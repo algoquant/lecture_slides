@@ -12,7 +12,8 @@ knit_theme$set(thm)
 
 
 % Define document options
-\documentclass[10pt]{beamer}
+\documentclass[9pt]{beamer}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
 \mode<presentation>
 \usetheme{AnnArbor}
 % \usecolortheme{whale}
@@ -56,9 +57,9 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Portfolio Construction]{Portfolio Construction}
-\subtitle{FRE6871 \& FRE7241, Spring 2021}
+\subtitle{FRE6871 \& FRE7241, Fall 2021}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
-\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
 \date{\today}
@@ -76,6 +77,200 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \section{Asset Allocation and Portfolio Construction}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Stock Selection}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Demonstrate that picking a portfolio that outperforms the stock index requires great skill, because most random portfolios underperform the index
+      \vskip1ex
+      So the proper benchmark for a stock picker is the median of random portfolios, not the stock index.
+      \vskip1ex
+      Asset allocation means dividing an investment portfolio among different asset classes, such as large company stocks, small company stocks, international stocks, bonds, commodities, cash, etc.
+      <<echo=TRUE,eval=FALSE>>=
+# Summary: Calculate the performance of random sub-portfolios
+# of S&P500 constituent stocks.
+
+# 1. (20pts) Load the file sp500_prices.RData containing 
+# an xts series called price_s, with the daily closing 
+# Prices of the S&P500 stock index constituents.  
+
+library(rutils)
+load("C:/Develop/lecture_slides/data/sp500_prices.RData")
+
+
+# Subset (select) from price_s only the data after the 
+# year 2000, and copy it over price_s.
+price_s <- price_s["2000/"]
+# Copy over NA prices using the function zoo::na.locf().
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+# Create a vector of dates called date_s, equal to the 
+# time index of price_s.
+date_s <- zoo::index(price_s)
+# Normalize the columns of price_s, so that the first 
+# row for all columns is equal to 1.
+# The columns of price_s will then represent the growth 
+# of one dollar invested in that stock.
+# You can use the functions lapply(), as.numeric(), cbind(), 
+# and rutils::do_call().
+price_s <- lapply(price_s, function(x) x/as.numeric(x[1]))
+price_s <- rutils::do_call(cbind, price_s)
+class(price_s)
+dim(price_s)
+sum(price_s[1, ])
+round(head(price_s[, 1:6]), 3)
+round(tail(price_s[, 1:6]), 3)
+# Calculate a vector equal to the dollar-weighted 
+# Prices of the index components, i.e. the average of 
+# the rows of price_s, and call it in_dex.
+# You can use the functions NCOL() and rowSums(). 
+
+n_cols <- NCOL(price_s)
+in_dex <- rowSums(price_s)/n_cols
+
+# You should get the following output:
+tail(in_dex)
+# [1] 12.27228 12.33409 12.33381 11.98787 12.11134 11.87442
+
+
+# 2. (30pts) Select twenty equally dollar-weighted, 
+# random sub-portfolios from the columns of price_s,
+# with each sub-portfolio being the average of five
+# randomly selected columns (stocks) of price_s.
+# Bind the sub-portfolio prices into a single xts 
+# time series called sub_portfolios.
+# You can use the function sample.int() with "replace=FALSE". 
+# You can also use the functions sapply(), xts::xts(), 
+# rowSums(), paste0(), and colnames(). 
+# You can use the vector of dates called date_s.
+
+n_portf <- 20
+n_stocks <- 5
+set.seed(1121)
+sub_portfolios <- sapply(1:n_portf, function(x) {
+  price_s <- price_s[, sample.int(n=n_cols, size=n_stocks, replace=FALSE)]
+  rowSums(price_s)/n_stocks
+})  # end sapply
+
+sub_portfolios <- xts::xts(sub_portfolios, order.by=date_s)
+colnames(sub_portfolios) <- paste0("portf", 1:n_portf)
+
+# You should get output similar to the following:
+# 
+round(head(sub_portfolios[, 1:4]), 3)
+#            portf1 portf2 portf3 portf4
+# 2000-01-03  1.000  1.000  1.000  1.000
+# 2000-01-04  0.977  0.975  0.962  0.973
+# 2000-01-05  0.967  0.992  0.979  0.988
+# 2000-01-06  0.950  1.001  0.981  1.008
+# 2000-01-07  0.966  1.008  0.985  1.035
+# 2000-01-10  0.980  1.010  0.980  1.043
+
+round(tail(sub_portfolios[, 1:4]), 3)
+#            portf1 portf2 portf3 portf4
+# 2020-06-19 30.928 11.654 36.575  8.667
+# 2020-06-22 31.553 11.691 37.173  8.662
+# 2020-06-23 31.262 11.606 37.022  8.660
+# 2020-06-24 30.275 11.409 37.289  8.415
+# 2020-06-25 30.897 11.511 37.242  8.567
+# 2020-06-26 29.834 11.228 36.912  8.570
+
+
+# Plot the sub_portfolios from worst to best (based 
+# on final price) using a color ramp from red to blue.
+# 
+# Create a color ramp, using functions colorRampPalette() 
+# and order(). 
+
+col_ors <- colorRampPalette(c("red", "blue"))(n_portf)
+col_ors <- col_ors[order(order(sub_portfolios[NROW(sub_portfolios), ]))]
+
+# Create a plot of the sub_portfolios with the custom 
+# color ramp, using either function zoo::plot.zoo(), 
+# Or functions chart_theme() and chart_Series(). 
+
+# Plot using chart_theme() and chart_Series()
+x11(width=6, height=5)
+zoo::plot.zoo(sub_portfolios, plot.type="single", 
+              col=col_ors, xlab="", ylab="",
+              main="Random S&P500 Stock Sub-portfolios (normalized)")
+
+# Or plot using quantmod::chart_Series()
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- col_ors
+quantmod::chart_Series(sub_portfolios, theme=plot_theme, 
+                       name="Random S&P500 Stock Sub-portfolios (normalized)")
+
+
+
+# Your plot should be similar to sp500_sub_portfolios.png
+
+
+# Calculate an xts series called above_index, with the 
+# percentage of sub-portfolios whose prices at the end 
+# of each year are above the index price in_dex.
+# You cannot perform any loops.
+# You can use the functions xts::endpoints(), rowSums(), 
+# chart_theme(), and xts(). 
+
+# You can calculate the end of year end points as follows:
+end_p <- xts::endpoints(date_s, on="years")
+
+# end_p are the row numbers for the end of year dates:
+date_s[end_p]
+
+end_p <- xts::endpoints(date_s, on="years")
+above_index <- (sub_portfolios[end_p, ] > in_dex[end_p])
+above_index <- rowSums(above_index)/n_portf
+above_index <- xts::xts(above_index, order.by=date_s[end_p])
+colnames(above_index) <- "percentage"
+
+# You should get output similar to the following:
+above_index
+#             percentage
+# 2000-12-29       0.35
+# 2001-12-31       0.40
+# 2002-12-31       0.35
+# 2003-12-31       0.25
+# 2004-12-31       0.35
+# 2005-12-30       0.25
+# 2006-12-29       0.25
+# 2007-12-31       0.25
+# 2008-12-31       0.30
+# 2009-12-31       0.25
+# 2010-12-31       0.30
+# 2011-12-30       0.30
+# 2012-12-31       0.30
+# 2013-12-31       0.35
+# 2014-12-31       0.30
+# 2015-12-31       0.30
+# 2016-12-30       0.30
+# 2017-12-29       0.30
+# 2018-12-31       0.40
+# 2019-12-31       0.40
+# 2020-06-26       0.40
+
+# Create a plot of above_index using function 
+# zoo::plot.zoo(). 
+
+zoo::plot.zoo(above_index, col="blue", lwd=2, xlab="", ylab="",
+              main="Percentage of Random Sub-portfolios 
+              Above the Index")
+
+# Your plot should be similar to sp500_sub_portfolios_above.png
+
+
+
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -215,7 +410,7 @@ portf_maxSR <- add.objective(
       \vskip1ex
       We can then express the sum of the elements of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbbm{1} = \mathbbm{1}^T \mathbf{v} = {\sum_{i=1}^n v_i}$.
       \vskip1ex
-      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v_i^2}$.
+      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v^2_i}$.
       \vskip1ex
       Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$.
       \vskip1ex
@@ -252,7 +447,7 @@ portf_maxSR <- add.objective(
       \vskip1ex
       The disadvantage of \emph{linear} constraints is that they allow highly leveraged portfolios, with very large positive and negative weights.
       \vskip1ex
-      Under \emph{quadratic} constraints the sum of the \emph{squared} weights is equal to \texttt{1}: $\mathbf{w}^T \mathbf{w} = {\sum_{i=1}^n w_i^2} = 1$, so that the weights are constrained to a \emph{hypersphere}.
+      Under \emph{quadratic} constraints the sum of the \emph{squared} weights is equal to \texttt{1}: $\mathbf{w}^T \mathbf{w} = {\sum_{i=1}^n w^2_i} = 1$, so that the weights are constrained to a \emph{hypersphere}.
       \vskip1ex
       Box constraints limit the individual weights, for example: $0 \leq w_i \leq 1$.
     \column{0.5\textwidth}
@@ -596,7 +791,7 @@ all.equal(tar_get, sum(mean_rets*weight_s))
           1 \\
           r_t
         \end{bmatrix} =\\
-        \frac{a r_t^2 - 2b r_t + c}{a c-b^2}
+        \frac{a r^2_t - 2b r_t + c}{a c-b^2}
       \end{align*}
       The above formula shows that the variance of the \emph{efficient portfolios} is a \emph{parabola} with respect to the target return $r_t$.
       \vskip1ex
@@ -680,8 +875,8 @@ text(x=sqrt(var_min), y=v_rets, labels="minimum \nvariance",
       The \emph{risk-free} rate $r_f$ can be calculated as the intercept of the tangent line:
       \begin{align*}
         r_f = r_t - \sigma \, \beta = r_t - \frac{\sigma^2 \, (a c-b^2)}{a r_t - b} = \\
-        r_t - \frac{a r_t^2 - 2b r_t + c}{a c-b^2} \frac{a c-b^2}{a r_t - b} = \\
-        r_t - \frac{a r_t^2 - 2b r_t + c}{a r_t - b} = \frac{b r_t - c}{a r_t - b}
+        r_t - \frac{a r^2_t - 2b r_t + c}{a c-b^2} \frac{a c-b^2}{a r_t - b} = \\
+        r_t - \frac{a r^2_t - 2b r_t + c}{a r_t - b} = \frac{b r_t - c}{a r_t - b}
       \end{align*}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -2114,7 +2309,7 @@ names(weight_s) <- colnames(re_turns)
       The \emph{elastic net} regularization is a combination of \emph{ridge} regularization and \emph{Lasso} regularization:
       \begin{align*}
         w_{max} = \operatorname*{arg\,max}_{w} [ \, \mathbf{w}^T \mathbf{r} - \\
-        \lambda ( (1-\alpha) \sum_{i=1}^n w_i^2 + \alpha \sum_{i=1}^n|w_i| ) \, ]
+        \lambda ( (1-\alpha) \sum_{i=1}^n w^2_i + \alpha \sum_{i=1}^n|w_i| ) \, ]
       \end{align*}
       The portfolio weights $\mathbf{w}$ are shrunk to zero as the parameters $\lambda$ and $\alpha$ increase.
     \column{0.5\textwidth}

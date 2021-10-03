@@ -12,7 +12,8 @@ knit_theme$set(thm)
 
 
 % Define document options
-\documentclass[10pt]{beamer}
+\documentclass[9pt]{beamer}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
 \mode<presentation>
 \usetheme{AnnArbor}
 % \usecolortheme{whale}
@@ -61,10 +62,10 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Probability and Statistics]{Probability and Statistics}
-\subtitle{FRE6871 \& FRE7241, Spring 2021}
+\subtitle{FRE6871 \& FRE7241, Fall 2021}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
-\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}
 % \email{jp3900@poly.edu}
@@ -1325,12 +1326,14 @@ jarque.bera.test(runif(NROW(re_turns)))
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\subsection{draft: The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      Needs more work: KS test for VTI returns vs t-distribution
+      \vskip1ex
       The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution.
       \vskip1ex
       The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
@@ -1346,21 +1349,49 @@ jarque.bera.test(runif(NROW(re_turns)))
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # KS test for normal distribution
-ks.test(rnorm(100), pnorm)
+ks_test <- ks.test(rnorm(100), pnorm)
+ks_test$p.value
 # KS test for uniform distribution
 ks.test(runif(100), pnorm)
 # KS test for two similar normal distributions
 ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
+ks.test(rnorm(100), rnorm(100, sd=2.0))
+# KS test for VTI returns vs normal distribution
+re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
+re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
+ks.test(re_turns, rnorm)
 # Fit t-dist into VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
 scal_e <- optim_fit$estimate[2]
-# Perform Kolmogorov-Smirnov test on VTI returns
+# KS test for VTI returns vs t-distribution
+# define non-standard Student’s t-distribution
+tdistr <- function(x, dfree, loc, scale) {
+  dt((x-loc)/scale, df=dfree)/scale
+}  # end likeli_hood
+# tdistr(x=re_turns[1], dfree=2, loc=lo_cation, scale=scal_e)
+# Plot shows that tdistr() fits re_turns very well
+den_sity <- density(re_turns)
+ma_d <- mad(re_turns)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     xlab="returns", ylab="density",
+     col="blue", lwd=2, main="Density of VTI Returns")
+curve(expr=tdistr(x, dfree=2, loc=lo_cation, scale=scal_e), col="red", lwd=2, add=TRUE)
+# Or
+tdistr <- function(x, dfree, loc, scale) {
+  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scale)*
+    (1+((x-loc)/scale)^2/dfree)^(-(dfree+1)/2)
+}  # end likeli_hood
+# tdistr(x=re_turns[1], dfree=2, loc=lo_cation, scale=scal_e)
+
+# Not the same as the below - gives p-value << 0.01 - rejects NULL
+ks.test(re_turns, tdistr, dfree=2, loc=lo_cation, scale=scal_e)
+
+# Not the same as the above - gives p-value > 0.02 most of the time - doesn't reject NULL
+# KS test for VTI returns vs t-distribution
 da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
-ks.test(as.numeric(re_turns), da_ta)
+ks.test(re_turns, da_ta)
       @
   \end{columns}
 \end{block}
@@ -1377,7 +1408,7 @@ ks.test(as.numeric(re_turns), da_ta)
     \column{0.5\textwidth}
       Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
       \vskip1ex
-      Then the random variable $X = \sum_{i=1}^k z_i^2$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      Then the random variable $X = \sum_{i=1}^k z^2_i$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
       \begin{displaymath}
         f(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
       \end{displaymath}
@@ -2857,7 +2888,7 @@ mean(rnorm(n_rows)^2 * rnorm(n_rows)^2)
       \end{displaymath}
       If the ranks are all distinct integers, then the \emph{Spearman} correlation $\rho_S$ can be expressed as:
       \begin{displaymath}
-        \rho_S = 1 - \frac{6 \sum_{i=1}^n {dr}_i^2}{n(n^2-1)}
+        \rho_S = 1 - \frac{6 \sum_{i=1}^n {dr}^2_i}{n(n^2-1)}
       \end{displaymath}
       Where ${dr}_i = {rx}_i - {ry}_i$ are the differences between the ranks.
       \vskip1ex

@@ -12,7 +12,9 @@ knit_theme$set(thm)
 
 
 % Define document options
-\documentclass[10pt]{beamer}
+\documentclass[9pt]{beamer}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
 \mode<presentation>
 \usetheme{AnnArbor}
 % \usecolortheme{whale}
@@ -29,7 +31,7 @@ knit_theme$set(thm)
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsfonts}
-\usepackage[latin1]{inputenc}
+% \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
 \usepackage{url}
@@ -62,9 +64,9 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Risk Analysis and Model Construction]{Risk Analysis and Model Construction}
-\subtitle{FRE6871 \& FRE7241, Spring 2021}
+\subtitle{FRE6871 \& FRE7241, Fall 2021}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
-\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
 \date{\today}
@@ -95,13 +97,15 @@ knit_theme$set(thm)
       \vskip1ex
       The kernel density is analogous to a histogram, but it provides more detailed information about the distribution of the data.
       \vskip1ex
-      The kernel $K(x)$ is a symmetric function which decreases with the distance $x$.
+      The smoothing kernel $K(x)$ is a symmetric function which decreases with the distance $x$.
       \vskip1ex
       The kernel density $d_i$ of a data sample $r_i$ is equal to the sum over the kernel function $K(x)$:
       \begin{displaymath}
         d_i = \sum_{j=1}^n {K(r_i - r_j)}
       \end{displaymath}
       The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
+      \vskip1ex
+      The parameter \emph{smoothing bandwidth} is the standard deviation of the smoothing kernel $K(x)$. 
       \vskip1ex
       The function \texttt{density()} returns a vector of densities at equally spaced points, not for the original data points.
       \vskip1ex
@@ -116,7 +120,7 @@ re_turns <- drop(coredata(na.omit(re_turns)))
 n_rows <- NROW(re_turns)
 # Mean and standard deviation of returns
 c(mean(re_turns), sd(re_turns))
-# Calculate the MAD of returns 10 points apart
+# Calculate the smoothing bandwidth as the MAD of returns 10 points apart
 re_turns <- sort(re_turns)
 b_w <- 10*mad(rutils::diff_it(re_turns, lagg=10))
 # Calculate the kernel density
@@ -327,24 +331,20 @@ boxplot(x=diff(log(EuStockMarkets)))
       $\mathbb{E}[\bar{x}] = \mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma] = \sigma$
       \vskip1ex
       The sample skewness (third moment):
-      {\scriptsize
       \begin{displaymath}
         \varsigma = \frac{n}{(n-1)(n-2)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
       \end{displaymath}
-      }
       The sample kurtosis (fourth moment):
-      {\scriptsize
       \begin{displaymath}
         \kappa = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
       \end{displaymath}
-      }
       The normal distribution has skewness equal to $0$ and kurtosis equal to $3$.
       \vskip1ex
       Stock returns typically have negative skewness and kurtosis much greater than $3$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# VTI percentage returns
+# Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Number of observations
 n_rows <- NROW(re_turns)
@@ -639,48 +639,36 @@ legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
   \begin{columns}[T]
     \column{0.5\textwidth}
       The non-standard Student's \emph{t-distribution} is:
-      {\scriptsize
       \begin{displaymath}
         f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{t - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
       \end{displaymath}
-      }
        It has non-zero mean equal to the location parameter $\mu$, and a standard deviation proportional to the scale parameter $\sigma$.
       \vskip1ex
       The negative logarithm of the probability density is equal to:
-      {\scriptsize
       \begin{multline*}
         -\log(f(t)) = -\log(\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)}) + \log(\sigma) + \\
         \frac{\nu+1}{2} \, \log(1 + (\frac{t - \mu}{\sigma})^2/\nu)
       \end{multline*}
-      }
       The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the model parameters $\theta$, given the observed values $\bar{x}$, under the model's probability distribution $f(x|\theta)$:
-      {\scriptsize
       \begin{displaymath}
         \mathcal{L}(\theta|x) = \prod_{i=1}^{n} f(x_i|\theta)
       \end{displaymath}
-      }
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# Objective function is log-likelihood
-likeli_hood <- function(pa_r, free_dom, da_ta) {
-  sum(
-    -log(gamma((free_dom+1)/2) /
-      (sqrt(pi*free_dom) * gamma(free_dom/2))) +
-    log(pa_r[2]) +
-    (free_dom+1)/2 * log(1 + ((da_ta - pa_r[1])/
-                            pa_r[2])^2/free_dom))
+# Objective function is negative log-likelihood
+likeli_hood <- function(par, dfree, data) {
+  sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
+    log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
 }  # end likeli_hood
 # Demonstrate equivalence with log(dt())
 likeli_hood(c(1, 0.5), 2, 2:5)
 -sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
 # Simpler objective function
-likeli_hood <- function(pa_r, free_dom, da_ta) {
-  -sum(log(dt(x=(da_ta-pa_r[1])/pa_r[2],
-              df=free_dom)/pa_r[2]))
+likeli_hood <- function(par, dfree, data) {
+  -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
 }  # end likeli_hood
       @
-      \vspace{-1em}
       The \emph{likelihood} function measures how \emph{likely} are the parameters, given the observed values $\bar{x}$.
       \vskip1ex
       The \emph{maximum-likelihood} estimate (\emph{MLE}) of the parameters are those that maximize the \emph{likelihood} function:
@@ -707,29 +695,32 @@ likeli_hood <- function(pa_r, free_dom, da_ta) {
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# VTI percentage returns
+# Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Initial parameters
 par_init <- c(mean=0, scale=0.01)
 # Fit distribution using optim()
 optim_fit <- optim(par=par_init,
   fn=likeli_hood, # Log-likelihood function
-  da_ta=re_turns,
-  free_dom=2, # Degrees of freedom
-  method="L-BFGS-B", # quasi-Newton method
-  upper=c(1, 0.1), # upper constraint
+  data=re_turns,
+  dfree=2, # Degrees of freedom
+  method="L-BFGS-B", # Quasi-Newton method
+  upper=c(1, 0.1), # Upper constraint
   lower=c(-1, 1e-7)) # Lower constraint
-# optimal parameters
+# Optimal parameters
 lo_cation <- optim_fit$par["mean"]
 scal_e <- optim_fit$par["scale"]
 # Fit VTI returns using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(re_turns,
-  densfun="t", df=2)
+optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
+summary(optim_fit)
+# Fitted parameters
 optim_fit$estimate
-optim_fit$sd
 lo_cation <- optim_fit$estimate[1]
 scal_e <- optim_fit$estimate[2]
-summary(optim_fit)
+# Standard errors of parameters
+optim_fit$sd
+# Log-likelihood value
+optim_fit$value
       @
   \end{columns}
 \end{block}
@@ -799,7 +790,7 @@ legend("topright", inset=0.05, bty="n",
       \end{displaymath}
       This is because a \emph{t-variable} can be thought of as the sum of normal variables with different volatilities (different sizes).
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/t_dist_tail_rets.png}
+      \includegraphics[width=0.4\paperwidth]{figure/t_dist_tail_rets.png}
       \vspace{-2em}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
@@ -827,7 +818,50 @@ legend("topleft", inset=0.05, bty="n",
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: (move to Hurst slides?): Asset Returns in Trading Time}
+\subsection{Trading Volumes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The rolling average trading volumes have increased significantly since the 2008 crisis, mostly because of high frequency trading (HFT).
+      \vskip1ex
+      Higher levels of volatility coincide with higher \emph{trading volumes}.
+      \vskip1ex
+      The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI returns and trading volumes
+oh_lc <- rutils::etf_env$VTI
+clos_e <- drop(coredata(quantmod::Cl(oh_lc)))
+re_turns <- rutils::diff_it(log(clos_e))
+vol_ume <- coredata(quantmod::Vo(oh_lc))
+# Calculate rolling variance
+look_back <- 121
+vari_ance <- HighFreq::roll_var_ohlc(log(oh_lc), method="close", look_back=look_back, scale=FALSE)
+vari_ance[1:look_back, ] <- vari_ance[look_back+1, ]
+# Calculate rolling average volume
+volume_roll <- HighFreq::roll_vec(vol_ume, look_back=look_back)/look_back
+# dygraph plot of VTI variance and trading volumes
+da_ta <- xts::xts(cbind(vari_ance, volume_roll), index(oh_lc))
+col_names <- c("variance", "volume")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="VTI Variance and Trading Volumes") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], strokeWidth=2, axis="y", col="blue") %>%
+  dySeries(name=col_names[2], strokeWidth=2, axis="y2", col="red")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/volume_volat_dyg.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Returns in Trading Time}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -835,45 +869,29 @@ legend("topleft", inset=0.05, bty="n",
     \column{0.5\textwidth}
       The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
       \vskip1ex
-      Higher levels of volatility coincide with higher \emph{trading volumes}.
-      \vskip1ex
       If asset returns were measured at fixed intervals of \emph{trading volumes} (\emph{trading time} instead of clock time), then the volatility would be lower and less time-dependent.
       \vskip1ex
-      The asset returns can be adjusted to \emph{trading time} by dividing them by the \emph{trading volume}, to obtain scaled returns over equal trading volumes.
+      The asset returns can be adjusted to \emph{trading time} by dividing them by the \emph{square root of the trading volumes}, to obtain scaled returns over equal trading volumes.
       \vskip1ex
-      The scaled returns have a smaller \emph{skewness} and \emph{kurtosis} than unscaled returns.
+      The scaled returns have a more positive \emph{skewness} and a smaller \emph{kurtosis} than unscaled returns.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate VTI returns and volume
-# oh_lc <- HighFreq::SPY
-oh_lc <- rutils::etf_env$VTI
-clos_e <- drop(coredata(quantmod::Cl(oh_lc)))
-re_turns <- rutils::diff_it(log(clos_e))
-vol_ume <- drop(coredata(quantmod::Vo(oh_lc)))
-# Calculate moving average volume
-look_back <- 121
-volume_roll <- HighFreq::roll_vec(vol_ume, look_back=look_back)/look_back
-dygraphs::dygraph(xts(volume_roll, index(oh_lc)),
-  main="Moving Average VTI Volume") %>%
-  dySeries(strokeWidth=3, col="blue")
 # Scale returns using volume (volume clock)
-# rets_scaled <- sqrt(volume_roll)*re_turns/sqrt(vol_ume)
-rets_scaled <- ifelse(vol_ume > 0, volume_roll*re_turns/vol_ume, 0)
+rets_scaled <- ifelse(vol_ume > 0, sqrt(volume_roll)*re_turns/sqrt(vol_ume), 0)
 rets_scaled <- sd(re_turns)*rets_scaled/sd(rets_scaled)
-
-
 # rets_scaled <- ifelse(vol_ume > 1e4, re_turns/vol_ume, 0)
 # Calculate moments of scaled returns
-# n_rows <- NROW(re_turns)
-# sapply(list(re_turns=re_turns, rets_scaled=rets_scaled),
-#   function(rets) {sapply(c(skew=3, kurt=4),
-#            function(x) sum((rets/sd(rets))^x)/n_rows)
-# })  # end sapply
+n_rows <- NROW(re_turns)
+sapply(list(re_turns=re_turns, rets_scaled=rets_scaled),
+  function(rets) {sapply(c(skew=3, kurt=4),
+           function(x) sum((rets/sd(rets))^x)/n_rows)
+})  # end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_scaled.png}
+      \includegraphics[width=0.4\paperwidth]{figure/vti_scaled.png}
       <<echo=TRUE,eval=FALSE>>=
-x11(width=6, height=5)
+# x11(width=6, height=5)
+dev.new(width=6, height=5, noRStudioGD=TRUE)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
 ma_d <- mad(re_turns)
@@ -887,8 +905,9 @@ curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)),
       add=TRUE, lwd=3, col="green")
 # Add legend
 legend("topright", inset=0.05, bty="n",
-  leg=c("minutely", "scaled", "normal"),
+  leg=c("unscaled", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
+quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
       @
   \end{columns}
 \end{block}
@@ -914,9 +933,9 @@ legend("topright", inset=0.05, bty="n",
       Follows the \emph{standard normal} distribution $\phi(0, 1)$.
 
     \column{0.5\textwidth}
-      The \emph{normal} distribution is the limiting distribution of sums of random variables which have a finite second moment.
+      The \emph{normal} distribution is the limiting distribution of x1s of random variables which have a finite second moment.
       \vskip1ex
-      For example, the sums of random variables with fat tails, which decrease as a power for large values of $x$:
+      For example, the x1s of random variables with fat tails, which decrease as a power for large values of $x$:
       \begin{displaymath}
         f(x) \propto {\left| x \right|}^{-(\nu+1)} \qquad (with \; \nu > 1)
       \end{displaymath}
@@ -928,12 +947,100 @@ legend("topright", inset=0.05, bty="n",
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\subsection{The \protect\emph{Shapiro-Wilk} Test of Normality}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The \emph{Shapiro-Wilk} test is designed to test the \emph{null hypothesis} that a sample: $\{x_1, \ldots, x_n\}$ is from a normally distributed population.
+      \vskip1ex
+      The test statistic is equal to:
+      \begin{displaymath}
+        W = \frac {(\sum_{i=1}^n a_i x_{(i)})^2} {\sum_{i=1}^n (x_i-\bar{x})^2}
+      \end{displaymath}
+      Where the: $\{a_1, \ldots, a_n\}$ are proportional to the \emph{order statistics} of random variables from the normal distribution.
+      \vskip1ex
+      $x_{(k)}$ is the \emph{k}-th \emph{order statistic}, and is equal to the \emph{k}-th smallest value in the sample: $\{x_1, \ldots, x_n\}$.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} statistic follows its own distribution, and is less than or equal to $1$.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} statistic is close to $1$ for samples from normal distributions.
+      \vskip1ex
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Calculate VTI percentage returns
+library(rutils)
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+# Reset output digits
+dig_its <- options(digits=5)
+# Shapiro-Wilk test for normal distribution
+shapiro.test(rnorm(NROW(re_turns)))
+# Shapiro-Wilk test for VTI returns
+shapiro.test(as.numeric(re_turns))
+# Shapiro-Wilk test for uniform distribution
+shapiro.test(runif(NROW(re_turns)))
+# Restore output digits
+options(digits=dig_its$digits)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Jarque-Bera} Test of Normality}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Jarque-Bera} test is designed to test the \emph{null hypothesis} that a sample: $\{x_1, \ldots, x_n\}$ is from a normally distributed population.
+      \vskip1ex
+      The test statistic is equal to:
+      \begin{displaymath}
+        JB = \frac{n}{6} (\varsigma^2 + \frac{1}{4} (\kappa - 3)^2)
+      \end{displaymath}
+      Where the \emph{skewness} and \emph{kurtosis} are defined as:
+      \begin{align*}
+        \varsigma = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
+      &&
+        \kappa = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+      \end{align*}
+      The \emph{Jarque-Bera} statistic asymptotically follows the \emph{chi-squared} distribution with two degrees of freedom.
+      \vskip1ex
+      The \emph{Jarque-Bera} statistic is small for samples from normal distributions.
+      \vskip1ex
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+library(tseries)  # Load package tseries
+# Jarque-Bera test for normal distribution
+jarque.bera.test(rnorm(NROW(re_turns)))
+# Jarque-Bera test for VTI returns
+jarque.bera.test(re_turns)
+# Jarque-Bera test for uniform distribution
+jarque.bera.test(runif(NROW(re_turns)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Needs more work: KS test for VTI returns vs t-distribution
+      \vskip1ex
       The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution.
       \vskip1ex
       The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
@@ -949,21 +1056,49 @@ legend("topright", inset=0.05, bty="n",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # KS test for normal distribution
-ks.test(rnorm(100), pnorm)
+ks_test <- ks.test(rnorm(100), pnorm)
+ks_test$p.value
 # KS test for uniform distribution
 ks.test(runif(100), pnorm)
 # KS test for two similar normal distributions
 ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
+ks.test(rnorm(100), rnorm(100, sd=2.0))
+# KS test for VTI returns vs normal distribution
+re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
+re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
+ks.test(re_turns, rnorm)
 # Fit t-dist into VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
 scal_e <- optim_fit$estimate[2]
-# Perform Kolmogorov-Smirnov test on VTI returns
+# KS test for VTI returns vs t-distribution
+# define non-standard Student’s t-distribution
+tdistr <- function(x, dfree, loc, scale) {
+  dt((x-loc)/scale, df=dfree)/scale
+}  # end likeli_hood
+# tdistr(x=re_turns[1], dfree=2, loc=lo_cation, scale=scal_e)
+# Plot shows that tdistr() fits re_turns very well
+den_sity <- density(re_turns)
+ma_d <- mad(re_turns)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     xlab="returns", ylab="density",
+     col="blue", lwd=2, main="Density of VTI Returns")
+curve(expr=tdistr(x, dfree=2, loc=lo_cation, scale=scal_e), col="red", lwd=2, add=TRUE)
+# Or
+tdistr <- function(x, dfree, loc, scale) {
+  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scale)*
+    (1+((x-loc)/scale)^2/dfree)^(-(dfree+1)/2)
+}  # end likeli_hood
+# tdistr(x=re_turns[1], dfree=2, loc=lo_cation, scale=scal_e)
+
+# Not the same as the below - gives p-value << 0.01 - rejects NULL
+ks.test(re_turns, tdistr, dfree=2, loc=lo_cation, scale=scal_e)
+
+# Not the same as the above - gives p-value > 0.02 most of the time - doesn't reject NULL
+# KS test for VTI returns vs t-distribution
 da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
-ks.test(as.numeric(re_turns), da_ta)
+ks.test(re_turns, da_ta)
       @
   \end{columns}
 \end{block}
@@ -980,7 +1115,7 @@ ks.test(as.numeric(re_turns), da_ta)
     \column{0.5\textwidth}
       Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
       \vskip1ex
-      Then the random variable $X = \sum_{i=1}^k z_i^2$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      Then the random variable $X = \sum_{i=1}^k z^2_i$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
       \begin{displaymath}
         f(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
       \end{displaymath}
@@ -1309,7 +1444,7 @@ apply(boot_data, MARGIN=2, function(x)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# VTI returns
+# Calculate VTI returns
 re_turns <- rutils::etf_env$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
@@ -1402,48 +1537,92 @@ all.equal(sqrt(sum(returns_sub^2)/n_rows),
       The \emph{drawdown} is the drop in prices from their historical peak, and is equal to the difference between the prices minus the cumulative maximum of the prices.
       \vskip1ex
       \emph{Drawdown risk} determines the risk of liquidation due to stop loss limits.
-      \vskip1ex
-      The function \texttt{table.Drawdowns()} from package \emph{PerformanceAnalytics} calculates a data frame of drawdowns.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI drawdowns
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+clos_e <- log(quantmod::Cl(rutils::etf_env$VTI))
 draw_downs <- (clos_e - cummax(clos_e))
-# PerformanceAnalytics plot of VTI drawdowns
-re_turns <- rutils::diff_it(log(clos_e))
-PerformanceAnalytics::chart.Drawdown(re_turns,
-  ylab="", main="VTI Drawdowns")
-# PerformanceAnalytics table of VTI drawdowns
-PerformanceAnalytics::table.Drawdowns(re_turns)
+# Extract the date index from the time series clos_e 
+date_s <- zoo::index(clos_e)
+# Calculate the maximum drawdown date and depth
+index_min <- which.min(draw_downs)
+date_min <- date_s[index_min]
+max_drawdown <- draw_downs[date_min]
+# Calculate the drawdown start and end dates
+date_start <- max(date_s[(date_s < date_min) & (draw_downs == 0)])
+date_end <- min(date_s[(date_s > date_min) & (draw_downs == 0)])
 # dygraph plot of VTI drawdowns
 da_ta <- cbind(clos_e, draw_downs)
 col_names <- c("VTI", "Drawdowns")
 colnames(da_ta) <- col_names
 dygraphs::dygraph(da_ta, main="VTI Drawdowns") %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], valueRange=c(min(da_ta[, "Drawdowns"]), 5), independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], 
+         valueRange=(1.2*range(draw_downs)+0.1), independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", col="blue") %>%
-  dySeries(name=col_names[2], axis="y2", col="red")
-# Plot VTI drawdowns
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
-x11(width=6, height=5)
-quantmod::chart_Series(x=draw_downs, name="VTI Drawdowns", theme=plot_theme)
+  dySeries(name=col_names[2], axis="y2", col="red") %>%
+  dyEvent(date_start, "start drawdown", col="blue") %>%
+  dyEvent(date_min, "max drawdown", col="red") %>%
+  dyEvent(date_end, "end drawdown", col="green")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/drawdown_plot.png}
-      <<echo=FALSE,eval=TRUE,results='asis'>>=
+      <<echo=TRUE,eval=FALSE>>=
+# Plot VTI drawdowns using package quantmod
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue")
+x11(width=6, height=5)
+quantmod::chart_Series(x=clos_e, name="VTI Drawdowns", theme=plot_theme)
+xval <- match(date_start, date_s)
+yval <- max(clos_e)
+abline(v=xval, col="blue")
+text(x=xval, y=0.95*yval, "start drawdown", col="blue", cex=0.9)
+xval <- match(date_min, date_s)
+abline(v=xval, col="red")
+text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
+xval <- match(date_end, date_s)
+abline(v=xval, col="green")
+text(x=xval, y=0.85*yval, "end drawdown", col="green", cex=0.9)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Drawdown Risk Using \texttt{PerformanceAnalytics::table.Drawdowns()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{table.Drawdowns()} from package \emph{PerformanceAnalytics} calculates a data frame of drawdowns.
+      <<echo=TRUE,eval=FALSE>>=
 library(xtable)
 library(PerformanceAnalytics)
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
-re_turns <- rutils::diff_it(log(clos_e))
+clos_e <- log(quantmod::Cl(rutils::etf_env$VTI))
+re_turns <- rutils::diff_it(clos_e)
 # Calculate table of VTI drawdowns
-tabl_e <- PerformanceAnalytics::table.Drawdowns(re_turns)
+tabl_e <- PerformanceAnalytics::table.Drawdowns(re_turns, geometric=FALSE)
 # Convert dates to strings
 tabl_e <- cbind(sapply(tabl_e[, 1:3], as.character), tabl_e[, 4:7])
 # Print table of VTI drawdowns
 print(xtable(tabl_e), comment=FALSE, size="tiny", include.rownames=FALSE)
       @
+      <<echo=FALSE,eval=TRUE,size="tiny",results='asis'>>=
+library(xtable)
+library(PerformanceAnalytics)
+clos_e <- log(quantmod::Cl(rutils::etf_env$VTI))
+re_turns <- rutils::diff_it(clos_e)
+# Calculate table of VTI drawdowns
+tabl_e <- PerformanceAnalytics::table.Drawdowns(re_turns, geometric=FALSE)
+# Convert dates to strings
+tabl_e <- cbind(sapply(tabl_e[, 1:3], as.character), tabl_e[, 4:7])
+# Print table of VTI drawdowns
+print(xtable(tabl_e), comment=FALSE, size="tiny", include.rownames=FALSE)
+      @
+    \column{0.5\textwidth}
   \end{columns}
 \end{block}
 
@@ -1489,15 +1668,15 @@ charts.PerformanceSummary(ham_1,
       The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
       \vskip1ex
       The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
-# VTI percentage returns
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 conf_level <- 0.1
 va_r <- quantile(re_turns, conf_level)
 c_var <- mean(re_turns[re_turns < va_r])
 # Plot histogram of VTI returns
+x11(width=6, height=5)
+par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 histo_gram <- hist(re_turns, col="lightgrey",
   xlab="returns", ylab="frequency", breaks=100,
   xlim=c(-0.05, 0.01), freq=FALSE, main="VTI Returns Histogram")
@@ -1506,20 +1685,19 @@ densi_ty <- density(re_turns, adjust=1.5)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_var.png}
-      \vspace{-2em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_var.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot density
 lines(densi_ty, lwd=3, col="blue")
 # Plot line for VaR
 abline(v=va_r, col="red", lwd=3)
-text(x=va_r, y=20, labels="VaR", lwd=2, srt=90, pos=2)
+text(x=va_r, y=25, labels="VaR", lwd=2, pos=2)
 # Plot polygon shading for CVaR
+text(x=1.5*va_r, y=10, labels="CVaR", lwd=2, pos=2)
 var_max <- -0.06
 rang_e <- (densi_ty$x < va_r) &  (densi_ty$x > var_max)
 polygon(c(var_max, densi_ty$x[rang_e], va_r),
   c(0, densi_ty$y[rang_e], 0), col=rgb(1, 0, 0,0.5), border=NA)
-text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
       @
   \end{columns}
 \end{block}
@@ -1548,11 +1726,11 @@ text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# VTI percentage returns
+# Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
-conf_level <- 0.02
+conf_level <- 0.05
 # Calculate VaR as quantile
-va_r <- quantile(re_turns, conf_level)
+va_r <- quantile(re_turns, probs=conf_level)
 # Or by sorting
 sort_ed <- sort(as.numeric(re_turns))
 in_dex <- round(conf_level*NROW(re_turns))
@@ -1587,7 +1765,7 @@ all.equal(unname(va_r),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
+x11(width=6, height=5)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 # Calculate VaR as quantile
 va_r <- quantile(re_turns, conf_level)
@@ -1748,7 +1926,7 @@ text(x=risk_ret$Skewness, y=risk_ret$Kurtosis,
       \vskip1ex
       The high and low volatility cohorts have very similar returns, contrary to expectations.  So do the high and low kurtosis cohorts.
     \column{0.5\textwidth}
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 ### Below is for ETFs
 # Sort on Sharpe ratio
 risk_ret <- risk_ret[order(risk_ret$Skewness, decreasing=TRUE), ]
@@ -1833,33 +2011,114 @@ dygraphs::dygraph(weal_th, main="Log Wealth of High and Low Skew Stocks") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Sharpe} ratio measures the excess returns per unit of risk, and is equal to the excess returns (over a risk-free return $r_f$) divided by the standard deviation of the returns:
+      The \emph{Sharpe ratio} $\mathrm{S_r}$ is equal to the excess returns (in excess of the risk-free return $r_f$) divided by the standard deviation $\sigma$ of the returns:
       \begin{displaymath}
-        S_{r}=\frac{E[r-r_f]}{\sigma}
+        \mathrm{S_r} = \frac{E[r-r_f]}{\sigma}
       \end{displaymath}
-      The \emph{Sortino} ratio is equal to the excess returns divided by the \emph{downside deviation} $\sigma_{d}$ (standard deviation of returns that are less than a target rate of return $r_t$):
+      The \emph{Sortino ratio} $\mathrm{{So}_r}$ is equal to the excess returns divided by the \emph{downside deviation} $\sigma_{d}$ (standard deviation of returns that are less than a target rate of return $r_t$):
       \begin{displaymath}
-        S_{r}=\frac{E[r-r_t]}{\sigma_{d}}
+        \mathrm{{So}_r} = \frac{E[r-r_t]}{\sigma_{d}}
       \end{displaymath}
-      The \emph{Calmar} ratio is equal to the excess returns divided by the maximum drawdown of the returns:
+      The \emph{Calmar ratio} $\mathrm{C_r}$ is equal to the excess returns divided by the \emph{maximum drawdown} $\mathrm{DD}$ of the returns:
       \begin{displaymath}
-        C_{r}=\frac{E[r-r_f]}{DD}
+        \mathrm{C_r} = \frac{E[r-r_f]}{\mathrm{DD}}
       \end{displaymath}
-      \vskip1ex
+      The \emph{Dowd ratio} $\mathrm{D_r}$ is equal to the excess returns divided by the \emph{Value at Risk} ($\mathrm{VaR}$) of the returns:
+      \begin{displaymath}
+        \mathrm{D_r} = \frac{E[r-r_f]}{\mathrm{VaR}}
+      \end{displaymath}
+      The \emph{Conditional Dowd ratio} $\mathrm{{Dc}_r}$ is equal to the excess returns divided by the \emph{Conditional Value at Risk} ($\mathrm{CVaR}$) of the returns:
+      \begin{displaymath}
+        \mathrm{{Dc}_r} = \frac{E[r-r_f]}{\mathrm{CVaR}}
+      \end{displaymath}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
+      <<echo=TRUE,eval=FALSE>>=
 library(PerformanceAnalytics)
 re_turns <- rutils::etf_env$re_turns[, c("VTI", "IEF")]
 re_turns <- na.omit(re_turns)
 # Calculate the Sharpe ratio
-PerformanceAnalytics::SharpeRatio(re_turns)
+conf_level <- 0.05
+PerformanceAnalytics::SharpeRatio(re_turns, p=(1-conf_level), 
+  method="historical")
 # Calculate the Sortino ratio
 PerformanceAnalytics::SortinoRatio(re_turns)
 # Calculate the Calmar ratio
 PerformanceAnalytics::CalmarRatio(re_turns)
-# Calculate the returns statistics
-tail(PerformanceAnalytics::table.Stats(re_turns), 4)
+# Calculate the Dowd ratio
+PerformanceAnalytics::SharpeRatio(re_turns, FUN="VaR", 
+  p=(1-conf_level), method="historical")
+# Calculate the Dowd ratio from scratch
+va_r <- sapply(re_turns, quantile, probs=conf_level)
+-sapply(re_turns, mean)/va_r
+# Calculate the Conditional Dowd ratio
+PerformanceAnalytics::SharpeRatio(re_turns, FUN="ES", 
+  p=(1-conf_level), method="historical")
+# Calculate the Conditional Dowd ratio from scratch
+c_var <- sapply(re_turns, function(x) {
+  mean(x[x < quantile(x, conf_level)])
+})
+-sapply(re_turns, mean)/c_var
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk and Return of Compounded Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Compounded stock returns become closer to normally distributed, and their skewness, kurtosis, and tail risks decrease significantly compared to daily returns.
+      \vskip1ex
+      So stocks become less risky over longer holding periods, and investors may choose to own a higher percentage of stocks, provided they hold them for a longer period of time.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- drop(zoo::coredata(re_turns))
+n_rows <- NROW(re_turns)
+# Calculate compounded VTI returns
+hold_p <- 252
+cum_rets <- sqrt(hold_p)*sapply(1:n_rows, function(x) {
+    mean(re_turns[sample.int(n_rows, size=hold_p, replace=TRUE)])
+})  # end sapply
+# Calculate mean, standard deviation, skewness, and kurtosis
+da_ta <- cbind(re_turns, cum_rets)
+colnames(da_ta) <- c("VTI", "Agg")
+apply(da_ta, MARGIN=2, function(x) {
+  # Standardize the returns
+  meanval <- mean(x); stddev <- sd(x); x <- (x - meanval)/stddev
+  c(mean=meanval, stddev=stddev, skew=mean(x^3), kurt=mean(x^4))
+})  # end sapply
+# Calculate the Sharpe and Dowd ratios
+conf_level <- 0.05
+sapply(colnames(da_ta), function(name) {
+  x <- da_ta[, name]; stddev <- sd(x)
+  va_r <- unname(quantile(x, probs=conf_level))
+  c_var <- mean(x[x < va_r])
+  fac_tor <- 1
+  if (name == colnames(da_ta)[2]) {fac_tor <- hold_p}
+  sqrt(252/fac_tor)*mean(x)/c(Sharpe=stddev, Dowd=-va_r, DowdC=-c_var)
+})  # end sapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/risk_compound.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the densities of returns
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+plot(density(re_turns), t="l", lwd=3, col="blue",
+     xlab="returns", ylab="density", xlim=c(-0.04, 0.04),
+     main="Distribution of Compounded Stock Returns")
+lines(density(cum_rets), t="l", col="red", lwd=3)
+curve(expr=dnorm(x, mean=mean(cum_rets), sd=sd(cum_rets)), col="green", lwd=3, add=TRUE)
+legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
+       inset=-0.1, bg="white", lty=1, lwd=6, col=c("blue", "red", "green"), bty="n")
       @
   \end{columns}
 \end{block}
@@ -2027,7 +2286,7 @@ summary(microbenchmark(
       \begin{displaymath}
         r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
       \end{displaymath}
-      Where $r_i$ is the filtered output vector, $\varphi_i$ are the filter coefficients, and $\xi_i$ are random \emph{innovations}.
+      Where $r_i$ is the filtered output vector, $\varphi_i$ are the filter coefficients, and $\xi_i$ are standard normal \emph{innovations}.
       \vskip1ex
       The \emph{recursive} filter describes an \emph{AR(p)} process, which is a special case of an \emph{ARIMA} process.
       \vskip1ex
@@ -2259,19 +2518,18 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[end_p], lwd=c(2, 2, 2),
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling interval:
-      {\scriptsize
       \begin{displaymath}
         p^{EWMA}_i = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) p_{i-j}
       \end{displaymath}
-      }
       Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       <<echo=TRUE,eval=FALSE>>=
 # Extract log VTI prices
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+oh_lc <- rutils::etf_env$VTI
+clos_e <- log(quantmod::Cl(oh_lc))
 n_rows <- NROW(clos_e)
 # Calculate EWMA weights
-look_back <- 21
-lamb_da <- 0.1
+look_back <- 252
+lamb_da <- 0.07
 weight_s <- exp(lamb_da*1:look_back)
 weight_s <- weight_s/sum(weight_s)
 # Calculate EWMA prices
@@ -2316,27 +2574,28 @@ legend("bottomright", legend=colnames(price_s),
       \begin{displaymath}
         p^{VWAP}_i = \frac{\sum_{j=0}^{n} v_j p_{i-j}}{\sum_{j=0}^{n} v_j}
       \end{displaymath}
-      The \emph{VWAP} is often used as a technical indicator in trend following strategies.
+      The \emph{VWAP} applies more weight to prices with higher trading volumes, which allows it to react more quickly to recent market volatility.
       \vskip1ex
+      The \emph{VWAP} is often used as a technical indicator in trend following strategies.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log OHLC prices and volumes
-sym_bol <- "VTI"
 oh_lc <- rutils::etf_env$VTI
-n_rows <- NROW(oh_lc)
 clos_e <- log(quantmod::Cl(oh_lc))
+colnames(clos_e) <- "VTI"
 vol_ume <- quantmod::Vo(oh_lc)
+colnames(vol_ume) <- "Volume"
+n_rows <- NROW(clos_e)
 # Calculate the VWAP prices
 look_back <- 21
-v_wap <- roll::roll_sum(clos_e*vol_ume, width=look_back, min_obs=1)
+vwap <- roll::roll_sum(clos_e*vol_ume, width=look_back, min_obs=1)
 volume_roll <- roll::roll_sum(vol_ume, width=look_back, min_obs=1)
-v_wap <- v_wap/volume_roll
-v_wap <- zoo::na.locf(v_wap, fromLast=TRUE)
-price_s <- cbind(clos_e, v_wap)
-colnames(price_s) <- c(sym_bol, paste(sym_bol, "VWAP"))
+vwap <- vwap/volume_roll
+colnames(vwap) <- "VWAP"
+price_s <- cbind(clos_e, vwap)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/features_vwap.png}
+      \includegraphics[width=0.4\paperwidth]{figure/features_vwap.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
 col_ors <- c("blue", "red")
@@ -2421,13 +2680,11 @@ dygraphs::dygraph(price_s["2009"], main=paste(sym_bol, "EWMA Returns")) %>%
       The simple returns can then be expressed as equal to the returns operator $(1 - L)$ applied to the prices: $r_i = (1 - L) p_i$.
       \vskip1ex
       The simple returns can be generalized to the fractional returns by raising the returns operator to some power $\delta < 1$:
-      {\scriptsize
       \begin{multline*}
         r_i = (1 - L)^\delta p_i = \\
         p_i - \delta L p_i + \frac{\delta(\delta-1)}{2!} L^2 p_i - \frac{\delta(\delta-1)(\delta-2)}{3!} L^3 p_i + \cdots = \\
         p_i - \delta p_{i-1} + \frac{\delta(\delta-1)}{2!} p_{i-2} - \frac{\delta(\delta-1)(\delta-2)}{3!} p_{i-3} + \cdots
       \end{multline*}
-      }
       The fractional returns provide a tradeoff between simple returns (which are range-bound but with no memory) and prices (which have memory but are not range-bound). 
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2548,22 +2805,20 @@ dy_graph
   \begin{columns}[T]
     \column{0.5\textwidth}
       The trailing \emph{volume z-score} is equal to the volume $v_i$ minus the trailing average volumes $\bar{v_i}$ divided by the volatility of the volumes $\sigma_i$:
-      {\scriptsize
       \begin{displaymath}
         z_i = \frac{v_i - \bar{v_i}}{\sigma_i}
       \end{displaymath}
-      }
       Trading volumes are typically higher when prices drop and they are also positively correlated with the return volatility.
       \vskip1ex
       The \emph{volume z-scores} are positively skewed because returns are negatively skewed.
-      \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volume z-scores
 vol_ume <- quantmod::Vo(rutils::etf_env$VTI)
 look_back <- 21
 volume_mean <- roll::roll_mean(vol_ume, width=look_back, min_obs=1)
 volume_sd <- roll::roll_sd(rutils::diff_it(vol_ume), width=look_back, min_obs=1)
-volume_scores <- (vol_ume - volume_mean)/volume_sd
+volume_sd[1] <- 0
+volume_scores <- ifelse(volume_sd > 0, (vol_ume - volume_mean)/volume_sd, 0)
 # Plot histogram of volume z-scores
 x11(width=6, height=5)
 hist(volume_scores, breaks=1e2)
@@ -2598,11 +2853,9 @@ dygraphs::dygraph(price_s["2009"], main="VTI Volume Z-Scores") %>%
       The difference between high and low prices is a proxy for the spot volatility in a bar of data.
       \vskip1ex
       The \emph{volatility z-score} is equal to the spot volatility $v_i$ minus the trailing average volatility $\bar{v_i}$ divided by the standard deviation of the volatility $\sigma_i$:
-      {\scriptsize
       \begin{displaymath}
         z_i = \frac{v_i - \bar{v_i}}{\sigma_i}
       \end{displaymath}
-      }
       Volatility is typically higher when prices drop and it's also positively correlated with the trading volumes.
       \vskip1ex
       The \emph{volatility z-scores} are positively skewed because returns are negatively skewed.
@@ -2614,7 +2867,8 @@ vol_at <- quantmod::Hi(oh_lc)-quantmod::Lo(oh_lc)
 look_back <- 21
 volat_mean <- roll::roll_mean(vol_at, width=look_back, min_obs=1)
 volat_sd <- roll::roll_sd(rutils::diff_it(vol_at), width=look_back, min_obs=1)
-volat_scores <- ifelse(is.na(volat_sd), 0, (vol_at - volat_mean)/volat_sd)
+volat_sd[1] <- 0
+volat_scores <- ifelse(volat_sd > 0, (vol_at - volat_mean)/volat_sd, 0)
 # Plot histogram of volatility z-scores
 x11(width=6, height=5)
 hist(volat_scores, breaks=1e2)
@@ -2653,11 +2907,9 @@ dygraphs::dygraph(price_s["2009"], main="VTI Volatility Z-Scores") %>%
       An extreme local price is a price which differs significantly from neighboring prices.
       \vskip1ex
       Extreme prices can be identified in-sample using the centered \emph{price z-score} equal to the price difference with neighboring prices divided by the volatility of returns $\sigma_i$:
-      {\scriptsize
       \begin{displaymath}
         z_i = \frac{2 p_i - p_{i-k} - p_{i+k}}{\sigma_i}
       \end{displaymath}
-      }
       Where $p_{i-k}$ and $p_{i+k}$ are the lagged and advanced prices.
       \vskip1ex
       The lag parameter $k$ determines the scale of the extreme local prices, with smaller $k$ producing larger z-scores for more local price extremes.
@@ -2665,6 +2917,7 @@ dygraphs::dygraph(price_s["2009"], main="VTI Volatility Z-Scores") %>%
 # Calculate the centered volatility
 look_back <- 21
 half_back <- look_back %/% 2
+re_turns <- rutils::diff_it(clos_e)
 vol_at <- roll::roll_sd(re_turns, width=look_back, min_obs=1)
 vol_at <- rutils::lag_it(vol_at, lagg=(-half_back))
 # Calculate the z-scores of prices
@@ -2701,6 +2954,8 @@ dygraphs::dygraph(price_s["2009"], main="VTI Price Z-Scores") %>%
   \begin{columns}[T]
     \column{0.5\textwidth}
       The local tops and bottoms of prices can be labeled approximately in-sample using the z-scores of prices and threshold values.
+      \vskip1ex
+      The local tops of prices represent \emph{overbought} conditions, while the bottoms represent \emph{oversold} conditions.
       \vskip1ex
       The labeled data can be used as a response or target variable in machine learning classifier models.
       \vskip1ex
@@ -2750,11 +3005,9 @@ dygraphs::dygraph(price_s, main="VTI Strategy Using In-sample Labels") %>%
   \begin{columns}[T]
     \column{0.5\textwidth}
       The trailing \emph{z-score} $z_i$ of a price $p_i$ can be defined as the \emph{standardized residual} of the linear regression with respect to time $t_i$ or some other variable:
-      {\scriptsize
       \begin{displaymath}
         z_i = \frac{p_i - (\alpha + \beta t_i)}{\sigma_i}
       \end{displaymath}
-      }
       Where $\alpha$ and $\beta$ are the \emph{regression coefficients}, and $\sigma_i$ is the standard deviation of the residuals.
       \vskip1ex
       The regression \emph{z-scores} can be used as rich or cheap indicators, either relative to past prices, or relative to prices in a stock pair.
@@ -2797,19 +3050,15 @@ dygraphs::dygraph(price_s["2009"], main="VTI Price Z-Scores") %>%
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability):
-      {\scriptsize
       \begin{displaymath}
         \operatorname{MAD} = \operatorname{median}(\operatorname{abs}(p_i - \operatorname{median}(\mathbf{p})))
       \end{displaymath}
-      }
       The \emph{Hampel filter} uses the \emph{MAD} dispersion measure to detect outliers in data.
       \vskip1ex
       The \emph{Hampel z-score} is equal to the deviation from the median divided by the \emph{MAD}:
-      {\scriptsize
       \begin{displaymath}
         z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
       \end{displaymath}
-      }
       A time series of \emph{z-scores} over past data can be calculated using a rolling look-back window.
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
@@ -2895,6 +3144,52 @@ range(z_scores)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Hampel Filter Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hampel filter strategy is a contrarian strategy that uses Hampel z-scores to establish long and short positions.
+      \vskip1ex
+      The Hampel strategy has two meta-parameters: the look-back interval and the threshold level.
+      \vskip1ex
+      The best choice of the meta-parameters can be determined through backtesting.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+re_turns <- rutils::diff_it(clos_e)
+# Define threshold value
+thresh_old <- sum(abs(range(z_scores)))/8
+# Backtest VTI strategy
+position_s <- rep(NA_integer_, NROW(clos_e))
+position_s[1] <- 0
+position_s[z_scores < -thresh_old] <- 1
+position_s[z_scores > thresh_old] <- (-1)
+position_s <- zoo::na.locf(position_s)
+position_s <- rutils::lag_it(position_s)
+pnl_s <- cumsum(re_turns*position_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_hampel.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of in-sample VTI strategy
+price_s <- cbind(clos_e, pnl_s)
+colnames(price_s) <- c("VTI", "Strategy")
+col_names <- colnames(price_s)
+dygraphs::dygraph(price_s, main="VTI Hampel Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{draft: State Space Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -2915,7 +3210,7 @@ range(z_scores)
       The system variables (matrices) $g_t$ and $f_t$ are deterministic functions of time.
       \vskip1ex
       If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
-      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
+      $\sigma^2_i$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
       \vskip1ex
       The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa.
       \vskip1ex
@@ -2959,12 +3254,10 @@ quantmod::chart_Series(x_ts, name="VTI EWMA Volatility")
       The variance of asset returns exhibits \emph{heteroskedasticity}, i.e. it changes over time.
       \vskip1ex
       The rolling variance of returns is given by:
-      {\scriptsize
       \begin{flalign*}
-        \sigma_i^2 &= \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2 \\
+        \sigma^2_i &= \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2 \\
         \bar{r_i} &= \frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
       \end{flalign*}
-      }
       Where \texttt{k} is the \emph{look-back interval} equal to the number of data points
       for performing aggregations over the past.
       \vskip1ex
@@ -2972,7 +3265,7 @@ quantmod::chart_Series(x_ts, name="VTI EWMA Volatility")
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# VTI percentage returns
+# Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 n_rows <- NROW(re_turns)
 # Define end points
@@ -3066,12 +3359,10 @@ summary(microbenchmark(
       Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) variance estimator.
       \vskip1ex
       If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
-      {\scriptsize
       \begin{displaymath}
-        \sigma_i^2 = (1-\lambda) {r_i}^2 + \lambda \sigma_{i-1}^2 = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
+        \sigma^2_i = (1-\lambda) r^2_i + \lambda \sigma^2_{i-1} = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j r^2_{i-j}
       \end{displaymath}
-      }
-      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
+      $\sigma^2_i$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
       \vskip1ex
       The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa.
       \vskip1ex
@@ -3109,18 +3400,14 @@ quantmod::chart_Series(x_ts, name="VTI EWMA Volatility")
   \begin{columns}[T]
     \column{0.5\textwidth}
       If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
-      {\scriptsize
       \begin{flalign*}
-        \sigma_i^2 &= \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2} \\
+        \sigma^2_i &= \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2} \\
         \bar{r_i} &= \frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
       \end{flalign*}
-      }
       Where $w_j$ is the vector of weights:
-      {\scriptsize
       \begin{displaymath}
         w_j = \frac{\lambda^j}{\sum_{j=0}^{k-1} \lambda^j}
       \end{displaymath}
-      }
       The function \texttt{roll\_var()} from package \emph{roll} calculates the rolling \emph{EWMA} variance.
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3149,12 +3436,10 @@ vari_ance[1:(look_back-1)] <- 0
   \begin{columns}[T]
     \column{0.5\textwidth}
       The standard \emph{close-to-close} volatility $\sigma$ depends on the \emph{Close} prices $C_i$ from \emph{OHLC} data:
-      {\scriptsize
       \begin{flalign*}
         \sigma^2 &= \frac{1}{n-1} \sum_{i=1}^{n} (r_i - \bar{r})^2 \\
         \bar{r} &= \frac{1}{n}{\sum_{i=0}^{n} r_i} \quad r_i = \log(\frac{C_i}{C_{i-1}})
       \end{flalign*}
-      }
       But intraday time series of prices (for example \texttt{HighFreq::SPY} prices), can have large overnight jumps which inflate the volatility estimates.
       \vskip1ex
       So the overnight returns must be divided by the overnight time interval (in seconds), which produces per second returns.
@@ -3200,19 +3485,15 @@ re_turns[1] <- 0
       Range estimators of return volatility utilize the \texttt{high} and \texttt{low} prices, and therefore have lower standard errors than the standard \emph{close-to-close} estimator.
       \vskip1ex
       The \emph{Garman-Klass} estimator uses the \emph{low-to-high} price range, but it underestimates volatility because it doesn't account for \emph{close-to-open} price jumps:
-      {\scriptsize
       \begin{displaymath}
         \sigma^2 = \frac{1}{n} \sum_{i=1}^{n} (0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)\log(\frac{C_i}{O_i})^2)
       \end{displaymath}
-      }
       The \emph{Yang-Zhang} estimator accounts for \emph{close-to-open} price jumps and has the lowest standard error among unbiased estimators:
-      {\scriptsize
       \begin{multline*}
         \hspace{-1em}\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{O_i}{C_{i-1}})-\bar{r}_{co})^2 + \\
         0.134(\log(\frac{C_i}{O_i})-\bar{r}_{oc})^2 + \\
         \frac{0.866}{n} \sum_{i=1}^{n} (\log(\frac{H_i}{O_i})\log(\frac{H_i}{C_i}) + \log(\frac{L_i}{O_i})\log(\frac{L_i}{C_i}))
       \end{multline*}
-      }
     \column{0.5\textwidth}
       The \emph{Yang-Zhang} (\emph{YZ}) and \emph{Garman-Klass-Yang-Zhang} (\emph{GKYZ}) estimators are unbiased and have up to seven times smaller standard errors than the standard close-to-close estimator.
       \vskip1ex
@@ -3221,12 +3502,10 @@ re_turns[1] <- 0
       Therefore in practice the \emph{YZ} and \emph{GKYZ} range estimators underestimate the volatility, and their standard errors are reduced less than by the theoretical amount, for the same reason.
       \vskip1ex
       The \emph{Garman-Klass-Yang-Zhang} estimator is another very efficient and unbiased estimator, and also accounts for \emph{close-to-open} price jumps:
-      {\scriptsize
       \begin{multline*}
         \sigma^2 = \frac{1}{n} \sum_{i=1}^{n} ((\log(\frac{O_i}{C_{i-1}})-\bar{r})^2 + \\
         0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)(\log(\frac{C_i}{O_i})^2))
       \end{multline*}
-      }
   \end{columns}
 \end{block}
 
@@ -3339,7 +3618,7 @@ dygraphs::dygraph(da_ta[, 1:2], main=cap_tion) %>%
       \vskip1ex
       The parameter $\alpha$ is the weight of the squared realized returns in the variance.
       \vskip1ex
-      Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing stronger variance spikes and higher kurtosis.
+      Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing larger variance spikes and higher kurtosis.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VXX log prices
 vx_x <- na.omit(rutils::etf_env$price_s$VXX)
@@ -3364,7 +3643,7 @@ tseries::adf.test(residual_s, k=1)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/garch_hist.png}
+      \includegraphics[width=0.4\paperwidth]{figure/garch_hist.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of VXX and VTI volatility
@@ -3392,9 +3671,9 @@ dygraphs::dygraph(da_ta[, 1:2], main=cap_tion) %>%
     \column{0.5\textwidth}
       Variance calculated over non-overlapping intervals has very statistically significant autocorrelations.
       <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
+x11(width=6, height=5)
 par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
-# VTI percentage returns
+# Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Calculate rolling VTI variance using package roll
 look_back <- 22
@@ -3416,8 +3695,8 @@ pacf(vari_ance, lag=10, main="PACF of Variance", ylab=NA)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/acf_var.png}\\
-      \includegraphics[width=0.45\paperwidth]{figure/pacf_var.png}
+      \includegraphics[width=0.4\paperwidth]{figure/acf_var.png}\\
+      \includegraphics[width=0.4\paperwidth]{figure/pacf_var.png}
   \end{columns}
 \end{block}
 
@@ -3425,46 +3704,112 @@ pacf(vari_ance, lag=10, main="PACF of Variance", ylab=NA)
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Volatility Model}
+\subsection{draft: The \protect\emph{ARCH} Volatility Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} model is a volatility model defined by two coupled equations:
+      The \emph{ARCH(1,1)} is a volatility model defined by two coupled equations:
       \begin{flalign*}
-        r_i &= \mu + \sigma_{i-1} \xi_i \\
-        \sigma_i^2 &= \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
+        \sigma^2_i &= \omega + \beta \sigma^2_{i-1} + \xi^2_i
       \end{flalign*}
-      Where $\sigma_i^2$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma_{i-1}^2$.
+      Where $\sigma^2_i$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance $(r_i - \mu)^2$ and the past variance $\sigma^2_{i-1}$, and $\xi_i$ are standard normal \emph{innovations}.
       \vskip1ex
-      The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma_i^2$.
+      The return process $r_i$ follows a normal distribution with a time-dependent variance $\sigma^2_i$.
       \vskip1ex
       The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance.
       \vskip1ex
-      The parameter $\omega$ is proportional to the long-term average level of variance, which is given by:
+      The long-term expected value of the variance is proportional to the parameter $\omega$:
       \begin{displaymath}
         \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
       \end{displaymath}
-      The sum of $\alpha$ plus $\beta$ should be less than $1$, otherwise the volatility is explosive.
+      So the sum of $\alpha$ plus $\beta$ should be less than $1$, otherwise the volatility is explosive.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define GARCH parameters
-om_ega <- 0.01 ; al_pha <- 0.2
-be_ta <- 0.79 ; n_rows <- 1000
+al_pha <- 0.3; be_ta <- 0.5;
+om_ega <- 1e-4*(1-al_pha-be_ta)
+n_rows <- 1000
+# Calculate matrix of standard normal innovations
+set.seed(1121)  # Reset random numbers
+in_nov <- rnorm(n_rows)
 re_turns <- numeric(n_rows)
 vari_ance <- numeric(n_rows)
 vari_ance[1] <- om_ega/(1-al_pha-be_ta)
-re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
+re_turns[1] <- sqrt(vari_ance[1])*in_nov[1]
 # Simulate GARCH model
-set.seed(1121)  # Reset random numbers
 for (i in 2:n_rows) {
-  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
+  re_turns[i] <- sqrt(vari_ance[i-1])*in_nov[i]
   vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
     be_ta*vari_ance[i-1]
 }  # end for
+# Simulate the GARCH process using Rcpp
+garch_data <- HighFreq::sim_garch(omega=om_ega, alpha=al_pha,  
+  beta=be_ta, innov=matrix(in_nov))
+all.equal(garch_data, cbind(re_turns, vari_ance), 
+  check.attributes=FALSE)
       @
+      The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{GARCH} Volatility Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{GARCH(1,1)} is a volatility model defined by two coupled equations:
+      \begin{flalign*}
+        r_i &= \mu + \sigma_{i-1} \xi_i \\
+        \sigma^2_i &= \omega + \alpha (r_i - \mu)^2 + \beta \sigma^2_{i-1}
+      \end{flalign*}
+      Where $\sigma^2_i$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance $(r_i - \mu)^2$ and the past variance $\sigma^2_{i-1}$, and $\xi_i$ are standard normal \emph{innovations}.
+      \vskip1ex
+      The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance.
+      \vskip1ex
+      The return process $r_i$ follows a normal distribution, \emph{conditional} on the variance in the previous period $\sigma^2_{i-1}$.
+      \vskip1ex
+      But the \emph{unconditional} distribution of returns is \emph{not} normal, since their standard deviation is time-dependent, so they are \emph{leptokurtic} (fat tailed).
+      \vskip1ex
+      The long-term expected value of the variance is proportional to the parameter $\omega$:
+      \begin{displaymath}
+        \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
+      \end{displaymath}
+      So the sum of $\alpha$ plus $\beta$ should be less than $1$, otherwise the volatility is explosive.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define GARCH parameters
+al_pha <- 0.3; be_ta <- 0.5;
+om_ega <- 1e-4*(1-al_pha-be_ta)
+n_rows <- 1000
+# Calculate matrix of standard normal innovations
+set.seed(1121)  # Reset random numbers
+in_nov <- rnorm(n_rows)
+re_turns <- numeric(n_rows)
+vari_ance <- numeric(n_rows)
+vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+re_turns[1] <- sqrt(vari_ance[1])*in_nov[1]
+# Simulate GARCH model
+for (i in 2:n_rows) {
+  re_turns[i] <- sqrt(vari_ance[i-1])*in_nov[i]
+  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
+    be_ta*vari_ance[i-1]
+}  # end for
+# Simulate the GARCH process using Rcpp
+garch_data <- HighFreq::sim_garch(omega=om_ega, alpha=al_pha,  
+  beta=be_ta, innov=matrix(in_nov))
+all.equal(garch_data, cbind(re_turns, vari_ance), 
+  check.attributes=FALSE)
+      @
+      The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
   \end{columns}
 \end{block}
 
@@ -3478,33 +3823,33 @@ for (i in 2:n_rows) {
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} volatility model exhibits sharp spikes in the volatility, followed by a quick decay of volatility.
+      The \emph{GARCH} volatility model produces volatility clustering - periods of high volatility followed by a quick decay.
       \vskip1ex
-      But the decay of volatility in the \emph{GARCH} model is faster than what is observed in practice.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=5, height=3.5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
+      But the decay of the volatility in the \emph{GARCH} model is faster than what is observed in practice.
+      \vskip1ex
+      The parameter $\alpha$ is the weight of the squared realized returns in the variance.
+      \vskip1ex
+      Larger values of $\alpha$ produce a stronger feedback between the realized returns and variance, which produce larger variance spikes, which produce larger kurtosis.
+      <<echo=TRUE,eval=FALSE>>=
+# Open plot window on Mac
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(2, 2, 3, 1), oma=c(0, 0, 0, 0))
 # Plot GARCH cumulative returns
-plot(cumsum(re_turns/100), t="l",
-  lwd=2, col="blue", xlab="", ylab="",
-  main="GARCH cumulative returns")
-# Plot dygraphs GARCH volatility
-date_s <- seq.Date(from=Sys.Date()-n_rows+1,
-  to=Sys.Date(), length.out=n_rows)
-x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
-dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
+plot(cumsum(re_turns), t="l", col="blue", xlab="", ylab="",
+  main="GARCH Cumulative Returns")
+quartz.save("figure/garch_returns.png", type="png", 
+  width=6, height=5)
 # Plot GARCH volatility
-plot(sqrt(vari_ance), t="l",
-  col="blue", xlab="", ylab="",
+plot(sqrt(vari_ance), t="l", col="blue", xlab="", ylab="",
   main="GARCH Volatility")
-# Plot dygraphsGARCH volatility
-vari_ance <- xts:::xts(sqrt(vari_ance), order.by=date_s)
-dygraphs::dygraph(vari_ance, main="GARCH Volatility")
+quartz.save("figure/garch_volat.png", type="png", 
+  width=6, height=5)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/garch_returns.png}\\
-      \includegraphics[width=0.45\paperwidth]{figure/garch_stdev.png}
+      \includegraphics[width=0.4\paperwidth]{figure/garch_returns.png}\\
+      \includegraphics[width=0.4\paperwidth]{figure/garch_volat.png}
   \end{columns}
 \end{block}
 
@@ -3512,99 +3857,47 @@ dygraphs::dygraph(vari_ance, main="GARCH Volatility")
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Properties}
+\subsection{\protect\emph{GARCH} Returns Distribution}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The parameter $\alpha$ is the weight of the squared realized returns in the variance.
+      The \emph{GARCH} volatility model produces \emph{leptokurtic} returns with fat tails in their the distribution.
       \vskip1ex
-      Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing stronger variance spikes and higher kurtosis.
+      Student's \emph{t-distribution} has fat tails, so it fits asset returns much better than the normal distribution.
+      \vskip1ex
+      Student's \emph{t-distribution} with two degrees of freedom is often used to represent asset returns.
+      \vskip1ex
+      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution into a sample of data, by performing \emph{maximum likelihood} optimization.
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
       <<echo=TRUE,eval=FALSE>>=
-# Define GARCH parameters
-om_ega <- 0.0001 ; al_pha <- 0.5
-be_ta <- 0.1 ; n_rows <- 10000
-re_turns <- numeric(n_rows)
-vari_ance <- numeric(n_rows)
-vari_ance[1] <- om_ega/(1-al_pha-be_ta)
-set.seed(1121)  # Reset random numbers
-re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# Simulate GARCH model
-for (i in 2:n_rows) {
-  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
-  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
-    be_ta*vari_ance[i-1]
-}  # end for
 # Calculate kurtosis of GARCH returns
 mean(((re_turns-mean(re_turns))/sd(re_turns))^4)
 # Perform Jarque-Bera test of normality
 tseries::jarque.bera.test(re_turns)
+# Fit t-distribution into GARCH returns
+optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
+lo_cation <- optim_fit$estimate[1]
+scal_e <- optim_fit$estimate[2]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/garch_hist.png}
-      \vspace{-2em}
+      \includegraphics[width=0.4\paperwidth]{figure/garch_hist.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram of GARCH returns
 histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
-  ylab="frequency", freq=FALSE,
-  main="GARCH returns histogram")
-lines(density(re_turns, adjust=1.5),
-      lwd=3, col="blue")
-optim_fit <- MASS::fitdistr(re_turns,
-  densfun="t", df=2, lower=c(-1, 1e-7))
-lo_cation <- optim_fit$estimate[1]
-scal_e <- optim_fit$estimate[2]
+  xlab="returns", breaks=200, xlim=c(-0.03, 0.03),
+  ylab="frequency", freq=FALSE, main="GARCH Returns Histogram")
+lines(density(re_turns, adjust=1.5), lwd=2, col="blue")
 curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
-  type="l", xlab="", ylab="", lwd=3,
+  type="l", xlab="", ylab="", lwd=2,
   col="red", add=TRUE)
-legend("topright", inset=0.05, bty="n",
+legend("topright", inset=-0, bty="n",
        leg=c("density", "t-distr w/ 2 dof"),
        lwd=6, lty=1, col=c("blue", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Calibration}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{GARCH} models can be calibrated on returns using the \emph{maximum-likelihood} method, but it's a complex optimization procedure.
-      \vskip1ex
-      The package \emph{fGarch} contains functions for applying \emph{GARCH} models.
-      \vskip1ex
-      The function \texttt{garchFit()} calibrates a \emph{GARCH} model on a time series of returns.
-      \vskip1ex
-      The function \texttt{garchFit()} returns an \texttt{S4} object of class \emph{fGARCH}, with multiple slots containing the \emph{GARCH} model outputs and diagnostic information.
-      <<echo=(-(1:2)),eval=FALSE>>=
-# use fixed notation instead of exponential notation
-options(scipen=999)
-library(fGarch)
-# Fit returns into GARCH
-garch_fit <- fGarch::garchFit(data=re_turns)
-# Fitted GARCH parameters
-round(garch_fit@fit$coef, 5)
-# Actual GARCH parameters
-round(c(mu=mean(re_turns), omega=om_ega,
-  alpha=al_pha, beta=be_ta), 5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/garch_fGarch_fitted.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot GARCH fitted volatility
-plot(sqrt(garch_fit@fit$series$h), t="l",
-  col="blue", xlab="", ylab="",
-  main="GARCH Fitted Volatility")
+quartz.save("figure/garch_hist.png", type="png", width=6, height=5)
       @
   \end{columns}
 \end{block}
@@ -3619,12 +3912,16 @@ plot(sqrt(garch_fit@fit$series$h), t="l",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{garchSpec()} from package \emph{fGarch} specifies a \emph{GARCH} model.
+      The package 
+      \href{https://cran.r-project.org/web/packages/fGarch/index.html}{\emph{fGarch}}
+      contains functions for applying \emph{GARCH} models.
       \vskip1ex
-      The function \texttt{garchSim()} simulates a \emph{GARCH} model.
+      The function \texttt{fGarch::garchSpec()} specifies a \emph{GARCH} model.
+      \vskip1ex
+      The function \texttt{fGarch::garchSim()} simulates a \emph{GARCH} model, but it uses its own random innovations, so its output is not reproducible.
       <<echo=TRUE,eval=FALSE>>=
 # Specify GARCH model
-garch_spec <- fGarch::garchSpec(model=list(omega=om_ega, 
+garch_spec <- fGarch::garchSpec(model=list(ar=c(0, 0), omega=om_ega, 
   alpha=al_pha, beta=be_ta))
 # Simulate GARCH model
 garch_sim <- fGarch::garchSim(spec=garch_spec, n=n_rows)
@@ -3638,14 +3935,12 @@ tseries::jarque.bera.test(re_turns)
 histo_gram <- hist(re_turns, col="lightgrey",
   xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
   ylab="frequency", freq=FALSE,
-  main="GARCH returns histogram")
-lines(density(re_turns, adjust=1.5),
-      lwd=3, col="blue")
+  main="GARCH Returns Histogram")
+lines(density(re_turns, adjust=1.5), lwd=3, col="blue")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/garch_fGarch_hist.png}
-      \vspace{-2em}
+      \includegraphics[width=0.4\paperwidth]{figure/garch_fGarch_hist.png}
       <<echo=TRUE,eval=FALSE>>=
 # Fit t-distribution into GARCH returns
 optim_fit <- MASS::fitdistr(re_turns,
@@ -3666,47 +3961,446 @@ legend("topright", inset=0.05, bty="n",
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: \protect\emph{GARCH} Model Forecasting}
+\subsection{\protect\emph{GARCH} Returns Kurtosis}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} model is a volatility forecasting model defined as:
+      The expected value of the variance $\sigma^2$ of \emph{GARCH} returns is proportional to the parameter $\omega$:
       \begin{displaymath}
-        \hspace{-0.5em}\hat\sigma_i^2 = \omega + \alpha {\Delta r_{i-1}}^2 + \beta \hat\sigma_{i-1}^2
+        \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
       \end{displaymath}
-      $\hat\sigma_i^2$ is the \emph{forecasted} variance, equal to the weighted average of the point \emph{realized} variance ${\Delta r_{i-1}}^2$, and the past variance forecast $\hat\sigma_{i-1}^2$.
+      The expected value of the kurtosis $\kappa$ of \emph{GARCH} returns is equal to:
+      \begin{flalign*}
+        \kappa = 3 + \frac{6 \alpha^2}{1 - 2 \alpha^2 - (\alpha + \beta)^2}
+      \end{flalign*}
+      The excess kurtosis $\kappa - 3$ is proportional to $\alpha^2$ because larger values of the parameter $\alpha$ produce larger variance spikes which produce larger kurtosis.
       \vskip1ex
-      The parameter $\omega$ is related to the long-term average level of variance, $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance forecasts.
+      The distribution of kurtosis is highly positively skewed, especially for short returns samples, so most kurtosis values will be significantly below their expected value. 
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate variance of GARCH returns
+var(re_turns)
+# Calculate expected value of variance
+om_ega/(1-al_pha-be_ta)
+# Calculate kurtosis of GARCH returns
+mean(((re_turns-mean(re_turns))/sd(re_turns))^4)
+# Calculate expected value of kurtosis
+3 + 6*al_pha^2/(1-2*al_pha^2-(al_pha+be_ta)^2)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/garch_kurtosis.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the distribution of GARCH kurtosis
+kurt <- sapply(1:1e4, function(x) {
+  garch_data <- HighFreq::sim_garch(omega=om_ega, alpha=al_pha, 
+    beta=be_ta, innov=matrix(rnorm(n_rows)))
+  re_turns <- garch_data[, 1]
+  c(var(re_turns), mean(((re_turns-mean(re_turns))/sd(re_turns))^4))
+})  # end sapply
+kurt <- t(kurt)
+apply(kurt, 2, mean)
+# Plot the distribution of GARCH kurtosis
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+par(mar=c(2, 2, 3, 1), oma=c(0, 0, 0, 0))
+histo_gram <- hist(kurt[, 2], breaks=500, col="lightgrey",
+  xlim=c(2, 8), xlab="returns", ylab="frequency", freq=FALSE,
+  main="Distribution of GARCH Kurtosis")
+lines(density(kurt[, 2], adjust=1.5), lwd=3, col="blue")
+abline(v=(3 + 6*al_pha^2/(1-2*al_pha^2-(al_pha+be_ta)^2)), lwd=3, col="red")
+text(x=7.0, y=0.4, "Expected Kurtosis")
+quartz.save("figure/garch_kurtosis.png", type="png", width=6, height=5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Variance Estimation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{GARCH} model can be used to estimate the rolling variance of empirical (historical) returns.
       \vskip1ex
-      In contrast to the \emph{EWMA} model, The \emph{GARCH} model doesn't depend on the realized variance in the current period \texttt{i}, but only on the past period $(i-1)$.
+      If the time series of returns $r_i$ is given, then it can be used in the \emph{GARCH(1,1)} formula to estimate the rolling variance $\sigma^2_i$: 
+      \begin{displaymath}
+        \sigma^2_i = \omega + \alpha (r_i - \mu)^2 + \beta \sigma^2_{i-1}
+      \end{displaymath}
+      If the returns from the \emph{GARCH(1,1)} simulation are used in the above formula, then it produces the simulated \emph{GARCH(1,1)} variance.
       \vskip1ex
-      The rolling \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code).
-      \vskip1ex
-      But the rolling \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}.
+      But to estimate the rolling variance of historical returns, the parameters $\omega$, $\alpha$, and $\beta$ must be estimated through model calibration.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # Load HighFreq
-# Calculate variance for each period
-vari_ance <- 252*(24*60*60)^2*
-  HighFreq::run_variance(oh_lc=rutils::etf_env$VTI)
-# Calculate EWMA VTI variance using RcppRoll
-library(RcppRoll)  # Load RcppRoll
-look_back <- 51
-weight_s <- exp(0.1*1:look_back)
-var_ewma <- RcppRoll::roll_mean(vari_ance,
-    align="right", n=look_back, weights=weight_s)
-var_ewma <- xts(var_ewma,
-    order.by=index(rutils::etf_env$VTI[-(1:(look_back-1)), ]))
-colnames(var_ewma) <- "VTI variance"
-# Plot EWMA variance with custom line colors
-x11(width=6, height=5)
-quantmod::chart_Series(rutils::etf_env$VTI["2010-01/2010-10"],
-   name="VTI EWMA variance with May 6, 2010 Flash Crash")
-# Add variance in extra panel
-add_TA(var_ewma["2010-01/2010-10"], col="black")
+# Simulate the GARCH process using Rcpp
+garch_data <- HighFreq::sim_garch(omega=om_ega, alpha=al_pha,  
+  beta=be_ta, innov=matrix(in_nov))
+# Extract the returns
+re_turns <- garch_data[, 1]
+# Estimate the rolling variance from the returns
+vari_ance <- numeric(n_rows)
+vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+for (i in 2:n_rows) {
+  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
+    be_ta*vari_ance[i-1]
+}  # end for
+all.equal(garch_data[, 2], vari_ance, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Model Calibration}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{GARCH} models can be calibrated from the returns using the \emph{maximum-likelihood} method.
+      \vskip1ex
+      But it's a complex optimization procedure which requires a large amount of data for accurate results.
+      \vskip1ex
+      The function \texttt{fGarch::garchFit()} calibrates a \emph{GARCH} model on a time series of returns.
+      \vskip1ex
+      The function \texttt{garchFit()} returns an \texttt{S4} object of class \emph{fGARCH}, with multiple slots containing the \emph{GARCH} model outputs and diagnostic information.
+      <<echo=TRUE,eval=FALSE>>=
+library(fGarch)
+# Fit returns into GARCH
+garch_fit <- fGarch::garchFit(data=re_turns)
+# Fitted GARCH parameters
+garch_fit@fit$coef
+# Actual GARCH parameters
+c(mu=mean(re_turns), omega=om_ega,alpha=al_pha, beta=be_ta)
+# Plot GARCH fitted volatility
+plot(sqrt(garch_fit@fit$series$h), t="l",
+  col="blue", xlab="", ylab="",
+  main="GARCH Fitted Volatility")
+quartz.save("figure/garch_fGarch_fitted.png", 
+  type="png", width=6, height=5)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/garch_fGarch_fitted.png}\\
+      \includegraphics[width=0.4\paperwidth]{figure/garch_volat.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Likelihood Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{GARCH(1,1)} volatility model, the returns follow the process: $r_i = \mu + \sigma_{i-1} \xi_i$.  (We can assume that the returns have been de-meaned, so that $\mu = 0$.)
+      \vskip1ex
+      So the \emph{conditional} distribution of returns is normal with standard deviation equal to $\sigma_{i-1}$:
+      \begin{displaymath}
+        \phi(r_i, \sigma_{i-1}) = \frac{e^{-r^2_i/2\sigma^2_{i-1}}}{\sqrt{2 \pi} \sigma_{i-1}}
+      \end{displaymath}
+      The \emph{log-likelihood} function $\mathcal{L}(\omega, \alpha, \beta | r_i)$ for the normally distributed returns is therefore equal to:
+      \begin{displaymath}
+        \mathcal{L}(\omega, \alpha, \beta | r_i) = - \sum_{i=1}^n (\frac{r^2_i}{\sigma^2_{i-1}} + \log(\sigma^2_{i-1}))
+      \end{displaymath}
+      The \emph{log-likelihood} depends on the \emph{GARCH(1,1)} parameters $\omega$, $\alpha$, and $\beta$ because the rolling variance $\sigma^2_i$ depends on the \emph{GARCH(1,1)} parameters:
+      \begin{displaymath}
+        \sigma^2_i = \omega + \alpha r^2_i + \beta \sigma^2_{i-1}
+      \end{displaymath}
+      The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define likelihood function
+likeli_hood <- function(om_ega, al_pha, be_ta) {
+  # Estimate the rolling variance from the returns
+  vari_ance <- numeric(n_rows)
+  vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+  for (i in 2:n_rows) {
+    vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + be_ta*vari_ance[i-1]
+  }  # end for
+  vari_ance <- ifelse(vari_ance > 0, vari_ance, 0.000001)
+  # Lag the variance
+  vari_ance <- rutils::lag_it(vari_ance, pad_zeros=FALSE)
+  # Calculate the likelihood
+  -sum(re_turns^2/vari_ance + log(vari_ance))
+}  # end likeli_hood
+# Calculate the likelihood in R
+likeli_hood(om_ega, al_pha, be_ta)
+# Calculate the likelihood in Rcpp
+HighFreq::lik_garch(omega=om_ega, alpha=al_pha,
+  beta=be_ta, returns=matrix(re_turns))
+# Benchmark speed of likelihood calculations
+library(microbenchmark)
+summary(microbenchmark(
+  Rcode=likeli_hood(om_ega, al_pha, be_ta),
+  Rcpp=HighFreq::lik_garch(omega=om_ega, alpha=al_pha, beta=be_ta, returns=matrix(re_turns))
+  ), times=10)[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Likelihood Function Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{GARCH(1,1)} \emph{log-likelihood} function depends on three parameters $\mathcal{L}(\omega, \alpha, \beta | r_i)$.
+      \vskip1ex
+      The more parameters the harder it is to find their optimal values using optimization.
+      \vskip1ex
+      We can simplify the optimization task by assuming that the expected variance is equal to the realized variance:
+      \begin{displaymath}
+        \sigma^2 = \frac{\omega}{1 - \alpha - \beta} = \frac{1}{n-1} \sum_{i=1}^n (r_i-\bar{r})^2
+      \end{displaymath}
+      This way the \emph{log-likelihood} becomes a function of only two parameters, say $\alpha$ and $\beta$. 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE,echo=TRUE>>=
+# Calculate the variance of returns
+re_turns <- garch_data[, 1, drop=FALSE]
+vari_ance <- var(re_turns)
+re_turns <- (re_turns - mean(re_turns))
+# Calculate likelihood as function of al_pha and be_ta parameters
+likeli_hood <- function(al_pha, be_ta) {
+  om_ega <- vari_ance*(1 - al_pha - be_ta)
+  -HighFreq::lik_garch(omega=om_ega, alpha=al_pha, beta=be_ta, returns=re_turns)
+}  # end likeli_hood
+# Calculate matrix of likelihood values
+alphas <- seq(from=0.15, to=0.35, len=50)
+betas <- seq(from=0.35, to=0.5, len=50)
+lik_mat <- sapply(alphas, function(al_pha) sapply(betas,
+  function(be_ta) likeli_hood(al_pha, be_ta)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Likelihood Perspective Plot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The perspective plot shows that the \emph{log-likelihood} is much more sensitive to the $\beta$ parameter than to $\alpha$. 
+      \vskip1ex
+      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a \emph{vectorized} function or a matrix.
+      \vskip1ex
+      The optimal values of $\alpha$ and $\beta$ can be found approximately using a grid search on the \emph{log-likelihood} matrix. 
+      <<eval=FALSE,echo=TRUE>>=
+# Set rgl options and load package rgl
+options(rgl.useNULL=TRUE); library(rgl)
+# Draw and render 3d surface plot of likelihood function
+n_col <- 100
+col_or <- rainbow(n_col, start=2/6, end=4/6)
+z_col <- cut(lik_mat, n_col)
+rgl::persp3d(alphas, betas, lik_mat, col=col_or[z_col],
+        xlab="alpha", ylab="beta", zlab="likelihood")
+rgl::rglwidget(elementId="plot3drgl", width=700, height=700)
+# Perform grid search
+coord <- which(lik_mat == min(lik_mat), arr.ind=TRUE)
+c(alphas[coord[2]], betas[coord[1]])
+lik_mat[coord]
+likeli_hood(alphas[coord[2]], betas[coord[1]])
+# Optimal and actual parameters
+options(scipen=2)  # Use fixed not scientific notation
+cbind(actual=c(alpha=al_pha, beta=be_ta, omega=om_ega),
+  optimal=c(alphas[coord[2]], betas[coord[1]], vari_ance*(1 - sum(alphas[coord[2]], betas[coord[1]]))))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/garchlik.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Likelihood Function Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The flat shape of the \emph{GARCH} likelihood function makes it difficult for steepest descent optimizers to find the best parameters.
+      \vskip1ex
+      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      \vskip1ex
+      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations:\\
+      \hskip1em\url{http://www1.icsi.berkeley.edu/~storn/code.html}
+      \vskip1ex
+      The first generation of solutions is selected randomly.
+      \vskip1ex
+      Each new generation is obtained by combining the best solutions from the previous generation.
+      \vskip1ex
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
+      \vskip1ex
+      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE,echo=TRUE>>=
+# Define vectorized likelihood function
+likeli_hood <- function(x, re_turns) {
+  al_pha <- x[1]; be_ta <- x[2]; om_ega <- x[3]
+  -HighFreq::lik_garch(omega=om_ega, alpha=al_pha, beta=be_ta, returns=re_turns)
+}  # end likeli_hood
+# Initial parameters
+par_init <- c(alpha=0.2, beta=0.4, omega=vari_ance/0.2)
+# Find max likelihood parameters using steepest descent optimizer
+optim_fit <- optim(par=par_init,
+  fn=likeli_hood, # Log-likelihood function
+  method="L-BFGS-B", # Quasi-Newton method
+  re_turns=re_turns, 
+  upper=c(0.35, 0.55, vari_ance), # Upper constraint
+  lower=c(0.15, 0.35, vari_ance/100)) # Lower constraint
+# Optimal and actual parameters
+cbind(actual=c(alpha=al_pha, beta=be_ta, omega=om_ega),
+      optimal=c(optim_fit$par["alpha"], optim_fit$par["beta"], optim_fit$par["omega"]))
+# Find max likelihood parameters using DEoptim
+op_tim <- DEoptim::DEoptim(fn=likeli_hood,
+  upper=c(0.35, 0.55, vari_ance), # Upper constraint
+  lower=c(0.15, 0.35, vari_ance/100), # Lower constraint
+  re_turns=re_turns, 
+  control=list(trace=FALSE, itermax=1000, parallelType=1))
+# Optimal and actual parameters
+cbind(actual=c(alpha=al_pha, beta=be_ta, omega=om_ega),
+      optimal=c(op_tim$optim$bestmem[1], op_tim$optim$bestmem[2], op_tim$optim$bestmem[3]))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Variance of Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{GARCH} model can be used to estimate the rolling variance of empirical (historical) returns.
+      \vskip1ex
+      If the time series of returns $r_i$ is given, then it can be used in the \emph{GARCH(1,1)} formula to estimate the rolling variance $\sigma^2_i$: 
+      \begin{displaymath}
+        \sigma^2_i = \omega + \alpha (r_i - \mu)^2 + \beta \sigma^2_{i-1}
+      \end{displaymath}
+      The \emph{GARCH} formula can be viewed as a generalization of the \emph{EWMA} rolling variance.
+      <<eval=FALSE,echo=TRUE>>=
+# Calculate VTI returns
+re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
+# Find max likelihood parameters using DEoptim
+op_tim <- DEoptim::DEoptim(fn=likeli_hood,
+  upper=c(0.4, 0.9, vari_ance), # Upper constraint
+  lower=c(0.1, 0.5, vari_ance/100), # Lower constraint
+  re_turns=re_turns, 
+  control=list(trace=FALSE, itermax=1000, parallelType=1))
+# Optimal parameters
+par_am <- unname(op_tim$optim$bestmem)
+al_pha <- par_am[1]; be_ta <- par_am[2]; om_ega <- par_am[3]
+c(al_pha, be_ta, om_ega)
+# Equilibrium GARCH variance
+om_ega/(1-al_pha-be_ta)
+drop(var(re_turns))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/garch_volat_vti.png}
+      <<eval=FALSE,echo=TRUE>>=
+# Estimate the GARCH volatility of VTI returns
+n_rows <- NROW(re_turns)
+vari_ance <- numeric(n_rows)
+vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+for (i in 2:n_rows) {
+  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + be_ta*vari_ance[i-1]
+}  # end for
+# Estimate the GARCH volatility using Rcpp
+garch_data <- HighFreq::sim_garch(omega=om_ega, alpha=al_pha, 
+  beta=be_ta, innov=re_turns, is_random=FALSE)
+all.equal(garch_data[, 2], vari_ance, check.attributes=FALSE)
+# Plot dygraph of the estimated GARCH volatility
+dygraphs::dygraph(xts::xts(sqrt(vari_ance), index(re_turns)), 
+  main="Estimated GARCH Volatility of VTI") %>%
+  dyOptions(colors="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Variance Forecasts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The one-step-ahead forecast of the squared returns is equal to their expected value: $r^2_{i+1} = \mathbb{E}[(\sigma_i \xi_i)^2] = \sigma^2_i$, since $\mathbb{E}[\xi^2_i] = 1$.
+      \vskip1ex
+      So the variance forecasts depend on the variance in the previous period: 
+      $\sigma^2_{i+1} = \mathbb{E}[\omega + \alpha r^2_{i+1} + \beta \sigma^2_i] = \omega + (\alpha + \beta) \sigma^2_i$ 
+      \vskip1ex
+      The variance forecasts gradually settles to the equilibrium value $\sigma^2$, such that the forecast is equal to itself: $\sigma^2 = \omega + (\alpha + \beta) \sigma^2$.
+      \vskip1ex
+      This gives: $\sigma^2 = \frac{\omega}{1 - \alpha - \beta}$, which is the long-term expected value of the variance.
+      \vskip1ex
+      So the variance forecasts decay exponentially to their equilibrium value $\sigma^2$ at the decay rate equal to $(\alpha + \beta)$: 
+      \begin{displaymath}
+        \sigma^2_{i+1} - \sigma^2 = (\alpha + \beta) (\sigma^2_i - \sigma^2)
+      \end{displaymath}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate GARCH model
+garch_data <- HighFreq::sim_garch(omega=om_ega, alpha=al_pha, 
+  beta=be_ta, innov=matrix(in_nov))
+vari_ance <- garch_data[, 2]
+# Calculate the equilibrium variance
+var_eq <- om_ega/(1-al_pha-be_ta)
+# Calculate the variance forecasts
+varcasts <- numeric(10)
+varcasts[1] <- var_eq + 
+  (al_pha + be_ta)*(xts::last(vari_ance) - var_eq)
+for (i in 2:10) {
+  varcasts[i] <- var_eq + (al_pha + be_ta)*(varcasts[i-1] - var_eq)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/garch_forecast.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Open plot window on Mac
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+par(mar=c(2, 2, 3, 1), oma=c(0, 0, 0, 0))
+# Plot GARCH variance forecasts
+plot(tail(vari_ance, 30), t="l", col="blue", xlab="", ylab="",
+  xlim=c(1, 40), ylim=c(0, max(tail(vari_ance, 30))), 
+  main="GARCH Variance Forecasts")
+text(x=15, y=0.5*var_eq, "realized variance")
+lines(x=30:40, y=c(xts::last(vari_ance), varcasts), col="red", lwd=3)
+text(x=35, y=0.6*var_eq, "variance forecasts")
+abline(h=var_eq, lwd=3, col="red")
+text(x=10, y=1.1*var_eq, "Equilibrium variance")
+quartz.save("figure/garch_forecast.png", type="png", 
+  width=6, height=5)
       @
   \end{columns}
 \end{block}
@@ -3832,7 +4526,6 @@ sqrt(6.5*60)*60*sd(re_turns)
       \begin{displaymath}
         H = \frac{\log{\sigma_t} - \log{\sigma}}{\log{\Delta t}}
       \end{displaymath}
-      \vskip1ex
       For a vector of aggregation intervals, the \emph{Hurst exponent} \texttt{H} can be calculated by regressing the volatility against the aggregation intervals.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate SPY returns adjusted for overnight jumps
@@ -3935,7 +4628,6 @@ log(mean(r_s))/log(inter_val)
         RS_{\Delta t} \propto {\Delta t}^H
       \end{displaymath}
       The \emph{Hurst exponents} calculated from the \emph{rescaled range} and the \emph{volatility} are similar because they both measure the dependence of returns over time, but they're not exactly equal because they use different methods to estimate price dispersion.
-      \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate rescaled range for vector of aggregation intervals
 n_rows <- NROW(clos_e)
@@ -4118,7 +4810,7 @@ legend("topright", inset=0.05,
     \column{0.5\textwidth}
       The logarithm of the range exhibits very significant autocorrelations, unlike the range percentage.
       <<echo=TRUE,eval=FALSE>>=
-# VTI range variance partial autocorrelations
+# Calculate VTI range variance partial autocorrelations
 pacf(re_turns^2, lag=10, xlab=NA, ylab=NA,
      main="PACF of VTI log range")
 quantmod::chart_Series(re_turns^2, name="VTI log of range squared")
@@ -4657,7 +5349,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The generic functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return the cumulative sums, minima, and maxima of \emph{vectors} and \emph{time series} objects.
+      The generic functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return the cumulative x1s, minima, and maxima of \emph{vectors} and \emph{time series} objects.
       \vskip1ex
       The methods for these functions are implemented as \emph{vectorized compiled} functions, and are therefore much faster than \texttt{apply()} loops.
       \vskip1ex
@@ -4775,7 +5467,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The package \emph{TTR} contains functions for calculating rolling aggregations over \emph{vectors} and \emph{time series} objects:
       \begin{itemize}
-        \item \texttt{runSum()} for rolling sums,
+        \item \texttt{runSum()} for rolling x1s,
         \item \texttt{runMin()} and \texttt{runMax()} for rolling minima and maxima,
         \item \texttt{runSD()} for rolling standard deviations,
         \item \texttt{runMedian()} and \texttt{runMAD()} for rolling medians and Median Absolute Deviations (\emph{MAD}),
@@ -4833,7 +5525,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The package \emph{roll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects:
       \begin{itemize}
-        \item \texttt{roll\_sum()}, \texttt{roll\_max()}, \texttt{roll\_mean()}, and \texttt{roll\_median()} for \emph{weighted} rolling sums, maximums, means, and medians,
+        \item \texttt{roll\_sum()}, \texttt{roll\_max()}, \texttt{roll\_mean()}, and \texttt{roll\_median()} for \emph{weighted} rolling x1s, maximums, means, and medians,
         \item \texttt{roll\_var()} for \emph{weighted} rolling variance,
         \item \texttt{roll\_scale()} for rolling scaling and centering of time series,
         \item \texttt{roll\_lm()} for rolling regression,
@@ -4882,7 +5574,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The package \emph{RcppRoll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects:
       \begin{itemize}
-        \item \texttt{roll\_sum()} for \emph{weighted} rolling sums,
+        \item \texttt{roll\_sum()} for \emph{weighted} rolling x1s,
         \item \texttt{roll\_min()} and \texttt{roll\_max()} for \emph{weighted} rolling minima and maxima,
         \item \texttt{roll\_sd()} for \emph{weighted} rolling standard deviations,
         \item \texttt{roll\_median()} for \emph{weighted} rolling medians,
@@ -4970,8 +5662,8 @@ detach("package:caTools")  # Remove caTools from search path
 look_back <- 2
 clos_e <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 med_ian <- runmed(x=clos_e, k=look_back)
-# Vector of rolling volatility
-sigma_r <- runsd(x=clos_e, k=look_back,
+# Vector of rolling volatilities
+sig_ma <- runsd(x=clos_e, k=look_back,
                 endrule="constant", align="center")
 # Vector of rolling quantiles
 quan_tiles <- runquantile(x=clos_e, k=look_back,

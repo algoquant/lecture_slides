@@ -12,7 +12,8 @@ knit_theme$set(thm)
 
 
 % Define document options
-\documentclass[10pt]{beamer}
+\documentclass[9pt]{beamer}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
 \mode<presentation>
 \usetheme{AnnArbor}
 % \usecolortheme{whale}
@@ -59,9 +60,9 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Numerical Analysis]{Numerical Analysis}
-\subtitle{FRE6871 \& FRE7241, Spring 2021}
+\subtitle{FRE6871 \& FRE7241, Fall 2021}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
-\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
 \date{\today}
@@ -250,7 +251,7 @@ all.equal(num_ber, 1.0)
 # Modulo division of non-integer numbers can
 # produce incorrect results
 0.6 %/% 0.2  # Produces 2 instead of 3
-6 %/% 2  # use integers to get correct result
+6 %/% 2  # Use integers to get correct result
 # 0.2 stored as binary number
 # Slightly larger than 0.2
 print(0.2, digits=22)
@@ -506,7 +507,7 @@ Store(etf_list)  # Store in object cache
 # Get sizes of objects in workspace
 sort(sapply(mget(ls()), object.size))
 search()  # Get search path for R objects
-Ls()  # list object cache
+Ls()  # List object cache
 find("etf_list")  # Find object on search path
       @
   \end{columns}
@@ -1785,7 +1786,7 @@ library(parallel)  # Load package parallel
 packageDescription("parallel")
 # Load help page
 help(package="parallel")
-# list all objects in "parallel"
+# List all objects in "parallel"
 ls("package:parallel")
       @
   \end{columns}
@@ -2153,11 +2154,11 @@ path_s <- matrix(path_s, nc=n_simu)
 path_s <- matrixStats::colCumsums(path_s)
 # Final distribution of paths
 mean(path_s[n_rows, ]) ; sd(path_s[n_rows, ])
-# Calculate option payout
+# Calculate option payout at maturity
 strik_e <- 50  # Strike price
 pay_outs <- (path_s[n_rows, ] - strik_e)
 sum(pay_outs[pay_outs > 0])/n_simu
-# Calculate probability of crossing a barrier
+# Calculate probability of crossing the barrier at any point
 bar_rier <- 50
 cross_ed <- colSums(path_s > bar_rier) > 0
 sum(cross_ed)/n_simu
@@ -2214,10 +2215,10 @@ mean(da_ta)
 # Sample standard deviation - MC estimate
 sd(da_ta)
 # Monte Carlo estimate of cumulative probability
-pnorm(1)
-sum(da_ta < 1)/n_rows
+pnorm(-2)
+sum(da_ta < (-2))/n_rows
 # Monte Carlo estimate of quantile
-conf_level <- 0.98
+conf_level <- 0.02
 qnorm(conf_level)  # Exact value
 cut_off <- conf_level*n_rows
 da_ta <- sort(da_ta)
@@ -3286,7 +3287,7 @@ summary(microbenchmark(
 
 
 # Quantile from Naive Monte Carlo
-conf_level <- 0.98
+conf_level <- 0.02
 qnorm(conf_level)  # Exact value
 da_ta <- sort(da_ta)
 quantile(da_ta, probs=conf_level)
@@ -3475,32 +3476,30 @@ title(main="Objective Function", line=-1)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix.
+      The package \emph{rgl} creates \emph{interactive} 3d scatter plots and surface plots by calling the 
+      \href{https://www.khronos.org/webgl/wiki/Main_Page}{\emph{WebGL}}
+      \href{https://en.wikipedia.org/wiki/JavaScript}{\emph{JavaScript}}
+      library.
       \vskip1ex
-      \emph{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework.
-      <<rgl_surf3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show="hide">>=
-library(rgl)  # Load rgl
-# Define function of two variables
-sur_face <- function(x, y) y*sin(x)
+      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a \emph{vectorized} function or a matrix.
+      <<eval=FALSE,echo=TRUE>>=
+# Rastrigin function
+rastri_gin <- function(x, y, pa_ram=25) {
+  x^2 + y^2 - pa_ram*(cos(x) + cos(y))
+}  # end rastri_gin
+# Rastrigin function is vectorized!
+rastri_gin(c(-10, 5), c(-10, 5))
+# Set rgl options and load package rgl
+options(rgl.useNULL=TRUE)
+library(rgl)
 # Draw 3d surface plot of function
-rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-        col="green", axes=FALSE)
-# Draw 3d surface plot of matrix
-x_lim <- seq(from=-5, to=5, by=0.1)
-y_lim <- seq(from=-5, to=5, by=0.1)
-rgl::persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
-        xlab="x", ylab="y", zlab="sur_face", col="green")
-# Save current view to png file
-rgl.snapshot("surface_plot.png")
-# Define function of two variables and two parameters
-sur_face <- function(x, y, par_1=1, par_2=1)
-  sin(par_1*x)*sin(par_2*y)
-# Draw 3d surface plot of function
-rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-        col="green", axes=FALSE, par_1=1, par_2=2)
+rgl::persp3d(x=rastri_gin, xlim=c(-10, 10), ylim=c(-10, 10),
+        col="green", axes=FALSE, pa_ram=15)
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/rgl_surf3d.png}
+      \includegraphics[width=0.5\paperwidth]{figure/rgl_rastrigin.png}
   \end{columns}
 \end{block}
 
@@ -3514,7 +3513,7 @@ rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization.
+      The function \texttt{optim()} performs \emph{multi-dimensional} optimization.
       \vskip1ex
       The argument \texttt{fn} is the objective function to be minimized.
       \vskip1ex
@@ -3534,7 +3533,7 @@ rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
 # Rastrigin function with vector argument for optimization
-rastri_gin <- function(vec_tor, pa_ram=25){
+rastri_gin <- function(vec_tor, pa_ram=25) {
   sum(vec_tor^2 - pa_ram*cos(vec_tor))
 }  # end rastri_gin
 vec_tor <- c(pi/6, pi/6)
@@ -3676,11 +3675,11 @@ rgl::persp3d(z=-objective_grid, zlab="objective",
 par_init <- c(mean=0, sd=1)
 # Perform optimization using optim()
 optim_fit <- optim(par=par_init,
-  fn=objec_tive, # log-likelihood function
+  fn=objec_tive, # Log-likelihood function
   da_ta=da_ta,
-  method="L-BFGS-B", # quasi-Newton method
-  upper=c(10, 10), # upper constraint
-  lower=c(-10, 0.1)) # lower constraint
+  method="L-BFGS-B", # Quasi-Newton method
+  upper=c(10, 10), # Upper constraint
+  lower=c(-10, 0.1)) # Lower constraint
 # Optimal parameters
 optim_fit$par
 # Perform optimization using MASS::fitdistr()
@@ -3831,7 +3830,7 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
 # Rastrigin function with vector argument for optimization
-rastri_gin <- function(vec_tor, pa_ram=25){
+rastri_gin <- function(vec_tor, pa_ram=25) {
   sum(vec_tor^2 - pa_ram*cos(vec_tor))
 }  # end rastri_gin
 vec_tor <- c(pi/6, pi/6)
@@ -3862,13 +3861,12 @@ plot(op_tim)
     \column{0.5\textwidth}
       The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
       \vskip1ex
-      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
+      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations:\\
       \hskip1em\url{http://www1.icsi.berkeley.edu/~storn/code.html}
       \vskip1ex
       The first generation of solutions is selected randomly.
       \vskip1ex
-      Each new generation is obtained by combining solutions from the previous generation,       \vskip1ex
-      The best solutions are selected for creating the next generation.
+      Each new generation is obtained by combining the best solutions from the previous generation.
       \vskip1ex
       The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
       \vskip1ex
@@ -3876,7 +3874,7 @@ plot(op_tim)
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
 # Rastrigin function with vector argument for optimization
-rastri_gin <- function(vec_tor, pa_ram=25){
+rastri_gin <- function(vec_tor, pa_ram=25) {
   sum(vec_tor^2 - pa_ram*cos(vec_tor))
 }  # end rastri_gin
 vec_tor <- c(pi/6, pi/6)
@@ -3937,9 +3935,9 @@ library(Rcpp)
 packageDescription("Rcpp")
 # Load help page
 help(package="Rcpp")
-# list all datasets in "Rcpp"
+# List all datasets in "Rcpp"
 data(package="Rcpp")
-# list all objects in "Rcpp"
+# List all objects in "Rcpp"
 ls("package:Rcpp")
 # Remove Rcpp from search path
 detach("package:Rcpp")
@@ -4094,7 +4092,7 @@ boot_data <- function(da_ta, n_boot=n_boot) {
 eq_price <- 5.0; sig_ma <- 0.01
 the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4148,7 +4146,7 @@ static const double pi = 3.14159265;
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in R
 sim_ou <- function(n_rows=1000, eq_price=5.0,
-                    vol_at=0.01, the_ta=0.01) {
+                    vol_at=0.01, theta=0.01) {
   re_turns <- numeric(n_rows)
   price_s <- numeric(n_rows)
   price_s[1] <- eq_price
@@ -4162,7 +4160,7 @@ sim_ou <- function(n_rows=1000, eq_price=5.0,
 eq_price <- 5.0; sig_ma <- 0.01
 the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4187,14 +4185,14 @@ NumericVector sim_ou_rcpp(double eq_price,
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
   vol_at=sig_ma,
-  the_ta=the_ta,
-  in_nov=rnorm(n_rows))
+  theta=the_ta,
+  innov=rnorm(n_rows))
 all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta, in_nov=rnorm(n_rows)),
+  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, theta=the_ta, innov=rnorm(n_rows)),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4226,14 +4224,14 @@ Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/sim_ou.cpp")
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
   vol_at=sig_ma,
-  the_ta=the_ta,
-  in_nov=rnorm(n_rows))
+  theta=the_ta,
+  innov=rnorm(n_rows))
 all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta, in_nov=rnorm(n_rows)),
+  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, theta=the_ta, innov=rnorm(n_rows)),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -4373,7 +4371,7 @@ boot_data <- function(da_ta, n_boot=1000) {
 eq_price <- 5.0; sig_ma <- 0.01
 the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4463,7 +4461,7 @@ boot_data <- function(da_ta, n_boot=1000) {
 eq_price <- 5.0; sig_ma <- 0.01
 the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4995,9 +4993,9 @@ library(reticulate)
 packageDescription("reticulate")
 # Load help page
 help(package="reticulate")
-# list all datasets in "reticulate"
+# List all datasets in "reticulate"
 data(package="reticulate")
-# list all objects in "reticulate"
+# List all objects in "reticulate"
 ls("package:reticulate")
 # Remove reticulate from search path
 detach("package:reticulate")

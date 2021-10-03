@@ -13,7 +13,8 @@ knit_theme$set(thm)
 
 
 % Define document options
-\documentclass[10pt]{beamer}
+\documentclass[9pt]{beamer}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
 \mode<presentation>
 \usetheme{AnnArbor}
 % \usecolortheme{whale}
@@ -60,13 +61,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#3]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#3, Spring 2021}
+\subtitle{Lecture\#3, Fall 2021}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
-\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 12, 2021}
+\date{September 20, 2021}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -78,1311 +79,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
-
-
-%%%%%%%%%%%%%%%
-\section{Simulation}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Brownian Motion Using \texttt{while()} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance.
-      \vskip1ex
-      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level.
-        <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-bar_rier <- 20  # Barrier level
-n_rows <- 1000  # Number of simulation steps
-pa_th <- numeric(n_rows)  # Allocate path vector
-pa_th[1] <- 0  # Initialize path
-in_dex <- 2  # Initialize simulation index
-while ((in_dex <= n_rows) && (pa_th[in_dex - 1] < bar_rier)) {
-# Simulate next step
-  pa_th[in_dex] <- pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # Advance in_dex
-}  # end while
-# Fill remaining pa_th after it crosses bar_rier
-if (in_dex <= n_rows)
-  pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
-# Plot the Brownian motion
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(pa_th, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=3, col="red")
-title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Brownian Motion Using Vectorized Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop.
-      \vskip1ex
-      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops.
-        <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-bar_rier <- 20  # Barrier level
-n_rows <- 1000  # Number of simulation steps
-# Simulate path of Brownian motion
-pa_th <- cumsum(rnorm(n_rows))
-# Find index when pa_th crosses bar_rier
-cro_ss <- which(pa_th > bar_rier)
-# Fill remaining pa_th after it crosses bar_rier
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):n_rows] <- pa_th[cro_ss[1]]
-}  # end if
-# Plot the Brownian motion
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(pa_th, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=3, col="red")
-title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-      The tradeoff between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up.
-      \vskip1ex
-      But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating the Statistics of Brownian Motion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The statistics of Brownian motion can be estimated by simulating multiple paths.
-      \vskip1ex
-      An example of a statistic is the expected value of Brownian motion at a fixed time horizon,  which is the option payout for the strike price $k$: $\mathbb{E}[(p_t - k)_{+}]$.
-      \vskip1ex
-      Another statistic is the probability of Brownian motion crossing a boundary (barrier) $b$: $\mathbb{E}[\mathbbm{1}(p_t - b)]$.
-      <<echo=TRUE,eval=FALSE>>=
-# Define Brownian motion parameters
-sig_ma <- 1.0  # Volatility
-dri_ft <- 0.0  # Drift
-n_rows <- 1000  # Number of simulation steps
-n_simu <- 100  # Number of simulations
-# Simulate multiple paths of Brownian motion
-set.seed(1121)
-path_s <- rnorm(n_simu*n_rows, mean=dri_ft, sd=sig_ma)
-path_s <- matrix(path_s, nc=n_simu)
-path_s <- matrixStats::colCumsums(path_s)
-# Final distribution of paths
-mean(path_s[n_rows, ]) ; sd(path_s[n_rows, ])
-# Calculate option payout
-strik_e <- 50  # Strike price
-pay_outs <- (path_s[n_rows, ] - strik_e)
-sum(pay_outs[pay_outs > 0])/n_simu
-# Calculate probability of crossing a barrier
-bar_rier <- 50
-cross_ed <- colSums(path_s > bar_rier) > 0
-sum(cross_ed)/n_simu
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_multiple.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot in window
-x11(width=6, height=5)
-par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
-# Select and plot full range of paths
-or_der <- order(path_s[n_rows, ])
-in_dex <- or_der[seq(1, 100, 9)]
-zoo::plot.zoo(path_s[, in_dex], main="Paths of Brownian Motion",
-  xlab="time steps", ylab=NA, plot.type="single")
-abline(h=strik_e, col="red", lwd=3)
-text(x=(n_rows-60), y=strik_e, labels="strike price", pos=3, cex=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Monte Carlo Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution.
-      \vskip1ex
-      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals.
-      \vskip1ex
-      The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} $p$.
-      \vskip1ex
-      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} $p$.
-      \vskip1ex
-      The function \texttt{quantile()} calculates the sample quantiles.  It uses interpolation to improve the accuracy.  Information about the different interpolation methods can be found by typing \texttt{?quantile}.
-      \vskip1ex
-      The function \texttt{sort()} returns a vector sorted into ascending order.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Sample mean - MC estimate
-mean(da_ta)
-# Sample standard deviation - MC estimate
-sd(da_ta)
-# Monte Carlo estimate of cumulative probability
-pnorm(1)
-sum(da_ta < 1)/n_rows
-# Monte Carlo estimate of quantile
-conf_level <- 0.98
-qnorm(conf_level)  # Exact value
-cut_off <- conf_level*n_rows
-da_ta <- sort(da_ta)
-da_ta[cut_off]  # Naive Monte Carlo value
-quantile(da_ta, probs=conf_level)
-# Analyze the source code of quantile()
-stats:::quantile.default
-# Microbenchmark quantile
-library(microbenchmark)
-summary(microbenchmark(
-  monte_carlo = da_ta[cut_off],
-  quan_tile = quantile(da_ta, probs=conf_level),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Resampling From Empirical Datasets}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Resampling is randomly selecting data from an existing dataset, to create a new dataset with similar properties to the existing dataset.
-      \vskip1ex
-      Resampling is usually performed with replacement, so that each draw is independent from the others.
-      \vskip1ex
-      Resampling is performed when it's not possible or convenient to obtain another set of empirical data.
-      \vskip1ex
-      The function \texttt{sample()} selects a random sample from a vector of data elements.
-      \vskip1ex
-      The function \texttt{sample.int()} is a \emph{method} that selects a random sample of \emph{integers}.
-      \vskip1ex
-      The function \texttt{sample.int()} with argument \texttt{replace=TRUE} selects a sample with replacement (the \emph{integers} can repeat).
-      \vskip1ex
-      The function \texttt{sample.int()} is a little faster than \texttt{sample()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate time series of VTI returns
-library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
-re_turns <- na.omit(re_turns)
-n_rows <- NROW(re_turns)
-# Sample from VTI returns
-sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
-c(sd=sd(sampl_e), mad=mad(sampl_e))
-# sample.int() is a little faster than sample()
-library(microbenchmark)
-summary(microbenchmark(
-  sample.int = sample.int(1e3), 
-  sample = sample(1e3), 
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation.
-      \vskip1ex
-      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed (empirical) data set.
-      \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
-      \vskip1ex
-      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
-      \vskip1ex
-      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000; da_ta <- rnorm(n_rows)
-# Sample mean and standard deviation
-mean(da_ta); sd(da_ta)
-# Bootstrap of sample mean and median
-n_boot <- 10000
-boot_data <- sapply(1:n_boot, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  c(mean=mean(sampl_e), median=median(sampl_e))
-})  # end sapply
-boot_data <- t(boot_data)
-      @
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/boot_median.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-boot_data[1:3, ]
-# Standard error from formula
-sd(da_ta)/sqrt(n_rows)
-# Standard error of mean from bootstrap
-sd(boot_data[, "mean"])
-# Standard error of median from bootstrap
-sd(boot_data[, "median"])
-plot(density(boot_data[, "median"]), lwd=2, xlab="estimate of median",
-     main="Distribution of Bootstrapped Median")
-abline(v=mean(boot_data[, "median"]), lwd=2, col="red")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Random Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Resampling is performed when it's not possible or convenient to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
-      \vskip1ex
-      But if the data consists of simulated random numbers then we can easily simulate another set of these random numbers, instead of sampling from the existing data.
-      \vskip1ex
-      The numbers won't be the same as before, but they will be statistically equivalent in the limit of many bootstrap simulations.
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-n_rows <- 1000
-# Bootstrap of sample mean and median
-n_boot <- 10000
-boot_data <- sapply(1:n_boot, function(x) {
-  # Sample from Standard Normal Distribution
-  sampl_e <- rnorm(n_rows)
-  c(mean=mean(sampl_e), median=median(sampl_e))
-})  # end sapply
-boot_data[, 1:3]
-# Standard error from formula
-1/sqrt(n_rows)
-# Standard error of mean from bootstrap
-sd(boot_data["mean", ])
-# Standard error of median from bootstrap
-sd(boot_data["median", ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping Using Vectorized Operations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrap simulations can be accelerated by using vectorized operations instead of \texttt{R} loops.       \vskip1ex
-      But using vectorized operations requires calculating a matrix of random data, instead of calculating random vectors in a loop.
-      \vskip1ex
-      This is another example of the tradeoff between speed and memory usage in simulations.
-      \vskip1ex
-      Faster code often requires more memory than slower code.
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-n_rows <- 1000
-# Bootstrap of sample mean and median
-n_boot <- 100
-boot_data <- sapply(1:n_boot, function(x) {
-  median(rnorm(n_rows))
-})  # end sapply
-# Perform vectorized bootstrap
-set.seed(1121)  # Reset random number generator
-# Calculate matrix of random data
-sampl_e <- matrix(rnorm(n_boot*n_rows), ncol=n_boot)
-boot_vec <- Rfast::colMedians(sampl_e)
-all.equal(boot_data, boot_vec)
-# Compare speed of loops with vectorized R code
-library(microbenchmark)
-summary(microbenchmark(
-  loop = {
-    sapply(1:n_boot, function(x) {
-      median(rnorm(n_rows))
-    })  # end sapply
-  },
-  vector_ized = {
-    sampl_e <- matrix(rnorm(n_boot*n_rows), ncol=n_boot)
-    Rfast::colMedians(sampl_e)
-    },
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping Standard Errors Using Parallel Computing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing.
-      \vskip1ex
-      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}).
-      \vskip1ex
-      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows}.
-      \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs loops under \emph{Windows} using parallel computing on several CPU cores.
-      \vskip1ex
-      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process.
-      \vskip1ex
-      Therefore the required data must be either passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, or by calling the function \texttt{clusterExport()}.
-      \vskip1ex
-      The function \texttt{mclapply()} performs loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}.
-      \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Bootstrap mean and median under Windows
-n_boot <- 10000
-boot_data <- parLapply(clus_ter, 1:n_boot,
-  function(x, da_ta, n_rows) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  c(mean=mean(sampl_e), median=median(sampl_e))
-  }, da_ta=da_ta, n_rows=n_rows)  # end parLapply
-# Bootstrap mean and median under Mac-OSX or Linux
-boot_data <- mclapply(1:n_boot,
-  function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  c(mean=mean(sampl_e), median=median(sampl_e))
-  }, mc.cores=n_cores)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
-# Standard error from formula
-sd(da_ta)/sqrt(n_rows)
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Parallel Bootstrapping of the \protect\emph{Median Absolute Deviation}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability), defined using the median instead of the mean:
-      \begin{displaymath}
-        \operatorname{MAD} = \operatorname{median}(\operatorname{abs}(x_i - \operatorname{median}(\mathbf{x})))
-      \end{displaymath}
-      The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance.
-      \vskip1ex
-      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
-      \vskip1ex
-      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}.
-      \vskip1ex
-      The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$.
-      \vskip1ex
-      The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-sd(da_ta)
-mad(da_ta)
-median(abs(da_ta - median(da_ta)))
-median(abs(da_ta - median(da_ta)))/qnorm(0.75)
-# Bootstrap of sd and mad estimators
-n_boot <- 10000
-boot_data <- sapply(1:n_boot, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  c(sd=sd(sampl_e), mad=mad(sampl_e))
-})  # end sapply
-boot_data <- t(boot_data)
-# Analyze bootstrapped variance
-head(boot_data)
-sum(is.na(boot_data))
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
-# Parallel bootstrap under Windows
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:n_boot,
-  function(x, da_ta) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, da_ta=da_ta)  # end parLapply
-# Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:n_boot, function(x) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Empirical Datasets}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrapping is usually performed by resampling from an observed (empirical) dataset.
-      \vskip1ex
-      Resampling consists of randomly selecting data from an existing dataset, with replacement.
-      \vskip1ex
-      Resampling produces a new \emph{bootstrapped} dataset with similar properties to the existing dataset.
-      \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
-      \vskip1ex
-      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
-      \vskip1ex
-      Bootstrapping shows that for asset returns, the \emph{Median Absolute Deviation} (\emph{MAD}) has a smaller relative standard error than the standard deviation.
-      \vskip1ex
-      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Sample from time series of VTI returns
-library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
-re_turns <- na.omit(re_turns)
-n_rows <- NROW(re_turns)
-# Bootstrap sd and MAD under Windows
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
-clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all cores
-n_boot <- 10000
-boot_data <- parLapply(clus_ter, 1:n_boot,
-  function(x, re_turns, n_rows) {
-    sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, re_turns=re_turns, n_rows=n_rows)  # end parLapply
-# Bootstrap sd and MAD under Mac-OSX or Linux
-boot_data <- mclapply(1:n_boot, function(x) {
-    sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
-# Standard error assuming normal distribution of returns
-sd(re_turns)/sqrt(n_boot)
-# Means and standard errors from bootstrap
-std_errors <- apply(boot_data, MARGIN=2,
-  function(x) c(mean=mean(x), std_error=sd(x)))
-std_errors
-# Relative standard errors
-std_errors[2, ]/std_errors[1, ]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Time Series of Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrapping from a time series of prices requires first converting the prices to \emph{percentage} returns, then bootstrapping the returns, and finally converting them back to prices.
-      \vskip1ex
-      Bootstrapping from \emph{percentage} returns ensures that the bootstrapped prices are not negative.
-      \vskip1ex
-      Below is a simulation of the frequency of bootstrapped prices crossing a barrier level.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate percentage returns from VTI prices
-library(rutils)
-price_s <- quantmod::Cl(rutils::etf_env$VTI)
-star_t <- as.numeric(price_s[1, ])
-re_turns <- rutils::diff_it(log(price_s))
-class(re_turns); head(re_turns)
-sum(is.na(re_turns))
-n_rows <- NROW(re_turns)
-# Define barrier level with respect to price_s
-bar_rier <- 1.5*max(price_s)
-# Calculate single bootstrap sample
-sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
-# Calculate prices from percentage returns
-sampl_e <- star_t*exp(cumsum(sampl_e))
-# Calculate if prices crossed barrier
-sum(sampl_e > bar_rier) > 0
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
-# Perform parallel bootstrap under Windows
-clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all cores
-clusterExport(clus_ter, c("star_t", "bar_rier"))
-n_boot <- 10000
-boot_data <- parLapply(clus_ter, 1:n_boot,
-  function(x, re_turns, n_rows) {
-    sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
-    # Calculate prices from percentage returns
-    sampl_e <- star_t*exp(cumsum(sampl_e))
-    # Calculate if prices crossed barrier
-    sum(sampl_e > bar_rier) > 0
-  }, re_turns=re_turns, n_rows=n_rows)  # end parLapply
-# Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:n_boot, function(x) {
-    sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
-    # Calculate prices from percentage returns
-    sampl_e <- star_t*exp(cumsum(sampl_e))
-    # Calculate if prices crossed barrier
-    sum(sampl_e > bar_rier) > 0
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
-# Calculate frequency of crossing barrier
-sum(boot_data)/n_boot
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From \protect\emph{OHLC} Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrapping from \emph{OHLC} prices requires updating all the price columns, not just the \emph{Close} prices.
-      \vskip1ex
-      The \emph{Close} prices are bootstrapped first, and then the other columns are updated using the differences of the \emph{OHLC} price columns.
-      \vskip1ex
-      Below is a simulation of the frequency of the \emph{High} prices crossing a barrier level.
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate percentage returns from VTI prices
-library(rutils)
-oh_lc <- rutils::etf_env$VTI
-price_s <- as.numeric(oh_lc[, 4])
-star_t <- price_s[1]
-re_turns <- rutils::diff_it(log(price_s))
-n_rows <- NROW(re_turns)
-# Calculate difference of OHLC price columns
-ohlc_diff <- oh_lc[, 1:3] - price_s
-class(re_turns); head(re_turns)
-# Calculate bootstrap prices from percentage returns
-da_ta <- sample.int(n_rows, replace=TRUE)
-boot_prices <- star_t*exp(cumsum(re_turns[da_ta]))
-boot_ohlc <- ohlc_diff + boot_prices
-boot_ohlc <- cbind(boot_ohlc, boot_prices)
-# Define barrier level with respect to price_s
-bar_rier <- 1.5*max(price_s)
-# Calculate if High bootstrapped prices crossed barrier level
-sum(boot_ohlc[, 2] > bar_rier) > 0
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
-# Perform parallel bootstrap under Windows
-clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all cores
-clusterExport(clus_ter, c("star_t", "bar_rier", "ohlc_diff"))
-n_boot <- 10000
-boot_data <- parLapply(clus_ter, 1:n_boot,
-  function(x, re_turns, n_rows) {
-    # Calculate OHLC prices from percentage returns
-    da_ta <- sample.int(n_rows, replace=TRUE)
-    boot_prices <- star_t*exp(cumsum(re_turns[da_ta]))
-    boot_ohlc <- ohlc_diff + boot_prices
-    boot_ohlc <- cbind(boot_ohlc, boot_prices)
-    # Calculate statistic
-    sum(boot_ohlc[, 2] > bar_rier) > 0
-  }, re_turns=re_turns, n_rows=n_rows)  # end parLapply
-# Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:n_boot, function(x) {
-    # Calculate OHLC prices from percentage returns
-    da_ta <- sample.int(n_rows, replace=TRUE)
-    boot_prices <- star_t*exp(cumsum(re_turns[da_ta]))
-    boot_ohlc <- ohlc_diff + boot_prices
-    boot_ohlc <- cbind(boot_ohlc, boot_prices)
-    # Calculate statistic
-    sum(boot_ohlc[, 2] > bar_rier) > 0
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
-# Calculate frequency of crossing barrier
-sum(boot_data)/n_boot
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of Regression Coefficients Using Bootstrap}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The standard errors of the regression coefficients can be calculated using a \emph{bootstrap} simulation.
-      \vskip1ex
-      The \emph{bootstrap} procedure creates new design matrices by randomly sampling with replacement from the regression design matrix.
-      \vskip1ex
-      Regressions are performed on the \emph{bootstrapped} design matrices, and the regression coefficients are saved into a matrix of \emph{bootstrapped} coefficients.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Initialize random number generator
-set.seed(1121)
-# Define explanatory and response variables
-predic_tor <- rnorm(100, mean=2)
-noise <- rnorm(100)
-res_ponse <- (-3 + predic_tor + noise)
-de_sign <- cbind(res_ponse, predic_tor)
-# Calculate alpha and beta regression coefficients
-be_ta <- cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
-al_pha <- mean(de_sign[, 1]) - be_ta*mean(de_sign[, 2])
-x11(width=6, height=5)
-plot(res_ponse ~ predic_tor, data=de_sign)
-abline(a=al_pha, b=be_ta, lwd=3, col="blue")
-# Bootstrap of beta regression coefficient
-n_boot <- 100
-boot_data <- sapply(1:n_boot, function(x) {
-  sampl_e <- sample.int(NROW(de_sign), replace=TRUE)
-  de_sign <- de_sign[sampl_e, ]
-  cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
-})  # end sapply
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Distribution of Bootstrapped Regression Coefficients}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bootstrapped} coefficient values can be used to calculate the probability distribution of the coefficients and their standard errors,
-      \vskip1ex
-      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
-      \vskip1ex
-      \texttt{abline()} plots a straight line on the existing plot.
-      \vskip1ex
-      The function \texttt{text()} draws text on a plot, and can be used to draw plot labels.
-        <<eval=FALSE,echo=(-(1:2))>>=
-x11(width=6, height=5)
-par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-# Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), std_error=sd(boot_data))
-# Plot density of bootstrapped beta coefficients
-plot(density(boot_data), lwd=2, xlab="Regression slopes",
-     main="Bootstrapped Regression Slopes")
-# Add line for expected value
-abline(v=mean(boot_data), lwd=2, col="red")
-text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
-     lwd=2, srt=90, pos=3)
-      @
-    \column{0.5\textwidth}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/boot_reg.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping Regressions Using Parallel Computing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing.
-      \vskip1ex
-      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}).
-      \vskip1ex
-      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows}.
-      \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs loops under \emph{Windows} using parallel computing on several CPU cores.
-      \vskip1ex
-      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process.
-      \vskip1ex
-      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument.
-      \vskip1ex
-      The function \texttt{mclapply()} performs loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}.
-      \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
-# Bootstrap of regression under Windows
-boot_data <- parLapply(clus_ter, 1:1000,
-  function(x, de_sign) {
-    sampl_e <- sample.int(NROW(de_sign), replace=TRUE)
-    de_sign <- de_sign[sampl_e, ]
-    cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
-  }, de_sign=de_sign)  # end parLapply
-# Bootstrap of regression under Mac-OSX or Linux
-boot_data <- mclapply(1:1000,
-  function(x) {
-    sampl_e <- sample.int(NROW(de_sign), replace=TRUE)
-    de_sign <- de_sign[sampl_e, ]
-    cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Analyzing the Bootstrap Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bootstrap} loop produces a \emph{list} which can be collapsed into a vector.
-      \vskip1ex
-      The function \texttt{unlist()} collapses a list with atomic elements into a vector (which can cause type coercion).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Collapse the bootstrap list into a vector
-class(boot_data)
-boot_data <- unlist(boot_data)
-# Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), std_error=sd(boot_data))
-# Plot density of bootstrapped beta coefficients
-plot(density(boot_data),
-     lwd=2, xlab="Regression slopes",
-     main="Bootstrapped Regression Slopes")
-# Add line for expected value
-abline(v=mean(boot_data), lwd=2, col="red")
-text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
-     lwd=2, srt=90, pos=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Variance Reduction Using Antithetic Sampling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Variance reduction} are techniques for increasing the precision of Monte Carlo simulations.
-      \vskip1ex
-      \emph{Naive Monte Carlo} refers to \emph{Monte Carlo} simulation without using \emph{variance reduction} techniques.
-      \vskip1ex
-      \emph{Antithetic Sampling} is a \emph{variance reduction} technique in which a new random sample is computed from an existing sample, without generating new random numbers.
-      \vskip1ex
-      In the case of a \emph{Normal} random sample $\phi$, the new \emph{antithetic} sample is equal to minus the existing sample: $\phi_{new} = -\phi$.
-      \vskip1ex
-      In the case of a \emph{Uniform} random sample $\phi$, the new \emph{antithetic} sample is equal to $1$ minus the existing sample: $\phi_{new} = 1-\phi$.
-      \vskip1ex
-      \emph{Antithetic Sampling} doubles the number of independent samples, so it reduces the standard error by $\sqrt{2}$.
-      \vskip1ex
-      \emph{Antithetic Sampling} doesn't change any other parameters of the simulation.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Estimate the 95% quantile
-n_boot <- 10000
-boot_data <- sapply(1:n_boot, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  quantile(sampl_e, 0.95)
-})  # end sapply
-sd(boot_data)
-# Estimate the 95% quantile using antithetic sampling
-boot_data <- sapply(1:n_boot, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  quantile(c(sampl_e, -sampl_e), 0.95)
-})  # end sapply
-# Standard error of quantile from bootstrap
-sd(boot_data)
-sqrt(2)*sd(boot_data)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Rare Events Using Probability Tilting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Rare events can be simulated more accurately by \emph{tilting} (deforming) their probability distribution, so that rare events occur more frequently.
-      \vskip1ex
-      A popular probability \emph{tilting} method is exponential (Esscher) tilting:
-      \begin{displaymath}
-        p(x, \lambda) = \frac{\exp(\lambda x) p(x)}{\int _{-\infty}^{\infty} {\exp(\lambda x) p(x)} dx}
-      \end{displaymath}
-      Where $p(x)$ is the probability density, $p(x, \lambda)$ is the tilted density, and $\lambda$ is the tilt parameter.
-      \vskip1ex
-      For the \emph{Normal} distribution $\phi(x) = \frac{\exp(-x^2/2)}{\sqrt{2\pi}}$, exponential tilting is equivalent to shifting the distribution by $\lambda$: $x \rightarrow x + \lambda$.
-      \begin{align*}
-        \phi(x, \lambda) = \frac{\exp(\lambda x) \exp(-x^2/2)}{\int _{-\infty}^{\infty} {\exp(\lambda x) \exp(-x^2/2)} dx} = \\
-        \frac{\exp(-(x - \lambda)^2/2)}{\sqrt{2\pi}} = 
-        \exp(x \lambda - \lambda^2/2) \cdot \phi(x, \lambda = 0)
-      \end{align*}
-      Shifting the random variable $x \rightarrow x + \lambda$ is equivalent to multiplying the distribution by the weight factor: $\exp(x \lambda - \lambda^2/2)$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/norm_dist_shifted.png}\\
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Plot a Normal probability distribution
-curve(expr=dnorm, xlim=c(-3, 4),
-      main="Shifted Normal distribution function",
-      xlab="", ylab="", lwd=3, col="blue")
-# Add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-      lwd=3, col="red")
-# Add vertical dashed lines
-abline(v=0, lwd=3, col="blue", lty="dashed")
-abline(v=1, lwd=3, col="red", lty="dashed")
-arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
-       code=2, angle=20, length=grid::unit(0.2, "cm"))
-text(x=0.3, 0.1, labels=bquote(lambda), pos=3, cex=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Variance Reduction Using Importance Sampling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Importance sampling} is a \emph{variance reduction} technique for simulating rare events more accurately.
-      \vskip1ex
-      The \emph{variance} of an estimate produced by simulation decreases with the number of events which contribute to the estimate: $\sigma^2 \propto \frac{1}{n}$.
-      \vskip1ex
-      \emph{Importance sampling} simulates rare events more frequently by \emph{tilting} the probability distribution, so that more events contribute to the estimate.
-      \vskip1ex
-      In standard Monte Carlo simulation, the simulated data points have equal probabilities.
-      \vskip1ex
-      But in \emph{importance sampling}, the simulated data must be weighted (multiplied) to compensate for the tilting of the probability.
-      \vskip1ex
-      The tilt weights are equal to the ratio of the base probability distribution divided by the tilted distribution, which for the \emph{Normal} distribution are equal to:
-      \begin{displaymath}
-        w_x = \frac{\phi(x, \lambda = 0)}{\phi(x, \lambda)} = \exp(-x \lambda + \lambda^2/2)
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-set.seed(1121) # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Cumulative probability from formula
-quan_tile <- (-2)
-pnorm(quan_tile)
-integrate(dnorm, lower=-Inf, upper=quan_tile)
-# Cumulative probability from Naive Monte Carlo
-sum(da_ta < quan_tile)/n_rows
-# Generate importance sample
-lamb_da <- (-1.5)  # Tilt parameter
-data_tilt <- da_ta + lamb_da  # Tilt the random numbers
-# Cumulative probability from importance sample
-sum(data_tilt < quan_tile)/n_rows
-weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-sum((data_tilt < quan_tile)*weight_s)/n_rows
-# Bootstrap of standard errors of cumulative probability
-n_boot <- 1000
-boot_data <- sapply(1:n_boot, function(x) {
-  da_ta <- rnorm(n_rows)
-  na_ive <- sum(da_ta < quan_tile)/n_rows
-  da_ta <- (da_ta + lamb_da)
-  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
-  im_port <- sum((da_ta < quan_tile)*weight_s)/n_rows
-  c(naive_mc=na_ive, importance=im_port)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Calculating Quantiles Using Importance Sampling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The quantiles can be calculated from the cumulative probabilities of the importance sample data.
-      \vskip1ex
-      The importance sample data points must be weighted to compensate for the tilting of the probability.
-      \vskip1ex
-      Importance sampling can be used to estimate the \emph{VaR} (\emph{quantile}) corresponding to a given \emph{confidence level}.
-      \vskip1ex
-      The standard error of the \emph{VaR} estimate using importance sampling can be several times smaller than that of \emph{naive Monte Carlo}.
-      \vskip1ex
-      The reduction of standard error is greater for higher \emph{confidence levels}.
-      \vskip1ex
-      \emph{Naive Monte Carlo} refers to \emph{Monte Carlo} simulation without using \emph{variance reduction} techniques.
-      \vskip1ex
-      The function \texttt{findInterval()} returns the indices of the intervals specified by \texttt{"vec"} that contain the elements of \texttt{"x"}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Quantile from Naive Monte Carlo
-conf_level <- 0.02
-qnorm(conf_level)  # Exact value
-da_ta <- sort(da_ta)
-cut_off <- n_rows*conf_level
-da_ta[cut_off]  # Naive Monte Carlo value
-# Importance sample weights
-data_tilt <- da_ta + lamb_da  # Tilt the random numbers
-weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-# Cumulative probabilities using importance sample
-cum_prob <- cumsum(weight_s)/n_rows
-# Quantile from importance sample
-data_tilt[findInterval(conf_level, cum_prob)]
-# Bootstrap of standard errors of quantile
-n_boot <- 1000
-boot_data <- sapply(1:n_boot, function(x) {
-  da_ta <- sort(rnorm(n_rows))
-  na_ive <- da_ta[cut_off]
-  data_tilt <- da_ta + lamb_da
-  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-  cum_prob <- cumsum(weight_s)/n_rows
-  im_port <- data_tilt[findInterval(conf_level, cum_prob)]
-  c(naive_mc=na_ive, importance=im_port)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Calculating \protect\emph{CVaR} Using Importance Sampling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Importance sampling can be used to estimate the Conditional Value at Risk (\emph{CVaR}) corresponding to a given \emph{confidence level}.
-      \vskip1ex
-      First the \emph{VaR} (\emph{quantile}) is estimated, and then the \emph{expected value} (\emph{CVaR}) is estimated using it.
-      \vskip1ex
-      The standard error of the \emph{CVaR} estimate using importance sampling can be several times smaller than that of \emph{naive Monte Carlo}.
-      \vskip1ex
-      The reduction of standard error is greater for higher \emph{confidence levels}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# CVaR from Naive Monte Carlo
-va_r <- da_ta[cut_off]
-sum((da_ta < va_r)*da_ta)/sum((da_ta < va_r))
-# CVaR from importance sample
-va_r <- data_tilt[findInterval(conf_level, cum_prob)]
-sum((data_tilt < va_r)*data_tilt*weight_s)/sum((data_tilt < va_r)*weight_s)
-# CVaR from integration
-integrate(function(x) x*dnorm(x), low=-Inf, up=va_r)$value/pnorm(va_r)
-# Bootstrap of standard errors of expected value
-n_boot <- 1000
-boot_data <- sapply(1:n_boot, function(x) {
-  da_ta <- sort(rnorm(n_rows))
-  va_r <- da_ta[cut_off]
-  na_ive <- sum((da_ta < va_r)*da_ta)/sum((da_ta < va_r))
-  data_tilt <- da_ta + lamb_da
-  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-  cum_prob <- cumsum(weight_s)/n_rows
-  va_r <- data_tilt[findInterval(conf_level, cum_prob)]
-  im_port <- sum((data_tilt < va_r)*data_tilt*weight_s)/sum((data_tilt < va_r)*weight_s)
-  c(naive_mc=na_ive, importance=im_port)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Optimal Tilt Parameter for Importance Sampling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The tilt parameter $\lambda$ should be chosen to minimize the standard error of the estimator.
-      \vskip1ex
-      The optimal tilt parameter depends on the estimator and on the required confidence level.
-      \vskip1ex
-      More tilting is needed at higher confidence levels, to provide enough significant data points.
-      \vskip1ex
-      When performing a loop over the tilt parameters, the same matrix of random data can be used for different tilt parameters.
-      \vskip1ex
-      The function \texttt{Rfast::sort\_mat()} sorts the columns of a matrix using very fast \texttt{C++} code.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate matrix of random data
-set.seed(1121) # Reset random number generator
-n_rows <- 1000; n_boot <- 100
-da_ta <- matrix(rnorm(n_boot*n_rows), ncol=n_boot)
-da_ta <- Rfast::sort_mat(da_ta)  # Sort the columns
-# Calculate vector of quantiles for tilt parameter
-conf_level <- 0.02; cut_off <- conf_level*n_rows
-calc_quant <- function(lamb_da) {
-  data_tilt <- da_ta + lamb_da  # Tilt the random numbers
-  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-  # Calculate quantiles for columns
-  sapply(1:n_boot, function(boo_t) {
-    cum_prob <- cumsum(weight_s[, boo_t])/n_rows
-    data_tilt[findInterval(conf_level, cum_prob), boo_t]
-  })  # end sapply
-}  # end calc_quant
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/optim_tilt.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define vector of tilt parameters
-lambda_s <- seq(-3.0, -1.2, by=0.2)
-# Calculate vector of quantiles for tilt parameters
-quantile_s <- sapply(lambda_s, calc_quant)
-# Calculate standard deviations of quantiles for tilt parameters
-std_devs <- apply(quantile_s, MARGIN=2, sd)
-# Calculate the optimal tilt parameter
-lambda_s[which.min(std_devs)]
-# Plot the standard deviations
-x11(width=6, height=5)
-plot(x=lambda_s, y=std_devs, 
-     main="Standard Deviations of Simulated Quantiles",
-     xlab="tilt parameter", ylab="standard deviation",
-     type="l", col="blue", lwd=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Importance Sampling for Binomial Variables}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The probability $p$ of a binomial variable can be tilted to $p(\lambda)$ as follows:
-      \begin{displaymath}
-        p(\lambda) = \frac{\lambda p}{1 + p (\lambda - 1)}
-      \end{displaymath}
-      Where $\lambda$ is the tilt parameter.
-      \vskip1ex
-      The weight is equal to the ratio of the base probability divided by the tilted probability:
-      \begin{displaymath}
-        w = \frac{1 + p (\lambda - 1)}{\lambda}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Binomial sample
-n_rows <- 1000
-pro_b <- 0.1
-da_ta <- rbinom(n=n_rows, size=1, pro_b)
-head(da_ta, 33)
-fre_q <- sum(da_ta)/n_rows
-# Tilted binomial sample
-lamb_da <- 5
-p_tilted <- lamb_da*pro_b/(1 + pro_b*(lamb_da - 1))
-weigh_t <- (1 + pro_b*(lamb_da - 1))/lamb_da
-da_ta <- rbinom(n=n_rows, size=1, p_tilted)
-head(da_ta, 33)
-weigh_t*sum(da_ta)/n_rows
-# Bootstrap of standard errors
-n_boot <- 1000
-boot_data <- sapply(1:n_boot, function(x) {
-  c(naive_mc=sum(rbinom(n=n_rows, size=1, pro_b))/n_rows,
-    importance=weigh_t*sum(rbinom(n=n_rows, size=1, p_tilted))/n_rows)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Importance Sampling of Brownian Motion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The statistics that depend on extreme paths of Brownian motion can be simulated more accurately using \emph{importance sampling}. 
-      \vskip1ex
-      The normally distributed variables $x_i$ are shifted by the tilt parameter $\lambda$ to obtain the importance sample variables $x^{tilt}_i$: $x^{tilt}_i = x_i + \lambda$.
-      \vskip1ex
-      The Brownian paths $p_t$ are equal to the cumulative sums of the tilted variables $x^{tilt}_i$: $p_t = \sum_{i=1}^t x^{tilt}_i$.
-      \vskip1ex
-      Each tilted Brownian path has an associated weight factor equal to the product: $\prod_{i=1}^t \exp(- x^{tilt}_i \lambda + \lambda^2/2)$.
-      \vskip1ex
-      To compensate for the probability tilting, the statistics derived from the tilted Brownian paths must be multiplied by their weight factors.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define Brownian motion parameters
-sig_ma <- 1.0  # Volatility
-dri_ft <- 0.0  # Drift
-n_rows <- 100  # Number of simulation steps
-n_simu <- 10000  # Number of simulations
-# Calculate matrix of normal variables
-set.seed(1121)
-da_ta <- rnorm(n_simu*n_rows, mean=dri_ft, sd=sig_ma)
-da_ta <- matrix(da_ta, nc=n_simu)
-# Simulate paths of Brownian motion
-path_s <- matrixStats::colCumsums(da_ta)
-# Tilt the da_ta
-lamb_da <- 0.04  # Tilt parameter
-data_tilt <- da_ta + lamb_da  # Tilt the random numbers
-paths_tilt <- matrixStats::colCumsums(data_tilt)
-# Calculate path weights
-weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-path_weights <- matrixStats::colProds(weight_s)
-# Or
-path_weights <- exp(-lamb_da*colSums(data_tilt) + n_rows*lamb_da^2/2)
-# Calculate option payout using standard MC
-strik_e <- 10  # Strike price
-pay_outs <- (path_s[n_rows, ] - strik_e)
-sum(pay_outs[pay_outs > 0])/n_simu
-# Calculate option payout using importance sampling
-pay_outs <- (paths_tilt[n_rows, ] - strik_e)
-sum((path_weights*pay_outs)[pay_outs > 0])/n_simu
-# Calculate crossing probability using standard MC
-bar_rier <- 10
-cross_ed <- colSums(path_s > bar_rier) > 0
-sum(cross_ed)/n_simu
-# Calculate crossing probability using importance sampling
-cross_ed <- colSums(paths_tilt > bar_rier) > 0
-sum(path_weights*cross_ed)/n_simu
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
 
 
 %%%%%%%%%%%%%%%
@@ -1874,28 +570,27 @@ integrate(function(x) x*dnorm(x), low=2, up=Inf)
         \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \Phi^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(\frac{x}{LGD}))^2}
       \end{multline*}
       <<echo=TRUE,eval=FALSE>>=
+# Vasicek model parameters
 rh_o <- 0.1; l_gd <- 0.4
+def_prob <- 0.05; def_thresh <- qnorm(def_prob)
 # Define Vasicek loss distribution function
 loss_distr <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
   sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
-integrate(loss_distr, low=0, up=l_gd,
-  def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
+integrate(loss_distr, low=0, up=l_gd, def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_loss_distr.png}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot probability distribution of losses
-def_prob <- 0.05; def_thresh <- qnorm(def_prob)
+x11(width=6, height=5)
 curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
       type="l", xlim=c(0, 0.06),
       xlab="loss percentage", ylab="density", lwd=3,
-      col="orange", main="Distribution of Losses")
+      col="blue", main="Portfolio Loss Density")
 # Add line for expected loss
 abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
-       lwd=2, srt=90, pos=3)
+text(x=l_gd*def_prob-0.001, y=35, labels="expected loss", lwd=3, pos=4)
       @
   \end{columns}
 \end{block}
@@ -2023,17 +718,13 @@ text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
       <<echo=TRUE,eval=FALSE>>=
 # Add lines for unexpected loss
 abline(v=0.04, col="blue", lwd=3)
-arrows(x0=0.02, y0=35, x1=0.04, y1=35,
-       code=3, lwd=3, cex=0.5)
-text(x=0.03, y=36, labels="unexpected loss",
-     lwd=2, pos=3)
+arrows(x0=0.02, y0=35, x1=0.04, y1=35, code=3, lwd=3, cex=0.5)
+text(x=0.03, y=36, labels="unexpected loss", lwd=2, pos=3)
 # Add lines for VaR
 abline(v=0.055, col="red", lwd=3)
-arrows(x0=0.0, y0=25, x1=0.055, y1=25,
-       code=3, lwd=3, cex=0.5)
+arrows(x0=0.0, y0=25, x1=0.055, y1=25, code=3, lwd=3, cex=0.5)
 text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
-text(x=0.055-0.001, y=10, labels="VaR",
-       lwd=2, srt=90, pos=3)
+text(x=0.055-0.001, y=10, labels="VaR", lwd=2, srt=90, pos=3)
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_distr_var.png}
@@ -2056,7 +747,7 @@ text(x=0.055-0.001, y=10, labels="VaR",
       \end{displaymath}
       The \emph{Conditional Value at Risk} is also called the Expected Shortfall (\emph{ES}), or Expected Tail Loss (\emph{ETL}).
       <<echo=TRUE,eval=FALSE>>=
-va_r <- 0.04; var_max <- 4*l_gd*def_prob
+va_r <- 0.04; min_var <- 4*l_gd*def_prob
 # Calculate CVaR
 c_var <- integrate(function(x, ...) x*loss_distr(x, ...),
   low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
@@ -2079,11 +770,11 @@ abline(v=va_r, col="red", lwd=3)
 text(x=va_r-0.001, y=10, labels="VaR",
        lwd=2, srt=90, pos=3)
 # Add shading for CVaR
-var_s <- seq(va_r, var_max, length=100)
+var_s <- seq(va_r, min_var, length=100)
 densi_ty <- sapply(var_s, loss_distr,
   def_thresh=def_thresh, rh_o=rh_o)
 # Draw shaded polygon
-polygon(c(va_r, var_s, var_max), density=20,
+polygon(c(va_r, var_s, min_var), density=20,
   c(-1, densi_ty, -1), col="red", border=NA)
 text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
       @
@@ -2214,7 +905,7 @@ loss given default = 40%",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating \protect\emph{VaR} Under the Vasicek Model}
+\subsection{Simulating Portfolio Losses Under the Vasicek Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2223,6 +914,8 @@ loss given default = 40%",
       If the default probabilities $p_i$ are not all the same, then there's no formula for the \emph{portfolio loss distribution} under the Vasicek Model.
       \vskip1ex
       In that case the portfolio losses and \emph{VaR} must be simulated.
+    \column{0.5\textwidth}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define model parameters
 n_assets <- 300; n_simu <- 1000; l_gd <- 0.4
@@ -2232,17 +925,88 @@ rh_o <- 0.2; rho_sqrt <- sqrt(rh_o); rho_sqrtm <- sqrt(1-rh_o)
 set.seed(1121)
 def_probs <- runif(n_assets, max=0.2)
 def_thresh <- qnorm(def_probs)
-# Calculate vector of systematic factors
-system_atic <- rnorm(n_simu)
 # Simulate losses under Vasicek model
+system_atic <- rnorm(n_simu)
 asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
 asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
 loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{VaR} and \protect\emph{CVaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data, and returns a list with a vector of loss values and a vector of corresponding densities.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VaR from confidence level
+conf_level <- 0.95
+va_r <- quantile(loss_es, conf_level)
+# Calculate the CVaR as the mean losses in excess of VaR
+c_var <- mean(loss_es[loss_es > va_r])
+# Plot the density of portfolio losses
+x11(width=6, height=5)
+densi_ty <- density(loss_es)
+plot(densi_ty, xlab="loss percentage", ylab="density", 
+     lwd=3, col="blue", main="Portfolio Loss Distribution")
+# Add vertical line for expected loss
+expected_loss <- l_gd*mean(def_probs)
+abline(v=expected_loss, col="red", lwd=3)
+x_max <- max(densi_ty$x); y_max <- max(densi_ty$y)
+text(x=expected_loss, y=(6*y_max/7), labels="expected loss", 
+     lwd=2, pos=4)
+# Add vertical line for VaR
+abline(v=va_r, col="red", lwd=3)
+text(x=va_r, y=4*y_max/5, labels="VaR", lwd=2, pos=4)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vasicek_loss_distr_simu.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Draw shaded polygon for CVaR
+in_dex <- (densi_ty$x > va_r)
+x_var <- c(min(densi_ty$x[in_dex]), densi_ty$x[in_dex], max(densi_ty$x))
+polygon(x_var, c(-1, densi_ty$y[in_dex], -1), col="red", border=NA, density=10)
+# Add text for CVaR
+text(x=5*va_r/4, y=(y_max/7), labels="CVaR", lwd=2, pos=4)
+# Add text with data
+text(x_max, y_max, labels=paste0(
+       "Expected Loss = ", format(100*expected_loss, digits=3), "%", "\n",
+       "Loss severity = ", format(100*l_gd, digits=3), "%", "\n",
+       "Correlation = ", format(100*rh_o, digits=3), "%", "\n",
+       "VaR = ", format(100*va_r, digits=3), "%", "\n",
+       "CVaR = ", format(100*c_var, digits=3), "%"), 
+     adj=c(1, 1), cex=0.8, lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{VaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{VaR} can be calculated from the simulated portfolio losses using the function \texttt{quantile()}.
+      \vskip1ex
+      The function \texttt{quantile()} calculates the sample quantiles.  It uses interpolation to improve the accuracy.  Information about the different interpolation methods can be found by typing \texttt{?quantile}.
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_var_simu.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate VaRs
+# Calculate VaRs from confidence levels
 level_s <- seq(0.93, 0.99, 0.01)
 var_s <- quantile(loss_es, probs=level_s)
 plot(x=level_s, y=var_s, t="l", lwd=2,
@@ -2459,20 +1223,21 @@ std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
 std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+std_error_var_scaled <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar_scaled <- std_error_cvar[2, ]/std_error_cvar[1, ]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_cvar_stderror_parallel.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
+x11(width=6, height=5)
 plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  y=std_error_cvar_scaled, t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var_scaled, std_error_cvar_scaled)),
   xlab="confidence level", ylab="standard error",
   main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+lines(x=colnames(std_error_var), y=std_error_var_scaled, lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
        title=NULL, inset=0.05, cex=0.8, bg="white",
        lwd=6, lty=1, col=c("red", "black"))
@@ -2553,26 +1318,63 @@ boot_data <- mclapply(rep(l_gd, n_boot),
 boot_data <- rutils::do_call(rbind, boot_data)
 stopCluster(clus_ter)  # Stop R processes over cluster
 # Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
+std_error_var_param <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
+std_error_cvar_param <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/vasicek_var_stderror_default_uncertainty.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the standard errors of VaRs under uncertain default probabilities
+x11(width=6, height=5)
+plot(x=colnames(std_error_var),
+  y=std_error_var[2, ], t="l", lwd=3,
+  ylim=range(c(std_error_var[2, ], std_error_var_param[2, ])),
+  xlab="confidence level", ylab="standard error",
+  main="Standard Errors of VaR 
+  with Uncertain Default Probabilities")
+lines(x=colnames(std_error_var), y=std_error_var_param[2, ],
+      col="red", lwd=3)
+legend(x=0.95, y=0.02, bty="n",
+       legend=c("VaR Fixed Def Probs", "VaR Random Def Probs"), 
+       title=NULL, inset=0.05, cex=1.0, bg="white",
+       lwd=6, lty=1, col=c("black", "red"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Relative Errors Due to Uncertain Default Probabilities}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{scaled} (relative) standard errors of \emph{VaR} and \emph{CVaR} under uncertain default probabilities decrease with higher confidence level, because the standard errors are less dependent on the confidence level and don't increase as fast as the \emph{VaR} does.
+      <<echo=TRUE,eval=FALSE>>=
 # Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+std_error_var_scaled <- std_error_var_param[2, ]/
+  std_error_var_param[1, ]
+std_error_cvar_scaled <- std_error_cvar_param[2, ]/
+  std_error_cvar_param[1, ]
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_stderror_default_uncertainty.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+x11(width=6, height=5)
+plot(x=colnames(std_error_cvar_param),
+  y=std_error_cvar_scaled, t="l", col="red", lwd=3,
+  ylim=range(c(std_error_var_scaled, std_error_cvar_scaled)),
   xlab="confidence level", ylab="standard error",
-  main="Standard Errors of CVaR and VaR
+  main="Relative Standard Errors of VaR and CVaR
   with Uncertain Default Probabilities")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topright", legend=c("CVaRs", "VaRs"), bty="n",
+lines(x=names(std_error_var_scaled), y=std_error_var_scaled, lwd=3)
+legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
        title=NULL, inset=0.05, cex=1.0, bg="white",
        lwd=6, lty=1, col=c("red", "black"))
       @
@@ -2606,6 +1408,7 @@ legend(x="topright", legend=c("CVaRs", "VaRs"), bty="n",
 \end{block}
 
 \end{frame}
+
 
 
 
