@@ -1,16 +1,9 @@
-library(knitr)
 library(rgl)
 knit_hooks$set(rgl=hook_rgl)
 knit_hooks$set(webgl=hook_webgl)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="tiny", fig.width=4, fig.height=4)
-options(width=80, dev="pdf")
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-
 library(quantmod)
 car_s <- mtcars[sample(NROW(mtcars), 10), ]
-# Plot scatterplot horsepower vs miles per gallon
+# Plot scatter plot horsepower vs miles per gallon
 plot(car_s[, "hp"], car_s[, "mpg"],
      xlab="horsepower", ylab="miles per gallon",
      main="miles per gallon vs horsepower")
@@ -26,7 +19,6 @@ text(x=car_s[, "hp"], y=car_s[, "mpg"],
 library(wordcloud)
 textplot(x=car_s[, "hp"], y=car_s[, "mpg"],
    words=rownames(car_s))
-
 # Plot the tree Height
 plot(trees[, "Height"],
      type="l",
@@ -42,12 +34,9 @@ lines(trees[, "Volume"], lwd=2, col="green")
 legend(x="left", legend=c("Height", "Volume"),
  inset=0.1, cex=1.0, bg="white", bty="n",
  lwd=2, lty=1, col=c("blue", "green"))
-
 x_var <- seq(-2*pi, 2*pi, len=100)  # x values
-
 # open Windows graphics device
 x11(width=11, height=7, title="simple plot")
-
 # Plot a sine function using basic line plot
 plot(x=x_var, y=sin(x_var), xlab="x-val",
      ylab="y-val", type="l", lwd=2, col="red")
@@ -60,14 +49,12 @@ legend(x="topright", legend=c("sine", "cosine"),
  title="legend", inset=0.1, cex=1.0, bg="white",
  lwd=2, lty=1, bty="n", col=c("red", "blue"))
 graphics.off()  # Close all graphics devices
-
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot a Normal probability distribution
 curve(expr=dnorm, xlim=c(-3, 3),
 xlab="", ylab="", lwd=2, col="blue")
 # Add shifted Normal probability distribution
 curve(expr=dnorm(x, mean=1), add=TRUE,lwd=2, col="red")
-
 # Add title
 title(main="Normal probability distribution functions",
 line=0.1)
@@ -75,7 +62,6 @@ line=0.1)
 legend(x="topright", legend=c("Normal", "shifted"),
  title="legend", inset=0.05, cex=0.8, bg="white",
  lwd=2, lty=1, bty="n", col=c("blue", "red"))
-
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 library(zoo)  # Load zoo
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
@@ -103,7 +89,6 @@ a_t <- match(tick_s, date_s)
 # Add "x" axis with monthly ticks
 axis(side=1, at=a_t, labels=format(tick_s, "%b-%y"), tcl=-0.7)
 abline(v=a_t, col="grey", lwd=0.5)
-
 library(zoo)  # Load zoo
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # extract time index and monthly dates
@@ -118,7 +103,6 @@ t_apply=as.Date(tapply(X=date_s,
     INDEX=month_ly, FUN=min)),
 times=10)
   )[, c(1, 4, 5)]
-
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # Set plot margines
 par(mar=c(3, 3, 3, 3), oma=c(0, 0, 0, 0))
@@ -141,7 +125,6 @@ line=0.5)
 legend("top", legend=col_names,
   bg="white", lty=1, lwd=6,
   col=c("black", "red"), bty="n")
-
 Slightly different method using par("usr")
 par(las=1)  # Set text printing to horizontal
 zoo::plot.zoo(zoo_stxeur[, 1], xlab=NA, ylab=NA, lwd=2)
@@ -158,7 +141,6 @@ line=0.5)
 legend("top", legend=col_names,
   bg="white", lty=1, lwd=6,
   col=c("black", "red"), bty="n")
-
 graph_params <- par()  # get existing parameters
 par("mar")  # get plot margins
 par(mar=c(2, 1, 2, 1))  # Set plot margins
@@ -177,7 +159,6 @@ for (i in 1:4) {  # Plot 4 panels
 par(ask=FALSE)  # Restore automatic plotting
 par(new=TRUE)  # Allow new plot on same chart
 par(graph_params)  # Restore original parameters
-
 x_var <- seq(-5, 7, length=100)
 y_var <- dnorm(x_var, mean=1.0, sd=2.0)
 plot(x_var, y_var, type="l", lty="solid", xlab="", ylab="")
@@ -187,7 +168,6 @@ star_t <- 3; fin_ish <- 5  # Set lower and upper bounds
 are_a <- ((x_var >= star_t) & (x_var <= fin_ish))
 polygon(c(star_t, x_var[are_a], fin_ish),  # Draw polygon
   c(-1, y_var[are_a], -1), col="red")
-
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 sig_mas <- c(0.5, 1, 1.5, 2)  # Sigma values
 # Create plot colors
@@ -204,7 +184,6 @@ title(main="Normal Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, title="Sigmas",
  lab_els, cex=0.8, lwd=2, lty=1, bty="n", col=col_ors)
-
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 x_var <- seq(-4, 4, length=100)
@@ -224,7 +203,6 @@ for (in_dex in 1:4) {
 # Add legend
 legend("topright", inset=0.05, title="Sigmas",
  lab_els, cex=0.8, lwd=2, lty=1, bty="n", col=col_ors)
-
 # Standard deviations of log-normal distribution
 sig_mas <- c(0.5, 1, 1.5)
 # Create plot colors
@@ -236,13 +214,11 @@ for (in_dex in 1:NROW(sig_mas)) {
   xlab="", ylab="", col=col_ors[in_dex],
   add=as.logical(in_dex-1))
 }  # end for
-
 # Add title and legend
 title(main="Log-normal Distributions", line=0.5)
 legend("topright", inset=0.05, title="Sigmas",
  paste("sigma", sig_mas, sep="="),
  cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)), col=col_ors)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
@@ -255,7 +231,6 @@ for (in_dex in 1:4) {
   xlab="", ylab="", col=col_ors[in_dex],
   lwd=2, add=as.logical(in_dex-1))
 }  # end for
-
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
@@ -264,7 +239,6 @@ legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
        cex=0.8, lwd=6, lty=1,
        col=col_ors)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 deg_free <- c(2, 5, 8, 11)  # df values
@@ -281,14 +255,12 @@ for (in_dex in 1:4) {
   lines(x_var, dchisq(x_var, df=deg_free[in_dex]),
 lwd=2, col=col_ors[in_dex])
 }  # end for
-
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05,
        title="Degrees of freedom", lab_els,
        cex=0.8, lwd=6, lty=1, bty="n", col=col_ors)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot three curves in loop
@@ -299,14 +271,12 @@ curve(expr=df(x, df1=deg_free[in_dex], df2=3),
 xlim=c(0, 4), xlab="", ylab="", lwd=2,
 col=col_ors[in_dex], add=as.logical(in_dex-1))
 }  # end for
-
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
 lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
        lab_els, cex=0.8, lwd=2, lty=1, col=col_ors)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 deg_free <- c(3, 6, 9)  # df values
@@ -318,14 +288,12 @@ for (in_dex in 1:3) {  # Plot three t-distributions
   curve(expr=dt(x, df=deg_free[in_dex]),
 lwd=2, col=col_ors[in_dex+1], add=TRUE)
 }  # end for
-
 # Add title
 title(main="t-distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n",
        title="Degrees\n of freedom", lab_els,
        cex=0.8, lwd=6, lty=1, col=col_ors)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 x_var <- seq(-4, 4, length=100)
@@ -338,14 +306,12 @@ for (in_dex in 1:3) {  # Add lines for t-distributions
   lines(x_var, dt(x_var, df=deg_free[in_dex]),
 lwd=2, col=col_ors[in_dex+1])
 }  # end for
-
 # Add title
 title(main="t-distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n",
        title="Degrees\n of freedom", lab_els,
        cex=0.8, lwd=6, lty=1, col=col_ors)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot the Normal and Cauchy probability distributions
@@ -357,7 +323,6 @@ title(main="Cauchy and Normal Distributions", line=0.5)
 legend("topright", inset=0.05, bty="n",
        title=NULL,leg=c("Normal", "Cauchy"),
        cex=0.8, lwd=6, lty=1, col=c("black", "blue"))
-
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Define Pareto function
@@ -375,7 +340,6 @@ lab_els <- paste("alpha", 1:3, sep=" = ")
 legend("topright", inset=0.2, bty="n",
  title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
  col=col_ors)
-
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 poisson_events <- 0:11  # Poisson events
@@ -388,19 +352,16 @@ curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), main="Poisson distribution"
 xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
 legend(x="topright", legend="Poisson density", title="", bty="n",
  inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
-
 # generate Poisson variables
 pois_counts <- rpois(1000, lambda=4)
 head(pois_counts)
 # Calculate contingency table
 pois_table <- table(pois_counts)
 pois_table
-
 # Create barplot of table data
 barplot(pois_table, col="lightgrey",
   xlab="counts", ylab="number of observations",
   main="barplot of Poisson count data")
-
 # Create histogram of Poisson variables
 histo_gram <- hist(pois_counts, col="lightgrey", xlab="count",
      ylab="frequency", freq=FALSE, main="Poisson histogram")
@@ -415,7 +376,6 @@ legend("topright", inset=0.05, title="Poisson histogram",
  lty=1, bty="n", col=c("blue", "red"))
 # total area under histogram
 diff(histo_gram$breaks) %*% histo_gram$density
-
 # boxplot of Poisson count data
 boxplot(x=pois_counts, ylab="counts",
   main="Poisson box plot")
@@ -423,7 +383,6 @@ boxplot(x=pois_counts, ylab="counts",
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
-
 # Create a plotting expression
 ex_pr <- quote({
   par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -446,13 +405,11 @@ xlab="", ylab="", lwd=3, col="red")
   text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
       deg_free[in_dex]), pos=1, cex=1.3)
 })  # end quote
-
 # View the plotting expression
 ex_pr
 # Create plot by evaluating the plotting expression
 x11(width=6, height=4)
 eval(ex_pr)
-
 library(animation)
 # Create an expression for creating multiple plots
 ex_pr <- quote({
@@ -479,7 +436,6 @@ ex_pr <- quote({
       deg_free[in_dex]), pos=1, cex=1.3)
   }  # end for
 })  # end quote
-
 # Create plot by evaluating the plotting expression
 x11(width=6, height=4)
 eval(ex_pr)
@@ -492,13 +448,10 @@ animation::saveHTML(expr=eval(ex_pr),
   img.name="chi_squared",
   htmlfile="chi_squared.html",
   description="Chi-squared Distributions")  # end saveHTML
-
 NA
-
 App setup code that runs only once at startup.
 n_data <- 1e4
 std_dev <- 1.0
-
 Define the user interface
 inter_face <- shiny::fluidPage(
   # Create numeric input for the number of data points.
@@ -509,7 +462,6 @@ inter_face <- shiny::fluidPage(
   # Render plot in a panel.
   plotOutput("plo_t", height=300, width=500)
 )  # end user interface
-
 Define the server function
 ser_ver <- function(input, output) {
   output$plo_t <- shiny::renderPlot({
@@ -520,10 +472,8 @@ ser_ver <- function(input, output) {
     hist(da_ta, xlim=c(-4, 4), main="Histogram of Random Data")
   })  # end renderPlot
 }  # end ser_ver
-
 # Return a Shiny app object
 shiny::shinyApp(ui=inter_face, server=ser_ver)
-
 Create elements of the user interface
 inter_face <- shiny::fluidPage(
   titlePanel("VWAP Moving Average"),
@@ -539,7 +489,6 @@ inter_face <- shiny::fluidPage(
   # Create output plot panel
   mainPanel(dygraphs::dygraphOutput("dy_graph"), width=12)
 )  # end fluidPage interface
-
 Define the server function
 ser_ver <- shiny::shinyServer(function(input, output) {
   # Get the close and volume data in a reactive environment
@@ -551,7 +500,6 @@ ser_ver <- shiny::shinyServer(function(input, output) {
     # Return the data
     cbind(clos_e, vol_ume)
   })  # end reactive code
-
   # Calculate the VWAP indicator in a reactive environment
   v_wap <- shiny::reactive({
     # Get model parameters from input argument
@@ -568,7 +516,6 @@ ser_ver <- shiny::shinyServer(function(input, output) {
     colnames(da_ta) <- c(input$sym_bol, "VWAP")
     da_ta
   })  # end reactive code
-
   # Return the dygraph plot to output argument
   output$dy_graph <- dygraphs::renderDygraph({
     col_names <- colnames(v_wap())
@@ -579,28 +526,22 @@ dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="bl
 dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
   })  # end output plot
 })  # end server code
-
 Return a Shiny app object
 shiny::shinyApp(ui=inter_face, server=ser_ver)
-
 Define the server function
 ser_ver <- shiny::shinyServer(function(input, output) {
-
   # Create an empty list of reactive values.
   value_s <- reactiveValues()
-
   # Get input parameters from the user interface.
   n_rows <- reactive({
     # Add n_rows to list of reactive values.
     value_s$n_rows <- input$n_rows
     input$n_rows
   })  # end reactive code
-
   # Broadcast a message to the console when the button is pressed.
   observeEvent(eventExpr=input$but_ton, handlerExpr={
     cat("Input button pressed\n")
   })  # end observeEvent
-
   # Send the data when the button is pressed.
   da_ta <- eventReactive(eventExpr=input$but_ton, valueExpr={
     # eventReactive() executes on input$but_ton, but not on n_rows() or input$n_rows.
@@ -610,7 +551,6 @@ ser_ver <- shiny::shinyServer(function(input, output) {
     da_ta
   })  # end eventReactive
   #   da_ta
-
   # Draw table of the data when the button is pressed.
   observeEvent(eventExpr=input$but_ton, handlerExpr={
     da_ta <- da_ta()
@@ -619,12 +559,9 @@ ser_ver <- shiny::shinyServer(function(input, output) {
     cat("Drawing table\n")
     output$tabl_e <- renderTable(da_ta)
   })  # end observeEvent
-
 })  # end server code
-
 Return a Shiny app object
 shiny::shinyApp(ui=inter_face, server=ser_ver)
-
 # R startup chunk
 # ```{r setup, include=FALSE}
 library(shiny)
@@ -639,7 +576,6 @@ inputPanel(
   sliderInput("lamb_da", label="lambda:",
     min=0.01, max=0.2, value=0.1, step=0.01)
 )  # end inputPanel
-
 renderPlot({
   # Calculate EWMA prices
   lamb_da <- input$lamb_da
@@ -656,20 +592,18 @@ renderPlot({
    inset=0.1, bg="white", lty=1, lwd=2,
    col=plot_theme$col$line.col, bty="n")
 })  # end renderPlot
-
 library(zoo)  # Load zoo
 library(ggplot2)  # Load ggplot2
 library(scales)  # Load scales
 my_ggplot <- ggplot(  # Specify data and aesthetics
   data=mtcars, mapping=aes(x=hp, y=mpg)) +
   geom_point() +  # Plot points
-  ggtitle("basic scatterplot") +  # Add title
+  ggtitle("basic scatter plot") +  # Add title
   theme(  # Customize plot object
   plot.title=element_text(vjust=-2.0),
   plot.background=element_blank()
   )  # end theme
 my_ggplot  # Render the plot
-
 # install.packages("directlabels", repo="http://r-forge.r-project.org")
 library(ggplot2)  # Load ggplot2
 library(scales)  # Load scales
@@ -697,7 +631,6 @@ grid.arrange(my_ggplot +
   ggtitle("ggplot2 labels") + gg_labels,
   my_ggplot + ggtitle("directlabels") +
     d_labels, ncol=1)  # end grid.arrange
-
 my_ggplot <- ggplot(data=iris,
       mapping=aes(Petal.Length, Sepal.Length)) +
   geom_point(aes(shape=Species, color=Species)) +
@@ -707,7 +640,6 @@ my_ggplot <- ggplot(data=iris,
     virginica=6, versicolor=3), guide="none") +
   scale_colour_discrete(guide="none")  # no label guide
 my_ggplot  # Render the plot
-
 library(ggplot2)  # Load ggplot2
 library(scales)  # Load scales
 library(gridExtra)  # Load gridExtra
@@ -736,7 +668,6 @@ ggp_zoo_multiple <- autoplot(zoo_series,
 grid.arrange(ggp_zoo_single +
          theme(legend.position=c(0.1, 0.5)),
        ggp_zoo_multiple, ncol=1)
-
 library(zoo)  # Load zoo
 library(ggplot2)  # Load ggplot2
 library(gridExtra)
@@ -747,7 +678,6 @@ auto_theme <- theme(legend.position=c(0.1, 0.5),
   plot.background=element_blank(),
   axis.text.y=element_blank()
   )
-
 # Plot ggplot2 in single pane
 ggp.zoo1 <- autoplot(zoo_series, main="Eu Stox",
    facets=NULL) + xlab("") +
@@ -768,7 +698,6 @@ ggp.zoo2 <- autoplot(zoo_series, main="Eu Stox",
   )
 # Create plot ggplot2 in multiple panes
 grid.arrange(ggp.zoo1, ggp.zoo2, ncol=1)
-
 # Define function of two variables
 sur_face <- function(x, y) sin(sqrt(x^2+y^2))
 # Calculate function over matrix grid
@@ -779,30 +708,33 @@ persp(z=outer(x_lim, y_lim, FUN=sur_face),
 theta=45, phi=30, zlab="sine",
 shade=0.1, col="green",
 main="radial sine function")
-
-library(rgl)  # Load rgl
-with(iris,
-     plot3d(Sepal.Length, Sepal.Width, Petal.Length,
-      type="s", col=as.numeric(Species)))
-
+# Set rgl options
+options(rgl.useNULL=TRUE)
+# Load package rgl
+library(rgl)
+# Create 3d scatter plot of function
+with(iris, rgl::plot3d(Sepal.Length, Sepal.Width, Petal.Length,
+            type="s", col=as.numeric(Species)))
+# Render the 3d scatter plot of function
+rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)
 library(rgl)  # Load rgl
 # Define function of two variables
 sur_face <- function(x, y) y*sin(x)
-# Draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+# Create 3d surface plot of function
+rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
   col="green", axes=FALSE)
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="surfacergl", width=1000, height=1000)
 # Draw 3d surface plot of matrix
 x_lim <- seq(from=-5, to=5, by=0.1)
 y_lim <- seq(from=-5, to=5, by=0.1)
-persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
-  xlab="x", ylab="y", zlab="sur_face",
-  col="green")
+rgl::persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+  xlab="x", ylab="y", zlab="sur_face", col="green")
 # Save current view to png file
-rgl.snapshot("surface_plot.png")
+rgl::rgl.snapshot("surface_plot.png")
 # Define function of two variables and two parameters
 sur_face <- function(x, y, lambda_1=1, lambda_2=1)
   sin(lambda_1*x)*sin(lambda_2*y)
 # Draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-  col="green", axes=FALSE,
-  lambda_1=1, lambda_2=2)
+rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+  col="green", axes=FALSE, lambda_1=1, lambda_2=2)

@@ -23,7 +23,6 @@ c_var <- sapply(re_turns, function(x) {
   mean(x[x < quantile(x, conf_level)])
 })
 -sapply(re_turns, mean)/c_var
-
 # Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 re_turns <- drop(zoo::coredata(re_turns))
@@ -56,13 +55,11 @@ std_dev <- sd(agg_rets)
 va_r <- unname(quantile(agg_rets, probs=conf_level))
 c_var <- mean(agg_rets[agg_rets < va_r])
 sqrt(252/n_agg)*mean(agg_rets)/c(Sharpe=std_dev, Dowd=-va_r, DowdC=-c_var)
-
 # Test if IEF can time VTI
 re_turns <- na.omit(rutils::etf_env$re_turns[, c("IEF", "VTI")])
 vt_i <- re_turns$VTI
 de_sign <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
 colnames(de_sign)[3:4] <- c("merton", "treynor")
-
 # Merton-Henriksson test
 mod_el <- lm(IEF ~ VTI + merton, data=de_sign); summary(mod_el)
 # Treynor-Mazuy test
@@ -77,7 +74,6 @@ fit_ted <- (mod_el$coeff["(Intercept)"] +
         mod_el$coeff["treynor"]*vt_i^2)
 points.default(x=de_sign$VTI, y=fit_ted, pch=16, col="red")
 text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
-
 library(rutils)
 # Extract ETF prices from rutils::etf_env$price_s
 price_s <- rutils::etf_env$price_s
@@ -93,7 +89,6 @@ rets_log <- rutils::diff_it(log(price_s))
 # Calculate percentage returns
 rets_percent <- rets_dollar/
   rutils::lag_it(price_s, lagg=1, pad_zeros=FALSE)
-
 # Calculate prices from simple dollar returns
 rets_dollar[1, ] <- price_s[1, ]
 new_prices <- cumsum(rets_dollar)
@@ -117,13 +112,11 @@ dygraphs::dygraph(log(quantmod::Cl(rutils::etf_env$VTI)),
   main="Logarithm of VTI Prices") %>%
   dyOptions(colors="blue", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Calculate percentage VTI returns
 price_s <- rutils::etf_env$price_s$VTI
 price_s <- na.omit(price_s)
 re_turns <- rutils::diff_it(price_s)/
   rutils::lag_it(price_s, lagg=1, pad_zeros=FALSE)
-
 # Funding rate per day
 f_rate <- 0.01/252
 # Margin account
@@ -142,7 +135,6 @@ dygraphs::dygraph(da_ta, main="VTI Margin Funding Costs") %>%
   dySeries(name=col_names[1], axis="y", col="blue") %>%
   dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
 # Cumulative transaction costs
@@ -160,7 +152,6 @@ dygraphs::dygraph(da_ta, main="VTI Transaction Costs") %>%
   dySeries(name=col_names[1], axis="y", col="blue") %>%
   dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-
 # Calculate VTI and IEF dollar returns
 price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
@@ -169,7 +160,6 @@ rets_dollar <- rutils::diff_it(price_s)
 # Calculate VTI and IEF percentage returns
 rets_percent <- rets_dollar/
   rutils::lag_it(price_s, lagg=1, pad_zeros=FALSE)
-
 # Wealth of fixed shares (without rebalancing)
 weight_s <- c(0.5, 0.5)
 rets_dollar[1, ] <- price_s[1, ]
@@ -187,7 +177,6 @@ dygraphs::dygraph(weal_th, main="Wealth of Weighted Portfolios") %>%
   dySeries(name=col_names[1], axis="y", col="red", strokeWidth=2) %>%
   dySeries(name=col_names[2], axis="y2", col="blue", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Margin account for fixed dollars (with rebalancing)
 mar_gin <- cumsum(rets_percent %*% weight_s)
 # Cumulative transaction costs
@@ -205,7 +194,6 @@ dygraphs::dygraph(da_ta, main="Fixed Dollar Portfolio Transaction Costs") %>%
   dySeries(name=col_names[1], axis="y", col="blue") %>%
   dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-
 # Wealth of fixed shares (without rebalancing)
 wealth_fixed_shares <- cumsum(rets_dollar %*% weight_s)
 # Calculate weighted percentage returns
@@ -220,7 +208,6 @@ colnames(weal_th) <- c("Fixed Shares", "Fixed Ratio")
 dygraphs::dygraph(weal_th, main="Log Wealth of Fixed Dollar Ratios") %>%
   dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Returns in excess of weighted returns
 ex_cess <- lapply(rets_percent, function(x) (rets_weighted - x))
 ex_cess <- do.call(cbind, ex_cess)
@@ -233,7 +220,6 @@ ex_cess <- ex_cess*rutils::lag_it(wealth_fixed_ratio)
 cost_s <- bid_offer*cumsum(ex_cess)/2
 # Subtract transaction costs from wealth
 wealth_fixed_ratio <- (wealth_fixed_ratio - cost_s)
-
 # dygraph plot of wealth and transaction costs
 weal_th <- cbind(wealth_fixed_ratio, cost_s)
 weal_th <- xts::xts(weal_th, index(price_s))
@@ -245,7 +231,6 @@ dygraphs::dygraph(weal_th, main="Transaction Costs With Fixed Dollar Ratios") %>
   dySeries(name=col_names[1], axis="y", col="blue") %>%
   dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-
 # Calculate stock and bond returns
 re_turns <- na.omit(rutils::etf_env$re_turns[, c("VTI", "IEF")])
 weight_s <- c(0.4, 0.6)
@@ -263,7 +248,6 @@ sapply(re_turns, function(x) {
   x <- (x - mean(x))/stddev
   c(stddev=stddev, skew=mean(x^3), kurt=mean(x^4))
 })  # end sapply
-
 # Wealth of fixed ratio of dollar amounts
 weal_th <- cumprod(1 + re_turns)
 # Plot cumulative wealth
@@ -271,7 +255,6 @@ dygraphs::dygraph(log(weal_th), main="Stock and Bond Portfolio") %>%
   dyOptions(colors=c("blue","green","blue","red")) %>%
   dySeries("Combined", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Extract ETF returns
 sym_bols <- c("VTI", "IEF", "DBC")
 re_turns <- na.omit(rutils::etf_env$re_turns[, sym_bols])
@@ -279,7 +262,6 @@ re_turns <- na.omit(rutils::etf_env$re_turns[, sym_bols])
 weights_aw <- c(0.30, 0.55, 0.15)
 re_turns <- cbind(re_turns, re_turns %*% weights_aw)
 colnames(re_turns)[4] <- "All Weather"
-
 # Calculate cumulative wealth from returns
 weal_th <- cumsum(re_turns)
 # dygraph all-weather wealth
@@ -295,7 +277,6 @@ quantmod::chart_Series(weal_th, theme=plot_theme, lwd=c(2, 2, 2, 4),
 legend("topleft", legend=colnames(weal_th),
   inset=0.1, bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
-
 # Calculate dollar and percentage returns for VTI and IEF.
 price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
@@ -321,7 +302,6 @@ allocation_s <- rutils::lag_it(allocation_s)
 # Calculate wealth of risk parity.
 rets_weighted <- rowSums(rets_percent*allocation_s)
 wealth_risk_parity <- cumprod(1 + rets_weighted)
-
 # Calculate the log wealths.
 weal_th <- log(cbind(wealth_fixed_ratio, wealth_risk_parity))
 weal_th <- xts::xts(weal_th, index(price_s))
@@ -332,7 +312,6 @@ sqrt(252)*sapply(rutils::diff_it(weal_th), function (x) mean(x)/sd(x))
 dygraphs::dygraph(weal_th, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios") %>%
   dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Test risk parity market timing of VTI using Treynor-Mazuy test
 re_turns <- rutils::diff_it(weal_th)
 vt_i <- rets_percent$VTI
@@ -353,7 +332,6 @@ fit_ted <- (mod_el$coeff["(Intercept)"] +
         mod_el$coeff["treynor"]*vt_i^2)
 points.default(x=de_sign$VTI, y=fit_ted, pch=16, col="red")
 text(x=0.05, y=0.025, paste("Risk Parity t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
-
 # Test for fixed ratio market timing of VTI using Treynor-Mazuy test
 mod_el <- lm(fixed ~ VTI + treynor, data=de_sign)
 summary(mod_el)
@@ -361,7 +339,6 @@ summary(mod_el)
 fit_ted <- (mod_el$coeff["(Intercept)"] + mod_el$coeff["treynor"]*vt_i^2)
 points.default(x=de_sign$VTI, y=fit_ted, pch=16, col="blue")
 text(x=0.05, y=0.02, paste("Fixed Ratio t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
-
 # Calculate positions
 vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
 position_s <- rep(NA_integer_, NROW(vt_i))
@@ -381,7 +358,6 @@ colnames(weal_th) <- c("VTI", "sell_in_may")
 # Calculate Sharpe and Sortino ratios
 sqrt(252)*sapply(weal_th,
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot wealth of Sell in May strategy
 dygraphs::dygraph(cumsum(weal_th), main="Sell in May Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -395,7 +371,6 @@ quantmod::chart_Series(weal_th, theme=plot_theme, name="Sell in May Strategy")
 legend("topleft", legend=colnames(weal_th),
   inset=0.1, bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
-
 # Test if Sell in May strategy can time VTI
 de_sign <- cbind(vt_i, 0.5*(vt_i+abs(vt_i)), vt_i^2)
 colnames(de_sign) <- c("VTI", "merton", "treynor")
@@ -414,7 +389,6 @@ fit_ted <- (mod_el$coeff["(Intercept)"] +
         mod_el$coeff["treynor"]*vt_i^2)
 points.default(x=vt_i, y=fit_ted, pch=16, col="red")
 text(x=0.05, y=0.05, paste("Treynor test t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
-
 # Calculate the log of OHLC VTI prices
 oh_lc <- log(rutils::etf_env$VTI)
 op_en <- quantmod::Op(oh_lc)
@@ -429,7 +403,6 @@ open_close <- (clos_e - op_en)
 colnames(open_close) <- "open_close"
 close_open <- (op_en - rutils::lag_it(clos_e, lagg=1, pad_zeros=FALSE))
 colnames(close_open) <- "close_open"
-
 # Calculate Sharpe and Sortino ratios
 weal_th <- cbind(close_close, close_open, open_close)
 sqrt(252)*sapply(weal_th,
@@ -441,7 +414,6 @@ dygraphs::dygraph(cumsum(weal_th),
   dySeries(name="close_open", label="Close-to-Open (overnight)", strokeWidth=2, col="red") %>%
   dySeries(name="open_close", label="Open-to-Close (daytime)", strokeWidth=2, col="green") %>%
   dyLegend(width=600)
-
 # Calculate the VTI returns
 vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
 date_s <- zoo::index(vt_i)
@@ -458,7 +430,6 @@ date_s[head(indeks, 11)]
 # Calculate Turn of the Month pnls
 pnl_s <- numeric(NROW(vt_i))
 pnl_s[indeks] <- vt_i[indeks, ]
-
 # Combine data
 weal_th <- cbind(vt_i, pnl_s)
 col_names <- c("VTI", "Strategy")
@@ -472,7 +443,6 @@ dygraphs::dygraph(cumsum(weal_th), main="Turn of the Month Strategy") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="red")
-
 # Calculate the VTI returns
 vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
 date_s <- zoo::index(vt_i)
@@ -500,7 +470,6 @@ pnls2 <- vt_i
 is_dd <- rutils::lag_it(dd < -sto_p*cum_max)
 pnls2 <- ifelse(is_dd, 0, pnls2)
 all.equal(pnl_s, pnls2)
-
 # Combine data
 weal_th <- xts::xts(cbind(vt_i, pnl_s), date_s)
 col_names <- c("VTI", "Strategy")
@@ -514,7 +483,6 @@ dygraphs::dygraph(cumsum(weal_th), main="VTI Stop-loss Strategy") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="red")
-
 # Simulate multiple stop-loss strategies
 cum_sum <- cumsum(vt_i)
 cum_max <- cummax(cumsum(vt_i))
@@ -525,7 +493,6 @@ cum_pnls <- sapply(0.01*(1:20), function(sto_p) {
   pnl_s <- ifelse(is_dd, 0, pnl_s)
   sum(pnl_s)
 })  # end sapply
-
 # Plot cumulative pnls for stop-loss strategies
 plot(x=0.01*(1:20), y=cum_pnls,
      main="Cumulative PnLs for Stop-loss Strategies",

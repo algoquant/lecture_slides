@@ -1,10 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
-options(width=80, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
@@ -16,7 +9,6 @@ vector2 <- c(-10, 0, 10)
 vector1 < vector2
 c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
 c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
-
 rm(list=ls())
 c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
 c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
@@ -33,36 +25,29 @@ if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
 if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
-
 ?Arithmetic
 4.7 * 0.5  # Multiplication
 4.7 / 0.5  # division
 # Exponentiation
 2**3
 2^3
-
 num_var <- 2
 num_var==2
 identical(num_var, 2)
-
 identical(num_var, NULL)
 # This doesn't work:
 # num_var==NULL
 is.null(num_var)
-
 vec_tor <- c(2, 4, 6)
 vec_tor==2
 identical(vec_tor, 2)
-
 # num_ber is equal to "1.0" within machine precision
 num_ber <- 1.0 + 2*sqrt(.Machine$double.eps)
 all.equal(num_ber, 1.0)
-
 # Info machine precision of computer R is running on
 # ?.Machine
 # Machine precision
 .Machine$double.eps
-
 vec_tor <- sample(1e3, 1e3)
 mat_rix <- matrix(vec_tor, ncol=4)
 which(vec_tor == 5)
@@ -88,7 +73,6 @@ summary(microbenchmark(
   match=match(5, vec_tor),
   which=min(which(vec_tor == 5)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Does 5 belong in vec_tor?
 5 %in% vec_tor
 match(5, vec_tor, nomatch=0) > 0
@@ -107,7 +91,6 @@ if (any(vec_tor < 2))
   cat("vector contains small values\n")
 # Partial matching of strings
 pmatch("med", c("mean", "median", "mode"))
-
 str(findInterval)
 # Get index of the element of "vec" that matches 5
 findInterval(x=5, vec=c(3, 5, 7))
@@ -123,7 +106,6 @@ findInterval(x=1:8, vec=c(3, 5, 7),
 # Make rightmost interval inclusive
 findInterval(x=1:8, vec=c(3, 5, 7),
        rightmost.closed=TRUE)
-
 num_var1 <- 3  # "<-" and "=" are valid assignment operators
 num_var1
 num_var1 = 3
@@ -136,7 +118,6 @@ x  # x doesn't exist outside the function
 # "<-" assignment within argument list
 median(x <- 1:10)
 x  # x exists outside the function
-
 my_var <- 1  # Create new object
 assign(x="my_var", value=2)  # Assign value to existing object
 my_var
@@ -158,7 +139,6 @@ assign(sym_bol, 1)  # Assign value to "new_var"
 ls()
 sym_bol <- 10
 assign(sym_bol, 1)  # Can't assign to non-string
-
 rm(list=ls())  # delete all objects
 # Create individual vectors from column names of EuStockMarkets
 for (col_name in colnames(EuStockMarkets)) {
@@ -169,7 +149,6 @@ ls()
 head(DAX)
 head(EuStockMarkets[, "DAX"])
 identical(DAX, EuStockMarkets[, "DAX"])
-
 # Create new environment
 test_env <- new.env()
 # Pass string as name to create new object
@@ -191,7 +170,6 @@ get("my_var1", envir=test_env)
 mget(ls(test_env), envir=test_env)
 # delete environment
 rm(test_env)
-
 rm(list=ls())  # delete all objects
 # Convert string to symbol
 as.symbol("some_string")
@@ -211,7 +189,6 @@ ls()
 eval(ex_pression)  # Evaluate expression
 ls()  # Expression evaluation created new object
 ne_w
-
 # Create the expression "1+1"
 quote(1+1)
 # Evaluate the expression "1+1"
@@ -239,7 +216,6 @@ get_input <- function(in_put) {
 my_var <- 2
 get_input(my_var)
 eval(get_input(my_var))
-
 # Define symbol
 my_var <- 10
 # Convert symbol value into string
@@ -256,7 +232,6 @@ get_name <- function(in_put) {
   in_put
 }  # end get_name
 get_name(my_var)
-
 rm(list=ls())
 # Expressions enclosed in parenthesis are less ambiguous
 -2:5
@@ -265,19 +240,16 @@ rm(list=ls())
 # Expressions enclosed in parenthesis are less ambiguous
 -2*3+5
 -2*(3+5)
-
 # Expressions can be separated by semicolons or by lines
 {1+2; 2*3; 1:5}
 # or
 {1+2
 2*3
 1:5}
-
 mat_rix <- matrix(nr=3, nc=4)
 mat_rix <- 0
 # Subset whole matrix
 mat_rix[] <- 0
-
 # Parenthesis and braces require a little additional processing time
 library(microbenchmark)
 summary(microbenchmark(
@@ -285,10 +257,8 @@ summary(microbenchmark(
   pa_ren=sqrt(((((rnorm(10000)^2))))),
   bra_ce=sqrt({{{{rnorm(10000)^2}}}}),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 rm(list=ls())
 num_var1 <- 1
-
 if (num_var1) {  # Numeric zero is FALSE, all other numbers are TRUE
   num_var2 <- 4
 } else if (num_var1 == 0) {  # 'else if' together on same line
@@ -296,9 +266,7 @@ if (num_var1) {  # Numeric zero is FALSE, all other numbers are TRUE
 } else {  # 'else' together with curly braces
   num_var2 <- -4
 }  # end if
-
 num_var2
-
 switch("a", a="aaahh", b="bee", c="see", d=2,
        "else this")
 switch("c", a="aaahh", b="bee", c="see", d=2,
@@ -321,9 +289,7 @@ my_var <- rnorm(100, mean=2)
 centra_lity(my_var, "mean")
 centra_lity(my_var, "mean_narm")
 centra_lity(my_var, "median")
-
 for (in_dex in vec_tor) {ex_pressions}
-
 rm(list=ls())
 color_list <- list("red", "white", "blue")
 # Loop over list
@@ -334,7 +300,6 @@ for (some_color in color_list) {
 for (in_dex in 1:3) {
   print(color_list[[in_dex]])
 }  # end for
-
 # While loops require initialization
 in_dex <- 1
 # While loop
@@ -342,7 +307,6 @@ while (in_dex < 4) {
   print(color_list[[in_dex]])
   in_dex <- in_dex + 1
 }  # end while
-
 vec_tor <- integer(7)
 # Loop over a vector and overwrite it
 for (i in seq_along(vec_tor)) {
@@ -366,7 +330,6 @@ vec_tor
 # sapply() loop returns vector of values
 vec_tor <- sapply(seq_along(vec_tor),
             function(i) (i^2))
-
 rm(list=ls())
 # fib_seq <- numeric()  # zero length numeric vector
 # Pre-allocate vector instead of "growing" it
@@ -377,7 +340,6 @@ for (i in 3:10) {  # Perform recurrence loop
   fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
 }  # end for
 fib_seq
-
 # Allocate character vector
 character()
 character(5)
@@ -407,7 +369,6 @@ is.integer(matrix(NA_integer_, nrow=3, ncol=2))
 # Allocate numeric matrix
 matrix(NA_real_, nrow=3, ncol=2)
 is.numeric(matrix(NA_real_, nrow=3, ncol=2))
-
 vec_tor <- sample(1:9)
 vec_tor
 vec_tor < 5  # Element-wise comparison
@@ -416,7 +377,6 @@ mat_rix <- matrix(vec_tor, ncol=3)
 mat_rix
 mat_rix < 5  # Element-wise comparison
 mat_rix == 5  # Element-wise comparison
-
 mat_rix <- 1:6  # Create a vector
 class(mat_rix)  # Get its class
 # Is it vector or matrix?
@@ -431,7 +391,6 @@ c(is.vector(mat_rix), is.matrix(mat_rix))
 dimnames(mat_rix) <- list(rows=c("row1", "row2"),
             columns=c("col1", "col2", "col3"))
 mat_rix
-
 mat_rix <- matrix(1:10, 2, 5)  # Create matrix
 mat_rix
 # as.numeric strips dim attribute from matrix
@@ -441,7 +400,6 @@ mat_rix <- as.character(mat_rix)
 c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
 # Coercion converted matrix to vector
 c(is.matrix(mat_rix), is.vector(mat_rix))
-
 vector1 <- 1:3  # define vector
 vector2 <- 6:4  # define vector
 # Bind vectors into columns
@@ -454,7 +412,6 @@ vector2 <- c(vector2, 7)
 cbind(vector1, vector2)
 # Another example of recycling rule
 1:6 + c(10, 20)
-
 # Replicate a single element
 rep("a", 5)
 # Replicate the whole vector several times
@@ -464,7 +421,6 @@ rep(c("a", "b"), times=5)
 rep(c("a", "b"), each=5)
 # Replicate to specified length
 rep(c("a", "b"), length.out=5)
-
 # define vector and matrix
 vector1 <- c(2, 4, 3)
 mat_rix <- matrix(sample(1:12), ncol=3)
@@ -486,7 +442,6 @@ summary(microbenchmark(
     do.call(cbind, pro_duct)
   },
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 vector1
 vector2 <- 6:4  # define vector
 # Multiply two vectors element-by-element
@@ -505,7 +460,6 @@ summary(microbenchmark(
   in_ner=drop(mat_rix %*% vector1),
   row_sums=rowSums(t(vector1 * t(mat_rix))),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(microbenchmark)
 # Multiply matrix by vector fails because dimensions aren't conformable
 vector1 %*% mat_rix
@@ -522,7 +476,6 @@ summary(microbenchmark(
   cross_prod=crossprod(tmat_rix, vec_tor),
   inner_prod=mat_rix %*% vec_tor,
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # define named vectors
 vector1 <- sample(1:4)
 names(vector1) <- paste0("row", 1:4, "=", vector1)
@@ -537,7 +490,6 @@ mat_rix
 mat_rix <- outer(vector1, vector2,
            FUN=function(x1, x2) x2*sin(x1))
 mat_rix
-
 # Create list of vectors
 li_st <- lapply(1:3, function(x) sample(6))
 # Bind list elements into matrix - doesn't work
@@ -556,7 +508,6 @@ do.call(cbind, list(1:2, 3:5))
 do.call(cbind, list(1, NULL, 3, 4))
 # NA element isn't skipped
 do.call(cbind, list(1, NA, 3, 4))
-
 library(microbenchmark)
 list_vectors <- lapply(1:5, rnorm, n=10)
 mat_rix <- do.call(rbind, list_vectors)
@@ -575,7 +526,6 @@ rbind(li_st[[in_dex]], li_st[[in_dex+1]])
   li_st[[1]]
 }  # end do_call_rbind
 identical(mat_rix, do_call_rbind(list_vectors))
-
 library(microbenchmark)
 airquality[(airquality$Solar.R>320 &
         !is.na(airquality$Solar.R)), ]
@@ -585,7 +535,6 @@ summary(microbenchmark(
     brackets=airquality[(airquality$Solar.R>320 &
             !is.na(airquality$Solar.R)), ],
 times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 unique(iris$Species)  # Species has three distinct values
 # Split into separate data frames by hand
 set_osa <- iris[iris$Species=="setosa", ]
@@ -600,7 +549,6 @@ names(split_iris)
 dim(split_iris$setosa)
 head(split_iris$setosa, 2)
 all.equal(set_osa, split_iris$setosa)
-
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
@@ -622,7 +570,6 @@ aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
 aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate() all columns
 aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
-
 # Mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
@@ -633,7 +580,6 @@ with(mtcars, sapply(sort(unique(cyl)), function(x) {
      }))  # end with
 # Function by() instead of tapply()
 with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
-
 # Get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
         function(x) {
@@ -649,10 +595,9 @@ data_cars <- lapply(split_cars,  # Now same using lapply
 is.list(data_cars)  # lapply produces a list
 # do.call flattens list into a matrix
 do.call(cbind, data_cars)
-
-# Download CRSPpanel.txt from NYU Classes
+# Download CRSPpanel.txt from Brightspace
 # Read the file using read.table() with header and sep arguments
-panel_data <- read.table(file="C:/Develop/lecture_slides/data/CRSPpanel.txt",
+panel_data <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt",
                    header=TRUE, sep="\t")
 # Split panel_data based on Industry column
 split_panel <- split(panel_data, panel_data$Industry)
@@ -672,11 +617,10 @@ aggregate(formula=(Sector ~ Industry), data=panel_data,
 with(panel_data, aggregate(x=Sector, by=list(Industry),
                      FUN=unique))
 # Or
-with(panel_data, sapply(levels(Industry),
+with(panel_data, sapply(unique(Industry),
   function(x) {
     Sector[match(x, Industry)]
   }))  # end sapply
-
 # Split panel_data based on Sector column
 split_panel <- split(panel_data, panel_data$Sector)
 # Number of companies in each Sector
@@ -702,7 +646,6 @@ sec_ind2 <- with(panel_data,
 # Coerce sec_ind2 into a jagged array
 sec_ind2 <- drop(as.matrix(sec_ind2))
 all.equal(sec_ind2, sec_ind)
-
 # Average ROE in each Industry
 with(panel_data,
   sapply(split(ROE, Industry), mean))
@@ -725,14 +668,12 @@ t(sapply(split_panel, FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
 aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
   by=list(panel_data$Industry), FUN=mean)
-
 library(plyr)
 one <- ozone[1, 1, ]
 month <- ordered(rep(1:12, length72))
 model <- rlm(one ~ month - 1)
 deseas <- resid(model)
 deseasf <- function(value) rlm(value ~ month - 1)
-
 # For loops
 models <- as.list(rep(NA, 24 * 24))
 dim(models) <- c(24, 24)
@@ -745,7 +686,6 @@ models[[i, j]] <- mod
 deseas[i, j, ] <- resid(mod)
 }
 }
-
 # Apply functions
 models <- apply(ozone, 1:2, deseasf)
 resids_list <- lapply(models, resid)
@@ -753,28 +693,20 @@ resids <- unlist(resids_list)
 dim(resids) <- c(72, 24, 24)
 deseas <- aperm(resids, c(2, 3, 1))
 dimnames(deseas) <- dimnames(ozone)
-
-
 # InsectSprays dataset
 head(InsectSprays)
-
 # Split the count column by the spray column.
 count_by_spray <- with(InsectSprays, split(count, spray))
-
 # Next apply the statistic to each element of the list. Lets use the mean here.
 mean_by_spray <- lapply(count_by_spray, mean)
-
 # Finally combine the list as a vector
 unlist(mean_by_spray)
-
 # or in one line
 sapply(count_by_spray, mean)
-
 # Can also use the functions tapply(), aggregate() and by():
 with(InsectSprays, tapply(count, spray, mean))
 with(InsectSprays, by(count, spray, mean))
 aggregate(count ~ spray, InsectSprays, mean)
-
 # ?options  # Get info on global options
 getOption("warn")  # Global option for "warn"
 options("warn")  # Global option for "warn"
@@ -798,7 +730,6 @@ options(warn=1)
 sqrt_safe()
 options(warn=3)
 sqrt_safe()
-
 # Function vali_date validates its arguments
 vali_date <- function(in_put=NULL) {
 # Check if argument is valid and return double
@@ -823,7 +754,6 @@ vali_date <- function(in_put) {
 vali_date(3)
 vali_date("a")
 vali_date()
-
 # vali_date() validates its arguments and assertions
 vali_date <- function(in_put) {
 # Check if argument is valid and return double
@@ -837,10 +767,8 @@ vali_date <- function(in_put) {
 vali_date(3)
 vali_date("a")
 vali_date()
-
 # Print the call stack
 traceback()
-
 vali_date <- function(in_put) {
 # Check argument using long form '&&' operator
   stopifnot(!missing(in_put) && is.numeric(in_put))
@@ -856,7 +784,6 @@ vali_date <- function(in_put) {
 }  # end vali_date
 vali_date()
 vali_date("a")
-
 # sum_two() returns the sum of its two arguments
 sum_two <- function(in_put1, in_put2) {  # Even more robust
 # Check if at least one argument is not missing
@@ -880,14 +807,12 @@ sum_two(5, 'a')
 sum_two('a', 5)
 sum_two('a', 'b')
 sum_two()
-
 # Flag "vali_date" for debugging
 debug(vali_date)
 # Calling "vali_date" starts debugger
 vali_date(3)
 # unflag "vali_date" for debugging
 undebug(vali_date)
-
 vali_date <- function(in_put) {
   browser()  # Pause and invoke debugger
 # Check argument using long form '&&' operator
@@ -898,7 +823,6 @@ vali_date()  # Invokes debugger
 options("error")  # Show default NULL "error" option
 options(error=recover)  # Set "error" option to "recover"
 options(error=NULL)  # Set back to default "error" option
-
 str(tryCatch)  # Get arguments of tryCatch()
 tryCatch(  # Without error handler
   {  # Evaluate expressions
@@ -907,7 +831,6 @@ tryCatch(  # Without error handler
   },
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
-
 tryCatch(  # With error handler
   {  # Evaluate expressions
     num_var <- 101  # Assign
@@ -923,7 +846,6 @@ tryCatch(  # With error handler
   },  # end warning handler
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
-
 # Apply loop without tryCatch
 apply(matrix(1:5), 1, function(num_var) {  # Anonymous function
     stopifnot(!(num_var = 3))  # Check for error
@@ -933,7 +855,6 @@ apply(matrix(1:5), 1, function(num_var) {  # Anonymous function
     paste("(return) num_var =", num_var)
   }  # end anonymous function
 )  # end apply
-
 # Apply loop with tryCatch
 apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
     tryCatch(  # With error handler

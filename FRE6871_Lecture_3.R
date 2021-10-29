@@ -26,14 +26,12 @@ x11(width=6, height=5)
 plot(density(de_faults), main="Distribution of Defaults",
      xlab="number of defaults", ylab="frequqncy")
 abline(v=mean(de_faults), lwd=3, col="red")
-
 # Calculate default thresholds and asset values
 def_thresh <- qnorm(def_probs)
 asset_s <- qnorm(uni_form)
 # Simulate defaults
 de_faults <- colSums(asset_s < def_thresh)
 mean(de_faults)
-
 # Plot Standard Normal distribution
 x11(width=6, height=5)
 x_lim <- 4; def_thresh <- qnorm(0.025)
@@ -49,7 +47,6 @@ y_var <- dnorm(x_var)
 are_a <- ((x_var >= (-x_lim)) & (x_var <= def_thresh))
 polygon(c(x_lim, x_var[are_a], def_thresh),
   c(-1, y_var[are_a], -1), col="red")
-
 # Define correlation parameters
 rh_o <- 0.2
 rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
@@ -79,7 +76,6 @@ summary(microbenchmark(
     rho_sqrt*system_atic[i] + rho_sqrtm*rnorm(n_assets)}},
   vector_ized={rho_sqrt*system_atic + rho_sqrtm*rnorm(n_simu*n_assets)},
   times=10))[, c(1, 4, 5)]
-
 # Calculate random default probabilities
 n_assets <- 5
 def_probs <- runif(n_assets, max=0.2)
@@ -101,7 +97,6 @@ colSums(de_faults) / n_simu
 def_probs
 # Calculate correlations between defaults
 cor(de_faults)
-
 # Define default probabilities
 n_assets <- 2
 def_prob <- 0.2
@@ -122,7 +117,6 @@ cor(de_faults)
 # Calculate average number of defaults and compare to def_prob
 colSums(de_faults) / n_simu
 def_prob
-
 # Define cumulative default probability function
 def_cumdistr <- function(x, def_thresh=(-2), rh_o=0.2)
   pnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))
@@ -133,7 +127,6 @@ curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.05),
 xlim=c(0, 0.999), lwd=3,
 xlab="percent default", ylab="probability",
 col="green", main="Cumulative Default Probabilities")
-
 # Plot default distribution with higher correlation
 curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.2),
 xlim=c(0, 0.999), add=TRUE, lwd=3,
@@ -148,7 +141,6 @@ abline(v=def_prob, col="red", lwd=3)
 text(x=def_prob, y=0.0,
  labels="default probability",
  lwd=2, srt=90, pos=4)
-
 # Define default probability density function
 def_distr <- function(x, def_thresh=(-2), rh_o=0.2)
   sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) -
@@ -162,7 +154,6 @@ curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.1),
 xlim=c(0, 1.0), lwd=3,
 xlab="percentage of defaults", ylab="density",
 col="green", main="Distribution of Defaults")
-
 # Plot default distribution with higher correlation
 curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.3),
 xlab="default percentage", ylab="",
@@ -177,7 +168,6 @@ abline(v=def_prob, col="red", lwd=3)
 text(x=def_prob, y=2,
  labels="default probability",
  lwd=2, srt=90, pos=2)
-
 # Plot default distribution with low correlation
 curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.01),
 xlab="default percentage", ylab="", lwd=2,
@@ -186,7 +176,6 @@ col="green", main="Distribution of Defaults")
 curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.99),
 xlab="percentage of defaults", ylab="density",
 add=TRUE, lwd=2, n=10001, col="blue", main="")
-
 # Add legend
 legend(x="top",
  legend=c("high correlation", "low correlation"),
@@ -196,7 +185,6 @@ legend(x="top",
 abline(v=0.1, col="red", lwd=2)
 text(x=0.1, y=10, lwd=2, pos=4,
  labels="default probability")
-
 # Get help for integrate()
 ?integrate
 # Calculate slowly converging integral
@@ -217,7 +205,6 @@ pnorm(-1)
 integrate(dnorm, low=2, up=Inf, mean=1)
 # Expected value over normal distribution
 integrate(function(x) x*dnorm(x), low=2, up=Inf)
-
 # Vasicek model parameters
 rh_o <- 0.1; l_gd <- 0.4
 def_prob <- 0.05; def_thresh <- qnorm(def_prob)
@@ -225,7 +212,6 @@ def_prob <- 0.05; def_thresh <- qnorm(def_prob)
 loss_distr <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
   sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
 integrate(loss_distr, low=0, up=l_gd, def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
-
 # Plot probability distribution of losses
 x11(width=6, height=5)
 curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
@@ -235,7 +221,6 @@ col="blue", main="Portfolio Loss Density")
 # Add line for expected loss
 abline(v=l_gd*def_prob, col="red", lwd=3)
 text(x=l_gd*def_prob-0.001, y=35, labels="expected loss", lwd=3, pos=4)
-
 # Define cumulative default probability function
 cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
   pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
@@ -245,7 +230,6 @@ loss_distr <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
   q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
   sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*q_norm - def_thresh)^2/(2*rh_o) + q_norm^2/2)/l_gd
 }  # end loss_distr
-
 def_prob <- 0.2; def_thresh <- qnorm(def_prob)
 rh_o <- 0.1; l_gd <- 0.4
 at_tach <- 0.15; de_tach <- 0.2
@@ -281,7 +265,6 @@ densi_ty <- sapply(var_s, loss_distr,
 polygon(c(at_tach, var_s, de_tach), density=20,
   c(-1, densi_ty, -1), col="red", border=NA)
 text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
-
 # Add lines for unexpected loss
 abline(v=0.04, col="blue", lwd=3)
 arrows(x0=0.02, y0=35, x1=0.04, y1=35, code=3, lwd=3, cex=0.5)
@@ -291,7 +274,6 @@ abline(v=0.055, col="red", lwd=3)
 arrows(x0=0.0, y0=25, x1=0.055, y1=25, code=3, lwd=3, cex=0.5)
 text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
 text(x=0.055-0.001, y=10, labels="VaR", lwd=2, srt=90, pos=3)
-
 va_r <- 0.04; min_var <- 4*l_gd*def_prob
 # Calculate CVaR
 c_var <- integrate(function(x, ...) x*loss_distr(x, ...),
@@ -305,7 +287,6 @@ col="orange", main="Conditional Value at Risk")
 # Add line for expected loss
 abline(v=l_gd*def_prob, col="red", lwd=3)
 text(x=l_gd*def_prob-0.001, y=10, labels="expected loss", lwd=2, srt=90, pos=3)
-
 # Add lines for VaR
 abline(v=va_r, col="red", lwd=3)
 text(x=va_r-0.001, y=10, labels="VaR",
@@ -318,7 +299,6 @@ densi_ty <- sapply(var_s, loss_distr,
 polygon(c(va_r, var_s, min_var), density=20,
   c(-1, densi_ty, -1), col="red", border=NA)
 text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
-
 # VaR (quantile of the loss distribution)
 var_func <- function(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
   l_gd*pnorm((sqrt(rh_o)*qnorm(x) + def_thresh)/sqrt(1-rh_o))
@@ -330,7 +310,6 @@ col="orange", main="VaR versus Confidence Level")
 # Add line for expected loss
 abline(h=l_gd*def_prob, col="red", lwd=3)
 text(x=0.2, y=l_gd*def_prob, labels="expected loss", lwd=2, pos=3)
-
 # Integrate loss_distr() over full range
 integrate(loss_distr, low=0.0, up=l_gd,
     def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
@@ -351,7 +330,6 @@ plot(x=1-level_s[, "level_s"],
      y=level_s[, "VaRs"], lwd=2,
      xlab="confidence level", ylab="VaRs",
      t="l", main="VaR Values and Confidence Levels")
-
 # Calculate CVaR values
 cvar_s <- sapply(var_s, function(va_r, ...) {
   integrate(function(x, ...) x*loss_distr(x, ...),
@@ -371,7 +349,6 @@ plot(x=1-level_s[, "level_s"],
      ylim=range(level_s[, c("VaRs", "CVaRs")]),
      xlab="confidence level", ylab="CVaRs",
      main="CVaR Values and Confidence Levels")
-
 # Add VaRs
 lines(x=1-level_s[, "level_s"], y=level_s[, "VaRs"], lwd=2)
 # Add legend
@@ -381,7 +358,6 @@ correlation = 10%
 loss given default = 40%",
  inset=0.1, cex=0.8, bg="white", bty="n",
  lwd=6, lty=1, col=c("red", "black"))
-
 # Define model parameters
 n_assets <- 300; n_simu <- 1000; l_gd <- 0.4
 # Define correlation parameters
@@ -395,7 +371,6 @@ system_atic <- rnorm(n_simu)
 asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
 asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
 loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
-
 # Calculate VaR from confidence level
 conf_level <- 0.95
 va_r <- quantile(loss_es, conf_level)
@@ -415,7 +390,6 @@ text(x=expected_loss, y=(6*y_max/7), labels="expected loss",
 # Add vertical line for VaR
 abline(v=va_r, col="red", lwd=3)
 text(x=va_r, y=4*y_max/5, labels="VaR", lwd=2, pos=4)
-
 # Draw shaded polygon for CVaR
 in_dex <- (densi_ty$x > va_r)
 x_var <- c(min(densi_ty$x[in_dex]), densi_ty$x[in_dex], max(densi_ty$x))
@@ -430,14 +404,12 @@ text(x_max, y_max, labels=paste0(
  "VaR = ", format(100*va_r, digits=3), "%", "\n",
  "CVaR = ", format(100*c_var, digits=3), "%"),
      adj=c(1, 1), cex=0.8, lwd=2)
-
 # Calculate VaRs from confidence levels
 level_s <- seq(0.93, 0.99, 0.01)
 var_s <- quantile(loss_es, probs=level_s)
 plot(x=level_s, y=var_s, t="l", lwd=2,
      xlab="confidence level", ylab="VaRs",
      main="Simulated VaR and Confidence Levels")
-
 # Calculate CVaRs
 cvar_s <- sapply(var_s, function(va_r) {
   mean(loss_es[loss_es >= va_r])
@@ -457,14 +429,12 @@ plot(x=level_s, y=cvar_s[, "cvar_s"],
      ylim=range(cvar_s),
      xlab="confidence level", ylab="CVaRs",
      main="Simulated CVaR and Confidence Levels")
-
 # Add VaRs
 lines(x=level_s, y=cvar_s[, "var_s"], lwd=2)
 # Add legend
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=0.8, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
-
 calc_var <- function(def_thresh, # Default thresholds
                l_gd=0.6, # loss given default
                rho_sqrt, rho_sqrtm, # asset correlation
@@ -487,7 +457,6 @@ calc_var <- function(def_thresh, # Default thresholds
   names(cvar_s) <- level_s
   c(var_s, cvar_s)
 }  # end calc_var
-
 # Define model parameters
 n_assets <- 300; n_simu <- 1000; l_gd <- 0.4
 rh_o <- 0.2; rho_sqrt <- sqrt(rh_o); rho_sqrtm <- sqrt(1-rh_o)
@@ -512,7 +481,6 @@ std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
 # Scale the standard errors of VaRs and CVaRs
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
 std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-
 # Plot the standard errors of VaRs and CVaRs
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -525,7 +493,6 @@ lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=0.8, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
-
 library(parallel)  # load package parallel
 n_cores <- detectCores() - 1  # number of cores
 clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
@@ -550,7 +517,6 @@ std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
 # Scale the standard errors of VaRs and CVaRs
 std_error_var_scaled <- std_error_var[2, ]/std_error_var[1, ]
 std_error_cvar_scaled <- std_error_cvar[2, ]/std_error_cvar[1, ]
-
 # Plot the standard errors of VaRs and CVaRs
 x11(width=6, height=5)
 plot(x=colnames(std_error_cvar),
@@ -562,7 +528,6 @@ lines(x=colnames(std_error_var), y=std_error_var_scaled, lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=0.8, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
-
 calc_var <- function(def_probs, # Default probabilities
                l_gd=0.6, # loss given default
                rho_sqrt, rho_sqrtm, # asset correlation
@@ -586,7 +551,6 @@ calc_var <- function(def_probs, # Default probabilities
   names(cvar_s) <- level_s
   c(var_s, cvar_s)
 }  # end calc_var
-
 library(parallel)  # load package parallel
 n_cores <- detectCores() - 1  # number of cores
 clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
@@ -608,7 +572,6 @@ std_error_var_param <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 std_error_cvar_param <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-
 # Plot the standard errors of VaRs under uncertain default probabilities
 x11(width=6, height=5)
 plot(x=colnames(std_error_var),
@@ -623,13 +586,11 @@ legend(x=0.95, y=0.02, bty="n",
  legend=c("VaR Fixed Def Probs", "VaR Random Def Probs"),
  title=NULL, inset=0.05, cex=1.0, bg="white",
  lwd=6, lty=1, col=c("black", "red"))
-
 # Scale the standard errors of VaRs and CVaRs
 std_error_var_scaled <- std_error_var_param[2, ]/
   std_error_var_param[1, ]
 std_error_cvar_scaled <- std_error_cvar_param[2, ]/
   std_error_cvar_param[1, ]
-
 # Plot the standard errors of VaRs and CVaRs
 x11(width=6, height=5)
 plot(x=colnames(std_error_cvar_param),
@@ -642,13 +603,10 @@ lines(x=names(std_error_var_scaled), y=std_error_var_scaled, lwd=3)
 legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
  title=NULL, inset=0.05, cex=1.0, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
-
 NA
-
 App setup code that runs only once at startup.
 n_data <- 1e4
 std_dev <- 1.0
-
 Define the user interface
 inter_face <- shiny::fluidPage(
   # Create numeric input for the number of data points.
@@ -659,7 +617,6 @@ inter_face <- shiny::fluidPage(
   # Render plot in a panel.
   plotOutput("plo_t", height=300, width=500)
 )  # end user interface
-
 Define the server function
 ser_ver <- function(input, output) {
   output$plo_t <- shiny::renderPlot({
@@ -670,10 +627,8 @@ ser_ver <- function(input, output) {
     hist(da_ta, xlim=c(-4, 4), main="Histogram of Random Data")
   })  # end renderPlot
 }  # end ser_ver
-
 # Return a Shiny app object
 shiny::shinyApp(ui=inter_face, server=ser_ver)
-
 Create elements of the user interface
 inter_face <- shiny::fluidPage(
   titlePanel("VWAP Moving Average"),
@@ -689,7 +644,6 @@ inter_face <- shiny::fluidPage(
   # Create output plot panel
   mainPanel(dygraphs::dygraphOutput("dy_graph"), width=12)
 )  # end fluidPage interface
-
 Define the server function
 ser_ver <- shiny::shinyServer(function(input, output) {
   # Get the close and volume data in a reactive environment
@@ -701,7 +655,6 @@ ser_ver <- shiny::shinyServer(function(input, output) {
     # Return the data
     cbind(clos_e, vol_ume)
   })  # end reactive code
-
   # Calculate the VWAP indicator in a reactive environment
   v_wap <- shiny::reactive({
     # Get model parameters from input argument
@@ -718,7 +671,6 @@ ser_ver <- shiny::shinyServer(function(input, output) {
     colnames(da_ta) <- c(input$sym_bol, "VWAP")
     da_ta
   })  # end reactive code
-
   # Return the dygraph plot to output argument
   output$dy_graph <- dygraphs::renderDygraph({
     col_names <- colnames(v_wap())
@@ -729,28 +681,22 @@ dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="bl
 dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
   })  # end output plot
 })  # end server code
-
 Return a Shiny app object
 shiny::shinyApp(ui=inter_face, server=ser_ver)
-
 Define the server function
 ser_ver <- shiny::shinyServer(function(input, output) {
-
   # Create an empty list of reactive values.
   value_s <- reactiveValues()
-
   # Get input parameters from the user interface.
   n_rows <- reactive({
     # Add n_rows to list of reactive values.
     value_s$n_rows <- input$n_rows
     input$n_rows
   })  # end reactive code
-
   # Broadcast a message to the console when the button is pressed.
   observeEvent(eventExpr=input$but_ton, handlerExpr={
     cat("Input button pressed\n")
   })  # end observeEvent
-
   # Send the data when the button is pressed.
   da_ta <- eventReactive(eventExpr=input$but_ton, valueExpr={
     # eventReactive() executes on input$but_ton, but not on n_rows() or input$n_rows.
@@ -760,7 +706,6 @@ ser_ver <- shiny::shinyServer(function(input, output) {
     da_ta
   })  # end eventReactive
   #   da_ta
-
   # Draw table of the data when the button is pressed.
   observeEvent(eventExpr=input$but_ton, handlerExpr={
     da_ta <- da_ta()
@@ -769,8 +714,6 @@ ser_ver <- shiny::shinyServer(function(input, output) {
     cat("Drawing table\n")
     output$tabl_e <- renderTable(da_ta)
   })  # end observeEvent
-
 })  # end server code
-
 Return a Shiny app object
 shiny::shinyApp(ui=inter_face, server=ser_ver)

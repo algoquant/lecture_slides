@@ -1,11 +1,9 @@
 # Formula of linear model with zero intercept
 for_mula <- z ~ x + y - 1
 for_mula
-
 # Collapse vector of strings into single text string
 paste0("x", 1:5)
 paste(paste0("x", 1:5), collapse="+")
-
 # Create formula from text string
 for_mula <- as.formula(
   # Coerce text strings to formula
@@ -17,7 +15,6 @@ class(for_mula)
 for_mula
 # Modify the formula using "update"
 update(for_mula, log(.) ~ . + beta)
-
 # Define explanatory (design) variable
 len_gth <- 100
 set.seed(1121)  # initialize random number generator
@@ -25,7 +22,6 @@ de_sign <- runif(len_gth)
 noise <- rnorm(len_gth)
 # Response equals linear form plus random noise
 res_ponse <- (1 + de_sign + noise)
-
 # Calculate de-meaned explanatory (design) and response vectors
 design_zm <- de_sign - mean(de_sign)
 response_zm <- res_ponse - mean(res_ponse)
@@ -33,7 +29,6 @@ response_zm <- res_ponse - mean(res_ponse)
 be_ta <- sum(design_zm*response_zm)/sum(design_zm^2)
 # Calculate the regression alpha
 al_pha <- mean(res_ponse) - be_ta*mean(de_sign)
-
 # Specify regression formula
 for_mula <- res_ponse ~ de_sign
 mod_el <- lm(for_mula)  # Perform regression
@@ -43,7 +38,6 @@ eval(mod_el$call$formula)  # Regression formula
 mod_el$coeff  # Regression coefficients
 all.equal(coef(mod_el), c(al_pha, be_ta),
   check.attributes=FALSE)
-
 fit_ted <- (al_pha + be_ta*de_sign)
 all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
 x11(width=5, height=4)  # Open x11 for plotting
@@ -56,14 +50,12 @@ title(main="Simple Regression", line=0.5)
 abline(mod_el, lwd=3, col="blue")
 # Plot fitted (predicted) response values
 points(x=de_sign, y=mod_el$fitted.values, pch=16, col="blue")
-
 # Plot response without noise
 lines(x=de_sign, y=(res_ponse-noise), col="red", lwd=3)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.08, cex=0.8, lwd=6,
        lty=1, col=c("red", "blue"))
-
 # Calculate the residuals
 fit_ted <- (al_pha + be_ta*de_sign)
 residual_s <- (res_ponse - fit_ted)
@@ -74,7 +66,6 @@ all.equal(sum(residual_s*de_sign), target=0)
 all.equal(sum(residual_s*fit_ted), target=0)
 # Sum of residuals is equal to zero
 all.equal(mean(residual_s), target=0)
-
 x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
@@ -85,7 +76,6 @@ colnames(da_ta) <- c("design", "residuals")
 plot(da_ta)
 title(main="Residuals of the Linear Regression", line=-1)
 abline(h=0, lwd=3, col="red")
-
 # Degrees of freedom of residuals
 deg_free <- mod_el$df.residual
 # Standard deviation of residuals
@@ -95,11 +85,9 @@ beta_stderror <- resid_stddev/sqrt(sum(design_zm^2))
 # Standard error of alpha
 alpha_stderror <- resid_stddev*
   sqrt(1/len_gth + mean(de_sign)^2/sum(design_zm^2))
-
 model_sum <- summary(mod_el)  # Copy regression summary
 model_sum  # Print the summary to console
 attributes(model_sum)$names  # get summary elements
-
 model_sum$coeff
 # Standard errors
 model_sum$coefficients[2, "Std. Error"]
@@ -112,7 +100,6 @@ model_sum$adj.r.squared
 # F-statistic and ANOVA
 model_sum$fstatistic
 anova(mod_el)
-
 set.seed(1121)  # initialize random number generator
 # High noise compared to coefficient
 res_ponse <- (1 + de_sign + rnorm(len_gth, sd=8))
@@ -120,7 +107,6 @@ mod_el <- lm(for_mula)  # Perform regression
 # Values of regression coefficients are not
 # Statistically significant
 summary(mod_el)
-
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 reg_stats <- function(std_dev) {  # Noisy regression
   set.seed(1121)  # initialize number generator
@@ -149,7 +135,6 @@ for (in_dex in 1:NCOL(mat_stats)) {
   title(main=colnames(mat_stats)[in_dex], line=-1.0)
   axis(1, at=1:(NROW(mat_stats)), labels=rownames(mat_stats))
 }  # end for
-
 reg_stats <- function(da_ta) {  # get regression
 # Perform regression and get summary
   col_names <- colnames(da_ta)
@@ -180,17 +165,14 @@ for (in_dex in 1:NCOL(mat_stats)) {
   axis(1, at=1:(NROW(mat_stats)),
  labels=rownames(mat_stats))
 }  # end for
-
 # Set plot paramaters - margins and font scale
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2, 2))  # Plot 2x2 panels
 plot(mod_el)  # Plot diagnostic scatterplots
 plot(mod_el, which=2)  # Plot just Q-Q
-
 library(lmtest)  # Load lmtest
 # Perform Durbin-Watson test
 lmtest::dwtest(mod_el)
-
 x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
@@ -206,12 +188,10 @@ plot(x=de_sign[or_der, 2], y=diag(influ_ence)[or_der],
      type="l", lwd=3, col="blue",
      xlab="predictor", ylab="leverage",
      main="Leverage as Function of Predictor")
-
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
 # The influence matrix is idempotent
 all.equal(influ_ence, influ_ence %*% influ_ence)
-
 # Calculate covariance and standard deviations of fitted values
 beta_s <- design_inv %*% res_ponse
 fit_ted <- drop(de_sign %*% beta_s)
@@ -226,7 +206,6 @@ fit_sd <- fit_sd[order(fit_ted), ]
 plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Univariate Regression")
-
 # Calculate response without random noise for univariate regression,
 # equal to weighted sum over columns of de_sign.
 beta_s <- c(-1, 1)
@@ -239,7 +218,6 @@ fit_ted <- lapply(1:50, function(it) {
   influ_ence %*% res_ponse
 })  # end lapply
 fit_ted <- rutils::do_call(cbind, fit_ted)
-
 x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
@@ -254,7 +232,6 @@ legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
        lty=1, col=c("red", "blue"))
-
 # Inverse of design matrix squared
 design_2 <- MASS::ginv(crossprod(de_sign))
 # Define new predictors
@@ -276,7 +253,6 @@ predic_tions <- sapply(new_data, function(predic_tor) {
   c(prediction=predic_tion, stddev=predict_sd)
 })  # end sapply
 predic_tions <- t(predic_tions)
-
 # Prepare plot data
 x_data <- c(de_sign[,2], new_data)
 x_lim <- range(x_data)
@@ -299,7 +275,6 @@ legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
        lty=1, col=c("blue", "red", "green"))
-
 # Perform univariate regression
 predic_tor <- de_sign[, 2]
 mod_el <- lm(res_ponse ~ predic_tor)
@@ -317,7 +292,6 @@ plot(res_ponse ~ predic_tor,
      ylim=range(res_ponse, predict_lm),
      xlab="predictor", ylab="fitted or predicted",
      main="Predictions from lm() Regression")
-
 abline(mod_el, col="blue", lwd=3)
 with(predict_lm, {
   points(x=new_data$predic_tor, y=fit, pch=16, col="blue")
@@ -328,7 +302,6 @@ legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
        lty=1, col=c("blue", "red", "green"))
-
 set.seed(1121)
 library(lmtest)
 # Spurious regression in unit root time series
@@ -343,7 +316,6 @@ model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- lmtest::dwtest(mod_el)
 c(dw_test$statistic[[1]], dw_test$p.value)
-
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 plot(for_mula, xlab="", ylab="")  # Plot scatterplot using formula
@@ -351,7 +323,6 @@ title(main="Spurious Regression", line=-1)
 # Add regression line
 abline(mod_el, lwd=2, col="red")
 plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
-
 # Define design matrix
 n_rows <- 100
 n_cols <- 5
@@ -364,7 +335,6 @@ weight_s <- sample(3:(n_cols+2))
 # Response equals weighted de_sign plus random noise
 noise <- rnorm(n_rows, sd=5)
 res_ponse <- (-1 + de_sign %*% weight_s + noise)
-
 # Perform multivariate regression using lm()
 mod_el <- lm(res_ponse ~ de_sign)
 # Solve multivariate regression using matrix algebra
@@ -380,7 +350,6 @@ al_pha <- mean(res_ponse) - sum(colSums(de_sign)*beta_s)/n_rows
 all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
 # Compare with actual coefficients
 all.equal(c(-1, weight_s), c(al_pha, beta_s), check.attributes=FALSE)
-
 # Add intercept column to design matrix
 de_sign <- cbind(rep(1, NROW(de_sign)), de_sign)
 n_cols <- NCOL(de_sign)
@@ -393,7 +362,6 @@ beta_s <- design_inv %*% res_ponse
 # Perform multivariate regression without intercept term
 mod_el <- lm(res_ponse ~ de_sign - 1)
 all.equal(drop(beta_s), coef(mod_el), check.attributes=FALSE)
-
 # Calculate fitted values from regression coefficients
 fit_ted <- drop(de_sign %*% beta_s)
 all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
@@ -406,7 +374,6 @@ sapply(residual_s %*% de_sign, all.equal, target=0)
 all.equal(sum(residual_s*fit_ted), target=0)
 # Sum of residuals is equal to zero
 all.equal(sum(residual_s), target=0)
-
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
 # The influence matrix is idempotent
@@ -417,7 +384,6 @@ all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
 # Calculate fitted values from regression coefficients
 fit_ted <- drop(de_sign %*% beta_s)
 all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
-
 # Calculate zero mean fitted values
 design_zm <- t(t(de_sign) - colMeans(de_sign))
 fitted_zm <- drop(design_zm %*% beta_s)
@@ -435,7 +401,6 @@ influence_zm <- design_zm %*% MASS::ginv(design_zm)
 all.equal(fitted_zm,
   drop(influence_zm %*% response_zm),
   check.attributes=FALSE)
-
 library(lmtest)  # Load lmtest
 # Define design matrix
 ex_plan <- 1:30
@@ -457,7 +422,6 @@ plot(res_p ~ ex_plan)
 abline(model_ovb, lwd=2, col="red")
 title(main="Omitted Variable Regression", line=-1)
 plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
-
 # Regression model summary
 model_sum <- summary(mod_el)
 # Degrees of freedom of residuals
@@ -467,7 +431,6 @@ deg_free <- (n_rows - n_cols)
 all.equal(deg_free, model_sum$df[2])
 # Variance of residuals
 var_resid <- sum(residual_s^2)/deg_free
-
 # Inverse of design matrix squared
 design_2 <- MASS::ginv(crossprod(de_sign))
 # design_2 <- t(de_sign) %*% de_sign
@@ -488,12 +451,10 @@ all.equal(beta_pvals, model_sum$coeff[, 4], check.attributes=FALSE)
 # to the inverse of the square
 all.equal(MASS::ginv(crossprod(de_sign)),
   design_inv %*% t(design_inv))
-
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
 # The influence matrix is idempotent
 all.equal(influ_ence, influ_ence %*% influ_ence)
-
 # Calculate covariance and standard deviations of fitted values
 fit_covar <- var_resid*influ_ence
 fit_sd <- sqrt(diag(fit_covar))
@@ -504,7 +465,6 @@ fit_sd <- fit_sd[order(fit_ted), ]
 plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Multivariate Regression")
-
 # Load time series of ETF percentage returns
 re_turns <- rutils::etf_env$re_turns[, c("XLF", "XLE")]
 re_turns <- na.omit(re_turns)
@@ -530,7 +490,6 @@ model_sum$coefficients
 dim(boot_data)
 t(apply(boot_data, MARGIN=1,
 function(x) c(mean=mean(x), std_error=sd(x))))
-
 # New data predictor is a data frame or row vector
 set.seed(1121)
 new_data <- data.frame(matrix(c(1, rnorm(5)), nr=1))
@@ -539,7 +498,6 @@ colnames(new_data) <- col_names
 new_datav <- as.matrix(new_data)
 predic_tion <- drop(new_datav %*% beta_s)
 std_dev <- drop(sqrt(new_datav %*% beta_covar %*% t(new_datav)))
-
 # Create formula from text string
 for_mula <- paste0("res_ponse ~ ",
   paste(colnames(de_sign), collapse=" + "), " - 1")
@@ -557,13 +515,11 @@ predict_low <- (predic_tion - t_quant*std_dev)
 all.equal(predict_lm[1, "fit"], predic_tion)
 all.equal(predict_lm[1, "lwr"], predict_low)
 all.equal(predict_lm[1, "upr"], predict_high)
-
 # TSS = ESS + RSS
 t_ss <- sum((res_ponse-mean(res_ponse))^2)
 e_ss <- sum((fit_ted-mean(fit_ted))^2)
 r_ss <- sum(residual_s^2)
 all.equal(t_ss, e_ss + r_ss)
-
 # Set regression attribute for intercept
 attributes(mod_el$terms)$intercept <- 1
 # Regression summary
@@ -575,7 +531,6 @@ all.equal(r_squared, model_sum$r.squared)
 cor_fitted <- drop(cor(res_ponse, fit_ted))
 # Squared correlation between response and fitted values
 all.equal(cor_fitted^2, r_squared)
-
 n_rows <- NROW(de_sign)
 n_cols <- NCOL(de_sign)
 # Degrees of freedom of residuals
@@ -584,7 +539,6 @@ deg_free <- (n_rows - n_cols)
 r_squared_adj <- (1-sum(residual_s^2)/deg_free/var(res_ponse))
 # Compare adjusted R-squared from lm()
 all.equal(drop(r_squared_adj), model_sum$adj.r.squared)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot three curves in loop
@@ -595,14 +549,12 @@ curve(expr=df(x, df1=deg_free[in_dex], df2=3),
 xlim=c(0, 4), xlab="", ylab="", lwd=2,
 col=col_ors[in_dex], add=as.logical(in_dex-1))
 }  # end for
-
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
 lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
        lab_els, cex=0.8, lwd=2, lty=1, col=col_ors)
-
 sigma_x <- var(rnorm(n_rows))
 sigma_y <- var(rnorm(n_rows))
 f_ratio <- sigma_x/sigma_y
@@ -610,7 +562,6 @@ f_ratio <- sigma_x/sigma_y
 pf(f_ratio, n_rows-1, n_rows-1)
 # p-value for f_ratios
 1-pf((10:20)/10, n_rows-1, n_rows-1)
-
 # F-statistic from lm()
 model_sum$fstatistic
 # Degrees of freedom of residuals
@@ -620,7 +571,6 @@ f_stat <- (e_ss/(n_cols-1))/(r_ss/deg_free)
 all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=f_stat, df1=n_cols-1, df2=n_rows-n_cols)
-
 # Calculate ETF returns
 re_turns <- na.omit(rutils::etf_env$re_turns)
 # Perform singular value decomposition
@@ -646,7 +596,6 @@ squared_inv <- ei_gen$vectors[, eigen_max] %*%
   (t(ei_gen$vectors[, eigen_max]) / ei_gen$values[eigen_max])
 mp_inverse <- squared_inv %*% t(re_turns)
 all.equal(inv_reg, mp_inverse, check.attributes=FALSE)
-
 # Define transformation matrix
 trans_mat <- matrix(runif(n_cols^2, min=(-1), max=1), ncol=n_cols)
 # Calculate linear combinations of design columns
@@ -655,7 +604,6 @@ design_trans <- de_sign %*% trans_mat
 influence_trans <- design_trans %*% MASS::ginv(design_trans)
 # Compare the influence matrices
 all.equal(influ_ence, influence_trans)
-
 lamb_da <- c(0.5, 1, 1.5)
 col_ors <- c("red", "blue", "green")
 # Plot three curves in loop
@@ -664,7 +612,6 @@ for (in_dex in 1:3) {
 xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
 col=col_ors[in_dex], add=(in_dex>1))
 }  # end for
-
 # Add title
 title(main="Logistic function", line=0.5)
 # Add legend
@@ -672,7 +619,6 @@ legend("topleft", title="Scale parameters",
        paste("lambda", lamb_da, sep="="),
        inset=0.05, cex=0.8, lwd=6, bty="n",
        lty=1, col=col_ors)
-
 set.seed(1121)  # Reset random number generator
 # Simulate overlapping scores data
 sample1 <- runif(100, max=0.6)
@@ -686,7 +632,6 @@ res_ponse <- c(logical(100), !logical(100))
 g_lm <- glm(res_ponse ~ predic_tor, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
-
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 or_der <- order(predic_tor)
@@ -707,7 +652,6 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
  legend=c("logistic fit", "TRUE", "FALSE"),
  col=c("orange", "red", "blue"),
  text.col=c("black", "red", "blue"))
-
 # Likelihood function of binomial distribution
 likeli_hood <- function(prob, b) {
   b*log(prob) + (1-b)*log(1-prob)
@@ -721,7 +665,6 @@ curve(expr=likeli_hood(x, b=0), lwd=3, col="red", add=TRUE)
 legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
        title=NULL, inset=0.3, cex=1.0, lwd=6,
        lty=1, col=c("blue", "red"))
-
 # Specify design matrix
 de_sign=cbind(intercept=rep(1, NROW(res_ponse)), predic_tor)
 # Likelihood function of the logistic model
@@ -730,7 +673,6 @@ likeli_hood <- function(coeff, res_ponse, de_sign) {
   -sum(res_ponse*log(probs) + (1-res_ponse)*log((1-probs)))
 }  # end likeli_hood
 # Run likelihood function
-
 # Rastrigin function with vector argument for optimization
 rastri_gin <- function(vec_tor, pa_ram=25) {
   sum(vec_tor^2 - pa_ram*cos(vec_tor))
@@ -753,7 +695,6 @@ op_tim <- optim(par=vec_tor, fn=rastri_gin,
 op_tim$par
 op_tim$value
 rastri_gin(op_tim$par, pa_ram=1)
-
 # Initial parameters
 par_init <- c(1, 1)
 # Find max likelihood parameters using steepest descent optimizer
@@ -772,21 +713,14 @@ unname(g_lm$coefficients)
 sqrt(diag(solve(optim_fit$hessian)))
 model_sum <- summary(g_lm)
 model_sum$coefficients[, 2]
-
 library(ISLR)  # Load package ISLR
 # get documentation for package tseries
 packageDescription("ISLR")  # get short description
-
 help(package="ISLR")  # Load help page
-
 library(ISLR)  # Load package ISLR
-
 data(package="ISLR")  # list all datasets in ISLR
-
 ls("package:ISLR")  # list all objects in ISLR
-
 detach("package:ISLR")  # Remove ISLR from search path
-
 # Coerce the student and default columns into Boolean
 Default <- ISLR::Default
 Default$default <- (Default$default == "Yes")
@@ -798,7 +732,6 @@ summary(Default)
 sapply(Default, class)
 dim(Default)
 head(Default)
-
 # Plot data points for non-defaulters
 x11(width=6, height=5)
 x_lim <- range(balance); y_lim <- range(income)
@@ -812,12 +745,10 @@ points(income ~ balance, pch=4, lwd=2, col="red",
 # Add legend
 legend(x="topright", legend=c("non-defaulters", "defaulters"),
  bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
-
 # Wilcoxon test for balance predictor
 wilcox.test(balance[de_fault], balance[!de_fault])
 # Wilcoxon test for income predictor
 wilcox.test(income[de_fault], income[!de_fault])
-
 x11(width=6, height=5)
 par(mfrow=c(1,2))  # Set plot panels
 # Balance boxplot
@@ -826,12 +757,10 @@ boxplot(formula=balance ~ de_fault,
 # Income boxplot
 boxplot(formula=income ~ de_fault,
   col="lightgrey", main="income", xlab="Default")
-
 # Fit logistic regression model
 g_lm <- glm(de_fault ~ balance, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
-
 x11(width=6, height=5)
 par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
 plot(x=balance, y=de_fault,
@@ -842,7 +771,6 @@ lines(x=balance[or_der], y=g_lm$fitted.values[or_der], col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n", lwd=6,
  legend=c("defaults", "logit fitted values"),
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
-
 # Calculate cumulative defaults
 to_tal <- sum(de_fault)
 default_s <- sapply(balance, function(lim_it) {
@@ -852,7 +780,6 @@ default_s <- sapply(balance, function(lim_it) {
 g_lm <- glm(cbind(default_s, to_tal-default_s) ~ balance,
   family=binomial(logit))
 summary(g_lm)
-
 plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
      main="Cumulative Defaults Versus Balance",
      xlab="credit balance", ylab="cumulative defaults")
@@ -862,7 +789,6 @@ col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n",
  legend=c("cumulative defaults", "fitted values"),
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
-
 # Fit multifactor logistic regression model
 col_names <- colnames(Default)
 for_mula <- as.formula(paste(col_names[1],
@@ -870,7 +796,6 @@ for_mula <- as.formula(paste(col_names[1],
 for_mula
 g_lm <- glm(for_mula, data=Default, family=binomial(logit))
 summary(g_lm)
-
 # Calculate cumulative defaults
 cum_defaults <- sapply(balance, function(lim_it) {
 c(student=sum(de_fault[stu_dent & (balance <= lim_it)]),
@@ -879,7 +804,6 @@ c(student=sum(de_fault[stu_dent & (balance <= lim_it)]),
 total_defaults <- c(student=sum(stu_dent & de_fault),
       stu_dent=sum(!stu_dent & de_fault))
 cum_defaults <- t(cum_defaults / total_defaults)
-
 # Plot cumulative defaults
 par(mfrow=c(1,2))  # Set plot panels
 or_der <- order(balance)
@@ -893,7 +817,6 @@ legend(x="topleft", bty="n",
 # Balance boxplot for student factor
 boxplot(formula=balance ~ !stu_dent,
   col="lightgrey", main="balance", xlab="Student")
-
 # Perform in-sample forecast from logistic regression model
 forecast_s <- predict(g_lm, type="response")
 all.equal(g_lm$fitted.values, forecast_s)
@@ -913,7 +836,6 @@ forecast_s <- predict(g_lm, newdata=test_data, type="response")
 # Calculate confusion matrix out-of-sample
 table(actual=!test_data$de_fault, 
 forecast=(forecast_s < thresh_old))
-
 # Calculate confusion matrix out-of-sample
 confu_sion <- table(actual=!test_data$de_fault, 
 forecast=(forecast_s < thresh_old))
@@ -922,7 +844,6 @@ confu_sion
 sum(!test_data$de_fault & (forecast_s > thresh_old))
 # Calculate FALSE negative (type II error)
 sum(test_data$de_fault & (forecast_s < thresh_old))
-
 # Calculate FALSE positive and FALSE negative rates
 confu_sion <- confu_sion / rowSums(confu_sion)
 c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
@@ -938,7 +859,6 @@ comment=FALSE, size="scriptsize",
 include.rownames=TRUE,
 include.colnames=TRUE)
 # end unsuccessful attempt to draw confusion table using xtable
-
 # Confusion matrix as function of thresh_old
 con_fuse <- function(actu_al, forecast_s, thresh_old) {
     confu_sion <- table(actu_al, (forecast_s < thresh_old))
@@ -960,7 +880,6 @@ true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lag_it(true_pos))/2
 false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
-
 # Plot ROC Curve for Defaults
 x11(width=5, height=5)
 plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],

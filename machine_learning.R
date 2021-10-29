@@ -1,10 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
-options(digits=3)
-options(width=80, dev='pdf')
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-
 # Create random real symmetric matrix
 mat_rix <- matrix(runif(25), nc=5)
 mat_rix <- mat_rix + t(mat_rix)
@@ -16,7 +9,6 @@ dim(eigen_vec)
 barplot(ei_gen$values, xlab="", ylab="", las=3,
   names.arg=paste0("ev", 1:NROW(ei_gen$values)),
   main="Eigenvalues of a real symmetric matrix")
-
 # eigenvectors form an orthonormal basis
 round(t(eigen_vec) %*% eigen_vec, digits=4)
 # Diagonalize matrix using eigenvector matrix
@@ -28,7 +20,6 @@ de_comp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
 # diago_nal <- diag(ei_gen$values)
 # de_comp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
 all.equal(mat_rix, de_comp)
-
 # Create random positive semi-definite matrix
 mat_rix <- matrix(runif(25), nc=5)
 mat_rix <- t(mat_rix) %*% mat_rix
@@ -39,7 +30,6 @@ ei_gen$values
 barplot(ei_gen$values, las=3, xlab="", ylab="",
   names.arg=paste0("ev", 1:NROW(ei_gen$values)),
   main="Eigenvalues of positive semi-definite matrix")
-
 # Perform singular value decomposition
 mat_rix <- matrix(rnorm(50), nc=5)
 s_vd <- svd(mat_rix)
@@ -48,7 +38,6 @@ all.equal(mat_rix, s_vd$u %*% (s_vd$d*t(s_vd$v)))
 # Columns of U and V are orthonormal
 round(t(s_vd$u) %*% s_vd$u, 4)
 round(t(s_vd$v) %*% s_vd$v, 4)
-
 # Dimensions of left and right matrices
 n_left <- 6 ; n_right <- 4
 # Calculate left matrix
@@ -80,7 +69,6 @@ square_d <- t(mat_rix) %*% mat_rix
 ei_gen <- eigen(square_d)
 all.equal(ei_gen$values, sing_values^2)
 all.equal(abs(ei_gen$vectors), abs(right_mat))
-
 # Create random positive semi-definite matrix
 mat_rix <- matrix(runif(25), nc=5)
 mat_rix <- t(mat_rix) %*% mat_rix
@@ -89,11 +77,9 @@ in_verse <- solve(a=mat_rix)
 # Multiply inverse with matrix
 round(in_verse %*% mat_rix, 4)
 round(mat_rix %*% in_verse, 4)
-
 # Calculate eigenvectors and eigenvalues
 ei_gen <- eigen(mat_rix)
 eigen_vec <- ei_gen$vectors
-
 # Perform eigen decomposition of inverse
 eigen_inverse <- eigen_vec %*% (t(eigen_vec) / ei_gen$values)
 all.equal(in_verse, eigen_inverse)
@@ -101,7 +87,6 @@ all.equal(in_verse, eigen_inverse)
 # diago_nal <- diag(1/ei_gen$values)
 # eigen_inverse <-
 #   eigen_vec %*% (diago_nal %*% t(eigen_vec))
-
 # Random rectangular matrix: n_left > n_right
 n_left <- 6 ; n_right <- 4
 mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
@@ -125,7 +110,6 @@ all.equal(svd_inverse, in_verse)
 # Calculate Moore-Penrose pseudo-inverse
 mp_inverse <- MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
 all.equal(mp_inverse, in_verse)
-
 # Create random singular matrix
 # More columns than rows: n_right > n_left
 n_left <- 4 ; n_right <- 6
@@ -135,32 +119,29 @@ mat_rix <- t(mat_rix) %*% mat_rix
 s_vd <- svd(mat_rix)
 # Incorrect inverse from SVD because of zero singular values
 svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
-# Verify inverse property of mat_rix
+# Inverse property doesn't hold
 all.equal(mat_rix, mat_rix %*% svd_inverse %*% mat_rix)
-
 # Set tolerance for determining zero singular values
 to_l <- sqrt(.Machine$double.eps)
 # Check for zero singular values
 round(s_vd$d, 12)
 not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
-# Calculate generalized inverse from SVD
+# Calculate regularized inverse from SVD
 svd_inverse <- s_vd$v[, not_zero] %*%
   (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
 # Verify inverse property of mat_rix
 all.equal(mat_rix, mat_rix %*% svd_inverse %*% mat_rix)
-# Calculate generalized inverse using MASS::ginv()
+# Calculate regularized inverse using MASS::ginv()
 in_verse <- MASS::ginv(mat_rix)
 all.equal(svd_inverse, in_verse)
 # Calculate Moore-Penrose pseudo-inverse
 mp_inverse <- MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
 all.equal(mp_inverse, in_verse)
-
 # Diagonalize the "unit" matrix
-uni_t <- mat_rix %*% in_verse
-round(uni_t, 4)
+unit_mat <- mat_rix %*% in_verse
+round(unit_mat, 4)
 round(mat_rix %*% in_verse, 4)
-round(t(s_vd$u) %*% uni_t %*% s_vd$v, 4)
-
+round(t(s_vd$u) %*% unit_mat %*% s_vd$v, 4)
 # Define a square matrix
 mat_rix <- matrix(c(1, 2, -1, 2), nc=2)
 vec_tor <- c(2, 1)
@@ -173,7 +154,6 @@ mat_rix %*% solu_tion
 # Calculate solution of linear system
 solu_tion <- solve(a=mat_rix, b=vec_tor)
 mat_rix %*% solu_tion
-
 # Create large random positive semi-definite matrix
 mat_rix <- matrix(runif(1e4), nc=100)
 mat_rix <- t(mat_rix) %*% mat_rix
@@ -202,7 +182,6 @@ summary(microbenchmark(
   sol_ve=solve(mat_rix),
   choles_ky=chol2inv(chol(mat_rix)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Calculate random covariance matrix
 cov_mat <- matrix(runif(25), nc=5)
 cov_mat <- t(cov_mat) %*% cov_mat
@@ -218,7 +197,6 @@ corr_returns <- re_turns %*% choles_ky
 # Calculate covariance matrix
 cov_returns <- crossprod(corr_returns) / (n_rows-1)
 all.equal(cov_mat, cov_returns)
-
 # Simulate random portfolio returns
 n_assets <- 10
 n_rows <- 100
@@ -237,7 +215,6 @@ barplot(ei_gen$values, # Plot eigenvalues
   xlab="", ylab="", las=3,
   names.arg=paste0("ev", 1:NROW(ei_gen$values)),
   main="Eigenvalues of covariance matrix")
-
 # Calculate eigenvectors and eigenvalues
 # as function of number of returns
 n_data <- ((n_assets/2):(2*n_assets))
@@ -250,7 +227,6 @@ e_values <- sapply(n_data, function(x) {
 plot(y=e_values, x=n_data, t="l", xlab="", ylab="", lwd=3, col="blue",
   main="Smallest eigenvalue of covariance matrix
   as function of number of returns")
-
 # Create rectangular matrix with collinear columns
 ran_dom <- matrix(rnorm(10*8), nc=10)
 # Calculate covariance matrix
@@ -273,14 +249,12 @@ reg_inverse <- eigen_vec[, not_zero] %*%
   (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
 # Verify inverse property of mat_rix
 all.equal(in_verse, reg_inverse)
-
 # Calculate regularized inverse matrix using cutoff
-max_eigen <- 3
-in_verse <- eigen_vec[, 1:max_eigen] %*%
-  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+eigen_max <- 3
+in_verse <- eigen_vec[, 1:eigen_max] %*%
+  (t(eigen_vec[, 1:eigen_max]) / ei_gen$values[1:eigen_max])
 # Verify inverse property of mat_rix
 all.equal(in_verse, reg_inverse)
-
 # Create random covariance matrix
 set.seed(1121)
 mat_rix <- matrix(rnorm(5e2), nc=5)
@@ -297,7 +271,6 @@ al_pha <- 0.5
 cov_shrink <- (1-al_pha)*cov_mat + al_pha*tar_get
 # Calculate inverse matrix
 in_verse <- solve(cov_shrink)
-
 re_turns <- scale(na.omit(rutils::etf_env$re_turns
           [, as.character(for_mula)[-1]]))
 crossprod(re_turns) / NROW(re_turns)
@@ -306,7 +279,6 @@ foo <- matrix(c(w_1, w_2, -w_2, w_1), nc=2)
 t(foo) %*% foo
 # bar <- re_turns %*% t(solve(foo))
 (t(bar) %*% bar) / NROW(bar)
-
 cov_mat <- function(re_turns, an_gle=0) {
   w_1 <- cos(an_gle)
   w_2 <- sin(an_gle)
@@ -314,16 +286,13 @@ cov_mat <- function(re_turns, an_gle=0) {
   compo_nents <- re_turns %*% t(mat_rix)
   (t(compo_nents) %*% compo_nents) / NROW(compo_nents)
 }  # end cov_mat
-
 bar <- cov_mat(re_turns, an_gle=pi/4)
 crossprod(re_turns) / NROW(re_turns)
 (t(bar) %*% bar) / NROW(bar)
-
 angle_s <- seq(0, pi/2, by=pi/24)
 cov_mat <- sapply(angle_s, function(an_gle)
   cov_mat(re_turns, an_gle=an_gle)[1, 1])
 plot(x=angle_s, y=cov_mat, t="l")
-
 op_tim <- optimize(
   f=function(an_gle)
     -cov_mat(re_turns, an_gle=an_gle)[1, 1],
@@ -331,49 +300,39 @@ op_tim <- optimize(
 an_gle <- op_tim$minimum
 bar <- cov_mat(re_turns, an_gle=an_gle)
 tan(an_gle)
-
 w_1 <- cos(an_gle)
 w_2 <- sin(an_gle)
 mat_rix <- matrix(c(w_1, -w_2, w_2, w_1), nc=2)
 compo_nents <- re_turns %*% t(mat_rix)
 (t(compo_nents) %*% compo_nents) / NROW(compo_nents)
-
 plot(x=compo_nents[, 1], y=compo_nents[, 2],
      xlim=c(-10, 10), ylim=c(-10, 10))
-
 mod_el <- lm(for_mula, data=re_turns)
 # Get regression coefficients
 coef(summary(mod_el))
-
 foo <- cbind(rnorm(1000, sd=0.2), rnorm(1000)) %*% t(mat_rix)
 (t(foo) %*% foo) / NROW(foo)
 plot(x=foo[, 1], y=foo[, 2])
 summary(lm(foo[, 1] ~ foo[, 2]))
-
 op_tim <- optimize(
   f=function(an_gle)
     -cov_mat(foo, an_gle=an_gle)[1, 1],
   interval=range(angle_s))
 an_gle <- op_tim$minimum
 tan(an_gle)
-
 ###
-
 w_1 <- cos(0.5)
 s_1 <- 1
 s_2 <- 2
 foo <- matrix(c(s_1^2, s_1*s_2*w_1, s_1*s_2*w_1, s_2^2), nc=2)
 eigen(foo)
-
 # Durbin-Watson test of autocorrelation of residuals
 lmtest::dwtest(mod_el)
-
 # Plot scatterplot of returns
 plot(for_mula, data=rutils::etf_env$re_turns,
      main="Regression XLP ~ VTI")
 # Add regression line
 abline(mod_el, lwd=2, col="red")
-
 library(rutils)
 # Select ETF symbols
 sym_bols <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
@@ -401,7 +360,6 @@ sapply(re_turns, sd)
 # re_turns <- re_turns/sqrt(rowSums(re_turns^2)/(NCOL(re_turns)-1))
 # re_turns <- t(re_turns)
 # re_turns <- xts::xts(re_turns, index(price_s))
-
 # Calculate correlation matrix
 cor_mat <- cor(re_turns)
 # Reorder correlation matrix based on clusters
@@ -419,53 +377,49 @@ title("ETF Correlation Matrix", line=1)
 # Draw rectangles on the correlation matrix plot
 corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
   method="complete", col="red")
-
 # create initial vector of portfolio weights
 n_weights <- NROW(sym_bols)
 weight_s <- rep(1/sqrt(n_weights), n_weights)
 names(weight_s) <- sym_bols
 # Objective function equal to minus portfolio variance
-object_ive <- function(weight_s, re_turns) {
+objec_tive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   -sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2
-}  # end object_ive
+}  # end objec_tive
 # Objective for equal weight portfolio
-object_ive(weight_s, re_turns)
+objec_tive(weight_s, re_turns)
 # Compare speed of vector multiplication methods
 summary(microbenchmark(
   trans_pose=(t(re_turns[, 1]) %*% re_turns[, 1]),
   s_um=sum(re_turns[, 1]^2),
   times=10))[, c(1, 4, 5)]
-
 # Find weights with maximum variance
 op_tim <- optim(par=weight_s,
-  fn=object_ive,
+  fn=objec_tive,
   re_turns=re_turns,
   method="L-BFGS-B",
   upper=rep(10.0, n_weights),
   lower=rep(-10.0, n_weights))
 # Optimal weights and maximum variance
 weights_1 <- op_tim$par
--object_ive(weights_1, re_turns)
+-objec_tive(weights_1, re_turns)
 # Plot first principal component weights
 barplot(weights_1, names.arg=names(weights_1), xlab="", ylab="",
   main="First Principal Component Weights")
-
 # PC1 returns
 pc_1 <- drop(re_turns %*% weights_1)
 # Redefine objective function
-object_ive <- function(weight_s, re_turns) {
+objec_tive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   -sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2 +
     1e7*(sum(weights_1*weight_s))^2
-}  # end object_ive
+}  # end objec_tive
 # Find second PC weights using parallel DEoptim
-op_tim <- DEoptim::DEoptim(fn=object_ive,
+op_tim <- DEoptim::DEoptim(fn=objec_tive,
   upper=rep(10, NCOL(re_turns)),
   lower=rep(-10, NCOL(re_turns)),
   re_turns=re_turns, control=list(parVar="weights_1",
     trace=FALSE, itermax=1000, parallelType=1))
-
 # PC2 weights
 weights_2 <- op_tim$optim$bestmem
 names(weights_2) <- colnames(re_turns)
@@ -476,7 +430,6 @@ pc_2 <- drop(re_turns %*% weights_2)
 # Plot second principal component loadings
 barplot(weights_2, names.arg=names(weights_2), xlab="", ylab="",
   main="Second Principal Component Loadings")
-
 # Calculate eigenvectors and eigenvalues
 ei_gen <- eigen(cor_mat)
 ei_gen$vectors
@@ -492,7 +445,6 @@ all.equal(ei_gen$values[2], var(pc_2), check.attributes=FALSE)
 # Plot eigenvalues
 barplot(ei_gen$values, names.arg=paste0("PC", 1:n_weights),
   las=3, xlab="", ylab="", main="Principal Component Variances")
-
 # Eigen decomposition of correlation matrix
 ei_gen <- eigen(cor_mat)
 # Perform PCA with scaling
@@ -509,14 +461,13 @@ pc_a <- prcomp(re_turns, scale=FALSE)
 all.equal(ei_gen$values, pc_a$sdev^2)
 all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
     check.attributes=FALSE)
-
 # Redefine objective function to minimize variance
-object_ive <- function(weight_s, re_turns) {
+objec_tive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2
-}  # end object_ive
+}  # end objec_tive
 # Find highest order PC weights using parallel DEoptim
-op_tim <- DEoptim::DEoptim(fn=object_ive,
+op_tim <- DEoptim::DEoptim(fn=objec_tive,
   upper=rep(10, NCOL(re_turns)),
   lower=rep(-10, NCOL(re_turns)),
   re_turns=re_turns, control=list(trace=FALSE,
@@ -530,22 +481,19 @@ sum(weights_1*weights_6)
 weights_6
 ei_gen$vectors[, 6]
 # Calculate objective function
-object_ive(weights_6, re_turns)
-object_ive(ei_gen$vectors[, 6], re_turns)
-
+objec_tive(weights_6, re_turns)
+objec_tive(ei_gen$vectors[, 6], re_turns)
 # Plot highest order principal component loadings
 x11(width=6, height=5)
 par(mar=c(2.5, 2, 2, 3), oma=c(0, 0, 0, 0), mgp=c(2, 0.5, 0))
 barplot(weights_6, names.arg=names(weights_2), xlab="", ylab="",
   main="Highest Order Principal Component Loadings")
-
 # Perform principal component analysis PCA
 pc_a <- prcomp(re_turns, scale=TRUE)
 # Plot standard deviations of principal components
 barplot(pc_a$sdev, names.arg=colnames(pc_a$rotation),
   las=3, xlab="", ylab="",
   main="Scree Plot: Volatilities of Principal Components \n of Stock Returns")
-
 # Calculate principal component loadings (weights)
 pc_a$rotation
 # Plot barplots with PCA weights in multiple panels
@@ -556,10 +504,10 @@ for (or_der in 1:n_weights) {
   barplot(pc_a$rotation[, or_der], las=3, xlab="", ylab="", main="")
   title(paste0("PC", or_der), line=-1, col.main="red")
 }  # end for
-
 # Calculate products of principal component time series
 round(t(pc_a$x) %*% pc_a$x, 2)
 # Calculate principal component time series from re_turns
+date_s <- zoo::index(price_s)
 pca_rets <- xts::xts(re_turns %*% pc_a$rotation, order.by=date_s)
 round(cov(pca_rets), 3)
 all.equal(coredata(pca_rets), pc_a$x, check.attributes=FALSE)
@@ -570,7 +518,6 @@ for (or_der in 1:n_weights) {
   plot.zoo(pca_ts[, or_der], ylim=rang_e, xlab="", ylab="")
   title(paste0("PC", or_der), line=-1, col.main="red")
 }  # end for
-
 # Invert all the principal component time series
 pca_rets <- re_turns %*% pc_a$rotation
 sol_ved <- pca_rets %*% solve(pc_a$rotation)
@@ -584,20 +531,15 @@ cum_returns <- cumsum(re_turns)
 for (sym_bol in sym_bols) {
   plot.zoo(cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
-  legend(x="topleft", bty="n",
-   legend=paste0(sym_bol, c("", " solved")),
-   title=NULL, inset=0.0, cex=1.0, lwd=6,
-   lty=1, col=c("black", "blue"))
+  legend(x="topleft", bty="n", legend=paste0(sym_bol, c("", " solved")),
+   title=NULL, inset=0.0, cex=1.0, lwd=6, lty=1, col=c("black", "blue"))
 }  # end for
-
 # Formula of linear model with zero intercept
 for_mula <- z ~ x + y - 1
 for_mula
-
 # Collapse vector of strings into single text string
 paste0("x", 1:5)
 paste(paste0("x", 1:5), collapse="+")
-
 # Create formula from text string
 for_mula <- as.formula(
   # Coerce text strings to formula
@@ -609,7 +551,6 @@ class(for_mula)
 for_mula
 # Modify the formula using "update"
 update(for_mula, log(.) ~ . + beta)
-
 # Define explanatory (design) variable
 len_gth <- 100
 set.seed(1121)  # initialize random number generator
@@ -617,7 +558,6 @@ de_sign <- runif(len_gth)
 noise <- rnorm(len_gth)
 # Response equals linear form plus random noise
 res_ponse <- (1 + de_sign + noise)
-
 # Calculate de-meaned explanatory (design) and response vectors
 design_zm <- de_sign - mean(de_sign)
 response_zm <- res_ponse - mean(res_ponse)
@@ -625,7 +565,6 @@ response_zm <- res_ponse - mean(res_ponse)
 be_ta <- sum(design_zm*response_zm)/sum(design_zm^2)
 # Calculate the regression alpha
 al_pha <- mean(res_ponse) - be_ta*mean(de_sign)
-
 # Specify regression formula
 for_mula <- res_ponse ~ de_sign
 mod_el <- lm(for_mula)  # Perform regression
@@ -635,7 +574,6 @@ eval(mod_el$call$formula)  # Regression formula
 mod_el$coeff  # Regression coefficients
 all.equal(coef(mod_el), c(al_pha, be_ta),
   check.attributes=FALSE)
-
 fit_ted <- (al_pha + be_ta*de_sign)
 all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
 x11(width=5, height=4)  # Open x11 for plotting
@@ -648,14 +586,12 @@ title(main="Simple Regression", line=0.5)
 abline(mod_el, lwd=3, col="blue")
 # Plot fitted (predicted) response values
 points(x=de_sign, y=mod_el$fitted.values, pch=16, col="blue")
-
 # Plot response without noise
 lines(x=de_sign, y=(res_ponse-noise), col="red", lwd=3)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.08, cex=0.8, lwd=6,
        lty=1, col=c("red", "blue"))
-
 # Calculate the residuals
 fit_ted <- (al_pha + be_ta*de_sign)
 residual_s <- (res_ponse - fit_ted)
@@ -666,7 +602,6 @@ all.equal(sum(residual_s*de_sign), target=0)
 all.equal(sum(residual_s*fit_ted), target=0)
 # Sum of residuals is equal to zero
 all.equal(mean(residual_s), target=0)
-
 x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
@@ -677,7 +612,6 @@ colnames(da_ta) <- c("design", "residuals")
 plot(da_ta)
 title(main="Residuals of the Linear Regression", line=-1)
 abline(h=0, lwd=3, col="red")
-
 # Degrees of freedom of residuals
 deg_free <- mod_el$df.residual
 # Standard deviation of residuals
@@ -687,11 +621,9 @@ beta_stderror <- resid_stddev/sqrt(sum(design_zm^2))
 # Standard error of alpha
 alpha_stderror <- resid_stddev*
   sqrt(1/len_gth + mean(de_sign)^2/sum(design_zm^2))
-
 model_sum <- summary(mod_el)  # Copy regression summary
 model_sum  # Print the summary to console
 attributes(model_sum)$names  # get summary elements
-
 model_sum$coeff
 # Standard errors
 model_sum$coefficients[2, "Std. Error"]
@@ -704,7 +636,6 @@ model_sum$adj.r.squared
 # F-statistic and ANOVA
 model_sum$fstatistic
 anova(mod_el)
-
 set.seed(1121)  # initialize random number generator
 # High noise compared to coefficient
 res_ponse <- (1 + de_sign + rnorm(len_gth, sd=8))
@@ -712,7 +643,6 @@ mod_el <- lm(for_mula)  # Perform regression
 # Values of regression coefficients are not
 # Statistically significant
 summary(mod_el)
-
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 reg_stats <- function(std_dev) {  # Noisy regression
   set.seed(1121)  # initialize number generator
@@ -741,7 +671,6 @@ for (in_dex in 1:NCOL(mat_stats)) {
   title(main=colnames(mat_stats)[in_dex], line=-1.0)
   axis(1, at=1:(NROW(mat_stats)), labels=rownames(mat_stats))
 }  # end for
-
 reg_stats <- function(da_ta) {  # get regression
 # Perform regression and get summary
   col_names <- colnames(da_ta)
@@ -772,17 +701,14 @@ for (in_dex in 1:NCOL(mat_stats)) {
   axis(1, at=1:(NROW(mat_stats)),
  labels=rownames(mat_stats))
 }  # end for
-
 # Set plot paramaters - margins and font scale
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2, 2))  # Plot 2x2 panels
 plot(mod_el)  # Plot diagnostic scatterplots
 plot(mod_el, which=2)  # Plot just Q-Q
-
 library(lmtest)  # Load lmtest
 # Perform Durbin-Watson test
 lmtest::dwtest(mod_el)
-
 foo <- etf_env$re_turns[, c("VTI", "VEU")]
 end_p <- endpoints(foo, on="months")
 head(foo)
@@ -793,17 +719,13 @@ mod_el <- lm(paste(names(foo), collapse=" ~ "), data=foo)
 model_sum <- summary(mod_el)
 model_sum
 lmtest::dwtest(mod_el)
-
 # Filter over non-overlapping periods
 bar <- names(foo)
 foo <- merge(period.sum(foo[, 1], INDEX=end_p), period.sum(foo[, 2], INDEX=end_p))
 foo <- foo[complete.cases(foo), ]
 names(foo) <- bar
-
 # Filter over overlapping periods
 foo <- rollsum(foo, k=11)
-
-
 set.seed(1121)
 library(lmtest)
 # Spurious regression in unit root time series
@@ -818,7 +740,6 @@ model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- lmtest::dwtest(mod_el)
 c(dw_test$statistic[[1]], dw_test$p.value)
-
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 plot(for_mula, xlab="", ylab="")  # Plot scatterplot using formula
@@ -826,7 +747,6 @@ title(main="Spurious Regression", line=-1)
 # Add regression line
 abline(mod_el, lwd=2, col="red")
 plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
-
 x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
@@ -842,12 +762,10 @@ plot(x=de_sign[or_der, 2], y=diag(influ_ence)[or_der],
      type="l", lwd=3, col="blue",
      xlab="predictor", ylab="leverage",
      main="Leverage as Function of Predictor")
-
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
 # The influence matrix is idempotent
 all.equal(influ_ence, influ_ence %*% influ_ence)
-
 # Calculate covariance and standard deviations of fitted values
 beta_s <- design_inv %*% res_ponse
 fit_ted <- drop(de_sign %*% beta_s)
@@ -862,7 +780,6 @@ fit_sd <- fit_sd[order(fit_ted), ]
 plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Univariate Regression")
-
 # Calculate response without random noise for univariate regression,
 # equal to weighted sum over columns of de_sign.
 beta_s <- c(-1, 1)
@@ -875,7 +792,6 @@ fit_ted <- lapply(1:50, function(it) {
   influ_ence %*% res_ponse
 })  # end lapply
 fit_ted <- rutils::do_call(cbind, fit_ted)
-
 x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
@@ -890,7 +806,6 @@ legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
        lty=1, col=c("red", "blue"))
-
 # Inverse of design matrix squared
 design_2 <- MASS::ginv(crossprod(de_sign))
 # Define new predictors
@@ -912,7 +827,6 @@ predic_tions <- sapply(new_data, function(predic_tor) {
   c(prediction=predic_tion, stddev=predict_sd)
 })  # end sapply
 predic_tions <- t(predic_tions)
-
 # Prepare plot data
 x_data <- c(de_sign[,2], new_data)
 x_lim <- range(x_data)
@@ -935,7 +849,6 @@ legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
        lty=1, col=c("blue", "red", "green"))
-
 # Perform univariate regression
 predic_tor <- de_sign[, 2]
 mod_el <- lm(res_ponse ~ predic_tor)
@@ -953,7 +866,6 @@ plot(res_ponse ~ predic_tor,
      ylim=range(res_ponse, predict_lm),
      xlab="predictor", ylab="fitted or predicted",
      main="Predictions from lm() Regression")
-
 abline(mod_el, col="blue", lwd=3)
 with(predict_lm, {
   points(x=new_data$predic_tor, y=fit, pch=16, col="blue")
@@ -964,7 +876,6 @@ legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
        lty=1, col=c("blue", "red", "green"))
-
 set.seed(1121)
 library(lmtest)
 # Spurious regression in unit root time series
@@ -979,7 +890,6 @@ model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- lmtest::dwtest(mod_el)
 c(dw_test$statistic[[1]], dw_test$p.value)
-
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 plot(for_mula, xlab="", ylab="")  # Plot scatterplot using formula
@@ -987,7 +897,6 @@ title(main="Spurious Regression", line=-1)
 # Add regression line
 abline(mod_el, lwd=2, col="red")
 plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
-
 # Define design matrix
 n_rows <- 100
 n_cols <- 5
@@ -1000,7 +909,6 @@ weight_s <- sample(3:(n_cols+2))
 # Response equals weighted de_sign plus random noise
 noise <- rnorm(n_rows, sd=5)
 res_ponse <- (-1 + de_sign %*% weight_s + noise)
-
 # Perform multivariate regression using lm()
 mod_el <- lm(res_ponse ~ de_sign)
 # Solve multivariate regression using matrix algebra
@@ -1016,7 +924,6 @@ al_pha <- mean(res_ponse) - sum(colSums(de_sign)*beta_s)/n_rows
 all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
 # Compare with actual coefficients
 all.equal(c(-1, weight_s), c(al_pha, beta_s), check.attributes=FALSE)
-
 # Add intercept column to design matrix
 de_sign <- cbind(rep(1, NROW(de_sign)), de_sign)
 n_cols <- NCOL(de_sign)
@@ -1029,7 +936,6 @@ beta_s <- design_inv %*% res_ponse
 # Perform multivariate regression without intercept term
 mod_el <- lm(res_ponse ~ de_sign - 1)
 all.equal(drop(beta_s), coef(mod_el), check.attributes=FALSE)
-
 # Calculate fitted values from regression coefficients
 fit_ted <- drop(de_sign %*% beta_s)
 all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
@@ -1042,7 +948,6 @@ sapply(residual_s %*% de_sign, all.equal, target=0)
 all.equal(sum(residual_s*fit_ted), target=0)
 # Sum of residuals is equal to zero
 all.equal(sum(residual_s), target=0)
-
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
 # The influence matrix is idempotent
@@ -1053,7 +958,6 @@ all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
 # Calculate fitted values from regression coefficients
 fit_ted <- drop(de_sign %*% beta_s)
 all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
-
 # Calculate zero mean fitted values
 design_zm <- t(t(de_sign) - colMeans(de_sign))
 fitted_zm <- drop(design_zm %*% beta_s)
@@ -1071,7 +975,6 @@ influence_zm <- design_zm %*% MASS::ginv(design_zm)
 all.equal(fitted_zm,
   drop(influence_zm %*% response_zm),
   check.attributes=FALSE)
-
 library(lmtest)  # Load lmtest
 # Define design matrix
 ex_plan <- 1:30
@@ -1093,7 +996,6 @@ plot(res_p ~ ex_plan)
 abline(model_ovb, lwd=2, col="red")
 title(main="Omitted Variable Regression", line=-1)
 plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
-
 # Regression model summary
 model_sum <- summary(mod_el)
 # Degrees of freedom of residuals
@@ -1103,7 +1005,6 @@ deg_free <- (n_rows - n_cols)
 all.equal(deg_free, model_sum$df[2])
 # Variance of residuals
 var_resid <- sum(residual_s^2)/deg_free
-
 # Inverse of design matrix squared
 design_2 <- MASS::ginv(crossprod(de_sign))
 # design_2 <- t(de_sign) %*% de_sign
@@ -1124,12 +1025,10 @@ all.equal(beta_pvals, model_sum$coeff[, 4], check.attributes=FALSE)
 # to the inverse of the square
 all.equal(MASS::ginv(crossprod(de_sign)),
   design_inv %*% t(design_inv))
-
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
 # The influence matrix is idempotent
 all.equal(influ_ence, influ_ence %*% influ_ence)
-
 # Calculate covariance and standard deviations of fitted values
 fit_covar <- var_resid*influ_ence
 fit_sd <- sqrt(diag(fit_covar))
@@ -1140,7 +1039,6 @@ fit_sd <- fit_sd[order(fit_ted), ]
 plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Multivariate Regression")
-
 # Load time series of ETF percentage returns
 re_turns <- rutils::etf_env$re_turns[, c("XLF", "XLE")]
 re_turns <- na.omit(re_turns)
@@ -1166,7 +1064,6 @@ model_sum$coefficients
 dim(boot_data)
 t(apply(boot_data, MARGIN=1,
 function(x) c(mean=mean(x), std_error=sd(x))))
-
 # New data predictor is a data frame or row vector
 set.seed(1121)
 new_data <- data.frame(matrix(c(1, rnorm(5)), nr=1))
@@ -1175,13 +1072,11 @@ colnames(new_data) <- col_names
 new_datav <- as.matrix(new_data)
 predic_tion <- drop(new_datav %*% beta_s)
 std_dev <- drop(sqrt(new_datav %*% beta_covar %*% t(new_datav)))
-
 # Create formula from text string
 for_mula <- paste0("res_ponse ~ ",
   paste(colnames(de_sign), collapse=" + "), " - 1")
 # Specify multivariate regression using formula
-mod_el <- lm(for_mula,
-     data=data.frame(cbind(res_ponse, de_sign)))
+mod_el <- lm(for_mula, data=data.frame(cbind(res_ponse, de_sign)))
 model_sum <- summary(mod_el)
 # Predict from lm object
 predict_lm <- predict.lm(object=mod_el, newdata=new_data,
@@ -1194,13 +1089,11 @@ predict_low <- (predic_tion - t_quant*std_dev)
 all.equal(predict_lm[1, "fit"], predic_tion)
 all.equal(predict_lm[1, "lwr"], predict_low)
 all.equal(predict_lm[1, "upr"], predict_high)
-
 # TSS = ESS + RSS
 t_ss <- sum((res_ponse-mean(res_ponse))^2)
 e_ss <- sum((fit_ted-mean(fit_ted))^2)
 r_ss <- sum(residual_s^2)
 all.equal(t_ss, e_ss + r_ss)
-
 # Set regression attribute for intercept
 attributes(mod_el$terms)$intercept <- 1
 # Regression summary
@@ -1212,7 +1105,6 @@ all.equal(r_squared, model_sum$r.squared)
 cor_fitted <- drop(cor(res_ponse, fit_ted))
 # Squared correlation between response and fitted values
 all.equal(cor_fitted^2, r_squared)
-
 n_rows <- NROW(de_sign)
 n_cols <- NCOL(de_sign)
 # Degrees of freedom of residuals
@@ -1221,7 +1113,6 @@ deg_free <- (n_rows - n_cols)
 r_squared_adj <- (1-sum(residual_s^2)/deg_free/var(res_ponse))
 # Compare adjusted R-squared from lm()
 all.equal(drop(r_squared_adj), model_sum$adj.r.squared)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot three curves in loop
@@ -1232,14 +1123,12 @@ curve(expr=df(x, df1=deg_free[in_dex], df2=3),
 xlim=c(0, 4), xlab="", ylab="", lwd=2,
 col=col_ors[in_dex], add=as.logical(in_dex-1))
 }  # end for
-
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
 lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
        lab_els, cex=0.8, lwd=2, lty=1, col=col_ors)
-
 sigma_x <- var(rnorm(n_rows))
 sigma_y <- var(rnorm(n_rows))
 f_ratio <- sigma_x/sigma_y
@@ -1247,7 +1136,6 @@ f_ratio <- sigma_x/sigma_y
 pf(f_ratio, n_rows-1, n_rows-1)
 # p-value for f_ratios
 1-pf((10:20)/10, n_rows-1, n_rows-1)
-
 # F-statistic from lm()
 model_sum$fstatistic
 # Degrees of freedom of residuals
@@ -1257,7 +1145,31 @@ f_stat <- (e_ss/(n_cols-1))/(r_ss/deg_free)
 all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=f_stat, df1=n_cols-1, df2=n_rows-n_cols)
-
+# Calculate ETF returns
+re_turns <- na.omit(rutils::etf_env$re_turns)
+# Perform singular value decomposition
+s_vd <- svd(re_turns)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+barplot(s_vd$d, main="Singular Values of ETF Returns")
+# Calculate generalized inverse from SVD
+in_verse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
+# Verify inverse property of in_verse
+all.equal(zoo::coredata(re_turns), re_turns %*% in_verse %*% re_turns)
+# Calculate regularized inverse from SVD
+eigen_max <- 1:3
+inv_reg <- s_vd$v[, eigen_max] %*%
+  (t(s_vd$u[, eigen_max]) / s_vd$d[eigen_max])
+# Calculate regularized inverse using RcppArmadillo
+rcpp_inverse <- HighFreq::calc_inv(re_turns, eigen_max=3)
+all.equal(inv_reg, rcpp_inverse, check.attributes=FALSE)
+# Calculate regularized inverse from Moore-Penrose pseudo-inverse
+square_d <- t(re_turns) %*% re_turns
+ei_gen <- eigen(square_d)
+squared_inv <- ei_gen$vectors[, eigen_max] %*%
+  (t(ei_gen$vectors[, eigen_max]) / ei_gen$values[eigen_max])
+mp_inverse <- squared_inv %*% t(re_turns)
+all.equal(inv_reg, mp_inverse, check.attributes=FALSE)
 # Define transformation matrix
 trans_mat <- matrix(runif(n_cols^2, min=(-1), max=1), ncol=n_cols)
 # Calculate linear combinations of design columns
@@ -1266,7 +1178,6 @@ design_trans <- de_sign %*% trans_mat
 influence_trans <- design_trans %*% MASS::ginv(design_trans)
 # Compare the influence matrices
 all.equal(influ_ence, influence_trans)
-
 # Perform PCA
 pc_a <- prcomp(de_sign, center=FALSE, scale=FALSE)
 design_pcr <- pc_a$x
@@ -1277,7 +1188,6 @@ round(apply(design_pcr, 2,
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
 all.equal(influ_ence, influence_pcr)
-
 # Perform PCA
 pc_a <- prcomp(de_sign, center=FALSE, scale=FALSE)
 design_pcr <- pc_a$x
@@ -1288,7 +1198,6 @@ round(apply(design_pcr, 2,
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
 all.equal(influ_ence, influence_pcr)
-
 # Perform PCA
 pc_a <- prcomp(de_sign, center=FALSE, scale=FALSE)
 design_pcr <- pc_a$x
@@ -1299,7 +1208,6 @@ round(apply(design_pcr, 2,
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
 all.equal(influ_ence, influence_pcr)
-
 # Perform PCA
 pc_a <- prcomp(de_sign, center=FALSE, scale=FALSE)
 design_pcr <- pc_a$x
@@ -1310,8 +1218,6 @@ round(apply(design_pcr, 2,
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
 all.equal(influ_ence, influence_pcr)
-
-par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 lamb_da <- c(0.5, 1, 1.5)
 col_ors <- c("red", "blue", "green")
 # Plot three curves in loop
@@ -1320,7 +1226,6 @@ for (in_dex in 1:3) {
 xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
 col=col_ors[in_dex], add=(in_dex>1))
 }  # end for
-
 # Add title
 title(main="Logistic function", line=0.5)
 # Add legend
@@ -1328,8 +1233,7 @@ legend("topleft", title="Scale parameters",
        paste("lambda", lamb_da, sep="="),
        inset=0.05, cex=0.8, lwd=6, bty="n",
        lty=1, col=col_ors)
-
-set.seed(1121)
+set.seed(1121)  # Reset random number generator
 # Simulate overlapping scores data
 sample1 <- runif(100, max=0.6)
 sample2 <- runif(100, min=0.4)
@@ -1342,7 +1246,6 @@ res_ponse <- c(logical(100), !logical(100))
 g_lm <- glm(res_ponse ~ predic_tor, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
-
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 or_der <- order(predic_tor)
@@ -1363,21 +1266,75 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
  legend=c("logistic fit", "TRUE", "FALSE"),
  col=c("orange", "red", "blue"),
  text.col=c("black", "red", "blue"))
-
+# Likelihood function of binomial distribution
+likeli_hood <- function(prob, b) {
+  b*log(prob) + (1-b)*log(1-prob)
+}  # end likeli_hood
+likeli_hood(prob=0.25, b=1)
+# Plot binomial likelihood function
+curve(expr=likeli_hood(x, b=1), xlim=c(0, 1), lwd=3,
+      xlab="prob", ylab="likelihood", col="blue",
+      main="Binomial Likelihood Function")
+curve(expr=likeli_hood(x, b=0), lwd=3, col="red", add=TRUE)
+legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
+       title=NULL, inset=0.3, cex=1.0, lwd=6,
+       lty=1, col=c("blue", "red"))
+# Specify design matrix
+de_sign=cbind(intercept=rep(1, NROW(res_ponse)), predic_tor)
+# Likelihood function of the logistic model
+likeli_hood <- function(coeff, res_ponse, de_sign) {
+  probs <- plogis(drop(de_sign %*% coeff))
+  -sum(res_ponse*log(probs) + (1-res_ponse)*log((1-probs)))
+}  # end likeli_hood
+# Run likelihood function
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25) {
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+# Draw 3d surface plot of Rastrigin function
+options(rgl.useNULL=TRUE); library(rgl)
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastri_gin(vec_tor=c(x, y))),
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastri_gin")
+# Optimize with respect to vector argument
+op_tim <- optim(par=vec_tor, fn=rastri_gin,
+        method="L-BFGS-B",
+        upper=c(4*pi, 4*pi),
+        lower=c(pi/2, pi/2),
+        pa_ram=1)
+# Optimal parameters and value
+op_tim$par
+op_tim$value
+rastri_gin(op_tim$par, pa_ram=1)
+# Initial parameters
+par_init <- c(1, 1)
+# Find max likelihood parameters using steepest descent optimizer
+optim_fit <- optim(par=par_init,
+           fn=likeli_hood, # Log-likelihood function
+           method="L-BFGS-B", # Quasi-Newton method
+           res_ponse=res_ponse,
+           de_sign=de_sign,
+           upper=c(20, 20), # Upper constraint
+           lower=c(-20, -20), # Lower constraint
+           hessian=TRUE)
+# Optimal logistic parameters
+optim_fit$par
+unname(g_lm$coefficients)
+# Standard errors of parameters
+sqrt(diag(solve(optim_fit$hessian)))
+model_sum <- summary(g_lm)
+model_sum$coefficients[, 2]
 library(ISLR)  # Load package ISLR
 # get documentation for package tseries
 packageDescription("ISLR")  # get short description
-
 help(package="ISLR")  # Load help page
-
 library(ISLR)  # Load package ISLR
-
 data(package="ISLR")  # list all datasets in ISLR
-
 ls("package:ISLR")  # list all objects in ISLR
-
 detach("package:ISLR")  # Remove ISLR from search path
-
 # Coerce the student and default columns into Boolean
 Default <- ISLR::Default
 Default$default <- (Default$default == "Yes")
@@ -1389,7 +1346,6 @@ summary(Default)
 sapply(Default, class)
 dim(Default)
 head(Default)
-
 # Plot data points for non-defaulters
 x11(width=6, height=5)
 x_lim <- range(balance); y_lim <- range(income)
@@ -1403,26 +1359,23 @@ points(income ~ balance, pch=4, lwd=2, col="red",
 # Add legend
 legend(x="topright", legend=c("non-defaulters", "defaulters"),
  bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
-
 # Wilcoxon test for balance predictor
 wilcox.test(balance[de_fault], balance[!de_fault])
 # Wilcoxon test for income predictor
 wilcox.test(income[de_fault], income[!de_fault])
-
 x11(width=6, height=5)
-par(mfrow=c(1,2))  # Set plot panels
+# Set 2 plot panels
+par(mfrow=c(1,2))
 # Balance boxplot
 boxplot(formula=balance ~ de_fault,
   col="lightgrey", main="balance", xlab="Default")
 # Income boxplot
 boxplot(formula=income ~ de_fault,
   col="lightgrey", main="income", xlab="Default")
-
 # Fit logistic regression model
 g_lm <- glm(de_fault ~ balance, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
-
 x11(width=6, height=5)
 par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
 plot(x=balance, y=de_fault,
@@ -1433,17 +1386,15 @@ lines(x=balance[or_der], y=g_lm$fitted.values[or_der], col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n", lwd=6,
  legend=c("defaults", "logit fitted values"),
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
-
 # Calculate cumulative defaults
 to_tal <- sum(de_fault)
-default_s <- sapply(balance, function(lim_it) {
-    sum(de_fault[balance <= lim_it])
+default_s <- sapply(balance, function(lim) {
+    sum(de_fault[balance <= lim])
 })  # end sapply
 # Perform logit regression
 g_lm <- glm(cbind(default_s, to_tal-default_s) ~ balance,
   family=binomial(logit))
 summary(g_lm)
-
 plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
      main="Cumulative Defaults Versus Balance",
      xlab="credit balance", ylab="cumulative defaults")
@@ -1453,18 +1404,49 @@ col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n",
  legend=c("cumulative defaults", "fitted values"),
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
-
+# Fit multifactor logistic regression model
+col_names <- colnames(Default)
+for_mula <- as.formula(paste(col_names[1],
+  paste(col_names[-1], collapse="+"), sep=" ~ "))
+for_mula
+g_lm <- glm(for_mula, data=Default, family=binomial(logit))
+summary(g_lm)
+# Fit single-factor logistic model with stu_dent as predictor
+glm_student <- glm(de_fault ~ stu_dent, family=binomial(logit))
+summary(glm_student)
+# Multifactor coefficient is negative
+g_lm$coefficients
+# Single-factor coefficient is positive
+glm_student$coefficients
+# Calculate cumulative defaults
+cum_defaults <- sapply(balance, function(lim) {
+c(student=sum(de_fault[stu_dent & (balance <= lim)]),
+  non_student=sum(de_fault[!stu_dent & (balance <= lim)]))
+})  # end sapply
+total_defaults <- c(student=sum(stu_dent & de_fault),
+      stu_dent=sum(!stu_dent & de_fault))
+cum_defaults <- t(cum_defaults / total_defaults)
+# Plot cumulative defaults
+par(mfrow=c(1,2))  # Set plot panels
+or_der <- order(balance)
+plot(x=balance[or_der], y=cum_defaults[or_der, 1],
+     col="red", t="l", lwd=2, xlab="credit balance", ylab="",
+     main="Cumulative defaults of\n students and non-students")
+lines(x=balance[or_der], y=cum_defaults[or_der, 2], col="blue", lwd=2)
+legend(x="topleft", bty="n",
+ legend=c("students", "non-students"),
+ col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
+# Balance boxplot for student factor
+boxplot(formula=balance ~ !stu_dent,
+  col="lightgrey", main="balance", xlab="Student")
 # Fit logistic regression model
 g_lm <- glm(de_fault ~ stu_dent, family=binomial(logit))
 summary(g_lm)
-
 x11(width=6, height=5)
 par(mfrow=c(1,2))  # Set plot panels
 # Balance boxplot
 boxplot(formula=balance ~ de_fault,
   col="lightgrey", main="balance", xlab="Default")
-
-
 # Plot data points for non-students
 x11(width=6, height=5)
 x_lim <- range(balance); y_lim <- range(income)
@@ -1479,38 +1461,6 @@ points(income ~ balance, pch=4, lwd=2, col="red",
 legend(x="topright", bty="n",
  legend=c("non-students", "students"),
  col=c("blue", "red"), lty=1, lwd=6, pch=4)
-
-# Fit multifactor logistic regression model
-col_names <- colnames(Default)
-for_mula <- as.formula(paste(col_names[1],
-  paste(col_names[-1], collapse="+"), sep=" ~ "))
-for_mula
-g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-summary(g_lm)
-
-# Calculate cumulative defaults
-cum_defaults <- sapply(balance, function(lim_it) {
-c(student=sum(de_fault[stu_dent & (balance <= lim_it)]),
-  non_student=sum(de_fault[!stu_dent & (balance <= lim_it)]))
-})  # end sapply
-total_defaults <- c(student=sum(stu_dent & de_fault),
-      stu_dent=sum(!stu_dent & de_fault))
-cum_defaults <- t(cum_defaults / total_defaults)
-
-# Plot cumulative defaults
-par(mfrow=c(1,2))  # Set plot panels
-or_der <- order(balance)
-plot(x=balance[or_der], y=cum_defaults[or_der, 1],
-     col="red", t="l", lwd=2, xlab="credit balance", ylab="",
-     main="Cumulative defaults of\n students and non-students")
-lines(x=balance[or_der], y=cum_defaults[or_der, 2], col="blue", lwd=2)
-legend(x="topleft", bty="n",
- legend=c("students", "non-students"),
- col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
-# Balance boxplot for student factor
-boxplot(formula=balance ~ !stu_dent,
-  col="lightgrey", main="balance", xlab="Student")
-
 # Perform in-sample forecast from logistic regression model
 forecast_s <- predict(g_lm, type="response")
 all.equal(g_lm$fitted.values, forecast_s)
@@ -1530,7 +1480,6 @@ forecast_s <- predict(g_lm, newdata=test_data, type="response")
 # Calculate confusion matrix out-of-sample
 table(actual=!test_data$de_fault, 
 forecast=(forecast_s < thresh_old))
-
 # Calculate confusion matrix out-of-sample
 confu_sion <- table(actual=!test_data$de_fault, 
 forecast=(forecast_s < thresh_old))
@@ -1539,7 +1488,6 @@ confu_sion
 sum(!test_data$de_fault & (forecast_s > thresh_old))
 # Calculate FALSE negative (type II error)
 sum(test_data$de_fault & (forecast_s < thresh_old))
-
 # Calculate FALSE positive and FALSE negative rates
 confu_sion <- confu_sion / rowSums(confu_sion)
 c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
@@ -1555,7 +1503,6 @@ comment=FALSE, size="scriptsize",
 include.rownames=TRUE,
 include.colnames=TRUE)
 # end unsuccessful attempt to draw confusion table using xtable
-
 # Confusion matrix as function of thresh_old
 con_fuse <- function(actu_al, forecast_s, thresh_old) {
     confu_sion <- table(actu_al, (forecast_s < thresh_old))
@@ -1577,16 +1524,208 @@ true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lag_it(true_pos))/2
 false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
-
 # Plot ROC Curve for Defaults
 x11(width=5, height=5)
 plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
-
+library(HighFreq)
+# Read TAQ trade data from csv file
+ta_q <- data.table::fread(file="/Volumes/external/Develop/data/xlk_tick_trades_2020_03_16.csv")
+# Inspect the TAQ data
+ta_q
+class(ta_q)
+colnames(ta_q)
+sapply(ta_q, class)
+sym_bol <- ta_q$SYM_ROOT[1]
+# Create date-time index
+date_s <- paste(ta_q$DATE, ta_q$TIME_M)
+# Coerce date-time index to POSIXlt
+date_s <- strptime(date_s, "%Y%m%d %H:%M:%OS")
+class(date_s)
+# Display more significant digits
+# options("digits")
+options(digits=20, digits.secs=10)
+last(date_s)
+unclass(last(date_s))
+as.numeric(last(date_s))
+# Coerce date-time index to POSIXct
+date_s <- as.POSIXct(date_s)
+class(date_s)
+last(date_s)
+unclass(last(date_s))
+as.numeric(last(date_s))
+# Calculate the number of ticks per second
+n_secs <- as.numeric(last(date_s)) - as.numeric(first(date_s))
+NROW(ta_q)/(6.5*3600)
+# Select TAQ data columns
+ta_q <- ta_q[, .(price=PRICE, volume=SIZE)]
+# Add date-time index
+ta_q <- cbind(index=date_s, ta_q)
+# Coerce trade ticks to xts series
+x_ts <- xts::xts(ta_q[, .(price, volume)], ta_q$index)
+colnames(x_ts) <- paste(sym_bol, c("Close", "Volume"), sep=".")
+save(x_ts, file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.RData")
+# save(x_ts, file="C:/Develop/data/xlk_tick_trades_2020_03_16.RData")
+# Plot dygraph
+dygraphs::dygraph(x_ts$XLK.Close,
+  main="XLK Trade Ticks for 2020-03-16")
+# Plot in x11 window
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close,
+  name="XLK Trade Ticks for 2020-03-16")
+# Calculate centered Hampel filter to remove price jumps
+look_back <- 111
+half_back <- look_back %/% 2
+medi_an <- roll::roll_median(ta_q$price, width=look_back)
+# medi_an <- TTR::runMedian(ta_q$price, n=look_back)
+medi_an <- rutils::lag_it(medi_an, lagg=-half_back, pad_zeros=FALSE)
+ma_d <- HighFreq::roll_var(matrix(ta_q$price), look_back=look_back, method="nonparametric")
+# ma_d <- TTR::runMAD(ta_q$price, n=look_back)
+ma_d <- rutils::lag_it(ma_d, lagg=-half_back, pad_zeros=FALSE)
+# Calculate Z-scores
+z_scores <- (ta_q$price - medi_an)/ma_d
+z_scores[is.na(z_scores)] <- 0
+z_scores[!is.finite(z_scores)] <- 0
+sum(is.na(z_scores))
+sum(!is.finite(z_scores))
+range(z_scores); mad(z_scores)
+hist(z_scores, breaks=2000, xlim=c(-5*mad(z_scores), 5*mad(z_scores)))
+# Define discrimination threshold value
+thresh_old <- 6*mad(z_scores)
+# Remove price jumps with large z-scores
+bad_ticks <- (abs(z_scores) > thresh_old)
+good_ticks <- ta_q[!bad_ticks]
+# Calculate number of price jumps
+sum(bad_ticks)/NROW(z_scores)
+# Coerce trade prices to xts
+x_ts <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
+colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
+# Plot dygraph of the clean lots
+dygraphs::dygraph(x_ts$XLK.Close,
+  main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+# Plot the large lots
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close,
+  name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+# Define discrimination threshold value
+thresh_old <- 6*mad(z_scores)
+# Calculate number of prices classified as bad data
+is_bad <- (abs(z_scores) > thresh_old)
+sum(is_bad)
+# Add 200 random price jumps into price_s
+set.seed(1121)
+n_bad <- 200
+is_jump <- logical(NROW(clos_e))
+is_jump[sample(x=NROW(is_jump), size=n_bad)] <- TRUE
+clos_e[is_jump] <- clos_e[is_jump]*
+  sample(c(0.95, 1.05), size=n_bad, replace=TRUE)
+# Plot prices and medians
+dygraphs::dygraph(cbind(clos_e, medi_an), main="VTI median") %>%
+  dyOptions(colors=c("black", "red"))
+# Calculate time series of z-scores
+medi_an <- roll::roll_median(clos_e, width=look_back)
+# medi_an <- TTR::runMedian(clos_e, n=look_back)
+ma_d <- HighFreq::roll_var(clos_e, look_back=look_back, method="nonparametric")
+# ma_d <- TTR::runMAD(clos_e, n=look_back)
+z_scores <- (clos_e - medi_an)/ma_d
+z_scores[1:look_back, ] <- 0
+# Calculate number of prices classified as bad data
+is_bad <- (abs(z_scores) > thresh_old)
+sum(is_bad)
+# Calculate confusion matrix
+table(actual=!is_jump, forecast=!is_bad)
+sum(is_bad)
+# FALSE positive (type I error)
+sum(!is_jump & is_bad)
+# FALSE negative (type II error)
+sum(is_jump & !is_bad)
+# Confusion matrix as function of thresh_old
+con_fuse <- function(actu_al, z_scores, thresh_old) {
+    confu_sion <- table(!actu_al, !(abs(z_scores) > thresh_old))
+    confu_sion <- confu_sion / rowSums(confu_sion)
+    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+  }  # end con_fuse
+con_fuse(is_jump, z_scores, thresh_old=thresh_old)
+# Define vector of discrimination thresholds
+threshold_s <- seq(from=0.2, to=5.0, by=0.2)
+# Calculate error rates
+error_rates <- sapply(threshold_s, con_fuse,
+  actu_al=is_jump, z_scores=z_scores)  # end sapply
+error_rates <- t(error_rates)
+rownames(error_rates) <- threshold_s
+error_rates <- rbind(c(1, 0), error_rates)
+error_rates <- rbind(error_rates, c(0, 1))
+# Calculate area under ROC curve (AUC)
+true_pos <- (1 - error_rates[, "typeII"])
+true_pos <- (true_pos + rutils::lag_it(true_pos))/2
+false_pos <- rutils::diff_it(error_rates[, "typeI"])
+abs(sum(true_pos*false_pos))
+# Plot ROC curve for Hampel classifier
+x11(width=6, height=5)
+plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Confusion matrix as function of thresh_old
+con_fuse <- function(actu_al, z_scores, thresh_old) {
+    confu_sion <- table(!actu_al, !(abs(z_scores) > thresh_old))
+    confu_sion <- confu_sion / rowSums(confu_sion)
+    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+  }  # end con_fuse
+con_fuse(is_jump, z_scores, thresh_old=thresh_old)
+# Define vector of discrimination thresholds
+threshold_s <- seq(from=0.2, to=5.0, by=0.2)
+# Calculate error rates
+error_rates <- sapply(threshold_s, con_fuse,
+  actu_al=is_jump, z_scores=z_scores)  # end sapply
+error_rates <- t(error_rates)
+rownames(error_rates) <- threshold_s
+error_rates <- rbind(c(1, 0), error_rates)
+error_rates <- rbind(error_rates, c(0, 1))
+# Calculate area under ROC curve (AUC)
+true_pos <- (1 - error_rates[, "typeII"])
+true_pos <- (true_pos + rutils::lag_it(true_pos))/2
+false_pos <- rutils::diff_it(error_rates[, "typeI"])
+abs(sum(true_pos*false_pos))
+# Plot ROC curve for Hampel classifier
+x11(width=6, height=5)
+plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Calculate centered Hampel filter over 3 data points
+medi_an <- roll::roll_median(ta_q$price, width=3)
+medi_an[1:2] <- ta_q$price[1:2]
+medi_an <- rutils::lag_it(medi_an, lagg=-1, pad_zeros=FALSE)
+ma_d <- HighFreq::roll_var(matrix(ta_q$price), look_back=look_back, method="nonparametric")
+ma_d <- rutils::lag_it(ma_d, lagg=-1, pad_zeros=FALSE)
+# Calculate Z-scores
+z_scores <- ifelse(ma_d > 0, (ta_q$price - medi_an)/ma_d, 0)
+range(z_scores); mad(z_scores)
+ma_d <- mad(z_scores[abs(z_scores)>0])
+hist(z_scores, breaks=2000, xlim=c(-5*ma_d, 5*ma_d))
+# Define discrimination threshold value
+thresh_old <- 6*ma_d
+bad_ticks <- (abs(z_scores) > thresh_old)
+good_ticks <- ta_q[!bad_ticks]
+# Calculate number of price jumps
+sum(bad_ticks)/NROW(z_scores)
+# Coerce trade prices to xts
+x_ts <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
+colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
+# Plot dygraph of the clean lots
+dygraphs::dygraph(x_ts$XLK.Close,
+  main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+# Plot the large lots
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close,
+  name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
 NA
-
 NA
-
 NA

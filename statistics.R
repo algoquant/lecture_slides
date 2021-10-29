@@ -1,10 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
-options(digits=3)
-options(width=80, dev='pdf')
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-
 set.seed(1121)  # Reset random number generator
 runif(3)  # three numbers from uniform distribution
 runif(3)  # Simulate another three numbers
@@ -18,7 +11,6 @@ rnorm(5)
 rnorm(n=5, mean=1, sd=2)  # Match arguments by name
 # Simulate t-distribution with 2 degrees of freedom
 rt(n=5, df=2)
-
 # Define logistic map function
 log_map <- function(x, r=4) r*x*(1-x)
 log_map(0.25, 4)
@@ -29,7 +21,6 @@ xlab="x[n-1]", ylab="x[n]", lwd=2, col="blue",
 main="logistic map")
 lines(x=c(0, 0.25), y=c(0.75, 0.75), lwd=2, col="orange")
 lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="orange")
-
 # Calculate uniformly distributed pseudo-random
 # Sequence using logistic map function
 uni_form <- function(see_d, n_rows=10) {
@@ -43,13 +34,11 @@ uni_form <- function(see_d, n_rows=10) {
   }  # end for
   acos(1-2*out_put)/pi
 }  # end uni_form
-
 uni_form(see_d=0.1, n_rows=15)
 plot(
   density(uni_form(see_d=runif(1), n_rows=1e5)),
   xlab="", ylab="", lwd=2, col="blue",
   main="uniform pseudo-random number density")
-
 set.seed(1121)  # Reset random number generator
 # Flip unbiased coin once, 20 times
 rbinom(n=20, size=1, 0.5)
@@ -64,7 +53,6 @@ rbinom(n=20, size=3, 0.2)
 # Flip unbiased coin once, 20 times
 sample(x=0:1, size=20, replace=TRUE)  # Fast
 as.numeric(runif(20) < 0.5)  # Slower
-
 # Permutation of five numbers
 sample(x=5)
 # Permutation of four strings
@@ -81,18 +69,13 @@ sample(  # Sample of strings
 sample(x=0:1, size=20, replace=TRUE)
 # Flip unbiased coin once, 20 times
 as.numeric(runif(20) > 0.5)  # Slower
-
 rm(list=ls())
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 da_ta <- rnorm(1000)
-
 mean(da_ta)  # Sample mean
-
 median(da_ta)  # Sample median
-
 sd(da_ta)  # Sample standard deviation
-
 rm(list=ls())
 # VTI returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
@@ -115,7 +98,6 @@ mean(re_turns); sd(re_turns)
 # Skewness and kurtosis of random normal returns
 n_rows/((n_rows-1)*(n_rows-2))*sum(re_turns^3)
 n_rows/(n_rows-1)^2*sum(re_turns^4)
-
 # Calculate cumulative standard normal distribution
 c(pnorm(-2), pnorm(2))
 # Calculate inverse cumulative standard normal distribution
@@ -144,7 +126,6 @@ summary(microbenchmark(
   monte_carlo=da_ta[cut_off],
   quan_tile=quantile(da_ta, probs=conf_level),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 n_rows <- 1000
@@ -155,12 +136,10 @@ mean(da_ta)
 sd(da_ta)
 # Standard error of sample mean
 sd(da_ta)/sqrt(n_rows)
-
 # Define Hermite polynomials
 her_mite <- function(x, n) {
     switch(n+1, 1, x, (x^2 - 1), (x^3 - 3*x), 0)
 }  # end her_mite
-
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 col_ors <- c("red", "blue", "green")
@@ -176,7 +155,6 @@ lab_els <- paste("Order", 1:3, sep=" = ")
 legend("top", inset=0.0, bty="n",
  title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
  col=col_ors)
-
 # Define Hermite functions
 hermite_fun <- function(x, n)
   exp(-x^2/4)*her_mite(x, n)/(2*pi)^(0.25)/sqrt(factorial(n))
@@ -184,7 +162,6 @@ hermite_fun <- function(x, n)
 integrate(function(x, n, m)
   hermite_fun(x, n)*hermite_fun(x, m),
   lower=(-Inf), upper=Inf, n=2, m=3)
-
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 col_ors <- c("red", "blue", "green")
@@ -200,14 +177,12 @@ lab_els <- paste("Order", 1:3, sep=" = ")
 legend("topright", inset=0.0, bty="n",
  title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
  col=col_ors)
-
 # Integrate Hermite functions
 integrate(her_mite, lower=(-Inf), upper=Inf, n=2)
 integrate(function(x, n, m) her_mite(x, n)*her_mite(x, m),
     lower=(-Inf), upper=Inf, n=2, m=3)
 integrate(function(x, n, m) her_mite(x, n)*her_mite(x, m),
     lower=(-Inf), upper=Inf, n=2, m=2)
-
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 col_ors <- c("red", "blue", "green")
@@ -223,7 +198,6 @@ lab_els <- paste("Order", 1:3, sep=" = ")
 legend("topright", inset=0.05, bty="n",
  title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
  col=col_ors)
-
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 n_rows <- 1000
@@ -232,7 +206,6 @@ da_ta <- rnorm(n_rows)
 mean(da_ta)
 # Sample standard deviation
 sd(da_ta)
-
 #Perform two-tailed test that sample is
 #from Standard Normal Distribution (mean=0, SD=1)
 # generate vector of samples and store in data frame
@@ -249,7 +222,6 @@ test_frame$result <-
 sum(!test_frame$result) / NROW(test_frame)
 # Show null rejections
 head(test_frame[!test_frame$result, ])
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot the Normal probability distribution
@@ -269,11 +241,9 @@ y_var <- dnorm(-x_var, sd=1)
 y_var[1] <- (-1)
 y_var[NROW(y_var)] <- (-1)
 polygon(x=(-x_var), y=y_var, col="red")
-
 rm(list=ls())
 par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(ggplot2)  # Load ggplot2
-
 qplot(  # Simple ggplot2
     main="Standard Normal Distribution",
     c(-4, 4),
@@ -282,18 +252,15 @@ qplot(  # Simple ggplot2
     geom="line",
     xlab=NULL, ylab=NULL
     ) +  # end qplot
-
 theme(  # Modify plot theme
     plot.title=element_text(vjust=-1.0),
     plot.background=element_blank()
     ) +  # end theme
-
 geom_vline(  # Add vertical line
   aes(xintercept=c(-2.0, 2.0)),
   colour="red",
   linetype="dashed"
   )  # end geom_vline
-
 rm(list=ls())
 par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 #Create ggplot2 with shaded area
@@ -320,7 +287,6 @@ ggplot(  # Main function
   plot.title=element_text(vjust=-1.0),
   plot.background=element_blank()
   )  # end theme
-
 # t-test for single sample
 t.test(rnorm(100))
 # t-test for two samples
@@ -341,7 +307,6 @@ legend("topright", inset=0.05, bty="n",
        title=NULL, c("normal", "t-dist"),
        cex=0.8, lwd=6, lty=1,
        col=c("black", "red"))
-
 # t-test for single sample
 t.test(rnorm(100))
 # t-test for two samples
@@ -362,7 +327,6 @@ legend("topright", inset=0.05, bty="n",
        title=NULL, c("normal", "t-dist"),
        cex=0.8, lwd=6, lty=1,
        col=c("black", "red"))
-
 # Calculate VTI percentage returns
 library(rutils)
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
@@ -376,7 +340,6 @@ shapiro.test(as.numeric(re_turns))
 shapiro.test(runif(NROW(re_turns)))
 # Restore output digits
 options(digits=dig_its$digits)
-
 library(tseries)  # Load package tseries
 # Jarque-Bera test for normal distribution
 jarque.bera.test(rnorm(NROW(re_turns)))
@@ -384,24 +347,48 @@ jarque.bera.test(rnorm(NROW(re_turns)))
 jarque.bera.test(re_turns)
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(re_turns)))
-
 # KS test for normal distribution
-ks.test(rnorm(100), pnorm)
+ks_test <- ks.test(rnorm(100), pnorm)
+ks_test$p.value
 # KS test for uniform distribution
 ks.test(runif(100), pnorm)
 # KS test for two similar normal distributions
 ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
+ks.test(rnorm(100), rnorm(100, sd=2.0))
+# KS test for VTI returns vs normal distribution
+re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
+re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
+ks.test(re_turns, rnorm)
 # Fit t-dist into VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
 scal_e <- optim_fit$estimate[2]
-# Perform Kolmogorov-Smirnov test on VTI returns
+# KS test for VTI returns vs t-distribution
+# define non-standard Student’s t-distribution
+tdistr <- function(x, dfree, loc, scale) {
+  dt((x-loc)/scale, df=dfree)/scale
+}  # end likeli_hood
+# tdistr(x=re_turns[1], dfree=2, loc=lo_cation, scale=scal_e)
+# Plot shows that tdistr() fits re_turns very well
+den_sity <- density(re_turns)
+ma_d <- mad(re_turns)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     xlab="returns", ylab="density",
+     col="blue", lwd=2, main="Density of VTI Returns")
+curve(expr=tdistr(x, dfree=2, loc=lo_cation, scale=scal_e), col="red", lwd=2, add=TRUE)
+# Or
+tdistr <- function(x, dfree, loc, scale) {
+  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scale)*
+    (1+((x-loc)/scale)^2/dfree)^(-(dfree+1)/2)
+}  # end likeli_hood
+# tdistr(x=re_turns[1], dfree=2, loc=lo_cation, scale=scal_e)
+# Not the same as the below - gives p-value << 0.01 - rejects NULL
+ks.test(re_turns, tdistr, dfree=2, loc=lo_cation, scale=scal_e)
+# Not the same as the above - gives p-value > 0.02 most of the time - doesn't reject NULL
+# KS test for VTI returns vs t-distribution
 da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
-ks.test(as.numeric(re_turns), da_ta)
-
+ks.test(re_turns, da_ta)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
@@ -414,7 +401,6 @@ for (in_dex in 1:4) {
   xlab="", ylab="", col=col_ors[in_dex],
   lwd=2, add=as.logical(in_dex-1))
 }  # end for
-
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
@@ -422,7 +408,6 @@ lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
        cex=0.8, lwd=6, lty=1, col=col_ors)
-
 # Observed frequencies from random normal data
 histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
@@ -448,7 +433,6 @@ freq_t <- pt((histo_gram$breaks-lo_cation)/scal_e, df=2)
 freq_t <- rutils::diff_it(freq_t)
 # Perform Chi-squared test for VTI returns
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
-
 # Sort a vector into ascending order
 da_ta <- round(runif(7), 3)
 sort_ed <- sort(da_ta)
@@ -465,7 +449,6 @@ all.equal(da_ta, sort_ed[in_dex])
 # Calculate ranks of the vector elements
 rank(da_ta)
 all.equal(rank(da_ta), in_dex)
-
 # VTI returns
 re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns[, "VTI"]))
 n_rows <- NROW(re_turns)
@@ -518,7 +501,6 @@ boot_data <- mclapply(1:1e4, function(x) {
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
-
 # Bias and variance from bootstrap
 bias_var <- apply(boot_data, MARGIN=2,
   function(x) c(bias=mean(x), variance=var(x)))
@@ -526,16 +508,12 @@ bias_var <- apply(boot_data, MARGIN=2,
 bias_var[1, 3]^2 + bias_var[2, 3]
 # MSE of median
 bias_var[1, 4]^2 + bias_var[2, 4]
-
 re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns[, "VTI"]))
 n_rows <- NROW(re_turns)
 re_turns <- 100*(re_turns-mean(re_turns))/sd(re_turns)
 # Simulate normal random data
 n_data <- rnorm(n_rows, sd=100)
-
 # Hodges-Lehmann estimator
-
-
 # Bootstrap the mean and median estimators
 boot_data <- sapply(1:1e3, function(x) {
   # Simulate data
@@ -553,7 +531,6 @@ sum(is.na(boot_data))
 # Means and medians from bootstrap
 apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
-
 n_rows <- 1e3
 da_ta <- rnorm(n_rows)
 sd(da_ta)
@@ -591,7 +568,6 @@ boot_data <- mclapply(1:1e4, function(x) {
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
-
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 n_rows <- 1e3
@@ -600,7 +576,6 @@ da_ta <- rnorm(n_rows)
 mean(da_ta)
 # Sample standard deviation
 sd(da_ta)
-
 n_rows <- 1e3
 # Wilcoxon test for normal distribution
 nor_mal <- rnorm(n_rows)
@@ -614,24 +589,18 @@ mean(log_norm); median(log_norm)
 wilcox.test(log_norm)
 # Skewed distribution with median=0
 wilcox.test(log_norm-median(log_norm))
-
 # Skewed distributions with median!=0
 wilcox.test(log_norm, nor_mal, paired=TRUE)
-
 # Two distributions with median=0
 wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
       paired=TRUE)
-
 # Skewed distribution with median=0
 wilcox.test(log_norm-median(log_norm))
-
-
 # Skewed distribution with mean=0
 mean(log_norm); median(log_norm)
 wilcox.test(log_norm-median(log_norm))
 # Same as
 wilcox.test(log_norm-median(log_norm), rep(0, n_rows), paired=TRUE)
-
 # Skewed distributions with median!=0
 wilcox.test(log_norm, nor_mal, paired=TRUE)
 # Two distributions with median=0
@@ -641,7 +610,6 @@ wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
 sample1 <- rnorm(n_rows, sd=1)
 sample2 <- rnorm(n_rows, sd=10)
 wilcox.test(sample1, sample2, paired=TRUE)
-
 # Wilcoxon test for random data around 0
 un_if <- (runif(n_rows) - 0.5)
 wil_cox <- wilcox.test(un_if)
@@ -661,7 +629,6 @@ da_ta <- (sample1 - sample2)
 sum(rank(abs(da_ta))[da_ta>0])
 # Calculate W statistic of Wilcoxon test
 sum(sign(da_ta)*rank(abs(da_ta)))
-
 # Calculate distributon of Wilcoxon W statistic
 wilcox_w <- sapply(1:1e3, function(x) {
   da_ta <- (runif(n_rows) - 0.5)
@@ -681,7 +648,6 @@ curve(expr=dnorm, add=TRUE, lwd=3, col="blue")
 legend("topright", inset=0.05, bty="n",
  leg=c("W density", "Normal"),
  lwd=6, lty=1, col=c("red", "blue"))
-
 n_rows <- 1e3
 # Wilcoxon test for normal distribution
 nor_mal <- rnorm(n_rows)
@@ -694,24 +660,18 @@ mean(log_norm); median(log_norm)
 wilcox.test(log_norm)
 # Skewed distribution with median=0
 wilcox.test(log_norm-median(log_norm))
-
 # Skewed distributions with median!=0
 wilcox.test(log_norm, nor_mal, paired=TRUE)
-
 # Two distributions with median=0
 wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
       paired=TRUE)
-
 # Skewed distribution with median=0
 wilcox.test(log_norm-median(log_norm))
-
-
 # Skewed distribution with mean=0
 mean(log_norm); median(log_norm)
 wilcox.test(log_norm-median(log_norm))
 # Same as
 wilcox.test(log_norm-median(log_norm), rep(0, n_rows), paired=TRUE)
-
 # Skewed distributions with median!=0
 wilcox.test(log_norm, nor_mal, paired=TRUE)
 # Two distributions with median=0
@@ -721,7 +681,6 @@ wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
 sample1 <- rnorm(n_rows, sd=1)
 sample2 <- rnorm(n_rows, sd=10)
 wilcox.test(sample1, sample2, paired=TRUE)
-
 # Wilcoxon test for random data around 0
 un_if <- (runif(n_rows) - 0.5)
 wil_cox <- wilcox.test(un_if)
@@ -741,7 +700,6 @@ da_ta <- (sample1 - sample2)
 sum(rank(abs(da_ta))[da_ta>0])
 # Calculate W statistic of Wilcoxon test
 sum(sign(da_ta)*rank(abs(da_ta)))
-
 # Calculate distributon of Wilcoxon W statistic
 wilcox_w <- sapply(1:1e3, function(x) {
   da_ta <- (runif(n_rows) - 0.5)
@@ -761,7 +719,6 @@ curve(expr=dnorm, add=TRUE, lwd=3, col="blue")
 legend("topright", inset=0.05, bty="n",
  leg=c("W density", "Normal"),
  lwd=6, lty=1, col=c("red", "blue"))
-
 # Wilcoxon test for two normal distributions
 sample1 <- rnorm(1e2)
 sample2 <- rnorm(1e2, mean=0.1)
@@ -774,27 +731,22 @@ sample2[1:3] <- sample2[1:3] + 1e3
 wilcox.test(sample1, sample2,
       paired=TRUE)$p.value
 t.test(sample1, sample2)$p.value
-
 # Data samples
 da_ta <- sort(rnorm(38))
 in_dex <- c(1:9, 20:29)
-
 # Or
 da_ta <- sort(rnorm(398))
 in_dex <- c(1:99, 200:299)
 sample1 <- da_ta[in_dex]
 sample2 <- da_ta[-in_dex]
-
 # Or
 in_dex <- sample(1:n_rows, size=n_rows/2)
 sample1 <- re_turns[in_dex]
 sample2 <- (-re_turns[-in_dex])
-
 sample1 <- (sample1- median(sample1))
 sample2 <- (sample2- median(sample2))
 moments::moment(sample1, order=3)
 moments::moment(sample2, order=3)
-
 # Mann-Whitney test for normal distribution
 wilcox.test(sample1, sample2, paired=FALSE)
 wilcox.test(sample1, sample2, paired=TRUE)
@@ -803,8 +755,6 @@ red <- rgb(1, 0, 0, alpha=0.5)
 barplot(sample2, col=red)
 barplot(sample1, col=blue, add=TRUE)
 hist(sample1)
-
-
 # Mann-Whitney test for normal distribution
 da_ta <- rnorm(n_rows, sd=100)
 wilcox.test(da_ta, paired=FALSE)
@@ -818,8 +768,6 @@ wilcox.test(re_turns-median(re_turns),
 # Skewed distribution with median=0
 wilcox.test(re_turns-median(re_turns),
       da_ta, paired=FALSE)
-
-
 sample1 <- sample(re_turns, size=n_rows)
 sample2 <- (-sample1)
 sample1 <- (sample1-median(sample1))
@@ -827,22 +775,18 @@ sample2 <- (sample2-median(sample2))
 # Mann-Whitney-Wilcoxon rank sum test
 wilcox.test(sample1, sample2,
       paired=FALSE)$p.value
-
-
 da_ta <- (-re_turns)
 da_ta <- (da_ta-median(da_ta))
 wilcox.test(re_turns-median(re_turns),
       da_ta, paired=FALSE)
 wilcox.test(re_turns-median(re_turns),
       da_ta, paired=TRUE)
-
 da_ta <- (-re_turns)
 da_ta <- (da_ta-mean(da_ta))
 wilcox.test(re_turns-mean(re_turns),
       da_ta, paired=FALSE)
 wilcox.test(re_turns-mean(re_turns),
       da_ta, paired=TRUE)
-
 foo <- sapply(1:100, function(x) {
   # Data samples
   sample1 <- sample(re_turns, size=n_rows/2)
@@ -853,7 +797,6 @@ foo <- sapply(1:100, function(x) {
   wilcox.test(sample1, sample2, paired=FALSE)$p.value
 })
 hist(foo)
-
 # Skewed distribution with mean=0
 mean(re_turns); median(re_turns)
 wilcox.test(re_turns-mean(re_turns))
@@ -863,8 +806,6 @@ wilcox.test(re_turns-mean(re_turns),
       paired=TRUE)
 # Skewed distribution with median=0
 wilcox.test(re_turns-median(re_turns))
-
-
 # Data samples
 sample1 <- rnorm(200)
 sample2 <- rnorm(100, mean=0.1)
@@ -877,7 +818,6 @@ da_ta <- c(sample1, sample2)
 rank_s <- rank(da_ta)
 sum(rank_s[1:200]) - 100*201
 sum(rank_s[201:300]) - 50*101
-
 # Wilcoxon test for random data around 0
 n_rows <- 1e3
 da_ta <- (runif(n_rows) - 0.5)
@@ -895,7 +835,6 @@ wilcox_w <- sapply(1:1e3, function(x) {
 wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
 var(wilcox_w)
 hist(wilcox_w)
-
 # iris data frame
 aggregate(Sepal.Length ~ Species, data=iris,
   FUN=function(x) c(mean=mean(x), sd=sd(x)))
@@ -921,7 +860,6 @@ plot(density(sample1), col="blue", lwd=3,
      xlim=range(c(sample1, sample2)), xlab="samples",
      main="Two samples from beta distributions with equal means")
 lines(density(sample2), col="red", lwd=3)
-
 # Kruskal-Wallis test for iris data
 k_test <- kruskal.test(Sepal.Length ~ Species, data=iris)
 # Calculate Kruskal-Wallis test Statistic
@@ -936,7 +874,6 @@ kruskal_stat <- (12/n_rows/(n_rows+1))*sum(
       })[, 2])
 c(k_test=unname(k_test$statistic),
   k_stat=kruskal_stat)
-
 # Kruskal-Wallis test with data outliers
 sample1 <- rnorm(1e3)
 sample2 <- rnorm(1e3)
@@ -944,7 +881,6 @@ sample2[1:11] <- sample2[1:11] + 50
 fac_tor <- c(rep(TRUE, 1e3), rep(FALSE, 1e3))
 kruskal.test(x=c(sample1, sample2), g=fac_tor)$p.value
 t.test(sample1, sample2)$p.value
-
 n_rows <- 1e3
 da_ta <- rnorm(n_rows)
 sd(da_ta)
@@ -983,7 +919,6 @@ boot_data <- mclapply(1:1e4,
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
-
 n_rows <- 1e3
 da_ta <- rnorm(n_rows)
 sd(da_ta)
@@ -1021,7 +956,6 @@ boot_data <- mclapply(1:1e4, function(x) {
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
-
 set.seed(1121)  # initialize random number generator
 # Define variables and calculate correlation
 n_rows <- 100
@@ -1040,7 +974,6 @@ title(main="Correlated Variables", line=0.5)
 abline(a=0.25, b=rh_o, lwd=3, col="blue")
 # Calculate regression
 summary(lm(y_var ~ x_var))
-
 # Simulation of sample correlation
 n_rows <- 1e4
 rh_o <- 0.99
@@ -1055,8 +988,6 @@ sd(da_ta)
 (1-rh_o^2)/sqrt(n_rows-2)
 # Incorrect formula
 sqrt((1-rh_o^2)/(n_rows-2))
-
-
 # Correlation
 co_r <- cor(x_var, y_var)
 # Standard error of correlation
@@ -1065,11 +996,8 @@ std_error <- sqrt((1-co_r^2)/(n_rows-2))
 co_r/std_error
 # 95% confidence intervals
 co_r*c(1-qnorm(0.975)*std_error, 1+qnorm(0.975)*std_error)
-
-
 # Test statistical significance of correlation
 cor.test(x_var, y_var)
-
 rh_o <- 0.9
 rho_2 <- sqrt(1-rh_o^2)
 set.seed(1121)
@@ -1079,19 +1007,14 @@ boot_data <- sapply(1:1000, function(x) {
   y_var <- (rh_o*x_var + rho_2*rnorm(n_rows))
   c(rho=mean(y_var*x_var), y_sd=sd(y_var), cor=cor(x_var, y_var))
 })  # end sapply
-
 # Means and standard errors from bootstrap
 foo <- apply(boot_data, MARGIN=1, function(x)
   c(mean=mean(x), std_error=sd(x)))
 foo[2, ]
 (1-rh_o^2)/sqrt(n_rows-2)
 sqrt((1-rh_o^2)/(n_rows-2))
-
 rho_2^2
-
 rh_o^4
-
-
 # Simulation of sample correlation
 rh_o <- 0.99
 rho_2 <- sqrt(1-rh_o^2)
@@ -1105,22 +1028,18 @@ sd(da_ta)
 (1-rh_o^2)/sqrt(n_rows-2)
 # Incorrect formula
 sqrt((1-rh_o^2)/(n_rows-2))
-
 da_ta <- sapply(1:10000, function(x) {
   rnorm(n_rows)^2 * rnorm(n_rows)^2
 })  # end sapply
 sd(da_ta)
-
 foo <- (rnorm(n_rows)^2 * rnorm(n_rows)^2)
 mean(rnorm(n_rows)^2 * rnorm(n_rows)^2)
-
 # Calculate correlations
 cor(x_var, y_var, method="pearson")
 cor(x_var, y_var, method="spearman")
 # Test statistical significance of correlations
 cor.test(x_var, y_var, method="pearson")
 cor.test(x_var, y_var, method="spearman")
-
 # Calculate correlations
 cor(x_var, y_var, method="pearson")
 cor(x_var, y_var, method="kendall")

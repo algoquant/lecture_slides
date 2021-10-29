@@ -6,7 +6,6 @@ rets_dollar <- rutils::diff_it(price_s)
 # Calculate VTI and IEF percentage returns
 rets_percent <- rets_dollar/
   rutils::lag_it(price_s, lagg=1, pad_zeros=FALSE)
-
 # Wealth of fixed shares (without rebalancing)
 weight_s <- c(0.5, 0.5)
 rets_dollar[1, ] <- price_s[1, ]
@@ -24,7 +23,6 @@ dygraphs::dygraph(weal_th, main="Wealth of Weighted Portfolios") %>%
   dySeries(name=col_names[1], axis="y", col="red", strokeWidth=2) %>%
   dySeries(name=col_names[2], axis="y2", col="blue", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Margin account for fixed dollars (with rebalancing)
 mar_gin <- cumsum(rets_percent %*% weight_s)
 # Cumulative transaction costs
@@ -42,7 +40,6 @@ dygraphs::dygraph(da_ta, main="Fixed Dollar Portfolio Transaction Costs") %>%
   dySeries(name=col_names[1], axis="y", col="blue") %>%
   dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-
 # Wealth of fixed shares (without rebalancing)
 wealth_fsa <- cumsum(rets_dollar %*% weight_s)
 # Calculate weighted percentage returns
@@ -57,7 +54,6 @@ colnames(weal_th) <- c("Fixed Shares", "Fixed Ratio")
 dygraphs::dygraph(weal_th, main="Log Wealth of Fixed Dollar Ratios") %>%
   dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Returns in excess of weighted returns
 ex_cess <- lapply(rets_percent, function(x) (rets_weighted - x))
 ex_cess <- do.call(cbind, ex_cess)
@@ -70,7 +66,6 @@ ex_cess <- ex_cess*rutils::lag_it(wealth_cda)
 cost_s <- bid_offer*cumsum(ex_cess)/2
 # Subtract transaction costs from wealth
 wealth_cda <- (wealth_cda - cost_s)
-
 # dygraph plot of wealth and transaction costs
 weal_th <- cbind(wealth_cda, cost_s)
 weal_th <- xts::xts(weal_th, index(price_s))
@@ -82,7 +77,6 @@ dygraphs::dygraph(weal_th, main="Transaction Costs With Fixed Dollar Ratios") %>
   dySeries(name=col_names[1], axis="y", col="blue") %>%
   dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-
 # Calculate stock and bond returns
 re_turns <- na.omit(rutils::etf_env$re_turns[, c("VTI", "IEF")])
 weight_s <- c(0.4, 0.6)
@@ -100,7 +94,6 @@ sapply(re_turns, function(x) {
   x <- (x - mean(x))/stddev
   c(stddev=stddev, skew=mean(x^3), kurt=mean(x^4))
 })  # end sapply
-
 # Wealth of fixed ratio of dollar amounts
 weal_th <- cumprod(1 + re_turns)
 # Plot cumulative wealth
@@ -108,7 +101,6 @@ dygraphs::dygraph(log(weal_th), main="Stock and Bond Portfolio") %>%
   dyOptions(colors=c("blue","green","blue","red")) %>%
   dySeries("Combined", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Extract ETF returns
 sym_bols <- c("VTI", "IEF", "DBC")
 re_turns <- na.omit(rutils::etf_env$re_turns[, sym_bols])
@@ -116,7 +108,6 @@ re_turns <- na.omit(rutils::etf_env$re_turns[, sym_bols])
 weights_aw <- c(0.30, 0.55, 0.15)
 re_turns <- cbind(re_turns, re_turns %*% weights_aw)
 colnames(re_turns)[4] <- "All Weather"
-
 # Calculate cumulative wealth from returns
 weal_th <- cumsum(re_turns)
 # dygraph all-weather wealth
@@ -132,7 +123,6 @@ quantmod::chart_Series(weal_th, theme=plot_theme, lwd=c(2, 2, 2, 4),
 legend("topleft", legend=colnames(weal_th),
   inset=0.1, bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
-
 # Calculate VTI returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI["2008/2009"])
 date_s <- index(re_turns)
@@ -146,7 +136,6 @@ stock_value <- numeric(n_rows)
 stock_value[1] <- co_eff*(portf_value[1] - bfloor)
 bond_value <- numeric(n_rows)
 bond_value[1] <- (portf_value[1] - stock_value[1])
-
 # Simulate CPPI strategy
 for (t in 2:n_rows) {
   portf_value[t] <- portf_value[t-1] + stock_value[t-1]*re_turns[t]
@@ -160,7 +149,6 @@ colnames(da_ta) <- c("stocks", "bonds", "CPPI", "VTI")
 dygraphs::dygraph(da_ta, main="CPPI strategy") %>%
   dyOptions(colors=c("red", "green","blue","orange"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate dollar and percentage returns for VTI and IEF.
 price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
@@ -186,7 +174,6 @@ allocation_s <- rutils::lag_it(allocation_s)
 # Calculate wealth of risk parity.
 rets_weighted <- rowSums(rets_percent*allocation_s)
 wealth_risk_parity <- cumprod(1 + rets_weighted)
-
 # Calculate the log wealths.
 weal_th <- log(cbind(wealth_cda, wealth_risk_parity))
 weal_th <- xts::xts(weal_th, index(price_s))
@@ -197,7 +184,6 @@ sqrt(252)*sapply(rutils::diff_it(weal_th), function (x) mean(x)/sd(x))
 dygraphs::dygraph(weal_th, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios") %>%
   dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Test risk parity market timing of VTI using Treynor-Mazuy test
 re_turns <- rutils::diff_it(weal_th)
 vt_i <- rets_percent$VTI
@@ -218,7 +204,6 @@ fit_ted <- (mod_el$coeff["(Intercept)"] +
         mod_el$coeff["treynor"]*vt_i^2)
 points.default(x=de_sign$VTI, y=fit_ted, pch=16, col="red")
 text(x=0.05, y=0.025, paste("Risk Parity t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
-
 # Test for fixed ratio market timing of VTI using Treynor-Mazuy test
 mod_el <- lm(fixed ~ VTI + treynor, data=de_sign)
 summary(mod_el)
@@ -226,7 +211,6 @@ summary(mod_el)
 fit_ted <- (mod_el$coeff["(Intercept)"] + mod_el$coeff["treynor"]*vt_i^2)
 points.default(x=de_sign$VTI, y=fit_ted, pch=16, col="blue")
 text(x=0.05, y=0.02, paste("Fixed Ratio t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
-
 # Calculate positions
 vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
 position_s <- rep(NA_integer_, NROW(vt_i))
@@ -246,7 +230,6 @@ colnames(weal_th) <- c("VTI", "sell_in_may")
 # Calculate Sharpe and Sortino ratios
 sqrt(252)*sapply(weal_th,
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot wealth of Sell in May strategy
 dygraphs::dygraph(cumsum(weal_th), main="Sell in May Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -260,7 +243,6 @@ quantmod::chart_Series(weal_th, theme=plot_theme, name="Sell in May Strategy")
 legend("topleft", legend=colnames(weal_th),
   inset=0.1, bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
-
 # Test if Sell in May strategy can time VTI
 de_sign <- cbind(vt_i, 0.5*(vt_i+abs(vt_i)), vt_i^2)
 colnames(de_sign) <- c("VTI", "merton", "treynor")
@@ -279,7 +261,6 @@ fit_ted <- (mod_el$coeff["(Intercept)"] +
         mod_el$coeff["treynor"]*vt_i^2)
 points.default(x=vt_i, y=fit_ted, pch=16, col="red")
 text(x=0.05, y=0.05, paste("Treynor test t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
-
 # Calculate the log of OHLC VTI prices
 oh_lc <- log(rutils::etf_env$VTI)
 op_en <- quantmod::Op(oh_lc)
@@ -294,7 +275,6 @@ open_close <- (clos_e - op_en)
 colnames(open_close) <- "open_close"
 close_open <- (op_en - rutils::lag_it(clos_e, lagg=1, pad_zeros=FALSE))
 colnames(close_open) <- "close_open"
-
 # Calculate Sharpe and Sortino ratios
 weal_th <- cbind(close_close, close_open, open_close)
 sqrt(252)*sapply(weal_th,
@@ -306,7 +286,6 @@ dygraphs::dygraph(cumsum(weal_th),
   dySeries(name="close_open", label="Close-to-Open (overnight)", strokeWidth=2, col="red") %>%
   dySeries(name="open_close", label="Open-to-Close (daytime)", strokeWidth=2, col="green") %>%
   dyLegend(width=600)
-
 # Calculate the VTI returns
 vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
 date_s <- zoo::index(vt_i)
@@ -323,7 +302,6 @@ date_s[head(indeks, 11)]
 # Calculate Turn of the Month pnls
 pnl_s <- numeric(NROW(vt_i))
 pnl_s[indeks] <- vt_i[indeks, ]
-
 # Combine data
 weal_th <- cbind(vt_i, pnl_s)
 col_names <- c("VTI", "Strategy")
@@ -337,7 +315,6 @@ dygraphs::dygraph(cumsum(weal_th), main="Turn of the Month Strategy") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="red")
-
 # Calculate the VTI returns
 vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
 date_s <- zoo::index(vt_i)
@@ -365,7 +342,6 @@ pnls2 <- vt_i
 is_dd <- rutils::lag_it(dd < -sto_p*cum_max)
 pnls2 <- ifelse(is_dd, 0, pnls2)
 all.equal(pnl_s, pnls2)
-
 # Combine data
 weal_th <- xts::xts(cbind(vt_i, pnl_s), date_s)
 col_names <- c("VTI", "Strategy")
@@ -379,7 +355,6 @@ dygraphs::dygraph(cumsum(weal_th), main="VTI Stop-loss Strategy") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="red")
-
 # Simulate multiple stop-loss strategies
 cum_sum <- cumsum(vt_i)
 cum_max <- cummax(cumsum(vt_i))
@@ -390,13 +365,11 @@ cum_pnls <- sapply(0.01*(1:20), function(sto_p) {
   pnl_s <- ifelse(is_dd, 0, pnl_s)
   sum(pnl_s)
 })  # end sapply
-
 # Plot cumulative pnls for stop-loss strategies
 plot(x=0.01*(1:20), y=cum_pnls,
      main="Cumulative PnLs for Stop-loss Strategies",
      xlab="stop-loss level", ylab="cumulative pnl",
      t="l", lwd=3, col="blue")
-
 # Extract time series of VTI log prices
 clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
 # Inspect the R code of the function filter()
@@ -427,7 +400,6 @@ summary(microbenchmark(
   filter_fast=.Call(stats:::C_cfilter, clos_e, filter=weight_s, sides=1, circular=FALSE),
   roll=roll::roll_sum(clos_e, width=look_back, weights=weights_rev)
   ), times=10)[, c(1, 4, 5)]
-
 # Simulate AR process using filter()
 n_rows <- NROW(clos_e)
 # Calculate ARIMA coefficients and innovations
@@ -451,7 +423,6 @@ summary(microbenchmark(
   filter_fast=.Call(stats:::C_rfilter, in_nov, co_eff, double(n_coeff + n_rows)),
   Rcpp=HighFreq::sim_arima(in_nov, rev(co_eff))
   ), times=10)[, c(1, 4, 5)]
-
 # Calculate trailing EWMA prices using roll::roll_sum()
 look_back <- 21
 weight_s <- exp(-0.1*1:look_back)
@@ -468,7 +439,6 @@ sapply(rutils::diff_it(price_s), sd)
 # Plot dygraph
 dygraphs::dygraph(price_s["2009"], main="VTI Prices and Trailing Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
-
 # Calculate centered EWMA prices using roll::roll_sum()
 weight_s <- c(weights_rev, weight_s[-1])
 weight_s <- weight_s/sum(weight_s)
@@ -485,7 +455,6 @@ sapply(rutils::diff_it(price_s), sd)
 # Plot dygraph
 dygraphs::dygraph(price_s["2009"], main="VTI Prices and Centered Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
-
 # Open plot window
 x11(width=6, height=7)
 # Set plot parameters
@@ -499,7 +468,6 @@ title(main="ACF of VTI Returns", line=-1)
 # Plot ACF of smoothed VTI returns
 rutils::plot_acf(re_turns[, 2], lag=10, xlab="")
 title(main="ACF of Smoothed VTI Returns", line=-1)
-
 # Extract log VTI prices
 clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
 n_rows <- NROW(clos_e)
@@ -514,7 +482,6 @@ ew_ma <- roll::roll_sum(clos_e, width=look_back, weights=weight_s, min_obs=1)
 ew_ma <- zoo::na.locf(ew_ma, fromLast=TRUE)
 price_s <- cbind(clos_e, ew_ma)
 colnames(price_s) <- c("VTI", "VTI EWMA")
-
 # Dygraphs plot with custom line colors
 col_ors <- c("blue", "red")
 dygraphs::dygraph(price_s["2009"], main="VTI EWMA Prices") %>%
@@ -528,7 +495,6 @@ quantmod::chart_Series(price_s["2009"], theme=plot_theme,
 legend("bottomright", legend=colnames(price_s),
  inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
  col=plot_theme$col$line.col, bty="n")
-
 # Calculate log OHLC prices and volumes
 sym_bol <- "VTI"
 oh_lc <- rutils::etf_env$VTI
@@ -543,7 +509,6 @@ v_wap <- v_wap/volume_roll
 v_wap <- zoo::na.locf(v_wap, fromLast=TRUE)
 price_s <- cbind(clos_e, v_wap)
 colnames(price_s) <- c(sym_bol, paste(sym_bol, "VWAP"))
-
 # Dygraphs plot with custom line colors
 col_ors <- c("blue", "red")
 dygraphs::dygraph(price_s["2009"], main="VTI VWAP Prices") %>%
@@ -557,7 +522,6 @@ quantmod::chart_Series(price_s["2009"], theme=plot_theme,
 legend("bottomright", legend=colnames(price_s),
  inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
  col=plot_theme$col$line.col, bty="n")
-
 # Calculate two EWMA prices
 look_back <- 21
 lamb_da <- 0.1
@@ -568,7 +532,6 @@ lamb_da <- 0.05
 weight_s <- exp(lamb_da*1:look_back)
 weight_s <- weight_s/sum(weight_s)
 ewma_slow <- roll::roll_sum(clos_e, width=look_back, weights=weight_s, min_obs=1)
-
 # Calculate VTI returns
 re_turns <- (ewma_fast - ewma_slow)
 price_s <- cbind(clos_e, re_turns)
@@ -580,7 +543,6 @@ dygraphs::dygraph(price_s["2009"], main=paste(sym_bol, "EWMA Returns")) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
-
 # Calculate fractional weights
 del_ta <- 0.1
 weight_s <- (del_ta - 0:(look_back-2)) / 1:(look_back-1)
@@ -599,7 +561,6 @@ dygraphs::dygraph(price_s["2009"], main=paste(sym_bol, "Fractional Returns")) %>
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
-
 # Calculate VTI log returns
 clos_e <- log(quantmod::Cl(rutils::etf_env$VTI))
 re_turns <- rutils::diff_it(clos_e)
@@ -607,7 +568,6 @@ re_turns <- rutils::diff_it(clos_e)
 tseries::adf.test(clos_e)
 # Perform ADF test for returns
 tseries::adf.test(re_turns)
-
 # Calculate fractional VTI returns
 delta_s <- 0.1*c(1, 3, 5, 7, 9)
 re_turns <- lapply(delta_s, function(del_ta) {
@@ -624,7 +584,6 @@ adf_stats <- sapply(re_turns, function(x)
   suppressWarnings(tseries::adf.test(x)$statistic)
 )  # end sapply
 names(adf_stats) <- colnames(re_turns)
-
 # Plot dygraph of fractional VTI returns
 color_s <- colorRampPalette(c("blue", "red"))(NCOL(re_turns))
 col_names <- colnames(re_turns)
@@ -637,7 +596,6 @@ for (i in 2:NROW(col_names))
   dySeries(name=col_names[i], axis="y2", label=col_names[i], strokeWidth=2, col=color_s[i])
 dy_graph <- dy_graph %>% dyLegend(width=500)
 dy_graph
-
 # Calculate volume z-scores
 vol_ume <- quantmod::Vo(rutils::etf_env$VTI)
 look_back <- 21
@@ -647,7 +605,6 @@ volume_scores <- (vol_ume - volume_mean)/volume_sd
 # Plot histogram of volume z-scores
 x11(width=6, height=5)
 hist(volume_scores, breaks=1e2)
-
 # Plot dygraph of volume z-scores of VTI prices
 price_s <- cbind(clos_e, volume_scores)
 colnames(price_s) <- c("VTI", "Z-scores")
@@ -657,7 +614,6 @@ dygraphs::dygraph(price_s["2009"], main="VTI Volume Z-Scores") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
-
 # Extract VTI log OHLC prices
 oh_lc <- log(rutils::etf_env$VTI)
 # Calculate volatility z-scores
@@ -672,7 +628,6 @@ hist(volat_scores, breaks=1e2)
 # Plot scatterplot of volume and volatility z-scores
 plot(as.numeric(volat_scores), as.numeric(volume_scores),
      xlab="volatility z-score", ylab="volume z-score")
-
 # Plot dygraph of VTI volatility z-scores
 clos_e <- quantmod::Cl(oh_lc)
 price_s <- cbind(clos_e, volat_scores)
@@ -683,7 +638,6 @@ dygraphs::dygraph(price_s["2009"], main="VTI Volatility Z-Scores") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
-
 # Calculate the centered volatility
 look_back <- 21
 half_back <- look_back %/% 2
@@ -694,7 +648,6 @@ price_scores <- (2*clos_e -
   rutils::lag_it(clos_e, half_back, pad_zeros=FALSE) -
   rutils::lag_it(clos_e, -half_back, pad_zeros=FALSE))
 price_scores <- ifelse(vol_at > 0, price_scores/vol_at, 0)
-
 # Plot dygraph of z-scores of VTI prices
 price_s <- cbind(clos_e, price_scores)
 colnames(price_s) <- c("VTI", "Z-scores")
@@ -704,7 +657,6 @@ dygraphs::dygraph(price_s["2009"], main="VTI Price Z-Scores") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
-
 # Calculate thresholds for labeling tops and bottoms
 threshold_s <- quantile(price_scores, c(0.1, 0.9))
 # Calculate the vectors of tops and bottoms
@@ -720,7 +672,6 @@ position_s[bottom_s] <- 1
 position_s <- zoo::na.locf(position_s)
 position_s <- rutils::lag_it(position_s)
 pnl_s <- cumsum(re_turns*position_s)
-
 # Plot dygraph of in-sample VTI strategy
 price_s <- cbind(clos_e, pnl_s)
 colnames(price_s) <- c("VTI", "Strategy")
@@ -730,13 +681,11 @@ dygraphs::dygraph(price_s, main="VTI Strategy Using In-sample Labels") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
-
 # Calculate trailing price z-scores
 date_s <- matrix(as.numeric(zoo::index(clos_e)))
 look_back <- 21
 price_scores <- drop(HighFreq::roll_zscores(res_ponse=clos_e, de_sign=date_s, look_back=look_back))
 price_scores[1:look_back] <- 0
-
 # Plot dygraph of z-scores of VTI prices
 price_s <- cbind(clos_e, price_scores)
 colnames(price_s) <- c("VTI", "Z-scores")
@@ -746,7 +695,6 @@ dygraphs::dygraph(price_s["2009"], main="VTI Price Z-Scores") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
-
 # Extract time series of VTI log prices
 clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
 # Define look-back window and a half window
@@ -762,7 +710,6 @@ z_scores <- (clos_e - medi_an)/ma_d
 z_scores[1:look_back, ] <- 0
 tail(z_scores, look_back)
 range(z_scores)
-
 x11(width=6, height=5)
 # Plot prices and medians
 dygraphs::dygraph(cbind(clos_e, medi_an), main="VTI median") %>%
@@ -772,7 +719,6 @@ histo_gram <- hist(z_scores, col="lightgrey",
   xlab="z-scores", breaks=50, xlim=c(-4, 4),
   ylab="frequency", freq=FALSE, main="Hampel Z-scores histogram")
 lines(density(z_scores, adjust=1.5), lwd=3, col="blue")
-
 # Calculate one-sided Hampel z-scores
 medi_an <- roll::roll_median(clos_e, width=look_back)
 # medi_an <- TTR::runMedian(clos_e, n=look_back)
@@ -790,7 +736,6 @@ z_scores <- (clos_e - medi_an)/ma_d
 z_scores[1:look_back, ] <- 0
 tail(z_scores, look_back)
 range(z_scores)
-
 # Calculate VTI percentage returns
 re_turns <- rutils::diff_it(clos_e)
 # Define threshold value
@@ -803,7 +748,6 @@ position_s[z_scores > thresh_old] <- (-1)
 position_s <- zoo::na.locf(position_s)
 position_s <- rutils::lag_it(position_s)
 pnl_s <- cumsum(re_turns*position_s)
-
 # Plot dygraph of in-sample VTI strategy
 price_s <- cbind(clos_e, pnl_s)
 colnames(price_s) <- c("VTI", "Strategy")
@@ -813,7 +757,6 @@ dygraphs::dygraph(price_s, main="VTI Hampel Strategy") %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
-
 library(HighFreq)
 # Read TAQ trade data from csv file
 ta_q <- data.table::fread(file="/Volumes/external/Develop/data/xlk_tick_trades_2020_03_16.csv")
@@ -847,7 +790,6 @@ NROW(ta_q)/(6.5*3600)
 ta_q <- ta_q[, .(price=PRICE, volume=SIZE)]
 # Add date-time index
 ta_q <- cbind(index=date_s, ta_q)
-
 # Coerce trade ticks to xts series
 x_ts <- xts::xts(ta_q[, .(price, volume)], ta_q$index)
 colnames(x_ts) <- paste(sym_bol, c("Close", "Volume"), sep=".")
@@ -859,7 +801,6 @@ dygraphs::dygraph(x_ts$XLK.Close,
 x11(width=6, height=5)
 quantmod::chart_Series(x=x_ts$XLK.Close,
   name="XLK Trade Ticks for 2020-03-16")
-
 # Calculate centered Hampel filter to remove price jumps
 look_back <- 111
 half_back <- look_back %/% 2
@@ -877,7 +818,6 @@ sum(is.na(z_scores))
 sum(!is.finite(z_scores))
 range(z_scores); mad(z_scores)
 hist(z_scores, breaks=2000, xlim=c(-5*mad(z_scores), 5*mad(z_scores)))
-
 # Define discrimination threshold value
 thresh_old <- 6*mad(z_scores)
 # Remove price jumps with large z-scores
@@ -895,7 +835,6 @@ dygraphs::dygraph(x_ts$XLK.Close,
 x11(width=6, height=5)
 quantmod::chart_Series(x=x_ts$XLK.Close,
   name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
-
 # Define discrimination threshold value
 thresh_old <- 6*mad(z_scores)
 # Calculate number of prices classified as bad data
@@ -921,7 +860,6 @@ z_scores[1:look_back, ] <- 0
 # Calculate number of prices classified as bad data
 is_bad <- (abs(z_scores) > thresh_old)
 sum(is_bad)
-
 # Calculate confusion matrix
 table(actual=!is_jump, forecast=!is_bad)
 sum(is_bad)
@@ -929,9 +867,7 @@ sum(is_bad)
 sum(!is_jump & is_bad)
 # FALSE negative (type II error)
 sum(is_jump & !is_bad)
-
 confu_sion <- table(!is_jump, !(abs(z_scores) > thresh_old))
-
 # Confusion matrix as function of thresh_old
 con_fuse <- function(actu_al, z_scores, thresh_old) {
     confu_sion <- table(!actu_al, !(abs(z_scores) > thresh_old))
@@ -953,7 +889,6 @@ true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lag_it(true_pos))/2
 false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
-
 # Plot ROC curve for Hampel classifier
 x11(width=5, height=5)
 plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
@@ -962,7 +897,6 @@ plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      main="ROC Curve for Hampel Classifier",
      type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
-
 # Calculate centered Hampel filter over 3 data points
 medi_an <- roll::roll_median(ta_q$price, width=3)
 medi_an[1:2] <- ta_q$price[1:2]
@@ -974,7 +908,6 @@ z_scores <- ifelse(ma_d > 0, (ta_q$price - medi_an)/ma_d, 0)
 range(z_scores); mad(z_scores)
 ma_d <- mad(z_scores[abs(z_scores)>0])
 hist(z_scores, breaks=2000, xlim=c(-5*ma_d, 5*ma_d))
-
 # Define discrimination threshold value
 thresh_old <- 6*ma_d
 bad_ticks <- (abs(z_scores) > thresh_old)

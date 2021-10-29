@@ -10,7 +10,6 @@ lis_t <- list(first=c("a", "b"), second=1:4)
 lis_t
 names(lis_t)
 unlist(lis_t)
-
 lis_t[2]  # Extract second element as sublist
 lis_t[[2]]  # Extract second element
 lis_t[[2]][3]  # Extract third element of second element
@@ -23,12 +22,10 @@ lis_t$a <- 1
 lis_t[2] <- 2
 lis_t
 names(lis_t)
-
 # Convert vector elements to list elements
 as.list(1:3)
 # Convert whole vector to single list element
 list(1:3)
-
 data_frame <- data.frame(  # Create a data frame
                 type=c("rose", "daisy", "tulip"),
                 color=c("red", "white", "yellow"),
@@ -41,10 +38,8 @@ rownames(data_frame)  # Get the rownames attribute
 class(data_frame)  # Get object class
 typeof(data_frame)  # Data frames are lists
 is.data.frame(data_frame)
-
 class(data_frame$type)  # Get column class
 class(data_frame$price)  # Get column class
-
 data_frame[, 3]  # Extract third column as vector
 data_frame[[3]]  # Extract third column as vector
 data_frame[3]  # Extract third column as data frame
@@ -57,7 +52,6 @@ data_frame[2, ][3]  # Third element from second column
 data_frame[2, 3]  # Third element from second column
 unlist(data_frame[2, ])  # Coerce to vector
 is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
-
 data_frame <- data.frame(  # Create a data frame
                 type=c("rose", "daisy", "tulip"),
                 color=c("red", "white", "yellow"),
@@ -71,12 +65,10 @@ class(data_frame$price)  # Get column class
 options("stringsAsFactors")
 default.stringsAsFactors()
 options(stringsAsFactors=FALSE)
-
 str(data_frame)  # Display the object structure
 dim(cars)  # The cars data frame has 50 rows
 head(cars, n=5)  # Get first five rows
 tail(cars, n=5)  # Get last five rows
-
 # Create a named vector of student scores
 score_s <- sample(round(runif(5, min=1, max=10), digits=2))
 names(score_s) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
@@ -95,7 +87,6 @@ score_s
 # Examples for sort() with ties
 order(c(2, 1:4))  # There's a tie
 order(c(2, 1:4), 1:5)  # There's a tie
-
 # Create a vector of student ranks
 ra_nks <- c("fifth", "fourth", "third", "second", "first")
 # Reverse sort the student ranks according to students
@@ -110,13 +101,10 @@ order(data_frame$price)
 data_frame[order(data_frame$price), ]
 # Sort data_frame on color column
 data_frame[order(data_frame$color), ]
-
-
 as.matrix(data_frame)
 vec_tor <- sample(9)
 matrix(vec_tor, ncol=3)
 as.matrix(vec_tor, ncol=3)
-
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
 rownames(mat_rix) <- c("row1", "row2")  # Rownames attribute
 colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
@@ -131,7 +119,6 @@ summary(microbenchmark(
   as_data_frame=as.data.frame(mat_rix),
   data_frame=data.frame(mat_rix),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
@@ -139,7 +126,6 @@ summary(microbenchmark(
   l_apply=lapply(seq_along(mat_rix[1, ]),
      function(in_dex) mat_rix[, in_dex]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # ?iris  # Get information on iris
 dim(iris)
 head(iris, 2)
@@ -150,7 +136,6 @@ class(unique(iris$Species))
 sapply(iris, is.numeric)
 # Calculate means of iris columns
 sapply(iris, mean)  # Returns NA for Species
-
 # ?mtcars  # mtcars data from 1974 Motor Trend magazine
 # mpg   Miles/(US) gallon
 # qsec   1/4 mile time
@@ -163,7 +148,6 @@ colnames(mtcars)
 head(rownames(mtcars), 3)
 unique(mtcars$cyl)  # Extract list of car cylinders
 sapply(mtcars, mean)  # Calculate means of mtcars columns
-
 library(MASS)
 # ?Cars93  # Get information on Cars93
 dim(Cars93)
@@ -174,7 +158,6 @@ unique(Cars93$Type)  # Extract list of car types
 # Plot histogram of Highway MPG using the Freedman-Diaconis rule
 hist(Cars93$MPG.highway, col="lightblue1",
      main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
-
 rm(list=ls())
 as.numeric(c(1:3, "a"))  # NA from coercion
 0/0  # NaN from ambiguous math
@@ -189,7 +172,6 @@ mean(da_ta)  # Returns NA, when NAs are input
 mean(da_ta, na.rm=TRUE)  # remove NAs from input data
 da_ta[!is.na(da_ta)]  # Delete the NA values
 sum(!is.na(da_ta))  # Count non-NA values
-
 # airquality data has some NAs
 head(airquality)
 dim(airquality)
@@ -199,7 +181,6 @@ sum(is.na(airquality))
 sum(!complete.cases(airquality))
 # Display rows containing NAs
 head(airquality[!complete.cases(airquality), ])
-
 # Create vector containing NA values
 vec_tor <- sample(22)
 vec_tor[sample(NROW(vec_tor), 4)] <- NA
@@ -218,7 +199,6 @@ good_air <- zoo::na.locf(airquality)
 dim(good_air)
 # NAs replaced
 head(good_air)
-
 # Replace NAs in xts time series
 library(rutils)  # load package rutils
 se_ries <- rutils::etf_env$price_s[, 1]
@@ -233,7 +213,6 @@ summary(microbenchmark(
   zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
   xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # NULL values have no mode or type
 c(mode(NULL), mode(NA))
 c(typeof(NULL), typeof(NA))
@@ -260,7 +239,6 @@ vec_tor <- numeric(5)
 # Assign to vector in a loop - good code
 for (in_dex in 1:5)
   vec_tor[in_dex] <- runif(1)
-
 # Create list of vectors
 li_st <- lapply(1:3, function(x) sample(6))
 # Bind list elements into matrix - doesn't work
@@ -279,7 +257,6 @@ do.call(cbind, list(1:2, 3:5))
 do.call(cbind, list(1, NULL, 3, 4))
 # NA element isn't skipped
 do.call(cbind, list(1, NA, 3, 4))
-
 library(microbenchmark)
 list_vectors <- lapply(1:5, rnorm, n=10)
 mat_rix <- do.call(rbind, list_vectors)
@@ -298,7 +275,6 @@ rbind(li_st[[in_dex]], li_st[[in_dex+1]])
   li_st[[1]]
 }  # end do_call_rbind
 identical(mat_rix, do_call_rbind(list_vectors))
-
 library(microbenchmark)
 airquality[(airquality$Solar.R>320 &
         !is.na(airquality$Solar.R)), ]
@@ -308,7 +284,6 @@ summary(microbenchmark(
     brackets=airquality[(airquality$Solar.R>320 &
             !is.na(airquality$Solar.R)), ],
 times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 unique(iris$Species)  # Species has three distinct values
 # Split into separate data frames by hand
 set_osa <- iris[iris$Species=="setosa", ]
@@ -323,7 +298,6 @@ names(split_iris)
 dim(split_iris$setosa)
 head(split_iris$setosa, 2)
 all.equal(set_osa, split_iris$setosa)
-
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
@@ -345,7 +319,6 @@ aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
 aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate() all columns
 aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
-
 # Mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
@@ -356,7 +329,6 @@ with(mtcars, sapply(sort(unique(cyl)), function(x) {
      }))  # end with
 # Function by() instead of tapply()
 with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
-
 # Get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
         function(x) {
@@ -372,7 +344,6 @@ data_cars <- lapply(split_cars,  # Now same using lapply
 is.list(data_cars)  # lapply produces a list
 # do.call flattens list into a matrix
 do.call(cbind, data_cars)
-
 # Download CRSPpanel.txt from Brightspace
 # Read the file using read.table() with header and sep arguments
 panel_data <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt",
@@ -399,7 +370,6 @@ with(panel_data, sapply(levels(Industry),
   function(x) {
     Sector[match(x, Industry)]
   }))  # end sapply
-
 # Split panel_data based on Sector column
 split_panel <- split(panel_data, panel_data$Sector)
 # Number of companies in each Sector
@@ -425,7 +395,6 @@ sec_ind2 <- with(panel_data,
 # Coerce sec_ind2 into a jagged array
 sec_ind2 <- drop(as.matrix(sec_ind2))
 all.equal(sec_ind2, sec_ind)
-
 # Average ROE in each Industry
 with(panel_data,
   sapply(split(ROE, Industry), mean))
@@ -448,7 +417,6 @@ t(sapply(split_panel, FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
 aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
   by=list(panel_data$Industry), FUN=mean)
-
 # ?options  # Get info on global options
 getOption("warn")  # Global option for "warn"
 options("warn")  # Global option for "warn"
@@ -472,7 +440,6 @@ options(warn=1)
 sqrt_safe()
 options(warn=3)
 sqrt_safe()
-
 # Function vali_date validates its arguments
 vali_date <- function(in_put=NULL) {
 # Check if argument is valid and return double
@@ -497,7 +464,6 @@ vali_date <- function(in_put) {
 vali_date(3)
 vali_date("a")
 vali_date()
-
 # vali_date() validates its arguments and assertions
 vali_date <- function(in_put) {
 # Check if argument is valid and return double
@@ -511,10 +477,8 @@ vali_date <- function(in_put) {
 vali_date(3)
 vali_date("a")
 vali_date()
-
 # Print the call stack
 traceback()
-
 vali_date <- function(in_put) {
 # Check argument using long form '&&' operator
   stopifnot(!missing(in_put) && is.numeric(in_put))
@@ -530,7 +494,6 @@ vali_date <- function(in_put) {
 }  # end vali_date
 vali_date()
 vali_date("a")
-
 # sum_two() returns the sum of its two arguments
 sum_two <- function(in_put1, in_put2) {  # Even more robust
 # Check if at least one argument is not missing
@@ -554,14 +517,12 @@ sum_two(5, 'a')
 sum_two('a', 5)
 sum_two('a', 'b')
 sum_two()
-
 # Flag "vali_date" for debugging
 debug(vali_date)
 # Calling "vali_date" starts debugger
 vali_date(3)
 # unflag "vali_date" for debugging
 undebug(vali_date)
-
 vali_date <- function(in_put) {
   browser()  # Pause and invoke debugger
 # Check argument using long form '&&' operator
@@ -572,7 +533,6 @@ vali_date()  # Invokes debugger
 options("error")  # Show default NULL "error" option
 options(error=recover)  # Set "error" option to "recover"
 options(error=NULL)  # Set back to default "error" option
-
 str(tryCatch)  # Get arguments of tryCatch()
 tryCatch(  # Without error handler
   {  # Evaluate expressions
@@ -581,7 +541,6 @@ tryCatch(  # Without error handler
   },
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
-
 tryCatch(  # With error handler
   {  # Evaluate expressions
     num_var <- 101  # Assign
@@ -597,7 +556,6 @@ tryCatch(  # With error handler
   },  # end warning handler
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
-
 # Apply loop without tryCatch
 apply(matrix(1:5), 1, function(num_var) {  # Anonymous function
     stopifnot(!(num_var = 3))  # Check for error
@@ -607,7 +565,6 @@ apply(matrix(1:5), 1, function(num_var) {  # Anonymous function
     paste("(return) num_var =", num_var)
   }  # end anonymous function
 )  # end apply
-
 # Apply loop with tryCatch
 apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
     tryCatch(  # With error handler
