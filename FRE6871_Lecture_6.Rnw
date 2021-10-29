@@ -74,7 +74,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{October 3, 2021}
+\date{October 18, 2021}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -183,8 +183,10 @@ names(lis_t)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-as.list(c(1,2,3))
-list(c(1,2,3))
+# Convert vector elements to list elements
+as.list(1:3)
+# Convert whole vector to single list element
+list(1:3)
       @
   \end{columns}
 \end{block}
@@ -387,20 +389,21 @@ order(c(2, 1:4), 1:5)  # There's a tie
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-# Permutation index on price column
-order(data_frame$price)
-# Sort data_frame on price column
-data_frame[order(data_frame$price), ]
-# Sort data_frame on color column
-data_frame[order(data_frame$color), ]
 # Create a vector of student ranks
-ra_nks <- c("first", "second", "third", "fourth", "fifth")
+ra_nks <- c("fifth", "fourth", "third", "second", "first")
 # Reverse sort the student ranks according to students
 ra_nks[order(order(score_s))]
 # Create a data frame of students and their ranks
 ros_ter <- data.frame(score=score_s, 
   rank=ra_nks[order(order(score_s))])
 ros_ter
+# Permutation index on price column
+order(data_frame$price)
+# Sort data_frame on price column
+data_frame[order(data_frame$price), ]
+# Sort data_frame on color column
+data_frame[order(data_frame$color), ]
+
       @
   \end{columns}
 \end{block}
@@ -493,10 +496,8 @@ summary(microbenchmark(
 library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
-  as_list=
-    as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=
-    lapply(seq_along(mat_rix[1, ]),
+  as_list=as.list(as.data.frame.matrix(mat_rix)),
+  l_apply=lapply(seq_along(mat_rix[1, ]),
            function(in_dex) mat_rix[, in_dex]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -668,7 +669,7 @@ sum(!is.na(da_ta))  # Count non-NA values
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-# Airquality data has some NAs
+# airquality data has some NAs
 head(airquality)
 dim(airquality)
 # Number of NA elements
@@ -1087,11 +1088,9 @@ tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
 with(mtcars, tapply(X=mpg, INDEX=cyl, FUN=mean))
 # Function sapply() instead of tapply()
-with(mtcars,
-     sapply(sort(unique(cyl)), function(x) {
+with(mtcars, sapply(sort(unique(cyl)), function(x) {
        structure(mean(mpg[x==cyl]), names=x)
-     }, USE.NAMES=TRUE))  # end with
-
+     }))  # end with
 # Function by() instead of tapply()
 with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
       @
@@ -1159,7 +1158,7 @@ do.call(cbind, data_cars)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Download CRSPpanel.txt from NYU Classes
+# Download CRSPpanel.txt from Brightspace
 # Read the file using read.table() with header and sep arguments
 panel_data <- read.table(file="C:/Develop/lecture_slides/data/CRSPpanel.txt", 
                          header=TRUE, sep="\t")
@@ -1291,430 +1290,56 @@ aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
 
 
 %%%%%%%%%%%%%%%
-\section{Classification}
+\section{Debugging and Exception Handling}
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Logistic} Function}
+\subsection{Exception Conditions: Errors and Warnings}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{logistic} function expresses the probability of a numerical variable ranging over the whole interval of real numbers:
-      \begin{displaymath}
-        p(x) = \frac{1}{1 + \exp(-\lambda x)}
-      \end{displaymath}
-      Where $\lambda$ is the scale (dispersion) parameter.
+      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions.
       \vskip1ex
-      The \emph{logistic} function can be inverted to obtain the \emph{Odds Ratio} (the ratio of probabilities for favorable to unfavorable outcomes):
-      \begin{displaymath}
-        \frac{p(x)}{1 - p(x)} = \exp(\lambda x)
-      \end{displaymath}
-      The function \texttt{plogis()} gives the cumulative probability of the \emph{Logistic} distribution,
-        <<echo=(-(1:1)),eval=FALSE>>=
-par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-lamb_da <- c(0.5, 1, 1.5)
-col_ors <- c("red", "blue", "green")
-# Plot three curves in loop
-for (in_dex in 1:3) {
-  curve(expr=plogis(x, scale=lamb_da[in_dex]),
-        xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
-        col=col_ors[in_dex], add=(in_dex>1))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/logistic_func.png}
-      \vspace{-2em}
-        <<echo=TRUE,eval=FALSE>>=
-# Add title
-title(main="Logistic function", line=0.5)
-# Add legend
-legend("topleft", title="Scale parameters",
-       paste("lambda", lamb_da, sep="="),
-       inset=0.05, cex=0.8, lwd=6, bty="n",
-       lty=1, col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing \protect\emph{Logistic} Regression Using the Function \texttt{glm()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Linear} regression isn't suitable when the response variable is discrete data (like \texttt{factors} or \texttt{integers}).
+      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler.
       \vskip1ex
-      But \emph{logistic} regression (\emph{logit}) can be used to model data with a discrete response variable.
+      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler.
       \vskip1ex
-      The function \texttt{glm()} fits generalized linear models, including \emph{logistic} regressions.
-      \vskip1ex
-      \texttt{glm()} can fit categorical data (\texttt{factors}) from individual observations, and frequencies of categorical data (\texttt{integers}) from groups of observations.
-      \vskip1ex
-      The parameter \texttt{family=binomial(logit)} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
-      <<echo=(-(1:1)),eval=FALSE>>=
-set.seed(1121)
-# Simulate overlapping scores data
-sample1 <- runif(100, max=0.6)
-sample2 <- runif(100, min=0.4)
-# Perform Wilcoxon test for mean
-wilcox.test(sample1, sample2)
-# Combine scores and add categorical variable
-predic_tor <- c(sample1, sample2)
-res_ponse <- c(logical(100), !logical(100))
-# Perform logit regression
-g_lm <- glm(res_ponse ~ predic_tor, family=binomial(logit))
-class(g_lm)
-summary(g_lm)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/logistic_density.png}
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
-or_der <- order(predic_tor)
-plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der],
-     main="Category Densities and Logistic Function",
-     type="l", lwd=4, col="orange", xlab="score", ylab="density")
-den_sity <- density(predic_tor[res_ponse])
-den_sity$y <- den_sity$y/max(den_sity$y)
-lines(den_sity, col="red")
-polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-den_sity <- density(predic_tor[!res_ponse])
-den_sity$y <- den_sity$y/max(den_sity$y)
-lines(den_sity, col="blue")
-polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
-# Add legend
-legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
-       lwd=c(6, NA, NA), pch=c(NA, 15, 15),
-       legend=c("logistic fit", "TRUE", "FALSE"),
-       col=c("orange", "red", "blue"),
-       text.col=c("black", "red", "blue"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{ISLR} With Datasets for Machine Learning}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{ISLR} contains datasets used in the book
-      \href{http://www-bcf.usc.edu/~gareth/ISL/index.html}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
-    \vskip1ex
-      The book introduces machine learning techniques using \texttt{R}, and it's a must for advanced finance applications.
-      % \fullcite{islbook}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(ISLR)  # Load package ISLR
-# get documentation for package tseries
-packageDescription("ISLR")  # get short description
-
-help(package="ISLR")  # Load help page
-
-library(ISLR)  # Load package ISLR
-
-data(package="ISLR")  # list all datasets in ISLR
-
-ls("package:ISLR")  # list all objects in ISLR
-
-detach("package:ISLR")  # Remove ISLR from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Default} Dataset}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The data frame \texttt{Default} in the package \emph{ISLR} contains credit default data.
-      \vskip1ex
-      The \texttt{Default} data frame contains two columns of categorical data (\texttt{factors}): \texttt{default} and \texttt{student}, and two columns of numerical data: \texttt{balance} and \texttt{income}.
-      \vskip1ex
-      The columns \texttt{default} and \texttt{student} contain factor data, and they can be converted to \texttt{Boolean} values, with \texttt{TRUE} if \texttt{default == "Yes"} and \texttt{student == "Yes"}, and \texttt{FALSE} otherwise.
-      \vskip1ex
-      This avoids implicit coercion by the function \texttt{glm()}.
-    \column{0.5\textwidth}
-      <<echo=TRUE,eval=TRUE>>=
-# Coerce the student and default columns into Boolean
-Default <- ISLR::Default
-Default$default <- (Default$default == "Yes")
-Default$student <- (Default$student == "Yes")
-colnames(Default)[1:2] <- c("de_fault", "stu_dent")
-attach(Default)  # Attach Default to search path
-# Explore credit default data
-summary(Default)
-sapply(Default, class)
-dim(Default); head(Default)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Dependence of \texttt{default} \texttt{balance} and \texttt{income}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The columns \texttt{student}, \texttt{balance}, and \texttt{income} can be used as \emph{predictors} to predict the \texttt{default} column.
-      \vskip1ex
-      The scatterplot of \texttt{income} versus \texttt{balance} shows that the \texttt{balance} column is able to separate the data points of \texttt{default = TRUE} from \texttt{default = FALSE}.
-      \vskip1ex
-      But there is very little difference in \texttt{income} between the \texttt{default = TRUE} versus \texttt{default = FALSE} data points.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/islr_default_data.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot data points for non-defaulters
-x11(width=6, height=5)
-x_lim <- range(balance); y_lim <- range(income)
-plot(income ~ balance,
-     main="Default Dataset from Package ISLR",
-     xlim=x_lim, ylim=y_lim, pch=4, col="blue",
-     data=Default[!de_fault, ])
-# Plot data points for defaulters
-points(income ~ balance, pch=4, lwd=2, col="red",
-       data=Default[de_fault, ])
-# Add legend
-legend(x="topright", legend=c("non-defaulters", "defaulters"),
-       bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Boxplots of the \texttt{Default} Dataset}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{Box Plot} (box-and-whisker plot) is a graphical display of a distribution of data:
-      \vskip1ex
-      The \emph{box} represents the upper and lower quartiles, \\
-      The vertical lines (whiskers) represent values beyond the quartiles, \\
-      Open circles represent values beyond the nominal range (outliers).
-      \vskip1ex
-      The function \texttt{boxplot()} plots a box-and-whisker plot for a distribution of data.
-      \vskip1ex
-      \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (involving categorical variables), and another for \texttt{data frames}.
-      \vskip1ex
-      The \emph{Wilcoxon} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
-      <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for balance predictor
-wilcox.test(balance[de_fault], balance[!de_fault])
-# Wilcoxon test for income predictor
-wilcox.test(income[de_fault], income[!de_fault])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/islr_default_boxplot.png}
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mfrow=c(1,2))  # Set plot panels
-# Balance boxplot
-boxplot(formula=balance ~ de_fault,
-        col="lightgrey", main="balance", xlab="Default")
-# Income boxplot
-boxplot(formula=income ~ de_fault,
-        col="lightgrey", main="income", xlab="Default")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modeling Credit Defaults Using \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{balance} column can be used to calculate the probability of default using \emph{logistic} regression.
-      \vskip1ex
-      The residuals are the differences betweeen the actual response values ($0$ and $1$), and the calculated probabilities of default.
-      \vskip1ex
-      The residuals are not normally distributed, so the data is fitted using the \emph{maximum-likelihood} method, instead of least squares.
-      <<echo=TRUE,eval=TRUE>>=
-# Fit logistic regression model
-g_lm <- glm(de_fault ~ balance, family=binomial(logit))
-class(g_lm)
-summary(g_lm)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/islr_logistic_reg.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
-plot(x=balance, y=de_fault,
-     main="Logistic Regression of Credit Defaults", 
-     col="orange", xlab="credit balance", ylab="defaults")
-or_der <- order(balance)
-lines(x=balance[or_der], y=g_lm$fitted.values[or_der], col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n", lwd=6,
-       legend=c("defaults", "logit fitted values"),
-       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modeling Cumulative Defaults Using \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{glm()} can model a \emph{logistic} regression using either a \texttt{Boolean} response variable, or using a response variable specified as a frequency.
-      \vskip1ex
-      In the second case, the response variable should be defined as a two-column matrix, with the cumulative frequency of success (\texttt{TRUE}) and a cumulative frequency of failure (\texttt{FALSE}).
-      \vskip1ex
-      These two different ways of specifying the \emph{logistic} regression are related, but they are not equivalent, because they have different error terms.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate cumulative defaults
-to_tal <- sum(de_fault)
-default_s <- sapply(balance, function(lim_it) {
-    sum(de_fault[balance <= lim_it])
-})  # end sapply
-# Perform logit regression
-g_lm <- glm(cbind(default_s, to_tal-default_s) ~ balance,
-  family=binomial(logit))
-summary(g_lm)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/islr_logistic_count.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
-     main="Cumulative Defaults Versus Balance",
-     xlab="credit balance", ylab="cumulative defaults")
-or_der <- order(balance)
-lines(x=balance[or_der], y=g_lm$fitted.values[or_der],
-      col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n",
-       legend=c("cumulative defaults", "fitted values"),
-       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multifactor \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Logistic} regression calculates the probability of categorical variables, from the \emph{Odds Ratio} of continuous \emph{predictors}:
-      \begin{displaymath}
-        p = \frac{1}{1 + \exp(- \lambda_0 - \sum_{i=1}^n \lambda_i x_i)}
-      \end{displaymath}
-      The \emph{generic} function \texttt{summary()} produces a list of regression model summary and diagnostic statistics:
+      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
       \begin{itemize}
-        \item coefficients: matrix with estimated coefficients, their \emph{z}-values, and \emph{p}-values,
-        \item \emph{Null} deviance: measures the differences betweeen the response values and the probabilities calculated using only the intercept,
-        \item \emph{Residual} deviance: measures the differences betweeen the response values and the model probabilities,
+        \item \emph{negative} then warnings are ignored,
+        \item \emph{zero} then warnings are stored and printed after the top-level function has completed,
+        \item \emph{one} - warnings are printed as they occur,
+        \item \emph{two} or larger - warnings are turned into errors,
       \end{itemize}
-      The \texttt{balance} and \texttt{student} columns are statistically significant, but the \texttt{income} column is not.
+      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings.
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# Fit multifactor logistic regression model
-col_names <- colnames(Default)
-for_mula <- as.formula(paste(col_names[1],
-  paste(col_names[-1], collapse="+"), sep=" ~ "))
-for_mula
-g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-summary(g_lm)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Confounding Variables in Multifactor \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{student} column is a confounding variable since it's correlated with the \texttt{balance} column.
-      \vskip1ex
-      Students are less likely to default than non-students with the same \texttt{balance}.
-      \vskip1ex
-      But on average students have higher \texttt{balances} than non-students, which makes them more likely to default.
-      \vskip1ex
-      That's why the multifactor regression coefficient for \texttt{student} is negative, while the single factor coefficient for \texttt{student} is positive.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate cumulative defaults
-cum_defaults <- sapply(balance, function(lim_it) {
-c(student=sum(de_fault[stu_dent & (balance <= lim_it)]),
-  non_student=sum(de_fault[!stu_dent & (balance <= lim_it)]))
-})  # end sapply
-total_defaults <- c(student=sum(stu_dent & de_fault), 
-            stu_dent=sum(!stu_dent & de_fault))
-cum_defaults <- t(cum_defaults / total_defaults)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/islr_student_boxplot.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative defaults
-par(mfrow=c(1,2))  # Set plot panels
-or_der <- order(balance)
-plot(x=balance[or_der], y=cum_defaults[or_der, 1],
-     col="red", t="l", lwd=2, xlab="credit balance", ylab="",
-     main="Cumulative defaults of\n students and non-students")
-lines(x=balance[or_der], y=cum_defaults[or_der, 2], col="blue", lwd=2)
-legend(x="topleft", bty="n",
-       legend=c("students", "non-students"),
-       col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
-# Balance boxplot for student factor
-boxplot(formula=balance ~ !stu_dent,
-        col="lightgrey", main="balance", xlab="Student")
+# ?options  # Get info on global options
+getOption("warn")  # Global option for "warn"
+options("warn")  # Global option for "warn"
+getOption("error")  # Global option for "error"
+sqrt_safe <- function(in_put) {
+# Returns its argument
+  if (in_put<0) {
+    warning("sqrt_safe: in_put is negative")
+    NULL  # Return NULL for negative argument
+  } else {
+    sqrt(in_put)
+  }  # end if
+}  # end sqrt_safe
+sqrt_safe(5)
+sqrt_safe(-1)
+options(warn=-1)
+sqrt_safe(-1)
+options(warn=0)
+sqrt_safe()
+options(warn=1)
+sqrt_safe()
+options(warn=3)
+sqrt_safe()
       @
   \end{columns}
 \end{block}
@@ -1723,202 +1348,417 @@ boxplot(formula=balance ~ !stu_dent,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Forecasting Credit Defaults using Logistic Regression}
+\subsection{Validating Function Arguments}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
+      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type}.
       \vskip1ex
-      The method \texttt{predict.glm()} produces forecasts for a generalized linear (\emph{glm}) model, in the form of \texttt{numeric} probabilities, not the \texttt{Boolean} response variable.
+      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call.
       \vskip1ex
-      The \texttt{Boolean} forecasts are obtained by comparing the \emph{forecast probabilities} with a \emph{discrimination threshold}.
+      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise.
       \vskip1ex
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{de\_fault = FALSE}.
+      Missing arguments can be detected by:\\
+      - assigning a \texttt{NULL} default value to formal arguments and then calling  \texttt{is.null()} on them,\\
+      - calling the function \texttt{missing()} on the arguments.
       \vskip1ex
-      If the \emph{forecast probability} is greater than the \emph{discrimination threshold}, then the forecast is that the subject will not default and that the \emph{null hypothesis} is \texttt{TRUE}.
+      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
       \vskip1ex
-      The \emph{in-sample forecasts} are just the \emph{fitted values} of the \emph{glm} model.
+      The function \texttt{return()} returns its argument and terminates futher function execution.
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# Perform in-sample forecast from logistic regression model
-forecast_s <- predict(g_lm, type="response")
-all.equal(g_lm$fitted.values, forecast_s)
-# Define discrimination threshold value
-thresh_old <- 0.7
-# Calculate confusion matrix in-sample
-table(actual=!de_fault, forecast=(forecast_s < thresh_old))
-# Fit logistic regression over training data
-set.seed(1121)  # Reset random number generator
-n_rows <- NROW(Default)
-sampl_e <- sample.int(n=n_rows, size=n_rows/2)
-train_data <- Default[sampl_e, ]
-g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
-# Forecast over test data out-of-sample
-test_data <- Default[-sampl_e, ]
-forecast_s <- predict(g_lm, newdata=test_data, type="response")
-# Calculate confusion matrix out-of-sample
-table(actual=!test_data$de_fault, 
-      forecast=(forecast_s < thresh_old))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Forecasting Errors}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
-      \vskip1ex
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{de\_fault = FALSE}.
-      \vskip1ex
-      A \emph{positive} result corresponds to rejecting the null hypothesis, while a \emph{negative} result corresponds to accepting the null hypothesis.
-      \vskip1ex
-      The forecasts are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
-      \vskip1ex
-      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), for example, when there is no default, but it's forecast to be a default.
-      \vskip1ex
-      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), for example, when there is a default, but it's forecast to be no default.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# Calculate confusion matrix out-of-sample
-confu_sion <- table(actual=!test_data$de_fault, 
-      forecast=(forecast_s < thresh_old))
-confu_sion
-# Calculate FALSE positive (type I error)
-sum(!test_data$de_fault & (forecast_s > thresh_old))
-# Calculate FALSE negative (type II error)
-sum(test_data$de_fault & (forecast_s < thresh_old))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Confusion Matrix of a Binary Classification Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
-      \vskip1ex
-      \newcommand\MyBox[2]{
-        \fbox{\lower0.75cm
-          \vbox to 1.2cm{\vfil
-            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
-            \vfil}
-        }
-      }
-      \renewcommand\arraystretch{0.3}
-      \setlength\tabcolsep{0pt}
-      {\tiny
-      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
-      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
-      & \multicolumn{2}{c}{\bfseries Forecast} & \\
-      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
-      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
-      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
-      \end{tabular}}
-      <<echo=TRUE,eval=TRUE>>=
-# Calculate FALSE positive and FALSE negative rates
-confu_sion <- confu_sion / rowSums(confu_sion)
-c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-detach(Default)
-      @
-      <<echo=FALSE,eval=FALSE,results='asis'>>=
-# Below is an unsuccessful attempt to draw confusion matrix using xtable
-confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
-dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
-                                   actual=c("FALSE", "TRUE"))
-print(xtable::xtable(confusion_matrix,
-      caption="Confusion Matrix"),
-      caption.placement="top",
-      comment=FALSE, size="scriptsize",
-      include.rownames=TRUE,
-      include.colnames=TRUE)
-# end unsuccessful attempt to draw confusion table using xtable
-      @
-    \column{0.5\textwidth}
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{de\_fault = FALSE}.
-      \vskip1ex
-      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
-      \vskip1ex
-      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
-      \vskip1ex
-      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
-      \vskip1ex
-      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
-      \vskip1ex
-      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
-      \vskip1ex
-      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Receiver Operating Characteristic (ROC) Curve}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
-      \vskip1ex
-      The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
-      <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of thresh_old
-con_fuse <- function(actu_al, forecast_s, thresh_old) {
-    confu_sion <- table(actu_al, (forecast_s < thresh_old))
-    confu_sion <- confu_sion / rowSums(confu_sion)
-    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-  }  # end con_fuse
-con_fuse(!test_data$de_fault, forecast_s, thresh_old=thresh_old)
-# Define vector of discrimination thresholds
-threshold_s <- seq(0.05, 0.95, by=0.05)^2
-# Calculate error rates
-error_rates <- sapply(threshold_s, con_fuse,
-  actu_al=!test_data$de_fault, forecast_s=forecast_s)  # end sapply
-error_rates <- t(error_rates)
-rownames(error_rates) <- threshold_s
-error_rates <- rbind(c(1, 0), error_rates)
-error_rates <- rbind(error_rates, c(0, 1))
-# Calculate area under ROC curve (AUC)
-true_pos <- (1 - error_rates[, "typeII"])
-true_pos <- (true_pos + rutils::lag_it(true_pos))/2
-false_pos <- rutils::diff_it(error_rates[, "typeI"])
-abs(sum(true_pos*false_pos))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/islr_defaults_roc.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot ROC Curve for Defaults
-x11(width=5, height=5)
-plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Function vali_date validates its arguments
+vali_date <- function(in_put=NULL) {
+# Check if argument is valid and return double
+  if (is.null(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# vali_date validates arguments using missing()
+vali_date <- function(in_put) {
+# Check if argument is valid and return double
+  if (missing(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put is not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Assertions Inside Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution.
+      \vskip1ex
+      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code.
+      \vskip1ex
+      Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced.
+      \vskip1ex
+      The function \texttt{traceback()} prints the call stack, showing the function that produced the \emph{error} condition.
+      \vskip1ex
+      \texttt{cat()} statements inside the function body provide information about the state of its variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+            <<echo=TRUE,eval=FALSE>>=
+# vali_date() validates its arguments and assertions
+vali_date <- function(in_put) {
+# Check if argument is valid and return double
+  if (missing(in_put)) {
+    stop("vali_date: in_put is missing")
+  } else if (!is.numeric(in_put)) {
+    cat("in_put =", in_put)
+    stop("vali_date: in_put is not numeric")
+  } else 2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+      @
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Print the call stack
+traceback()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Assertions Using \texttt{stopifnot()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()}.
+      \vskip1ex
+      If the argument to function \texttt{stopifnot()} is \texttt{FALSE}, then it produces an \emph{error} condition, and halts function execution.
+      \vskip1ex
+      \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if ()} statements.
+      \vskip1ex
+      \texttt{stopifnot()} is often used to check the validity of function arguments.
+      \vskip1ex
+      \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+vali_date <- function(in_put) {
+# Check argument using long form '&&' operator
+  stopifnot(!missing(in_put) && is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date()
+vali_date("a")
+vali_date <- function(in_put) {
+# Check argument using logical '&' operator
+  stopifnot(!missing(in_put) & is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()
+vali_date("a")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Function Arguments and Assertions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE}.
+      \vskip1ex
+      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions.
+      \vskip1ex
+      \texttt{cat()} statements can provide information about the state of variables inside a function.
+      \vskip1ex
+      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# sum_two() returns the sum of its two arguments
+sum_two <- function(in_put1, in_put2) {  # Even more robust
+# Check if at least one argument is not missing
+  stopifnot(!missing(in_put1) &&
+              !missing(in_put2))
+# Check if arguments are valid and return sum
+  if (is.numeric(in_put1) && is.numeric(in_put2)) {
+    in_put1 + in_put2  # Both valid
+  } else if (is.numeric(in_put1)) {
+    cat("in_put2 is not numeric\n")
+    in_put1  # in_put1 is valid
+  } else if (is.numeric(in_put2)) {
+    cat("in_put1 is not numeric\n")
+    in_put2  # in_put2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sum_two
+sum_two(1, 2)
+sum_two(5, 'a')
+sum_two('a', 5)
+sum_two('a', 'b')
+sum_two()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Debugger Facility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{debug()} flags a function for future debugging, but doesn't invoke the debugger.
+      \vskip1ex
+      After a function is flagged for debugging with the call \texttt{"debug(my\_func)"}, then the function call \texttt{"my\_func()"} automatically invokes the debugger (browser).
+      \vskip1ex
+      When the debugger is first invoked, it prints the function code to the console, and produces a \emph{browser} prompt: \texttt{"Browse[2]>"}.
+      \vskip1ex
+      Once inside the debugger, the user can execute the function code one command at a time by pressing the \emph{Enter} key.
+      \vskip1ex
+      The user can examine the function arguments and variables with standard \texttt{R} commands, and can also change the values of objects or create new ones.
+      \vskip1ex
+      The command \texttt{"c"} executes the remainder of the function code without pausing.
+      \vskip1ex
+      The command \texttt{"Q"} exits the debugger (browser).
+      \vskip1ex
+      The call \texttt{"undebug(my\_func)"} at the \texttt{R} prompt unflags the function for debugging.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Flag "vali_date" for debugging
+debug(vali_date)
+# Calling "vali_date" starts debugger
+vali_date(3)
+# unflag "vali_date" for debugging
+undebug(vali_date)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Debugging Using \texttt{browser()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      As an alternative to flagging a function for debugging, the user can insert the function \texttt{browser()} into the function body.
+      \vskip1ex
+      \texttt{browser()} pauses the execution of a function and invokes the debugger (browser) at the point where \texttt{browser()} was called.
+      \vskip1ex
+      Once inside the debugger, the user can execute all the same browser commands as when using \texttt{debug()}.
+      \vskip1ex
+      \texttt{browser()} is usually inserted just before the command that is suspected of producing an \emph{error} condition.
+      \vskip1ex
+      Another alternative to flagging a function for debugging, or inserting \texttt{browser()} calls, is setting the \texttt{"error"} option equal to \texttt{"recover"}.
+      \vskip1ex
+      Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+vali_date <- function(in_put) {
+  browser()  # Pause and invoke debugger
+# Check argument using long form '&&' operator
+  stopifnot(!missing(in_put) && is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()  # Invokes debugger
+options("error")  # Show default NULL "error" option
+options(error=recover)  # Set "error" option to "recover"
+options(error=NULL)  # Set back to default "error" option
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using the Debugger in \protect\emph{RStudio}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
+      \begin{itemize}
+        \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
+        \item stepping into functions,
+        \item environment pane with environment stack, instead of calling \texttt{ls()},
+        \item traceback pane, instead of calling \texttt{traceback()},
+      \end{itemize}
+      \emph{RStudio} provides an online debugging tutorial:
+      \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{image/rstudio_debug.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Handling Exception Conditions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
+      \vskip1ex
+      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument.
+      \vskip1ex
+      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression.
+      \vskip1ex
+      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition}.
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console.
+      \vskip1ex
+      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+str(tryCatch)  # Get arguments of tryCatch()
+tryCatch(  # Without error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+
+tryCatch(  # With error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  # Error handler captures error condition
+  error=function(error_cond) {
+    print(paste("error handler: ", error_cond))
+  },  # end error handler
+  # Warning handler captures warning condition
+  warning=function(warning_cond) {
+    print(paste("warning handler: ", warning_cond))
+  },  # end warning handler
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Error Conditions in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If an \emph{error} occurs in an \texttt{apply()} loop, then the loop exits without returning any result.
+      \vskip1ex
+      \texttt{apply()} collects the values returned by the function supplied to its \texttt{FUN} argument, and returns them only after the loop is finished.
+      \vskip1ex
+      If one of the function calls produces an error, then the loop is interrupted and \texttt{apply()} exits without returning any result.
+      \vskip1ex
+      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Apply loop without tryCatch
+apply(matrix(1:5), 1, function(num_var) {  # Anonymous function
+    stopifnot(!(num_var = 3))  # Check for error
+    # Broadcast message to console
+    cat("(cat) num_var =", num_var, "\n")
+    # Return a value
+    paste("(return) num_var =", num_var)
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Handling in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results.
+      \vskip1ex
+      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()}.
+      \vskip1ex
+      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()}.
+      \vskip1ex
+      \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# Apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    tryCatch(  # With error handler
+      {  # Body
+        stopifnot(num_var != 3)  # Check for error
+        # Broadcast message to console
+        cat("(cat) num_var =", num_var, "\t")
+        # Return a value
+        paste("(return) num_var =", num_var)
+      },
+      # Error handler captures error condition
+      error=function(error_cond)
+        paste("handler: ", error_cond),
+      finally=print(paste("(finally) num_var =", num_var))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 

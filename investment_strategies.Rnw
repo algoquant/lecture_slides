@@ -21,6 +21,11 @@ knit_theme$set(thm)
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
 \usepackage{mathtools}
+% tikz package for plotting and tables
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{array}
+\usepackage{multirow}
 % bbm and bbold packages for unitary vector or matrix symbol
 \usepackage{bbm}
 \usepackage{bbold}
@@ -735,7 +740,7 @@ weal_th <- cbind(weal_th, wealth_trans)
 colnames(weal_th) <- c("Kelly", "Including bid-offer")
 # Plot compounded wealth
 dygraphs::dygraph(weal_th, main="Kelly Strategy With Transaction Costs") %>%
-  dyOptions(colors=c("green","blue"), strokeWidth=2) %>%
+  dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -1187,7 +1192,7 @@ colnames(re_turns)[3] <- "Kelly_sub_optimal"
 weal_th <- cumprod(1 + re_turns)
 # Plot compounded wealth
 dygraphs::dygraph(weal_th, main="Stock and Bond Portfolio") %>%
-  dyOptions(colors=c("green","blue","green")) %>%
+  dyOptions(colors=c("green", "blue", "green")) %>%
   dySeries("Kelly_sub_optimal", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
@@ -1331,7 +1336,7 @@ wealth_trans <- cumprod(1 + re_turns$VTI*re_turns$VTI - cost_s)
 weal_th <- cbind(weal_th, wealth_trans)
 colnames(weal_th) <- c("Kelly", "Including bid-offer")
 dygraphs::dygraph(weal_th, main="Kelly Strategy With Transaction Costs") %>%
-  dyOptions(colors=c("green","blue"), strokeWidth=2) %>%
+  dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -1842,7 +1847,7 @@ weal_th <- log(cbind(wealth_fsa, wealth_cda))
 weal_th <- xts::xts(weal_th, index(price_s))
 colnames(weal_th) <- c("Fixed Shares", "Fixed Ratio")
 dygraphs::dygraph(weal_th, main="Log Wealth of Fixed Dollar Ratios") %>%
-  dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -1991,7 +1996,7 @@ sapply(re_turns, function(x) {
 weal_th <- cumprod(1 + re_turns)
 # Plot cumulative wealth
 dygraphs::dygraph(log(weal_th), main="Stock and Bond Portfolio") %>%
-  dyOptions(colors=c("blue","green","blue","red")) %>%
+  dyOptions(colors=c("blue", "green", "blue", "red")) %>%
   dySeries("Combined", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
@@ -2042,7 +2047,7 @@ price_s <- lapply(re_turns, function(x) exp(cumsum(x)))
 price_s <- do.call(cbind, price_s)
 # Plot prices
 dygraphs::dygraph(price_s, main="Stock and Bond Portfolio") %>%
-  dyOptions(colors=c("green","blue","green")) %>%
+  dyOptions(colors=c("green", "blue", "green")) %>%
   dySeries("combined", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
@@ -2137,7 +2142,7 @@ weal_th <- cbind(wealth_fda, log(wealth_fsa))
 # weal_th <- xts::xts(weal_th, index(price_s))
 colnames(weal_th) <- c("With rebalancing", "Without rebalancing")
 dygraphs::dygraph(weal_th, main="Wealth of Equal Dollar Amount of Shares") %>%
-  dyOptions(colors=c("green","blue"), strokeWidth=2) %>%
+  dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -2222,7 +2227,7 @@ vt_i <- 100*cumprod(1+re_turns)
 da_ta <- xts::xts(cbind(stock_value, bond_value, portf_value, vt_i), date_s)
 colnames(da_ta) <- c("stocks", "bonds", "CPPI", "VTI")
 dygraphs::dygraph(da_ta, main="CPPI strategy") %>%
-  dyOptions(colors=c("red", "green","blue","orange"), strokeWidth=2) %>%
+  dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -2310,7 +2315,7 @@ colnames(weal_th) <- c("Fixed Ratio", "Risk Parity")
 sqrt(252)*sapply(rutils::diff_it(weal_th), function (x) mean(x)/sd(x))
 # Plot a dygraph of the log wealths.
 dygraphs::dygraph(weal_th, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios") %>%
-  dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -2337,7 +2342,7 @@ re_turns <- rutils::diff_it(weal_th)
 vt_i <- rets_percent$VTI
 de_sign <- cbind(re_turns, vt_i, vt_i^2)
 de_sign <- na.omit(de_sign)
-colnames(de_sign)[1:2] <- c("fixed","risk_parity")
+colnames(de_sign)[1:2] <- c("fixed", "risk_parity")
 colnames(de_sign)[4] <- "treynor"
 mod_el <- lm(risk_parity ~ VTI + treynor, data=de_sign)
 summary(mod_el)
@@ -2436,18 +2441,18 @@ dygraphs::dygraph(weal_th, main="Transaction Costs With Fixed Dollar Ratios") %>
       <<echo=TRUE,eval=FALSE>>=
 # Calculate positions
 vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
-position_s <- rep(NA_integer_, NROW(vt_i))
+po_s <- rep(NA_integer_, NROW(vt_i))
 date_s <- index(vt_i)
 date_s <- format(date_s, "%m-%d")
-position_s[date_s == "05-01"] <- 0
-position_s[date_s == "05-03"] <- 0
-position_s[date_s == "11-01"] <- 1
-position_s[date_s == "11-03"] <- 1
-# Carry forward and backward non-NA position_s
-position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- zoo::na.locf(position_s, fromLast=TRUE)
+po_s[date_s == "05-01"] <- 0
+po_s[date_s == "05-03"] <- 0
+po_s[date_s == "11-01"] <- 1
+po_s[date_s == "11-03"] <- 1
+# Carry forward and backward non-NA po_s
+po_s <- zoo::na.locf(po_s, na.rm=FALSE)
+po_s <- zoo::na.locf(po_s, fromLast=TRUE)
 # Calculate strategy returns
-sell_inmay <- position_s*vt_i
+sell_inmay <- po_s*vt_i
 weal_th <- cbind(vt_i, sell_inmay)
 colnames(weal_th) <- c("VTI", "sell_in_may")
 # Calculate Sharpe and Sortino ratios
@@ -2795,7 +2800,7 @@ dygraphs::dygraph(cumsum(weal_th), main="VTI Stop-loss Strategy") %>%
 
 
 %%%%%%%%%%%%%%%
-\section{Classifier Strategies}
+\section{Classification Strategies}
 
 
 %%%%%%%%%%%%%%%
@@ -2873,27 +2878,24 @@ colnames(top_s) <- "tops"
 bottom_s <- zoo::coredata(price_scores < threshold_s[1])
 colnames(bottom_s) <- "bottoms"
 # Simulate in-sample VTI strategy
-position_s <- rep(NA_integer_, NROW(re_turns))
-position_s[1] <- 0
-position_s[top_s] <- (-1)
-position_s[bottom_s] <- 1
-position_s <- zoo::na.locf(position_s)
-position_s <- rutils::lag_it(position_s)
-pnl_s <- cumsum(re_turns*position_s)
+po_s <- rep(NA_integer_, NROW(re_turns))
+po_s[1] <- 0
+po_s[top_s] <- (-1)
+po_s[bottom_s] <- 1
+po_s <- zoo::na.locf(po_s)
+po_s <- rutils::lag_it(po_s)
+pnl_s <- re_turns*po_s
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/features_labels.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of in-sample VTI strategy
-price_s <- cbind(clos_e, pnl_s)
-colnames(price_s) <- c("VTI", "Strategy")
-col_names <- colnames(price_s)
-dygraphs::dygraph(price_s, main="VTI Strategy Using In-sample Labels") %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
+weal_th <- cbind(re_turns, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+dygraphs::dygraph(cumsum(weal_th), main="VTI Strategy Using In-sample Labels") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}
@@ -3109,7 +3111,7 @@ print(xtable::xtable(confusion_matrix,
       \vskip1ex
       The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of thresh_old
+# Confusion matrix as function of threshold
 con_fuse <- function(actual, forecasts, threshold) {
     conf <- table(actual, (forecasts < threshold))
     conf <- conf / rowSums(conf)
@@ -3235,27 +3237,24 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       But it's not feasible to classify the prices out-of-sample exactly according to their in-sample labels.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate in-sample VTI strategy
-position_s <- rep(NA_integer_, NROW(re_turns))
-position_s[1] <- 0
-position_s[tops_forecast] <- (-1)
-position_s[bottoms_forecast] <- 1
-position_s <- zoo::na.locf(position_s)
-position_s <- rutils::lag_it(position_s)
-pnl_s <- cumsum(re_turns*position_s)
+po_s <- rep(NA_integer_, NROW(re_turns))
+po_s[1] <- 0
+po_s[tops_forecast] <- (-1)
+po_s[bottoms_forecast] <- 1
+po_s <- zoo::na.locf(po_s)
+po_s <- rutils::lag_it(po_s)
+pnl_s <- re_turns*po_s
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/logistic_stocklabels.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of in-sample VTI strategy
-price_s <- cbind(clos_e, pnl_s)
-colnames(price_s) <- c("VTI", "Strategy")
-col_names <- colnames(price_s)
-dygraphs::dygraph(price_s, main="Logistic Strategy Using Top and Bottom Labels") %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
+weal_th <- cbind(re_turns, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+dygraphs::dygraph(cumsum(weal_th), main="Logistic Strategy Using Top and Bottom Labels") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}
@@ -3302,6 +3301,62 @@ table(actual=!test_data$de_fault,
 
 \end{frame}
 
+
+%%%%%%%%%%%%%%%
+\subsection{Hampel Filter Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hampel filter strategy is a contrarian strategy that uses Hampel z-scores to establish long and short positions.
+      \vskip1ex
+      The Hampel strategy has two meta-parameters: the look-back interval and the threshold level.
+      \vskip1ex
+      The best choice of the meta-parameters can be determined through simulation.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+re_turns <- rutils::diff_it(clos_e)
+# Define look-back window
+look_back <- 11
+# Calculate time series of medians
+medi_an <- roll::roll_median(clos_e, width=look_back)
+# medi_an <- TTR::runMedian(clos_e, n=look_back)
+# Calculate time series of MAD
+ma_d <- HighFreq::roll_var(clos_e, look_back=look_back, method="nonparametric")
+# ma_d <- TTR::runMAD(clos_e, n=look_back)
+# Calculate time series of z-scores
+z_scores <- (clos_e - medi_an)/ma_d
+z_scores[1:look_back, ] <- 0
+tail(z_scores, look_back)
+range(z_scores)
+# Define threshold value
+thresh_old <- sum(abs(range(z_scores)))/8
+# Simulate VTI strategy
+position_s <- rep(NA_integer_, NROW(clos_e))
+position_s[1] <- 0
+position_s[z_scores < -thresh_old] <- 1
+position_s[z_scores > thresh_old] <- (-1)
+position_s <- zoo::na.locf(position_s)
+position_s <- rutils::lag_it(position_s)
+pnl_s <- re_turns*position_s
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_hampel.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of Hampel strategy pnl_s
+weal_th <- cbind(re_turns, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+dygraphs::dygraph(cumsum(weal_th), main="VTI Hampel Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 
@@ -3382,13 +3437,12 @@ legend("topleft", legend=colnames(price_s),
       The strategy is therefore always either in a long risk, or in a short risk position.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate positions, either: -1, 0, or 1
-position_s <- sign(clos_e - ew_ma)
-position_s <- xts::xts(position_s, order.by=index(clos_e))
-position_s <- rutils::lag_it(position_s, lagg=1)
+in_dic <- sign(clos_e - ew_ma)
+po_s <- rutils::lag_it(in_dic, lagg=1)
 # Create colors for background shading
-date_s <- (rutils::diff_it(position_s) != 0)
-shad_e <- position_s[date_s]
-date_s <- c(index(shad_e), end(position_s))
+date_s <- (rutils::diff_it(po_s) != 0)
+shad_e <- po_s[date_s]
+date_s <- c(index(shad_e), end(po_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 # Create dygraph object without plotting it
 dy_graph <- dygraphs::dygraph(price_s["2007/"], main="VTI EWMA Prices") %>%
@@ -3406,19 +3460,19 @@ dy_graph
 # Equivalent code to the above
 # Determine trade dates right after EWMA has crossed prices
 in_dic <- sign(clos_e - ew_ma)
-trade_dates <- (rutils::diff_it(in_dic) != 0)
-trade_dates <- which(trade_dates) + 1
-trade_dates <- trade_dates[trade_dates < n_rows]
+date_s <- (rutils::diff_it(in_dic) != 0)
+date_s <- which(date_s) + 1
+date_s <- date_s[date_s < n_rows]
 # Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, n_rows)
-position_s[1] <- 0
-position_s[trade_dates] <- in_dic[trade_dates-1]
-position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- xts::xts(position_s, order.by=index(clos_e))
+po_s <- rep(NA_integer_, n_rows)
+po_s[1] <- 0
+po_s[date_s] <- in_dic[date_s-1]
+po_s <- zoo::na.locf(po_s, na.rm=FALSE)
+po_s <- xts::xts(po_s, order.by=index(clos_e))
 # Create indicator for background shading
-shad_e <- position_s[trade_dates]
+shad_e <- po_s[date_s]
 date_s <- index(shad_e)
-date_s <- c(date_s, end(position_s))
+date_s <- c(date_s, end(po_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
       @
     \column{0.5\textwidth}
@@ -3429,8 +3483,8 @@ shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 x11(width=6, height=5)
 quantmod::chart_Series(price_s["2007/"], theme=plot_theme,
              lwd=2, name="VTI EWMA Prices")
-add_TA(position_s > 0, on=-1, col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1, col="lightgrey", border="lightgrey")
+add_TA(po_s > 0, on=-1, col="lightgreen", border="lightgreen")
+add_TA(po_s < 0, on=-1, col="lightgrey", border="lightgrey")
 legend("topleft", legend=colnames(price_s),
        inset=0.1, bg="white", lty=1, lwd=6,
        col=plot_theme$col$line.col, bty="n")
@@ -3453,9 +3507,8 @@ legend("topleft", legend=colnames(price_s),
       The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate daily profits and losses of EWMA strategy
-vt_i <- rutils::diff_it(clos_e)
-colnames(vt_i) <- "VTI"
-pnl_s <- vt_i*position_s
+vt_i <- rutils::diff_it(clos_e)  # VTI returns
+pnl_s <- vt_i*po_s
 colnames(pnl_s) <- "EWMA"
 weal_th <- cbind(vt_i, pnl_s)
 colnames(weal_th) <- c("VTI", "EWMA PnL")
@@ -3487,8 +3540,8 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- col_ors
 quantmod::chart_Series(cumsum(weal_th["2007/"]), theme=plot_theme,
              name="Performance of EWMA Strategy")
-add_TA(position_s > 0, on=-1, col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1, col="lightgrey", border="lightgrey")
+add_TA(po_s > 0, on=-1, col="lightgreen", border="lightgreen")
+add_TA(po_s < 0, on=-1, col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(weal_th),
        inset=0.05, bg="white", lty=1, lwd=6,
        col=plot_theme$col$line.col, bty="n")
@@ -3513,7 +3566,7 @@ legend("top", legend=colnames(weal_th),
 # Test EWMA crossover market timing of VTI using Treynor-Mazuy test
 de_sign <- cbind(pnl_s, vt_i, vt_i^2)
 de_sign <- na.omit(de_sign)
-colnames(de_sign) <- c("EWMA","VTI","treynor")
+colnames(de_sign) <- c("EWMA", "VTI", "treynor")
 mod_el <- lm(EWMA ~ VTI + treynor, data=de_sign)
 summary(mod_el)
 # Plot residual scatterplot
@@ -3556,23 +3609,23 @@ in_dic <- sign(clos_e - ew_ma)
 lagg <- 2
 in_dic <- roll::roll_sum(in_dic, width=lagg, min_obs=1)
 # Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, n_rows)
-position_s[1] <- 0
-position_s <- ifelse(in_dic == lagg, 1, position_s)
-position_s <- ifelse(in_dic == (-lagg), -1, position_s)
-position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- xts::xts(position_s, order.by=index(clos_e))
+po_s <- rep(NA_integer_, n_rows)
+po_s[1] <- 0
+po_s <- ifelse(in_dic == lagg, 1, po_s)
+po_s <- ifelse(in_dic == (-lagg), -1, po_s)
+po_s <- zoo::na.locf(po_s, na.rm=FALSE)
+po_s <- xts::xts(po_s, order.by=index(clos_e))
 # Lag the positions to trade in next period
-position_s <- rutils::lag_it(position_s, lagg=1)
+po_s <- rutils::lag_it(po_s, lagg=1)
 # Calculate PnLs of lagged strategy
-pnl_s <- vt_i*position_s
-colnames(pnl_s) <- "Lagged Strategy"
+pnls_lag <- vt_i*po_s
+colnames(pnls_lag) <- "Lagged Strategy"
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ewma_strat_lag.png}
       <<echo=TRUE,eval=FALSE>>=
-weal_th <- cbind(weal_th[, 2], pnl_s)
+weal_th <- cbind(pnl_s, pnls_lag)
 colnames(weal_th) <- c("EWMA Strategy", "Lagged Strategy")
 # Annualized Sharpe ratios of EWMA strategies
 sharp_e <- sqrt(252)*sapply(weal_th, function (x) mean(x)/sd(x))
@@ -3600,19 +3653,24 @@ dygraphs::dygraph(cumsum(weal_th["2007/"]), main=paste("EWMA Crossover Strategy,
       \vskip1ex
       The Profit and Loss (\emph{PnL}) on a trade date is the sum of the realized \emph{PnL} from closing the old position, plus the unrealized \emph{PnL} after opening the new position.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate daily profits and losses
-pnl_s <- vt_i*position_s
-# Calculate realized pnl for days with trade
+# Calculate positions, either: -1, 0, or 1
+in_dic <- sign(clos_e - ew_ma)
+po_s <- rutils::lag_it(in_dic, lagg=1)
+# Calculate daily pnl for days without trades
+pnls_lag <- vt_i*po_s
+# Determine trade dates right after EWMA has crossed prices
+date_s <- which(rutils::diff_it(po_s) != 0)
+# Calculate realized pnl for days with trades
 op_en <- log(quantmod::Op(oh_lc))
 close_lag <- rutils::lag_it(clos_e)
-pos_lagged <- rutils::lag_it(position_s)
-pnl_s[trade_dates] <- pos_lagged[trade_dates]*
-  (op_en[trade_dates] - close_lag[trade_dates])
-# Calculate unrealized pnl for days with trade
-pnl_s[trade_dates] <- pnl_s[trade_dates] +
-  position_s[trade_dates]*
-  (clos_e[trade_dates] - op_en[trade_dates])
-weal_th <- cbind(vt_i, pnl_s)
+pos_lag <- rutils::lag_it(po_s)
+pnls_lag[date_s] <- pos_lag[date_s]*
+  (op_en[date_s] - close_lag[date_s])
+# Calculate unrealized pnl for days with trades
+pnls_lag[date_s] <- pnls_lag[date_s] + 
+  po_s[date_s]*(clos_e[date_s] - op_en[date_s])
+# Calculate the wealth
+weal_th <- cbind(vt_i, pnls_lag)
 colnames(weal_th) <- c("VTI", "EWMA PnL")
 # Annualized Sharpe ratio of EWMA strategy
 sqrt(252)*sapply(weal_th, function (x) mean(x)/sd(x))
@@ -3663,7 +3721,7 @@ legend("top", legend=colnames(weal_th),
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
 # Calculate transaction costs
-cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*clos_e
+cost_s <- 0.5*bid_offer*abs(pos_lag - po_s)*clos_e
 # Plot strategy with transaction costs
 weal_th <- cbind(pnl_s, pnl_s - cost_s)
 colnames(weal_th) <- c("EWMA", "EWMA w Costs")
@@ -3687,13 +3745,13 @@ dygraphs::dygraph(cumsum(weal_th["2007/"]), main="EWMA Strategy With Transaction
     \column{0.5\textwidth}
       The \emph{EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{simu\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay parameter $\lambda$.
+      The function \texttt{sim\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay parameter $\lambda$.
       \vskip1ex
-      The function \texttt{simu\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
+      The function \texttt{sim\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001, 
+sim_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001, 
                       trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
   returns <- rutils::diff_it(close)
@@ -3725,7 +3783,7 @@ simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001,
   pnls <- cbind(pos, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end simu_ewma
+}  # end sim_ewma
       @
   \end{columns}
 \end{block}
@@ -3740,18 +3798,18 @@ simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple \emph{EWMA} strategies can be simulated by calling the function \texttt{simu\_ewma()} in a loop over a vector of $\lambda$ parameters.
+      Multiple \emph{EWMA} strategies can be simulated by calling the function \texttt{sim\_ewma()} in a loop over a vector of $\lambda$ parameters.
       \vskip1ex
-      But \texttt{simu\_ewma()} returns an \emph{xts} time series, and \texttt{sapply()} cannot merge \emph{xts} time series together.
+      But \texttt{sim\_ewma()} returns an \emph{xts} time series, and \texttt{sapply()} cannot merge \emph{xts} time series together.
       \vskip1ex
       So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
       <<echo=TRUE,eval=FALSE>>=
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lamb_das <- seq(from=0.001, to=0.008, by=0.001)
 # Perform lapply() loop over lamb_das
 pnl_s <- lapply(lamb_das, function(lamb_da) {
   # Simulate EWMA strategy and calculate returns
-  simu_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
+  sim_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnl_s <- do.call(cbind, pnl_s)
 colnames(pnl_s) <- paste0("lambda=", lamb_das)
@@ -3763,7 +3821,7 @@ colnames(pnl_s) <- paste0("lambda=", lamb_das)
 # Plot dygraph of multiple EWMA strategies
 col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
 dygraphs::dygraph(cumsum(pnl_s["2007/"]), main="Cumulative Returns of Trend Following EWMA Strategies") %>%
-  dyOptions(colors=col_ors, strokeWidth=2) %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Plot EWMA strategies with custom line colors
 x11(width=6, height=5)
@@ -3800,19 +3858,19 @@ legend("topleft", legend=colnames(pnl_s), inset=0.1,
 library(parallel)
 clus_ter <- makeCluster(detectCores()-1)
 clusterExport(clus_ter,
-  varlist=c("oh_lc", "look_back", "simu_ewma"))
+  varlist=c("oh_lc", "look_back", "sim_ewma"))
 # Perform parallel loop over lamb_das under Windows
 pnl_s <- parLapply(clus_ter, lamb_das, function(lamb_da) {
   library(quantmod)
   # Simulate EWMA strategy and calculate returns
-  simu_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back)[, "pnls"]
+  sim_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back)[, "pnls"]
 })  # end parLapply
 stopCluster(clus_ter)  # Stop R processes over cluster under Windows
 # Perform parallel loop over lamb_das under Mac-OSX or Linux
 pnl_s <- mclapply(lamb_das, function(lamb_da) {
   library(quantmod)
   # Simulate EWMA strategy and calculate returns
-  simu_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back)[, "pnls"]
+  sim_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back)[, "pnls"]
 })  # end mclapply
 pnl_s <- do.call(cbind, pnl_s)
 colnames(pnl_s) <- paste0("lambda=", lamb_das)
@@ -3844,19 +3902,19 @@ colnames(pnl_s) <- paste0("lambda=", lamb_das)
 sharpe_ratios <- sqrt(252)*sapply(pnl_s, function(x_ts) {
   mean(x_ts)/sd(x_ts)
 })  # end sapply
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_trend_performance.png}
-      <<echo=TRUE,eval=FALSE>>=
 # Plot Sharpe ratios
-x11(width=6, height=5)
+dev.new(width=6, height=5, noRStudioGD=TRUE)
 plot(x=lamb_das, y=sharpe_ratios, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EWMA Trend Following Strategies
      as Function of the Decay Parameter Lambda")
 # Find optimal lambda
 lamb_da <- lamb_das[which.max(sharpe_ratios)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_trend_performance.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Plot optimal weights
 weight_s <- exp(-lamb_da*(1:look_back))
 weight_s <- weight_s/sum(weight_s)
@@ -3881,22 +3939,17 @@ trend_sharpe <- sharpe_ratios
       The best performing trend following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past prices), and producing less frequent trading.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate best performing strategy
-ewma_trend <- simu_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back, bid_offer=0, lagg=2)
-position_s <- ewma_trend[, "positions"]
+ewma_trend <- sim_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back, bid_offer=0, lagg=2)
+po_s <- ewma_trend[, "positions"]
 pnl_s <- ewma_trend[, "pnls"]
 weal_th <- cbind(vt_i, pnl_s)
 colnames(weal_th) <- c("VTI", "EWMA PnL")
 # Create colors for background shading
-date_s <- (rutils::diff_it(position_s) != 0)
-shad_e <- position_s[date_s]
-date_s <- c(index(shad_e), end(position_s))
+date_s <- (rutils::diff_it(po_s) != 0)
+shad_e <- po_s[date_s]
+date_s <- c(index(shad_e), end(po_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 col_ors <- c("blue", "red")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_strat_pnl.png}
-      <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of EWMA strategy wealth
 # Create dygraph object without plotting it
 dy_graph <- dygraphs::dygraph(cumsum(weal_th["2007/"]), main="Performance of Optimal Trend Following EWMA Strategy") %>%
@@ -3909,6 +3962,11 @@ for (i in 1:NROW(shad_e)) {
 }  # end for
 # Plot the dygraph object
 dy_graph
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_strat_pnl.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Plot EWMA PnL with position shading
 # Standard plot of EWMA strategy wealth
 x11(width=6, height=5)
@@ -3916,8 +3974,8 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- col_ors
 quantmod::chart_Series(cumsum(weal_th["2007/"]), theme=plot_theme,
              name="Performance of EWMA Strategy")
-add_TA(position_s > 0, on=-1, col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1, col="lightgrey", border="lightgrey")
+add_TA(po_s > 0, on=-1, col="lightgreen", border="lightgreen")
+add_TA(po_s < 0, on=-1, col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(weal_th),
        inset=0.05, bg="white", lty=1, lwd=6,
        col=plot_theme$col$line.col, bty="n")
@@ -3935,16 +3993,16 @@ legend("top", legend=colnames(weal_th),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Mean reverting EWMA crossover strategies can be simulated using function \texttt{simu\_ewma()} with argument \texttt{trend=(-1)}.
+      Mean reverting EWMA crossover strategies can be simulated using function \texttt{sim\_ewma()} with argument \texttt{trend=(-1)}.
       \vskip1ex
       The profitability of mean reverting strategies can be significantly improved by using limit orders, to reduce transaction costs.
       <<echo=TRUE,eval=FALSE>>=
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lamb_das <- seq(0.05, 1.0, 0.05)
 # Perform lapply() loop over lamb_das
 pnl_s <- lapply(lamb_das, function(lamb_da) {
   # Simulate EWMA strategy and calculate returns
-  simu_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back, trend=(-1))[, "pnls"]
+  sim_ewma(ohlc=oh_lc, lambda=lamb_da, look_back=look_back, trend=(-1))[, "pnls"]
 })  # end lapply
 pnl_s <- do.call(cbind, pnl_s)
 colnames(pnl_s) <- paste0("lambda=", lamb_das)
@@ -3952,7 +4010,7 @@ colnames(pnl_s) <- paste0("lambda=", lamb_das)
 column_s <- seq(1, NCOL(pnl_s), by=4)
 col_ors <- colorRampPalette(c("blue", "red"))(NROW(column_s))
 dygraphs::dygraph(cumsum(pnl_s["2007/", column_s]), main="Cumulative Returns of Mean Reverting EWMA Strategies") %>%
-  dyOptions(colors=col_ors, strokeWidth=2) %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Plot EWMA strategies with custom line colors
 x11(width=6, height=5)
@@ -3965,8 +4023,8 @@ legend("topleft", legend=colnames(pnl_s[, column_s]),
   col=plot_theme$col$line.col, bty="n")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_returns.png}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_notranscosts.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ewma_revert_returns.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ewma_revert_notranscosts.png}
   \end{columns}
 \end{block}
 
@@ -4028,9 +4086,9 @@ revert_sharpe <- sharpe_ratios
 # Find optimal lambda
 lamb_da <- lamb_das[which.max(sharpe_ratios)]
 # Simulate best performing strategy
-ewma_revert <- simu_ewma(ohlc=oh_lc, bid_offer=0.0,
+ewma_revert <- sim_ewma(ohlc=oh_lc, bid_offer=0.0,
   lambda=lamb_da, look_back=look_back, trend=(-1))
-position_s <- ewma_revert[, "positions"]
+po_s <- ewma_revert[, "positions"]
 pnl_s <- ewma_revert[, "pnls"]
 weal_th <- cbind(vt_i, pnl_s)
 colnames(weal_th) <- c("VTI", "EWMA PnL")
@@ -4039,7 +4097,6 @@ col_ors <- c("blue", "red")
 dygraphs::dygraph(cumsum(weal_th["2007/"]), main="Optimal Mean Reverting EWMA Strategy") %>%
   dyOptions(colors=col_ors, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
-# Plot EWMA PnL with position shading
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4051,8 +4108,8 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- col_ors
 quantmod::chart_Series(cumsum(weal_th["2007/"]), theme=plot_theme,
              name="Optimal Mean Reverting EWMA Strategy")
-add_TA(position_s > 0, on=-1, col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1, col="lightgrey", border="lightgrey")
+add_TA(po_s > 0, on=-1, col="lightgreen", border="lightgreen")
+add_TA(po_s < 0, on=-1, col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(weal_th),
        inset=0.05, bg="white", lty=1, lwd=6,
        col=plot_theme$col$line.col, bty="n")
@@ -4182,22 +4239,22 @@ colnames(price_s) <- c("VTI", "EWMA fast", "EWMA slow")
 in_dic <- sign(ewma1 - ewma2)
 lagg <- 2
 in_dic <- roll::roll_sum(in_dic, width=lagg, min_obs=1)
-position_s <- rep(NA_integer_, n_rows)
-position_s[1] <- 0
-position_s <- ifelse(in_dic == lagg, 1, position_s)
-position_s <- ifelse(in_dic == (-lagg), -1, position_s)
-position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- xts::xts(position_s, order.by=index(clos_e))
-position_s <- rutils::lag_it(position_s, lagg=1)
+po_s <- rep(NA_integer_, n_rows)
+po_s[1] <- 0
+po_s <- ifelse(in_dic == lagg, 1, po_s)
+po_s <- ifelse(in_dic == (-lagg), -1, po_s)
+po_s <- zoo::na.locf(po_s, na.rm=FALSE)
+po_s <- xts::xts(po_s, order.by=index(clos_e))
+po_s <- rutils::lag_it(po_s, lagg=1)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ewm_dual_strat.png}
       <<echo=TRUE,eval=FALSE>>=
 # Create colors for background shading
-date_s <- (rutils::diff_it(position_s) != 0)
-shad_e <- position_s[date_s]
-date_s <- c(index(shad_e), end(position_s))
+date_s <- (rutils::diff_it(po_s) != 0)
+shad_e <- po_s[date_s]
+date_s <- c(index(shad_e), end(po_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 # Plot dygraph
 col_names <- colnames(price_s)
@@ -4229,7 +4286,7 @@ dy_graph
       The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate daily profits and losses of strategy
-pnl_s <- vt_i*position_s
+pnl_s <- vt_i*po_s
 colnames(pnl_s) <- "Strategy"
 weal_th <- cbind(vt_i, pnl_s)
 # Annualized Sharpe ratio of Dual EWMA strategy
@@ -4266,13 +4323,13 @@ dy_graph
     \column{0.5\textwidth}
       The \emph{Dual EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{simu\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of prices, and two decay parameters $\lambda1$ and $\lambda2$.
+      The function \texttt{sim\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of prices, and two decay parameters $\lambda1$ and $\lambda2$.
       \vskip1ex
-      The function \texttt{simu\_ewma2()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
+      The function \texttt{sim\_ewma2()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333, 
+sim_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333, 
                       bid_offer=0.001, trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
   returns <- rutils::diff_it(close)
@@ -4306,7 +4363,7 @@ simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
   pnls <- cbind(pos, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end simu_ewma2
+}  # end sim_ewma2
       @
   \end{columns}
 \end{block}
@@ -4321,9 +4378,11 @@ simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple \emph{Dual EWMA} strategies can be simulated by calling the function \texttt{simu\_ewma2()} in two loops over the vectors of $\lambda$ parameters.
+      Multiple \emph{Dual EWMA} strategies can be simulated by calling the function \texttt{sim\_ewma2()} in two loops over the vectors of $\lambda$ parameters.
+      \vskip1ex
+      The best \emph{Dual EWMA} strategy performs better than the best \emph{single EWMA} strategy, because it has an extra parameter that can be adjusted to improve in-sample performance.  But this doesn't guarantee better out-of-sample performance.
       <<echo=TRUE,eval=FALSE>>=
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lamb_das1 <- seq(from=0.05, to=0.15, by=0.01)
 lamb_das2 <- seq(from=0.03, to=0.1, by=0.01)
 # Perform sapply() loops over lambdas
@@ -4331,7 +4390,7 @@ sharpe_ratios <- sapply(lamb_das1, function(lambda1) {
   sapply(lamb_das2, function(lambda2) {
     if (lambda1 > lambda2) {
       # Simulate Dual EWMA strategy
-      pnl_s <- simu_ewma2(ohlc=oh_lc, lambda1=lambda1, lambda2=lambda2, 
+      pnl_s <- sim_ewma2(ohlc=oh_lc, lambda1=lambda1, lambda2=lambda2, 
                           look_back=look_back, bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
       sqrt(252)*mean(pnl_s)/sd(pnl_s)
     } else NA
@@ -4343,18 +4402,18 @@ rownames(sharpe_ratios) <- lamb_das2
 whi_ch <- which(sharpe_ratios == max(sharpe_ratios, na.rm=TRUE), arr.ind=TRUE)
 lambda1 <- lamb_das1[whi_ch[2]]
 lambda2 <- lamb_das2[whi_ch[1]]
-pnl_s <- simu_ewma2(ohlc=oh_lc, lambda1=lambda1, lambda2=lambda2, 
+pnl_s <- sim_ewma2(ohlc=oh_lc, lambda1=lambda1, lambda2=lambda2, 
                     look_back=look_back, bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
 weal_th <- cbind(vt_i, pnl_s)
-# Annualized Sharpe ratio of Dual EWMA strategy
-sharp_e <- sqrt(252)*sapply(weal_th, function (x) mean(x)/sd(x))
-# The crossover strategy has a negative correlation to VTI
-cor(weal_th)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ewma_dual_strat_opt_pnl.png}
       <<echo=TRUE,eval=FALSE>>=
+# Annualized Sharpe ratio of Dual EWMA strategy
+sharp_e <- sqrt(252)*sapply(weal_th, function (x) mean(x)/sd(x))
+# The crossover strategy has a negative correlation to VTI
+cor(weal_th)
 # Plot Optimal Dual EWMA strategy
 dy_graph <- dygraphs::dygraph(cumsum(weal_th["2007/"]), main=paste("Optimal EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>% 
   dyOptions(colors=c("blue", "red"), strokeWidth=1)
@@ -4446,16 +4505,17 @@ in_dic <- sign(clos_e - vwap)
 lagg <- 2
 in_dic <- roll::roll_sum(in_dic, width=lagg, min_obs=1)
 # Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, n_rows)
-position_s[1] <- 0
-position_s <- ifelse(in_dic == lagg, 1, position_s)
-position_s <- ifelse(in_dic == (-lagg), -1, position_s)
-position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- xts::xts(position_s, order.by=index(clos_e))
+po_s <- rep(NA_integer_, n_rows)
+po_s[1] <- 0
+po_s <- ifelse(in_dic == lagg, 1, po_s)
+po_s <- ifelse(in_dic == (-lagg), -1, po_s)
+po_s <- zoo::na.locf(po_s, na.rm=FALSE)
+po_s <- xts::xts(po_s, order.by=index(clos_e))
 # Lag the positions to trade in next period
-position_s <- rutils::lag_it(position_s, lagg=1)
+po_s <- rutils::lag_it(po_s, lagg=1)
 # Calculate PnLs of VWAP strategy
-pnl_s <- vt_i*position_s
+vt_i <- rutils::diff_it(clos_e)  # VTI returns
+pnl_s <- vt_i*po_s
 colnames(pnl_s) <- "VWAP Strategy"
 weal_th <- cbind(vt_i, pnl_s)
 colnames(weal_th) <- c("VTI", "VWAP Strategy")
@@ -4468,9 +4528,9 @@ sharp_e <- sqrt(252)*sapply(weal_th, function (x) mean(x)/sd(x))
       \includegraphics[width=0.45\paperwidth]{figure/vwap_strat_lag.png}
       <<echo=TRUE,eval=FALSE>>=
 # Create colors for background shading
-date_s <- (rutils::diff_it(position_s) != 0)
-shad_e <- position_s[date_s]
-date_s <- c(index(shad_e), end(position_s))
+date_s <- (rutils::diff_it(po_s) != 0)
+shad_e <- po_s[date_s]
+date_s <- c(index(shad_e), end(po_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 # Plot dygraph of VWAP strategy
 # Create dygraph object without plotting it
@@ -4517,6 +4577,14 @@ sharp_e <- sqrt(252)*sapply(weal_th, function (x) mean(x)/sd(x))
       \includegraphics[width=0.45\paperwidth]{figure/vwap_combined.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of VWAP strategy combined with VTI
+# wippp
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+  dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=1) %>%
+  dySeries(name=col_names[2], label=col_names[2], col="red", strokeWidth=1) %>%
+  dySeries(name=col_names[3], label=col_names[3], col="purple", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+# Or
 dygraphs::dygraph(cumsum(weal_th), 
   main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red", "purple"), strokeWidth=1) %>%
@@ -4542,7 +4610,7 @@ dygraphs::dygraph(cumsum(weal_th),
 # Test VWAP crossover market timing of VTI using Treynor-Mazuy test
 de_sign <- cbind(pnl_s, vt_i, vt_i^2)
 de_sign <- na.omit(de_sign)
-colnames(de_sign) <- c("VWAP","VTI","treynor")
+colnames(de_sign) <- c("VWAP", "VTI", "treynor")
 mod_el <- lm(VWAP ~ VTI + treynor, data=de_sign)
 summary(mod_el)
 # Plot residual scatterplot
@@ -4574,13 +4642,13 @@ text(x=0.05, y=0.8*max(residual_s), paste("VWAP crossover t-value =", round(summ
     \column{0.5\textwidth}
       The \emph{VWAP} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{simu\_vwap()} performs a simulation of the \emph{VWAP} strategy, given an \emph{OHLC} time series of prices, and the length of the look-back interval (\texttt{look\_back}).
+      The function \texttt{sim\_vwap()} performs a simulation of the \emph{VWAP} strategy, given an \emph{OHLC} time series of prices, and the length of the look-back interval (\texttt{look\_back}).
       \vskip1ex
-      The function \texttt{simu\_vwap()} returns the \emph{VWAP} strategy positions and returns, in a two-column \emph{xts} time series.
+      The function \texttt{sim\_vwap()} returns the \emph{VWAP} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
+sim_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
   vol_ume <- quantmod::Vo(oh_lc)
   returns <- rutils::diff_it(close)
@@ -4612,7 +4680,7 @@ simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
   pnls <- cbind(pos, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end simu_vwap
+}  # end sim_vwap
       @
   \end{columns}
 \end{block}
@@ -4627,18 +4695,18 @@ simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple \emph{VWAP} strategies can be simulated by calling the function \texttt{simu\_vwap()} in a loop over a vector of $\lambda$ parameters.
+      Multiple \emph{VWAP} strategies can be simulated by calling the function \texttt{sim\_vwap()} in a loop over a vector of $\lambda$ parameters.
       \vskip1ex
-      But \texttt{simu\_vwap()} returns an \emph{xts} time series, and \texttt{sapply()} cannot merge \emph{xts} time series together.
+      But \texttt{sim\_vwap()} returns an \emph{xts} time series, and \texttt{sapply()} cannot merge \emph{xts} time series together.
       \vskip1ex
       So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
       <<echo=TRUE,eval=FALSE>>=
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 look_backs <- seq(70, 200, 10)
 # Perform lapply() loop over lamb_das
 pnl_s <- lapply(look_backs, function(look_back) {
   # Simulate VWAP strategy and calculate returns
-  simu_vwap(ohlc=oh_lc, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
+  sim_vwap(ohlc=oh_lc, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnl_s <- do.call(cbind, pnl_s)
 colnames(pnl_s) <- paste0("look_back=", look_backs)
@@ -4650,7 +4718,7 @@ colnames(pnl_s) <- paste0("look_back=", look_backs)
 # Plot dygraph of multiple VWAP strategies
 col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
 dygraphs::dygraph(cumsum(pnl_s["2007/"]), main="Cumulative Returns of Trend Following VWAP Strategies") %>%
-  dyOptions(colors=col_ors, strokeWidth=2) %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Plot VWAP strategies with custom line colors
 x11(width=6, height=5)
@@ -4680,11 +4748,13 @@ legend("topleft", legend=colnames(pnl_s), inset=0.1,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{In-sample forecasting} consists of first fitting an \emph{AR(p)} model to the data, and calculating its coefficients.
+      The \emph{response} variable are the daily stock returns, and the \emph{predictor} matrix are the lagged returns.  Given \emph{n} lags, the forecasting model is an \emph{AR(n)} autoregressive model.
+      \vskip1ex
+      \emph{In-sample forecasting} consists of first fitting an \emph{AR(n)} model to the data, and calculating its coefficients.
       \vskip1ex
       The \emph{in-sample} forecasts are calculated by multiplying the response vector of returns by the fitted coefficients.
       \vskip1ex
-      The mean squared errors (\emph{MSE}) of the \emph{in-sample} forecasts decrease steadily with the increasing order parameter $p$ of the \emph{AR(p)} model.
+      The mean squared errors (\emph{MSE}) of the \emph{in-sample} forecasts decrease steadily with the increasing order parameter \emph{n} of the \emph{AR(n)} model.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
 vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
@@ -4701,15 +4771,15 @@ res_ponse <- vt_i
 forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
   # Calculate fitted coefficients
   in_verse <- MASS::ginv(predic_tor[, 1:or_der])
-  coeff_fit <- drop(in_verse %*% res_ponse)
+  co_eff <- drop(in_verse %*% res_ponse)
   # Calculate in-sample forecasts of vt_i
-  drop(predic_tor[, 1:or_der] %*% coeff_fit)
+  drop(predic_tor[, 1:or_der] %*% co_eff)
 })  # end lapply
-names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+names(forecast_s) <- paste0("n=", 2:NCOL(predic_tor))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_insample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_forecast_insample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
 ms_e <- sapply(forecast_s, function(x) {
@@ -4721,8 +4791,8 @@ rownames(ms_e) <- names(forecast_s)
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(x=2:NCOL(predic_tor), y=ms_e[, 1],
-  xlab="AR(p) order", ylab="MSE", type="l", lwd=2,
-  main="MSE of In-sample AR(p) Forecasting Model for VTI")
+  xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
+  main="MSE of In-sample AR(n) Forecasting Model for VTI")
       @
   \end{columns}
 \end{block}
@@ -4737,11 +4807,11 @@ plot(x=2:NCOL(predic_tor), y=ms_e[, 1],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Out-of-sample forecasting} consists of first fitting an \emph{AR(p)} model to the training data, and calculating its coefficients.
+      \emph{Out-of-sample forecasting} consists of first fitting an \emph{AR(n)} model to the training data, and calculating its coefficients.
       \vskip1ex
       The \emph{out-of-sample} forecasts are calculated by multiplying the \emph{out-of-sample} response vector of returns by the fitted coefficients.
       \vskip1ex
-      The mean squared errors (\emph{MSE}) of the \emph{out-of-sample} forecasts increase steadily with the increasing order parameter $p$ of the \emph{AR(p)} model.
+      The mean squared errors (\emph{MSE}) of the \emph{out-of-sample} forecasts increase steadily with the increasing order parameter \emph{n} of the \emph{AR(n)} model.
       \vskip1ex
       The reason for the increasing out-of-sample MSE is \emph{overfitting} of the coefficients to the training data.
       <<echo=TRUE,eval=FALSE>>=
@@ -4751,15 +4821,15 @@ out_sample <- (n_rows %/% 2 + 1):n_rows
 forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
   # Calculate fitted coefficients
   in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
-  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  co_eff <- drop(in_verse %*% res_ponse[in_sample])
   # Calculate out-of-sample forecasts of vt_i
-  drop(predic_tor[out_sample, 1:or_der] %*% coeff_fit)
+  drop(predic_tor[out_sample, 1:or_der] %*% co_eff)
 })  # end lapply
-names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+names(forecast_s) <- paste0("n=", 2:NCOL(predic_tor))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_outofsample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_forecast_outofsample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
 ms_e <- sapply(forecast_s, function(x) {
@@ -4769,8 +4839,8 @@ ms_e <- t(ms_e)
 rownames(ms_e) <- names(forecast_s)
 # Plot forecasting MSE
 plot(x=2:NCOL(predic_tor), y=ms_e[, 1],
-  xlab="AR(p) order", ylab="MSE", type="l", lwd=2,
-  main="MSE of Out-of-sample AR(p) Forecasting Model for VTI")
+  xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
+  main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
       @
   \end{columns}
 \end{block}
@@ -4787,7 +4857,7 @@ plot(x=2:NCOL(predic_tor), y=ms_e[, 1],
     \column{0.5\textwidth}
       The autoregressive strategy invests a dollar amount of \emph{VTI} equal to the sign of the forecasts. 
       \vskip1ex
-      The performance of the autoregressive strategy is better with a smaller order parameter $p$ of the \emph{AR(p)} model.
+      The performance of the autoregressive strategy is better with a smaller order parameter \emph{n} of the \emph{AR(n)} model.
       \vskip1ex
       Decreasing the order parameter of the autoregressive model is a form of \emph{shrinkage} because it reduces the number of predictive variables.
       <<echo=TRUE,eval=FALSE>>=
@@ -4800,7 +4870,7 @@ pnl_s <- xts::xts(pnl_s, date_s[out_sample])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_order.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_pnl_order.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample PnLs
 color_s <- colorRampPalette(c("red", "blue"))(NCOL(pnl_s[, 1:4]))
@@ -4830,13 +4900,11 @@ dygraphs::dygraph(pnl_s[, 1:4],
       But the average also has a higher \emph{bias} because it includes returns that may be unrelated to the present.
       \vskip1ex
       Using the rolling average of returns as a predictor reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor as a rolling mean
 n_agg <- 5
 predic_tor <- roll::roll_mean(vt_i, width=n_agg, min_obs=1)
-# Shift the res_ponse forward out-of-sample
-res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
+res_ponse <- vt_i
 # Define predictor matrix for forecasting
 predic_tor <- sapply(1+n_agg*(0:order_max), rutils::lag_it,
                      in_put=predic_tor)
@@ -4844,14 +4912,14 @@ predic_tor <- cbind(rep(1, n_rows), predic_tor)
 # Calculate forecasts as function of the AR order
 forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
   in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
-  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
-  drop(predic_tor[out_sample, 1:or_der] %*% coeff_fit)
+  co_eff <- drop(in_verse %*% res_ponse[in_sample])
+  drop(predic_tor[out_sample, 1:or_der] %*% co_eff)
 })  # end lapply
-names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+names(forecast_s) <- paste0("n=", 2:NCOL(predic_tor))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_sum.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_pnl_rolling_sum.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate out-of-sample PnLs
 pnl_s <- sapply(forecast_s, function(x) {
@@ -4886,7 +4954,8 @@ dygraphs::dygraph(pnl_s[, 1:4],
       \vskip1ex
       Using the rolling average of past forecasts reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
       <<echo=TRUE,eval=FALSE>>=
-# Calculate out-of-sample PnLs
+# Calculate PnLs using the average of past forecasts
+n_agg <- 5
 pnl_s <- sapply(forecast_s, function(x) {
   x <- roll::roll_mean(x, width=n_agg, min_obs=1)
   cumsum(sign(x)*vt_i[out_sample])
@@ -4896,7 +4965,7 @@ pnl_s <- xts::xts(pnl_s, date_s[out_sample])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_forecasts.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_pnl_rolling_forecasts.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnl_s[, 1:4],
@@ -4917,11 +4986,11 @@ dygraphs::dygraph(pnl_s[, 1:4],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Forecasting using an autoregressive model is performed by first fitting an \emph{AR(p)} model to past data, and calculating its coefficients.
+      Forecasting using an autoregressive model is performed by first fitting an \emph{AR(n)} model to past data, and calculating its coefficients.
       \vskip1ex
       The fitted coefficients are then applied to calculating the \emph{out-of-sample} forecasts.
       \vskip1ex
-      The forecasting model depends on two unknown \emph{meta-parameters}: the order $p$ of the \emph{AR(p)} model and the length of the look-back interval (\texttt{look\_back}).
+      The forecasting model depends on two unknown \emph{meta-parameters}: the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -4944,9 +5013,9 @@ look_back <- 100
 rang_e <- (n_rows-look_back):(n_rows-1)
 design_inv <- MASS::ginv(de_sign[rang_e, -1])
 # Calculate fitted coefficients
-coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
+co_eff <- drop(design_inv %*% de_sign[rang_e, 1])
 # Calculate forecast of vt_i for n_rows
-drop(de_sign[n_rows, -1] %*% coeff_fit)
+drop(de_sign[n_rows, -1] %*% co_eff)
 # Compare with actual value
 de_sign[n_rows, 1]
       @
@@ -4969,9 +5038,9 @@ de_sign[n_rows, 1]
       \vskip1ex
       If the start date is fixed at the first row then the look-back interval is \emph{expanding}.
       \vskip1ex
-      The coefficients of the \emph{AR(p)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
+      The coefficients of the \emph{AR(n)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
       \vskip1ex
-      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order $p$ of the \emph{AR(p)} model and the length of look-back interval (\texttt{look\_back}).
+      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{look\_back}).
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -4980,18 +5049,16 @@ vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
 date_s <- index(vt_i)
 vt_i <- as.numeric(vt_i)
 n_rows <- NROW(vt_i)
-# Define predictor as a rolling mean
+# Define response equal to vt_i
+res_ponse <- vt_i
+# Define predictor as a rolling sum
 n_agg <- 5
-predic_tor <- roll::roll_mean(vt_i, width=n_agg, min_obs=1)
-# Shift the res_ponse forward out-of-sample
-res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
+predic_tor <- rutils::roll_sum(vt_i, look_back=n_agg)
 # Define predictor matrix for forecasting
 order_max <- 5
 predic_tor <- sapply(1+n_agg*(0:order_max), rutils::lag_it,
                      in_put=predic_tor)
 predic_tor <- cbind(rep(1, n_rows), predic_tor)
-# Define de_sign matrix
-de_sign <- cbind(res_ponse, predic_tor)
 # Perform rolling forecasting
 look_back <- 100
 forecast_s <- sapply((look_back+1):n_rows, function(end_p) {
@@ -5001,11 +5068,11 @@ forecast_s <- sapply((look_back+1):n_rows, function(end_p) {
   # start_p <- 1
   rang_e <- start_p:(end_p-1)
   # Invert the predictor matrix
-  design_inv <- MASS::ginv(de_sign[rang_e, -1])
+  design_inv <- MASS::ginv(predic_tor[rang_e, ])
   # Calculate fitted coefficients
-  coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
+  co_eff <- drop(design_inv %*% res_ponse[rang_e])
   # Calculate forecast
-  drop(de_sign[end_p, -1] %*% coeff_fit)
+  drop(predic_tor[end_p, ] %*% co_eff)
 })  # end sapply
 # Add warmup period
 forecast_s <- c(rep(0, look_back), forecast_s)
@@ -5017,7 +5084,7 @@ forecast_s <- c(rep(0, look_back), forecast_s)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Accuracy of the Autoregressive Forecasting Model}
+\subsection{Mean Squared Error of the Autoregressive Forecasting Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -5029,22 +5096,24 @@ forecast_s <- c(rep(0, look_back), forecast_s)
       \begin{displaymath}
         \operatorname{MSE} = \frac{1}{n} \sum_{i=1}^n (r_i - f_i)^2
       \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_resid.png}
       <<echo=TRUE,eval=FALSE>>=
 # Mean squared error
 mean((vt_i - forecast_s)^2)
 # Correlation
 cor(forecast_s, vt_i)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_forecast_resid.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Plot forecasting series with legend
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
-plot(forecast_s[(n_rows-look_back):n_rows], col="red", 
+plot(vt_i[(n_rows-look_back):n_rows], col="blue", 
      xlab="", ylab="", type="l", lwd=2,
      main="Rolling Forecasting Using AR Model")
-lines(vt_i[(n_rows-look_back):n_rows], col="blue", lwd=2)
-legend(x="top", legend=c("VTI returns", "forecasts"),
+lines(forecast_s[(n_rows-look_back):n_rows], col="red", lwd=2)
+legend(x="top", legend=c("returns", "forecasts"),
        col=c("blue", "red"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
       @
@@ -5055,30 +5124,26 @@ legend(x="top", legend=c("VTI returns", "forecasts"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Backtesting Function for the \protect\emph{AR} Forecasting Model}
+\subsection{Backtesting Function for the Forecasting Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{meta-parameters} of the \emph{backtesting} function are the order $p$ of the \emph{AR(p)} model and the length of the look-back interval (\texttt{look\_back}).
+      The \emph{meta-parameters} of the \emph{backtesting} function are the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
-sim_forecasts <- function(res_ponse, predic_tor=res_ponse, n_agg=5,
-                      or_der=5, look_back=100) {
-  n_rows <- NROW(res_ponse)
-  # Define predictor as a rolling mean
-  predic_tor <- roll::roll_mean(vt_i, width=n_agg, min_obs=1)
-  # Shift the res_ponse forward out-of-sample
-  res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
+sim_forecasts <- function(response, n_agg=5, 
+                          or_der=5, look_back=100) {
+  n_rows <- NROW(response)
+  # Define predictor as a rolling sum
+  predictor <- rutils::roll_sum(response, look_back=n_agg)
   # Define predictor matrix for forecasting
-  predic_tor <- sapply(1+n_agg*(0:or_der), rutils::lag_it,
-                       in_put=predic_tor)
-  predic_tor <- cbind(rep(1, n_rows), predic_tor)
-  # Define de_sign matrix
-  de_sign <- cbind(res_ponse, predic_tor)
+  predictor <- sapply(1+n_agg*(0:or_der), rutils::lag_it,
+                       in_put=predictor)
+  predictor <- cbind(rep(1, n_rows), predictor)
   # Perform rolling forecasting
   forecast_s <- sapply((look_back+1):n_rows, function(end_p) {
     # Define rolling look-back range
@@ -5087,18 +5152,19 @@ sim_forecasts <- function(res_ponse, predic_tor=res_ponse, n_agg=5,
     # start_p <- 1
     rang_e <- start_p:(end_p-1)
     # Invert the predictor matrix
-    design_inv <- MASS::ginv(de_sign[rang_e, -1])
+    design_inv <- MASS::ginv(predictor[rang_e, ])
     # Calculate fitted coefficients
-    coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
+    co_eff <- drop(design_inv %*% response[rang_e])
     # Calculate forecast
-    drop(de_sign[end_p, -1] %*% coeff_fit)
+    drop(predictor[end_p, ] %*% co_eff)
   })  # end sapply
   # Add warmup period
   forecast_s <- c(rep(0, look_back), forecast_s)
-  roll::roll_mean(forecast_s, width=n_agg, min_obs=1)
+  # Aggregate the forecasts
+  rutils::roll_sum(forecast_s, look_back=n_agg)
 }  # end sim_forecasts
 # Simulate the rolling autoregressive forecasts
-forecast_s <- sim_forecasts(vt_i, or_der=5, look_back=100)
+forecast_s <- sim_forecasts(response=vt_i, or_der=5, look_back=100)
 c(mse=mean((vt_i - forecast_s)^2), cor=cor(vt_i, forecast_s))
       @
   \end{columns}
@@ -5108,7 +5174,7 @@ c(mse=mean((vt_i - forecast_s)^2), cor=cor(vt_i, forecast_s))
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Dependence On the Look-back Interval}
+\subsection{Forecasting Dependence On the Look-back Interval}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -5116,13 +5182,12 @@ c(mse=mean((vt_i - forecast_s)^2), cor=cor(vt_i, forecast_s))
     \column{0.5\textwidth}
       The \emph{backtesting} function can be used to find the optimal \emph{meta-parameters} of the autoregressive forecasting model.
       \vskip1ex
-      The accuracy of the forecasting model depends on the order $p$ of the \emph{AR(p)} model and on the length of the look-back interval (\texttt{look\_back}).
+      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{look\_back}).
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       \vskip1ex
       The accuracy of the forecasting model increases steadily with longer look-back intervals (\texttt{look\_back}), because more data improves the estimates of the autoregressive coefficients.
       <<echo=TRUE,eval=FALSE>>=
-look_backs <- seq(20, 600, 40)
 library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
@@ -5130,15 +5195,16 @@ n_cores <- detectCores() - 1
 clus_ter <- makeCluster(n_cores)
 # clusterExport(clus_ter, c("star_t", "bar_rier"))
 # Perform parallel loop under Windows
-forecast_s <- parLapply(clus_ter, look_backs, sim_forecasts, res_ponse=vt_i, 
-                        predic_tor=vt_i, n_agg=5, or_der=5)
+look_backs <- seq(20, 600, 40)
+forecast_s <- parLapply(clus_ter, look_backs, sim_forecasts, 
+  response=vt_i, n_agg=5, or_der=5)
 # Perform parallel bootstrap under Mac-OSX or Linux
-forecast_s <- mclapply(look_backs, sim_forecasts, res_ponse=vt_i, 
-  predic_tor=vt_i, n_agg=5, or_der=5, mc.cores=n_cores)
+forecast_s <- mclapply(look_backs, sim_forecasts, response=vt_i, 
+  n_agg=5, or_der=5, mc.cores=n_cores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_mse.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_ar_vti_mse.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
 ms_e <- sapply(forecast_s, function(x) {
@@ -5168,13 +5234,12 @@ plot(x=look_backs, y=ms_e[, 1],
     \column{0.5\textwidth}
       The \emph{backtesting} function can be used to find the optimal \emph{meta-parameters} of the autoregressive forecasting model.
       \vskip1ex
-      The accuracy of the forecasting model depends on the order $p$ of the \emph{AR(p)} model and on the length of the look-back interval (\texttt{look\_back}).
+      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{look\_back}).
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       \vskip1ex
       The accuracy of the forecasting model increases steadily with longer look-back intervals (\texttt{look\_back}), because more data improves the estimates of the autoregressive coefficients.
       <<echo=TRUE,eval=FALSE>>=
-order_s <- 2:6
 library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
@@ -5182,17 +5247,17 @@ n_cores <- detectCores() - 1
 clus_ter <- makeCluster(n_cores)
 # clusterExport(clus_ter, c("star_t", "bar_rier"))
 # Perform parallel loop under Windows
-forecast_s <- parLapply(clus_ter, order_s, sim_forecasts, res_ponse=vt_i, 
-                        predic_tor=vt_i, n_agg=5, look_back=look_back)
+forecast_s <- parLapply(clus_ter, order_s, sim_forecasts, response=vt_i, 
+  n_agg=5, look_back=look_back)
 stopCluster(clus_ter)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
-forecast_s <- mclapply(order_s, sim_forecasts, res_ponse=vt_i, 
-  predic_tor=vt_i, n_agg=5, look_back=look_back, mc.cores=n_cores)
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
+order_s <- 2:6
+forecast_s <- mclapply(order_s, sim_forecasts, response=vt_i, 
+  n_agg=5, look_back=look_back, mc.cores=n_cores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_mse_order.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_ar_vti_mse_order.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
 ms_e <- sapply(forecast_s, function(x) {
@@ -5236,17 +5301,16 @@ pnl_s <- cbind(vt_i, pnl_s, (vt_i+pnl_s)/2)
 colnames(pnl_s) <- c("VTI", "AR_Strategy", "Combined")
 cor(pnl_s)
 # Annualized Sharpe ratios of VTI and AR strategy
-sqrt(252)*apply(pnl_s, 2, function (x) mean(x)/sd(x))
 pnl_s <- xts::xts(pnl_s, date_s)
-pnl_s <- cumsum(pnl_s)
+sqrt(252)*sapply(pnl_s, function (x) mean(x)/sd(x))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_optim.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_ar_vti_optim.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the cumulative strategy PnLs
-dygraphs::dygraph(pnl_s, main="Rolling Autoregressive Strategy") %>%
-  dyOptions(colors=c("blue","red","green"), strokeWidth=2) %>%
+dygraphs::dygraph(cumsum(pnl_s), main="Rolling Autoregressive Strategy") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -5262,7 +5326,7 @@ dygraphs::dygraph(pnl_s, main="Rolling Autoregressive Strategy") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The accuracy of the forecasting model depends on the order $p$ of the \emph{AR(p)} model.
+      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model.
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       \vskip1ex
@@ -5390,6 +5454,961 @@ dygraphs::dygraph(weal_th, main="Improved Autoregressive Strategies") %>%
 
 
 %%%%%%%%%%%%%%%
+\section{Interest Rate Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interest Rate Yield Curve and Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Daily stock returns have insignificant correlations with the daily changes in interest rates, with the possible exception of the 10-year bond yield. 
+      \vskip1ex
+      And these correlations change significantly over time.
+      <<echo=TRUE,eval=FALSE>>=
+# Load constant maturity Treasury rates
+load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
+# Combine rates into single xts series
+rate_s <- do.call(cbind, as.list(rates_env))
+# Sort the columns of rate_s according bond maturity
+name_s <- colnames(rate_s)
+name_s <- substr(name_s, start=4, stop=10)
+name_s <- as.numeric(name_s)
+indeks <- order(name_s)
+rate_s <- rate_s[, indeks]
+# Align rates dates with VTI prices
+clos_e <- log(quantmod::Cl(rutils::etf_env$VTI))
+colnames(clos_e) <- "VTI"
+n_rows <- NROW(clos_e)
+date_s <- zoo::index(clos_e)
+rate_s <- na.omit(rate_s[date_s])
+clos_e <- clos_e[zoo::index(rate_s)]
+date_s <- zoo::index(clos_e)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI returns and IR changes
+re_turns <- rutils::diff_it(clos_e)
+rates_diff <- rutils::diff_it(log(rate_s))
+# Regress VTI returns versus the lagged rate differences
+predic_tor <- rutils::lag_it(rates_diff)
+mod_el <- lm(re_turns ~ predic_tor)
+summary(mod_el)
+# Regress VTI returns before and after 2012
+summary(lm(re_turns["/2012"] ~ predic_tor["/2012"]))
+summary(lm(re_turns["2012/"] ~ predic_tor["2012/"]))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Yield Curve Principal Components and Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The principal components of the interest rate yield curve can also be used as predictors of stock indices.
+      \vskip1ex
+      The second principal component describes the steepening and flattening of the yield curve, and it's an indicator of investor risk appetite.  So it's also related to bullish and bearish market periods.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate PCA of rates correlation matrix
+ei_gen <- eigen(cor(rates_diff))
+rates_pca <- -rates_diff %*% ei_gen$vectors
+colnames(rates_pca) <- paste0("PC", 1:6)
+# Define predictor as the YC PCAs
+predic_tor <- rutils::lag_it(rates_pca)
+mod_el <- lm(re_turns ~ predic_tor)
+summary(mod_el)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_steep.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot YC steepener principal component with VTI
+da_ta <- cbind(re_turns, rates_pca[, 2])
+colnames(da_ta) <- c("VTI", "Steepener")
+col_names <- colnames(da_ta)
+dygraphs::dygraph(cumsum(da_ta), main="VTI and Yield Curve Steepener") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=1, col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Yield Curve Strategy In-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For in-sample forecasts, the training set and the test set are the same.  The model is calibrated on the data that is used for forecasting. 
+      \vskip1ex
+      Yield Curve Strategy
+      \vskip1ex
+      Although it's not realistic to achieve the in-sample performance, it's useful because it provides insights into how the model works.
+      \vskip1ex
+      The in-sample strategy performs well in periods of high volatility, but otherwise it's flat.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Define predictor with intercept term
+predic_tor <- rutils::lag_it(rates_diff)
+predic_tor <- cbind(rep(1, NROW(predic_tor)), predic_tor)
+colnames(predic_tor)[1] <- "intercept"
+# Calculate inverse of predictor
+in_verse <- MASS::ginv(predic_tor)
+# Calculate coefficients from response and inverse of predictor
+res_ponse <- re_turns
+co_eff <- drop(in_verse %*% res_ponse)
+# Calculate forecasts and pnls in-sample
+forecast_s <- (predic_tor %*% co_eff)
+pnl_s <- sign(forecast_s)*re_turns
+# Calculate in-sample factors
+factor_s <- (predic_tor * co_eff)
+apply(factor_s, 2, sd)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_insample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of in-sample IR strategy
+weal_th <- cbind(re_turns, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Yield Curve Strategy In-sample") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Yield Curve Strategy Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For out-of-sample forecasts, the training set and the test set are separate.  The model is calibrated on the training data, and forecasts are calculated using the test data. 
+      \vskip1ex
+      The out-of-sample strategy performs well in periods of high volatility, but otherwise it's flat.
+      <<echo=TRUE,eval=FALSE>>=
+# Define in-sample and out-of-sample intervals
+in_sample <- (date_s < as.Date("2020-01-01"))
+out_sample <- (date_s >= as.Date("2020-01-01"))
+# Calculate inverse of predictor in-sample
+in_verse <- MASS::ginv(predic_tor[in_sample, ])
+# Calculate coefficients in-sample
+co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+# Calculate forecasts and pnls out-of-sample
+forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+pnl_s <- sign(forecast_s)*re_turns[out_sample, ]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_outsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of out-of-sample IR PCA strategy
+weal_th <- cbind(re_turns[out_sample, ], pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Yield Curve Strategy Out-of-Sample") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Yearly Yield Curve Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the rolling yearly yield curve strategy, the model is recalibrated at the end of every year using a training set of data from the past year.
+      The coefficients are applied to calculate out-of-sample forecasts in the following year.
+      \vskip1ex
+      The rolling yearly strategy performs well in periods of high volatility, but otherwise it's flat.
+      <<echo=TRUE,eval=FALSE>>=
+# Define yearly dates
+format(date_s[1], "%Y")
+year_s <- paste0(seq(2001, 2022, 1), "-01-01")
+year_s <- as.Date(year_s)
+# Perform loop over yearly dates
+pnl_s <- lapply(3:(NROW(year_s)-1), function(i) {
+  # Define in-sample and out-of-sample intervals
+  in_sample <- (date_s > year_s[i-1]) & (date_s < year_s[i])
+  out_sample <- (date_s >= year_s[i]) & (date_s < year_s[i+1])
+  # Calculate coefficients in-sample
+  in_verse <- MASS::ginv(predic_tor[in_sample, ])
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  # Calculate forecasts and pnls out-of-sample
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})  # end lapply
+pnl_s <- do.call(rbind, pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_yearly.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling yearly IR strategy
+vt_i <- rutils::diff_it(clos_e[zoo::index(pnl_s),])
+weal_th <- cbind(vt_i, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Rolling Yearly Yield Curve Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Monthly Yield Curve Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{11} months.
+      The coefficients are applied to perform out-of-sample forecasts in the following month.
+      \vskip1ex
+      Research shows that looking back roughly a year provides the best out-of-sample forecasts.
+      \vskip1ex
+      The rolling monthly strategy performs better than the yearly strategy, but mostly in periods of high volatility, and otherwise it's flat.
+      <<echo=TRUE,eval=FALSE>>=
+# Define monthly dates
+format(date_s[1], "%m-%Y")
+format(date_s[NROW(date_s)], "%m-%Y")
+month_s <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month")
+# Perform loop over monthly dates
+pnl_s <- lapply(12:(NROW(month_s)-1), function(i) {
+  # Define in-sample and out-of-sample intervals
+  in_sample <- (date_s > month_s[i-11]) & (date_s < month_s[i])
+  out_sample <- (date_s > month_s[i]) & (date_s < month_s[i+1])
+  # Calculate forecasts and pnls out-of-sample
+  in_verse <- MASS::ginv(predic_tor[in_sample, ])
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})  # end lapply
+pnl_s <- do.call(rbind, pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_monthly.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling monthly IR strategy
+vt_i <- rutils::diff_it(clos_e[zoo::index(pnl_s),])
+weal_th <- cbind(vt_i, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Rolling Monthly Yield Curve Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Weekly Yield Curve Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the rolling weekly yield curve strategy, the model is recalibrated at the end of every week using a training set of the past \texttt{10} weeks.
+      The coefficients are applied to perform out-of-sample forecasts in the following week.
+      <<echo=TRUE,eval=FALSE>>=
+# Define weekly dates
+week_s <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks")
+# Perform loop over weekly dates
+pnl_s <- lapply(51:(NROW(week_s)-1), function(i) {
+  # Define in-sample and out-of-sample intervals
+  in_sample <- (date_s > week_s[i-10]) & (date_s < week_s[i])
+  out_sample <- (date_s > week_s[i]) & (date_s < week_s[i+1])
+  # Calculate forecasts and pnls out-of-sample
+  in_verse <- MASS::ginv(predic_tor[in_sample, ])
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})  # end lapply
+pnl_s <- do.call(rbind, pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_weekly.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling weekly IR strategy
+vt_i <- rutils::diff_it(clos_e[zoo::index(pnl_s),])
+weal_th <- cbind(vt_i, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Rolling Weekly Yield Curve Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularization of the Inverse Predictor Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ is defined as the factorization:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{U} \Sigma \mathbb{V}^T
+      \end{displaymath}
+      Where $\mathbb{U}$ and $\mathbb{V}$ are the \emph{singular matrices}, and $\Sigma$ is a diagonal matrix of \emph{singular values}.
+      \vskip1ex
+      The \emph{generalized inverse} matrix $\mathbb{A}^{-1}$ satisfies the inverse equation: $\mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}$, and it can be expressed as a product of the \emph{SVD} matrices as follows:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
+      \end{displaymath}
+      If any of the \emph{singular values} are zero then the \emph{generalized inverse} does not exist.
+      \vskip1ex
+      The \emph{regularized inverse} is obtained by removing the zero \emph{singular values}:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
+      \end{displaymath}
+      Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices without the zero \emph{singular values}.
+      \vskip1ex
+      The regularized inverse satisfies the inverse matrix equation: $\mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.3\paperwidth]{figure/yc_pred_svd.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate singular value decomposition of the predictor matrix
+s_vd <- svd(predic_tor)
+barplot(s_vd$d, main="Singular Values of YC Predictor Matrix")
+# Calculate generalized inverse from SVD
+in_verse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
+# Verify inverse property of in_verse
+all.equal(zoo::coredata(predic_tor), 
+          predic_tor %*% in_verse %*% predic_tor)
+# Calculate generalized inverse using MASS::ginv()
+inverse_ginv <- MASS::ginv(predic_tor)
+all.equal(inverse_ginv, in_verse)
+# Set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# Check for zero singular values
+round(s_vd$d, 12)
+not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
+# Calculate regularized inverse from SVD
+inv_reg <- s_vd$v[, not_zero] %*%
+  (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
+# Verify inverse property of inv_reg
+all.equal(zoo::coredata(predic_tor), 
+          predic_tor %*% inv_reg %*% predic_tor)
+all.equal(inv_reg, in_verse)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Shrinkage of the Inverse Predictor Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the higher order singular values are very small then the inverse matrix will amplify the noise in the response matrix.
+      \vskip1ex
+      The \emph{shrinkage inverse} is obtained by removing the very small \emph{singular values}.
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
+      \end{displaymath}
+      This effectively reduces the number of parameters in the model.
+      \vskip1ex
+      The \emph{shrinkage inverse} satisfies the inverse equation only approximately (it is \emph{biased}), but it's often used in machine learning because it produces a lower \emph{variance} of the forecasts than the exact inverse.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate shrinkage inverse from SVD
+eigen_max <- 3
+inv_shrink <- s_vd$v[, 1:eigen_max] %*%
+  (t(s_vd$u[, 1:eigen_max]) / s_vd$d[1:eigen_max])
+# Inverse property fails for inv_shrink
+all.equal(zoo::coredata(predic_tor), 
+          predic_tor %*% inv_shrink %*% predic_tor)
+# Calculate shrinkage inverse using RcppArmadillo
+inverse_rcpp <- HighFreq::calc_inv(predic_tor, eigen_max=eigen_max)
+all.equal(inv_shrink, inverse_rcpp, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Yield Curve Strategy With Shrinkage In-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The technique of \emph{regularization} is designed to reduce the number of parameters in a model, for example in portfolio optimization.
+      \vskip1ex
+      Regularization of the inverse predictor matrix improves the in-sample performance of the yield curve strategy.
+      \vskip1ex
+      Although it's not realistic to achieve the in-sample performance, it's useful because it provides insights into how the model can be improved.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate in-sample pnls for different eigen_max values
+eigen_maxs <- 2:7
+pnl_s <- lapply(eigen_maxs, function(eigen_max) {
+  in_verse <- HighFreq::calc_inv(predic_tor, eigen_max=eigen_max)
+  co_eff <- drop(in_verse %*% res_ponse)
+  forecast_s <- (predic_tor %*% co_eff)
+  sign(forecast_s)*re_turns
+})
+pnl_s <- do.call(cbind, pnl_s)
+colnames(pnl_s) <- paste0("eigen", eigen_maxs)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_insample_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of in-sample pnls
+col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+dygraphs::dygraph(cumsum(pnl_s), main="In-Sample Returns of Shrinkage YC Strategies") %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Yield Curve Strategy With Shrinkage Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For out-of-sample forecasts, the training set and the test set are separate.  The model is calibrated on the training data, and forecasts are calculated using the test data. 
+      \vskip1ex
+      The out-of-sample strategy performs well in periods of high volatility, but otherwise it's flat.
+      <<echo=TRUE,eval=FALSE>>=
+# Define in-sample and out-of-sample intervals
+in_sample <- (date_s < as.Date("2020-01-01"))
+out_sample <- (date_s >= as.Date("2020-01-01"))
+# Calculate in-sample pnls for different eigen_max values
+eigen_maxs <- 2:7
+pnl_s <- lapply(eigen_maxs, function(x) {
+  in_verse <- HighFreq::calc_inv(predic_tor[in_sample, ], eigen_max=x)
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})
+pnl_s <- do.call(cbind, pnl_s)
+colnames(pnl_s) <- paste0("eigen", eigen_maxs)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_outsample_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of out-of-sample pnls
+col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+dygraphs::dygraph(cumsum(pnl_s), main="Out-of-Sample Returns of Shrinkage YC Strategies") %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Monthly Yield Curve Strategy With Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter look\_back intervals since it suppresses the response noise.
+      \vskip1ex
+      In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{6} months.
+      The coefficients are applied to perform out-of-sample forecasts in the following month.
+      <<echo=TRUE,eval=FALSE>>=
+# Define monthly dates
+format(date_s[1], "%m-%Y")
+format(date_s[NROW(date_s)], "%m-%Y")
+month_s <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month")
+# Perform loop over monthly dates
+look_back <- 6
+eigen_max <- 3
+pnl_s <- lapply(12:(NROW(month_s)-1), function(i) {
+  # Define in-sample and out-of-sample intervals
+  in_sample <- (date_s > month_s[i-look_back]) & (date_s < month_s[i])
+  out_sample <- (date_s > month_s[i]) & (date_s < month_s[i+1])
+  # Calculate forecasts and pnls out-of-sample
+  in_verse <- HighFreq::calc_inv(predic_tor[in_sample, ], eigen_max=eigen_max)
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})  # end lapply
+pnl_s <- do.call(rbind, pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_monthly_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling monthly IR strategy
+vt_i <- rutils::diff_it(clos_e[zoo::index(pnl_s),])
+weal_th <- cbind(vt_i, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Rolling Monthly Shrinkage YC Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Weekly Yield Curve Strategy With Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the rolling weekly yield curve strategy, the model is recalibrated at the end of every week using a training set of the past \texttt{4} weeks.
+      The coefficients are applied to perform out-of-sample forecasts in the following week.
+      <<echo=TRUE,eval=FALSE>>=
+# Define weekly dates
+week_s <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks")
+# Perform loop over weekly dates
+look_back <- 4
+eigen_max <- 4
+pnl_s <- lapply(51:(NROW(week_s)-1), function(i) {
+  # Define in-sample and out-of-sample intervals
+  in_sample <- (date_s > week_s[i-look_back]) & (date_s < week_s[i])
+  out_sample <- (date_s > week_s[i]) & (date_s < week_s[i+1])
+  # Calculate forecasts and pnls out-of-sample
+  in_verse <- HighFreq::calc_inv(predic_tor[in_sample, ], eigen_max=eigen_max)
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})  # end lapply
+pnl_s <- do.call(rbind, pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_weekly_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling weekly IR strategy
+vt_i <- rutils::diff_it(clos_e[zoo::index(pnl_s),])
+weal_th <- cbind(vt_i, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Rolling Weekly Shrinkage YC Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Combined Predictor Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A "kitchen sink" strategy combines many different predictors into a large predictor matrix with many columns.  
+      \vskip1ex
+      For example by combining the yield curve predictors with the lagged returns. 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load the yield curve data
+load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
+rate_s <- do.call(cbind, as.list(rates_env))
+name_s <- colnames(rate_s)
+name_s <- substr(name_s, start=4, stop=10)
+name_s <- as.numeric(name_s)
+indeks <- order(name_s)
+rate_s <- rate_s[, indeks]
+clos_e <- log(quantmod::Cl(rutils::etf_env$VTI))
+colnames(clos_e) <- "VTI"
+n_rows <- NROW(clos_e)
+date_s <- zoo::index(clos_e)
+rate_s <- na.omit(rate_s[date_s])
+clos_e <- clos_e[zoo::index(rate_s)]
+date_s <- zoo::index(clos_e)
+re_turns <- rutils::diff_it(clos_e)
+rates_diff <- rutils::diff_it(log(rate_s))
+# Create a combined predictor matrix
+order_max <- 5
+predic_tor <- sapply(1:order_max, rutils::lag_it, in_put=as.numeric(re_turns))
+colnames(predic_tor) <- paste0("retslag", 1:NCOL(predic_tor))
+predic_tor <- cbind(predic_tor, rutils::lag_it(rates_diff))
+predic_tor <- cbind(rep(1, NROW(predic_tor)), predic_tor)
+colnames(predic_tor)[1] <- "intercept"
+res_ponse <- re_turns
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Combined Strategy With Shrinkage In-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The technique of \emph{regularization} is designed to reduce the number of parameters in a model, for example in portfolio optimization.
+      \vskip1ex
+      Regularization of the inverse predictor matrix improves the in-sample performance of the yield curve strategy.
+      \vskip1ex
+      Although it's not realistic to achieve the in-sample performance, it's useful because it provides insights into how the model can be improved.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate in-sample pnls for different eigen_max values
+eigen_maxs <- 2:11
+pnl_s <- lapply(eigen_maxs, function(eigen_max) {
+  in_verse <- HighFreq::calc_inv(predic_tor, eigen_max=eigen_max)
+  co_eff <- drop(in_verse %*% res_ponse)
+  forecast_s <- (predic_tor %*% co_eff)
+  sign(forecast_s)*re_turns
+})
+pnl_s <- do.call(cbind, pnl_s)
+colnames(pnl_s) <- paste0("eigen", eigen_maxs)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_combined_insample_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of in-sample pnls
+col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+dygraphs::dygraph(cumsum(pnl_s), main="In-Sample Returns of Combined Strategies With Shrinkage") %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Combined Strategy With Shrinkage Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For out-of-sample forecasts, the training set and the test set are separate.  The model is calibrated on the training data, and forecasts are calculated using the test data. 
+      \vskip1ex
+      The out-of-sample strategy performs well in periods of high volatility, but otherwise it's flat.
+      <<echo=TRUE,eval=FALSE>>=
+# Define in-sample and out-of-sample intervals
+in_sample <- (date_s < as.Date("2020-01-01"))
+out_sample <- (date_s >= as.Date("2020-01-01"))
+# Calculate in-sample pnls for different eigen_max values
+eigen_maxs <- 2:11
+pnl_s <- lapply(eigen_maxs, function(x) {
+  in_verse <- HighFreq::calc_inv(predic_tor[in_sample, ], eigen_max=x)
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})
+pnl_s <- do.call(cbind, pnl_s)
+colnames(pnl_s) <- paste0("eigen", eigen_maxs)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_combined_outsample_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of out-of-sample pnls
+col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+dygraphs::dygraph(cumsum(pnl_s), main="Out-of-Sample Returns of Combined Strategies With Shrinkage") %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Rolling Monthly Combined Strategy With Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter look\_back intervals since it suppresses the response noise.
+      \vskip1ex
+      In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{6} months.
+      The coefficients are applied to perform out-of-sample forecasts in the following month.
+      <<echo=TRUE,eval=FALSE>>=
+# Define monthly dates
+format(date_s[1], "%m-%Y")
+format(date_s[NROW(date_s)], "%m-%Y")
+month_s <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month")
+# Perform loop over monthly dates
+look_back <- 6
+eigen_max <- 3
+pnl_s <- lapply(12:(NROW(month_s)-1), function(i) {
+  # Define in-sample and out-of-sample intervals
+  in_sample <- (date_s > month_s[i-look_back]) & (date_s < month_s[i])
+  out_sample <- (date_s > month_s[i]) & (date_s < month_s[i+1])
+  # Calculate forecasts and pnls out-of-sample
+  in_verse <- HighFreq::calc_inv(predic_tor[in_sample, ], eigen_max=eigen_max)
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})  # end lapply
+pnl_s <- do.call(rbind, pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_monthly_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling monthly IR strategy
+vt_i <- rutils::diff_it(clos_e[zoo::index(pnl_s),])
+weal_th <- cbind(vt_i, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Rolling Monthly Shrinkage YC Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Rolling Weekly Combined Strategy With Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the rolling weekly yield curve strategy, the model is recalibrated at the end of every week using a training set of the past \texttt{4} weeks.
+      The coefficients are applied to perform out-of-sample forecasts in the following week.
+      <<echo=TRUE,eval=FALSE>>=
+# Define weekly dates
+week_s <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks")
+# Perform loop over weekly dates
+look_back <- 8
+eigen_max <- 4
+pnl_s <- lapply(51:(NROW(week_s)-1), function(i) {
+  # Define in-sample and out-of-sample intervals
+  in_sample <- (date_s > week_s[i-look_back]) & (date_s < week_s[i])
+  out_sample <- (date_s > week_s[i]) & (date_s < week_s[i+1])
+  # Calculate forecasts and pnls out-of-sample
+  in_verse <- HighFreq::calc_inv(predic_tor[in_sample, ], eigen_max=eigen_max)
+  co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+  forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+  sign(forecast_s)*re_turns[out_sample, ]
+})  # end lapply
+pnl_s <- do.call(rbind, pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_weekly_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling weekly IR strategy
+vt_i <- rutils::diff_it(clos_e[zoo::index(pnl_s),])
+weal_th <- cbind(vt_i, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Rolling Weekly Shrinkage YC Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Forecasts Using Aggregated Predictor}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Needs more work to improve performance
+      \vskip1ex
+      Aggregating the predictor reduces its noise and increases the significance of correlations. 
+      \vskip1ex
+      The optimal aggregation number can be found by maximizing the regression t-values.
+      <<echo=TRUE,eval=FALSE>>=
+# Find optimal n_agg for predictor
+n_aggs <- 5:100
+tvalues <- sapply(n_aggs, function(n_agg) {
+  predic_tor <- roll::roll_mean(rates_diff, width=n_agg, min_obs=1)
+  predic_tor <- cbind(rep(1, NROW(predic_tor)), predic_tor)
+  predic_tor <- rutils::lag_it(predic_tor)
+  mod_el <- lm(res_ponse ~ predic_tor - 1)
+  model_sum <- summary(mod_el)
+  max(abs(model_sum$coefficients[, 3][-1]))
+})  # end sapply
+n_aggs[which.max(tvalues)]
+plot(n_aggs, tvalues, t="l", col="blue", lwd=2)
+# Calculate aggregated predictor
+n_agg <- 53
+predic_tor <- roll::roll_mean(rates_diff, width=n_agg, min_obs=1)
+predic_tor <- rutils::lag_it(predic_tor)
+predic_tor <- cbind(rep(1, NROW(predic_tor)), predic_tor)
+mod_el <- lm(res_ponse ~ predic_tor - 1)
+summary(mod_el)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_insample_agg.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate forecasts and pnls in-sample
+in_verse <- MASS::ginv(predic_tor)
+co_eff <- drop(in_verse %*% res_ponse)
+forecast_s <- (predic_tor %*% co_eff)
+pnl_s <- sign(forecast_s)*re_turns
+# Plot dygraph of in-sample IR strategy
+weal_th <- cbind(re_turns, pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Aggregated YC Strategy In-sample") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Aggregated Forecasts Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Needs more work to improve performance
+      \vskip1ex
+      For out-of-sample forecasts, the training set and the test set are separate.  The model is calibrated on the training data, and forecasts are calculated using the test data. 
+      \vskip1ex
+      The out-of-sample strategy performs well in periods of high volatility, but otherwise it's flat.
+      <<echo=TRUE,eval=FALSE>>=
+# Define in-sample and out-of-sample intervals
+in_sample <- (date_s < as.Date("2020-01-01"))
+out_sample <- (date_s >= as.Date("2020-01-01"))
+# Calculate forecasts and pnls out-of-sample
+in_verse <- MASS::ginv(predic_tor[in_sample, ])
+co_eff <- drop(in_verse %*% res_ponse[in_sample, ])
+forecast_s <- (predic_tor[out_sample, ] %*% co_eff)
+pnl_s <- sign(forecast_s)*re_turns[out_sample, ]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_outsample_agg.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of out-of-sample YC strategy
+weal_th <- cbind(re_turns[out_sample, ], pnl_s)
+colnames(weal_th) <- c("VTI", "Strategy")
+col_names <- colnames(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="Aggregated YC Strategy Out-of-Sample") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
 \section{Momentum Strategies}
 
 
@@ -5400,15 +6419,16 @@ dygraphs::dygraph(weal_th, main="Improved Autoregressive Strategies") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A \emph{momentum} strategy can be \emph{backtested} as follows:
+      \emph{Momentum} strategies can be \emph{backtested} by specifying the portfolio rebalancing frequency, the formation period, and the holding period:
       \setlength{\leftmargini}{1.0em}
       \begin{itemize}
         \item Specify a portfolio of \emph{ETFs}, stocks, or other assets, and a time series of their returns,
-        \item Specify \emph{look-back} and \emph{look-forward} intervals, spanned by \emph{end points} and \emph{start points},
+        \item Specify \emph{end points} for the portfolio rebalancing frequency,
+        \item Specify \emph{look-back} intervals for portfolio formation, and \emph{look-forward} intervals for portfolio holding, 
         \item Specify a performance function to calculate the past performance of the assets,
-        \item Calculate the past performance over the \emph{look-back} intervals,
+        \item Calculate the past performance over the \emph{look-back} formation intervals,
         \item Calculate the portfolio weights from the past performance,
-        \item Calculate the future returns over the \emph{look-forward} intervals,
+        \item Calculate the future returns over the \emph{look-forward} holding intervals,
         \item Calculate the out-of-sample momentum strategy returns by applying the portfolio weights to the future returns,
         \item Calculate the transaction costs and subtract them from the strategy returns.
       \end{itemize}
@@ -5418,106 +6438,12 @@ dygraphs::dygraph(weal_th, main="Improved Autoregressive Strategies") %>%
 # Extract ETF returns
 sym_bols <- c("VTI", "IEF", "DBC")
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
-# Select rows with IEF data
-re_turns <- re_turns[index(rutils::etf_env$IEF)]
+re_turns <- na.omit(re_turns)
+# Or, select rows with IEF data
+# re_turns <- re_turns[index(rutils::etf_env$IEF)]
 # Copy over NA values
-re_turns[1, is.na(re_turns[1, ])] <- 0
-re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{depr: Backtesting Framework with Overlapping Aggregations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Done: Adapt this verbiage:
-      \vskip1ex
-      An interval aggregation can be calculated by a vector of look-back \emph{intervals} attached at \emph{end points} spanning fixed time \emph{intervals}.
-      \vskip1ex
-      For example, we may wish to perform aggregations at weekly \emph{end points}, over overlapping 40-week look-back \emph{intervals}.
-      \vskip1ex
-      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{interval}, while (\texttt{look\_back - 1}) is equal to the number of intervals in the look-back.
-      \vskip1ex
-      The \emph{start points} are the \emph{end points} lagged by the number of interval intervals (number of intervals in the interval).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
-# Define time interval for end points
-re_balance <- "weeks"
-# Look-back interval is multiple of re_balance
-look_back <- 41
-# Create index of rebalancing period end points
-end_p <- xts::endpoints(rutils::etf_env$re_turns,
-                             on=re_balance)
-# start_p are multi-period lag of end_p
-n_rows <- NROW(end_p)
-start_p <- c(rep_len(0, look_back-1),
-  end_p[1:(n_rows - look_back + 1)])
-# Create list of look-back intervals
-look_backs <- lapply(2:n_rows,
-    function(ep) {
-      start_p[ep]:end_p[ep]
-  })  # end lapply
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{depr: Performing Overlapping Aggregations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Done: Adapt this verbiage:
-      \vskip1ex
-      An interval aggregation can be calculated by a vector of look-back \emph{intervals} attached at \emph{end points} spanning fixed time \emph{intervals}.
-      \vskip1ex
-      For example, we may wish to perform aggregations at weekly \emph{end points}, over overlapping 40-week look-back \emph{intervals}.
-      \vskip1ex
-      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{interval}, while (\texttt{look\_back-1}) is equal to the number of intervals in that interval.
-      \vskip1ex
-      The \emph{start points} are the \emph{end points} lagged by the number of interval intervals (number of intervals in the interval).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
-# Create vector of symbols for model
-sym_bols <- c("VTI", "IEF", "DBC")
-
-# Calculate risk&ret stats for some symbols, over a range of dates
-# Perform lapply() loop over look_backs
-risk_stats <- lapply(look_backs,
-  function(look_back) {
-    x_ts <-
-      rutils::etf_env$re_turns[look_back, sym_bols]
-    t(sapply(x_ts,
-      function(col_umn)
-        c(return=mean(col_umn), risk=mad(col_umn))
-      ))  # end sapply
-    })  # end lapply
-# rbind list into single xts or matrix
-# risk_stats <- do.call_rbind(risk_stats)
-# head(risk_stats)
-# Calculate non-overlapping returns in interval
-re_turns <-sapply(2:n_rows,
-    function(ep) {
-    sapply(rutils::etf_env$re_turns[
-      (end_p[ep-1]+1):end_p[ep],
-      sym_bols], sum)
-  })  # end sapply
-re_turns <- t(re_turns)
+# re_turns[1, is.na(re_turns[1, ])] <- 0
+# re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
       @
   \end{columns}
 \end{block}
@@ -5532,11 +6458,11 @@ re_turns <- t(re_turns)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Aggregations can be calculated over a vector of overlapping \emph{look-back} intervals attached at \emph{end points}.
+      Performance aggregations are be calculated over a vector of overlapping in-sample \emph{look-back} intervals attached at \emph{end points}.
       \vskip1ex
       For example, aggregations at monthly \emph{end points} over overlapping 12-month \emph{look-back} intervals.
       \vskip1ex
-      An example of a data aggregation is the past performance at each \emph{end point}.
+      An example of a data aggregation are the cumulative past returns at each \emph{end point}.
       \vskip1ex
       The variable \texttt{look\_back} is equal to the number of \emph{end points} in the \emph{look-back} interval.
       \vskip1ex
@@ -5544,7 +6470,7 @@ re_turns <- t(re_turns)
       \vskip1ex
       The \emph{look-back} intervals are spanned by the vectors of \emph{start points} and \emph{end points}.
       \vskip1ex
-      Aggregations can also be calculated over non-overlapping \emph{look-forward} intervals.
+      Performance aggregations are also be calculated over non-overlapping out-of-sample \emph{look-forward} intervals.
       \vskip1ex
       The \emph{look-forward} intervals should not overlap with the \emph{look-back} intervals, in order to avoid data snooping.
     \column{0.5\textwidth}
@@ -5552,17 +6478,22 @@ re_turns <- t(re_turns)
       <<echo=TRUE,eval=FALSE>>=
 # Define end of month end points
 end_p <- rutils::calc_endpoints(re_turns, inter_val="months")
+end_p <- end_p[-1]
 n_rows <- NROW(end_p)
-# start points equal end points lagged by 12-month look-back interval
+date_s <- zoo::index(re_turns)[end_p]
+# Start points equal end points lagged by 12-month look-back interval
 look_back <- 12
-start_p <- c(rep_len(0, look_back-1),
+start_p <- c(rep_len(1, look_back-1),
   end_p[1:(n_rows - look_back + 1)])
 # Calculate matrix of look-back intervals
 look_backs <- cbind(start_p, end_p)
+colnames(look_backs) <- c("start", "end")
 # Calculate matrix of look-forward intervals
 look_fwds <- cbind(end_p + 1, rutils::lag_it(end_p, -1))
-look_fwds[n_rows, 1] <- end_p[n_rows]
+look_fwds[n_rows, ] <- end_p[n_rows]
+colnames(look_fwds) <- c("start", "end")
 # Inspect the intervals
+head(cbind(look_backs, look_fwds))
 tail(cbind(look_backs, look_fwds))
       @
   \end{columns}
@@ -5584,9 +6515,9 @@ tail(cbind(look_backs, look_fwds))
       \vskip1ex
       The portfolio weights of \emph{momentum} strategies can be scaled in several different ways.
       \vskip1ex
-      To limit the portfolio leverage, the weights can be scaled so that the sum of their absolute values (or their squares) is equal to $1$: $\sum_{i=1}^n {w^2_i} = 1$
+      To limit the portfolio leverage, the weights can be scaled so that the sum of squares is equal to $1$: $\sum_{i=1}^n {w^2_i} = 1$.
       \vskip1ex
-      The weights can also be de-meaned, so that their sum is equal to zero, to create long-short portfolios with small betas.
+      The weights can also be de-meaned, so that their sum is equal to zero, to create long-short portfolios with small betas: $\sum_{i=1}^n {w_i} = 0$.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -5598,19 +6529,13 @@ pas_t <- apply(look_backs, 1, function(ep) {
 })  # end sapply
 pas_t <- t(pas_t)
 pas_t[is.na(pas_t)] <- 0
-# Calculate future performance
-fu_ture <- apply(look_fwds, 1, function(ep) {
-  sapply(re_turns[ep[1]:ep[2]], sum)
-})  # end sapply
-fu_ture <- t(fu_ture)
-fu_ture[is.na(fu_ture)] <- 0
-# Weights proportional to past performance
+# Weights are proportional to past performance
 weight_s <- pas_t
 # weight_s[weight_s < 0] <- 0
-# Scale weight_s so sum is equal to 1
-# weight_s <- weight_s/rowSums(weight_s)
 # Scale weight_s so sum of squares is equal to 1.
 weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+# Or scale weight_s so sum is equal to 1
+# weight_s <- weight_s/rowSums(weight_s)
 # Set NA values to zero
 weight_s[is.na(weight_s)] <- 0
 sum(is.na(weight_s))
@@ -5622,14 +6547,12 @@ sum(is.na(weight_s))
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Backtesting the EWMA Momentum Strategy}
+\subsection{Backtesting the Momentum Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Adapt this verbiage:
-      \vskip1ex
       \emph{Backtesting} is the testing of the accuracy of a forecasting model using simulation on historical data.
       \vskip1ex
       \emph{Backtesting} is a type of \emph{cross-validation} applied to time series data.
@@ -5638,30 +6561,40 @@ sum(is.na(weight_s))
       \vskip1ex
       The \emph{training} data is specified by the \emph{look-back} intervals (\texttt{pas\_t}), and the model forecasts are applied to the future data defined by the \emph{look-forward} intervals (\texttt{fu\_ture}).
       \vskip1ex
-      The out-of-sample \emph{momentum} strategy returns can be calculated by multiplying the \texttt{fu\_ture} by the forecast \emph{ETF} portfolio weights.
+      The out-of-sample \emph{momentum} strategy returns can be calculated by multiplying the \texttt{fu\_ture} returns by the forecast \emph{ETF} portfolio weights.
+      \vskip1ex
+      The momentum returns are lagged so that they are attached to the end of the future interval, instead of at its beginning.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate backtest returns
-pnl_s <- rowSums(weight_s*fu_ture)
-pnl_s <- xts::xts(pnl_s, order.by=date_s)
-colnames(pnl_s) <- "ewma momentum"
-close_rets <- rutils::diff_it(clos_e[date_s])
-cor(cbind(pnl_s, close_rets))
-pnl_s <- star_t + cumsum(pnl_s)
+# Calculate future out-of-sample performance
+fu_ture <- apply(look_fwds, 1, function(ep) {
+  sapply(re_turns[ep[1]:ep[2]], sum)
+})  # end sapply
+fu_ture <- t(fu_ture)
+fu_ture[is.na(fu_ture)] <- 0
+tail(fu_ture)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/backtest_ewma.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_etf.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the backtest
-quantmod::chart_Series(x=clos_e[end_p[-n_rows]],
-  name="Backtest of EWMA Strategies", col="orange")
-add_TA(pnl_s, on=1, lwd=2, col="blue")
-legend("top", legend=c("VTI", "EWMA"),
-       inset=0.1, bg="white", lty=1, lwd=6,
-       col=c("orange", "blue"), bty="n")
-# shad_e <- xts::xts(index(pnl_s) < as.Date("2008-01-31"), order.by=index(pnl_s))
-# add_TA(shad_e, on=-1, col="lightgrey", border="lightgrey")
-# text(x=7, y=0, labels="warmup period")
+# Calculate the momentum pnls
+pnl_s <- rowSums(weight_s*fu_ture)
+# Lag the future and momentum returns to proper dates
+fu_ture <- rutils::lag_it(fu_ture)
+pnl_s <- rutils::lag_it(pnl_s)
+# The momentum strategy has low correlation to stocks
+cor(pnl_s, fu_ture)
+# Define all-weather benchmark
+weights_aw <- c(0.30, 0.55, 0.15)
+all_weather <- fu_ture %*% weights_aw
+# Calculate the wealth of momentum returns
+weal_th <- xts::xts(cbind(all_weather, pnl_s), order.by=date_s)
+colnames(weal_th) <- c("All-Weather", "Momentum")
+cor(weal_th)
+# Plot dygraph of the momentum strategy returns
+dygraphs::dygraph(cumsum(weal_th), main="Monthly Momentum Strategy vs All-Weather") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}
@@ -5670,15 +6603,13 @@ legend("top", legend=c("VTI", "EWMA"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Backtest of the Momentum Strategy}
+\subsection{depr: Backtest of the Momentum Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \emph{out-of-sample} momentum strategy returns are calculated by multiplying the weights times the future returns.
-      \vskip1ex
-      The momentum returns and weights need to be lagged by one end point, so that they are attached to the end of the future interval, instead of at its beginning.
       \vskip1ex
       The \emph{transaction costs} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amounts of the \emph{risky assets}.
       <<echo=TRUE,eval=FALSE>>=
@@ -5699,7 +6630,7 @@ weal_th <- xts::xts(weal_th, date_s)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_etf.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_etf.png}
       <<echo=TRUE,eval=FALSE>>=
 # Define all-weather benchmark
 weights_aw <- c(0.30, 0.55, 0.15)
@@ -5729,20 +6660,20 @@ dygraphs::dygraph(weal_th, main="Momentum Strategy") %>%
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # Define backtest functional
-backtest_momentum <- function(re_turns,
+backtest_momentum <- function(returns,
                       perform_ance=function(re_turns) (sum(re_turns)/sd(re_turns)),
                       look_back=12, re_balance="months", bid_offer=0.001,
-                      end_p=rutils::calc_endpoints(re_turns, inter_val=re_balance),
+                      endp=rutils::calc_endpoints(re_turns, inter_val=re_balance)[-1],
                       with_weights=FALSE, ...) {
   stopifnot("package:rutils" %in% search() || require("rutils", quietly=TRUE))
   # Define look-back and look-forward intervals
   n_rows <- NROW(end_p)
-  start_p <- c(rep_len(0, look_back-1), end_p[1:(n_rows-look_back+1)])
+  start_p <- c(rep_len(1, look_back-1), end_p[1:(n_rows-look_back+1)])
   # Calculate look-back intervals
   look_backs <- cbind(start_p, end_p)
   # Calculate look-forward intervals
   look_fwds <- cbind(end_p + 1, rutils::lag_it(end_p, -1))
-  look_fwds[n_rows, 1] <- end_p[n_rows]
+  look_fwds[n_rows, ] <- end_p[n_rows]
   # Calculate past performance over look-back intervals
   pas_t <- t(apply(look_backs, 1, function(ep) sapply(re_turns[ep[1]:ep[2]], perform_ance)))
   pas_t[is.na(pas_t)] <- 0
@@ -5789,19 +6720,20 @@ backtest_momentum <- function(re_turns,
       Performing many \emph{backtests} on multiple trading strategies risks identifying inherently unprofitable trading strategies as profitable, purely by chance (\emph{p-value hacking}).
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_profile.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_profile.png}
       <<echo=TRUE,eval=FALSE>>=
-source("C:/Develop/lecture_slides/scripts/back_test.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/back_test.R")
 look_backs <- seq(3, 15, by=1)
 perform_ance <- function(re_turns) sum(re_turns)/sd(re_turns)
-pro_files <- sapply(look_backs, function(look_back) {
-  pnl_s <- backtest_momentum(returns=re_turns, end_p=end_p,
+pro_file <- sapply(look_backs, function(look_back) {
+  pnl_s <- backtest_momentum(returns=re_turns, endp=end_p,
     look_back=look_back, perform_ance=perform_ance)
-  last(cumsum(pnl_s))
+  sum(pnl_s)
 })  # end sapply
+# Plot momemntum PnLs
 x11(width=6, height=5)
-plot(x=look_backs, y=pro_files, t="l",
-  main="Strategy PnL as function of look_back",
+plot(x=look_backs, y=pro_file, t="l",
+  main="Momemntum PnL as function of look_back",
   xlab="look_back (months)", ylab="pnl")
       @
   \end{columns}
@@ -5820,31 +6752,33 @@ plot(x=look_backs, y=pro_files, t="l",
       The hypothetical out-of-sample \emph{momentum} strategy returns can be calculated by multiplying the \texttt{fu\_ture} returns by the forecast \emph{ETF} portfolio weights.
       \vskip1ex
       The \emph{training} data is specified over the \emph{look-back} intervals, and the forecast weights are applied to the future data defined by the \emph{look-forward} intervals.
+      \vskip1ex
+      The momentum strategy has performed well for \emph{ETF} portfolios because of the consistent performance of bond ETFs, like \emph{TLT} and \emph{VYM}.
       <<echo=TRUE,eval=FALSE>>=
-look_back <- look_backs[which.max(pro_files)]
+# Optimal look_back
+look_back <- look_backs[which.max(pro_file)]
 pnl_s <- backtest_momentum(returns=re_turns,
-  look_back=look_back, end_p=end_p,
+  look_back=look_back, endp=end_p,
   perform_ance=perform_ance, with_weights=TRUE)
 tail(pnl_s)
-ret_mom <- as.numeric(pnl_s[, 1])
-weal_th <- cumsum(ret_mom)
-weal_th <- cbind(weal_th, wealth_aw)
-colnames(weal_th) <- c("Momentum Strategy", "All_weather")
+# Calculate the wealth of momentum returns
+ret_mom <- pnl_s[, 1]
+weal_th <- xts::xts(cbind(all_weather, ret_mom), order.by=date_s)
+colnames(weal_th) <- c("All-Weather", "Momentum")
+cor(weal_th)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_etf_optim.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_etf_optim.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the Momentum strategy and benchmark
-dygraphs::dygraph(weal_th, main="Momentum Strategy") %>%
-  dyAxis("y", label="All_weather", independentTicks=TRUE) %>%
-  dyAxis("y2", label="Momentum Strategy", independentTicks=TRUE) %>%
-  dySeries(name="Momentum Strategy", axis="y2", label="Momentum Strategy", strokeWidth=2, col="red") %>%
-  dySeries(name="All_weather", axis="y", label="All_weather", strokeWidth=2, col="blue")
+# Plot dygraph of the momentum strategy returns
+dygraphs::dygraph(cumsum(weal_th), main="Monthly Momentum Strategy vs All-Weather") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
 # Or
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
-quantmod::chart_Series(weal_th, theme=plot_theme, lwd=2,
+quantmod::chart_Series(cumsum(weal_th), theme=plot_theme, lwd=2,
              name="Momentum PnL")
 legend("topleft", legend=colnames(weal_th),
   inset=0.1, bg="white", lty=1, lwd=6,
@@ -5871,7 +6805,8 @@ legend("topleft", legend=colnames(weal_th),
       <<echo=TRUE,eval=FALSE>>=
 # Plot the momentum portfolio weights
 weight_s <- pnl_s[, -1]
-vt_i <- rutils::etf_env$price_s$VTI[date_s]
+vt_i <- log(quantmod::Cl(rutils::etf_env$VTI[date_s]))
+colnames(vt_i) <- "VTI"
 da_ta <- cbind(vt_i, weight_s)
 da_ta <- na.omit(da_ta)
 colnames(da_ta)[2:NCOL(pnl_s)] <- paste0(colnames(weight_s), "_weight")
@@ -5879,7 +6814,7 @@ zoo::plot.zoo(da_ta, xlab=NULL, main="Momentum Weights")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_weights.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_weights.png}
   \end{columns}
 \end{block}
 
@@ -5887,7 +6822,7 @@ zoo::plot.zoo(da_ta, xlab=NULL, main="Momentum Weights")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Momentum Strategy Market Betas}
+\subsection{Momentum Strategy Market Beta}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -5898,18 +6833,18 @@ zoo::plot.zoo(da_ta, xlab=NULL, main="Momentum Weights")
 # Calculate ETF betas
 betas_etf <- sapply(re_turns, function(x)
   cov(re_turns$VTI, x)/var(x))
-# Betas equal weights times ETF betas
+# Momentum beta is equal weights times ETF betas
 beta_s <- weight_s %*% betas_etf
 beta_s <- xts::xts(beta_s, order.by=date_s)
 colnames(beta_s) <- "momentum_beta"
-da_ta <- cbind(beta_s, rutils::etf_env$VTI[date_s, 4])
+da_ta <- cbind(beta_s, vt_i)
 zoo::plot.zoo(da_ta,
   oma = c(3, 1, 3, 0), mar = c(0, 4, 0, 1),
-  main="betas & VTI", xlab="")
+  main="Momentum Beta & VTI Price", xlab="")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_betas.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_betas.png}
   \end{columns}
 \end{block}
 
@@ -5931,7 +6866,7 @@ zoo::plot.zoo(da_ta,
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 # Merton-Henriksson test
-vt_i <- rutils::diff_it(vt_i)/rutils::lag_it(vt_i)
+vt_i <- rutils::diff_it(vt_i)
 de_sign <- cbind(VTI=vt_i, 0.5*(vt_i+abs(vt_i)), vt_i^2)
 colnames(de_sign)[2:3] <- c("merton", "treynor")
 mod_el <- lm(ret_mom ~ VTI + merton, data=de_sign); summary(mod_el)
@@ -5942,11 +6877,12 @@ plot.default(x=vt_i, y=ret_mom, xlab="VTI", ylab="momentum")
 title(main="Treynor-Mazuy market timing test\n for Momentum vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 points.default(x=vt_i, y=mod_el$fitted.values, pch=16, col="red")
-text(x=0.05, y=0.8*max(residual_s), paste("Treynor test t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
+residual_s <- mod_el$residuals
+text(x=0.0, y=max(residual_s), paste("Treynor test t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_timing.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_timing.png}
   \end{columns}
 \end{block}
 
@@ -5976,7 +6912,7 @@ apply(cbind(ret_mom_std, vt_i), 2, function(x)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_distr.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_distr.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
 hist(ret_mom_std, breaks=30,
@@ -6011,9 +6947,8 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
       This suggests that combining the \emph{momentum} strategy with a static buy-and-hold strategy can achieve significant diversification of risk.
       <<echo=TRUE,eval=FALSE>>=
 # Combine momentum strategy with all-weather
-ret_aw <- rutils::diff_it(wealth_aw)/rutils::lag_it(wealth_aw)
-ret_aw <- sd(ret_mom)*ret_aw/sd(ret_aw)
-weal_th <- cbind(ret_mom, ret_aw, 0.5*(ret_mom + ret_aw))
+all_weather <- sd(ret_mom)*all_weather/sd(all_weather)
+weal_th <- cbind(ret_mom, all_weather, 0.5*(ret_mom + all_weather))
 colnames(weal_th) <- c("momentum", "all_weather", "combined")
 # Calculate strategy annualized Sharpe ratios
 apply(weal_th, MARGIN=2, function(x) {
@@ -6022,18 +6957,15 @@ apply(weal_th, MARGIN=2, function(x) {
 # Calculate strategy correlations
 cor(weal_th)
 # Calculate cumulative wealth
-weal_th <- apply(weal_th, MARGIN=2,
-  function(x) {cumsum(x)}
-)  # end apply
 weal_th <- xts::xts(weal_th, date_s)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_combined.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_combined.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot ETF momentum strategy combined with All-Weather
-dygraphs::dygraph(weal_th, main="ETF Momentum Strategy Combined with All-Weather") %>%
-  dyOptions(colors=c("green", "blue", "red"), strokeWidth=2) %>%
+dygraphs::dygraph(cumsum(weal_th), main="ETF Momentum Strategy Combined with All-Weather") %>%
+  dyOptions(colors=c("red", "blue", "green"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Or
 plot_theme <- chart_theme()
@@ -6065,16 +6997,12 @@ legend("topleft", legend=colnames(weal_th),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate rolling variance
 look_back <- 252
-vari_ance <- roll::roll_var(re_turns, width=look_back)
-vari_ance <- zoo::na.locf(vari_ance, na.rm=FALSE)
-vari_ance[is.na(vari_ance)] <- 0
+vari_ance <- roll::roll_var(re_turns, width=look_back, min_obs=1)
+vari_ance[1, ] <- 1
 # Calculate rolling Sharpe
-pas_t <- roll::roll_mean(re_turns, width=look_back)
+pas_t <- roll::roll_mean(re_turns, width=look_back, min_obs=1)
 weight_s <- pas_t/sqrt(vari_ance)
-weight_s[vari_ance == 0] <- 0
-weight_s[1:look_back, ] <- 1
 weight_s <- weight_s/sqrt(rowSums(weight_s^2))
-weight_s[is.na(weight_s)] <- 0
 weight_s <- rutils::lag_it(weight_s)
 sum(is.na(weight_s))
 # Calculate momentum profits and losses
@@ -6082,23 +7010,23 @@ pnl_s <- rowMeans(weight_s*re_turns)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_daily_etf.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_daily_etf.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate transaction costs
 bid_offer <- 0.001
 cost_s <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weight_s)))
-weal_th <- cumsum(pnl_s - cost_s)
-weal_th <- xts::xts(weal_th, order.by=index(re_turns))
-# Plot momentum and VTI
-wealth_aw <- cumsum(re_turns %*% weights_aw)
-weal_th <- cbind(wealth_aw, weal_th)
-colnames(weal_th) <- c("all_weather", "momentum")
-col_names <- colnames(weal_th)
-dygraphs::dygraph(weal_th, main="Momentum vs All-Weather") %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(name=col_names[1], axis="y", col="blue") %>%
-  dySeries(name=col_names[2], axis="y2", col="red")
+pnl_s <- (pnl_s - cost_s)
+# Define all-weather benchmark
+weights_aw <- c(0.30, 0.55, 0.15)
+all_weather <- re_turns %*% weights_aw
+# Calculate the wealth of momentum returns
+weal_th <- xts::xts(cbind(all_weather, pnl_s), order.by=index(re_turns))
+colnames(weal_th) <- c("All-Weather", "Momentum")
+cor(weal_th)
+# Plot dygraph of the momentum strategy returns
+dygraphs::dygraph(cumsum(weal_th)[date_s], main="Daily Momentum Strategy vs All-Weather") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}
@@ -6115,27 +7043,22 @@ dygraphs::dygraph(weal_th, main="Momentum vs All-Weather") %>%
       <<echo=(-(1:1)),eval=FALSE>>=
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
-momentum_daily <- function(re_turns, look_back=252, bid_offer=0.001, trend=1, ...) {
+momentum_daily <- function(returns, look_back=252, bid_offer=0.001, trend=1, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate rolling variance
-  vari_ance <- roll::roll_var(re_turns, width=look_back)
-  vari_ance <- zoo::na.locf(vari_ance, na.rm=FALSE)
-  # vari_ance[is.na(vari_ance)] <- 0
+  vari_ance <- roll::roll_var(returns, width=look_back, min_obs=1)
+  vari_ance[1, ] <- 1
   vari_ance[vari_ance <= 0] <- 1
-  # Calculate rolling Sharpe
-  pas_t <- roll::roll_mean(re_turns, width=look_back)
-  pas_t[1:look_back, ] <- 1
+# Calculate rolling Sharpe
+  pas_t <- roll::roll_mean(returns, width=look_back, min_obs=1)
   weight_s <- pas_t/sqrt(vari_ance)
-  # weight_s[vari_ance == 0] <- 0
-  weight_s[1:look_back, ] <- 1
   weight_s <- weight_s/sqrt(rowSums(weight_s^2))
-  weight_s[is.na(weight_s)] <- 0
   weight_s <- rutils::lag_it(weight_s)
   # Calculate momentum profits and losses
-  pnl_s <- trend*rowMeans(weight_s*re_turns)
+  pnl_s <- trend*rowMeans(weight_s*returns)
   # Calculate transaction costs
   cost_s <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weight_s)))
-  cumsum(pnl_s - cost_s)
+  (pnl_s - cost_s)
 }  # end momentum_daily
 @
 \end{block}
@@ -6150,33 +7073,116 @@ momentum_daily <- function(re_turns, look_back=252, bid_offer=0.001, trend=1, ..
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{backtest\_rolling()} in a loop over a vector of \emph{look-back} parameters.
+      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of \emph{look-back} parameters.
       \vskip1ex
       The \emph{momentum} strategies do not perform well, especially the ones with a small \emph{look-back} parameter.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate a daily ETF momentum strategy
-source("C:/Develop/lecture_slides/scripts/back_test.R")
-weal_th <- momentum_daily(look_back=252,
-  returns=re_turns, bid_offer=bid_offer)
+source("/Users/jerzy/Develop/lecture_slides/scripts/back_test.R")
+pnl_s <- momentum_daily(returns=re_turns, look_back=252,
+  bid_offer=bid_offer)
 # Perform sapply loop over look_backs
 look_backs <- seq(50, 300, by=50)
-weal_th <- sapply(look_backs, momentum_daily,
+pnl_s <- sapply(look_backs, momentum_daily,
   returns=re_turns, bid_offer=bid_offer)
-colnames(weal_th) <- paste0("look_back=", look_backs)
-weal_th <- xts::xts(weal_th, index(re_turns))
-tail(weal_th)
+colnames(pnl_s) <- paste0("look_back=", look_backs)
+pnl_s <- xts::xts(pnl_s, index(re_turns))
+tail(pnl_s)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_daily_etf_mult.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_daily_etf_mult.png}
       <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of daily ETF momentum strategies
+col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+dygraphs::dygraph(cumsum(pnl_s), main="Daily ETF Momentum Strategies") %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
 # Plot EWMA strategies with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
-  colorRampPalette(c("blue", "red"))(NCOL(weal_th))
-quantmod::chart_Series(weal_th,
+  colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+quantmod::chart_Series(cumsum(pnl_s),
   theme=plot_theme, name="Cumulative Returns of Daily ETF Momentum Strategies")
-legend("bottomleft", legend=colnames(weal_th),
+legend("bottomleft", legend=colnames(pnl_s),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)),
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Daily Momentum Strategy with Holding Period}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+      The daily ETF \emph{momentum} strategy can be improved by introducing a holding period for the portfolio.
+      <<echo=(-(1:1)),eval=FALSE>>=
+# Define backtest functional for daily momentum strategy
+# If trend=(-1) then it backtests a mean reverting strategy
+momentum_daily <- function(returns, look_back=252, hold_period=5, bid_offer=0.001, trend=1, ...) {
+  stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
+  # Calculate rolling variance
+  vari_ance <- roll::roll_var(returns, width=look_back, min_obs=1)
+  vari_ance[1, ] <- 1
+  vari_ance[vari_ance <= 0] <- 1
+  # Calculate rolling Sharpe
+  pas_t <- roll::roll_mean(returns, width=look_back, min_obs=1)
+  weight_s <- pas_t/sqrt(vari_ance)
+  weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+  weight_s <- rutils::lag_it(weight_s)
+  # Average the weights over holding period
+  weight_s <- roll::roll_mean(weight_s, width=hold_period, min_obs=1)
+  # Calculate momentum profits and losses
+  pnl_s <- trend*rowMeans(weight_s*returns)
+  # Calculate transaction costs
+  cost_s <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weight_s)))
+  (pnl_s - cost_s)
+}  # end momentum_daily
+@
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Daily Momentum Strategy with Holding Period}
+\subsection{Multiple Daily ETF Momentum Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of holding periods.
+      \vskip1ex
+      The daily \emph{momentum} strategies with a holding period perform perform much better.
+      <<echo=TRUE,eval=FALSE>>=
+# Perform sapply loop over holding periods
+hold_periods <- seq(2, 11, by=2)
+pnl_s <- sapply(hold_periods, momentum_daily, look_back=120,
+                  returns=re_turns, bid_offer=bid_offer)
+colnames(pnl_s) <- paste0("holding=", hold_periods)
+pnl_s <- xts::xts(pnl_s, index(re_turns))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_daily_etf_hold.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of daily ETF momentum strategies
+col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+dygraphs::dygraph(cumsum(pnl_s), main="Daily ETF Momentum Strategies with Holding Period") %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
+# Plot EWMA strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <-
+  colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+quantmod::chart_Series(cumsum(pnl_s),
+  theme=plot_theme, name="Cumulative Returns of Daily ETF Momentum Strategies")
+legend("bottomleft", legend=colnames(pnl_s),
   inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)),
   col=plot_theme$col$line.col, bty="n")
       @
@@ -6193,32 +7199,39 @@ legend("bottomleft", legend=colnames(weal_th),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple \emph{S\&P500} \emph{momentum} strategies can be backtested by calling the function \texttt{backtest\_rolling()} in a loop over a vector of \emph{look-back} parameters.
+      Multiple \emph{S\&P500} \emph{momentum} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of \emph{look-back} parameters.
       \vskip1ex
       The \emph{momentum} strategies do not perform well, especially the ones with a small \emph{look-back} parameter.
       <<echo=TRUE,eval=FALSE>>=
 # Load daily S&P500 percentage stock returns.
-load("C:/Develop/lecture_slides/data/sp500_returns.RData")
+load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+# Overwrite NA values in returns_100
+returns_100 <- returns_100["2000/"]
+returns_100[1, is.na(returns_100[1, ])] <- 0
+returns_100 <- zoo::na.locf(returns_100, na.rm=FALSE)
 # Simulate a daily S&P500 momentum strategy.
-source("C:/Develop/lecture_slides/scripts/back_test.R")
 # Perform sapply loop over look_backs
-look_backs <- seq(50, 300, by=50)
-weal_th <- sapply(look_backs, momentum_daily,
-  returns=returns_100, bid_offer=0)
-colnames(weal_th) <- paste0("look_back=", look_backs)
-weal_th <- xts::xts(weal_th, index(re_turns))
+look_backs <- seq(100, 300, by=20)
+pnl_s <- sapply(look_backs, momentum_daily,
+  hold_period=5, returns=returns_100, bid_offer=0)
+colnames(pnl_s) <- paste0("look_back=", look_backs)
+pnl_s <- xts::xts(pnl_s, index(returns_100))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/momentum_sp500_mult.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_sp500_mult.png}
       <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of daily ETF momentum strategies
+col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+dygraphs::dygraph(cumsum(pnl_s), main="Daily S&P500 Momentum Strategies") %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
 # Plot daily S&P500 momentum strategies with custom line colors
 plot_theme <- chart_theme()
-plot_theme$col$line.col <-
-  colorRampPalette(c("blue", "red"))(NCOL(weal_th))
-quantmod::chart_Series(weal_th,
-  theme=plot_theme, name="Cumulative Returns of S&P500 Momentum Strategies")
-legend("bottomleft", legend=colnames(weal_th),
+plot_theme$col$line.col <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+quantmod::chart_Series(cumsum(pnl_s),
+  theme=plot_theme, name="Daily S&P500 Momentum Strategies")
+legend("bottomleft", legend=colnames(pnl_s),
   inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)),
   col=plot_theme$col$line.col, bty="n")
       @
@@ -6235,33 +7248,63 @@ legend("bottomleft", legend=colnames(weal_th),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple \emph{S\&P500} \emph{mean reverting} strategies can be backtested by calling the function \texttt{backtest\_rolling()} in a loop over a vector of \emph{look-back} parameters.
+      Multiple \emph{S\&P500} \emph{mean reverting} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of \emph{look-back} parameters.
       \vskip1ex
       The \emph{mean reverting} strategies for the \emph{S\&P500} constituents perform the best for short \emph{look-back} parameters.
       \vskip1ex
       The \emph{mean reverting} strategies had their best performance prior to the 2008 financial crisis.
       <<echo=TRUE,eval=FALSE>>=
 # Perform sapply loop over look_backs
-look_backs <- seq(5, 50, by=5)
-weal_th <- sapply(look_backs, momentum_daily,
-  returns=returns_100, bid_offer=0, trend=(-1))
-colnames(weal_th) <- paste0("look_back=", look_backs)
-weal_th <- xts::xts(weal_th, index(price_s))
+look_backs <- seq(3, 20, by=2)
+pnl_s <- sapply(look_backs, momentum_daily,
+  hold_period=5, returns=returns_100, bid_offer=0, trend=(-1))
+colnames(pnl_s) <- paste0("look_back=", look_backs)
+pnl_s <- xts::xts(pnl_s, index(returns_100))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/sp500_revert_mult.png}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_sp500_revert.png}
       <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of daily ETF momentum strategies
+col_ors <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+dygraphs::dygraph(cumsum(pnl_s), main="Daily S&P500 Momentum Strategies") %>%
+  dyOptions(colors=col_ors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
 # Plot EWMA strategies with custom line colors
 plot_theme <- chart_theme()
-plot_theme$col$line.col <-
-  colorRampPalette(c("blue", "red"))(NCOL(weal_th))
-quantmod::chart_Series(weal_th,
+plot_theme$col$line.col <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+quantmod::chart_Series(cumsum(pnl_s),
   theme=plot_theme, name="Cumulative Returns of S&P500 Mean Reverting Strategies")
-legend("topleft", legend=colnames(weal_th),
+legend("topleft", legend=colnames(pnl_s),
   inset=0.05, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)),
   col=plot_theme$col$line.col, bty="n")
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The MTUM Momentum ETF}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{MTUM} ETF is an actively managed ETF following a momentum strategy.
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative returns of VTI vs MTUM ETF
+weal_th <- log(na.omit(rutils::etf_env$price_s[, c("VTI", "MTUM")]))
+colnames(weal_th) <- c("VTI", "MTUM")
+weal_th <- rutils::diff_it(weal_th)
+dygraphs::dygraph(cumsum(weal_th), main="VTI vs MTUM ETF") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(width=500)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/momentum_mtum.png}
   \end{columns}
 \end{block}
 
@@ -6274,60 +7317,7 @@ legend("topleft", legend=colnames(weal_th),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization In-sample}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ETF} portfolio is overweight bond ETFs, for example \emph{TLT} and \emph{VYM}.
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)
-# Select all the ETF symbols except "VXX", "SVXY" and "MTUM"
-sym_bols <- colnames(rutils::etf_env$re_turns)
-sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM"))]
-# Extract columns of rutils::etf_env$re_turns and overwrite NA values
-re_turns <- rutils::etf_env$re_turns[, sym_bols]
-n_assets <- NCOL(re_turns)
-# re_turns <- na.omit(re_turns)
-re_turns[1, is.na(re_turns[1, ])] <- 0
-re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
-# Returns in excess of risk-free rate
-risk_free <- 0.03/252
-ex_cess <- (re_turns - risk_free)
-# Maximum Sharpe weights in-sample interval
-in_verse <- MASS::ginv(cov(re_turns["/2014"]))
-weight_s <- in_verse %*% colMeans(ex_cess["/2014"])
-weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
-names(weight_s) <- colnames(re_turns)
-# Plot portfolio weights
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-barplot(sort(weight_s), main="Maximum Sharpe Weights", cex.names=0.7)
-# Calculate portfolio returns
-rets_is <- re_turns["/2014"]
-portf_is <- xts::xts(rets_is %*% weight_s, index(rets_is))
-in_dex <- xts::xts(rowSums(rets_is)/sqrt(n_assets), index(rets_is))
-portf_is <- portf_is*sd(in_dex)/sd(portf_is)
-# Plot cumulative portfolio returns
-weal_th <- cumsum(cbind(portf_is, in_dex))
-colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(weal_th, main="In-sample Optimal Portfolio Returns") %>%
-  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
-  dyLegend(width=500)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_etf_weights_in_sample.png}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_etf_in_sample.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization Strategy for ETFs}
+\subsection{Portfolio Optimization Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -6341,27 +7331,103 @@ dygraphs::dygraph(weal_th, main="In-sample Optimal Portfolio Returns") %>%
         \item Calculating the maximum Sharpe ratio portfolio weights in the \emph{in-sample} interval,
         \item Applying the weights and calculating the portfolio returns in the \emph{out-of-sample} interval.
       \end{enumerate}
-      The optimal portfolio weights $\mathbf{w}$ are calculated using the past in-sample excess returns $\mu = \mathbf{r} - r_f$ (in excess of the risk-free rate $r_f$):
+      The optimal portfolio weights $\mathbf{w}$ are equal to the past in-sample excess returns $\mu = \mathbf{r} - r_f$ (in excess of the risk-free rate $r_f$) multiplied by the inverse of the covariance matrix $\mathbb{C}$:
       \begin{displaymath}
         \mathbf{w} = \mathbb{C}^{-1} \mu
       \end{displaymath}
-      This strategy has performed well for \emph{ETF} portfolios because of the consistent performance of bond ETFs, like \emph{TLT} and \emph{VYM}.
+      <<echo=TRUE,eval=FALSE>>=
+# Select all the ETF symbols except "VXX", "SVXY" and "MTUM"
+sym_bols <- colnames(rutils::etf_env$re_turns)
+sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM", "QUAL", "VLUE", "USMV"))]
+# Extract columns of rutils::etf_env$re_turns and overwrite NA values
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
+n_assets <- NCOL(re_turns)
+# re_turns <- na.omit(re_turns)
+re_turns[1, is.na(re_turns[1, ])] <- 0
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
+# Returns in excess of risk-free rate
+risk_free <- 0.03/252
+ex_cess <- (re_turns - risk_free)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_weights_in_sample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Maximum Sharpe weights in-sample interval
+rets_is <- re_turns["/2014"]
+in_verse <- MASS::ginv(cov(rets_is))
+weight_s <- in_verse %*% colMeans(ex_cess["/2014"])
+weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+names(weight_s) <- colnames(re_turns)
+# Plot portfolio weights
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+barplot(sort(weight_s), main="Maximum Sharpe Weights", cex.names=0.7)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Strategy In-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The in-sample performance of the optimal portfolio is much better than the equal weight portfolio.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate portfolio returns
+portf_is <- xts::xts(rets_is %*% weight_s, index(rets_is))
+in_dex <- xts::xts(rowSums(rets_is)/sqrt(n_assets), index(rets_is))
+portf_is <- portf_is*sd(in_dex)/sd(portf_is)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_in_sample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative portfolio returns
+pnl_s <- cumsum(cbind(portf_is, in_dex))
+colnames(pnl_s) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(pnl_s, main="In-sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Strategy Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The out-of-sample performance of the optimal portfolio is not nearly as good as in-sample.
+      \vskip1ex
+      Combining the optimal portfolio with the equal weight portfolio produces and even better performing portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Out-of-sample portfolio returns
 rets_os <- re_turns["2015/"]
 portf_os <- xts::xts(rets_os %*% weight_s, index(rets_os))
 in_dex <- xts::xts(rowSums(rets_os)/sqrt(n_assets), index(rets_os))
 portf_os <- portf_os*sd(in_dex)/sd(portf_os)
+pnl_s <- cbind(portf_os, in_dex, (portf_os + in_dex)/2)
+colnames(pnl_s) <- c("Optimal", "Equal Weight", "Combined")
+sapply(pnl_s, function(x) mean(x)/sd(x))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_etf_out_sample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-weal_th <- cumsum(cbind(portf_os, in_dex))
-colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(weal_th, main="Out-of-sample Optimal Portfolio Returns") %>%
-  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+dygraphs::dygraph(cumsum(pnl_s), main="Out-of-sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("red", "blue", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -6381,7 +7447,7 @@ dygraphs::dygraph(weal_th, main="Out-of-sample Optimal Portfolio Returns") %>%
       \vskip1ex
       Therefore the strategy completely fails in the \emph{out-of-sample} interval.
       <<echo=TRUE,eval=FALSE>>=
-load("C:/Develop/lecture_slides/data/sp500_returns.RData")
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in re_turns
 re_turns <- re_turns["2000/"]
 n_assets <- NCOL(re_turns)
@@ -6404,15 +7470,15 @@ in_dex <- xts::xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_stocks_out_sample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_stocks_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-weal_th <- rbind(portf_is, portf_os)
-weal_th <- weal_th*sd(in_dex)/sd(weal_th)
-weal_th <- cumsum(cbind(weal_th, in_dex))
-colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(weal_th, main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
-  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+pnl_s <- rbind(portf_is, portf_os)
+pnl_s <- pnl_s*sd(in_dex)/sd(pnl_s)
+pnl_s <- cumsum(cbind(pnl_s, in_dex))
+colnames(pnl_s) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(pnl_s, main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
+  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -6449,10 +7515,6 @@ ran_dom <- matrix(rnorm(10*8), nc=10)
 cov_mat <- cov(ran_dom)
 # Calculate inverse of cov_mat - error
 in_verse <- solve(cov_mat)
-# Calculate regularized inverse of cov_mat
-in_verse <- MASS::ginv(cov_mat)
-# Verify inverse property of mat_rix
-all.equal(cov_mat, cov_mat %*% in_verse %*% cov_mat)
 # Perform eigen decomposition
 ei_gen <- eigen(cov_mat)
 eigen_vec <- ei_gen$vectors
@@ -6461,10 +7523,14 @@ eigen_val <- ei_gen$values
 to_l <- sqrt(.Machine$double.eps)
 # Calculate regularized inverse matrix
 not_zero <- (eigen_val > (to_l * eigen_val[1]))
-reg_inverse <- eigen_vec[, not_zero] %*%
+inv_reg <- eigen_vec[, not_zero] %*%
   (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
+# Verify inverse property of inv_reg
+all.equal(cov_mat, cov_mat %*% inv_reg %*% cov_mat)
+# Calculate regularized inverse of cov_mat
+in_verse <- MASS::ginv(cov_mat)
 # Verify inverse property of mat_rix
-all.equal(in_verse, reg_inverse)
+all.equal(in_verse, inv_reg)
       @
   \end{columns}
 \end{block}
@@ -6473,7 +7539,7 @@ all.equal(in_verse, reg_inverse)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Regularized Inverse of the Covariance Matrix}
+\subsection{Shrinkage Inverse of the Covariance Matrix}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -6485,7 +7551,7 @@ all.equal(in_verse, reg_inverse)
       \vskip1ex
       But removing a larger number of eigenvalues increases the bias of the covariance matrix, which is an example of the \emph{bias-variance tradeoff}.
       \vskip1ex
-      Even though the \emph{regularized} inverse $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
+      Even though the \emph{shrinkage inverse} $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
       \vskip1ex
       The parameter \texttt{max\_eigen} specifies the number of eigenvalues used for calculating the \emph{regularized} inverse of the covariance matrix of returns.
       \vskip1ex
@@ -6498,10 +7564,10 @@ cov_mat <- cov(rets_is)
 ei_gen <- eigen(cov_mat)
 eigen_vec <- ei_gen$vectors
 eigen_val <- ei_gen$values
-# Calculate regularized inverse of covariance matrix
-max_eigen <- 21
-in_verse <- eigen_vec[, 1:max_eigen] %*%
-  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+# Calculate shrinkage inverse of covariance matrix
+eigen_max <- 21
+in_verse <- eigen_vec[, 1:eigen_max] %*%
+  (t(eigen_vec[, 1:eigen_max]) / ei_gen$values[1:eigen_max])
       @
   \end{columns}
 \end{block}
@@ -6510,15 +7576,15 @@ in_verse <- eigen_vec[, 1:max_eigen] %*%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Regularized Portfolio Optimization Strategy for Stocks}
+\subsection{Portfolio Optimization Strategy with Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{out-of-sample} performance of the \emph{portfolio optimization} strategy is greatly improved by regularizing the inverse of the covariance matrix.
+      The \emph{out-of-sample} performance of the \emph{portfolio optimization} strategy is greatly improved by shrinking the inverse of the covariance matrix.
       \vskip1ex
-      The \emph{in-sample} performance is worse because regularization reduces \emph{overfitting}.
+      The \emph{in-sample} performance is worse because shrinkage reduces \emph{overfitting}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate portfolio weights
 weight_s <- in_verse %*% colMeans(ex_cess["/2010"])
@@ -6531,15 +7597,15 @@ in_dex <- xts::xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_stocks_out_sample_reg.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_stocks_out_sample_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-weal_th <- rbind(portf_is, portf_os)
-weal_th <- weal_th*sd(in_dex)/sd(weal_th)
-weal_th <- cumsum(cbind(weal_th, in_dex))
-colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(weal_th, main="Regularized Out-of-sample Optimal Portfolio Returns for Stocks") %>%
-  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+pnl_s <- rbind(portf_is, portf_os)
+pnl_s <- pnl_s*sd(in_dex)/sd(pnl_s)
+pnl_s <- cumsum(cbind(pnl_s, in_dex))
+colnames(pnl_s) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(pnl_s, main="Regularized Out-of-sample Optimal Portfolio Returns for Stocks") %>%
+  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -6567,27 +7633,27 @@ dygraphs::dygraph(weal_th, main="Regularized Out-of-sample Optimal Portfolio Ret
       The optimal value of the \emph{shrinkage} intensity $\alpha$ can be determined using \emph{backtesting} (\emph{cross-validation}).
       <<echo=TRUE,eval=FALSE>>=
 # Shrink the in-sample returns to their mean
-rets_mean <- colMeans(rets_is) - risk_free
 al_pha <- 0.7
-rets_mean <- (1 - al_pha)*rets_mean + al_pha*mean(rets_mean)
+excess_mean <- rowMeans(ex_cess["/2010"])
+excess_is <- (1 - al_pha)*ex_cess["/2010"] + al_pha*excess_mean
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_stocks_out_sample_reg_shink.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_stocks_out_sample_rets_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate portfolio weights
-weight_s <- in_verse %*% rets_mean
+weight_s <- in_verse %*% colMeans(excess_is)
 weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
 # Calculate portfolio returns
 portf_is <- xts::xts(rets_is %*% weight_s, index(rets_is))
 portf_os <- xts::xts(rets_os %*% weight_s, index(rets_os))
 # Plot cumulative portfolio returns
-weal_th <- rbind(portf_is, portf_os)
-weal_th <- weal_th*sd(in_dex)/sd(weal_th)
-weal_th <- cumsum(cbind(weal_th, in_dex))
-colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(weal_th, main="Out-of-sample Returns for Stocks With Regularization and Shrinkage") %>%
-  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+pnl_s <- rbind(portf_is, portf_os)
+pnl_s <- pnl_s*sd(in_dex)/sd(pnl_s)
+pnl_s <- cumsum(cbind(pnl_s, in_dex))
+colnames(pnl_s) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(pnl_s, main="Out-of-sample Returns for Stocks With Regularization and Shrinkage") %>%
+  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -6602,59 +7668,67 @@ dygraphs::dygraph(weal_th, main="Out-of-sample Returns for Stocks With Regulariz
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
-  % \begin{columns}[T]
-    % \column{0.4\textwidth}
+  \begin{columns}[T]
+  \column{0.5\textwidth}
       \emph{RcppArmadillo} can be used to quickly calculate the regularized inverse of a covariance matrix.
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
-using namespace Rcpp; // use Rcpp C++ namespace
-using namespace arma;
-
-//' @export
-// [[Rcpp::export]]
-arma::mat calc_inv(const arma::mat& mat_rix, const arma::uword& max_eigen) {
-  arma::mat eigen_vec;
-  arma::vec eigen_val;
-
-  arma::eig_sym(eigen_val, eigen_vec, cov(mat_rix));
-  eigen_vec = eigen_vec.cols(eigen_vec.n_cols-max_eigen, eigen_vec.n_cols-1);
-  eigen_val = 1/eigen_val.subvec(eigen_val.n_elem-max_eigen, eigen_val.n_elem-1);
-
-  return eigen_vec*diagmat(eigen_val)*eigen_vec.t();
-
-}  // end calc_inv
-    \end{lstlisting}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp("C:/Develop/lecture_slides/scripts/calc_weights.cpp")
+Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/back_test.cpp")
 # Create random matrix of returns
 mat_rix <- matrix(rnorm(300), nc=5)
 # Regularized inverse of covariance matrix
-max_eigen <- 4
+eigen_max <- 4
 ei_gen <- eigen(cov(mat_rix))
-cov_inv <- ei_gen$vectors[, 1:max_eigen] %*%
-  (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+cov_inv <- ei_gen$vectors[, 1:eigen_max] %*%
+  (t(ei_gen$vectors[, 1:eigen_max]) / ei_gen$values[1:eigen_max])
 # Regularized inverse using RcppArmadillo
-cov_inv_arma <- calc_inv(mat_rix, max_eigen)
+cov_inv_arma <- calc_inv(mat_rix, eigen_max)
 all.equal(cov_inv, cov_inv_arma)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r={
-    ei_gen <- eigen(cov(mat_rix))
-    ei_gen$vectors[, 1:max_eigen] %*%
-      (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+  pure_r={ei_gen <- eigen(cov(mat_rix))
+    ei_gen$vectors[, 1:eigen_max] %*%
+      (t(ei_gen$vectors[, 1:eigen_max]) / ei_gen$values[1:eigen_max])
   },
-  r_cpp=calc_inv(mat_rix, max_eigen),
+  r_cpp=calc_inv(mat_rix, eigen_max),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
-    % \column{0.6\textwidth}
-  % \end{columns}
+  \column{0.5\textwidth}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+arma::mat calc_inv(const arma::mat& tseries,
+                   double eigen_thresh = 0.001, 
+                   arma::uword eigen_max = 0) {
+  
+  if (eigen_max == 0) {
+    // Calculate the inverse using arma::pinv()
+    return arma::pinv(tseries, eigen_thresh);
+  } else {
+    // Calculate the regularized inverse using SVD decomposition
+    
+    // Allocate SVD
+    arma::vec svd_val;
+    arma::mat svd_u, svd_v;
+    
+    // Calculate the SVD
+    arma::svd(svd_u, svd_val, svd_v, tseries);
+    
+    // Subset the SVD
+    eigen_max = eigen_max - 1;
+    // For no regularization: eigen_max = tseries.n_cols
+    svd_u = svd_u.cols(0, eigen_max);
+    svd_v = svd_v.cols(0, eigen_max);
+    svd_val = svd_val.subvec(0, eigen_max);
+    
+    // Calculate the inverse from the SVD
+    return svd_v*arma::diagmat(1/svd_val)*svd_u.t();
+    
+  }  // end if
+  
+}  // end calc_inv
+    \end{lstlisting}
+  \end{columns}
 \end{block}
 
 \end{frame}
@@ -6669,87 +7743,133 @@ summary(microbenchmark(
     % \column{0.5\textwidth}
       Fast portfolio optimization using matrix algebra can be implemented using \protect\emph{RcppArmadillo}.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Fast portfolio optimization using matrix algebra and RcppArmadillo
-// Rcpp header with information for C++ compiler
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
-using namespace Rcpp; // use Rcpp C++ namespace
-using namespace arma;
-
-//' @export
-// [[Rcpp::export]]
-arma::vec calc_weights(const arma::mat& re_turns,
-                       const std::string& typ_e = "max_sharpe",
-                       int max_eigen = 1,
-                       const double& pro_b = 0.1,
-                       const double& al_pha = 0.0,
-                       const bool scal_e = true) {
+arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
+                       std::string method = "rank_sharpe",
+                       double eigen_thresh = 0.001,
+                       arma::uword eigen_max = 0,
+                       double con_fi = 0.1,
+                       double alpha = 0.0,
+                       bool scale = true,
+                       double vol_target = 0.01) {
   // Initialize
-  arma::vec weight_s(re_turns.n_cols);
-  if (max_eigen == 1)  max_eigen = re_turns.n_cols;
-
-  // Calculate weights depending on typ_e
-  if (typ_e == "max_sharpe") {
+  arma::vec weights(returns.n_cols, fill::zeros);
+  if (eigen_max == 0)  eigen_max = returns.n_cols;
+  
+  // Switch for the different methods for weights
+  switch(calc_method(method)) {
+  case meth_od::rank_sharpe: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(re_turns, 0));
-    // Shrink mean_cols to the mean of re_turns
-    mean_cols = ((1-al_pha)*mean_cols + al_pha*arma::mean(mean_cols));
-    // Apply regularized inverse
-    weight_s = calc_inv(re_turns, max_eigen)*mean_cols;
-  } else if (typ_e == "max_sharpe_median") {
-    // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(re_turns, 0));
-    // Shrink mean_cols to the mean of re_turns
-    mean_cols = ((1-al_pha)*mean_cols + al_pha*arma::median(mean_cols));
-    // Apply regularized inverse
-    weight_s = calc_inv(re_turns, max_eigen)*mean_cols;
-  } else if (typ_e == "min_var") {
-    // Apply regularized inverse to unit vector
-    weight_s = calc_inv(re_turns, max_eigen)*arma::ones(re_turns.n_cols);
-  } else if (typ_e == "min_varpca") {
-    // Calculate highest order principal component
-    arma::vec eigen_val;
-    arma::mat eigen_vec;
-    arma::eig_sym(eigen_val, eigen_vec, cov(re_turns));
-    weight_s = eigen_vec.col(0);
-  } else if (typ_e == "rank") {
-    // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(re_turns, 0));
+    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(re_turns, 0));
+    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
     mean_cols = mean_cols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
-    weight_s = (weight_s - arma::mean(weight_s));
-  } else if (typ_e == "rankrob") {
-    // Median returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(re_turns, 0));
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = (weights - arma::mean(weights));
+    break;
+  }  // end rank_sharpe
+  case meth_od::max_sharpe: {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
+    // Shrink mean_cols to the mean of returns
+    mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    // Apply regularized inverse
+    // arma::mat in_verse = calc_inv(cov(returns), eigen_max);
+    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
+    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*mean_cols;
+    break;
+  }  // end max_sharpe
+  case meth_od::max_sharpe_median: {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
+    // Shrink mean_cols to the mean of returns
+    mean_cols = ((1-alpha)*mean_cols + alpha*arma::median(mean_cols));
+    // Apply regularized inverse
+    // arma::mat in_verse = calc_inv(cov(returns), eigen_max);
+    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*mean_cols;
+    break;
+  }  // end max_sharpe_median
+  case meth_od::min_var: {
+    // Apply regularized inverse to unit vector
+    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*arma::ones(returns.n_cols);
+    break;
+  }  // end min_var
+  case meth_od::min_varpca: {
+    // Calculate highest order principal component
+    arma::vec eigen_val;
+    arma::mat eigen_vec;
+    arma::eig_sym(eigen_val, eigen_vec, arma::cov(returns));
+    weights = eigen_vec.col(0);
+    break;
+  }  // end min_varpca
+  case meth_od::rank: {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(re_turns, 0));
+    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
+    sd_cols.replace(0, 1);
+    mean_cols = mean_cols/sd_cols;
+    // Weights equal to ranks of Sharpe
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = (weights - arma::mean(weights));
+    break;
+  }  // end rank
+  case meth_od::rankrob: {
+    // Median returns by columns
+    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
+    // mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    // Standard deviation by columns
+    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
     mean_cols = mean_cols/sd_cols;
     // Apply regularized inverse
-    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
-    weight_s = (weight_s - arma::mean(weight_s));
-  } else if (typ_e == "quan_tile") {
+    // arma::mat in_verse = calc_inv(cov(returns), eigen_max);
+    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
+    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
+    // // Standard deviation by columns
+    // arma::vec sd_cols = mean_cols;
+    // for (arma::uword it=0; it < returns.n_cols; it++) {
+    //   sd_cols(it) = arma::median(arma::abs((returns.col(it) - sd_cols)));
+    // }  // end for
+    // sd_cols.replace(0, 1);
+    // mean_cols = mean_cols/sd_cols;
+    // Weights equal to ranks of Sharpe
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    // level;
+    weights = (weights - arma::mean(weights));
+    break;
+  }  // end rankrob
+  case meth_od::quantile: {
     // Sum of quantiles for columns
-    arma::vec prob_s = {pro_b, 1-pro_b};
-    weight_s = conv_to< vec >::from(arma::sum(arma::quantile(re_turns, prob_s, 0), 0));
+    arma::vec level_s = {con_fi, 1-con_fi};
+    weights = conv_to<vec>::from(arma::sum(arma::quantile(returns, level_s, 0), 0));
     // Weights equal to ranks
-    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(weight_s)));
-    weight_s = (weight_s - arma::mean(weight_s));
-  } else {
-    cout << "Warning: Incorrect typ_e argument: " << typ_e << endl;
-    return arma::ones(re_turns.n_cols);
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(weights)));
+    weights = (weights - arma::mean(weights));
+    break;
+  }  // end quantile
+  default : {
+    cout << "Warning: Invalid method parameter: " << method << endl;
+    return arma::ones(returns.n_cols);
+  }  // end default
+  }  // end switch
+  
+  if (scale == TRUE) {
+    // return weights/std::sqrt(sum(square(weights)));
+    // return weights/sum(weights);
+    // Returns of equally weighted portfolio
+    // arma::vec mean_rows = arma::mean(returns, 1);
+    // Returns of weighted portfolio
+    // arma::vec returns_portf = returns*weights;
+    // Scale weights to equally weighted portfolio and return them
+    // return weights*arma::stddev(arma::mean(returns, 1))/arma::stddev(returns*weights);
+    // Scale weights so the resulting portfolio has a volatility equal to vol_target
+    return weights*vol_target/arma::stddev(returns*weights);
   }  // end if
-
-  if (scal_e == TRUE) {
-    return weight_s*arma::stddev(arma::mean(re_turns, 1))/arma::stddev(re_turns*weight_s);
-  }  // end if
-
-  return weight_s;
+  
+  return weights;
+  
 }  // end calc_weights
     \end{lstlisting}
     % \column{0.5\textwidth}
@@ -6769,41 +7889,41 @@ arma::vec calc_weights(const arma::mat& re_turns,
     % \column{0.5\textwidth}
       Fast backtesting of strategies can be implemented using \protect\emph{RcppArmadillo}.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
-using namespace Rcpp; // use Rcpp C++ namespace
-using namespace arma;
-
-arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
-                    const arma::mat& re_turns, // Portfolio returns
-                    const arma::uvec& start_p,
-                    const arma::uvec& end_p,
-                    const std::string& typ_e = "max_sharpe",
-                    const arma::uword& max_eigen = 1,
-                    const double& pro_b = 0.1,
-                    const double& al_pha = 0,
-                    const bool& scal_e = true,
-                    const double& co_eff = 1.0,
-                    const double& bid_offer = 0.0) {
-  arma::vec pnl_s = zeros(re_turns.n_rows);
-  arma::vec weights_past = zeros(re_turns.n_cols);
-  arma::vec weight_s(re_turns.n_cols);
-
-  // Perform loop over the end_p
-  for (arma::uword it=1; it < end_p.size(); it++) {
+arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
+                    const arma::mat& returns, // Portfolio returns
+                    arma::uvec startp, 
+                    arma::uvec endp, 
+                    std::string method = "rank_sharpe",
+                    double eigen_thresh = 0.001,
+                    arma::uword eigen_max = 0,
+                    double con_fi = 0.1,
+                    double alpha = 0.0,
+                    bool scale = true,
+                    double vol_target = 0.01,
+                    double coeff = 1.0,
+                    double bid_offer = 0.0) {
+  
+  arma::vec weights(returns.n_cols, fill::zeros);
+  arma::vec weights_past = zeros(returns.n_cols);
+  arma::mat pnl_s = zeros(returns.n_rows, 1);
+  
+  // Perform loop over the end points
+  for (arma::uword it = 1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weight_s = co_eff*calc_weights(ex_cess.rows(start_p(it-1), end_p(it-1)), typ_e, max_eigen, pro_b, al_pha, scal_e);
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), method, eigen_thresh, eigen_max, con_fi, alpha, scale, vol_target);
     // Calculate out-of-sample returns
-    pnl_s.subvec(end_p(it-1)+1, end_p(it)) = re_turns.rows(end_p(it-1)+1, end_p(it))*weight_s;
+    pnl_s.rows(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
     // Add transaction costs
-    pnl_s.row(end_p(it-1)+1) -= bid_offer*sum(abs(weight_s - weights_past))/2;
-    weights_past = weight_s;
+    pnl_s.row(endp(it-1)+1) -= bid_offer*sum(abs(weights - weights_past))/2;
+    weights_past = weights;
   }  // end for
-  // Return the strategy returns
+  
+  // Return the strategy pnl_s
   return pnl_s;
+  
 }  // end back_test
+
     \end{lstlisting}
     % \column{0.5\textwidth}
       % \vspace{-1em}
@@ -6814,7 +7934,7 @@ arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Portfolio Optimization Strategy}
+\subsection{Rolling Portfolio Optimization Strategy for S\&P500 Stocks}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -6828,20 +7948,24 @@ arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
       \end{enumerate}
       The parameters of this strategy are: the rebalancing frequency (annual, monthly, etc.), and the length of look-back interval.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate vector of monthly end points and start points
-end_p <- rutils::calc_endpoints(re_turns, inter_val="months")
-end_p <- end_p[end_p > 2*NCOL(re_turns)]
-n_rows <- NROW(end_p)
-look_back <- 24
-start_p <- c(rep_len(0, look_back-1),
-             end_p[1:(n_rows-look_back+1)])
+# Overwrite NA values in returns_100
+returns_100[1, is.na(returns_100[1, ])] <- 0
+returns_100 <- zoo::na.locf(returns_100, na.rm=FALSE)
+ex_cess <- (returns_100 - risk_free)
+n_cols <- NCOL(returns_100) ; date_s <- index(returns_100)
+n_assets <- NCOL(returns_100)
+# Define monthly end points
+end_p <- rutils::calc_endpoints(returns_100, inter_val="months")
+end_p <- end_p[end_p > (n_cols+1)]
+n_rows <- NROW(end_p) ; look_back <- 12
+start_p <- c(rep_len(0, look_back-1), end_p[1:(n_rows-look_back+1)])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/backtest_rolling_portfolio.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500.png}
       <<echo=TRUE,eval=FALSE>>=
 # Perform loop over end points
-rets_portf <- lapply(2:n_rows, function(i) {
+pnl_s <- lapply(2:n_rows, function(i) {
     # Subset the ex_cess returns
     ex_cess <- ex_cess[start_p[i-1]:end_p[i-1], ]
     in_verse <- MASS::ginv(cov(ex_cess))
@@ -6849,16 +7973,17 @@ rets_portf <- lapply(2:n_rows, function(i) {
     weight_s <- in_verse %*% colMeans(ex_cess)
     weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
     # Calculate the out-of-sample portfolio returns
-    re_turns <- re_turns[(end_p[i-1]+1):end_p[i], ]
+    re_turns <- returns_100[(end_p[i-1]+1):end_p[i], ]
     xts::xts(re_turns %*% weight_s, index(re_turns))
 })  # end lapply
-rets_portf <- rutils::do_call(rbind, rets_portf)
+pnl_s <- rutils::do_call(rbind, pnl_s)
+# Calculate returns of equal weight portfolio
+in_dex <- xts::xts(rowMeans(returns_100), date_s)
 # Plot cumulative strategy returns
-in_dex <- xts::xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
-weal_th <- cumsum(na.omit(cbind(rets_portf, in_dex*sd(rets_portf)/sd(in_dex))))
-colnames(weal_th) <- c("Rolling Portfolio Strategy", "Equal Weight Portfolio")
-dygraphs::dygraph(weal_th, main="Rolling Portfolio Optimization Strategy") %>%
-  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+weal_th <- na.omit(cbind(pnl_s, in_dex*sd(rets_portf)/sd(in_dex)))
+colnames(weal_th) <- c("Rolling Strategy", "Equal Weight")
+dygraphs::dygraph(cumsum(weal_th), main="Rolling Portfolio Optimization Strategy for S&P500 Stocks") %>%
+  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -6868,7 +7993,7 @@ dygraphs::dygraph(weal_th, main="Rolling Portfolio Optimization Strategy") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Portfolio Optimization Strategy for S\&P500}
+\subsection{Rolling Portfolio Optimization Strategy With Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -6880,38 +8005,28 @@ dygraphs::dygraph(weal_th, main="Rolling Portfolio Optimization Strategy") %>%
       \vskip1ex
       The weights are scaled to match the volatility of the equally weighted portfolio, and are kept constant until the next end point.
       <<echo=TRUE,eval=FALSE>>=
-load("C:/Develop/lecture_slides/data/sp500_returns.RData")
-# Overwrite NA values in re_turns
-returns_100[1, is.na(returns_100[1, ])] <- 0
-returns_100 <- zoo::na.locf(returns_100, na.rm=FALSE)
-n_cols <- NCOL(returns_100) ; date_s <- index(returns_100)
-# Define monthly end points
-end_p <- rutils::calc_endpoints(returns_100, inter_val="months")
-end_p <- end_p[end_p > (n_cols+1)]
-n_rows <- NROW(end_p) ; look_back <- 12
-start_p <- c(rep_len(0, look_back-1), end_p[1:(n_rows-look_back+1)])
+# Shift end points to C++ convention
 end_p <- (end_p - 1)
+end_p[end_p < 0] <- 0
 start_p <- (start_p - 1)
 start_p[start_p < 0] <- 0
-al_pha <- 0.7 ; max_eigen <- 21
+# Specify shrinkage intensity
+al_pha <- 0.7
+eigen_max <- 21
+# Perform backtest in Rcpp
+pnl_s <- HighFreq::back_test(excess=ex_cess, returns=returns_100,
+  startp=start_p, endp=end_p, alpha=al_pha, eigen_max=eigen_max, method="max_sharpe")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/backtest_sp500_monthly.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
-# Perform backtest in Rcpp
-pnl_s <- HighFreq::back_test(typ_e="max_sharpe",
-  ex_cess=returns_100, returns=returns_100,
-  start_p=start_p, end_p=end_p,
-  al_pha=al_pha, max_eigen=max_eigen)
-# Calculate returns on equal weight portfolio
-in_dex <- xts::xts(rowMeans(returns_100), index(returns_100))
 # Plot cumulative strategy returns
 weal_th <- cbind(pnl_s, in_dex, (pnl_s+in_dex)/2)
 weal_th <- cumsum(na.omit(weal_th))
-col_names <- c("Strategy", "Index", "Average")
+col_names <- c("Strategy", "Index", "Combined")
 colnames(weal_th) <- col_names
-dygraphs::dygraph(weal_th[end_p], main="Rolling S&P500 Portfolio Optimization Strategy") %>%
+dygraphs::dygraph(weal_th[end_p], main="Rolling S&P500 Portfolio Optimization Strategy With Shrinkage") %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", col="red", strokeWidth=1) %>%
@@ -6936,38 +8051,34 @@ dygraphs::dygraph(weal_th[end_p], main="Rolling S&P500 Portfolio Optimization St
 # Perform backtest over alphas
 alpha_s <- seq(from=0.01, to=0.91, by=0.1)
 pnl_s <- lapply(alpha_s, function(al_pha) {
-  HighFreq::back_test(typ_e="max_sharpe",
-  ex_cess=returns_100, returns=returns_100,
-  start_p=start_p, end_p=end_p,
-  al_pha=al_pha, max_eigen=max_eigen)
+  HighFreq::back_test(excess=ex_cess, returns=returns_100,
+  startp=start_p, endp=end_p, alpha=al_pha, eigen_max=eigen_max, method="max_sharpe")
 })  # end lapply
-pro_files <- sapply(pnl_s, sum)
-plot(x=alpha_s, y=pro_files, t="l", main="Strategy PnL as Function of Shrinkage Intensity Alpha",
+pro_file <- sapply(pnl_s, sum)
+plot(x=alpha_s, y=pro_file, t="l", main="Strategy PnL as Function of Shrinkage Intensity Alpha",
   xlab="Shrinkage Intensity Alpha", ylab="pnl")
-al_pha <- alpha_s[which.max(pro_files)]
-pnl_s <- pnl_s[[which.max(pro_files)]]
-# Perform backtest over max_eigens
-max_eigens <- seq(from=3, to=40, by=2)
-pnl_s <- lapply(max_eigens, function(max_eigen) {
-  HighFreq::back_test(typ_e="max_sharpe",
-    ex_cess=returns_100, returns=returns_100,
-    start_p=start_p, end_p=end_p,
-    al_pha=al_pha, max_eigen=max_eigen)
+al_pha <- alpha_s[which.max(pro_file)]
+pnl_s <- pnl_s[[which.max(pro_file)]]
+# Perform backtest over eigen_maxs
+eigen_maxs <- seq(from=3, to=40, by=2)
+pnl_s <- lapply(eigen_maxs, function(eigen_max) {
+  HighFreq::back_test(excess=ex_cess, returns=returns_100,
+    startp=start_p, endp=end_p, alpha=al_pha, eigen_max=eigen_max, method="max_sharpe")
 })  # end lapply
-pro_files <- sapply(pnl_s, sum)
-plot(x=max_eigens, y=pro_files, t="l", main="Strategy PnL as Function of Max_eigen",
-  xlab="Max_eigen", ylab="pnl")
-max_eigen <- max_eigens[which.max(pro_files)]
-pnl_s <- pnl_s[[which.max(pro_files)]]
+pro_file <- sapply(pnl_s, sum)
+plot(x=eigen_maxs, y=pro_file, t="l", main="Strategy PnL as Function of eigen_max",
+  xlab="eigen_max", ylab="pnl")
+eigen_max <- eigen_maxs[which.max(pro_file)]
+pnl_s <- pnl_s[[which.max(pro_file)]]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/backtest_sp500_monthly_best.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink_optim.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative strategy returns
 weal_th <- cbind(pnl_s, in_dex, (pnl_s+in_dex)/2)
 weal_th <- cumsum(na.omit(weal_th))
-col_names <- c("Strategy", "Index", "Average")
+col_names <- c("Strategy", "Index", "Combined")
 colnames(weal_th) <- col_names
 dygraphs::dygraph(weal_th[end_p], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
@@ -6997,25 +8108,23 @@ pnl_s <- lapply(look_backs, function(look_back) {
   start_p <- c(rep_len(0, look_back-1), end_p[1:(n_rows-look_back+1)])
   start_p <- (start_p - 1)
   start_p[start_p < 0] <- 0
-  HighFreq::back_test(typ_e="max_sharpe",
-    ex_cess=returns_100, returns=returns_100,
-    start_p=start_p, end_p=end_p,
-    al_pha=al_pha, max_eigen=max_eigen)
+  HighFreq::back_test(excess=ex_cess, returns=returns_100,
+    startp=start_p, endp=end_p, alpha=al_pha, eigen_max=eigen_max, method="max_sharpe")
 })  # end lapply
-pro_files <- sapply(pnl_s, sum)
-plot(x=look_backs, y=pro_files, t="l", main="Strategy PnL as Function of Look-back Interval",
+pro_file <- sapply(pnl_s, sum)
+plot(x=look_backs, y=pro_file, t="l", main="Strategy PnL as Function of Look-back Interval",
   xlab="Look-back Interval", ylab="pnl")
-look_back <- look_backs[which.max(pro_files)]
-pnl_s <- pnl_s[[which.max(pro_files)]]
+look_back <- look_backs[which.max(pro_file)]
+pnl_s <- pnl_s[[which.max(pro_file)]]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/backtest_sp500_monthly_best_lookback.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink_optim_lookback.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative strategy returns
 weal_th <- cbind(pnl_s, in_dex, (pnl_s+in_dex)/2)
 weal_th <- cumsum(na.omit(weal_th))
-col_names <- c("Strategy", "Index", "Average")
+col_names <- c("Strategy", "Index", "Combined")
 colnames(weal_th) <- col_names
 dygraphs::dygraph(weal_th[end_p], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%

@@ -1,5 +1,5 @@
 // This file must first be compiled:
-//  Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/mult_rcpp.cpp")
+// Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/mult_rcpp.cpp")
 
 // Rcpp header with information for C++ compiler
 #include <Rcpp.h>

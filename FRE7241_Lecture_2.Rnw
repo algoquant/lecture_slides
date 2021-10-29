@@ -152,55 +152,364 @@ c_var <- sapply(re_turns, function(x) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Risk and Return of Aggregated Returns}
+\subsection{Risk and Return of Compounded Stock Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      When stock returns are aggregated over a longer holding period, then their skewness, kurtosis, and tail risks decrease significantly.
+      Compounded stock returns become closer to normally distributed, and their skewness, kurtosis, and tail risks decrease significantly compared to daily returns.
       \vskip1ex
-      So stocks become less risky over longer holding periods, and risk-averse investors may choose to own a higher percentage of stocks, provided they are able to hold them for a longer period of time.
-    \column{0.5\textwidth}
-      \vspace{-1em}
+      So stocks become less risky over longer holding periods, and investors may choose to own a higher percentage of stocks, provided they hold them for a longer period of time.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 re_turns <- drop(zoo::coredata(re_turns))
 n_rows <- NROW(re_turns)
-# Calculate aggregated VTI returns
-n_agg <- 252
-agg_rets <- sapply(1:n_rows, function(x) {
-    sum(re_turns[sample.int(n_rows, size=n_agg, replace=TRUE)])
+# Calculate compounded VTI returns
+hold_p <- 252
+cum_rets <- sqrt(hold_p)*sapply(1:n_rows, function(x) {
+    mean(re_turns[sample.int(n_rows, size=hold_p, replace=TRUE)])
 })  # end sapply
-mean(re_turns)
-mean(agg_rets)/n_agg
-# Calculate standard deviation, skewness, and kurtosis
-da_ta <- cbind(re_turns, agg_rets)
+# Calculate mean, standard deviation, skewness, and kurtosis
+da_ta <- cbind(re_turns, cum_rets)
 colnames(da_ta) <- c("VTI", "Agg")
 apply(da_ta, MARGIN=2, function(x) {
-  # Calculate standard deviation
-  stddev <- sd(x)
   # Standardize the returns
-  x <- (x - mean(x))/stddev
-  c(stddev=stddev, skew=mean(x^3), kurt=mean(x^4))
+  meanval <- mean(x); stddev <- sd(x); x <- (x - meanval)/stddev
+  c(mean=meanval, stddev=stddev, skew=mean(x^3), kurt=mean(x^4))
 })  # end sapply
-# Calculate the Sharpe ratios
+# Calculate the Sharpe and Dowd ratios
 conf_level <- 0.05
-std_dev <- sd(re_turns)
-va_r <- unname(quantile(re_turns, probs=conf_level))
-c_var <- mean(re_turns[re_turns < va_r])
-sqrt(252)*mean(re_turns)/c(Sharpe=std_dev, Dowd=-va_r, DowdC=-c_var)
-# Calculate the Sharpe ratios of aggregated returns
-std_dev <- sd(agg_rets)
-va_r <- unname(quantile(agg_rets, probs=conf_level))
-c_var <- mean(agg_rets[agg_rets < va_r])
-sqrt(252/n_agg)*mean(agg_rets)/c(Sharpe=std_dev, Dowd=-va_r, DowdC=-c_var)
+sapply(colnames(da_ta), function(name) {
+  x <- da_ta[, name]; stddev <- sd(x)
+  va_r <- unname(quantile(x, probs=conf_level))
+  c_var <- mean(x[x < va_r])
+  fac_tor <- 1
+  if (name == colnames(da_ta)[2]) {fac_tor <- hold_p}
+  sqrt(252/fac_tor)*mean(x)/c(Sharpe=stddev, Dowd=-va_r, DowdC=-c_var)
+})  # end sapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/risk_compound.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the densities of returns
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+plot(density(re_turns), t="l", lwd=3, col="blue",
+     xlab="returns", ylab="density", xlim=c(-0.04, 0.04),
+     main="Distribution of Compounded Stock Returns")
+lines(density(cum_rets), t="l", col="red", lwd=3)
+curve(expr=dnorm(x, mean=mean(cum_rets), sd=sd(cum_rets)), col="green", lwd=3, add=TRUE)
+legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
+       inset=-0.1, bg="white", lty=1, lwd=6, col=c("blue", "red", "green"), bty="n")
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Asset Pricing Models}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Alpha} and \protect\emph{Beta} of Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
+      \begin{displaymath}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
+      \end{displaymath}
+      The returns of \emph{XLP} and \emph{VTI} are highly correlated because they are driven by common market factors of returns.
+      \vskip1ex
+      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error.
+      \vskip1ex
+      The \emph{p}-value is the probability of obtaining values exceeding the \emph{t}-statistic, assuming the \emph{null hypothesis} is true.
+      \vskip1ex
+      A small \emph{p}-value means that the regression coefficients are very unlikely to be zero (given the data).
+      <<echo=TRUE,eval=TRUE>>=
+# Perform regression using formula
+mod_el <- lm(XLP ~ VTI, data=rutils::etf_env$re_turns)
+# Get regression coefficients
+coef(summary(mod_el))
+# Get alpha and beta
+coef(summary(mod_el))[, 1]
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.4\paperwidth]{figure/reg_rets.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot scatterplot of returns with aspect ratio 1
+plot(for_mula, data=rutils::etf_env$re_turns,
+     xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
+     asp=1, main="Regression XLP ~ VTI")
+# Add regression line and perpendicular line
+abline(mod_el, lwd=2, col="red")
+abline(a=0, b=-1/coef(summary(mod_el))[2, 1], 
+       lwd=2, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Statistical Significance of \protect\emph{Alpha} and \protect\emph{Beta}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{beta} $\beta$ values of stock returns are very statistically significant, but the \emph{alpha} $\alpha$ values are mostly not significant.
+      \vskip1ex
+      In addition, the \emph{Durbin-Watson} test shows that the regression residuals are autocorrelated which means that the regression \emph{p}-values may be smaller than the reported values.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Get regression coefficients
+coef(summary(mod_el))
+# Calculate regression coefficients from scratch
+de_sign <- na.omit(rutils::etf_env$re_turns[, c("XLP", "VTI")])
+be_ta <- drop(cov(de_sign$XLP, de_sign$VTI)/var(de_sign$VTI))
+al_pha <- drop(mean(de_sign$XLP) - be_ta*mean(de_sign$VTI))
+c(al_pha, be_ta)
+# Calculate the residuals
+residual_s <- (de_sign$XLP - (al_pha + be_ta*de_sign$VTI))
+# Calculate the standard deviation of residuals
+n_rows <- NROW(residual_s)
+resid_stddev <- sqrt(sum(residual_s^2)/(n_rows - 2))
+# Calculate the standard errors of beta and alpha
+sum2 <- sum((de_sign$VTI - mean(de_sign$VTI))^2)
+beta_stderror <- resid_stddev/sqrt(sum2)
+alpha_stderror <- resid_stddev*sqrt(1/n_rows + mean(de_sign$VTI)^2/sum2)
+c(alpha_stderror, beta_stderror)
+# Perform the Durbin-Watson test of autocorrelation of residuals
+lmtest::dwtest(mod_el)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Alpha} and \protect\emph{Beta} of ETF Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      The \emph{beta} $\beta$ values of ETF returns are very statistically significant, but the \emph{alpha} $\alpha$ values are mostly not significant.
+      \vskip1ex
+      Some of the ETFs with significant \emph{alpha} $\alpha$ values are the bond ETFs \emph{IEF} and \emph{TLT} (which have performed very well), and the natural resource ETFs \emph{USO} and \emph{DBC} (which have performed very poorly).
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(rutils)  # Load rutils
+re_turns <- rutils::etf_env$re_turns
+symbol_s <- colnames(re_turns)
+symbol_s <- symbol_s[symbol_s != "VTI"]
+# Perform regressions and collect statistics
+etf_betas <- sapply(symbol_s, function(sym_bol) {
+# Specify regression formula
+  for_mula <- as.formula(paste(sym_bol, "~ VTI"))
+# Perform regression
+  mod_el <- lm(for_mula, data=re_turns)
+# Get regression summary
+  model_sum <- summary(mod_el)
+# Collect regression statistics
+  with(model_sum, 
+    c(beta=coefficients[2, 1], 
+      p_beta=coefficients[2, 4],
+      alpha=coefficients[1, 1], 
+      p_alpha=coefficients[1, 4], 
+      p_dw=lmtest::dwtest(mod_el)$p.value))
+})  # end sapply
+etf_betas <- t(etf_betas)
+# Sort by p_alpha
+etf_betas <- etf_betas[order(etf_betas[, "p_alpha"]), ]
+      @
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+etf_betas
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Capital Asset Pricing Model (\protect\emph{CAPM})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
+      \begin{displaymath}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
+      \end{displaymath}
+      Where $R_m$ are the market returns, and $R_f$ are the risk-free returns.
+      \vskip1ex
+      The \emph{systematic} returns are proportional to $\beta$.
+      \vskip1ex
+      The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$.
+      \vskip1ex
+      The \emph{alpha} $\alpha$ are the returns in excess of \emph{systematic} returns, that may be attributed to portfolio selection or active manager performance.
+      \vskip1ex
+      The \emph{idiosyncratic} risk (equal to $\varepsilon$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
+      \vskip1ex
+      The $\beta$ is proportional to the correlation of returns between the asset and the market:
+      \begin{displaymath}
+        \beta = \frac{\sum_{i=1}^n (R_i-\bar{R}) (R_{i,m}-\bar{R_m})}{\sum_{i=1}^n (R_{i,m}-\bar{R_m})^2} = \rho \frac{\sigma}{\sigma_m}
+      \end{displaymath}
+      The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it earns higher \emph{systematic} returns.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+library(PerformanceAnalytics)
+# Calculate XLP beta
+CAPM.beta(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+# Calculate XLP bull beta
+CAPM.beta.bull(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+# Calculate XLP bear beta
+CAPM.beta.bear(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+# Calculate XLP alpha
+CAPM.alpha(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Security Market Line for ETFs}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      According to the \emph{CAPM} model, assets should earn a \emph{systematic} return proportional to their \emph{systematic} risk $\beta$.
+      \vskip1ex
+      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk $\beta$ and return, for different stocks.
+      <<echo=(-1),eval=FALSE>>=
+library(PerformanceAnalytics)
+etf_betas <- sapply(re_turns[, colnames(re_turns)!="VXX"], 
+  CAPM.beta, Rb=re_turns[, "VTI"])
+etf_annrets <- sapply(re_turns[, colnames(re_turns)!="VXX"], 
+  Return.annualized)
+# Plot scatterplot
+plot(etf_annrets ~ etf_betas, xlab="betas", 
+            ylab="ann. rets", xlim=c(-0.25, 1.6))
+points(x=1, y=etf_annrets["VTI"], col="red", lwd=3, pch=21)
+abline(a=0, b=etf_annrets["VTI"])
+label_names <- rownames(etf_betas)[1:13]
+# Add labels
+text(x=1, y=etf_annrets["VTI"], labels="VTI", pos=2)
+text(x=etf_betas[label_names], y=etf_annrets[label_names], 
+     labels=label_names, pos=2, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-4em}
+      \includegraphics[width=0.5\paperwidth]{figure/capm_scatter-1}\\
+    \vspace{-1em}
+      A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't.
+      \vskip1ex
+      If an asset lies on the \emph{SML}, then its returns are mostly \emph{systematic}, and its $\alpha$ is equal to zero.
+      \vskip1ex
+      Assets above the \emph{SML} have a positive $\alpha$, and those below have a negative $\alpha$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Beta-adjusted Performance Measurement}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Treynor} ratio measures the excess returns per unit of the \emph{systematic} risk \emph{beta} $\beta$, and is equal to the excess returns (over a risk-free return) divided by the $\beta$:
+      \begin{displaymath}
+        T_r=\frac{E[R-R_f]}{\beta}
+      \end{displaymath}
+      The \emph{Treynor} ratio is similar to the \emph{Sharpe} ratio, with the difference that its denominator represents only \emph{systematic} risk, not total risk.
+      \vskip1ex
+      The \emph{Information} ratio is equal to the excess returns (over a benchmark) divided by the \emph{tracking error} (standard deviation of excess returns):
+      \begin{displaymath}
+        I_r = \frac{E[R-R_b]} {\sqrt{\sum_{i=1}^n (R_i-R_{i,b})^2}}
+      \end{displaymath}
+      The \emph{Information} ratio measures the amount of outperformance versus the benchmark, and the consistency of outperformance.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+library(PerformanceAnalytics)
+# Calculate XLP Treynor ratio
+TreynorRatio(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+# Calculate XLP Information ratio
+InformationRatio(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{CAPM} Summary Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \texttt{PerformanceAnalytics::table.CAPM()} calculates the \emph{beta} $\beta$ and \emph{alpha} $\alpha$ values, the \emph{Treynor} ratio, and other performance statistics.
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+PerformanceAnalytics::table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
+                                 Rb=re_turns[, "VTI"], scale=252)
+      @
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+capm_stats <- table.CAPM(Ra=re_turns[, symbol_s], 
+              Rb=re_turns[, "VTI"], scale=252)
+col_names <- strsplit(colnames(capm_stats), split=" ")
+col_names <- do.call(cbind, col_names)[1, ]
+colnames(capm_stats) <- col_names
+capm_stats <- t(capm_stats)
+capm_stats <- capm_stats[, -1]
+col_names <- colnames(capm_stats)
+whi_ch <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), col_names)
+col_names[whi_ch] <- c("Alpha", "Information", "Treynor")
+colnames(capm_stats) <- col_names
+capm_stats <- capm_stats[order(capm_stats[, "Alpha"], decreasing=TRUE), ]
+# Copy capm_stats into etf_env and save to .RData file
+etf_env <- rutils::etf_env
+etf_env$capm_stats <- capm_stats
+save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
+      @
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+rutils::etf_env$capm_stats[, c("Beta", "Alpha", "Information", "Treynor")]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%

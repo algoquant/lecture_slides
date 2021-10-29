@@ -79,12 +79,16 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Linear Regression of Returns}
+\subsection{The \protect\emph{Alpha} and \protect\emph{Beta} of Stock Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
+      \begin{displaymath}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
+      \end{displaymath}
       The returns of \emph{XLP} and \emph{VTI} are highly correlated because they are driven by common market factors of returns.
       \vskip1ex
       The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error.
@@ -92,19 +96,17 @@ knit_theme$set(thm)
       The \emph{p}-value is the probability of obtaining values exceeding the \emph{t}-statistic, assuming the \emph{null hypothesis} is true.
       \vskip1ex
       A small \emph{p}-value means that the regression coefficients are very unlikely to be zero (given the data).
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(rutils)
-# Specify formula and perform regression
+      <<echo=TRUE,eval=TRUE>>=
+# Perform regression using formula
 mod_el <- lm(XLP ~ VTI, data=rutils::etf_env$re_turns)
 # Get regression coefficients
 coef(summary(mod_el))
-# Durbin-Watson test of autocorrelation of residuals
-lmtest::dwtest(mod_el)
+# Get alpha and beta
+coef(summary(mod_el))[, 1]
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_rets.png}\\
+      \includegraphics[width=0.4\paperwidth]{figure/reg_rets.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot scatterplot of returns with aspect ratio 1
@@ -123,7 +125,46 @@ abline(a=0, b=-1/coef(summary(mod_el))[2, 1],
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Beta} and \protect\emph{Alpha} of ETF Returns}
+\subsection{The Statistical Significance of \protect\emph{Alpha} and \protect\emph{Beta}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{beta} $\beta$ values of stock returns are very statistically significant, but the \emph{alpha} $\alpha$ values are mostly not significant.
+      \vskip1ex
+      In addition, the \emph{Durbin-Watson} test shows that the regression residuals are autocorrelated which means that the regression \emph{p}-values may be smaller than the reported values.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Get regression coefficients
+coef(summary(mod_el))
+# Calculate regression coefficients from scratch
+de_sign <- na.omit(rutils::etf_env$re_turns[, c("XLP", "VTI")])
+be_ta <- drop(cov(de_sign$XLP, de_sign$VTI)/var(de_sign$VTI))
+al_pha <- drop(mean(de_sign$XLP) - be_ta*mean(de_sign$VTI))
+c(al_pha, be_ta)
+# Calculate the residuals
+residual_s <- (de_sign$XLP - (al_pha + be_ta*de_sign$VTI))
+# Calculate the standard deviation of residuals
+n_rows <- NROW(residual_s)
+resid_stddev <- sqrt(sum(residual_s^2)/(n_rows - 2))
+# Calculate the standard errors of beta and alpha
+sum2 <- sum((de_sign$VTI - mean(de_sign$VTI))^2)
+beta_stderror <- resid_stddev/sqrt(sum2)
+alpha_stderror <- resid_stddev*sqrt(1/n_rows + mean(de_sign$VTI)^2/sum2)
+c(alpha_stderror, beta_stderror)
+# Perform the Durbin-Watson test of autocorrelation of residuals
+lmtest::dwtest(mod_el)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Alpha} and \protect\emph{Beta} of ETF Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -181,13 +222,19 @@ etf_betas
       \end{displaymath}
       Where $R_m$ are the market returns, and $R_f$ are the risk-free returns.
       \vskip1ex
-      The \emph{systematic} risk and returns are proportional to $\beta$.
+      The \emph{systematic} returns are proportional to $\beta$.
       \vskip1ex
-      The $\beta$ can be obtained from linear regression, and is proportional to the correlation of returns between the asset and the market:
+      The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$.
+      \vskip1ex
+      The \emph{alpha} $\alpha$ are the returns in excess of \emph{systematic} returns, that may be attributed to portfolio selection or active manager performance.
+      \vskip1ex
+      The \emph{idiosyncratic} risk (equal to $\varepsilon$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
+      \vskip1ex
+      The $\beta$ is proportional to the correlation of returns between the asset and the market:
       \begin{displaymath}
-        \beta = \frac{\sum_{i=1}^n (R_i-\bar{R}) (R_{i,m}-\bar{R_m})} {\sum_{i=1}^n (R_{i,m}-\bar{R_m})^2}
+        \beta = \frac{\sum_{i=1}^n (R_i-\bar{R}) (R_{i,m}-\bar{R_m})}{\sum_{i=1}^n (R_{i,m}-\bar{R_m})^2} = \rho \frac{\sigma}{\sigma_m}
       \end{displaymath}
-      The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it should earn higher \emph{systematic} returns.
+      The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it earns higher \emph{systematic} returns.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
@@ -201,11 +248,6 @@ CAPM.beta.bear(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
 # Calculate XLP alpha
 CAPM.alpha(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
       @
-      The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$.
-      \vskip1ex
-      The \emph{alpha} $\alpha$ are the returns in excess of \emph{systematic} returns, that may be attributed to portfolio selection or active manager performance.
-      \vskip1ex
-      The \emph{idiosyncratic} risk (equal to $\varepsilon$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
   \end{columns}
 \end{block}
 
@@ -365,7 +407,7 @@ capm_stats <- capm_stats[order(capm_stats[, "Alpha"], decreasing=TRUE), ]
 # Copy capm_stats into etf_env and save to .RData file
 etf_env <- rutils::etf_env
 etf_env$capm_stats <- capm_stats
-save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
+save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       @
     \column{0.45\textwidth}
       \vspace{-1em}
@@ -508,7 +550,7 @@ dygraphs::dygraph(residual_s, main="XLB and XLE Cointegration Residuals")
       Another rule of thumb is to use the \emph{principal components} with the largest standard deviations which sum up to \texttt{80\%} of the total variance of returns.
       <<echo=TRUE,eval=FALSE>>=
 # Load S&P500 constituent stock prices
-load("C:/Develop/lecture_slides/data/sp500_prices.RData")
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 # Calculate stock prices and percentage returns
 price_s <- zoo::na.locf(price_s, na.rm=FALSE)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
@@ -998,7 +1040,7 @@ factor_pca$Omega[1:3, 4:6]
     \column{0.4\textwidth}
       <<fact_load,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=10,fig.show='hide'>>=
 library(factorAnalytics)
-# load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
+# load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 plot(factor_pca, which.plot.group=3, 
      n.max=30, loop=FALSE)
 # ?plot.sfm

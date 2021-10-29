@@ -4,7 +4,8 @@ library(rutils)  # load package rutils
 
 # Simulate single EWMA model using historical oh_lc data,
 # and return percentage returns.
-simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
+sim_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001, 
+                     trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
   returns <- rutils::diff_it(close)
   n_rows <- NROW(ohlc)
@@ -25,7 +26,7 @@ simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001, trend=1
   pos <- ifelse(indic == (-lagg), -1, pos)
   pos <- zoo::na.locf(pos, na.rm=FALSE)
   pos <- xts::xts(pos, order.by=index(close))
-  # Lag the positions to trade in next period
+  # Lag the positions to trade on next day
   pos <- rutils::lag_it(pos, lagg=1)
   # Calculate PnLs of strategy
   pnls <- returns*pos
@@ -35,12 +36,12 @@ simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001, trend=1
   pnls <- cbind(pos, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end simu_ewma
+}  # end sim_ewma
 
 
 # Simulate Dual EWMA model using historical oh_lc data
-simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333, 
-                       bid_offer=0.001, trend=1, lagg=1) {
+sim_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333, 
+                      bid_offer=0.001, trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
   returns <- rutils::diff_it(close)
   n_rows <- NROW(ohlc)
@@ -73,5 +74,5 @@ simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
   pnls <- cbind(pos, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end simu_ewma2
+}  # end sim_ewma2
 

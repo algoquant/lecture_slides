@@ -22,13 +22,13 @@ using namespace arma;
 //'   
 //' @examples
 //' \dontrun{
-//' # create vector of innovations
+//' # Create vector of innovations
 //' in_nov <- rnorm(100)
-//' # create ARIMA coefficients
+//' # Create ARIMA coefficients
 //' co_eff <- c(-0.8, 0.2)
-//' # calculate recursive filter using filter()
+//' # Calculate recursive filter using filter()
 //' filter_ed <- filter(in_nov, filter=co_eff, method="recursive")
-//' # calculate recursive filter using sim_arima()
+//' # Calculate recursive filter using sim_arima()
 //' ari_ma <- sim_arima(in_nov, rev(co_eff))
 //' # compare the two methods
 //' all.equal(as.numeric(ari_ma), as.numeric(filter_ed))
@@ -40,14 +40,14 @@ arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
   uword look_back = co_eff.n_elem;
   arma::vec ari_ma(n_rows);
 
-  // startup period
+  // Startup period
   ari_ma(0) = in_nov(0);
   ari_ma(1) = in_nov(1) + co_eff(look_back-1) * ari_ma(0);
   for (uword it = 2; it < look_back-1; it++) {
     ari_ma(it) = in_nov(it) + arma::dot(co_eff.subvec(look_back-it, look_back-1), ari_ma.subvec(0, it-1));
   }  // end for
   
-  // remaining periods
+  // Remaining periods
   for (uword it = look_back; it < n_rows; it++) {
     ari_ma(it) = in_nov(it) + arma::dot(co_eff, ari_ma.subvec(it-look_back, it-1));
   }  // end for

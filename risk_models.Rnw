@@ -1963,7 +1963,7 @@ calc_mom <- function(re_turns, mo_ment=3) {
 calc_mom(re_turns, mo_ment=3)
 calc_mom(re_turns, mo_ment=4)
 # Load the S&P500 constituent stock returns
-load(file="C:/Develop/lecture_slides/data/sp500_returns.RData")
+load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 dim(re_turns)
 sum(is.na(re_turns))
 # re_turns <- re_turns["2000/"]
@@ -3063,13 +3063,13 @@ dygraphs::dygraph(price_s["2009"], main="VTI Price Z-Scores") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
 clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
-# Define look-back window and a half window
+# Define look-back window
 look_back <- 11
 # Calculate time series of medians
 medi_an <- roll::roll_median(clos_e, width=look_back)
 # medi_an <- TTR::runMedian(clos_e, n=look_back)
 # Calculate time series of MAD
-ma_d <- HighFreq::roll_var(clos_e, look_back=look_back, method="quantile")
+ma_d <- HighFreq::roll_var(clos_e, look_back=look_back, method="nonparametric")
 # ma_d <- TTR::runMAD(clos_e, n=look_back)
 # Calculate time series of z-scores
 z_scores <- (clos_e - medi_an)/ma_d
@@ -3109,7 +3109,7 @@ lines(density(z_scores, adjust=1.5), lwd=3, col="blue")
       \vskip1ex
       Filters calculated over both past and future data are called \emph{two-sided} (centered) filters, and they are appropriate for filtering historical data.
       \vskip1ex
-      The function \texttt{HighFreq::roll\_var()} with parameter \texttt{method="quantile"} calculates the rolling \emph{MAD} using a trailing look-back interval over past data.
+      The function \texttt{HighFreq::roll\_var()} with parameter \texttt{method="nonparametric"} calculates the rolling \emph{MAD} using a trailing look-back interval over past data.
       \vskip1ex
       The functions \texttt{TTR::runMedian()} and \texttt{TTR::runMAD()} calculate the rolling medians and \emph{MAD} using a trailing look-back interval over past data.
       \vskip1ex
@@ -3122,7 +3122,7 @@ lines(density(z_scores, adjust=1.5), lwd=3, col="blue")
 # Calculate one-sided Hampel z-scores
 medi_an <- roll::roll_median(clos_e, width=look_back)
 # medi_an <- TTR::runMedian(clos_e, n=look_back)
-ma_d <- HighFreq::roll_var(clos_e, look_back=look_back, method="quantile")
+ma_d <- HighFreq::roll_var(clos_e, look_back=look_back, method="nonparametric")
 # ma_d <- TTR::runMAD(clos_e, n=look_back)
 z_scores <- (clos_e - medi_an)/ma_d
 z_scores[1:look_back, ] <- 0
@@ -3136,52 +3136,6 @@ z_scores <- (clos_e - medi_an)/ma_d
 z_scores[1:look_back, ] <- 0
 tail(z_scores, look_back)
 range(z_scores)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Hampel Filter Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Hampel filter strategy is a contrarian strategy that uses Hampel z-scores to establish long and short positions.
-      \vskip1ex
-      The Hampel strategy has two meta-parameters: the look-back interval and the threshold level.
-      \vskip1ex
-      The best choice of the meta-parameters can be determined through backtesting.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate VTI percentage returns
-re_turns <- rutils::diff_it(clos_e)
-# Define threshold value
-thresh_old <- sum(abs(range(z_scores)))/8
-# Backtest VTI strategy
-position_s <- rep(NA_integer_, NROW(clos_e))
-position_s[1] <- 0
-position_s[z_scores < -thresh_old] <- 1
-position_s[z_scores > thresh_old] <- (-1)
-position_s <- zoo::na.locf(position_s)
-position_s <- rutils::lag_it(position_s)
-pnl_s <- cumsum(re_turns*position_s)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_hampel.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of in-sample VTI strategy
-price_s <- cbind(clos_e, pnl_s)
-colnames(price_s) <- c("VTI", "Strategy")
-col_names <- colnames(price_s)
-dygraphs::dygraph(price_s, main="VTI Hampel Strategy") %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
       @
   \end{columns}
 \end{block}
@@ -5719,7 +5673,7 @@ arma::mat roll_maxmin(const arma::vec& vec_tor,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Compile Rcpp functions
-Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/roll_maxmin.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/roll_maxmin.cpp")
 max_minarma <- roll_maxmin(clos_e, look_back)
 max_minarma <- xts::xts(max_minr, index(clos_e))
 max_min <- cbind(TTR::runMax(x=clos_e, n=look_back),
