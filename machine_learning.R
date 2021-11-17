@@ -1218,11 +1218,11 @@ round(apply(design_pcr, 2,
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
 all.equal(influ_ence, influence_pcr)
-lamb_da <- c(0.5, 1, 1.5)
+lambdas <- c(0.5, 1, 1.5)
 col_ors <- c("red", "blue", "green")
 # Plot three curves in loop
 for (in_dex in 1:3) {
-  curve(expr=plogis(x, scale=lamb_da[in_dex]),
+  curve(expr=plogis(x, scale=lambdas[in_dex]),
 xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
 col=col_ors[in_dex], add=(in_dex>1))
 }  # end for
@@ -1230,7 +1230,7 @@ col=col_ors[in_dex], add=(in_dex>1))
 title(main="Logistic function", line=0.5)
 # Add legend
 legend("topleft", title="Scale parameters",
-       paste("lambda", lamb_da, sep="="),
+       paste("lambda", lambdas, sep="="),
        inset=0.05, cex=0.8, lwd=6, bty="n",
        lty=1, col=col_ors)
 set.seed(1121)  # Reset random number generator

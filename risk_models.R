@@ -703,7 +703,7 @@ risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
 knitr::kable(risk_ret[, c("Sharpe", "Skewness", "Kurtosis")])
 # Print data frame
 knitr::kable(risk_ret[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
-# dygraph plot of VTI drawdowns
+# dygraph plot of VXX versus SVXY
 price_s <- na.omit(rutils::etf_env$price_s[, c("VXX", "SVXY")])
 price_s <- price_s["2017/"]
 col_names <- c("VXX", "SVXY")
