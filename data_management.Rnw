@@ -1497,6 +1497,47 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
+\subsection{draft: Coercing \protect\emph{Data Tables} Into \texttt{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{data table} can be coerced into an \texttt{xts} time series 
+      by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
+      \vskip1ex
+      But then the time index of the \texttt{xts} series is coerced into strings, not dates.
+      \vskip1ex
+      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce xts to a data frame
+price_s <- rutils::etf_env$VTI
+class(price_s); head(price_s)
+price_s <- as.data.frame(price_s)
+class(price_s); head(price_s)
+# Coerce data frame to a data table
+data.table::setDT(price_s, keep.rownames=TRUE)
+class(price_s); head(price_s)
+# Dates are coerced to strings
+sapply(price_s, class)
+# Coerce xts directly to a data table
+data_table <- as.data.table(rutils::etf_env$VTI,
+  keep.rownames=TRUE)
+class(data_table); head(data_table)
+# Dates are not coerced to strings
+sapply(data_table, class)
+all.equal(price_s, data_table, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Coercing \texttt{xts} Time Series Into \protect\emph{Data Tables}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -2367,7 +2408,7 @@ sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
       \vskip1ex
       The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Tiingo}, called \texttt{getSymbols.tiingo()}.
       \vskip1ex
-      Users must first obtain a \emph{Tiingo} API key, and then pass it in \texttt{getSymbols.tiingo()} calls:\\
+      Users must first obtain a \emph{Tiingo} \emph{API key}, and then pass it in \texttt{getSymbols.tiingo()} calls:\\
       https://www.tiingo.com/
       \vskip1ex
       Note that the data are downloaded as \texttt{xts} time series, with a date-time index of class \texttt{POSIXct} (not \texttt{Date}).
@@ -2381,7 +2422,7 @@ sp500_env <- new.env()
 # Boolean vector of symbols already downloaded
 down_loaded <- sym_bols %in% ls(sp500_env)
 # Download in while loop from Tiingo and copy into environment
-at_tempt <- 0  # number of download attempts
+at_tempt <- 0  # Number of download attempts
 while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
   # Download data and copy it into environment
   at_tempt <- at_tempt + 1
@@ -2589,7 +2630,7 @@ for (file_name in file_names) {
       \vskip1ex
       The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Alpha Vantage}, called \texttt{getSymbols.av()}.
       \vskip1ex
-      Users must first obtain an \emph{Alpha Vantage} API key, and then pass it in \texttt{getSymbols.av()} calls:\\
+      Users must first obtain an \emph{Alpha Vantage} \emph{API key}, and then pass it in \texttt{getSymbols.av()} calls:\\
       https://www.alphavantage.co/
       \vskip1ex
       The function \texttt{adjustOHLC()} with argument \texttt{use.Adjusted=TRUE}, adjusts all the \emph{OHLC} price columns, using the \emph{Adjusted} price column.
@@ -2752,6 +2793,201 @@ save(price_s, prices_100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 save(re_turns, returns_100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Stock Prices From Polygon}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \href{http://polygon.io/}{\emph{Polygon}}
+      is a premium provider of live and historical stock price data, both daily and intraday (minutes). 
+      \vskip1ex
+      \emph{Polygon} provides $2$ years of daily historical stock prices for free. 
+      But users must first obtain a Polygon \emph{API key}.
+      \vskip1ex
+      \emph{Polygon} provides the historical \emph{OHLC} stock prices in \emph{JSON} format.
+      \vskip1ex
+      \emph{JSON} (JavaScript Object Notation) is a data format consisting of symbol-value pairs.
+      \vskip1ex
+      The package
+      \href{https://cran.r-project.org/web/packages/jsonlite/}{\emph{jsonlite}}
+      contains functions for managing data in \emph{JSON} format.
+      \vskip1ex
+      The functions \texttt{fromJSON()} and \texttt{toJSON()} convert data from \emph{JSON} format to \texttt{R} objects, and vice versa.
+      \vskip1ex
+      The functions \texttt{read\_json()} and \texttt{write\_json()} read and write \emph{JSON} format data in files.
+      \vskip1ex
+      The function \texttt{download.file()} downloads data from an internet website \texttt{URL} and writes it to a file.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Setup code
+sym_bol <- "SPY"
+start_date <- as.Date("1990-01-01")
+to_day <- Sys.Date()
+rang_e <- "day"
+# Replace below your own Polygon API key
+apikey <- "SEpnsBpiRyONMJdl48r6dOo0_pjmCu5r"
+ur_l <- paste0("https://api.polygon.io/v2/aggs/ticker/", sym_bol, "/range/1/", rang_e, "/", start_date, "/", to_day, "?adjusted=true&sort=asc&limit=50000&apiKey=", apikey)
+# Download SPY prices in JSON format from Polygon
+download.file(ur_l, "/Users/jerzy/Data/data.json")
+# Read SPY prices from json file
+oh_lc <- jsonlite::read_json("/Users/jerzy/Data/data.json")
+class(oh_lc)
+NROW(oh_lc)
+names(oh_lc)
+# Extract list of prices from json object
+oh_lc <- oh_lc$results
+# Coerce from list to matrix
+oh_lc <- lapply(oh_lc, unlist)
+oh_lc <- do.call(rbind, oh_lc)
+# Coerce time from milliseconds to dates
+date_s <- oh_lc[, "t"]/1e3
+date_s <- as.POSIXct(date_s, origin="1970-01-01")
+date_s <- as.Date(date_s)
+tail(date_s)
+# Coerce from matrix to xts
+oh_lc <- oh_lc[, c("o","h","l","c","v","vw")]
+colnames(oh_lc) <- c("Open", "High", "Low", "Close", "Volume", "VWAP")
+oh_lc <- xts::xts(oh_lc, order.by=date_s)
+tail(oh_lc)
+# Save the xts time series to compressed RData file
+save(oh_lc, file="/Users/jerzy/Data/spy_daily.RData")
+# Candlestick plot of SPY OHLC prices
+dygraphs::dygraph(oh_lc[, 1:4], main=paste("Candlestick Plot of", sym_bol, "OHLC prices")) %>% 
+  dygraphs::dyCandlestick()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Multiple Stock Prices From Polygon}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The stock prices for multiple stocks can be downloaded in a \texttt{while()} loop.
+      <<echo=TRUE,eval=FALSE>>=
+# Select ETF symbols for asset allocation
+sym_bols <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
+  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
+# Setup code
+etf_env <- new.env()  # New environment for data
+# Boolean vector of symbols already downloaded
+down_loaded <- sym_bols %in% ls(etf_env)
+      @
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Download data from Polygon using while loop
+while (sum(!down_loaded) > 0) {
+  for (sym_bol in sym_bols[!down_loaded]) {
+    cat("Processing:", sym_bol, "\n")
+    tryCatch({  # With error handler
+      # Download OHLC bars from Polygon into JSON format file
+      ur_l <- paste0("https://api.polygon.io/v2/aggs/ticker/", sym_bol, "/range/1/", rang_e, "/", start_date, "/", to_day, "?adjusted=true&sort=asc&limit=50000&apiKey=", apikey)
+      download.file(ur_l, destfile="/Volumes/external/Develop/data/polygon/data.json")
+      # Read OHLC bars from json file
+      oh_lc <- jsonlite::read_json("/Volumes/external/Develop/data/polygon/data.json")
+      # Extract list of prices from json object
+      oh_lc <- oh_lc$results
+      # Coerce from list to matrix
+      oh_lc <- lapply(oh_lc, unlist)
+      oh_lc <- do.call(rbind, oh_lc)
+      # Coerce time from milliseconds to dates
+      date_s <- oh_lc[, "t"]/1e3
+      date_s <- as.POSIXct(date_s, origin="1970-01-01")
+      date_s <- as.Date(date_s)
+      # Coerce from matrix to xts
+      oh_lc <- oh_lc[, c("o","h","l","c","v","vw")]
+      colnames(oh_lc) <- paste0(sym_bol, ".", c("Open", "High", "Low", "Close", "Volume", "VWAP"))
+      oh_lc <- xts::xts(oh_lc, order.by=date_s)
+      # Save to environment
+      assign(sym_bol, oh_lc, envir=etf_env)
+      Sys.sleep(1)
+      },
+    error={function(error_cond) print(paste("Error handler:", error_cond))},
+    finally=print(paste0("sym_bol=", sym_bol))
+    )  # end tryCatch
+  }  # end for
+  # Update vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(etf_env)
+}  # end while
+save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calculating the Stock Alphas, Betas, and Other Performance Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package 
+      \href{https://cran.r-project.org/web/packages/PerformanceAnalytics/index.html}{\emph{PerformanceAnalytics}} 
+      contains functions for calculating risk and performance statistics, such as the \emph{variance}, \emph{skewness}, \emph{kurtosis}, \emph{beta}, \emph{alpha}, etc.
+      \vskip1ex
+      The function \texttt{PerformanceAnalytics::table.CAPM()} calculates the \emph{beta} $\beta$ and \emph{alpha} $\alpha$ values, the \emph{Treynor} ratio, and other performance statistics.
+      \vskip1ex
+      The function \texttt{PerformanceAnalytics::table.Stats()} calculates a data frame of risk and return statistics of the return distributions.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# Extract Close prices
+price_s <- eapply(etf_env, quantmod::Cl)
+price_s <- do.call(cbind, price_s)
+# Drop ".Close" from colnames
+colnames(price_s) <- do.call(rbind, strsplit(colnames(price_s), split="[.]"))[, 1]
+# Calculate the log returns
+re_turns <- xts::diff.xts(log(price_s))
+# Copy price_s and re_turns into etf_env
+etf_env$price_s <- price_s
+etf_env$re_turns <- re_turns
+# Copy sym_bols into etf_env
+etf_env$sym_bols <- sym_bols
+# Calculate the risk-return statistics
+risk_return <- PerformanceAnalytics::table.Stats(re_turns)
+# Transpose the data frame
+risk_return <- as.data.frame(t(risk_return))
+# Add Name column
+risk_return$Name <- rownames(risk_return)
+# Copy risk_return into etf_env
+etf_env$risk_return <- risk_return
+# Calculate the beta, alpha, Treynor ratio, and other performance statistics
+capm_stats <- PerformanceAnalytics::table.CAPM(Ra=re_turns[, sym_bols], 
+                                               Rb=re_turns[, "VTI"], scale=252)
+col_names <- strsplit(colnames(capm_stats), split=" ")
+col_names <- do.call(cbind, col_names)[1, ]
+colnames(capm_stats) <- col_names
+capm_stats <- t(capm_stats)
+capm_stats <- capm_stats[, -1]
+col_names <- colnames(capm_stats)
+whi_ch <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), col_names)
+col_names[whi_ch] <- c("Alpha", "Information", "Treynor")
+colnames(capm_stats) <- col_names
+capm_stats <- capm_stats[order(capm_stats[, "Alpha"], decreasing=TRUE), ]
+# Copy capm_stats into etf_env
+etf_env$capm_stats <- capm_stats
+save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -2970,7 +3206,7 @@ detach("package:Quandl")
       @
       \href{https://www.quandl.com/}{Quandl} has developed an \texttt{R} package called \emph{Quandl} that allows downloading data from \href{https://www.quandl.com/}{Quandl} directly into \texttt{R}.
       \vskip1ex
-      To make more than 50 downloads a day, you need to register your \emph{Quandl} API key using the function \texttt{Quandl.api\_key()},
+      To make more than 50 downloads a day, you need to register your \emph{Quandl} \emph{API key} using the function \texttt{Quandl.api\_key()},
   \end{columns}
 \end{block}
 
@@ -3251,60 +3487,6 @@ colnames(vix_env$VX_M18)
 # Save the data to a binary file called "vix_cboe.RData".
 save(vix_env,
   file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Managing Data in JSON Format}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{download.file()} downloads data from an internet website \texttt{URL} and writes it to a file.
-      \vskip1ex
-      The package \emph{jsonlite} contains functions for managing data in \emph{JSON} format.
-      \vskip1ex
-      \emph{JSON} (JavaScript Object Notation) is a data format consisting of symbol-value pairs.
-      \vskip1ex
-      The functions \texttt{fromJSON()} and \texttt{toJSON()} convert data from \emph{JSON} format to \texttt{R} objects, and vice versa.
-      \vskip1ex
-      The functions \texttt{read\_json()} and \texttt{write\_json()} read and write \emph{JSON} format data in files.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Download VTI prices in JSON format from Polygon
-download.file("https://api.polygon.io/v2/aggs/ticker/VTI/range/1/day/1995-01-01/2021-07-20?adjusted=true&sort=asc&limit=50000&apiKey=cLXNCKw8fCkvrNAoLboAIwsET0wkL3QD", "/Users/jerzy/Develop/data/vti.json")
-# Read VTI prices from json file
-vt_i <- jsonlite::read_json("/Users/jerzy/Develop/data/vti.json")
-class(vt_i)
-NROW(vt_i)
-names(vt_i)
-# Coerce from json to data frame
-vt_i <- vt_i$results
-vt_i <- jsonlite::toJSON(vt_i)
-vt_i <- jsonlite::fromJSON(vt_i)
-sapply(vt_i, class)
-# Coerce from data frame to matrix
-vt_i <- lapply(vt_i, unlist)
-vt_i <- do.call(cbind, vt_i)
-class(vt_i)
-# Coerce time from milliseconds to dates
-date_s <- vt_i[, "t"]/1e3
-date_s <- as.POSIXct(date_s, origin="1970-01-01")
-date_s <- as.Date(date_s)
-tail(date_s)
-# Coerce from matrix to xts
-vt_i <- vt_i[, c("o","h","l","c","v","vw")]
-colnames(vt_i) <- c("Open", "High", "Low", "Close", "Volume", "VWAP")
-vt_i <- xts::xts(vt_i, order.by=date_s)
-tail(vt_i)
-# Save the xts time series to compressed RData file
-save(vt_i, file="/Users/jerzy/Develop/data/polygon/vti_daily.RData")
       @
   \end{columns}
 \end{block}

@@ -1223,7 +1223,9 @@ chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{PerformanceAnalytics} contains functions for risk and performance analysis.
+      The package 
+      \href{https://cran.r-project.org/web/packages/PerformanceAnalytics/index.html}{\emph{PerformanceAnalytics}} 
+      contains functions for calculating risk and performance statistics, such as the variance, skewness, kurtosis, beta, alpha, etc.
       \vskip1ex
       The function \texttt{data()} loads external data or lists data sets in a package.
       \vskip1ex
@@ -2232,7 +2234,7 @@ data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
       \vskip1ex
       \texttt{filter()} with \texttt{method="convolution"} calls the function \texttt{stats:::C\_cfilter()} to calculate the \emph{convolution}.
       \vskip1ex
-      Filtering can be performed even faster by directly calling the compiled function \texttt{stats:::C\_cfilter()}.
+      Convolution filtering can be performed even faster by directly calling the compiled function \texttt{stats:::C\_cfilter()}.
       \vskip1ex
       The function \texttt{roll::roll\_sum()} calculates the \emph{weighted} rolling sum (convolution) even faster than \texttt{stats:::C\_cfilter()}.
     \column{0.5\textwidth}
@@ -2511,7 +2513,7 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[end_p], lwd=c(2, 2, 2),
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{EWMA} Price Technical Indicator}
+\subsection{EWMA Price Technical Indicator}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2519,41 +2521,108 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[end_p], lwd=c(2, 2, 2),
     \column{0.5\textwidth}
       The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling interval:
       \begin{displaymath}
-        p^{EWMA}_i = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) p_{i-j}
+        p^{EWMA}_i = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      \vskip1ex
+      The function \texttt{HighFreq::roll\_wsum()} calculates the convolution of a time series with a vector of weights.
       <<echo=TRUE,eval=FALSE>>=
 # Extract log VTI prices
-oh_lc <- rutils::etf_env$VTI
-clos_e <- log(quantmod::Cl(oh_lc))
+oh_lc <- log(rutils::etf_env$VTI)
+clos_e <- quantmod::Cl(oh_lc)
+colnames(clos_e) <- "VTI"
 n_rows <- NROW(clos_e)
 # Calculate EWMA weights
-look_back <- 252
-lamb_da <- 0.07
-weight_s <- exp(lamb_da*1:look_back)
+look_back <- 333
+lamb_da <- 0.9
+weight_s <- lamb_da^(1:look_back)
 weight_s <- weight_s/sum(weight_s)
-# Calculate EWMA prices
-ew_ma <- roll::roll_sum(clos_e, width=look_back, weights=weight_s, min_obs=1)
-# Copy over NA values
-ew_ma <- zoo::na.locf(ew_ma, fromLast=TRUE)
+# Calculate EWMA prices as the convolution
+ew_ma <- HighFreq::roll_wsum(clos_e, weights=weight_s)
 price_s <- cbind(clos_e, ew_ma)
 colnames(price_s) <- c("VTI", "VTI EWMA")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/features_ewma.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ewma_feature.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
-col_ors <- c("blue", "red")
+col_names <- colnames(price_s)
 dygraphs::dygraph(price_s["2009"], main="VTI EWMA Prices") %>%
-  dyOptions(colors=col_ors, strokeWidth=2)
-# Plot EWMA prices with custom line colors
+  dySeries(name=col_names[1], label=col_names[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=col_names[2], label=col_names[2], strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=500)
+# Standard plot of  EWMA prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
+col_ors <- c("blue", "red")
 plot_theme$col$line.col <- col_ors
 quantmod::chart_Series(price_s["2009"], theme=plot_theme,
              lwd=2, name="VTI EWMA Prices")
-legend("bottomright", legend=colnames(price_s),
+legend("topleft", legend=colnames(price_s),
+       inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive EWMA Price Indicator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{EWMA} prices can be calculated recursively as follows:
+      \begin{displaymath}
+        p^{EWMA}_i = (1-\lambda) p_i + \lambda p^{EWMA}_{i-1}
+      \end{displaymath}
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      \vskip1ex
+      The recursive \emph{EWMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
+      \vskip1ex
+      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the exponentially weighted moving average prices recursively.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_mean()} calculates the exponentially weighted moving average prices recursively.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate EWMA prices recursively using C++ code
+ewma_rfilter <- .Call(stats:::C_rfilter, clos_e, lamb_da, c(as.numeric(clos_e[1])/(1-lamb_da), double(NROW(clos_e))))[-1]
+# Or R code
+# ewma_rfilter <- filter(clos_e, filter=lamb_da, init=as.numeric(clos_e[1, 1])/(1-lamb_da), method="recursive")
+ewma_rfilter <- (1-lamb_da)*ewma_rfilter
+# Calculate EWMA prices recursively using RcppArmadillo
+ew_ma <- HighFreq::run_mean(clos_e, lambda=lamb_da)
+all.equal(drop(ew_ma), ewma_rfilter)
+# Compare the speed of C++ code with RcppArmadillo
+library(microbenchmark)
+summary(microbenchmark(
+  run_mean=HighFreq::run_mean(clos_e, lambda=lamb_da),
+  rfilter=.Call(stats:::C_rfilter, clos_e, lamb_da, c(as.numeric(clos_e[1])/(1-lamb_da), double(NROW(clos_e)))),
+  times=10))[, c(1, 4, 5)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/ewma_recursive.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Dygraphs plot with custom line colors
+price_s <- cbind(clos_e, ew_ma)
+colnames(price_s) <- c("VTI", "VTI EWMA")
+col_names <- colnames(price_s)
+dygraphs::dygraph(price_s["2009"], main="Recursive VTI EWMA Prices") %>%
+  dySeries(name=col_names[1], label=col_names[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=col_names[2], label=col_names[2], strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=500)
+# Standard plot of  EWMA prices with custom line colors
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+col_ors <- c("blue", "red")
+plot_theme$col$line.col <- col_ors
+quantmod::chart_Series(price_s["2009"], theme=plot_theme,
+             lwd=2, name="VTI EWMA Prices")
+legend("topleft", legend=colnames(price_s),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
        col=plot_theme$col$line.col, bty="n")
       @
@@ -2576,6 +2645,8 @@ legend("bottomright", legend=colnames(price_s),
       \end{displaymath}
       The \emph{VWAP} applies more weight to prices with higher trading volumes, which allows it to react more quickly to recent market volatility.
       \vskip1ex
+      The drawback of the \emph{VWAP} indicator is that it applies large weights to prices far in the past.
+      \vskip1ex
       The \emph{VWAP} is often used as a technical indicator in trend following strategies.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log OHLC prices and volumes
@@ -2595,7 +2666,7 @@ price_s <- cbind(clos_e, vwap)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/features_vwap.png}
+      \includegraphics[width=0.4\paperwidth]{figure/vwap_feature.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
 col_ors <- c("blue", "red")
@@ -2610,6 +2681,53 @@ quantmod::chart_Series(price_s["2009"], theme=plot_theme,
 legend("bottomright", legend=colnames(price_s),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
        col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive VWAP Price Indicator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{VWAP} prices $p^{VWAP}$ can also be calculated as the ratio of the volume weighted prices $\mu^{pv}$ divided by the mean trading volumes $\mu^v$:
+      \begin{displaymath}
+        p^{VWAP} = \frac{\mu^{pv}}{\mu^v}
+      \end{displaymath}
+      The volume weighted prices $\mu^{pv}$ and the mean trading volumes $\mu^v$ are both calculated recursively: 
+      \begin{flalign*}
+        \mu^v_i = (1-\lambda) v_i + \lambda \mu^v_{i-1} \\
+        \mu^{pv}_i = (1-\lambda) v_i p_i + \lambda \mu^{pv}_{i-1}
+      \end{flalign*}
+      The recursive \emph{VWAP} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
+      \vskip1ex
+      The advantage of the recursive \emph{VWAP} indicator is that it gradually "forgets" about large trading volumes far in the past.
+      \vskip1ex
+      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the weighted running values recursively.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_mean()} also calculates the weighted running values recursively.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/vwap_recursive.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VWAP prices recursively using C++ code
+volume_rec <- .Call(stats:::C_rfilter, vol_ume, lamb_da, c(as.numeric(vol_ume[1])/(1-lamb_da), double(NROW(vol_ume))))[-1]
+price_rec <- .Call(stats:::C_rfilter, vol_ume*clos_e, lamb_da, c(as.numeric(vol_ume[1]*clos_e[1])/(1-lamb_da), double(NROW(clos_e))))[-1]
+vwap_rec <- price_rec/volume_rec
+# Calculate VWAP prices recursively using RcppArmadillo
+vwap_arma <- HighFreq::run_mean(clos_e, lambda=lamb_da, weights=vol_ume)
+all.equal(vwap_rec, drop(vwap_arma))
+# Dygraphs plot the VWAP prices
+price_s <- xts(cbind(vwap, vwap_arma), zoo::index(oh_lc))
+colnames(price_s) <- c("VWAP rolling", "VWAP running")
+dygraphs::dygraph(price_s["2009"], main="VWAP Prices") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}
