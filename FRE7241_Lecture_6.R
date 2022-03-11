@@ -45,7 +45,7 @@ arima_fit$coef
 library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(ari_ma, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
-re_turns <- drop(zoo::coredata(na.omit(rutils::etf_env$re_turns$VTI)))
+re_turns <- drop(zoo::coredata(na.omit(rutils::etfenv$re_turns$VTI)))
 de_sign <- sapply(1:5, rutils::lag_it, in_put=re_turns)
 design_inv <- MASS::ginv(de_sign)
 coeff_fit <- drop(design_inv %*% re_turns)
@@ -174,7 +174,7 @@ coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
 # Calculate forecast
 drop(de_sign[n_rows, -1] %*% coeff_fit)
 # Calculate a vector of daily VTI log returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- index(re_turns)
 re_turns <- as.numeric(re_turns)
 n_rows <- NROW(re_turns)
@@ -266,7 +266,7 @@ plot(x=look_backs, y=mse_s,
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")
 # Calculate a vector of daily VTI log returns
-vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
+vt_i <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- index(vt_i)
 vt_i <- as.numeric(vt_i)
 n_rows <- NROW(vt_i)
@@ -370,7 +370,7 @@ dygraphs::dygraph(pnl_s[, 1:4],
   dyOptions(colors=color_s, strokeWidth=2) %>%
   dyLegend(width=500)
 # Calculate a vector of daily VTI log returns
-vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
+vt_i <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- index(vt_i)
 vt_i <- as.numeric(vt_i)
 n_rows <- NROW(vt_i)
@@ -526,7 +526,7 @@ name_s <- as.numeric(name_s)
 indeks <- order(name_s)
 rate_s <- rate_s[, indeks]
 # Align rates dates with VTI prices
-clos_e <- quantmod::Cl(rutils::etf_env$VTI)
+clos_e <- quantmod::Cl(rutils::etfenv$VTI)
 colnames(clos_e) <- "VTI"
 n_rows <- NROW(clos_e)
 date_s <- zoo::index(clos_e)
@@ -739,10 +739,10 @@ dygraphs::dygraph(cumsum(weal_th), main="Rolling Weekly Yield Curve Strategy") %
   dyLegend(show="always", width=500)
 # Extract ETF returns
 sym_bols <- c("VTI", "IEF", "DBC")
-re_turns <- rutils::etf_env$re_turns[, sym_bols]
+re_turns <- rutils::etfenv$re_turns[, sym_bols]
 re_turns <- na.omit(re_turns)
 # Or, select rows with IEF data
-# re_turns <- re_turns[index(rutils::etf_env$IEF)]
+# re_turns <- re_turns[index(rutils::etfenv$IEF)]
 # Copy over NA values
 # re_turns[1, is.na(re_turns[1, ])] <- 0
 # re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
@@ -881,7 +881,7 @@ legend("topleft", legend=colnames(weal_th),
   col=plot_theme$col$line.col, bty="n")
 # Plot the momentum portfolio weights
 weight_s <- pnl_s[, -1]
-vt_i <- log(quantmod::Cl(rutils::etf_env$VTI[date_s]))
+vt_i <- log(quantmod::Cl(rutils::etfenv$VTI[date_s]))
 colnames(vt_i) <- "VTI"
 da_ta <- cbind(vt_i, weight_s)
 da_ta <- na.omit(da_ta)
@@ -1061,10 +1061,10 @@ legend("topleft", legend=colnames(weal_th),
   col=plot_theme$col$line.col, bty="n")
 library(rutils)
 # Select all the ETF symbols except "VXX", "SVXY" and "MTUM"
-sym_bols <- colnames(rutils::etf_env$re_turns)
+sym_bols <- colnames(rutils::etfenv$re_turns)
 sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM"))]
-# Extract columns of rutils::etf_env$re_turns and overwrite NA values
-re_turns <- rutils::etf_env$re_turns[, sym_bols]
+# Extract columns of rutils::etfenv$re_turns and overwrite NA values
+re_turns <- rutils::etfenv$re_turns[, sym_bols]
 n_assets <- NCOL(re_turns)
 # re_turns <- na.omit(re_turns)
 re_turns[1, is.na(re_turns[1, ])] <- 0

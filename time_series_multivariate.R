@@ -1,11 +1,11 @@
 # Perform regression using formula
-mod_el <- lm(XLP ~ VTI, data=rutils::etf_env$re_turns)
+mod_el <- lm(XLP ~ VTI, data=rutils::etfenv$re_turns)
 # Get regression coefficients
 coef(summary(mod_el))
 # Get alpha and beta
 coef(summary(mod_el))[, 1]
 # Plot scatterplot of returns with aspect ratio 1
-plot(for_mula, data=rutils::etf_env$re_turns,
+plot(for_mula, data=rutils::etfenv$re_turns,
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1),
      asp=1, main="Regression XLP ~ VTI")
 # Add regression line and perpendicular line
@@ -15,7 +15,7 @@ abline(a=0, b=-1/coef(summary(mod_el))[2, 1],
 # Get regression coefficients
 coef(summary(mod_el))
 # Calculate regression coefficients from scratch
-de_sign <- na.omit(rutils::etf_env$re_turns[, c("XLP", "VTI")])
+de_sign <- na.omit(rutils::etfenv$re_turns[, c("XLP", "VTI")])
 be_ta <- drop(cov(de_sign$XLP, de_sign$VTI)/var(de_sign$VTI))
 al_pha <- drop(mean(de_sign$XLP) - be_ta*mean(de_sign$VTI))
 c(al_pha, be_ta)
@@ -32,7 +32,7 @@ c(alpha_stderror, beta_stderror)
 # Perform the Durbin-Watson test of autocorrelation of residuals
 lmtest::dwtest(mod_el)
 library(rutils)  # Load rutils
-re_turns <- rutils::etf_env$re_turns
+re_turns <- rutils::etfenv$re_turns
 symbol_s <- colnames(re_turns)
 symbol_s <- symbol_s[symbol_s != "VTI"]
 # Perform regressions and collect statistics
@@ -106,25 +106,25 @@ TreynorRatio(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
 InformationRatio(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
 PerformanceAnalytics::table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
                            Rb=re_turns[, "VTI"], scale=252)
-capm_stats <- table.CAPM(Ra=re_turns[, symbol_s],
+capmstats <- table.CAPM(Ra=re_turns[, symbol_s],
         Rb=re_turns[, "VTI"], scale=252)
-col_names <- strsplit(colnames(capm_stats), split=" ")
+col_names <- strsplit(colnames(capmstats), split=" ")
 col_names <- do.call(cbind, col_names)[1, ]
-colnames(capm_stats) <- col_names
-capm_stats <- t(capm_stats)
-capm_stats <- capm_stats[, -1]
-col_names <- colnames(capm_stats)
+colnames(capmstats) <- col_names
+capmstats <- t(capmstats)
+capmstats <- capmstats[, -1]
+col_names <- colnames(capmstats)
 whi_ch <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), col_names)
 col_names[whi_ch] <- c("Alpha", "Information", "Treynor")
-colnames(capm_stats) <- col_names
-capm_stats <- capm_stats[order(capm_stats[, "Alpha"], decreasing=TRUE), ]
-# Copy capm_stats into etf_env and save to .RData file
-etf_env <- rutils::etf_env
-etf_env$capm_stats <- capm_stats
-save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
-rutils::etf_env$capm_stats[, c("Beta", "Alpha", "Information", "Treynor")]
+colnames(capmstats) <- col_names
+capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
+# Copy capmstats into etfenv and save to .RData file
+etfenv <- rutils::etfenv
+etfenv$capmstats <- capmstats
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
 # Calculate XLP and VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns[, c("XLP", "VTI")])
+re_turns <- na.omit(rutils::etfenv$re_turns[, c("XLP", "VTI")])
 # Calculate monthly end points
 end_p <- xts::endpoints(re_turns, on="months")[-1]
 # Calculate start points from look-back interval
@@ -153,7 +153,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # dygraph plot of rolling XLP beta and VTI prices
 date_s <- zoo::index(re_turns[end_p, ])
-price_s <- rutils::etf_env$price_s$VTI[date_s]
+price_s <- rutils::etfenv$price_s$VTI[date_s]
 da_ta <- cbind(price_s, beta_s)
 col_names <- colnames(da_ta)
 dygraphs::dygraph(da_ta, main="XLP Rolling 12-month Beta and VTI Prices") %>%
@@ -163,7 +163,7 @@ dygraphs::dygraph(da_ta, main="XLP Rolling 12-month Beta and VTI Prices") %>%
   dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
 # Calculate XLB and XLE prices
-price_s <- na.omit(rutils::etf_env$price_s[, c("XLB", "XLE")])
+price_s <- na.omit(rutils::etfenv$price_s[, c("XLB", "XLE")])
 cor(rutils::diff_it(log(price_s)))
 xl_b <- drop(zoo::coredata(price_s$XLB))
 xl_e <- drop(zoo::coredata(price_s$XLE))
@@ -323,7 +323,7 @@ table.CAPM(Ra=pca_rets[, 1:3],
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 #Perform principal component analysis PCA
-re_turns <- na.omit(rutils::etf_env$re_turns)
+re_turns <- na.omit(rutils::etfenv$re_turns)
 pc_a <- prcomp(re_turns, center=TRUE, scale=TRUE)
 barplot(pc_a$sdev[1:10],
   names.arg=colnames(pc_a$rotation)[1:10],
@@ -376,7 +376,7 @@ ls("package:factorAnalytics")
 detach("package:factorAnalytics")
 library(factorAnalytics)
 # Fit a three-factor model using PCA
-factor_pca <- fitSfm(rutils::etf_env$re_turns, k=3)
+factor_pca <- fitSfm(rutils::etfenv$re_turns, k=3)
 head(factor_pca$loadings, 3)  # Factor loadings
 # Factor realizations (time series)
 head(factor_pca$factors)

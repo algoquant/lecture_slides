@@ -273,7 +273,7 @@ summary(microbenchmark(
     cut(x=vec_tor, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Calculate VTI percentage returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
@@ -533,7 +533,7 @@ dim(good_air)
 head(good_air)
 # Replace NAs in xts time series
 library(rutils)  # load package rutils
-se_ries <- rutils::etf_env$price_s[, 1]
+se_ries <- rutils::etfenv$price_s[, 1]
 head(se_ries, 3)
 sum(is.na(se_ries))
 series_zoo <- zoo::na.locf(se_ries, fromLast=TRUE)

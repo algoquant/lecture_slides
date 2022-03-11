@@ -5,42 +5,42 @@
 # Simulate a rolling portfolio optimization strategy
 # using the regularized inverse of the covariance matrix.
 
-roll_portf_r <- function(ex_cess, # Portfolio excess returns
-                         re_turns, # Portfolio returns
-                         start_points, 
-                         end_points, 
-                         al_pha, 
+roll_portf_r <- function(excess, # Portfolio excess returns
+                         returns, # Portfolio returns
+                         startpoints, 
+                         endpoints, 
+                         alpha, 
                          max_eigen) {
   
-  strat_rets <- lapply(2:NROW(end_points), function(i) {
-    # Subset the ex_cess returns
-    ex_cess <- ex_cess[start_points[i-1]:end_points[i-1], ]
-    cov_mat <- cov(ex_cess)
+  strat_rets <- lapply(2:NROW(endpoints), function(i) {
+    # Subset the excess returns
+    excess <- excess[startpoints[i-1]:endpoints[i-1], ]
+    covmat <- cov(excess)
     # Perform eigen decomposition and calculate eigenvectors and eigenvalues
-    ei_gen <- eigen(cov_mat)
-    eigen_vec <- ei_gen$vectors
+    eigend <- eigen(covmat)
+    eigen_vec <- eigend$vectors
     # Calculate regularized inverse
-    in_verse <- eigen_vec[, 1:max_eigen] %*% (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
-    # weight_s are proportional to the mean of ex_cess
-    excess_mean <- colMeans(ex_cess)
+    inverse <- eigen_vec[, 1:max_eigen] %*% (t(eigen_vec[, 1:max_eigen]) / eigend$values[1:max_eigen])
+    # weights are proportional to the mean of excess
+    excess_mean <- colMeans(excess)
     # Shrink excess_mean vector to the mean of excess_mean
-    excess_mean <- ((1-al_pha)*excess_mean + al_pha*mean(excess_mean))
-    # Apply regularized inverse to mean of ex_cess
-    weight_s <- drop(in_verse %*% excess_mean)
-    weight_s <- weight_s/sqrt(sum(weight_s^2))
-    # Subset the re_turns to out-of-sample returns
-    re_turns <- re_turns[(end_points[i-1]+1):end_points[i], ]
+    excess_mean <- ((1-alpha)*excess_mean + alpha*mean(excess_mean))
+    # Apply regularized inverse to mean of excess
+    weights <- drop(inverse %*% excess_mean)
+    weights <- weights/sqrt(sum(weights^2))
+    # Subset the returns to out-of-sample returns
+    returns <- returns[(endpoints[i-1]+1):endpoints[i], ]
     # Calculate the out-of-sample portfolio returns
-    xts(re_turns %*% weight_s, index(re_turns))
+    xts(returns %*% weights, index(returns))
   }  # end anonymous function
   )  # end lapply
   
   # Flatten the list of xts into a single xts series
   strat_rets <- rutils::do_call(rbind, strat_rets)
   colnames(strat_rets) <- "strat_rets"
-  # Add warmup period so that index(strat_rets) equals index(re_turns)
-  in_dex <- index(re_turns)[index(re_turns) < start(strat_rets)]
-  strat_rets <- rbind(xts(numeric(NROW(in_dex)), in_dex), strat_rets)
+  # Add warmup period so that index(strat_rets) equals index(returns)
+  indeks <- index(returns)[index(returns) < start(strat_rets)]
+  strat_rets <- rbind(xts(numeric(NROW(indeks)), indeks), strat_rets)
   # Cumulate strat_rets
   cumsum(strat_rets)
 }  # end roll_portf_r

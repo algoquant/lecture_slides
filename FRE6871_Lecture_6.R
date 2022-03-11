@@ -201,7 +201,7 @@ dim(good_air)
 head(good_air)
 # Replace NAs in xts time series
 library(rutils)  # load package rutils
-se_ries <- rutils::etf_env$price_s[, 1]
+se_ries <- rutils::etfenv$price_s[, 1]
 head(se_ries, 3)
 sum(is.na(se_ries))
 series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))

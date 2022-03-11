@@ -1,5 +1,5 @@
 # Calculate VTI and IEF dollar returns
-price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
 date_s <- index(price_s)
 rets_dollar <- rutils::diff_it(price_s)
@@ -78,7 +78,7 @@ dygraphs::dygraph(weal_th, main="Transaction Costs With Fixed Dollar Ratios") %>
   dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
 # Calculate stock and bond returns
-re_turns <- na.omit(rutils::etf_env$re_turns[, c("VTI", "IEF")])
+re_turns <- na.omit(rutils::etfenv$re_turns[, c("VTI", "IEF")])
 weight_s <- c(0.4, 0.6)
 re_turns <- cbind(re_turns, re_turns %*% weight_s)
 colnames(re_turns)[3] <- "Combined"
@@ -103,7 +103,7 @@ dygraphs::dygraph(log(weal_th), main="Stock and Bond Portfolio") %>%
   dyLegend(show="always", width=500)
 # Extract ETF returns
 sym_bols <- c("VTI", "IEF", "DBC")
-re_turns <- na.omit(rutils::etf_env$re_turns[, sym_bols])
+re_turns <- na.omit(rutils::etfenv$re_turns[, sym_bols])
 # Calculate all-weather portfolio wealth
 weights_aw <- c(0.30, 0.55, 0.15)
 re_turns <- cbind(re_turns, re_turns %*% weights_aw)
@@ -124,7 +124,7 @@ legend("topleft", legend=colnames(weal_th),
   inset=0.1, bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 # Calculate VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI["2008/2009"])
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI["2008/2009"])
 date_s <- index(re_turns)
 n_rows <- NROW(re_turns)
 re_turns <- drop(zoo::coredata(re_turns))
@@ -150,7 +150,7 @@ dygraphs::dygraph(da_ta, main="CPPI strategy") %>%
   dyOptions(colors=c("red", "green","blue","orange"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Calculate dollar and percentage returns for VTI and IEF.
-price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
 rets_dollar <- rutils::diff_it(price_s)
 rets_percent <- rets_dollar/rutils::lag_it(price_s, lagg=1, pad_zeros=FALSE)
@@ -212,7 +212,7 @@ fit_ted <- (mod_el$coeff["(Intercept)"] + mod_el$coeff["treynor"]*vt_i^2)
 points.default(x=de_sign$VTI, y=fit_ted, pch=16, col="blue")
 text(x=0.05, y=0.02, paste("Fixed Ratio t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
 # Calculate positions
-vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
+vt_i <- na.omit(rutils::etfenv$re_turns$VTI)
 position_s <- rep(NA_integer_, NROW(vt_i))
 date_s <- index(vt_i)
 date_s <- format(date_s, "%m-%d")
@@ -262,7 +262,7 @@ fit_ted <- (mod_el$coeff["(Intercept)"] +
 points.default(x=vt_i, y=fit_ted, pch=16, col="red")
 text(x=0.05, y=0.05, paste("Treynor test t-value =", round(summary(mod_el)$coeff["treynor", "t value"], 2)))
 # Calculate the log of OHLC VTI prices
-oh_lc <- log(rutils::etf_env$VTI)
+oh_lc <- log(rutils::etfenv$VTI)
 op_en <- quantmod::Op(oh_lc)
 hi_gh <- quantmod::Hi(oh_lc)
 lo_w <- quantmod::Lo(oh_lc)
@@ -287,7 +287,7 @@ dygraphs::dygraph(cumsum(weal_th),
   dySeries(name="open_close", label="Open-to-Close (daytime)", strokeWidth=2, col="green") %>%
   dyLegend(width=600)
 # Calculate the VTI returns
-vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
+vt_i <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- zoo::index(vt_i)
 # Calculate first business day of every month
 day_s <- as.numeric(format(date_s, "%d"))
@@ -316,7 +316,7 @@ dygraphs::dygraph(cumsum(weal_th), main="Turn of the Month Strategy") %>%
   dySeries(name=col_names[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="red")
 # Calculate the VTI returns
-vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
+vt_i <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- zoo::index(vt_i)
 vt_i <- drop(coredata(vt_i))
 n_rows <- NROW(vt_i)
@@ -371,7 +371,7 @@ plot(x=0.01*(1:20), y=cum_pnls,
      xlab="stop-loss level", ylab="cumulative pnl",
      t="l", lwd=3, col="blue")
 # Extract time series of VTI log prices
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+clos_e <- log(na.omit(rutils::etfenv$price_s$VTI))
 # Inspect the R code of the function filter()
 filter
 # Calculate EWMA weight_s
@@ -469,7 +469,7 @@ title(main="ACF of VTI Returns", line=-1)
 rutils::plot_acf(re_turns[, 2], lag=10, xlab="")
 title(main="ACF of Smoothed VTI Returns", line=-1)
 # Extract log VTI prices
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+clos_e <- log(na.omit(rutils::etfenv$price_s$VTI))
 n_rows <- NROW(clos_e)
 # Calculate EWMA weights
 look_back <- 21
@@ -497,7 +497,7 @@ legend("bottomright", legend=colnames(price_s),
  col=plot_theme$col$line.col, bty="n")
 # Calculate log OHLC prices and volumes
 sym_bol <- "VTI"
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 n_rows <- NROW(oh_lc)
 clos_e <- log(quantmod::Cl(oh_lc))
 vol_ume <- quantmod::Vo(oh_lc)
@@ -562,7 +562,7 @@ dygraphs::dygraph(price_s["2009"], main=paste(sym_bol, "Fractional Returns")) %>
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
 # Calculate VTI log returns
-clos_e <- log(quantmod::Cl(rutils::etf_env$VTI))
+clos_e <- log(quantmod::Cl(rutils::etfenv$VTI))
 re_turns <- rutils::diff_it(clos_e)
 # Perform ADF test for prices
 tseries::adf.test(clos_e)
@@ -597,7 +597,7 @@ for (i in 2:NROW(col_names))
 dy_graph <- dy_graph %>% dyLegend(width=500)
 dy_graph
 # Calculate volume z-scores
-vol_ume <- quantmod::Vo(rutils::etf_env$VTI)
+vol_ume <- quantmod::Vo(rutils::etfenv$VTI)
 look_back <- 21
 volume_mean <- roll::roll_mean(vol_ume, width=look_back, min_obs=1)
 volume_sd <- roll::roll_sd(rutils::diff_it(vol_ume), width=look_back, min_obs=1)
@@ -615,7 +615,7 @@ dygraphs::dygraph(price_s["2009"], main="VTI Volume Z-Scores") %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
 # Extract VTI log OHLC prices
-oh_lc <- log(rutils::etf_env$VTI)
+oh_lc <- log(rutils::etfenv$VTI)
 # Calculate volatility z-scores
 vol_at <- quantmod::Hi(oh_lc)-quantmod::Lo(oh_lc)
 look_back <- 21
@@ -696,7 +696,7 @@ dygraphs::dygraph(price_s["2009"], main="VTI Price Z-Scores") %>%
   dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
   dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
 # Extract time series of VTI log prices
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+clos_e <- log(na.omit(rutils::etfenv$price_s$VTI))
 # Define look-back window and a half window
 look_back <- 11
 # Calculate time series of medians

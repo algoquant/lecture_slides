@@ -1,61 +1,61 @@
 # Functions for back-testing momentum strategies
 
-# Function backtest_momentum() performs a back-test of a momentum strategy over the end-points
-backtest_momentum <- function(re_turns, 
-                               perform_ance=function(re_turns) (sum(re_turns)/sd(re_turns)), 
+# Function backtestmomentum() performs a back-test of a momentum strategy over the end-points
+backtestmomentum <- function(returns, 
+                               objfunc=function(returns) (sum(returns)/sd(returns)), 
                                look_back=12, re_balance="months", bid_offer=0.001,
-                               end_p=rutils::calc_endpoints(re_turns, inter_val=re_balance), 
+                               endp=rutils::calc_endpoints(returns, interval=re_balance), 
                                with_weights=FALSE, ...) {
   stopifnot("package:rutils" %in% search() || require("rutils", quietly=TRUE))
   # Define look-back and look-forward intervals
-  n_rows <- NROW(end_p)
-  start_p <- c(rep_len(1, look_back-1), end_p[1:(n_rows-look_back+1)])
+ .n_rows <- NROW(endp)
+  startp <- c(rep_len(1, look_back-1), endp[1:.n_rows-look_back+1)])
   # Calculate look-back intervals
-  look_backs <- cbind(start_p, end_p)
+  look_backs <- cbind(startp, endp)
   # Calculate look-forward intervals
-  look_fwds <- cbind(end_p + 1, rutils::lag_it(end_p, -1))
-  look_fwds[n_rows, 1] <- end_p[n_rows]
+  look_fwds <- cbind(endp + 1, rutils::lagit(endp, -1))
+  look_fwds.n_rows, 1] <- endp.n_rows]
   # Calculate past performance over look-back intervals
-  pas_t <- t(apply(look_backs, 1, function(ep) sapply(re_turns[ep[1]:ep[2]], perform_ance)))
-  pas_t[is.na(pas_t)] <- 0
+  past <- t(apply(look_backs, 1, function(ep) sapply(returns[ep[1]:ep[2]], objfunc)))
+  past[is.na(past)] <- 0
   # Calculate future performance
-  fu_ture <- t(apply(look_fwds, 1, function(ep) sapply(re_turns[ep[1]:ep[2]], sum)))
-  fu_ture[is.na(fu_ture)] <- 0
-  # Scale weight_s so sum of squares is equal to 1
-  weight_s <- pas_t
-  weight_s <- weight_s/sqrt(rowSums(weight_s^2))
-  weight_s[is.na(weight_s)] <- 0  # Set NA values to zero
+  future <- t(apply(look_fwds, 1, function(ep) sapply(returns[ep[1]:ep[2]], sum)))
+  future[is.na(future)] <- 0
+  # Scale weights so sum of squares is equal to 1
+  weights <- past
+  weights <- weights/sqrt(rowSums(weights^2))
+  weights[is.na(weights)] <- 0  # Set NA values to zero
   # Calculate momentum profits and losses
-  pnl_s <- rowSums(weight_s*fu_ture)
+  pnls <- rowSums(weights*future)
   # Calculate transaction costs
-  cost_s <- 0.5*bid_offer*cumprod(1 + pnl_s)*rowSums(abs(rutils::diff_it(weight_s)))
-  pnl_s <- (pnl_s - cost_s)
+  costs <- 0.5*bid_offer*cumprod(1 + pnls)*rowSums(abs(rutils::diffit(weights)))
+  pnls <- (pnls - costs)
   if (with_weights)
-    rutils::lag_it(cbind(pnl_s, weight_s))
+    rutils::lagit(cbind(pnls, weights))
   else
-    rutils::lag_it(pnl_s)
-}  # end backtest_momentum
+    rutils::lagit(pnls)
+}  # end backtestmomentum
 
 
 # Function momentum_daily() performs a back-test of a daily momentum strategy
 # If tre_nd=(-1) then it backtests a mean reverting strategy
-momentum_daily <- function(re_turns, look_back=252, bid_offer=0.001, tre_nd=1, ...) {
+momentum_daily <- function(returns, look_back=252, bid_offer=0.001, tre_nd=1, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate rolling variance
-  vari_ance <- roll::roll_var(re_turns, width=look_back)
-  vari_ance <- zoo::na.locf(vari_ance, na.rm=FALSE)
-  vari_ance[is.na(vari_ance)] <- 0
+  variance <- roll::roll_var(returns, width=look_back)
+  variance <- zoo::na.locf(variance, na.rm=FALSE)
+  variance[is.na(variance)] <- 0
   # Calculate rolling Sharpe
-  pas_t <- roll::roll_mean(re_turns, width=look_back)
-  weight_s <- pas_t/sqrt(vari_ance)
-  weight_s[vari_ance == 0] <- 0
-  weight_s[1:look_back, ] <- 1
-  weight_s <- weight_s/sqrt(rowSums(weight_s^2))
-  weight_s[is.na(weight_s)] <- 0
-  weight_s <- rutils::lag_it(weight_s)
+  past <- roll::roll_mean(returns, width=look_back)
+  weights <- past/sqrt(variance)
+  weights[variance == 0] <- 0
+  weights[1:look_back, ] <- 1
+  weights <- weights/sqrt(rowSums(weights^2))
+  weights[is.na(weights)] <- 0
+  weights <- rutils::lagit(weights)
   # Calculate momentum profits and losses
-  pnl_s <- tre_nd*rowMeans(weight_s*re_turns)
+  pnls <- tre_nd*rowMeans(weights*returns)
   # Calculate transaction costs
-  cost_s <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weight_s)))
-  cumprod(1 + pnl_s - cost_s)
+  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
+  cumprod(1 + pnls - costs)
 }  # end momentum_daily

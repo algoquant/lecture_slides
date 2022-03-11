@@ -78,7 +78,7 @@ median(da_ta)  # Sample median
 sd(da_ta)  # Sample standard deviation
 rm(list=ls())
 # VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Number of observations
 n_rows <- NROW(re_turns)
 # Mean of VTI returns
@@ -483,16 +483,16 @@ parLapply(clus_ter, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol)
-      NROW(index(get(sym_bol, envir=rutils::etf_env))))
+      NROW(index(get(sym_bol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol)
-      NROW(zoo::index(get(sym_bol, envir=rutils::etf_env))))
+      NROW(zoo::index(get(sym_bol, envir=rutils::etfenv))))
 # Package zoo loaded in child process:
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol) {
       stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-      NROW(index(get(sym_bol, envir=rutils::etf_env)))
+      NROW(index(get(sym_bol, envir=rutils::etfenv)))
     })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(clus_ter)
@@ -719,7 +719,7 @@ apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
 # Calculate time series of VTI returns
 library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # Sample from VTI returns
@@ -733,7 +733,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 # Sample from time series of VTI returns
 library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # Bootstrap sd and MAD under Windows
@@ -764,7 +764,7 @@ std_errors
 std_errors[2, ]/std_errors[1, ]
 # Calculate percentage returns from VTI prices
 library(rutils)
-price_s <- quantmod::Cl(rutils::etf_env$VTI)
+price_s <- quantmod::Cl(rutils::etfenv$VTI)
 star_t <- as.numeric(price_s[1, ])
 re_turns <- rutils::diff_it(log(price_s))
 class(re_turns); head(re_turns)
@@ -807,7 +807,7 @@ boot_data <- rutils::do_call(rbind, boot_data)
 sum(boot_data)/n_boot
 # Calculate percentage returns from VTI prices
 library(rutils)
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 price_s <- as.numeric(oh_lc[, 4])
 star_t <- price_s[1]
 re_turns <- rutils::diff_it(log(price_s))

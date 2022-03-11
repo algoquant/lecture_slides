@@ -1,5 +1,5 @@
 // This file must first be compiled:
-//  Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
+//  Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/unifunc.cpp")
 
 // Rcpp header with information for C++ compiler
 #include <Rcpp.h>
@@ -15,21 +15,21 @@ using namespace Rcpp;
 //   http://adv-r.had.co.nz/Rcpp.html
 //   http://gallery.rcpp.org/
 
-// function uni_form() produces a vector of 
+// function unifunc() produces a vector of 
 // uniformly distributed pseudo-random numbers
 // [[Rcpp::export]]
-NumericVector uniform_rcpp(double see_d, int n_rows) {
+NumericVector uniform_rcpp(double seedv, int numrows) {
 // define pi
 static const double pi = 3.14159265;
 // allocate output vector
-  NumericVector out_put(n_rows);
+  NumericVector output(numrows);
 // initialize output vector
-  out_put[0] = see_d; 
+  output[0] = seedv; 
 // perform loop
-  for (int i=1; i < n_rows; ++i) {
-    out_put[i] = 4*out_put[i-1]*(1-out_put[i-1]);
+  for (int i=1; i < numrows; ++i) {
+    output[i] = 4*output[i-1]*(1-output[i-1]);
   }  // end for
 // rescale output vector and return it
-  return acos(1-2*out_put)/pi;
+  return acos(1-2*output)/pi;
 }
 

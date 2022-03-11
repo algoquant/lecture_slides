@@ -346,7 +346,7 @@ mat_rix <- matrix(mat_rix, nc=3)
 zoo::na.locf(mat_rix)
 rutils::na_locf(mat_rix)
 # Get time series of prices
-price_s <- mget(c("VTI", "VXX"), envir=rutils::etf_env)
+price_s <- mget(c("VTI", "VXX"), envir=rutils::etfenv)
 price_s <- lapply(price_s, quantmod::Cl)
 price_s <- rutils::do_call(cbind, price_s)
 sum(is.na(price_s))
@@ -355,16 +355,16 @@ price_s <- zoo::na.locf(price_s, na.rm=FALSE)
 price_s <- zoo::na.locf(price_s, na.rm=FALSE, fromLast=TRUE)
 sum(is.na(price_s))
 # Remove whole rows containing NA returns
-re_turns <- rutils::etf_env$re_turns
+re_turns <- rutils::etfenv$re_turns
 sum(is.na(re_turns))
 re_turns <- na.omit(re_turns)
 # Or carry forward non-NA returns (preferred)
-re_turns <- rutils::etf_env$re_turns
+re_turns <- rutils::etfenv$re_turns
 re_turns[1, is.na(re_turns[1, ])] <- 0
 re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 sum(is.na(re_turns))
 # Replace NAs in xts time series
-se_ries <- rutils::etf_env$price_s[, 1]
+se_ries <- rutils::etfenv$price_s[, 1]
 head(se_ries)
 sum(is.na(se_ries))
 library(quantmod)
@@ -492,7 +492,7 @@ legend("topleft", legend=colnames(EuStockMarkets),
  lwd=3, col=col_ors, bg="white")
 library(rutils)
 library(ggplot2)
-price_s <- rutils::etf_env$price_s[, 1]
+price_s <- rutils::etfenv$price_s[, 1]
 price_s <- na.omit(price_s)
 # Create ggplot object
 etf_gg <- qplot(x=zoo::index(price_s),
@@ -510,7 +510,7 @@ etf_gg
 library(rutils)  # Load xts time series data
 library(reshape2)
 library(ggplot2)
-price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
 # Create data frame of time series
 data_frame <- data.frame(dates=zoo::index(price_s),
@@ -529,19 +529,19 @@ ggplot(data=data_frame,
     legend.position=c(0.2, 0.8),
     plot.title=element_text(vjust=-2.0)
   )  # end theme
-# Load rutils which contains etf_env dataset
+# Load rutils which contains etfenv dataset
 library(rutils)
 library(dygraphs)
-price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
 # Plot dygraph with date range selector
 dygraph(price_s, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
   dyRangeSelector()
-# Load rutils which contains etf_env dataset
+# Load rutils which contains etfenv dataset
 library(rutils)
 library(plotly)
-price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
 # Create data frame of time series
 data_frame <- data.frame(dates=zoo::index(price_s),
@@ -560,7 +560,7 @@ p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
 # Subset xts using a date range string
-price_s <- rutils::etf_env$price_s
+price_s <- rutils::etfenv$price_s
 sub_prices <- price_s["2014-10-15/2015-01-10", 1:4]
 first(sub_prices)
 last(sub_prices)
@@ -583,7 +583,7 @@ summary(microbenchmark(
 # Specify string representing a date
 dat_e <- "2014-10-15"
 # Subset price_s in two different ways
-price_s <- rutils::etf_env$price_s
+price_s <- rutils::etfenv$price_s
 all.equal(price_s[zoo::index(price_s) >= dat_e],
     price_s[paste0(dat_e, "/")])
 # Boolean subsetting is slower because coercing string into date
@@ -607,8 +607,8 @@ last(price_s["2012-04-16"])  # Last element of day
 # Suppress timezone warning messages
 options(xts_check_tz=FALSE)
 # Create time series with overlapping time indices
-vti1 <- rutils::etf_env$VTI["/2015"]
-vti2 <- rutils::etf_env$VTI["2014/"]
+vti1 <- rutils::etfenv$VTI["/2015"]
+vti2 <- rutils::etfenv$VTI["2014/"]
 dates1 <- index(vti1)
 dates2 <- index(vti2)
 # Join by rows
@@ -616,16 +616,16 @@ vt_i <- rbind(vti1, vti2)
 date_s <- index(vt_i)
 sum(duplicated(date_s))
 vt_i <- vt_i[!duplicated(date_s), ]
-all.equal(vt_i, rutils::etf_env$VTI)
+all.equal(vt_i, rutils::etfenv$VTI)
 # Alternative method - slightly slower
 vt_i <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
-all.equal(vt_i, rutils::etf_env$VTI)
+all.equal(vt_i, rutils::etfenv$VTI)
 # Remove duplicates starting from the end
 vt_i <- rbind(vti1, vti2)
 vt_i <- vt_i[!duplicated(date_s), ]
 vti_fl <- vt_i[!duplicated(date_s, fromLast=TRUE), ]
 all.equal(vt_i, vti_fl)
-price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
 str(price_s)  # Display structure of xts
 # Subsetting zoo to single column drops dim attribute

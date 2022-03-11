@@ -2,108 +2,108 @@
 
 # library(HighFreq)  # load package HighFreq
 
-# Simulate single EWMA model using historical oh_lc data,
+# Simulate single EWMA model using historical ohlc data,
 # and return percentage returns.
-simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1) {
+simu_ewma <- function(ohlc, lambdav=0.01, wid_th=251, bid_offer=0.001, tre_nd=1) {
   # Calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:wid_th)
-  weight_s <- weight_s/sum(weight_s)
-  clos_e <- quantmod::Cl(oh_lc)
-  ew_ma <- stats::filter(as.numeric(clos_e), filter=weight_s, sides=1)
+  weights <- exp(-lambdav*1:wid_th)
+  weights <- weights/sum(weights)
+  closep <- quantmod::Cl(ohlc)
+  ew_ma <- stats::filter(as.numeric(closep), filter=weights, sides=1)
   ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
   # Determine dates right after EWMA has crossed prices
-  indica_tor <- tre_nd*xts::xts(sign(as.numeric(clos_e) - ew_ma), order.by=index(oh_lc))
-  indicator_lag <- rutils::lag_it(indica_tor)
-  trade_dates <- (rutils::diff_it(indica_tor) != 0)
+  indica_tor <- tre_nd*xts::xts(sign(as.numeric(closep) - ew_ma), order.by=index(ohlc))
+  indicator_lag <- rutils::lagit(indica_tor)
+  trade_dates <- (rutils::diffit(indica_tor) != 0)
   trade_dates <- which(trade_dates) + 1
-  trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
+  trade_dates <- trade_dates[trade_dates<NROW(ohlc)]
   # Calculate positions, either: -1, 0, or 1
-  posi_tion <- rep(NA_integer_, NROW(oh_lc))
+  posi_tion <- rep(NA_integer_, NROW(ohlc))
   posi_tion[1] <- 0
   posi_tion[trade_dates] <- indicator_lag[trade_dates]
   posi_tion <- na.locf(posi_tion)
-  posi_tion <- xts(posi_tion, order.by=index(oh_lc))
-  op_en <- quantmod::Op(oh_lc)
-  close_lag <- rutils::lag_it(clos_e)
-  pos_lagged <- rutils::lag_it(posi_tion)
+  posi_tion <- xts(posi_tion, order.by=index(ohlc))
+  openp <- quantmod::Op(ohlc)
+  close_lag <- rutils::lagit(closep)
+  pos_lagged <- rutils::lagit(posi_tion)
   # Calculate transaction costs
-  cost_s <- 0.0*posi_tion
-  cost_s[trade_dates] <- 0.5*bid_offer*abs(pos_lagged[trade_dates] - posi_tion[trade_dates])*op_en[trade_dates]
+  costs <- 0.0*posi_tion
+  costs[trade_dates] <- 0.5*bid_offer*abs(pos_lagged[trade_dates] - posi_tion[trade_dates])*openp[trade_dates]
   # Calculate daily profits and losses
-  re_turns <- pos_lagged*(clos_e - close_lag)
-  re_turns[trade_dates] <- pos_lagged[trade_dates] * (op_en[trade_dates] - close_lag[trade_dates]) + posi_tion[trade_dates] * (clos_e[trade_dates] - op_en[trade_dates]) - cost_s
+  returns <- pos_lagged*(closep - close_lag)
+  returns[trade_dates] <- pos_lagged[trade_dates] * (openp[trade_dates] - close_lag[trade_dates]) + posi_tion[trade_dates] * (closep[trade_dates] - openp[trade_dates]) - costs
   # Calculate strategy returns
-  out_put <- cbind(posi_tion, re_turns)
-  colnames(out_put) <- c("positions", "returns")
-  out_put
+  output <- cbind(posi_tion, returns)
+  colnames(output) <- c("positions", "returns")
+  output
 }  # end simu_ewma
 
 
 
-# simulate two EWMA model using historical oh_lc data
-simu_ewma2 <- function(oh_lc, lambda_1=0.25, lambda_2=0.05, wid_th=51) {
+# simulate two EWMA model using historical ohlc data
+simu_ewma2 <- function(ohlc, lambda1=0.25, lambda2=0.05, wid_th=51) {
   # Calculate EWMA prices
-  weights_1 <- exp(-lambda_1*1:wid_th)
-  weights_1 <- weights_1/sum(weights_1)
-  weights_2 <- exp(-lambda_2*1:wid_th)
-  weights_2 <- weights_2/sum(weights_2)
+  weights1 <- exp(-lambda1*1:wid_th)
+  weights1 <- weights1/sum(weights1)
+  weights2 <- exp(-lambda2*1:wid_th)
+  weights2 <- weights2/sum(weights2)
   # Calculate open and close prices
-  op_en <- Op(oh_lc)
-  clos_e <- Cl(oh_lc)
+  openp <- Op(ohlc)
+  closep <- Cl(ohlc)
   # Adjust close price to start at zero
-  op_en <- op_en - as.numeric(clos_e[1, ])
-  clos_e <- clos_e - as.numeric(clos_e[1, ])
-  prices_lag <- rutils::lag_it(clos_e)
+  openp <- openp - as.numeric(closep[1, ])
+  closep <- closep - as.numeric(closep[1, ])
+  prices_lag <- rutils::lagit(closep)
   # Filter the prices using weights
-  ewma_1 <- filter(clos_e, filter=weights_1, sides=1)
-  ewma_1[1:(wid_th-1)] <- ewma_1[wid_th]
-  ewma_2 <- filter(clos_e, filter=weights_2, sides=1)
-  ewma_2[1:(wid_th-1)] <- ewma_2[wid_th]
+  ewma1 <- filter(closep, filter=weights1, sides=1)
+  ewma1[1:(wid_th-1)] <- ewma1[wid_th]
+  ewma2 <- filter(closep, filter=weights2, sides=1)
+  ewma2[1:(wid_th-1)] <- ewma2[wid_th]
   # Determine dates right after EWMAs have crossed
-  in_dic <- xts(sign(ewma_1 - ewma_2), order.by=index(oh_lc))
-  trade_dates <- (rutils::diff_it(in_dic) != 0)
+  indic <- xts(sign(ewma1 - ewma2), order.by=index(ohlc))
+  trade_dates <- (rutils::diffit(indic) != 0)
   trade_dates <- which(trade_dates) + 1
-  trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
+  trade_dates <- trade_dates[trade_dates<NROW(ohlc)]
   # Calculate positions, either: -1, 0, or 1
-  position_s <- rep(NA_integer_, NROW(clos_e))
+  position_s <- rep(NA_integer_, NROW(closep))
   position_s[1] <- 0
-  position_s[trade_dates] <- rutils::lag_it(in_dic)[trade_dates]
-  position_s <- xts(na.locf(position_s), order.by=index(oh_lc))
-  position_lagged <- rutils::lag_it(position_s)
+  position_s[trade_dates] <- rutils::lagit(indic)[trade_dates]
+  position_s <- xts(na.locf(position_s), order.by=index(ohlc))
+  position_lagged <- rutils::lagit(position_s)
   # Calculate daily profits and losses
-  re_turns <- position_lagged*(clos_e - prices_lag)
-  re_turns[trade_dates] <- 
+  returns <- position_lagged*(closep - prices_lag)
+  returns[trade_dates] <- 
     position_lagged[trade_dates] * 
-    (op_en[trade_dates] - prices_lag[trade_dates]) +
+    (openp[trade_dates] - prices_lag[trade_dates]) +
     position_s[trade_dates] * 
-    (clos_e[trade_dates] - op_en[trade_dates])
-  out_put <- cbind(ewma_1, ewma_2, position_s, re_turns)
-  colnames(out_put) <- c("ewma_1", "ewma_2", "positions", "returns")
-  out_put
+    (closep[trade_dates] - openp[trade_dates])
+  output <- cbind(ewma1, ewma2, position_s, returns)
+  colnames(output) <- c("ewma1", "ewma2", "positions", "returns")
+  output
 }  # end simu_ewma2
 
 
 # Define aggregation function
-agg_regate <- function(oh_lc, lamb_das, ...) {
-  sapply(lamb_das, function(lamb_da) {
+agg_regate <- function(ohlc, lambdavs, ...) {
+  sapply(lambdavs, function(lambdav) {
     # simulate EWMA strategy and calculate Sharpe ratio
-    re_turns <- simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, ...)[, "returns"]
-    sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+    returns <- simu_ewma(ohlc=ohlc, lambdav=lambdav, ...)[, "returns"]
+    sqrt(260)*sum(returns)/sd(returns)/NROW(returns)
   })  # end sapply
 }  # end agg_regate
 
 # Define functional for performing aggregations
-roll_agg <- function(x_ts, look_backs, FUN, ...) {
+roll_agg <- function(xtes, look_backs, FUN, ...) {
   # perform lapply() loop over look_backs
   agg_s <- lapply(look_backs, 
                   function(look_back) {
-                    FUN(x_ts[look_back], ...)
+                    FUN(xtes[look_back], ...)
                   })  # end lapply
   # rbind list into single xts or matrix
   agg_s <- rutils::do_call_rbind(agg_s)
   if (!is.xts(agg_s))
     agg_s <- xts(agg_s, order.by=
-                   index(x_ts[unlist(lapply(look_backs, last))]))
+                   index(xtes[unlist(lapply(look_backs, last))]))
   agg_s
 }  # end roll_agg
 

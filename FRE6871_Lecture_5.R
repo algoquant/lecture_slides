@@ -466,7 +466,7 @@ plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Multivariate Regression")
 # Load time series of ETF percentage returns
-re_turns <- rutils::etf_env$re_turns[, c("XLF", "XLE")]
+re_turns <- rutils::etfenv$re_turns[, c("XLF", "XLE")]
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 head(re_turns)
@@ -572,7 +572,7 @@ all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=f_stat, df1=n_cols-1, df2=n_rows-n_cols)
 # Calculate ETF returns
-re_turns <- na.omit(rutils::etf_env$re_turns)
+re_turns <- na.omit(rutils::etfenv$re_turns)
 # Perform singular value decomposition
 s_vd <- svd(re_turns)
 x11(width=6, height=5)

@@ -1,9 +1,9 @@
 # Extract ETF returns
 sym_bols <- c("VTI", "IEF", "DBC")
-re_turns <- rutils::etf_env$re_turns[, sym_bols]
+re_turns <- rutils::etfenv$re_turns[, sym_bols]
 re_turns <- na.omit(re_turns)
 # Or, select rows with IEF data
-# re_turns <- re_turns[index(rutils::etf_env$IEF)]
+# re_turns <- re_turns[index(rutils::etfenv$IEF)]
 # Copy over NA values
 # re_turns[1, is.na(re_turns[1, ])] <- 0
 # re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
@@ -142,7 +142,7 @@ legend("topleft", legend=colnames(weal_th),
   col=plot_theme$col$line.col, bty="n")
 # Plot the momentum portfolio weights
 weight_s <- pnl_s[, -1]
-vt_i <- log(quantmod::Cl(rutils::etf_env$VTI[date_s]))
+vt_i <- log(quantmod::Cl(rutils::etfenv$VTI[date_s]))
 colnames(vt_i) <- "VTI"
 da_ta <- cbind(vt_i, weight_s)
 da_ta <- na.omit(da_ta)
@@ -377,7 +377,7 @@ legend("topleft", legend=colnames(pnl_s),
   inset=0.05, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)),
   col=plot_theme$col$line.col, bty="n")
 # Plot cumulative returns of VTI vs MTUM ETF
-weal_th <- log(na.omit(rutils::etf_env$price_s[, c("VTI", "MTUM")]))
+weal_th <- log(na.omit(rutils::etfenv$price_s[, c("VTI", "MTUM")]))
 colnames(weal_th) <- c("VTI", "MTUM")
 weal_th <- rutils::diff_it(weal_th)
 dygraphs::dygraph(cumsum(weal_th), main="VTI vs MTUM ETF") %>%
@@ -624,10 +624,10 @@ ei_gen$vectors[, 1:eigen_max] %*% (t(ei_gen$vectors[, 1:eigen_max]) / ei_gen$val
   Rcpp = calc_inv(cor_mat, eigen_max=eigen_max),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 # Select all the ETF symbols except "VXX", "SVXY" and "MTUM"
-sym_bols <- colnames(rutils::etf_env$re_turns)
+sym_bols <- colnames(rutils::etfenv$re_turns)
 sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM", "QUAL", "VLUE", "USMV"))]
-# Extract columns of rutils::etf_env$re_turns and overwrite NA values
-re_turns <- rutils::etf_env$re_turns[, sym_bols]
+# Extract columns of rutils::etfenv$re_turns and overwrite NA values
+re_turns <- rutils::etfenv$re_turns[, sym_bols]
 n_assets <- NCOL(re_turns)
 # re_turns <- na.omit(re_turns)
 re_turns[1, is.na(re_turns[1, ])] <- 0
@@ -1633,9 +1633,9 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
 chart_Series(x=Cl(vix_env$vix_index["2007/"]),
        theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
+chart_Series(x=Cl(rutils::etfenv$VTI["2007/"]),
        theme=plot_theme, name="VTI ETF")
 chart_Series(x=Cl(vix_env$vix_index["2017/2018"]),
        theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
+chart_Series(x=Cl(rutils::etfenv$SVXY["2017/2018"]),
        theme=plot_theme, name="SVXY ETF")

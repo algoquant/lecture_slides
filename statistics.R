@@ -78,7 +78,7 @@ median(da_ta)  # Sample median
 sd(da_ta)  # Sample standard deviation
 rm(list=ls())
 # VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Number of observations
 n_rows <- NROW(re_turns)
 # Mean of VTI returns
@@ -329,7 +329,7 @@ legend("topright", inset=0.05, bty="n",
        col=c("black", "red"))
 # Calculate VTI percentage returns
 library(rutils)
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Reset output digits
 dig_its <- options(digits=5)
 # Shapiro-Wilk test for normal distribution
@@ -357,7 +357,7 @@ ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
 ks.test(rnorm(100), rnorm(100, sd=2.0))
 # KS test for VTI returns vs normal distribution
-re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
+re_turns <- as.numeric(na.omit(rutils::etfenv$re_turns$VTI))
 re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
 ks.test(re_turns, rnorm)
 # Fit t-dist into VTI returns
@@ -450,7 +450,7 @@ all.equal(da_ta, sort_ed[in_dex])
 rank(da_ta)
 all.equal(rank(da_ta), in_dex)
 # VTI returns
-re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns[, "VTI"]))
+re_turns <- as.numeric(na.omit(rutils::etfenv$re_turns[, "VTI"]))
 n_rows <- NROW(re_turns)
 re_turns <- 100*(re_turns-mean(re_turns))/sd(re_turns)
 # Simulate normal random data
@@ -508,7 +508,7 @@ bias_var <- apply(boot_data, MARGIN=2,
 bias_var[1, 3]^2 + bias_var[2, 3]
 # MSE of median
 bias_var[1, 4]^2 + bias_var[2, 4]
-re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns[, "VTI"]))
+re_turns <- as.numeric(na.omit(rutils::etfenv$re_turns[, "VTI"]))
 n_rows <- NROW(re_turns)
 re_turns <- 100*(re_turns-mean(re_turns))/sd(re_turns)
 # Simulate normal random data

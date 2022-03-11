@@ -1,5 +1,5 @@
 # Extract log VTI prices
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 clos_e <- log(quantmod::Cl(oh_lc))
 colnames(clos_e) <- "VTI"
 n_rows <- NROW(clos_e)
@@ -559,7 +559,7 @@ for (i in 1:NROW(shad_e)) {
 # Plot the dygraph object
 dy_graph
 # Calculate log OHLC prices and volumes
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 clos_e <- log(quantmod::Cl(oh_lc))
 colnames(clos_e) <- "VTI"
 vol_ume <- quantmod::Vo(oh_lc)
@@ -818,9 +818,9 @@ legend("topright", inset=0.05, title="Sigmas",
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1))
 # Return volatility of VTI etf
-sig_ma <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
+sig_ma <- sd(rutils::diff_it(log(rutils::etfenv$VTI[, 4])))
 sigma2 <- sig_ma^2
-n_rows <- NROW(rutils::etf_env$VTI)
+n_rows <- NROW(rutils::etfenv$VTI)
 # Standard deviation of log-normal prices
 sqrt(n_rows)*sig_ma
 # Skewness of log-normal prices
@@ -870,9 +870,9 @@ plot.zoo(per_centage, main="Percentage of GBM paths below mean",
    xlab=NA, ylab=NA, col="blue")
 # Load S&P500 stock prices
 load("C:/Develop/lecture_slides/data/sp500.RData")
-ls(sp500_env)
+ls(sp500env)
 # Extract closing prices
-price_s <- eapply(sp500_env, quantmod::Cl)
+price_s <- eapply(sp500env, quantmod::Cl)
 # Flatten price_s into a single xts series
 price_s <- rutils::do_call(cbind, price_s)
 # Carry forward and backward non-NA prices
@@ -1029,7 +1029,7 @@ legend("topright",
 abline(h=eq_price, col='red', lwd=2)
 x11(width=6, height=5)
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Plot autocorrelations using stats::acf()
 stats::acf(re_turns, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)
@@ -1371,7 +1371,7 @@ arima_fit$coef
 library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(ari_ma, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
-re_turns <- drop(zoo::coredata(na.omit(rutils::etf_env$re_turns$VTI)))
+re_turns <- drop(zoo::coredata(na.omit(rutils::etfenv$re_turns$VTI)))
 de_sign <- sapply(1:5, rutils::lag_it, in_put=re_turns)
 design_inv <- MASS::ginv(de_sign)
 coeff_fit <- drop(design_inv %*% re_turns)
@@ -1500,7 +1500,7 @@ coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
 # Calculate forecast
 drop(de_sign[n_rows, -1] %*% coeff_fit)
 # Calculate a vector of daily VTI log returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- index(re_turns)
 re_turns <- as.numeric(re_turns)
 n_rows <- NROW(re_turns)
@@ -1591,7 +1591,7 @@ plot(x=look_backs, y=back_tests[, 1],
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")
 # Calculate a vector of daily VTI log returns
-vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
+vt_i <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- index(vt_i)
 vt_i <- as.numeric(vt_i)
 n_rows <- NROW(vt_i)
@@ -1696,7 +1696,7 @@ dygraphs::dygraph(pnl_s[, 1:4],
   dyOptions(colors=color_s, strokeWidth=2) %>%
   dyLegend(width=500)
 # Calculate a vector of daily VTI log returns
-vt_i <- na.omit(rutils::etf_env$re_turns$VTI)
+vt_i <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- index(vt_i)
 vt_i <- as.numeric(vt_i)
 n_rows <- NROW(vt_i)

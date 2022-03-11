@@ -396,7 +396,7 @@ summary(microbenchmark(
     cut(x=vec_tor, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Calculate VTI percentage returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))

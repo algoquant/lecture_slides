@@ -60,7 +60,7 @@ test_func("second_val")
 test_func("se")  # Partial name binding
 test_func("some_val")  # Invalid string
 # VTI percentage returns
-re_turns <- rutils::diff_it(log(Cl(rutils::etf_env$VTI)))
+re_turns <- rutils::diff_it(log(Cl(rutils::etfenv$VTI)))
 # calc_skew() calculates skew of time series of returns
 # Default is normal time series
 calc_skew <- function(re_turns=rnorm(1000)) {
@@ -483,7 +483,7 @@ apply(mat_rix, 2, median)
 # Calculate median of columns with na.rm=TRUE
 apply(mat_rix, 2, median, na.rm=TRUE)
 # VTI percentage returns
-re_turns <- rutils::diff_it(log(Cl(rutils::etf_env$VTI)))
+re_turns <- rutils::diff_it(log(Cl(rutils::etfenv$VTI)))
 library(moments)  # Load package moments
 str(moment)  # Get list of arguments
 # Apply moment function

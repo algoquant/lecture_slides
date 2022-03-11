@@ -181,8 +181,8 @@ head(trees)  # "trees" is in datasets base package
 library(rutils)  # Load package rutils
 # Define ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract sym_bols from rutils::etf_env
-price_s <- mget(sym_bols, envir=rutils::etf_env)
+# Extract sym_bols from rutils::etfenv
+price_s <- mget(sym_bols, envir=rutils::etfenv)
 # price_s is a list of xts series
 class(price_s)
 class(price_s[[1]])
@@ -199,18 +199,18 @@ class(price_s)
 dim(price_s)
 # Extract and cbind in single step
 price_s <- do.call(cbind, lapply(
-  mget(sym_bols, envir=rutils::etf_env), quantmod::Cl))
+  mget(sym_bols, envir=rutils::etfenv), quantmod::Cl))
 # Or
 # Extract and bind all data, subset by sym_bols
 price_s <- lapply(sym_bols, function(sym_bol) {
-    quantmod::Cl(get(sym_bol, envir=rutils::etf_env))
+    quantmod::Cl(get(sym_bol, envir=rutils::etfenv))
 })  # end lapply
-# Same, but loop over etf_env without anonymous function
+# Same, but loop over etfenv without anonymous function
 price_s <- do.call(cbind,
-  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Cl))
+  lapply(as.list(rutils::etfenv)[sym_bols], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
 price_s <- do.call(cbind,
-  eapply(rutils::etf_env, quantmod::Cl)[sym_bols])
+  eapply(rutils::etfenv, quantmod::Cl)[sym_bols])
 # Drop ".Close" from column names
 colnames(price_s[, 1:4])
 do.call(rbind, strsplit(colnames(price_s[, 1:4]), split="[.]"))[, 1]
@@ -224,12 +224,12 @@ unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(price_s,
   file="C:/Develop/lecture_slides/data/etf_series.csv", sep=",")
-# Copy price_s into etf_env
-etf_env$etf_list <- etf_list
+# Copy price_s into etfenv
+etfenv$etf_list <- etf_list
 # Or
-assign("price_s", price_s, envir=etf_env)
+assign("price_s", price_s, envir=etfenv)
 # Save to .RData file
-save(etf_env, file="etf_data.RData")
+save(etfenv, file="etf_data.RData")
 # "trees" is in datasets base package
 head(trees, 3)
 colnames(trees)

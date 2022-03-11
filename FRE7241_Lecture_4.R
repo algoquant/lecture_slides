@@ -1,5 +1,5 @@
 # Extract VTI log OHLC prices
-oh_lc <- log(rutils::etf_env$VTI)
+oh_lc <- log(rutils::etfenv$VTI)
 clos_e <- quantmod::Cl(oh_lc)
 re_turns <- rutils::diff_it(clos_e)
 # Calculate the centered volatility
@@ -675,7 +675,7 @@ legend("topright",
 abline(h=eq_price, col='red', lwd=2)
 x11(width=6, height=5)
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Plot autocorrelations using stats::acf()
 stats::acf(re_turns, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)

@@ -271,7 +271,7 @@ al_pha <- 0.5
 cov_shrink <- (1-al_pha)*cov_mat + al_pha*tar_get
 # Calculate inverse matrix
 in_verse <- solve(cov_shrink)
-re_turns <- scale(na.omit(rutils::etf_env$re_turns
+re_turns <- scale(na.omit(rutils::etfenv$re_turns
           [, as.character(for_mula)[-1]]))
 crossprod(re_turns) / NROW(re_turns)
 w_1 <- sqrt(0.5); w_2 <- w_1
@@ -329,7 +329,7 @@ eigen(foo)
 # Durbin-Watson test of autocorrelation of residuals
 lmtest::dwtest(mod_el)
 # Plot scatterplot of returns
-plot(for_mula, data=rutils::etf_env$re_turns,
+plot(for_mula, data=rutils::etfenv$re_turns,
      main="Regression XLP ~ VTI")
 # Add regression line
 abline(mod_el, lwd=2, col="red")
@@ -337,7 +337,7 @@ library(rutils)
 # Select ETF symbols
 sym_bols <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # Calculate ETF prices and percentage returns
-price_s <- rutils::etf_env$price_s[, sym_bols]
+price_s <- rutils::etfenv$price_s[, sym_bols]
 price_s <- zoo::na.locf(price_s, na.rm=FALSE)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 # Calculate log returns without standardizing
@@ -709,7 +709,7 @@ plot(mod_el, which=2)  # Plot just Q-Q
 library(lmtest)  # Load lmtest
 # Perform Durbin-Watson test
 lmtest::dwtest(mod_el)
-foo <- etf_env$re_turns[, c("VTI", "VEU")]
+foo <- etfenv$re_turns[, c("VTI", "VEU")]
 end_p <- endpoints(foo, on="months")
 head(foo)
 tail(foo)
@@ -1040,7 +1040,7 @@ plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Multivariate Regression")
 # Load time series of ETF percentage returns
-re_turns <- rutils::etf_env$re_turns[, c("XLF", "XLE")]
+re_turns <- rutils::etfenv$re_turns[, c("XLF", "XLE")]
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 head(re_turns)
@@ -1146,7 +1146,7 @@ all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=f_stat, df1=n_cols-1, df2=n_rows-n_cols)
 # Calculate ETF returns
-re_turns <- na.omit(rutils::etf_env$re_turns)
+re_turns <- na.omit(rutils::etfenv$re_turns)
 # Perform singular value decomposition
 s_vd <- svd(re_turns)
 x11(width=6, height=5)

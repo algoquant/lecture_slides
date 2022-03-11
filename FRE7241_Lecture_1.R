@@ -144,8 +144,8 @@ head(trees)  # "trees" is in datasets base package
 library(rutils)  # Load package rutils
 # Define ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract sym_bols from rutils::etf_env
-price_s <- mget(sym_bols, envir=rutils::etf_env)
+# Extract sym_bols from rutils::etfenv
+price_s <- mget(sym_bols, envir=rutils::etfenv)
 # price_s is a list of xts series
 class(price_s)
 class(price_s[[1]])
@@ -162,18 +162,18 @@ class(price_s)
 dim(price_s)
 # Extract and cbind in single step
 price_s <- do.call(cbind, lapply(
-  mget(sym_bols, envir=rutils::etf_env), quantmod::Cl))
+  mget(sym_bols, envir=rutils::etfenv), quantmod::Cl))
 # Or
 # Extract and bind all data, subset by sym_bols
 price_s <- lapply(sym_bols, function(sym_bol) {
-    quantmod::Cl(get(sym_bol, envir=rutils::etf_env))
+    quantmod::Cl(get(sym_bol, envir=rutils::etfenv))
 })  # end lapply
-# Same, but loop over etf_env without anonymous function
+# Same, but loop over etfenv without anonymous function
 price_s <- do.call(cbind,
-  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Cl))
+  lapply(as.list(rutils::etfenv)[sym_bols], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
 price_s <- do.call(cbind,
-  eapply(rutils::etf_env, quantmod::Cl)[sym_bols])
+  eapply(rutils::etfenv, quantmod::Cl)[sym_bols])
 # Drop ".Close" from column names
 colnames(price_s[, 1:4])
 do.call(rbind, strsplit(colnames(price_s[, 1:4]), split="[.]"))[, 1]
@@ -187,12 +187,12 @@ unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(price_s,
   file="C:/Develop/lecture_slides/data/etf_series.csv", sep=",")
-# Copy price_s into etf_env
-etf_env$etf_list <- etf_list
+# Copy price_s into etfenv
+etfenv$etf_list <- etf_list
 # Or
-assign("price_s", price_s, envir=etf_env)
+assign("price_s", price_s, envir=etfenv)
 # Save to .RData file
-save(etf_env, file="etf_data.RData")
+save(etfenv, file="etf_data.RData")
 # "trees" is in datasets base package
 head(trees, 3)
 colnames(trees)
@@ -259,8 +259,8 @@ detach(MASS)
 if (!require("xts")) install.packages("xts")
 # calculate VTI volume-weighted average price
 v_wap <- TTR::VWAP(
-  price=quantmod::Cl(rutils::etf_env$VTI),
-  volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
+  price=quantmod::Cl(rutils::etfenv$VTI),
+  volume=quantmod::Vo(rutils::etfenv$VTI), n=10)
 library()  # list all packages installed on the system
 search()  # list all loaded packages on search path
 # get documentation for package "Ecdat"
@@ -642,16 +642,16 @@ parLapply(clus_ter, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol)
-      NROW(index(get(sym_bol, envir=rutils::etf_env))))
+      NROW(index(get(sym_bol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol)
-      NROW(zoo::index(get(sym_bol, envir=rutils::etf_env))))
+      NROW(zoo::index(get(sym_bol, envir=rutils::etfenv))))
 # Package zoo loaded in child process:
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol) {
       stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-      NROW(index(get(sym_bol, envir=rutils::etf_env)))
+      NROW(index(get(sym_bol, envir=rutils::etfenv)))
     })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(clus_ter)
@@ -878,7 +878,7 @@ apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
 # Calculate time series of VTI returns
 library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # Sample from VTI returns
@@ -892,7 +892,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 # Sample from time series of VTI returns
 library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # Bootstrap sd and MAD under Windows
@@ -923,7 +923,7 @@ std_errors
 std_errors[2, ]/std_errors[1, ]
 # Calculate percentage returns from VTI prices
 library(rutils)
-price_s <- quantmod::Cl(rutils::etf_env$VTI)
+price_s <- quantmod::Cl(rutils::etfenv$VTI)
 star_t <- as.numeric(price_s[1, ])
 re_turns <- rutils::diff_it(log(price_s))
 class(re_turns); head(re_turns)
@@ -966,7 +966,7 @@ boot_data <- rutils::do_call(rbind, boot_data)
 sum(boot_data)/n_boot
 # Calculate percentage returns from VTI prices
 library(rutils)
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 price_s <- as.numeric(oh_lc[, 4])
 star_t <- price_s[1]
 re_turns <- rutils::diff_it(log(price_s))
@@ -1274,7 +1274,7 @@ cross_ed <- colSums(paths_tilt > bar_rier) > 0
 sum(path_weights*cross_ed)/n_simu
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-price_s <- eapply(sp500_env, quantmod::Cl)
+price_s <- eapply(sp500env, quantmod::Cl)
 price_s <- rutils::do_call(cbind, price_s)
 # Carry forward non-NA prices
 price_s <- zoo::na.locf(price_s, na.rm=FALSE)
@@ -1307,7 +1307,7 @@ n_cols <- NCOL(price_s)
 in_dex <- xts(rowSums(price_s)/n_cols, index(price_s))
 colnames(in_dex) <- "index"
 # Combine index with VTI
-da_ta <- cbind(in_dex[index(etf_env$VTI)], etf_env$VTI[, 4])
+da_ta <- cbind(in_dex[index(etfenv$VTI)], etfenv$VTI[, 4])
 col_names <- c("index", "VTI")
 colnames(da_ta) <- col_names
 # Plot index with VTI
@@ -1350,7 +1350,7 @@ etf_list["GLD", "Name"] <- "Physical Gold Fund"
 print(xtable::xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- drop(coredata(na.omit(re_turns)))
 n_rows <- NROW(re_turns)
 # Mean and standard deviation of returns
@@ -1408,7 +1408,7 @@ boxplot(formula=mpg ~ cyl, data=mtcars,
 # Boxplot method for data frame of EuStockMarkets percentage returns
 boxplot(x=diff(log(EuStockMarkets)))
 # VTI percentage returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Number of observations
 n_rows <- NROW(re_turns)
 # Mean of VTI returns
@@ -1545,7 +1545,7 @@ likeli_hood <- function(pa_r, free_dom, da_ta) {
       df=free_dom)/pa_r[2]))
 }  # end likeli_hood
 # VTI percentage returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Initial parameters
 par_init <- c(mean=0, scale=0.01)
 # Fit distribution using optim()
@@ -1602,7 +1602,7 @@ legend("topleft", inset=0.05, bty="n",
   leg=c("density", "t-distr", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
 # Calculate VTI returns and trading volumes
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 clos_e <- drop(coredata(quantmod::Cl(oh_lc)))
 re_turns <- rutils::diff_it(log(clos_e))
 vol_ume <- coredata(quantmod::Vo(oh_lc))
@@ -1651,7 +1651,7 @@ legend("topright", inset=0.05, bty="n",
 quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
 # Calculate VTI percentage returns
 library(rutils)
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Reset output digits
 dig_its <- options(digits=5)
 # Shapiro-Wilk test for normal distribution
@@ -1678,7 +1678,7 @@ ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
 ks.test(rnorm(100), rnorm(100, mean=1.0))
 # Fit t-dist into VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
 scal_e <- optim_fit$estimate[2]
@@ -1753,13 +1753,13 @@ head(managers, 3)
 # Load package "PerformanceAnalytics"
 library(PerformanceAnalytics)
 # Calculate ETF returns
-re_turns <- rutils::etf_env$re_turns[, c("VTI", "DBC", "IEF")]
+re_turns <- rutils::etfenv$re_turns[, c("VTI", "DBC", "IEF")]
 re_turns <- na.omit(re_turns)
 # Plot cumulative ETF returns
 x11(width=6, height=5)
 chart.CumReturns(re_turns, lwd=2, ylab="",
   legend.loc="topleft", main="ETF Cumulative Returns")
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- na.omit(re_turns)
 x11(width=6, height=5)
 chart.Histogram(re_turns, xlim=c(-0.04, 0.04),
@@ -1769,7 +1769,7 @@ chart.Histogram(re_turns, xlim=c(-0.04, 0.04),
 legend("topright", inset=0.05, bty="n",
  leg=c("VTI Density", "Normal"),
  lwd=6, lty=1, col=c("red", "blue"))
-re_turns <- rutils::etf_env$re_turns[,
+re_turns <- rutils::etfenv$re_turns[,
   c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")]
 x11(width=6, height=5)
 chart.Boxplot(names=FALSE, re_turns)
@@ -1814,7 +1814,7 @@ boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
 # VTI returns
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 sd(re_turns)
@@ -1866,7 +1866,7 @@ n_rows <- NROW(returns_sub)
 all.equal(sqrt(sum(returns_sub^2)/n_rows),
   DownsideDeviation(re_turns, MAR=tar_get, method="subset"))
 # Calculate time series of VTI drawdowns
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+clos_e <- log(na.omit(rutils::etfenv$price_s$VTI))
 draw_downs <- (clos_e - cummax(clos_e))
 # PerformanceAnalytics plot of VTI drawdowns
 re_turns <- rutils::diff_it(log(clos_e))
@@ -1890,7 +1890,7 @@ x11(width=6, height=5)
 quantmod::chart_Series(x=draw_downs, name="VTI Drawdowns", theme=plot_theme)
 library(xtable)
 library(PerformanceAnalytics)
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+clos_e <- log(na.omit(rutils::etfenv$price_s$VTI))
 re_turns <- rutils::diff_it(log(clos_e))
 # Calculate table of VTI drawdowns
 tabl_e <- PerformanceAnalytics::table.Drawdowns(re_turns)
@@ -1905,7 +1905,7 @@ charts.PerformanceSummary(ham_1,
 x11(width=6, height=5)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 # VTI percentage returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 conf_level <- 0.1
 va_r <- quantile(re_turns, conf_level)
 c_var <- mean(re_turns[re_turns < va_r])
@@ -1927,7 +1927,7 @@ polygon(c(var_max, densi_ty$x[rang_e], va_r),
   c(0, densi_ty$y[rang_e], 0), col=rgb(1, 0, 0,0.5), border=NA)
 text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
 # VTI percentage returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 conf_level <- 0.02
 # Calculate VaR as quantile
 va_r <- quantile(re_turns, conf_level)
@@ -1960,7 +1960,7 @@ all.equal(c_var,
   p=(1-conf_level), method="historical")))
 # Calculate the risk-return statistics
 risk_ret <-
-  PerformanceAnalytics::table.Stats(rutils::etf_env$re_turns)
+  PerformanceAnalytics::table.Stats(rutils::etfenv$re_turns)
 class(risk_ret)
 # Transpose the data frame
 risk_ret <- as.data.frame(t(risk_ret))
@@ -1971,7 +1971,7 @@ risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
 # Sort on Sharpe ratio
 risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
 # Copy from rutils to save time
-risk_ret <- rutils::etf_env$risk_return
+risk_ret <- rutils::etfenv$riskstats
 # Add Sharpe ratio column
 risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
 # Sort on Sharpe ratio
@@ -1981,7 +1981,7 @@ knitr::kable(risk_ret[, c("Sharpe", "Skewness", "Kurtosis")])
 # Print data frame
 knitr::kable(risk_ret[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
 # dygraph plot of VTI drawdowns
-price_s <- na.omit(rutils::etf_env$price_s[, c("VXX", "SVXY")])
+price_s <- na.omit(rutils::etfenv$price_s[, c("VXX", "SVXY")])
 price_s <- price_s["2017/"]
 col_names <- c("VXX", "SVXY")
 colnames(price_s) <- col_names
@@ -2010,7 +2010,7 @@ plot(Kurtosis ~ Skewness, data=risk_ret,
 text(x=risk_ret$Skewness, y=risk_ret$Kurtosis,
     labels=risk_ret$Name, pos=1, cex=0.8)
 library(PerformanceAnalytics)
-re_turns <- rutils::etf_env$re_turns[, c("VTI", "IEF")]
+re_turns <- rutils::etfenv$re_turns[, c("VTI", "IEF")]
 re_turns <- na.omit(re_turns)
 # Calculate the Sharpe ratio
 PerformanceAnalytics::SharpeRatio(re_turns)

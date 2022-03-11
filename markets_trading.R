@@ -1,6 +1,6 @@
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-price_s <- eapply(sp500_env, quantmod::Cl)
+price_s <- eapply(sp500env, quantmod::Cl)
 price_s <- rutils::do_call(cbind, price_s)
 # Carry forward non-NA prices
 price_s <- zoo::na.locf(price_s, na.rm=FALSE)
@@ -34,7 +34,7 @@ price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 in_dex <- xts(rowSums(price_s)/n_cols, index(price_s))
 colnames(in_dex) <- "index"
 # Combine index with VTI
-da_ta <- cbind(in_dex[index(etf_env$VTI)], etf_env$VTI[, 4])
+da_ta <- cbind(in_dex[index(etfenv$VTI)], etfenv$VTI[, 4])
 col_names <- c("index", "VTI")
 colnames(da_ta) <- col_names
 # Plot index with VTI
@@ -565,11 +565,11 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
 chart_Series(x=Cl(vix_env$vix_index["2007/"]),
        theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
+chart_Series(x=Cl(rutils::etfenv$VTI["2007/"]),
        theme=plot_theme, name="VTI ETF")
 chart_Series(x=Cl(vix_env$vix_index["2017/2018"]),
        theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
+chart_Series(x=Cl(rutils::etfenv$SVXY["2017/2018"]),
        theme=plot_theme, name="SVXY ETF")
 library(xtable)
 # Read table of fundamental data into data frame
@@ -623,28 +623,28 @@ etf_gvkeys <- names_table$gvkey[in_dex]
 names(etf_gvkeys) <- sym_bols
 cat(etf_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
 # Read .csv file with S&P500 constituents
-sp500_table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
-class(sp500_table)
+sp500table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
+class(sp500table)
 # Select unique sp500 tickers and save them into text file
-sp500_tickers <- unique(sp500_table$co_tic)
+sp500_tickers <- unique(sp500table$co_tic)
 cat(sp500_tickers, file="/Users/jerzy/Develop/lecture_slides/data/sp500_tickers.txt", sep="\n")
 # Some gvkeys are duplicates
-duplicate_s <- table(sp500_table$gvkey)
+duplicate_s <- table(sp500table$gvkey)
 duplicate_s <- duplicate_s[duplicate_s > 1]
-duplicate_s <- sp500_table[match(as.numeric(names(duplicate_s)), sp500_table$gvkey), ]
+duplicate_s <- sp500table[match(as.numeric(names(duplicate_s)), sp500table$gvkey), ]
 # Select unique gvkeys
-sp500_gvkeys <- unique(sp500_table$gvkey)
-# foo <- sp500_table[match(sp500_gvkeys, sp500_table$gvkey), ]
+sp500_gvkeys <- unique(sp500table$gvkey)
+# foo <- sp500table[match(sp500_gvkeys, sp500table$gvkey), ]
 # Save gvkeys into text file
 cat(sp500_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/sp500_gvkeys.txt", sep="\n")
 # Select unique cusips and save into text file
-sp500_cusips <- unique(sp500_table$co_cusip)
+sp500_cusips <- unique(sp500table$co_cusip)
 # Remove empty cusips
 which(sp500_cusips == "")
 sp500_cusips <- sp500_cusips[-which(sp500_cusips == "")]
 cat(sp500_cusips, file="/Users/jerzy/Develop/lecture_slides/data/sp500_cusips.txt", sep="\n")
 # Find the rows corresponding to the sp500_cusips
-rows_cusips <- sp500_table[match(sp500_cusips, sp500_table$co_cusip), ]
+rows_cusips <- sp500table[match(sp500_cusips, sp500table$co_cusip), ]
 # Find the rows corresponding to duplicate gvkeys
 duplicate_s <- table(rows_cusips$gvkey)
 duplicate_s <- duplicate_s[duplicate_s > 1]
@@ -662,8 +662,8 @@ ticker_s <- unique(oh_lc$tic)
 ticker_s %in% sp500_tickers
 # Select data only for sp500_tickers
 oh_lc <- oh_lc[oh_lc$tic %in% sp500_tickers, ]
-# Select ticker from sp500_table
-sym_bol <- sp500_table$co_tic[match(oh_lc$gvkey[1], sp500_table$gvkey)]
+# Select ticker from sp500table
+sym_bol <- sp500table$co_tic[match(oh_lc$gvkey[1], sp500table$gvkey)]
 # Adjustment factor and total return factor
 adj_fact <- drop(oh_lc[, "ajexdi"])
 tr_fact <- drop(oh_lc[, "trfd"])
@@ -685,8 +685,8 @@ oh_lc <- na.omit(oh_lc)
 plot(quantmod::Cl(oh_lc), main="TAP Stock")
 # Define formatting function for OHLC prices
 format_ohlc <- function(oh_lc, environ_ment) {
-  # Select ticker from sp500_table
-  sym_bol <- sp500_table$co_tic[match(oh_lc$gvkey[1], sp500_table$gvkey)]
+  # Select ticker from sp500table
+  sym_bol <- sp500table$co_tic[match(oh_lc$gvkey[1], sp500table$gvkey)]
   # Split adjustment and total return factors
   adj_fact <- drop(oh_lc[, c("ajexdi")])
   tr_fact <- drop(oh_lc[, "trfd"])
@@ -722,36 +722,36 @@ NROW(sp500_tickers); NROW(ticker_s)
 # Select data only for sp500_tickers
 sp500_prices <- sp500_prices[sp500_prices$tic %in% sp500_tickers, ]
 # Create new data environment
-sp500_env <- new.env()
+sp500env <- new.env()
 # Perform OHLC aggregations by cusip column
 sp500_prices <- split(sp500_prices, sp500_prices$cusip)
 process_ed <- lapply(sp500_prices, format_ohlc,
-               environ_ment=sp500_env)
-# Get end dates of series in sp500_env
-end_dates <- eapply(sp500_env, end)
+               environ_ment=sp500env)
+# Get end dates of series in sp500env
+end_dates <- eapply(sp500env, end)
 end_dates <- unlist(end_dates)
 end_dates <- as.Date(end_dates)
 # Remove elements with short end dates
 se_lect <- (end_dates < max(end_dates))
-rm(list=names(sp500_env)[se_lect], envir=sp500_env)
+rm(list=names(sp500env)[se_lect], envir=sp500env)
 # Rename element "BRK.B" to "BRKB"
-sp500_env$BRKB <- sp500_env$BRK.B
-rm(BRK.B, envir=sp500_env)
-names(sp500_env$BRKB) <- paste("BRKB",
+sp500env$BRKB <- sp500env$BRK.B
+rm(BRK.B, envir=sp500env)
+names(sp500env$BRKB) <- paste("BRKB",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Rename element "LOW" to "LOWES"
-sp500_env$LOWES <- sp500_env$LOW
-names(sp500_env$LOWES) <- paste("LO_WES",
+sp500env$LOWES <- sp500env$LOW
+names(sp500env$LOWES) <- paste("LO_WES",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
-rm(LOW, envir=sp500_env)
+rm(LOW, envir=sp500env)
 # Rename element "BF.B" to "BFB"
-sp500_env$BFB <- sp500_env$BF.B
-names(sp500_env$BFB) <- paste("BFB",
+sp500env$BFB <- sp500env$BF.B
+names(sp500env$BFB) <- paste("BFB",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
-rm(BF.B, envir=sp500_env)
+rm(BF.B, envir=sp500env)
 # Save OHLC prices to .RData file
-save(sp500_env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-plot(quantmod::Cl(sp500_env$MSFT))
+save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+plot(quantmod::Cl(sp500env$MSFT))
 library(Quandl)  # Load package Quandl
 # Register Quandl API key
 Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")

@@ -591,7 +591,7 @@ summary(microbenchmark(
   setDF=data.table::setDF(data_table),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Coerce xts to a data frame
-price_s <- rutils::etf_env$VTI
+price_s <- rutils::etfenv$VTI
 class(price_s); head(price_s)
 price_s <- as.data.frame(price_s)
 class(price_s); head(price_s)
@@ -601,14 +601,14 @@ class(price_s); head(price_s)
 # Dates are coerced to strings
 sapply(price_s, class)
 # Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
+data_table <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(data_table); head(data_table)
 # Dates are not coerced to strings
 sapply(data_table, class)
 all.equal(price_s, data_table, check.attributes=FALSE)
 # Coerce xts to a data frame
-price_s <- rutils::etf_env$VTI
+price_s <- rutils::etfenv$VTI
 class(price_s); head(price_s)
 price_s <- as.data.frame(price_s)
 class(price_s); head(price_s)
@@ -618,7 +618,7 @@ class(price_s); head(price_s)
 # Dates are coerced to strings
 sapply(price_s, class)
 # Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
+data_table <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(data_table); head(data_table)
 # Dates are not coerced to strings
@@ -788,22 +788,22 @@ sym_bols <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
   "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
   "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
 library(rutils)  # Load package rutils
-etf_env <- new.env()  # New environment for data
+etfenv <- new.env()  # New environment for data
 # Boolean vector of symbols already downloaded
-down_loaded <- sym_bols %in% ls(etf_env)
+isdownloaded <- sym_bols %in% ls(etfenv)
 # Download data for sym_bols using single command - creates pacing error
-getSymbols.av(sym_bols, adjust=TRUE, env=etf_env,
+getSymbols.av(sym_bols, adjust=TRUE, env=etfenv,
   output.size="full", api.key="T7JPW54ES8G75310")
 # Download data from Alpha Vantage using while loop
-at_tempt <- 0  # number of download attempts
-while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
+nattempts <- 0  # number of download attempts
+while (((sum(!isdownloaded)) > 0) & (nattempts<10)) {
   # Download data and copy it into environment
-  at_tempt <- at_tempt + 1
-  cat("Download attempt = ", at_tempt, "\n")
-  for (sym_bol in na.omit(sym_bols[!down_loaded][1:5])) {
+  nattempts <- nattempts + 1
+  cat("Download attempt = ", nattempts, "\n")
+  for (sym_bol in na.omit(sym_bols[!isdownloaded][1:5])) {
     cat("Processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
-quantmod::getSymbols.av(sym_bol, adjust=TRUE, env=etf_env, auto.assign=TRUE, output.size="full", api.key="T7JPW54ES8G75310"),
+quantmod::getSymbols.av(sym_bol, adjust=TRUE, env=etfenv, auto.assign=TRUE, output.size="full", api.key="T7JPW54ES8G75310"),
 # Error handler captures error condition
 error=function(error_cond) {
   print(paste("error handler: ", error_cond))
@@ -812,48 +812,48 @@ finally=print(paste("sym_bol=", sym_bol))
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(etf_env)
+  isdownloaded <- sym_bols %in% ls(etfenv)
   cat("Pausing 1 minute to avoid pacing...\n")
   Sys.sleep(65)
 }  # end while
 # Download all sym_bols using single command - creates pacing error
-# quantmod::getSymbols.av(sym_bols, env=etf_env, adjust=TRUE, from="2005-01-03", output.size="full", api.key="T7NHW54ES8GG501C")
-ls(etf_env)  # List files in etf_env
-# Get class of object in etf_env
-class(get(x=sym_bols[1], envir=etf_env))
+# quantmod::getSymbols.av(sym_bols, env=etfenv, adjust=TRUE, from="2005-01-03", output.size="full", api.key="T7NHW54ES8GG501C")
+ls(etfenv)  # List files in etfenv
+# Get class of object in etfenv
+class(get(x=sym_bols[1], envir=etfenv))
 # Another way
-class(etf_env$VTI)
-colnames(etf_env$VTI)
+class(etfenv$VTI)
+colnames(etfenv$VTI)
 # Get first 3 rows of data
-head(etf_env$VTI, 3)
+head(etfenv$VTI, 3)
 # Get last 11 rows of data
-tail(etf_env$VTI, 11)
-# Get class of all objects in etf_env
-eapply(etf_env, class)
+tail(etfenv$VTI, 11)
+# Get class of all objects in etfenv
+eapply(etfenv, class)
 # Get class of all objects in R workspace
 lapply(ls(), function(ob_ject) class(get(ob_ject)))
-# Get end dates of all objects in etf_env
-as.Date(sapply(etf_env, end))
+# Get end dates of all objects in etfenv
+as.Date(sapply(etfenv, end))
 library(rutils)  # Load package rutils
 # Check of object is an OHLC time series
-is.OHLC(etf_env$VTI)
+is.OHLC(etfenv$VTI)
 # Adjust single OHLC object using its name
-etf_env$VTI <- adjustOHLC(etf_env$VTI, use.Adjusted=TRUE)
+etfenv$VTI <- adjustOHLC(etfenv$VTI, use.Adjusted=TRUE)
 # Adjust OHLC object using string as name
 assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=etf_env), use.Adjusted=TRUE),
-  envir=etf_env)
+    get(x=sym_bols[1], envir=etfenv), use.Adjusted=TRUE),
+  envir=etfenv)
 # Adjust objects in environment using vector of strings
-for (sym_bol in ls(etf_env)) {
+for (sym_bol in ls(etfenv)) {
   assign(sym_bol,
-   adjustOHLC(get(sym_bol, envir=etf_env), use.Adjusted=TRUE),
-   envir=etf_env)
+   adjustOHLC(get(sym_bol, envir=etfenv), use.Adjusted=TRUE),
+   envir=etfenv)
 }  # end for
 library(rutils)  # Load package rutils
 # Define ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract sym_bols from rutils::etf_env
-price_s <- mget(sym_bols, envir=rutils::etf_env)
+# Extract sym_bols from rutils::etfenv
+price_s <- mget(sym_bols, envir=rutils::etfenv)
 # price_s is a list of xts series
 class(price_s)
 class(price_s[[1]])
@@ -872,17 +872,17 @@ class(price_s)
 dim(price_s)
 # Or extract and cbind in single step
 price_s <- do.call(cbind, lapply(
-  mget(sym_bols, envir=rutils::etf_env), quantmod::Cl))
+  mget(sym_bols, envir=rutils::etfenv), quantmod::Cl))
 # Or extract and bind all data, subset by sym_bols
 price_s <- lapply(sym_bols, function(sym_bol) {
-    quantmod::Cl(get(sym_bol, envir=rutils::etf_env))
+    quantmod::Cl(get(sym_bol, envir=rutils::etfenv))
 })  # end lapply
-# Or loop over etf_env without anonymous function
+# Or loop over etfenv without anonymous function
 price_s <- do.call(cbind,
-  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Cl))
+  lapply(as.list(rutils::etfenv)[sym_bols], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
 price_s <- do.call(cbind,
-  eapply(rutils::etf_env, quantmod::Cl)[sym_bols])
+  eapply(rutils::etfenv, quantmod::Cl)[sym_bols])
 # Column names end with ".Close"
 colnames(price_s)
 strsplit(colnames(price_s), split="[.]")
@@ -899,14 +899,14 @@ unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(price_s,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
-# Copy price_s into etf_env
-etf_env$etf_list <- etf_list
+# Copy price_s into etfenv
+etfenv$etf_list <- etf_list
 # Or
-assign("price_s", price_s, envir=etf_env)
+assign("price_s", price_s, envir=etfenv)
 # Save to .RData file
-save(etf_env, file="etf_data.RData")
+save(etfenv, file="etf_data.RData")
 # Extract VTI prices
-vt_i <- etf_env$price_s[ ,"VTI"]
+vt_i <- etfenv$price_s[ ,"VTI"]
 vt_i <- na.omit(vt_i)
 # Calculate percentage returns "by hand"
 vti_lag <- as.numeric(vt_i)
@@ -917,8 +917,8 @@ vti_returns <- (vt_i-vti_lag)/vti_lag
 daily_returns <- quantmod::dailyReturn(vt_i)
 head(cbind(daily_returns, vti_returns))
 all.equal(daily_returns, vti_returns, check.attributes=FALSE)
-# Calculate returns for all prices in etf_env$price_s
-re_turns <- lapply(etf_env$price_s, function(x_ts) {
+# Calculate returns for all prices in etfenv$price_s
+re_turns <- lapply(etfenv$price_s, function(x_ts) {
   daily_returns <- quantmod::dailyReturn(na.omit(x_ts))
   colnames(daily_returns) <- names(x_ts)
   daily_returns
@@ -930,33 +930,33 @@ class(re_turns[[1]])
 re_turns <- do.call(cbind, re_turns)
 class(re_turns)
 dim(re_turns)
-# Copy re_turns into etf_env and save to .RData file
-# assign("re_turns", re_turns, envir=etf_env)
-etf_env$re_turns <- re_turns
-save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+# Copy re_turns into etfenv and save to .RData file
+# assign("re_turns", re_turns, envir=etfenv)
+etfenv$re_turns <- re_turns
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
 library(quantmod)
 start_date <- "2012-05-10"; end_date <- "2013-11-20"
 # Select all objects in environment and return as environment
-new_env <- as.environment(eapply(etf_env, "[",
+new_env <- as.environment(eapply(etfenv, "[",
             paste(start_date, end_date, sep="/")))
 # Select only sym_bols in environment and return as environment
 new_env <- as.environment(
-  lapply(as.list(etf_env)[sym_bols], "[",
+  lapply(as.list(etfenv)[sym_bols], "[",
    paste(start_date, end_date, sep="/")))
 # Extract and cbind Close prices and return to environment
 assign("price_s", rutils::do_call(cbind,
-         lapply(ls(etf_env), function(sym_bol) {
-           x_ts <- quantmod::Cl(get(sym_bol, etf_env))
+         lapply(ls(etfenv), function(sym_bol) {
+           x_ts <- quantmod::Cl(get(sym_bol, etfenv))
            colnames(x_ts) <- sym_bol
            x_ts
          })), envir=new_env)
-# Get sizes of OHLC xts series in etf_env
-sapply(mget(sym_bols, envir=etf_env), object.size)
+# Get sizes of OHLC xts series in etfenv
+sapply(mget(sym_bols, envir=etfenv), object.size)
 # Extract and cbind adjusted prices and return to environment
 col_name <- function(x_ts)
   strsplit(colnames(x_ts), split="[.]")[[1]][1]
 assign("price_s", rutils::do_call(cbind,
-         lapply(mget(etf_env$sym_bols, envir=etf_env),
+         lapply(mget(etfenv$sym_bols, envir=etfenv),
                 function(x_ts) {
                   x_ts <- Ad(x_ts)
                   colnames(x_ts) <- col_name(x_ts)
@@ -984,20 +984,20 @@ sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
 # Load package rutils
 library(rutils)
 # Create new environment for data
-sp500_env <- new.env()
+sp500env <- new.env()
 # Boolean vector of symbols already downloaded
-down_loaded <- sym_bols %in% ls(sp500_env)
+isdownloaded <- sym_bols %in% ls(sp500env)
 # Download in while loop from Tiingo and copy into environment
-at_tempt <- 0  # number of download attempts
-while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
+nattempts <- 0  # number of download attempts
+while (((sum(!isdownloaded)) > 0) & (nattempts<5)) {
   # Download data and copy it into environment
-  at_tempt <- at_tempt + 1
-  cat("Download attempt = ", at_tempt, "\n")
-  for (sym_bol in sym_bols[!down_loaded]) {
+  nattempts <- nattempts + 1
+  cat("Download attempt = ", nattempts, "\n")
+  for (sym_bol in sym_bols[!isdownloaded]) {
     cat("processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
 quantmod::getSymbols(sym_bol, src="tiingo", adjust=TRUE, auto.assign=TRUE,
-           from="1990-01-01", env=sp500_env, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
+           from="1990-01-01", env=sp500env, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
 # Error handler captures error condition
 error=function(error_cond) {
   print(paste("error handler: ", error_cond))
@@ -1006,67 +1006,67 @@ finally=print(paste("sym_bol=", sym_bol))
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(sp500_env)
+  isdownloaded <- sym_bols %in% ls(sp500env)
   Sys.sleep(10)  # Wait 10 seconds until next attempt
 }  # end while
-class(sp500_env$AAPL)
-class(index(sp500_env$AAPL))
-tail(sp500_env$AAPL)
+class(sp500env$AAPL)
+class(index(sp500env$AAPL))
+tail(sp500env$AAPL)
 # "LOW.Low" is a bad column name
-colnames(sp500_env$LOW)
-strsplit(colnames(sp500_env$LOW), split="[.]")
-do.call(cbind, strsplit(colnames(sp500_env$LOW), split="[.]"))
-do.call(cbind, strsplit(colnames(sp500_env$LOW), split="[.]"))[2, ]
+colnames(sp500env$LOW)
+strsplit(colnames(sp500env$LOW), split="[.]")
+do.call(cbind, strsplit(colnames(sp500env$LOW), split="[.]"))
+do.call(cbind, strsplit(colnames(sp500env$LOW), split="[.]"))[2, ]
 # Extract proper names from column names
-name_s <- rutils::get_name(colnames(sp500_env$LOW), field=2)
+name_s <- rutils::get_name(colnames(sp500env$LOW), field=2)
 # Or
-# name_s <- do.call(rbind, strsplit(colnames(sp500_env$LOW),
+# name_s <- do.call(rbind, strsplit(colnames(sp500env$LOW),
 #                                   split="[.]"))[, 2]
 # Rename "LOW" colnames to "LOWES"
-colnames(sp500_env$LOW) <- paste("LO_WES", name_s, sep=".")
-sp500_env$LOWES <- sp500_env$LOW
-rm(LOW, envir=sp500_env)
+colnames(sp500env$LOW) <- paste("LO_WES", name_s, sep=".")
+sp500env$LOWES <- sp500env$LOW
+rm(LOW, envir=sp500env)
 # Download "BRK.B" separately with auto.assign=FALSE
 BRKB <- quantmod::getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
 colnames(BRKB) <- paste("BRKB", name_s, sep=".")
-sp500_env$BRKB <- BRKB
+sp500env$BRKB <- BRKB
 # Rename "BF-B" colnames to "BFB"
-colnames(sp500_env$"BF-B") <- paste("BFB", name_s, sep=".")
-sp500_env$BFB <- sp500_env$"BF-B"
-rm("BF-B", envir=sp500_env)
+colnames(sp500env$"BF-B") <- paste("BFB", name_s, sep=".")
+sp500env$BFB <- sp500env$"BF-B"
+rm("BF-B", envir=sp500env)
 # Plot OHLC candlestick chart for LOWES
-chart_Series(x=sp500_env$LOWES["2019-12/"],
+chart_Series(x=sp500env$LOWES["2019-12/"],
   TA="add_Vo()", name="LOWES OHLC Stock Prices")
 # Plot dygraph
-dygraphs::dygraph(sp500_env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices") %>%
+dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices") %>%
   dyCandlestick()
-class(sp500_env$AAPL)
+class(sp500env$AAPL)
 # The date-time index is class POSIXct not Date
-class(index(sp500_env$AAPL))
+class(index(sp500env$AAPL))
 # Coerce time indices from class POSIXct to class Date
-for (sym_bol in ls(sp500_env)) {
-  x_ts <- get(sym_bol, envir=sp500_env)
+for (sym_bol in ls(sp500env)) {
+  x_ts <- get(sym_bol, envir=sp500env)
   index(x_ts) <- as.Date(index(x_ts))
-  assign(sym_bol, x_ts, envir=sp500_env)
+  assign(sym_bol, x_ts, envir=sp500env)
 }  # end for
-class(index(sp500_env$AAPL))
+class(index(sp500env$AAPL))
 # Save the environment to compressed .RData file
 dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
-save(sp500_env, file=paste0(dir_name, "sp500.RData"))
+save(sp500env, file=paste0(dir_name, "sp500.RData"))
 # Save the ETF prices into CSV files
 dir_name <- "/Users/jerzy/Develop/lecture_slides/data/SP500/"
-for (sym_bol in ls(sp500_env)) {
-  zoo::write.zoo(sp500_env$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
+for (sym_bol in ls(sp500env)) {
+  zoo::write.zoo(sp500env$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
 }  # end for
 # Or using lapply()
-file_names <- lapply(ls(sp500_env), function(sym_bol) {
-  x_ts <- get(sym_bol, envir=sp500_env)
+file_names <- lapply(ls(sp500env), function(sym_bol) {
+  x_ts <- get(sym_bol, envir=sp500env)
   zoo::write.zoo(x_ts, file=paste0(dir_name, sym_bol, ".csv"))
   sym_bol
 })  # end lapply
 unlist(file_names)
 # Or using eapply() and data.table::fwrite()
-file_names <- eapply(sp500_env , function(x_ts) {
+file_names <- eapply(sp500env , function(x_ts) {
   file_name <- rutils::get_name(colnames(x_ts)[1])
   data.table::fwrite(data.table::as.data.table(x_ts), file=paste0(dir_name, file_name, ".csv"))
   file_name
@@ -1079,12 +1079,12 @@ load(file=paste0(dir_name, "sp500.RData"))
 dir_name <- "/Users/jerzy/Develop/lecture_slides/data/SP500/"
 file_names <- Sys.glob(paste0(dir_name, "*.csv"))
 # Create new environment for data
-sp500_env <- new.env()
+sp500env <- new.env()
 for (file_name in file_names) {
   x_ts <- xts::as.xts(zoo::read.csv.zoo(file_name))
   sym_bol <- rutils::get_name(colnames(x_ts)[1])
   # sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
-  assign(sym_bol, x_ts, envir=sp500_env)
+  assign(sym_bol, x_ts, envir=sp500env)
 }  # end for
 # Or using fread()
 for (file_name in file_names) {
@@ -1092,20 +1092,20 @@ for (file_name in file_names) {
   data.table::setDF(x_ts)
   x_ts <- xts::xts(x_ts[, -1], as.Date(x_ts[, 1]))
   sym_bol <- rutils::get_name(colnames(x_ts)[1])
-  assign(sym_bol, x_ts, envir=sp500_env)
+  assign(sym_bol, x_ts, envir=sp500env)
 }  # end for
 # Remove all files from environment(if necessary)
-rm(list=ls(sp500_env), envir=sp500_env)
+rm(list=ls(sp500env), envir=sp500env)
 # Download in while loop from Alpha Vantage and copy into environment
-down_loaded <- sym_bols %in% ls(sp500_env)
-at_tempt <- 0
-while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
+isdownloaded <- sym_bols %in% ls(sp500env)
+nattempts <- 0
+while (((sum(!isdownloaded)) > 0) & (nattempts<10)) {
   # Download data and copy it into environment
-  at_tempt <- at_tempt + 1
-  for (sym_bol in sym_bols[!down_loaded]) {
+  nattempts <- nattempts + 1
+  for (sym_bol in sym_bols[!isdownloaded]) {
     cat("processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
-quantmod::getSymbols(sym_bol, src="av", adjust=TRUE, auto.assign=TRUE, env=sp500_env,
+quantmod::getSymbols(sym_bol, src="av", adjust=TRUE, auto.assign=TRUE, env=sp500env,
            output.size="full", api.key="T7JPW54ES8G75310"),
 # error handler captures error condition
 error=function(error_cond) {
@@ -1115,14 +1115,14 @@ finally=print(paste("sym_bol=", sym_bol))
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(sp500_env)
+  isdownloaded <- sym_bols %in% ls(sp500env)
   Sys.sleep(10)  # Wait 10 seconds until next attempt
 }  # end while
 # Adjust all OHLC prices in environment
-for (sym_bol in ls(sp500_env)) {
+for (sym_bol in ls(sp500env)) {
   assign(sym_bol,
-    adjustOHLC(get(x=sym_bol, envir=sp500_env), use.Adjusted=TRUE),
-    envir=sp500_env)
+    adjustOHLC(get(x=sym_bol, envir=sp500env), use.Adjusted=TRUE),
+    envir=sp500env)
 }  # end for
 library(rutils)  # Load package rutils
 # Assign name SP500 to ^GSPC symbol
@@ -1131,10 +1131,10 @@ getSymbolLookup()
 # view and clear options
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
-# Download S&P500 prices into etf_env
-quantmod::getSymbols("SP500", env=etf_env,
+# Download S&P500 prices into etfenv
+quantmod::getSymbols("SP500", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$SP500["2016/"],
+chart_Series(x=etfenv$SP500["2016/"],
        TA="add_Vo()", name="S&P500 index")
 library(rutils)  # Load package rutils
 # Assign name DJIA to ^DJI symbol
@@ -1143,13 +1143,13 @@ getSymbolLookup()
 # view and clear options
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
-# Download DJIA prices into etf_env
-quantmod::getSymbols("DJIA", env=etf_env,
+# Download DJIA prices into etfenv
+quantmod::getSymbols("DJIA", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$DJIA["2016/"],
+chart_Series(x=etfenv$DJIA["2016/"],
        TA="add_Vo()", name="DJIA index")
 # Calculate prices from OHLC data of the S&P500 stocks
-price_s <- eapply(sp500_env, quantmod::Cl)
+price_s <- eapply(sp500env, quantmod::Cl)
 price_s <- rutils::do_call(cbind, price_s)
 # Carry forward non-NA prices
 price_s <- zoo::na.locf(price_s, na.rm=FALSE)
@@ -1181,10 +1181,10 @@ getSymbolLookup()
 # view and clear options
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
-# Download S&P500 prices into etf_env
-quantmod::getSymbols("SP500", env=etf_env,
+# Download S&P500 prices into etfenv
+quantmod::getSymbols("SP500", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$SP500["2016/"],
+chart_Series(x=etfenv$SP500["2016/"],
        TA="add_Vo()", name="S&P500 index")
 library(rutils)  # Load package rutils
 library(RCurl)  # Load package RCurl
@@ -1217,20 +1217,20 @@ for (in_dex in 1:NROW(sp_500)) {
     list(list(name=sp_500$Ticker[in_dex])),
     names=sp_500$names[in_dex]))
 }  # end for
-sp500_env <- new.env()  # new environment for data
+sp500env <- new.env()  # new environment for data
 # Remove all files (if necessary)
-rm(list=ls(sp500_env), envir=sp500_env)
+rm(list=ls(sp500env), envir=sp500env)
 # Download data and copy it into environment
 rutils::get_data(sp_500$names,
-   env_out=sp500_env, start_date="1990-01-01")
+   env_out=sp500env, start_date="1990-01-01")
 # Or download in loop
 for (sym_bol in sp_500$names) {
   cat("processing: ", sym_bol, "\n")
   rutils::get_data(sym_bol,
-   env_out=sp500_env, start_date="1990-01-01")
+   env_out=sp500env, start_date="1990-01-01")
 }  # end for
-save(sp500_env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-chart_Series(x=sp500_env$BRKB["2016/"],
+save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+chart_Series(x=sp500env$BRKB["2016/"],
        TA="add_Vo()", name="BRK-B stock")
 library(quantmod)
 # Download U.S. unemployment rate data
@@ -1292,22 +1292,22 @@ tick_ers <- matrix(unlist(
 tick_ers <- do_call_rbind(
   strsplit(sp_500$free_code, split="/"))[, 2]
 library(rutils)  # Load package rutils
-sp500_env <- new.env()  # new environment for data
+sp500env <- new.env()  # new environment for data
 # Remove all files (if necessary)
-rm(list=ls(sp500_env), envir=sp500_env)
+rm(list=ls(sp500env), envir=sp500env)
 # Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(sp500_env)
+isdownloaded <- tick_ers %in% ls(sp500env)
 # Download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
+for (tick_er in tick_ers[!isdownloaded]) {
   cat("processing: ", tick_er, "\n")
   da_ta <- Quandl(code=paste0("WIKI/", tick_er),
             start_date="1990-01-01", type="xts")[, -(1:7)]
   colnames(da_ta) <- paste(tick_er,
     c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=sp500_env)
+  assign(tick_er, da_ta, envir=sp500env)
 }  # end for
-save(sp500_env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-chart_Series(x=sp500_env$XOM["2016/"], TA="add_Vo()", name="XOM stock")
+save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+chart_Series(x=sp500env$XOM["2016/"], TA="add_Vo()", name="XOM stock")
 library(rutils)
 library(Quandl)
 # Register Quandl API key

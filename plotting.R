@@ -567,7 +567,7 @@ shiny::shinyApp(ui=inter_face, server=ser_ver)
 library(shiny)
 library(quantmod)
 inter_val <- 31
-clos_e  <- quantmod::Cl(rutils::etf_env$VTI)
+clos_e  <- quantmod::Cl(rutils::etfenv$VTI)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
 # ```

@@ -81,7 +81,7 @@ integrate(function(x) x*dnorm(x),
     low=2, up=Inf)
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- drop(coredata(na.omit(re_turns)))
 n_rows <- NROW(re_turns)
 # Mean and standard deviation of returns
@@ -139,10 +139,10 @@ sort(sapply(mget(ls()), function(ob_ject) {
 ))
 # Get total size of all objects in workspace
 format(object.size(x=mget(ls())), units="MB")
-# Get sizes of objects in rutils::etf_env environment
-sort(sapply(ls(rutils::etf_env), function(ob_ject) {
-  object.size(get(ob_ject, rutils::etf_env))}))
-sort(sapply(mget(ls(rutils::etf_env), rutils::etf_env),
+# Get sizes of objects in rutils::etfenv environment
+sort(sapply(ls(rutils::etfenv), function(ob_ject) {
+  object.size(get(ob_ject, rutils::etfenv))}))
+sort(sapply(mget(ls(rutils::etfenv), rutils::etfenv),
       object.size))
 library(gdata)  # Load package gdata
 # Get size of data frame columns
@@ -152,8 +152,8 @@ ob_jects <- gdata::ll(unit="bytes")
 # Sort by memory size (descending)
 ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
 gdata::ll()[order(ll()$KB, decreasing=TRUE), ]
-# Get sizes of objects in etf_env environment
-gdata::ll(unit="bytes", etf_env)
+# Get sizes of objects in etfenv environment
+gdata::ll(unit="bytes", etfenv)
 library(SOAR)  # Load package SOAR
 # Get sizes of objects in workspace
 sort(sapply(mget(ls()), object.size))
@@ -717,16 +717,16 @@ parLapply(clus_ter, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol)
-      NROW(index(get(sym_bol, envir=rutils::etf_env))))
+      NROW(index(get(sym_bol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol)
-      NROW(zoo::index(get(sym_bol, envir=rutils::etf_env))))
+      NROW(zoo::index(get(sym_bol, envir=rutils::etfenv))))
 # Package zoo loaded in child process:
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol) {
       stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-      NROW(index(get(sym_bol, envir=rutils::etf_env)))
+      NROW(index(get(sym_bol, envir=rutils::etfenv)))
     })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(clus_ter)
@@ -953,7 +953,7 @@ apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
 # Calculate time series of VTI returns
 library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # Sample from VTI returns
@@ -967,7 +967,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 # Sample from time series of VTI returns
 library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- rutils::etfenv$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # Bootstrap sd and MAD under Windows
@@ -998,7 +998,7 @@ std_errors
 std_errors[2, ]/std_errors[1, ]
 # Calculate percentage returns from VTI prices
 library(rutils)
-price_s <- quantmod::Cl(rutils::etf_env$VTI)
+price_s <- quantmod::Cl(rutils::etfenv$VTI)
 star_t <- as.numeric(price_s[1, ])
 re_turns <- rutils::diff_it(log(price_s))
 class(re_turns); head(re_turns)
@@ -1041,7 +1041,7 @@ boot_data <- rutils::do_call(rbind, boot_data)
 sum(boot_data)/n_boot
 # Calculate percentage returns from VTI prices
 library(rutils)
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 price_s <- as.numeric(oh_lc[, 4])
 star_t <- price_s[1]
 re_turns <- rutils::diff_it(log(price_s))

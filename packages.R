@@ -57,8 +57,8 @@ detach(MASS)
 if (!require("xts")) install.packages("xts")
 # calculate VTI volume-weighted average price
 v_wap <- TTR::VWAP(
-  price=quantmod::Cl(rutils::etf_env$VTI),
-  volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
+  price=quantmod::Cl(rutils::etfenv$VTI),
+  volume=quantmod::Vo(rutils::etfenv$VTI), n=10)
 library()  # list all packages installed on the system
 search()  # list all loaded packages on search path
 # get documentation for package "Ecdat"

@@ -104,38 +104,38 @@ ls("package:quantmod")
 detach("package:quantmod")
 library(quantmod)
 # Plot OHLC candlechart with volume
-chartSeries(etf_env$VTI["2014-11"],
+chartSeries(etfenv$VTI["2014-11"],
       name="VTI",
       theme=chartTheme("white"))
 # Plot OHLC bar chart with volume
-chartSeries(etf_env$VTI["2014-11"],
+chartSeries(etfenv$VTI["2014-11"],
       type="bars",
       name="VTI",
       theme=chartTheme("white"))
 library(quantmod)
 # Plot OHLC candlechart with volume
-chartSeries(etf_env$VTI["2008-11/2009-04"], name="VTI")
+chartSeries(etfenv$VTI["2008-11/2009-04"], name="VTI")
 # Redraw plot only for Feb-2009, with white theme
 reChart(subset="2009-02", theme=chartTheme("white"))
 library(quantmod)
 # Candlechart with Bollinger Bands
-chartSeries(etf_env$VTI["2014"],
+chartSeries(etfenv$VTI["2014"],
       TA="addBBands(): addBBands(draw='percent'): addVo()",
       name="VTI with Bollinger Bands",
       theme=chartTheme("white"))
 # Candlechart with two Moving Averages
-chartSeries(etf_env$VTI["2014"],
+chartSeries(etfenv$VTI["2014"],
       TA="addVo(): addEMA(10): addEMA(30)",
       name="VTI with Moving Averages",
       theme=chartTheme("white"))
 # Candlechart with Commodity Channel Index
-chartSeries(etf_env$VTI["2014"],
+chartSeries(etfenv$VTI["2014"],
       TA="addVo(): addBBands(): addCCI()",
       name="VTI with Technical Indicators",
       theme=chartTheme("white"))
 library(quantmod)
 library(TTR)
-oh_lc <- rutils::etf_env$VTI["2009-02/2009-03"]
+oh_lc <- rutils::etfenv$VTI["2009-02/2009-03"]
 VTI_close <- quantmod::Cl(oh_lc)
 VTI_vol <- quantmod::Vo(oh_lc)
 # Calculate volume-weighted average price
@@ -148,7 +148,7 @@ addTA(ta=v_wap, on=1, col='red')
 addTA(ta=(VTI_close-v_wap), col='red')
 library(quantmod)
 library(TTR)
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 VTI_close <- quantmod::Cl(oh_lc)
 VTI_vol <- quantmod::Vo(oh_lc)
 v_wap <- TTR::VWAP(price=VTI_close, volume=VTI_vol, n=10)
@@ -172,7 +172,7 @@ addLines(v=which.min(v_wap), col='red')
 addLines(h=min(v_wap), col='red')
 library(quantmod)
 library(TTR)
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 VTI_adj <- quantmod::Cl(oh_lc)
 VTI_vol <- quantmod::Vo(oh_lc)
 v_wap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
@@ -194,7 +194,7 @@ col="lightgrey", border="lightgrey")
 abline(v=which.min(v_wap), col='red')
 abline(h=min(v_wap), col='red')
 library(quantmod)
-oh_lc <- rutils::etf_env$VTI["2009-02/2009-03"]
+oh_lc <- rutils::etfenv$VTI["2009-02/2009-03"]
 # Extract plot object
 ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
 class(ch_ob)
@@ -207,7 +207,7 @@ plot_theme <- chart_theme()
 class(plot_theme)
 ls(plot_theme)
 library(quantmod)
-oh_lc <- rutils::etf_env$VTI["2010-04/2010-05"]
+oh_lc <- rutils::etfenv$VTI["2010-04/2010-05"]
 # Extract, modify theme, format tick marks "%b %d"
 plot_theme <- chart_theme()
 plot_theme$format.labels <- "%b %d"
@@ -223,19 +223,19 @@ ch_ob$set_ylim(y_lim)  # use setter function
 plot(ch_ob)
 library(rutils)
 # Calculate VTI and XLF volume-weighted average price
-v_wap <- TTR::VWAP(price=quantmod::Cl(rutils::etf_env$VTI),
-      volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
-XLF_vwap <- TTR::VWAP(price=quantmod::Cl(rutils::etf_env$XLF),
-      volume=quantmod::Vo(rutils::etf_env$XLF), n=10)
+v_wap <- TTR::VWAP(price=quantmod::Cl(rutils::etfenv$VTI),
+      volume=quantmod::Vo(rutils::etfenv$VTI), n=10)
+XLF_vwap <- TTR::VWAP(price=quantmod::Cl(rutils::etfenv$XLF),
+      volume=quantmod::Vo(rutils::etfenv$XLF), n=10)
 # Open graphics device, and define
 # Plot area with two horizontal panels
 x11(); par(mfrow=c(2, 1))
 ch_ob <- chart_Series(  # Plot in top panel
-  x=etf_env$VTI["2009-02/2009-04"],
+  x=etfenv$VTI["2009-02/2009-04"],
   name="VTI", plot=FALSE)
 add_TA(v_wap["2009-02/2009-04"], lwd=2, on=1, col='blue')
 # Plot in bottom panel
-ch_ob <- chart_Series(x=etf_env$XLF["2009-02/2009-04"],
+ch_ob <- chart_Series(x=etfenv$XLF["2009-02/2009-04"],
   name="XLF", plot=FALSE)
 add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
 # Open plot window and set plot margins
@@ -262,7 +262,7 @@ legend("top", legend=col_names, cex=1.0, bg="white",
  lty=1, lwd=6, col=c("orange", "blue"), bty="n")
 library(dygraphs)
 # Calculate volume-weighted average price
-oh_lc <- rutils::etf_env$VTI
+oh_lc <- rutils::etfenv$VTI
 v_wap <- TTR::VWAP(price=quantmod::Cl(oh_lc),
     volume=quantmod::Vo(oh_lc), n=20)
 # Add VWAP to OHLC data
@@ -300,7 +300,7 @@ dyShading(from=date_s[i], to=date_s[i+1], color=in_dic[i])
 dy_graph
 library(dygraphs)
 # Prepare VTI and IEF prices
-price_s <- cbind(Cl(rutils::etf_env$VTI), Cl(rutils::etf_env$IEF))
+price_s <- cbind(Cl(rutils::etfenv$VTI), Cl(rutils::etfenv$IEF))
 price_s <- na.omit(price_s)
 col_names <- rutils::get_name(colnames(price_s))
 colnames(price_s) <- col_names
@@ -434,9 +434,9 @@ legend("topright", inset=0.05, title="Sigmas",
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1))
 # Return volatility of VTI etf
-sig_ma <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
+sig_ma <- sd(rutils::diff_it(log(rutils::etfenv$VTI[, 4])))
 sigma2 <- sig_ma^2
-n_rows <- NROW(rutils::etf_env$VTI)
+n_rows <- NROW(rutils::etfenv$VTI)
 # Standard deviation of log-normal prices
 sqrt(n_rows)*sig_ma
 # Skewness of log-normal prices
@@ -486,9 +486,9 @@ plot.zoo(per_centage, main="Percentage of GBM paths below mean",
    xlab=NA, ylab=NA, col="blue")
 # Load S&P500 stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-ls(sp500_env)
+ls(sp500env)
 # Extract closing prices
-price_s <- eapply(sp500_env, quantmod::Cl)
+price_s <- eapply(sp500env, quantmod::Cl)
 # Flatten price_s into a single xts series
 price_s <- rutils::do_call(cbind, price_s)
 # Carry forward and backward non-NA prices
@@ -645,14 +645,14 @@ legend("topright",
 abline(h=eq_price, col='red', lwd=2)
 x11(width=6, height=5)
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 # Plot autocorrelations using stats::acf()
 stats::acf(re_turns, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)
 # Two-tailed 95% confidence interval
 qnorm(0.975)/sqrt(NROW(re_turns))
 # Calculate VTI and XLF percentage returns
-re_turns <- rutils::etf_env$re_turns[, c("VTI", "XLF")]
+re_turns <- rutils::etfenv$re_turns[, c("VTI", "XLF")]
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # De-mean (center) and scale the returns
@@ -983,7 +983,7 @@ tseries::adf.test(ari_ma, k=1)
 tseries::adf.test(ari_ma, k=0)
 # Simulate AR(1) process with different coefficients
 coeff_s <- seq(0.99, 0.999, 0.001)
-re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
+re_turns <- as.numeric(na.omit(rutils::etfenv$re_turns$VTI))
 adf_test <- sapply(coeff_s, function(co_eff) {
   ari_ma <- filter(x=re_turns, filter=co_eff, method="recursive")
   ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
@@ -1060,7 +1060,7 @@ arima_fit$coef
 library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(ari_ma, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
-re_turns <- drop(zoo::coredata(na.omit(rutils::etf_env$re_turns$VTI)))
+re_turns <- drop(zoo::coredata(na.omit(rutils::etfenv$re_turns$VTI)))
 de_sign <- sapply(1:5, rutils::lag_it, in_put=re_turns)
 design_inv <- MASS::ginv(de_sign)
 co_eff <- drop(design_inv %*% re_turns)
@@ -1275,7 +1275,7 @@ co_eff <- drop(design_inv %*% de_sign[rang_e, 1])
 # Calculate forecast
 drop(de_sign[n_rows, -1] %*% co_eff)
 # Calculate a vector of daily VTI log returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
 date_s <- index(re_turns)
 re_turns <- as.numeric(re_turns)
 n_rows <- NROW(re_turns)

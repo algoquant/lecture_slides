@@ -21,8 +21,8 @@ double inner_vec(arma::vec vec1, arma::vec vec2) {
 // It uses RcppArmadillo.
 //' @export
 // [[Rcpp::export]]
-double inner_mat(const arma::vec& vec_tor2, const arma::mat& mat_rix, const arma::vec& vec_tor1) {
-  return arma::as_scalar(trans(vec_tor2) * (mat_rix * vec_tor1));
+double inner_mat(const arma::vec& vectorv2, const arma::mat& matrixv, const arma::vec& vectorv1) {
+  return arma::as_scalar(trans(vectorv2) * (matrixv * vectorv1));
 }  // end inner_mat
 
 
@@ -32,13 +32,13 @@ double inner_mat(const arma::vec& vec_tor2, const arma::mat& mat_rix, const arma
 // It uses RcppArmadillo.
 //' @export
 // [[Rcpp::export]]
-int demean_mat(arma::mat& mat_rix) {
+int demean_mat(arma::mat& matrixv) {
   
-  for (uword i = 0; i < mat_rix.n_cols; i++) {
-    mat_rix.col(i) -= arma::mean(mat_rix.col(i));
+  for (uword i = 0; i < matrixv.n_cols; i++) {
+    matrixv.col(i) -= arma::mean(matrixv.col(i));
   }  // end for
   
-  return mat_rix.n_cols;
+  return matrixv.n_cols;
   
 }  // end demean_mat
 
@@ -50,11 +50,11 @@ int demean_mat(arma::mat& mat_rix) {
 // It uses RcppArmadillo.
 //' @export
 // [[Rcpp::export]]
-double inv_mat(arma::mat& mat_rix) {
+double inv_mat(arma::mat& matrixv) {
   
-  mat_rix = arma::inv_sympd(mat_rix);
+  matrixv = arma::inv_sympd(matrixv);
   
-  return mat_rix.n_cols;
+  return matrixv.n_cols;
   
 }  // end inv_mat
 
