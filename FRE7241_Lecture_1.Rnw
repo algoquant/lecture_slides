@@ -1251,8 +1251,8 @@ head(trees)  # "trees" is in datasets base package
 library(rutils)  # Load package rutils
 # Define ETF symbols
 symbolv <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract symbolv from rutils::etf_env
-prices <- mget(symbolv, envir=rutils::etf_env)
+# Extract symbolv from rutils::etfenv
+prices <- mget(symbolv, envir=rutils::etfenv)
 # prices is a list of xts series
 class(prices)
 class(prices[[1]])
@@ -1269,18 +1269,18 @@ class(prices)
 dim(prices)
 # Extract and cbind in single step
 prices <- do.call(cbind, lapply(
-  mget(symbolv, envir=rutils::etf_env), quantmod::Cl))
+  mget(symbolv, envir=rutils::etfenv), quantmod::Cl))
 # Or
 # Extract and bind all data, subset by symbolv
 prices <- lapply(symbolv, function(symbol) {
-    quantmod::Cl(get(symbol, envir=rutils::etf_env))
+    quantmod::Cl(get(symbol, envir=rutils::etfenv))
 })  # end lapply
-# Same, but loop over etf_env without anonymous function
+# Same, but loop over etfenv without anonymous function
 prices <- do.call(cbind,
-  lapply(as.list(rutils::etf_env)[symbolv], quantmod::Cl))
+  lapply(as.list(rutils::etfenv)[symbolv], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
 prices <- do.call(cbind,
-  eapply(rutils::etf_env, quantmod::Cl)[symbolv])
+  eapply(rutils::etfenv, quantmod::Cl)[symbolv])
       @
   \end{columns}
 \end{block}
@@ -1322,12 +1322,12 @@ unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(prices,
   file="C:/Develop/lecture_slides/data/etf_series.csv", sep=",")
-# Copy prices into etf_env
-etf_env$etf_list <- etf_list
+# Copy prices into etfenv
+etfenv$etf_list <- etf_list
 # Or
-assign("prices", prices, envir=etf_env)
+assign("prices", prices, envir=etfenv)
 # Save to .RData file
-save(etf_env, file="etf_data.RData")
+save(etfenv, file="etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -1708,8 +1708,8 @@ if (!require("xts")) install.packages("xts")
         <<echo=TRUE,eval=FALSE>>=
 # calculate VTI volume-weighted average price
 vwapv <- TTR::VWAP(
-  price=quantmod::Cl(rutils::etf_env$VTI), 
-  volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
+  price=quantmod::Cl(rutils::etfenv$VTI), 
+  volume=quantmod::Vo(rutils::etfenv$VTI), n=10)
       @
   \end{columns}
 \end{block}
@@ -1728,7 +1728,7 @@ vwapv <- TTR::VWAP(
       \vskip1ex
       The data frame \texttt{Garch} contains daily currency prices.
       \vskip1ex
-      The function \texttt{data()} loads external data or lists data sets in a package.
+      The function \texttt{data()} loads external data or listv data sets in a package.
       \vskip1ex
       Some packages provide \emph{lazy loading} of their data sets, which means they automatically load their data sets when they're needed (when they are called by some operation).
       \vskip1ex
@@ -1804,7 +1804,7 @@ detach("package:MASS")  # remove "MASS" from search path
       \vskip1ex
       When packages are loaded, then packages they depend on are also loaded, but their \emph{namesvpaces} aren't necessarily attached to the search path.
       \vskip1ex
-      The function \texttt{loadedNamespaces()} lists all loaded \emph{namesvpaces}, including those that aren't on the search path.
+      The function \texttt{loadedNamespaces()} listv all loaded \emph{namesvpaces}, including those that aren't on the search path.
       \vskip1ex
       The function \texttt{search()} returns the current search path for \texttt{R} objects.
       \vskip1ex
@@ -1831,7 +1831,7 @@ search()  # get search path for R objects
     \column{0.5\textwidth}
       The function \texttt{sessionInfo()} returns information about the current \texttt{R} session, including packages that are loaded, but \emph{not attached} to the search path.
       \vskip1ex
-      \texttt{sessionInfo()} lists those packages as "loaded via a \emph{namesvpace} (and not attached)"
+      \texttt{sessionInfo()} listv those packages as "loaded via a \emph{namesvpace} (and not attached)"
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
@@ -2833,16 +2833,16 @@ parLapply(cluster, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
-            NROW(index(get(symbol, envir=rutils::etf_env))))
+            NROW(index(get(symbol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
-            NROW(zoo::index(get(symbol, envir=rutils::etf_env))))
+            NROW(zoo::index(get(symbol, envir=rutils::etfenv))))
 # Package zoo loaded in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol) {
             stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-            NROW(index(get(symbol, envir=rutils::etf_env)))
+            NROW(index(get(symbol, envir=rutils::etfenv)))
           })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(cluster)
@@ -3084,7 +3084,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo = datav[cutoff],
-  quan_tile = quantile(datav, probs=confl),
+  quantilev = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -3262,7 +3262,7 @@ boot_data <- mclapply(1:nboot,
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Standard error from formula
 sd(datav)/sqrt(nrows)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
@@ -3313,7 +3313,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -3332,7 +3332,7 @@ stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -3365,7 +3365,7 @@ apply(boot_data, MARGIN=2, function(x)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI returns
 library(rutils)
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 # Sample from VTI returns
@@ -3409,7 +3409,7 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Sample from time series of VTI returns
 library(rutils)
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 # Bootstrap sd and MAD under Windows
@@ -3433,11 +3433,11 @@ boot_data <- rutils::do_call(rbind, boot_data)
 # Standard error assuming normal distribution of returns
 sd(returns)/sqrt(nboot)
 # Means and standard errors from bootstrap
-std_errors <- apply(boot_data, MARGIN=2,
-  function(x) c(mean=mean(x), std_error=sd(x)))
-std_errors
+stderrors <- apply(boot_data, MARGIN=2,
+  function(x) c(mean=mean(x), stderror=sd(x)))
+stderrors
 # Relative standard errors
-std_errors[2, ]/std_errors[1, ]
+stderrors[2, ]/stderrors[1, ]
       @
   \end{columns}
 \end{block}
@@ -3460,9 +3460,9 @@ std_errors[2, ]/std_errors[1, ]
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-prices <- quantmod::Cl(rutils::etf_env$VTI)
+prices <- quantmod::Cl(rutils::etfenv$VTI)
 startd <- as.numeric(prices[1, ])
-returns <- rutils::diff_it(log(prices))
+returns <- rutils::diffit(log(prices))
 class(returns); head(returns)
 sum(is.na(returns))
 nrows <- NROW(returns)
@@ -3528,10 +3528,10 @@ sum(boot_data)/nboot
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 prices <- as.numeric(ohlc[, 4])
 startd <- prices[1]
-returns <- rutils::diff_it(log(prices))
+returns <- rutils::diffit(log(prices))
 nrows <- NROW(returns)
 # Calculate difference of OHLC price columns
 ohlc_diff <- ohlc[, 1:3] - prices
@@ -3647,7 +3647,7 @@ boot_data <- sapply(1:nboot, function(x) {
 x11(width=6, height=5)
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), std_error=sd(boot_data))
+c(mean=mean(boot_data), stderror=sd(boot_data))
 # Plot density of bootstrapped beta coefficients
 plot(density(boot_data), lwd=2, xlab="Regression slopes",
      main="Bootstrapped Regression Slopes")
@@ -3732,7 +3732,7 @@ stopCluster(cluster)  # Stop R processes over cluster under Windows
 class(boot_data)
 boot_data <- unlist(boot_data)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), std_error=sd(boot_data))
+c(mean=mean(boot_data), stderror=sd(boot_data))
 # Plot density of bootstrapped beta coefficients
 plot(density(boot_data),
      lwd=2, xlab="Regression slopes",
@@ -3874,26 +3874,26 @@ set.seed(1121) # Reset random number generator
 nrows <- 1000
 datav <- rnorm(nrows)
 # Cumulative probability from formula
-quan_tile <- (-2)
-pnorm(quan_tile)
-integrate(dnorm, lower=-Inf, upper=quan_tile)
+quantilev <- (-2)
+pnorm(quantilev)
+integrate(dnorm, lower=-Inf, upper=quantilev)
 # Cumulative probability from Naive Monte Carlo
-sum(datav < quan_tile)/nrows
+sum(datav < quantilev)/nrows
 # Generate importance sample
-lambdav <- (-1.5)  # Tilt parameter
-data_tilt <- datav + lambdav  # Tilt the random numbers
+lambda <- (-1.5)  # Tilt parameter
+data_tilt <- datav + lambda  # Tilt the random numbers
 # Cumulative probability from importance sample
-sum(data_tilt < quan_tile)/nrows
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
-sum((data_tilt < quan_tile)*weights)/nrows
+sum(data_tilt < quantilev)/nrows
+weights <- exp(-lambda*data_tilt + lambda^2/2)
+sum((data_tilt < quantilev)*weights)/nrows
 # Bootstrap of standard errors of cumulative probability
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- rnorm(nrows)
-  naivemc <- sum(datav < quan_tile)/nrows
-  datav <- (datav + lambdav)
-  weights <- exp(-lambdav*datav + lambdav^2/2)
-  isample <- sum((datav < quan_tile)*weights)/nrows
+  naivemc <- sum(datav < quantilev)/nrows
+  datav <- (datav + lambda)
+  weights <- exp(-lambda*datav + lambda^2/2)
+  isample <- sum((datav < quantilev)*weights)/nrows
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -3935,8 +3935,8 @@ datav <- sort(datav)
 cutoff <- nrows*confl
 datav[cutoff]  # Naive Monte Carlo value
 # Importance sample weights
-data_tilt <- datav + lambdav  # Tilt the random numbers
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+data_tilt <- datav + lambda  # Tilt the random numbers
+weights <- exp(-lambda*data_tilt + lambda^2/2)
 # Cumulative probabilities using importance sample
 cumprob <- cumsum(weights)/nrows
 # Quantile from importance sample
@@ -3946,8 +3946,8 @@ nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   naivemc <- datav[cutoff]
-  data_tilt <- datav + lambdav
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+  data_tilt <- datav + lambda
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
   isample <- data_tilt[findInterval(confl, cumprob)]
   c(naivemc=naivemc, importmc=isample)
@@ -3992,8 +3992,8 @@ boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   va_r <- datav[cutoff]
   naivemc <- sum((datav < va_r)*datav)/sum((datav < va_r))
-  data_tilt <- datav + lambdav
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+  data_tilt <- datav + lambda
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
   va_r <- data_tilt[findInterval(confl, cumprob)]
   isample <- sum((data_tilt < va_r)*data_tilt*weights)/sum((data_tilt < va_r)*weights)
@@ -4032,9 +4032,9 @@ datav <- matrix(rnorm(nboot*nrows), ncol=nboot)
 datav <- Rfast::sort_mat(datav)  # Sort the columns
 # Calculate vector of quantiles for tilt parameter
 confl <- 0.02; cutoff <- confl/nrows
-calc_quant <- function(lambdav) {
-  data_tilt <- datav + lambdav  # Tilt the random numbers
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+calc_quant <- function(lambda) {
+  data_tilt <- datav + lambda  # Tilt the random numbers
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   # Calculate quantiles for columns
   sapply(1:nboot, function(boo_t) {
     cumprob <- cumsum(weights[, boo_t])/nrows
@@ -4090,21 +4090,21 @@ plot(x=lambda_s, y=stdevs,
       <<echo=TRUE,eval=FALSE>>=
 # Binomial sample
 nrows <- 1000
-pro_b <- 0.1
-datav <- rbinom(n=nrows, size=1, pro_b)
+probv <- 0.1
+datav <- rbinom(n=nrows, size=1, probv)
 head(datav, 33)
 fre_q <- sum(datav)/nrows
 # Tilted binomial sample
-lambdav <- 5
-p_tilted <- lambdav*pro_b/(1 + pro_b*(lambdav - 1))
-weigh_t <- (1 + pro_b*(lambdav - 1))/lambdav
+lambda <- 5
+p_tilted <- lambda*probv/(1 + probv*(lambda - 1))
+weigh_t <- (1 + probv*(lambda - 1))/lambda
 datav <- rbinom(n=nrows, size=1, p_tilted)
 head(datav, 33)
 weigh_t*sum(datav)/nrows
 # Bootstrap of standard errors
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
-  c(naivemc=sum(rbinom(n=nrows, size=1, pro_b))/nrows,
+  c(naivemc=sum(rbinom(n=nrows, size=1, probv))/nrows,
     importmc=weigh_t*sum(rbinom(n=nrows, size=1, p_tilted))/nrows)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -4148,14 +4148,14 @@ datav <- matrix(datav, nc=nsimu)
 # Simulate paths of Brownian motion
 paths <- matrixStats::colCumsums(datav)
 # Tilt the datav
-lambdav <- 0.04  # Tilt parameter
-data_tilt <- datav + lambdav  # Tilt the random numbers
+lambda <- 0.04  # Tilt parameter
+data_tilt <- datav + lambda  # Tilt the random numbers
 paths_tilt <- matrixStats::colCumsums(data_tilt)
 # Calculate path weights
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+weights <- exp(-lambda*data_tilt + lambda^2/2)
 path_weights <- matrixStats::colProds(weights)
 # Or
-path_weights <- exp(-lambdav*colSums(data_tilt) + nrows*lambdav^2/2)
+path_weights <- exp(-lambda*colSums(data_tilt) + nrows*lambda^2/2)
 # Calculate option payout using standard MC
 strikep <- 10  # Strike price
 payouts <- (paths[nrows, ] - strikep)
@@ -4195,7 +4195,7 @@ sum(path_weights*didcross)/nsimu
       <<echo=TRUE,eval=FALSE>>=
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-prices <- eapply(sp500_env, quantmod::Cl)
+prices <- eapply(sp500env, quantmod::Cl)
 prices <- rutils::do_call(cbind, prices)
 # Carry forward non-NA prices
 prices <- zoo::na.locf(prices, na.rm=FALSE)
@@ -4248,7 +4248,7 @@ ncols <- NCOL(prices)
 indeks <- xts(rowSums(prices)/ncols, index(prices))
 colnames(indeks) <- "index"
 # Combine index with VTI
-datav <- cbind(indeks[index(etf_env$VTI)], etf_env$VTI[, 4])
+datav <- cbind(indeks[index(etfenv$VTI)], etfenv$VTI[, 4])
 colnamev <- c("index", "VTI")
 colnames(datav) <- colnamev
 # Plot index with VTI
@@ -4417,20 +4417,20 @@ print(xtable::xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FAL
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- drop(coredata(na.omit(returns)))
 nrows <- NROW(returns)
 # Mean and standard deviation of returns
 c(mean(returns), sd(returns))
 # Calculate the smoothing bandwidth as the MAD of returns 10 points apart
 returns <- sort(returns)
-b_w <- 10*mad(rutils::diff_it(returns, lagg=10))
+b_w <- 10*mad(rutils::diffit(returns, lagg=10))
 # Calculate the kernel density
 densityv <- sapply(1:nrows, function(i_d) {
   sum(dnorm(returns-returns[i_d], sd=b_w))
 })  # end sapply
-ma_d <- mad(returns)
-plot(returns, densityv, xlim=c(-5*ma_d, 5*ma_d),
+madv <- mad(returns)
+plot(returns, densityv, xlim=c(-5*madv, 5*madv),
      t="l", col="blue", lwd=3,
      xlab="returns", ylab="density",
      main="Density of VTI Returns")
@@ -4438,13 +4438,13 @@ plot(returns, densityv, xlim=c(-5*ma_d, 5*ma_d),
 densityv <- density(returns, bw=b_w)
 NROW(densityv$y)
 x11(width=6, height=5)
-plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
+plot(densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      col="blue", lwd=3, main="Density of VTI Returns")
 # Interpolate the densityv vector into returns
 densityv <- approx(densityv$x, densityv$y, xout=returns)
 all.equal(densityv$x, returns)
-plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
+plot(densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      t="l", col="blue", lwd=3,
      main="Density of VTI Returns")
@@ -4476,7 +4476,7 @@ plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
 histo_gram <- hist(returns, breaks=100, freq=FALSE,
-  xlim=c(-5*ma_d, 5*ma_d), xlab="", ylab="",
+  xlim=c(-5*madv, 5*madv), xlab="", ylab="",
   main="VTI Return Distribution")
 # Draw kernel density of histogram
 lines(densityv, col="red", lwd=2)
@@ -4595,7 +4595,7 @@ boxplot(x=diff(log(EuStockMarkets)))
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Number of observations
 nrows <- NROW(returns)
 # Mean of VTI returns
@@ -4952,7 +4952,7 @@ likeli_hood <- function(pa_r, free_dom, datav) {
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Initial parameters
 par_init <- c(mean=0, scale=0.01)
 # Fit distribution using optim()
@@ -5084,9 +5084,9 @@ legend("topleft", inset=0.05, bty="n",
       The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns and trading volumes
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 closep <- drop(coredata(quantmod::Cl(ohlc)))
-returns <- rutils::diff_it(log(closep))
+returns <- rutils::diffit(log(closep))
 volumes <- coredata(quantmod::Vo(ohlc))
 # Calculate rolling variance
 look_back <- 121
@@ -5147,13 +5147,13 @@ sapply(list(returns=returns, rets_scaled=rets_scaled),
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
-ma_d <- mad(returns)
-# b_w <- mad(rutils::diff_it(returns))
-plot(density(returns, bw=ma_d/10), xlim=c(-5*ma_d, 5*ma_d),
+madv <- mad(returns)
+# b_w <- mad(rutils::diffit(returns))
+plot(density(returns, bw=madv/10), xlim=c(-5*madv, 5*madv),
      lwd=3, mgp=c(2, 1, 0), col="blue",
      xlab="returns (standardized)", ylab="frequency",
      main="Density of Volume-scaled VTI Returns")
-lines(density(rets_scaled, bw=ma_d/10), lwd=3, col="red")
+lines(density(rets_scaled, bw=madv/10), lwd=3, col="red")
 curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
       add=TRUE, lwd=3, col="green")
 # Add legend
@@ -5195,7 +5195,7 @@ quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
       <<echo=TRUE,eval=TRUE>>=
 # Calculate VTI percentage returns
 library(rutils)
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Reset output digits
 dig_its <- options(digits=5)
 # Shapiro-Wilk test for normal distribution
@@ -5284,7 +5284,7 @@ ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
 ks.test(rnorm(100), rnorm(100, mean=1.0))
 # Fit t-dist into VTI returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 optim_fit <- MASS::fitdistr(returns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
 scalit <- optim_fit$estimate[2]
@@ -5375,7 +5375,7 @@ legend("topright", inset=0.05, bty="n",
 histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
 # Theoretical frequencies
-freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Return p-value
@@ -5385,7 +5385,7 @@ chisq_test$p.value
 histo_gram <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts/sum(histo_gram$counts)
 # Theoretical frequencies
-freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for shifted normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Calculate histogram of VTI returns
@@ -5393,7 +5393,7 @@ histo_gram <- hist(returns, breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
 # Calculate cumulative probabilities and then difference them
 freq_t <- pt((histo_gram$breaks-lo_cation)/scalit, df=2)
-freq_t <- rutils::diff_it(freq_t)
+freq_t <- rutils::diffit(freq_t)
 # Perform Chi-squared test for VTI returns
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
       @
@@ -5417,7 +5417,7 @@ chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
     \column{0.5\textwidth}
       The package \emph{PerformanceAnalytics} contains functions for risk and performance analysis.
       \vskip1ex
-      The function \texttt{data()} loads external data or lists data sets in a package.
+      The function \texttt{data()} loads external data or listv data sets in a package.
       \vskip1ex
       \texttt{managers} is an \emph{xts} time series containing monthly percentage returns of six asset managers (HAM1 through HAM6), the EDHEC Long-Short Equity hedge fund index, the \texttt{S\&P 500}, and US Treasury 10-year bond and 3-month bill total returns.
     \column{0.5\textwidth}
@@ -5466,7 +5466,7 @@ head(managers, 3)
 # Load package "PerformanceAnalytics"
 library(PerformanceAnalytics)
 # Calculate ETF returns
-returns <- rutils::etf_env$returns[, c("VTI", "DBC", "IEF")]
+returns <- rutils::etfenv$returns[, c("VTI", "DBC", "IEF")]
 returns <- na.omit(returns)
 # Plot cumulative ETF returns
 x11(width=6, height=5)
@@ -5491,7 +5491,7 @@ chart.CumReturns(returns, lwd=2, ylab="",
     \column{0.5\textwidth}
       The function \texttt{chart.Histogram()} from package \emph{PerformanceAnalytics} plots the histogram (frequency distribution) and the density of returns.
       <<echo=TRUE,eval=FALSE>>=
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 x11(width=6, height=5)
 chart.Histogram(returns, xlim=c(-0.04, 0.04),
@@ -5527,7 +5527,7 @@ legend("topright", inset=0.05, bty="n",
       The vertical lines (whiskers) represent values beyond the quartiles, \\
       Open circles represent values beyond the nominal range (outliers).
       <<echo=TRUE,eval=FALSE>>=
-returns <- rutils::etf_env$returns[,
+returns <- rutils::etfenv$returns[,
   c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")]
 x11(width=6, height=5)
 chart.Boxplot(namesv=FALSE, returns)
@@ -5582,7 +5582,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -5601,7 +5601,7 @@ stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -5637,7 +5637,7 @@ apply(boot_data, MARGIN=2, function(x)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # VTI returns
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 sd(returns)
@@ -5650,7 +5650,7 @@ boot_data <- sapply(1:10000, function(x) {
 boot_data <- t(boot_data)
 # Means and standard errors from bootstrap
 100*apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -5670,7 +5670,7 @@ stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -5733,10 +5733,10 @@ all.equal(sqrt(sum(returns_sub^2)/nrows),
       The function \texttt{table.Drawdowns()} from package \emph{PerformanceAnalytics} calculates a data frame of drawdowns.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI drawdowns
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 draw_downs <- (closep - cummax(closep))
 # PerformanceAnalytics plot of VTI drawdowns
-returns <- rutils::diff_it(log(closep))
+returns <- rutils::diffit(log(closep))
 PerformanceAnalytics::chart.Drawdown(returns,
   ylab="", main="VTI Drawdowns")
 # PerformanceAnalytics table of VTI drawdowns
@@ -5762,8 +5762,8 @@ quantmod::chart_Series(x=draw_downs, name="VTI Drawdowns", theme=plot_theme)
       <<echo=FALSE,eval=TRUE,size="tiny",results='asis'>>=
 library(xtable)
 library(PerformanceAnalytics)
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
-returns <- rutils::diff_it(log(closep))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
+returns <- rutils::diffit(log(closep))
 # Calculate table of VTI drawdowns
 tablev <- PerformanceAnalytics::table.Drawdowns(returns)
 # Convert dates to strings
@@ -5820,7 +5820,7 @@ charts.PerformanceSummary(ham1,
 x11(width=6, height=5)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 # VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.1
 va_r <- quantile(returns, confl)
 c_var <- mean(returns[returns < va_r])
@@ -5875,7 +5875,7 @@ text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.02
 # Calculate VaR as quantile
 va_r <- quantile(returns, confl)
@@ -5948,7 +5948,7 @@ all.equal(c_var,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the risk-return statistics
 risk_ret <-
-  PerformanceAnalytics::table.Stats(rutils::etf_env$returns)
+  PerformanceAnalytics::table.Stats(rutils::etfenv$returns)
 class(risk_ret)
 # Transpose the data frame
 risk_ret <- as.data.frame(t(risk_ret))
@@ -5962,7 +5962,7 @@ risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
     \column{0.5\textwidth}
       <<echo=FALSE,eval=TRUE,size="tiny">>=
 # Copy from rutils to save time
-risk_ret <- rutils::etf_env$risk_return
+risk_ret <- rutils::etfenv$riskstats
 # Add Sharpe ratio column
 risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
 # Sort on Sharpe ratio
@@ -6003,7 +6003,7 @@ knitr::kable(risk_ret[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
       \includegraphics[width=0.45\paperwidth]{figure/vix_vxx_svxy.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of VTI drawdowns
-prices <- na.omit(rutils::etf_env$prices[, c("VXX", "SVXY")])
+prices <- na.omit(rutils::etfenv$prices[, c("VXX", "SVXY")])
 prices <- prices["2017/"]
 colnamev <- c("VXX", "SVXY")
 colnames(prices) <- colnamev
@@ -6085,7 +6085,7 @@ text(x=risk_ret$Skewness, y=risk_ret$Kurtosis,
       \vspace{-1em}
       <<echo=(-1)>>=
 library(PerformanceAnalytics)
-returns <- rutils::etf_env$returns[, c("VTI", "IEF")]
+returns <- rutils::etfenv$returns[, c("VTI", "IEF")]
 returns <- na.omit(returns)
 # Calculate the Sharpe ratio
 PerformanceAnalytics::SharpeRatio(returns)

@@ -201,7 +201,7 @@ arima_fit$coef
 library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(arimav, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
-returns <- drop(zoo::coredata(na.omit(rutils::etf_env$returns$VTI)))
+returns <- drop(zoo::coredata(na.omit(rutils::etfenv$returns$VTI)))
 design <- sapply(1:5, rutils::lagit, input=returns)
 design_inv <- MASS::ginv(design)
 coeff_fit <- drop(design_inv %*% returns)
@@ -538,7 +538,7 @@ drop(design[nrows, -1] %*% coeff_fit)
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 dates <- index(returns)
 returns <- as.numeric(returns)
 nrows <- NROW(returns)
@@ -718,7 +718,7 @@ plot(x=look_backs, y=back_tests[, 1],
       The mean squared errors (\emph{MSE}) of the \emph{in-sample} forecasts decrease steadily with the increasing order parameter \emph{n} of the \emph{AR(n)} model.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 dates <- index(vtis)
 vtis <- as.numeric(vtis)
 nrows <- NROW(vtis)
@@ -834,11 +834,11 @@ pnls <- xts::xts(pnls, dates[out_sample])
       \includegraphics[width=0.4\paperwidth]{figure/ar_pnl_order.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample PnLs
-color_s <- colorRampPalette(c("red", "blue"))(NCOL(pnls[, 1:4]))
+colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls[, 1:4]))
 colnamev <- colnames(pnls[, 1:4])
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance With Different Order Parameters") %>%
-  dyOptions(colors=color_s, strokeWidth=2) %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -891,7 +891,7 @@ pnls <- xts::xts(pnls, dates[out_sample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Predictor") %>%
-  dyOptions(colors=color_s, strokeWidth=2) %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -930,7 +930,7 @@ pnls <- xts::xts(pnls, dates[out_sample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Forecasts") %>%
-  dyOptions(colors=color_s, strokeWidth=2) %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -959,7 +959,7 @@ dygraphs::dygraph(pnls[, 1:4],
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 dates <- index(vtis)
 vtis <- as.numeric(vtis)
 nrows <- NROW(vtis)
@@ -1261,7 +1261,7 @@ namesv <- as.numeric(names)
 indeks <- order(names)
 rates <- rates[, indeks]
 # Align rates dates with VTI prices
-closep <- quantmod::Cl(rutils::etf_env$VTI)
+closep <- quantmod::Cl(rutils::etfenv$VTI)
 colnames(closep) <- "VTI"
 nrows <- NROW(closep)
 dates <- zoo::index(closep)
@@ -1273,8 +1273,8 @@ dates <- zoo::index(closep)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns and IR changes
-returns <- rutils::diff_it(log(closep))
-rates_diff <- rutils::diff_it(log(rates))
+returns <- rutils::diffit(log(closep))
+rates_diff <- rutils::diffit(log(rates))
 # Regress VTI returns versus the lagged rate differences
 predictor <- rutils::lagit(rates_diff)
 model <- lm(returns ~ predictor)
@@ -1311,7 +1311,7 @@ summary(model)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ycsteep.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_steep.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot YC steepener principal component with VTI
 datav <- cbind(returns, rates_pca[, 2])
@@ -1361,7 +1361,7 @@ apply(factors, 2, sd)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ycinsample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_insample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of in-sample IR strategy
 wealth <- cbind(returns, pnls)
@@ -1404,7 +1404,7 @@ pnls <- forecasts*returns[out_sample, ]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ycoutsample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_outsample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample IR PCA strategy
 wealth <- cbind(returns[out_sample, ], pnls)
@@ -1456,7 +1456,7 @@ summary(model)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ycinsample_agg.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_insample_agg.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate forecasts in-sample
 inverse <- MASS::ginv(predictor)
@@ -1502,7 +1502,7 @@ pnls <- forecasts*returns[out_sample, ]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ycoutsample_agg.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_outsample_agg.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample YC strategy
 wealth <- cbind(returns[out_sample, ], pnls)
@@ -1554,7 +1554,7 @@ pnls <- do.call(rbind, pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ycroll_yearly.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_yearly.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of rolling yearly IR strategy
 wealth <- cbind(returns[zoo::index(pnls),], pnls)
@@ -1607,7 +1607,7 @@ pnls <- do.call(rbind, pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ycroll_monthly.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_monthly.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of rolling monthly IR strategy
 wealth <- cbind(returns[zoo::index(pnls),], pnls)
@@ -1656,7 +1656,7 @@ pnls <- do.call(rbind, pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ycroll_weekly.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_yc_roll_weekly.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of rolling weekly IR strategy
 wealth <- cbind(returns[zoo::index(pnls),], pnls)
@@ -1705,10 +1705,10 @@ dygraphs::dygraph(cumsum(wealth), main="Rolling Weekly Yield Curve Strategy") %>
       <<echo=TRUE,eval=FALSE>>=
 # Extract ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
-returns <- rutils::etf_env$returns[, symbolv]
+returns <- rutils::etfenv$returns[, symbolv]
 returns <- na.omit(returns)
 # Or, select rows with IEF data
-# returns <- returns[index(rutils::etf_env$IEF)]
+# returns <- returns[index(rutils::etfenv$IEF)]
 # Copy over NA values
 # returns[1, is.na(returns[1, ])] <- 0
 # returns <- zoo::na.locf(returns, na.rm=FALSE)
@@ -1905,7 +1905,7 @@ backtestmomentum <- function(returns,
   # Calculate momentum profits and losses
   pnls <- rowSums(weights*future)
   # Calculate transaction costs
-  costs <- 0.5*bid_offer*cumprod(1 + pnls)*rowSums(abs(rutils::diff_it(weights)))
+  costs <- 0.5*bid_offer*cumprod(1 + pnls)*rowSums(abs(rutils::diffit(weights)))
   pnls <- (pnls - costs)
   if (with_weights)
     rutils::lagit(cbind(pnls, weights))
@@ -2021,7 +2021,7 @@ legend("topleft", legend=colnames(wealth),
       <<echo=TRUE,eval=FALSE>>=
 # Plot the momentum portfolio weights
 weights <- pnls[, -1]
-vtis <- log(quantmod::Cl(rutils::etf_env$VTI[dates]))
+vtis <- log(quantmod::Cl(rutils::etfenv$VTI[dates]))
 colnames(vtis) <- "VTI"
 datav <- cbind(vtis, weights)
 datav <- na.omit(datav)
@@ -2082,7 +2082,7 @@ zoo::plot.zoo(datav,
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 # Merton-Henriksson test
-vtis <- rutils::diff_it(vtis)
+vtis <- rutils::diffit(vtis)
 design <- cbind(VTI=vtis, 0.5*(vtis+abs(vtis)), vtis^2)
 colnames(design)[2:3] <- c("merton", "treynor")
 model <- lm(retsmom ~ VTI + merton, data=design); summary(model)
@@ -2230,7 +2230,7 @@ pnls <- rowMeans(weights*returns)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate transaction costs
 bid_offer <- 0.001
-costs <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weights)))
+costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
 pnls <- (pnls - costs)
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
@@ -2273,7 +2273,7 @@ momentum_daily <- function(returns, look_back=252, bid_offer=0.001, trend=1, ...
   # Calculate momentum profits and losses
   pnls <- trend*rowMeans(weights*returns)
   # Calculate transaction costs
-  costs <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weights)))
+  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
   (pnls - costs)
 }  # end momentum_daily
 @
@@ -2424,10 +2424,10 @@ legend("topleft", legend=colnames(wealth),
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)
 # Select all the ETF symbols except "VXX", "SVXY" and "MTUM"
-symbolv <- colnames(rutils::etf_env$returns)
+symbolv <- colnames(rutils::etfenv$returns)
 symbolv <- symbolv[!(symbolv %in% c("VXX", "SVXY", "MTUM"))]
-# Extract columns of rutils::etf_env$returns and overwrite NA values
-returns <- rutils::etf_env$returns[, symbolv]
+# Extract columns of rutils::etfenv$returns and overwrite NA values
+returns <- rutils::etfenv$returns[, symbolv]
 nassets <- NCOL(returns)
 # returns <- na.omit(returns)
 returns[1, is.na(returns[1, ])] <- 0
@@ -2820,68 +2820,68 @@ using namespace arma;
 //' @export
 // [[Rcpp::export]]
 arma::vec calc_weights(const arma::mat& returns,
-                       const std::string& typ_e = "max_sharpe",
+                       const std::string& typev = "max_sharpe",
                        int max_eigen = 1,
-                       const double& pro_b = 0.1,
+                       const double& probv = 0.1,
                        const double& alpha = 0.0,
                        const bool scalit = true) {
   // Initialize
   arma::vec weights(returns[ncols);
   if (max_eigen == 1)  max_eigen = returns[ncols;
 
-  // Calculate weights depending on typ_e
-  if (typ_e == "max_sharpe") {
+  // Calculate weights depending on typev
+  if (typev == "max_sharpe") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Apply regularized inverse
-    weights = calc_inv(returns, max_eigen)*mean_cols;
-  } else if (typ_e == "max_sharpe_median") {
+    weights = calc_inv(returns, max_eigen)*meancols;
+  } else if (typev == "max_sharpe_median") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::median(mean_cols));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
     // Apply regularized inverse
-    weights = calc_inv(returns, max_eigen)*mean_cols;
-  } else if (typ_e == "min_var") {
+    weights = calc_inv(returns, max_eigen)*meancols;
+  } else if (typev == "min_var") {
     // Apply regularized inverse to unit vector
     weights = calc_inv(returns, max_eigen)*arma::ones(returns[ncols);
-  } else if (typ_e == "min_varpca") {
+  } else if (typev == "min_varpca") {
     // Calculate highest order principal component
     arma::vec eigen_val;
     arma::mat eigen_vec;
     arma::eig_sym(eigen_val, eigen_vec, cov(returns));
     weights = eigen_vec.col(0);
-  } else if (typ_e == "rank") {
+  } else if (typev == "rank") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
-  } else if (typ_e == "rankrob") {
+  } else if (typev == "rankrob") {
     // Median returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Apply regularized inverse
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
-  } else if (typ_e == "quan_tile") {
+  } else if (typev == "quantilev") {
     // Sum of quantiles for columns
-    arma::vec prob_s = {pro_b, 1-pro_b};
-    weights = conv_to< vec >::from(arma::sum(arma::quantile(returns, prob_s, 0), 0));
+    arma::vec probs = {probv, 1-probv};
+    weights = conv_to< vec >::from(arma::sum(arma::quantile(returns, probs, 0), 0));
     // Weights equal to ranks
     weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(weights)));
     weights = (weights - arma::mean(weights));
   } else {
-    cout << "Warning: Incorrect typ_e argument: " << typ_e << endl;
+    cout << "Warning: Incorrect typev argument: " << typev << endl;
     return arma::ones(returns[ncols);
   }  // end if
 
@@ -2919,9 +2919,9 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
                     const arma::mat& returns, // Portfolio returns
                     const arma::uvec& startp,
                     const arma::uvec& endp,
-                    const std::string& typ_e = "max_sharpe",
+                    const std::string& typev = "max_sharpe",
                     const arma::uword& max_eigen = 1,
-                    const double& pro_b = 0.1,
+                    const double& probv = 0.1,
                     const double& alpha = 0,
                     const bool& scalit = true,
                     const double& coeff = 1.0,
@@ -2934,7 +2934,7 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
   for (arma::uword it=1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typ_e, max_eigen, pro_b, alpha, scalit);
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typev, max_eigen, probv, alpha, scalit);
     // Calculate out-of-sample returns
     pnls.subvec(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
     // Add transaction costs
@@ -3040,7 +3040,7 @@ alpha <- 0.7 ; max_eigen <- 21
       \includegraphics[width=0.45\paperwidth]{figure/backtest_sp500_monthly.png}
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest in Rcpp
-pnls <- HighFreq::back_test(typ_e="max_sharpe",
+pnls <- HighFreq::back_test(typev="max_sharpe",
   excess=returns100, returns=returns100,
   startp=startp, endp=endp,
   alpha=alpha, max_eigen=max_eigen)
@@ -3076,7 +3076,7 @@ dygraphs::dygraph(wealth[endp], main="Rolling S&P500 Portfolio Optimization Stra
 # Perform backtest over alphas
 alpha_s <- seq(from=0.01, to=0.91, by=0.1)
 pnls <- lapply(alpha_s, function(alpha) {
-  HighFreq::back_test(typ_e="max_sharpe",
+  HighFreq::back_test(typev="max_sharpe",
   excess=returns100, returns=returns100,
   startp=startp, endp=endp,
   alpha=alpha, max_eigen=max_eigen)
@@ -3089,7 +3089,7 @@ pnls <- pnls[[which.max(profilev)]]
 # Perform backtest over max_eigens
 max_eigens <- seq(from=3, to=40, by=2)
 pnls <- lapply(max_eigens, function(max_eigen) {
-  HighFreq::back_test(typ_e="max_sharpe",
+  HighFreq::back_test(typev="max_sharpe",
     excess=returns100, returns=returns100,
     startp=startp, endp=endp,
     alpha=alpha, max_eigen=max_eigen)
@@ -3137,7 +3137,7 @@ pnls <- lapply(look_backs, function(look_back) {
   startp <- c(rep_len(0, look_back-1), endp[1:(nrows-look_back+1)])
   startp <- (startp - 1)
   startp[startp < 0] <- 0
-  HighFreq::back_test(typ_e="max_sharpe",
+  HighFreq::back_test(typev="max_sharpe",
     excess=returns100, returns=returns100,
     startp=startp, endp=endp,
     alpha=alpha, max_eigen=max_eigen)

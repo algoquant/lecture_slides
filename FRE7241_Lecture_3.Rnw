@@ -107,10 +107,10 @@ knit_theme$set(thm)
       This \emph{rebalancing} acts as a mean reverting strategy - selling shares when their price goes up, and vice versa.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI and IEF dollar returns
-prices <- rutils::etf_env$prices[, c("VTI", "IEF")]
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 dates <- index(prices)
-rets_dollar <- rutils::diff_it(prices)
+rets_dollar <- rutils::diffit(prices)
 # Calculate VTI and IEF percentage returns
 rets_percent <- rets_dollar/
   rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
@@ -301,7 +301,7 @@ dygraphs::dygraph(wealth, main="Transaction Costs With Fixed Dollar Ratios") %>%
       Active investment strategies are expected to outperform static stock and bond portfolios.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate stock and bond returns
-returns <- na.omit(rutils::etf_env$returns[, c("VTI", "IEF")])
+returns <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 weights <- c(0.4, 0.6)
 returns <- cbind(returns, returns %*% weights)
 colnames(returns)[3] <- "Combined"
@@ -354,7 +354,7 @@ dygraphs::dygraph(log(wealth), main="Stock and Bond Portfolio") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Extract ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
-returns <- na.omit(rutils::etf_env$returns[, symbolv])
+returns <- na.omit(rutils::etfenv$returns[, symbolv])
 # Calculate all-weather portfolio wealth
 weightsaw <- c(0.30, 0.55, 0.15)
 returns <- cbind(returns, returns %*% weightsaw)
@@ -408,7 +408,7 @@ legend("topleft", legend=colnames(wealth),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns
-returns <- na.omit(rutils::etf_env$returns$VTI["2008/2009"])
+returns <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
 dates <- index(returns)
 nrows <- NROW(returns)
 returns <- drop(zoo::coredata(returns))
@@ -497,9 +497,9 @@ dygraphs::dygraph(datav, main="CPPI strategy") %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate dollar and percentage returns for VTI and IEF.
-prices <- rutils::etf_env$prices[, c("VTI", "IEF")]
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
-rets_dollar <- rutils::diff_it(prices)
+rets_dollar <- rutils::diffit(prices)
 rets_percent <- rets_dollar/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
 # Calculate wealth of fixed ratio of dollar amounts.
 weights <- c(0.5, 0.5)
@@ -547,7 +547,7 @@ wealth <- log(cbind(wealth_cda, wealth_risk_parity))
 wealth <- xts::xts(wealth, index(prices))
 colnames(wealth) <- c("Fixed Ratio", "Risk Parity")
 # Calculate the Sharpe ratios.
-sqrt(252)*sapply(rutils::diff_it(wealth), function (x) mean(x)/sd(x))
+sqrt(252)*sapply(rutils::diffit(wealth), function (x) mean(x)/sd(x))
 # Plot a dygraph of the log wealths.
 dygraphs::dygraph(wealth, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios") %>%
   dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
@@ -573,7 +573,7 @@ dygraphs::dygraph(wealth, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios
       The t-value of the \emph{Treynor-Mazuy} test is slightly significant, indicating some market timing skill of the risk parity strategy for \emph{VTI} and \emph{IEF}. 
       <<echo=TRUE,eval=FALSE>>=
 # Test risk parity market timing of VTI using Treynor-Mazuy test
-returns <- rutils::diff_it(wealth)
+returns <- rutils::diffit(wealth)
 vtis <- rets_percent$VTI
 design <- cbind(returns, vtis, vtis^2)
 design <- na.omit(design)
@@ -626,7 +626,7 @@ text(x=0.05, y=0.02, paste("Fixed Ratio t-value =", round(summary(model)$coeff["
       \href{https://en.wikipedia.org/wiki/Sell_in_May}{\emph{Sell in May}} is a \emph{market timing} \emph{calendar strategy}, in which stocks are sold at the beginning of May, and then bought back at the beginning of November.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate positions
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 position_s <- rep(NA_integer_, NROW(vtis))
 dates <- index(vtis)
 dates <- format(dates, "%m-%d")
@@ -726,14 +726,14 @@ text(x=0.05, y=0.05, paste("Treynor test t-value =", round(summary(model)$coeff[
       The \emph{Overnight Market Anomaly} has mostly disappeared after the \texttt{2008-2009} financial crisis.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the log of OHLC VTI prices
-ohlc <- log(rutils::etf_env$VTI)
+ohlc <- log(rutils::etfenv$VTI)
 openp <- quantmod::Op(ohlc)
 highp <- quantmod::Hi(ohlc)
 lowp <- quantmod::Lo(ohlc)
 closep <- quantmod::Cl(ohlc)
 # Calculate the close-to-close log returns, the intraday 
 # open-to-close returns and the overnight close-to-open returns.
-close_close <- rutils::diff_it(closep)
+close_close <- rutils::diffit(closep)
 colnames(close_close) <- "close_close"
 open_close <- (closep - openp)
 colnames(open_close) <- "open_close"
@@ -780,11 +780,11 @@ dygraphs::dygraph(cumsum(wealth),
       This would explain why the \emph{TOM} effect has been more pronounced for less liquid small-cap stocks.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI returns
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 dates <- zoo::index(vtis)
 # Calculate first business day of every month
 day_s <- as.numeric(format(dates, "%d"))
-indeks <- which(rutils::diff_it(day_s) < 0)
+indeks <- which(rutils::diffit(day_s) < 0)
 dates[head(indeks)]
 # Calculate Turn of the Month dates
 indeks <- lapply((-1):2, function(x) indeks + x)
@@ -837,7 +837,7 @@ dygraphs::dygraph(cumsum(wealth), main="Turn of the Month Strategy") %>%
       For example, a simple stop-loss rule is to sell the stock if its price drops by $5\%$ below the recent maximum price, and buy it back when the price recovers.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI returns
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 dates <- zoo::index(vtis)
 vtis <- drop(coredata(vtis))
 nrows <- NROW(vtis)
@@ -956,7 +956,7 @@ plot(x=0.01*(1:20), y=cum_pnls,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Inspect the R code of the function filter()
 filter
 # Calculate EWMA weights
@@ -964,16 +964,16 @@ look_back <- 21
 weights <- exp(-0.1*1:look_back)
 weights <- weights/sum(weights)
 # Calculate convolution using filter()
-filter_ed <- filter(closep, filter=weights,
+filtered <- filter(closep, filter=weights,
                     method="convolution", sides=1)
 # filter() returns time series of class "ts"
-class(filter_ed)
+class(filtered)
 # Get information about C_cfilter()
 getAnywhere(C_cfilter)
 # Filter using C_cfilter() over past values (sides=1).
 filter_fast <- .Call(stats:::C_cfilter, closep, filter=weights,
                      sides=1, circular=FALSE)
-all.equal(as.numeric(filter_ed), filter_fast, check.attributes=FALSE)
+all.equal(as.numeric(filtered), filter_fast, check.attributes=FALSE)
 # Calculate EWMA prices using roll::roll_sum()
 weights_rev <- rev(weights)
 roll_ed <- roll::roll_sum(closep, width=look_back, weights=weights_rev, min_obs=1)
@@ -1062,14 +1062,14 @@ look_back <- 21
 weights <- exp(-0.1*1:look_back)
 weights <- weights/sum(weights)
 weights_rev <- rev(weights)
-filter_ed <- roll::roll_sum(closep, width=NROW(weights), weights=weights_rev)
+filtered <- roll::roll_sum(closep, width=NROW(weights), weights=weights_rev)
 # Copy warmup period
-filter_ed[1:look_back] <- closep[1:look_back]
+filtered[1:look_back] <- closep[1:look_back]
 # Combine prices with smoothed prices
-prices <- cbind(closep, filter_ed)
+prices <- cbind(closep, filtered)
 colnames(prices)[2] <- "VTI Smooth"
 # Calculate standard deviations of returns
-sapply(rutils::diff_it(prices), sd)
+sapply(rutils::diffit(prices), sd)
 # Plot dygraph
 dygraphs::dygraph(prices["2009"], main="VTI Prices and Trailing Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
@@ -1081,16 +1081,16 @@ dygraphs::dygraph(prices["2009"], main="VTI Prices and Trailing Smoothed Prices"
 # Calculate centered EWMA prices using roll::roll_sum()
 weights <- c(weights_rev, weights[-1])
 weights <- weights/sum(weights)
-filter_ed <- roll::roll_sum(closep, width=NROW(weights), weights=weights, online=FALSE)
+filtered <- roll::roll_sum(closep, width=NROW(weights), weights=weights, online=FALSE)
 # Copy warmup period
-filter_ed[1:(2*look_back)] <- closep[1:(2*look_back)]
+filtered[1:(2*look_back)] <- closep[1:(2*look_back)]
 # Center the data
-filter_ed <- rutils::lagit(filter_ed, -(look_back-1), pad_zeros=FALSE)
+filtered <- rutils::lagit(filtered, -(look_back-1), pad_zeros=FALSE)
 # Combine prices with smoothed prices
-prices <- cbind(closep, filter_ed)
+prices <- cbind(closep, filtered)
 colnames(prices)[2] <- "VTI Smooth"
 # Calculate standard deviations of returns
-sapply(rutils::diff_it(prices), sd)
+sapply(rutils::diffit(prices), sd)
 # Plot dygraph
 dygraphs::dygraph(prices["2009"], main="VTI Prices and Centered Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
@@ -1147,12 +1147,12 @@ title(main="ACF of Smoothed VTI Returns", line=-1)
       Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       <<echo=TRUE,eval=FALSE>>=
 # Extract log VTI prices
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 nrows <- NROW(closep)
 # Calculate EWMA weights
 look_back <- 21
-lambdav <- 0.1
-weights <- exp(lambdav*1:look_back)
+lambda <- 0.1
+weights <- exp(lambda*1:look_back)
 weights <- weights/sum(weights)
 # Calculate EWMA prices
 ew_ma <- roll::roll_sum(closep, width=look_back, weights=weights, min_obs=1)
@@ -1201,7 +1201,7 @@ legend("bottomright", legend=colnames(prices),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log OHLC prices and volumes
 symbol <- "VTI"
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 nrows <- NROW(ohlc)
 closep <- log(quantmod::Cl(ohlc))
 volumes <- quantmod::Vo(ohlc)
@@ -1258,12 +1258,12 @@ legend("bottomright", legend=colnames(prices),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate two EWMA prices
 look_back <- 21
-lambdav <- 0.1
-weights <- exp(lambdav*1:look_back)
+lambda <- 0.1
+weights <- exp(lambda*1:look_back)
 weights <- weights/sum(weights)
 ewma_fast <- roll::roll_sum(closep, width=look_back, weights=weights, min_obs=1)
-lambdav <- 0.05
-weights <- exp(lambdav*1:look_back)
+lambda <- 0.05
+weights <- exp(lambda*1:look_back)
 weights <- weights/sum(weights)
 ewma_slow <- roll::roll_sum(closep, width=look_back, weights=weights, min_obs=1)
       @
@@ -1356,8 +1356,8 @@ dygraphs::dygraph(prices["2009"], main=paste(symbol, "Fractional Returns")) %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI log returns
-closep <- log(quantmod::Cl(rutils::etf_env$VTI))
-returns <- rutils::diff_it(closep)
+closep <- log(quantmod::Cl(rutils::etfenv$VTI))
+returns <- rutils::diffit(closep)
 # Perform ADF test for prices
 tseries::adf.test(closep)
 # Perform ADF test for returns
@@ -1390,25 +1390,25 @@ returns <- do.call(cbind, returns)
 returns <- cbind(closep, returns)
 colnames(returns) <- c("VTI", paste0("frac_", delta_s))
 # Calculate ADF test statistics
-adf_stats <- sapply(returns, function(x)
+adfstats <- sapply(returns, function(x)
   suppressWarnings(tseries::adf.test(x)$statistic)
 )  # end sapply
-names(adf_stats) <- colnames(returns)
+names(adfstats) <- colnames(returns)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/features_fracrets.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of fractional VTI returns
-color_s <- colorRampPalette(c("blue", "red"))(NCOL(returns))
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(returns))
 colnamev <- colnames(returns)
 dyplot <- dygraphs::dygraph(returns["2019"], main="Fractional Returns") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col=color_s[1])
+  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col=colorv[1])
 for (i in 2:NROW(colnamev))
   dyplot <- dyplot %>%
   dyAxis("y2", label=colnamev[i], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[i], axis="y2", label=colnamev[i], strokeWidth=2, col=color_s[i])
+  dySeries(name=colnamev[i], axis="y2", label=colnamev[i], strokeWidth=2, col=colorv[i])
 dyplot <- dyplot %>% dyLegend(width=500)
 dyplot
       @
@@ -1435,10 +1435,10 @@ dyplot
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volume z-scores
-volumes <- quantmod::Vo(rutils::etf_env$VTI)
+volumes <- quantmod::Vo(rutils::etfenv$VTI)
 look_back <- 21
 volume_mean <- roll::roll_mean(volumes, width=look_back, min_obs=1)
-volume_sd <- roll::roll_sd(rutils::diff_it(volumes), width=look_back, min_obs=1)
+volume_sd <- roll::roll_sd(rutils::diffit(volumes), width=look_back, min_obs=1)
 volume_scores <- (volumes - volume_mean)/volume_sd
 # Plot histogram of volume z-scores
 x11(width=6, height=5)
@@ -1482,12 +1482,12 @@ dygraphs::dygraph(prices["2009"], main="VTI Volume Z-Scores") %>%
       The \emph{volatility z-scores} are positively skewed because returns are negatively skewed.
       <<echo=TRUE,eval=FALSE>>=
 # Extract VTI log OHLC prices
-ohlc <- log(rutils::etf_env$VTI)
+ohlc <- log(rutils::etfenv$VTI)
 # Calculate volatility z-scores
 volat <- quantmod::Hi(ohlc)-quantmod::Lo(ohlc)
 look_back <- 21
 volat_mean <- roll::roll_mean(volat, width=look_back, min_obs=1)
-volat_sd <- roll::roll_sd(rutils::diff_it(volat), width=look_back, min_obs=1)
+volat_sd <- roll::roll_sd(rutils::diffit(volat), width=look_back, min_obs=1)
 volat_scores <- ifelse(is.na(volat_sd), 0, (volat - volat_mean)/volat_sd)
 # Plot histogram of volatility z-scores
 x11(width=6, height=5)
@@ -1679,20 +1679,20 @@ dygraphs::dygraph(prices["2009"], main="VTI Price Z-Scores") %>%
       A time series of \emph{z-scores} over past data can be calculated using a rolling look-back window.
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Define look-back window and a half window
 look_back <- 11
 # Calculate time series of medians
 medi_an <- roll::roll_median(closep, width=look_back)
 # medi_an <- TTR::runMedian(closep, n=look_back)
 # Calculate time series of MAD
-ma_d <- HighFreq::roll_var(closep, look_back=look_back, method="quantile")
-# ma_d <- TTR::runMAD(closep, n=look_back)
+madv <- HighFreq::roll_var(closep, look_back=look_back, method="quantile")
+# madv <- TTR::runMAD(closep, n=look_back)
 # Calculate time series of z-scores
-z_scores <- (closep - medi_an)/ma_d
-z_scores[1:look_back, ] <- 0
-tail(z_scores, look_back)
-range(z_scores)
+zscores <- (closep - medi_an)/madv
+zscores[1:look_back, ] <- 0
+tail(zscores, look_back)
+range(zscores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1704,10 +1704,10 @@ x11(width=6, height=5)
 dygraphs::dygraph(cbind(closep, medi_an), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Plot histogram of z-scores
-histo_gram <- hist(z_scores, col="lightgrey",
+histo_gram <- hist(zscores, col="lightgrey",
   xlab="z-scores", breaks=50, xlim=c(-4, 4),
   ylab="frequency", freq=FALSE, main="Hampel Z-scores histogram")
-lines(density(z_scores, adjust=1.5), lwd=3, col="blue")
+lines(density(zscores, adjust=1.5), lwd=3, col="blue")
       @
   \end{columns}
 \end{block}
@@ -1739,20 +1739,20 @@ lines(density(z_scores, adjust=1.5), lwd=3, col="blue")
 # Calculate one-sided Hampel z-scores
 medi_an <- roll::roll_median(closep, width=look_back)
 # medi_an <- TTR::runMedian(closep, n=look_back)
-ma_d <- HighFreq::roll_var(closep, look_back=look_back, method="quantile")
-# ma_d <- TTR::runMAD(closep, n=look_back)
-z_scores <- (closep - medi_an)/ma_d
-z_scores[1:look_back, ] <- 0
-tail(z_scores, look_back)
-range(z_scores)
+madv <- HighFreq::roll_var(closep, look_back=look_back, method="quantile")
+# madv <- TTR::runMAD(closep, n=look_back)
+zscores <- (closep - medi_an)/madv
+zscores[1:look_back, ] <- 0
+tail(zscores, look_back)
+range(zscores)
 # Calculate two-sided Hampel z-scores
 half_back <- look_back %/% 2
 medi_an <- rutils::lagit(medi_an, lagg=-half_back)
-ma_d <- rutils::lagit(ma_d, lagg=-half_back)
-z_scores <- (closep - medi_an)/ma_d
-z_scores[1:look_back, ] <- 0
-tail(z_scores, look_back)
-range(z_scores)
+madv <- rutils::lagit(madv, lagg=-half_back)
+zscores <- (closep - medi_an)/madv
+zscores[1:look_back, ] <- 0
+tail(zscores, look_back)
+range(zscores)
       @
   \end{columns}
 \end{block}
@@ -1774,14 +1774,14 @@ range(z_scores)
       The best choice of the meta-parameters can be determined through backtesting.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- rutils::diff_it(closep)
+returns <- rutils::diffit(closep)
 # Define threshold value
-thresh_old <- sum(abs(range(z_scores)))/8
+threshold <- sum(abs(range(zscores)))/8
 # Backtest VTI strategy
 position_s <- rep(NA_integer_, NROW(closep))
 position_s[1] <- 0
-position_s[z_scores < -thresh_old] <- 1
-position_s[z_scores > thresh_old] <- (-1)
+position_s[zscores < -threshold] <- 1
+position_s[zscores > threshold] <- (-1)
 position_s <- zoo::na.locf(position_s)
 position_s <- rutils::lagit(position_s)
 pnls <- cumsum(returns*position_s)
@@ -1932,28 +1932,28 @@ half_back <- look_back %/% 2
 medi_an <- roll::roll_median(taq$price, width=look_back)
 # medi_an <- TTR::runMedian(taq$price, n=look_back)
 medi_an <- rutils::lagit(medi_an, lagg=-half_back, pad_zeros=FALSE)
-ma_d <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="quantile")
-# ma_d <- TTR::runMAD(taq$price, n=look_back)
-ma_d <- rutils::lagit(ma_d, lagg=-half_back, pad_zeros=FALSE)
+madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="quantile")
+# madv <- TTR::runMAD(taq$price, n=look_back)
+madv <- rutils::lagit(madv, lagg=-half_back, pad_zeros=FALSE)
 # Calculate Z-scores
-z_scores <- (taq$price - medi_an)/ma_d
-z_scores[is.na(z_scores)] <- 0
-z_scores[!is.finite(z_scores)] <- 0
-sum(is.na(z_scores))
-sum(!is.finite(z_scores))
-range(z_scores); mad(z_scores)
-hist(z_scores, breaks=2000, xlim=c(-5*mad(z_scores), 5*mad(z_scores)))
+zscores <- (taq$price - medi_an)/madv
+zscores[is.na(zscores)] <- 0
+zscores[!is.finite(zscores)] <- 0
+sum(is.na(zscores))
+sum(!is.finite(zscores))
+range(zscores); mad(zscores)
+hist(zscores, breaks=2000, xlim=c(-5*mad(zscores), 5*mad(zscores)))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_good_ticks_dygraph.png}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-thresh_old <- 6*mad(z_scores)
+threshold <- 6*mad(zscores)
 # Remove price jumps with large z-scores
-bad_ticks <- (abs(z_scores) > thresh_old)
+bad_ticks <- (abs(zscores) > threshold)
 good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
-sum(bad_ticks)/NROW(z_scores)
+sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
 xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
 colnames(xtes) <- c("XLK.Close", "XLK.Volume")
@@ -1997,9 +1997,9 @@ quantmod::chart_Series(x=xtes$XLK.Close,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-thresh_old <- 6*mad(z_scores)
+threshold <- 6*mad(zscores)
 # Calculate number of prices classified as bad data
-is_bad <- (abs(z_scores) > thresh_old)
+is_bad <- (abs(zscores) > threshold)
 sum(is_bad)
 # Add 200 random price jumps into prices
 set.seed(1121)
@@ -2014,12 +2014,12 @@ dygraphs::dygraph(cbind(closep, medi_an), main="VTI median") %>%
 # Calculate time series of z-scores
 medi_an <- roll::roll_median(closep, width=look_back)
 # medi_an <- TTR::runMedian(closep, n=look_back)
-ma_d <- HighFreq::roll_var(closep, look_back=look_back, method="quantile")
-# ma_d <- TTR::runMAD(closep, n=look_back)
-z_scores <- (closep - medi_an)/ma_d
-z_scores[1:look_back, ] <- 0
+madv <- HighFreq::roll_var(closep, look_back=look_back, method="quantile")
+# madv <- TTR::runMAD(closep, n=look_back)
+zscores <- (closep - medi_an)/madv
+zscores[1:look_back, ] <- 0
 # Calculate number of prices classified as bad data
-is_bad <- (abs(z_scores) > thresh_old)
+is_bad <- (abs(zscores) > threshold)
 sum(is_bad)
       @
   \end{columns}
@@ -2096,18 +2096,18 @@ sum(is_jump & !is_bad)
       \vskip1ex
       The \emph{area under the ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of thresh_old
-con_fuse <- function(actu_al, z_scores, thresh_old) {
-    confu_sion <- table(!actu_al, !(abs(z_scores) > thresh_old))
+# Confusion matrix as function of threshold
+con_fuse <- function(actu_al, zscores, threshold) {
+    confu_sion <- table(!actu_al, !(abs(zscores) > threshold))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(is_jump, z_scores, thresh_old=thresh_old)
+con_fuse(is_jump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
 threshold_s <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  actu_al=is_jump, z_scores=z_scores)  # end sapply
+  actu_al=is_jump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshold_s
 error_rates <- rbind(c(1, 0), error_rates)
@@ -2115,7 +2115,7 @@ error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diff_it(error_rates[, "typeI"])
+false_pos <- rutils::diffit(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
       @
     \column{0.5\textwidth}
@@ -2152,23 +2152,23 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 medi_an <- roll::roll_median(taq$price, width=3)
 medi_an[1:2] <- taq$price[1:2]
 medi_an <- rutils::lagit(medi_an, lagg=-1, pad_zeros=FALSE)
-ma_d <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="quantile")
-ma_d <- rutils::lagit(ma_d, lagg=-1, pad_zeros=FALSE)
+madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="quantile")
+madv <- rutils::lagit(madv, lagg=-1, pad_zeros=FALSE)
 # Calculate Z-scores
-z_scores <- ifelse(ma_d > 0, (taq$price - medi_an)/ma_d, 0)
-range(z_scores); mad(z_scores)
-ma_d <- mad(z_scores[abs(z_scores)>0])
-hist(z_scores, breaks=2000, xlim=c(-5*ma_d, 5*ma_d))
+zscores <- ifelse(madv > 0, (taq$price - medi_an)/madv, 0)
+range(zscores); mad(zscores)
+madv <- mad(zscores[abs(zscores)>0])
+hist(zscores, breaks=2000, xlim=c(-5*madv, 5*madv))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_good_ticks_dygraph.png}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-thresh_old <- 6*ma_d
-bad_ticks <- (abs(z_scores) > thresh_old)
+threshold <- 6*madv
+bad_ticks <- (abs(zscores) > threshold)
 good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
-sum(bad_ticks)/NROW(z_scores)
+sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
 xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
 colnames(xtes) <- c("XLK.Close", "XLK.Volume")

@@ -1,288 +1,288 @@
 # Create random real symmetric matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- mat_rix + t(mat_rix)
+matrixv <- matrix(runif(25), nc=5)
+matrixv <- matrixv + t(matrixv)
 # Calculate eigenvectors and eigenvalues
-ei_gen <- eigen(mat_rix)
-eigen_vec <- ei_gen$vectors
+eigend <- eigen(matrixv)
+eigen_vec <- eigend$vectors
 dim(eigen_vec)
 # Plot eigenvalues
-barplot(ei_gen$values, xlab="", ylab="", las=3,
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+barplot(eigend$values, xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(eigend$values)),
   main="Eigenvalues of a real symmetric matrix")
 # eigenvectors form an orthonormal basis
 round(t(eigen_vec) %*% eigen_vec, digits=4)
 # Diagonalize matrix using eigenvector matrix
-round(t(eigen_vec) %*% (mat_rix %*% eigen_vec), digits=4)
-ei_gen$values
+round(t(eigen_vec) %*% (matrixv %*% eigen_vec), digits=4)
+eigend$values
 # eigen decomposition of matrix by rotating the diagonal matrix
-de_comp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
+de_comp <- eigen_vec %*% (eigend$values * t(eigen_vec))
 # Create diagonal matrix of eigenvalues
-# diago_nal <- diag(ei_gen$values)
+# diago_nal <- diag(eigend$values)
 # de_comp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
-all.equal(mat_rix, de_comp)
+all.equal(matrixv, de_comp)
 # Create random positive semi-definite matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- t(mat_rix) %*% mat_rix
+matrixv <- matrix(runif(25), nc=5)
+matrixv <- t(matrixv) %*% matrixv
 # Calculate eigenvectors and eigenvalues
-ei_gen <- eigen(mat_rix)
-ei_gen$values
+eigend <- eigen(matrixv)
+eigend$values
 # Plot eigenvalues
-barplot(ei_gen$values, las=3, xlab="", ylab="",
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+barplot(eigend$values, las=3, xlab="", ylab="",
+  names.arg=paste0("ev", 1:NROW(eigend$values)),
   main="Eigenvalues of positive semi-definite matrix")
 # Perform singular value decomposition
-mat_rix <- matrix(rnorm(50), nc=5)
-s_vd <- svd(mat_rix)
-# Recompose mat_rix from SVD mat_rices
-all.equal(mat_rix, s_vd$u %*% (s_vd$d*t(s_vd$v)))
+matrixv <- matrix(rnorm(50), nc=5)
+svdec <- svd(matrixv)
+# Recompose matrixv from SVD mat_rices
+all.equal(matrixv, svdec$u %*% (svdec$d*t(svdec$v)))
 # Columns of U and V are orthonormal
-round(t(s_vd$u) %*% s_vd$u, 4)
-round(t(s_vd$v) %*% s_vd$v, 4)
+round(t(svdec$u) %*% svdec$u, 4)
+round(t(svdec$v) %*% svdec$v, 4)
 # Dimensions of left and right matrices
 n_left <- 6 ; n_right <- 4
 # Calculate left matrix
 left_mat <- matrix(runif(n_left^2), nc=n_left)
-ei_gen <- eigen(crossprod(left_mat))
-left_mat <- ei_gen$vectors[, 1:n_right]
+eigend <- eigen(crossprod(left_mat))
+left_mat <- eigend$vectors[, 1:n_right]
 # Calculate right matrix and singular values
 right_mat <- matrix(runif(n_right^2), nc=n_right)
-ei_gen <- eigen(crossprod(right_mat))
-right_mat <- ei_gen$vectors
+eigend <- eigen(crossprod(right_mat))
+right_mat <- eigend$vectors
 sing_values <- sort(runif(n_right, min=1, max=5), decreasing=TRUE)
 # Compose rectangular matrix
-mat_rix <- left_mat %*% (sing_values * t(right_mat))
+matrixv <- left_mat %*% (sing_values * t(right_mat))
 # Perform singular value decomposition
-s_vd <- svd(mat_rix)
-# Recompose mat_rix from SVD
-all.equal(mat_rix, s_vd$u %*% (s_vd$d*t(s_vd$v)))
-# Compare SVD with mat_rix components
-all.equal(abs(s_vd$u), abs(left_mat))
-all.equal(abs(s_vd$v), abs(right_mat))
-all.equal(s_vd$d, sing_values)
-# Eigen decomposition of mat_rix squared
-square_d <- mat_rix %*% t(mat_rix)
-ei_gen <- eigen(square_d)
-all.equal(ei_gen$values[1:n_right], sing_values^2)
-all.equal(abs(ei_gen$vectors[, 1:n_right]), abs(left_mat))
-# Eigen decomposition of mat_rix squared
-square_d <- t(mat_rix) %*% mat_rix
-ei_gen <- eigen(square_d)
-all.equal(ei_gen$values, sing_values^2)
-all.equal(abs(ei_gen$vectors), abs(right_mat))
+svdec <- svd(matrixv)
+# Recompose matrixv from SVD
+all.equal(matrixv, svdec$u %*% (svdec$d*t(svdec$v)))
+# Compare SVD with matrixv components
+all.equal(abs(svdec$u), abs(left_mat))
+all.equal(abs(svdec$v), abs(right_mat))
+all.equal(svdec$d, sing_values)
+# Eigen decomposition of matrixv squared
+square_d <- matrixv %*% t(matrixv)
+eigend <- eigen(square_d)
+all.equal(eigend$values[1:n_right], sing_values^2)
+all.equal(abs(eigend$vectors[, 1:n_right]), abs(left_mat))
+# Eigen decomposition of matrixv squared
+square_d <- t(matrixv) %*% matrixv
+eigend <- eigen(square_d)
+all.equal(eigend$values, sing_values^2)
+all.equal(abs(eigend$vectors), abs(right_mat))
 # Create random positive semi-definite matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- t(mat_rix) %*% mat_rix
-# Calculate the inverse of mat_rix
-in_verse <- solve(a=mat_rix)
+matrixv <- matrix(runif(25), nc=5)
+matrixv <- t(matrixv) %*% matrixv
+# Calculate the inverse of matrixv
+inverse <- solve(a=matrixv)
 # Multiply inverse with matrix
-round(in_verse %*% mat_rix, 4)
-round(mat_rix %*% in_verse, 4)
+round(inverse %*% matrixv, 4)
+round(matrixv %*% inverse, 4)
 # Calculate eigenvectors and eigenvalues
-ei_gen <- eigen(mat_rix)
-eigen_vec <- ei_gen$vectors
+eigend <- eigen(matrixv)
+eigen_vec <- eigend$vectors
 # Perform eigen decomposition of inverse
-eigen_inverse <- eigen_vec %*% (t(eigen_vec) / ei_gen$values)
-all.equal(in_verse, eigen_inverse)
+eigen_inverse <- eigen_vec %*% (t(eigen_vec) / eigend$values)
+all.equal(inverse, eigen_inverse)
 # Decompose diagonal matrix with inverse of eigenvalues
-# diago_nal <- diag(1/ei_gen$values)
+# diago_nal <- diag(1/eigend$values)
 # eigen_inverse <-
 #   eigen_vec %*% (diago_nal %*% t(eigen_vec))
 # Random rectangular matrix: n_left > n_right
 n_left <- 6 ; n_right <- 4
-mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
-# Calculate generalized inverse of mat_rix
-in_verse <- MASS::ginv(mat_rix)
-round(in_verse %*% mat_rix, 4)
-all.equal(mat_rix, mat_rix %*% in_verse %*% mat_rix)
+matrixv <- matrix(runif(n_left*n_right), nc=n_right)
+# Calculate generalized inverse of matrixv
+inverse <- MASS::ginv(matrixv)
+round(inverse %*% matrixv, 4)
+all.equal(matrixv, matrixv %*% inverse %*% matrixv)
 # Random rectangular matrix: n_left < n_right
 n_left <- 4 ; n_right <- 6
-mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
-# Calculate generalized inverse of mat_rix
-in_verse <- MASS::ginv(mat_rix)
-all.equal(mat_rix, mat_rix %*% in_verse %*% mat_rix)
-round(mat_rix %*% in_verse, 4)
-round(in_verse %*% mat_rix, 4)
+matrixv <- matrix(runif(n_left*n_right), nc=n_right)
+# Calculate generalized inverse of matrixv
+inverse <- MASS::ginv(matrixv)
+all.equal(matrixv, matrixv %*% inverse %*% matrixv)
+round(matrixv %*% inverse, 4)
+round(inverse %*% matrixv, 4)
 # Perform singular value decomposition
-s_vd <- svd(mat_rix)
+svdec <- svd(matrixv)
 # Calculate generalized inverse from SVD
-svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
-all.equal(svd_inverse, in_verse)
+svd_inverse <- svdec$v %*% (t(svdec$u) / svdec$d)
+all.equal(svd_inverse, inverse)
 # Calculate Moore-Penrose pseudo-inverse
-mp_inverse <- MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
-all.equal(mp_inverse, in_verse)
+mp_inverse <- MASS::ginv(t(matrixv) %*% matrixv) %*% t(matrixv)
+all.equal(mp_inverse, inverse)
 # Create random singular matrix
 # More columns than rows: n_right > n_left
 n_left <- 4 ; n_right <- 6
-mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
-mat_rix <- t(mat_rix) %*% mat_rix
+matrixv <- matrix(runif(n_left*n_right), nc=n_right)
+matrixv <- t(matrixv) %*% matrixv
 # Perform singular value decomposition
-s_vd <- svd(mat_rix)
+svdec <- svd(matrixv)
 # Incorrect inverse from SVD because of zero singular values
-svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
+svd_inverse <- svdec$v %*% (t(svdec$u) / svdec$d)
 # Inverse property doesn't hold
-all.equal(mat_rix, mat_rix %*% svd_inverse %*% mat_rix)
+all.equal(matrixv, matrixv %*% svd_inverse %*% matrixv)
 # Set tolerance for determining zero singular values
-to_l <- sqrt(.Machine$double.eps)
+precision <- sqrt(.Machine$double.eps)
 # Check for zero singular values
-round(s_vd$d, 12)
-not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
+round(svdec$d, 12)
+not_zero <- (svdec$d > (precision * svdec$d[1]))
 # Calculate generalized inverse from SVD
-svd_inverse <- s_vd$v[, not_zero] %*%
-  (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
-# Verify inverse property of mat_rix
-all.equal(mat_rix, mat_rix %*% svd_inverse %*% mat_rix)
+svd_inverse <- svdec$v[, not_zero] %*%
+  (t(svdec$u[, not_zero]) / svdec$d[not_zero])
+# Verify inverse property of matrixv
+all.equal(matrixv, matrixv %*% svd_inverse %*% matrixv)
 # Calculate generalized inverse using MASS::ginv()
-in_verse <- MASS::ginv(mat_rix)
-all.equal(svd_inverse, in_verse)
+inverse <- MASS::ginv(matrixv)
+all.equal(svd_inverse, inverse)
 # Calculate Moore-Penrose pseudo-inverse
-mp_inverse <- MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
-all.equal(mp_inverse, in_verse)
+mp_inverse <- MASS::ginv(t(matrixv) %*% matrixv) %*% t(matrixv)
+all.equal(mp_inverse, inverse)
 # Diagonalize the "unit" matrix
-unit_mat <- mat_rix %*% in_verse
+unit_mat <- matrixv %*% inverse
 round(unit_mat, 4)
-round(mat_rix %*% in_verse, 4)
-round(t(s_vd$u) %*% unit_mat %*% s_vd$v, 4)
+round(matrixv %*% inverse, 4)
+round(t(svdec$u) %*% unit_mat %*% svdec$v, 4)
 # Define a square matrix
-mat_rix <- matrix(c(1, 2, -1, 2), nc=2)
-vec_tor <- c(2, 1)
-# Calculate the inverse of mat_rix
-in_verse <- solve(a=mat_rix)
-in_verse %*% mat_rix
-# Calculate solution using inverse of mat_rix
-solu_tion <- in_verse %*% vec_tor
-mat_rix %*% solu_tion
+matrixv <- matrix(c(1, 2, -1, 2), nc=2)
+vectorv <- c(2, 1)
+# Calculate the inverse of matrixv
+inverse <- solve(a=matrixv)
+inverse %*% matrixv
+# Calculate solution using inverse of matrixv
+solu_tion <- inverse %*% vectorv
+matrixv %*% solu_tion
 # Calculate solution of linear system
-solu_tion <- solve(a=mat_rix, b=vec_tor)
-mat_rix %*% solu_tion
+solu_tion <- solve(a=matrixv, b=vectorv)
+matrixv %*% solu_tion
 # Create large random positive semi-definite matrix
-mat_rix <- matrix(runif(1e4), nc=100)
-mat_rix <- t(mat_rix) %*% mat_rix
+matrixv <- matrix(runif(1e4), nc=100)
+matrixv <- t(matrixv) %*% matrixv
 # Calculate eigen decomposition
-ei_gen <- eigen(mat_rix)
-eigen_val <- ei_gen$values
-eigen_vec <- ei_gen$vectors
+eigend <- eigen(matrixv)
+eigen_val <- eigend$values
+eigen_vec <- eigend$vectors
 # Set tolerance for determining zero singular values
-to_l <- sqrt(.Machine$double.eps)
+precision <- sqrt(.Machine$double.eps)
 # If needed convert to positive definite matrix
-not_zero <- (eigen_val > (to_l*eigen_val[1]))
+not_zero <- (eigen_val > (precision*eigen_val[1]))
 if (sum(!not_zero) > 0) {
-  eigen_val[!not_zero] <- 2*to_l
-  mat_rix <- eigen_vec %*% (eigen_val * t(eigen_vec))
+  eigen_val[!not_zero] <- 2*precision
+  matrixv <- eigen_vec %*% (eigen_val * t(eigen_vec))
 }  # end if
-# Calculate the Cholesky mat_rix
-choles_ky <- chol(mat_rix)
-choles_ky[1:5, 1:5]
-all.equal(mat_rix, t(choles_ky) %*% choles_ky)
+# Calculate the Cholesky matrixv
+cholmat <- chol(matrixv)
+cholmat[1:5, 1:5]
+all.equal(matrixv, t(cholmat) %*% cholmat)
 # Calculate inverse from Cholesky
-chol_inverse <- chol2inv(choles_ky)
-all.equal(solve(mat_rix), chol_inverse)
+chol_inverse <- chol2inv(cholmat)
+all.equal(solve(matrixv), chol_inverse)
 # Compare speed of Cholesky inversion
 library(microbenchmark)
 summary(microbenchmark(
-  sol_ve=solve(mat_rix),
-  choles_ky=chol2inv(chol(mat_rix)),
+  sol_ve=solve(matrixv),
+  cholmat=chol2inv(chol(matrixv)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Calculate random covariance matrix
-cov_mat <- matrix(runif(25), nc=5)
-cov_mat <- t(cov_mat) %*% cov_mat
-# Calculate the Cholesky mat_rix
-choles_ky <- chol(cov_mat)
-choles_ky
+covmat <- matrix(runif(25), nc=5)
+covmat <- t(covmat) %*% covmat
+# Calculate the Cholesky matrixv
+cholmat <- chol(covmat)
+cholmat
 # Simulate random uncorrelated returns
-n_assets <- 5
-n_rows <- 10000
-re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
+nassets <- 5
+nrows <- 10000
+returns <- matrix(rnorm(nassets*nrows), nc=nassets)
 # Calculate correlated returns by applying Cholesky
-corr_returns <- re_turns %*% choles_ky
+corr_returns <- returns %*% cholmat
 # Calculate covariance matrix
-cov_returns <- crossprod(corr_returns) / (n_rows-1)
-all.equal(cov_mat, cov_returns)
+cov_returns <- crossprod(corr_returns) / (nrows-1)
+all.equal(covmat, cov_returns)
 # Simulate random portfolio returns
-n_assets <- 10
-n_rows <- 100
+nassets <- 10
+nrows <- 100
 set.seed(1121)  # Initialize random number generator
-re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
-# Calculate de-meaned re_turns matrix
-re_turns <- t(t(re_turns) - colMeans(re_turns))
+returns <- matrix(rnorm(nassets*nrows), nc=nassets)
+# Calculate de-meaned returns matrix
+returns <- t(t(returns) - colMeans(returns))
 # Or
-re_turns <- apply(re_turns, MARGIN=2, function(x) (x-mean(x)))
+returns <- apply(returns, MARGIN=2, function(x) (x-mean(x)))
 # Calculate covariance matrix
-cov_mat <- crossprod(re_turns) / (n_rows-1)
+covmat <- crossprod(returns) / (nrows-1)
 # Calculate eigenvectors and eigenvalues
-ei_gen <- eigen(cov_mat)
-ei_gen$values
-barplot(ei_gen$values, # Plot eigenvalues
+eigend <- eigen(covmat)
+eigend$values
+barplot(eigend$values, # Plot eigenvalues
   xlab="", ylab="", las=3,
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+  names.arg=paste0("ev", 1:NROW(eigend$values)),
   main="Eigenvalues of covariance matrix")
 # Calculate eigenvectors and eigenvalues
 # as function of number of returns
-n_data <- ((n_assets/2):(2*n_assets))
-e_values <- sapply(n_data, function(x) {
-  re_turns <- re_turns[1:x, ]
-  re_turns <- apply(re_turns, MARGIN=2, function(y) (y - mean(y)))
-  cov_mat <- crossprod(re_turns) / (x-1)
-  min(eigen(cov_mat)$values)
+ndata <- ((nassets/2):(2*nassets))
+e_values <- sapply(ndata, function(x) {
+  returns <- returns[1:x, ]
+  returns <- apply(returns, MARGIN=2, function(y) (y - mean(y)))
+  covmat <- crossprod(returns) / (x-1)
+  min(eigen(covmat)$values)
 })  # end sapply
-plot(y=e_values, x=n_data, t="l", xlab="", ylab="", lwd=3, col="blue",
+plot(y=e_values, x=ndata, t="l", xlab="", ylab="", lwd=3, col="blue",
   main="Smallest eigenvalue of covariance matrix
   as function of number of returns")
 # Create rectangular matrix with collinear columns
 ran_dom <- matrix(rnorm(10*8), nc=10)
 # Calculate covariance matrix
-cov_mat <- cov(ran_dom)
-# Calculate inverse of cov_mat - error
-in_verse <- solve(cov_mat)
-# Calculate regularized inverse of cov_mat
-in_verse <- MASS::ginv(cov_mat)
-# Verify inverse property of mat_rix
-all.equal(cov_mat, cov_mat %*% in_verse %*% cov_mat)
+covmat <- cov(ran_dom)
+# Calculate inverse of covmat - error
+inverse <- solve(covmat)
+# Calculate regularized inverse of covmat
+inverse <- MASS::ginv(covmat)
+# Verify inverse property of matrixv
+all.equal(covmat, covmat %*% inverse %*% covmat)
 # Perform eigen decomposition
-ei_gen <- eigen(cov_mat)
-eigen_vec <- ei_gen$vectors
-eigen_val <- ei_gen$values
+eigend <- eigen(covmat)
+eigen_vec <- eigend$vectors
+eigen_val <- eigend$values
 # Set tolerance for determining zero singular values
-to_l <- sqrt(.Machine$double.eps)
+precision <- sqrt(.Machine$double.eps)
 # Calculate regularized inverse matrix
-not_zero <- (eigen_val > (to_l * eigen_val[1]))
+not_zero <- (eigen_val > (precision * eigen_val[1]))
 reg_inverse <- eigen_vec[, not_zero] %*%
   (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
-# Verify inverse property of mat_rix
-all.equal(in_verse, reg_inverse)
+# Verify inverse property of matrixv
+all.equal(inverse, reg_inverse)
 # Calculate regularized inverse matrix using cutoff
 max_eigen <- 3
-in_verse <- eigen_vec[, 1:max_eigen] %*%
-  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
-# Verify inverse property of mat_rix
-all.equal(in_verse, reg_inverse)
+inverse <- eigen_vec[, 1:max_eigen] %*%
+  (t(eigen_vec[, 1:max_eigen]) / eigend$values[1:max_eigen])
+# Verify inverse property of matrixv
+all.equal(inverse, reg_inverse)
 # Create random covariance matrix
 set.seed(1121)
-mat_rix <- matrix(rnorm(5e2), nc=5)
-cov_mat <- cov(mat_rix)
-cor_mat <- cor(mat_rix)
-std_dev <- sqrt(diag(cov_mat))
+matrixv <- matrix(rnorm(5e2), nc=5)
+covmat <- cov(matrixv)
+cormat <- cor(matrixv)
+stdev <- sqrt(diag(covmat))
 # Calculate target matrix
-cor_mean <- mean(cor_mat[upper.tri(cor_mat)])
-tar_get <- matrix(cor_mean, nr=NROW(cov_mat), nc=NCOL(cov_mat))
-diag(tar_get) <- 1
-tar_get <- t(t(tar_get * std_dev) * std_dev)
+cor_mean <- mean(cormat[upper.tri(cormat)])
+targetr <- matrix(cor_mean, nr=NROW(covmat), nc=NCOL(covmat))
+diag(targetr) <- 1
+targetr <- t(t(targetr * stdev) * stdev)
 # Calculate shrinkage covariance matrix
-al_pha <- 0.5
-cov_shrink <- (1-al_pha)*cov_mat + al_pha*tar_get
+alpha <- 0.5
+cov_shrink <- (1-alpha)*covmat + alpha*targetr
 # Calculate inverse matrix
-in_verse <- solve(cov_shrink)
+inverse <- solve(cov_shrink)
 # Create a plotting expression
 ex_pr <- quote({
   par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
   deg_free <- 2:20
-  rang_e <- (1:NROW(deg_free))
-  in_dex <- 4
+  rangev <- (1:NROW(deg_free))
+  indeks <- 4
   # Plot a curve
-  curve(expr=dchisq(x, df=deg_free[in_dex]),
+  curve(expr=dchisq(x, df=deg_free[indeks]),
 xlim=c(0, 30), ylim=c(0, 0.2),
 xlab="", ylab="", lwd=3, col="red")
   # Add grey lines to plot
-  for (it in rang_e[-in_dex]) {
+  for (it in rangev[-indeks]) {
     curve(expr=dchisq(x, df=deg_free[it]),
   xlim=c(0, 30), ylim=c(0, 0.2),
   xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
@@ -291,7 +291,7 @@ xlab="", ylab="", lwd=3, col="red")
   title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
   # Add legend
   text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
-      deg_free[in_dex]), pos=1, cex=1.3)
+      deg_free[indeks]), pos=1, cex=1.3)
 })  # end quote
 # View the plotting expression
 ex_pr
@@ -303,16 +303,16 @@ library(animation)
 ex_pr <- quote({
   par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
   deg_free <- 2:20
-  rang_e <- (1:NROW(deg_free))
+  rangev <- (1:NROW(deg_free))
   # Set image refesh interval
   animation::ani.options(interval=0.5)
   # Create multiple plots with curves
-  for (in_dex in rang_e) {
-    curve(expr=dchisq(x, df=deg_free[in_dex]),
+  for (indeks in rangev) {
+    curve(expr=dchisq(x, df=deg_free[indeks]),
   xlim=c(0, 30), ylim=c(0, 0.2),
   xlab="", ylab="", lwd=3, col="red")
     # Add grey lines to plot
-    for (it in rang_e[-in_dex]) {
+    for (it in rangev[-indeks]) {
       curve(expr=dchisq(x, df=deg_free[it]),
     xlim=c(0, 30), ylim=c(0, 0.2),
     xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
@@ -321,7 +321,7 @@ ex_pr <- quote({
     title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
     # Add legend
     text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
-      deg_free[in_dex]), pos=1, cex=1.3)
+      deg_free[indeks]), pos=1, cex=1.3)
   }  # end for
 })  # end quote
 # Create plot by evaluating the plotting expression
@@ -337,17 +337,17 @@ animation::saveHTML(expr=eval(ex_pr),
   htmlfile="chi_squared.html",
   description="Chi-squared Distributions")  # end saveHTML
 # Symbols for constant maturity Treasury rates
-sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
+symbols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
 # Create new environment for time series
 rates_env <- new.env()
-# Download time series for sym_bols into rates_env
-quantmod::getSymbols(sym_bols, env=rates_env, src="FRED")
+# Download time series for symbols into rates_env
+quantmod::getSymbols(symbols, env=rates_env, src="FRED")
 # List files in rates_env
 ls(rates_env)
 # Get class of all objects in rates_env
 sapply(rates_env, class)
 # Get class of all objects in R workspace
-sapply(ls(), function(nam_e) class(get(nam_e)))
+sapply(ls(), function(name) class(get(name)))
 # Save the time series environment into a binary .RData file
 save(rates_env, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get class of time series object DGS10
@@ -366,235 +366,235 @@ chart_Series(rates_env$DGS10["1990/"], name="10-year Treasury Rate")
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get most recent yield curve
-yc_2021 <- eapply(rates_env, xts::last)
-class(yc_2021)
-yc_2021 <- do.call(cbind, yc_2021)
+yc2021 <- eapply(rates_env, xts::last)
+class(yc2021)
+yc2021 <- do.call(cbind, yc2021)
 # Check if 2020-03-25 is not a holiday
 weekdays(as.Date("2020-03-25"))
 # Get yield curve from 2020-03-25
-yc_2020 <- eapply(rates_env, function(x) x[as.Date("2020-03-25")])
-yc_2020 <- do.call(cbind, yc_2020)
+yc2020 <- eapply(rates_env, function(x) x[as.Date("2020-03-25")])
+yc2020 <- do.call(cbind, yc2020)
 # Combine the yield curves
-rate_s <- c(yc_2020, yc_2021)
+rates <- c(yc2020, yc2021)
 # Rename columns and rows, sort columns, and transpose into matrix
-colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
-rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
-colnames(rate_s) <- paste0(colnames(rate_s), "yr")
-rate_s <- t(rate_s)
-colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
+colnames(rates) <- substr(colnames(rates), start=4, stop=11)
+rates <- rates[, order(as.numeric(colnames(rates)))]
+colnames(rates) <- paste0(colnames(rates), "yr")
+rates <- t(rates)
+colnames(rates) <- substr(colnames(rates), start=1, stop=4)
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Plot using matplot()
-col_ors <- c("blue", "red")
-matplot(rate_s, main="Yield Curves in 2020 and 2021", xaxt="n", lwd=3, lty=1,
-  type="l", xlab="maturity", ylab="yield", col=col_ors)
+colors <- c("blue", "red")
+matplot(rates, main="Yield Curves in 2020 and 2021", xaxt="n", lwd=3, lty=1,
+  type="l", xlab="maturity", ylab="yield", col=colors)
 # Add x-axis
-axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+axis(1, seq_along(rownames(rates)), rownames(rates))
 # Add legend
-legend("topleft", legend=colnames(rate_s),
- col=col_ors, lty=1, lwd=6, inset=0.05, cex=1.0)
+legend("topleft", legend=colnames(rates),
+ col=colors, lty=1, lwd=6, inset=0.05, cex=1.0)
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
-date_s <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
-date_s <- zoo::index(rates_env$DGS1["2006/"][date_s])
+dates <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
+dates <- zoo::index(rates_env$DGS1["2006/"][dates])
 # Create time series of end-of-year rates
-rate_s <- eapply(rates_env, function(ra_te) ra_te[date_s])
-rate_s <- rutils::do_call(cbind, rate_s)
+rates <- eapply(rates_env, function(ra_te) ra_te[dates])
+rates <- rutils::do_call(cbind, rates)
 # Rename columns and rows, sort columns, and transpose into matrix
-colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
-rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
-colnames(rate_s) <- paste0(colnames(rate_s), "yr")
-rate_s <- t(rate_s)
-colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
+colnames(rates) <- substr(colnames(rates), start=4, stop=11)
+rates <- rates[, order(as.numeric(colnames(rates)))]
+colnames(rates) <- paste0(colnames(rates), "yr")
+rates <- t(rates)
+colnames(rates) <- substr(colnames(rates), start=1, stop=4)
 # Plot matrix using plot.zoo()
-col_ors <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
-plot.zoo(rate_s, main="Yield curve since 2006", lwd=3, xaxt="n",
-   plot.type="single", xlab="maturity", ylab="yield", col=col_ors)
+colors <- colorRampPalette(c("red", "blue"))(NCOL(rates))
+plot.zoo(rates, main="Yield curve since 2006", lwd=3, xaxt="n",
+   plot.type="single", xlab="maturity", ylab="yield", col=colors)
 # Add x-axis
-axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+axis(1, seq_along(rownames(rates)), rownames(rates))
 # Add legend
-legend("topleft", legend=colnames(rate_s),
- col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
+legend("topleft", legend=colnames(rates),
+ col=colors, lty=1, lwd=4, inset=0.05, cex=0.8)
 # Alternative plot using matplot()
-matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
-  type="l", xlab="maturity", ylab="yield", col=col_ors)
+matplot(rates, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
+  type="l", xlab="maturity", ylab="yield", col=colors)
 # Add x-axis
-axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+axis(1, seq_along(rownames(rates)), rownames(rates))
 # Add legend
-legend("topleft", legend=colnames(rate_s),
- col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
+legend("topleft", legend=colnames(rates),
+ col=colors, lty=1, lwd=4, inset=0.05, cex=0.8)
 # Extract rates from rates_env
-sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
-rate_s <- mget(sym_bols, envir=rates_env)
-rate_s <- rutils::do_call(cbind, rate_s)
-rate_s <- zoo::na.locf(rate_s, na.rm=FALSE)
-rate_s <- zoo::na.locf(rate_s, fromLast=TRUE)
+symbols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
+rates <- mget(symbols, envir=rates_env)
+rates <- rutils::do_call(cbind, rates)
+rates <- zoo::na.locf(rates, na.rm=FALSE)
+rates <- zoo::na.locf(rates, fromLast=TRUE)
 # Calculate daily percentage rates changes
-re_turns <- rutils::diff_it(log(rate_s))
+returns <- rutils::diffit(log(rates))
 # De-mean the returns
-re_turns <- lapply(re_turns, function(x) {x - mean(x)})
-re_turns <- rutils::do_call(cbind, re_turns)
-sapply(re_turns, mean)
+returns <- lapply(returns, function(x) {x - mean(x)})
+returns <- rutils::do_call(cbind, returns)
+sapply(returns, mean)
 # Covariance and Correlation matrices of Treasury rates
-cov_mat <- cov(re_turns)
-cor_mat <- cor(re_turns)
+covmat <- cov(returns)
+cormat <- cor(returns)
 # Reorder correlation matrix based on clusters
 library(corrplot)
-or_der <- corrMatOrder(cor_mat, order="hclust",
+ordern <- corrMatOrder(cormat, order="hclust",
   hclust.method="complete")
-cor_mat <- cor_mat[or_der, or_der]
+cormat <- cormat[ordern, ordern]
 # Plot the correlation matrix
 x11(width=6, height=6)
-col_ors <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, title=NA, tl.col="black",
-    method="square", col=col_ors(NCOL(cor_mat)), tl.cex=0.8,
+colors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cormat, title=NA, tl.col="black",
+    method="square", col=colors(NCOL(cormat)), tl.cex=0.8,
     cl.offset=0.75, cl.cex=0.7, cl.align.text="l", cl.ratio=0.25)
 title("Correlation of Treasury Rates", line=1)
 # Draw rectangles on the correlation matrix plot
-corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
   method="complete", col="red")
 # Create initial vector of portfolio weights
-n_weights <- NROW(sym_bols)
-weight_s <- rep(1/sqrt(n_weights), n_weights)
-names(weight_s) <- sym_bols
+nweights <- NROW(symbols)
+weightv <- rep(1/sqrt(nweights), nweights)
+names(weightv) <- symbols
 # Objective function equal to minus portfolio variance
-objec_tive <- function(weight_s, re_turns) {
-  portf_rets <- re_turns %*% weight_s
-  -1e7*var(portf_rets) + 1e7*(1 - sum(weight_s*weight_s))^2
-}  # end objec_tive
+object <- function(weightv, returns) {
+  retsp <- returns %*% weightv
+  -1e7*var(retsp) + 1e7*(1 - sum(weightv*weightv))^2
+}  # end object
 # Objective for equal weight portfolio
-objec_tive(weight_s, re_turns)
+object(weightv, returns)
 # Compare speed of vector multiplication methods
 library(microbenchmark)
 summary(microbenchmark(
-  trans_pose=t(re_turns) %*% re_turns,
-  s_um=sum(re_turns*re_turns),
+  transp=t(returns) %*% returns,
+  sumv=sum(returns*returns),
   times=10))[, c(1, 4, 5)]
 # Find weights with maximum variance
-op_tim <- optim(par=weight_s,
-  fn=objec_tive,
-  re_turns=re_turns,
+optimd <- optim(par=weightv,
+  fn=object,
+  returns=returns,
   method="L-BFGS-B",
-  upper=rep(5.0, n_weights),
-  lower=rep(-5.0, n_weights))
+  upper=rep(5.0, nweights),
+  lower=rep(-5.0, nweights))
 # Optimal weights and maximum variance
-weights_1 <- op_tim$par
-objec_tive(weights_1, re_turns)
+weights1 <- optimd$par
+object(weights1, returns)
 # Plot first principal component loadings
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-barplot(weights_1, names.arg=names(weights_1),
+barplot(weights1, names.arg=names(weights1),
   xlab="", ylab="", main="First Principal Component Loadings")
 # pc1 weights and returns
-pc_1 <- drop(re_turns %*% weights_1)
+pc1 <- drop(returns %*% weights1)
 # Redefine objective function
-objec_tive <- function(weight_s, re_turns) {
-  portf_rets <- re_turns %*% weight_s
-  -1e7*var(portf_rets) + 1e7*(1 - sum(weight_s^2))^2 +
-    1e7*sum(weights_1*weight_s)^2
-}  # end objec_tive
+object <- function(weightv, returns) {
+  retsp <- returns %*% weightv
+  -1e7*var(retsp) + 1e7*(1 - sum(weightv^2))^2 +
+    1e7*sum(weights1*weightv)^2
+}  # end object
 # Find second principal component weights
-op_tim <- optim(par=weight_s,
-             fn=objec_tive,
-             re_turns=re_turns,
+optimd <- optim(par=weightv,
+             fn=object,
+             returns=returns,
              method="L-BFGS-B",
-             upper=rep(5.0, n_weights),
-             lower=rep(-5.0, n_weights))
+             upper=rep(5.0, nweights),
+             lower=rep(-5.0, nweights))
 # pc2 weights and returns
-weights_2 <- op_tim$par
-pc_2 <- drop(re_turns %*% weights_2)
-sum(pc_1*pc_2)
+weights2 <- optimd$par
+pc2 <- drop(returns %*% weights2)
+sum(pc1*pc2)
 # Plot second principal component loadings
-barplot(weights_2, names.arg=names(weights_2),
+barplot(weights2, names.arg=names(weights2),
   xlab="", ylab="", main="Second Principal Component Loadings")
-ei_gen <- eigen(cov_mat)
-ei_gen$vectors
+eigend <- eigen(covmat)
+eigend$vectors
 # Compare with optimization
-all.equal(sum(diag(cov_mat)), sum(ei_gen$values))
-all.equal(abs(ei_gen$vectors[, 1]), abs(weights_1), check.attributes=FALSE)
-all.equal(abs(ei_gen$vectors[, 2]), abs(weights_2), check.attributes=FALSE)
-all.equal(ei_gen$values[1], var(pc_1), check.attributes=FALSE)
-all.equal(ei_gen$values[2], var(pc_2), check.attributes=FALSE)
+all.equal(sum(diag(covmat)), sum(eigend$values))
+all.equal(abs(eigend$vectors[, 1]), abs(weights1), check.attributes=FALSE)
+all.equal(abs(eigend$vectors[, 2]), abs(weights2), check.attributes=FALSE)
+all.equal(eigend$values[1], var(pc1), check.attributes=FALSE)
+all.equal(eigend$values[2], var(pc2), check.attributes=FALSE)
 # Eigenvalue equations are satisfied approximately
-(cov_mat %*% weights_1) / weights_1 / var(pc_1)
-(cov_mat %*% weights_2) / weights_2 / var(pc_2)
+(covmat %*% weights1) / weights1 / var(pc1)
+(covmat %*% weights2) / weights2 / var(pc2)
 # Plot eigenvalues
-barplot(ei_gen$values, names.arg=paste0("PC", 1:n_weights),
+barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
   las=3, xlab="", ylab="", main="Principal Component Variances")
 # Eigen decomposition of correlation matrix
-ei_gen <- eigen(cor_mat)
+eigend <- eigen(cormat)
 # Perform PCA with scaling
-pc_a <- prcomp(re_turns, scale=TRUE)
+pcad <- prcomp(returns, scale=TRUE)
 # Compare outputs
-all.equal(ei_gen$values, pc_a$sdev^2)
-all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
+all.equal(eigend$values, pcad$sdev^2)
+all.equal(abs(eigend$vectors), abs(pcad$rotation),
     check.attributes=FALSE)
 # Eigen decomposition of covariance matrix
-ei_gen <- eigen(cov_mat)
+eigend <- eigen(covmat)
 # Perform PCA without scaling
-pc_a <- prcomp(re_turns, scale=FALSE)
+pcad <- prcomp(returns, scale=FALSE)
 # Compare outputs
-all.equal(ei_gen$values, pc_a$sdev^2)
-all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
+all.equal(eigend$values, pcad$sdev^2)
+all.equal(abs(eigend$vectors), abs(pcad$rotation),
     check.attributes=FALSE)
 # Perform principal component analysis PCA
-pc_a <- prcomp(re_turns, scale=TRUE)
+pcad <- prcomp(returns, scale=TRUE)
 # Plot standard deviations
-barplot(pc_a$sdev, names.arg=colnames(pc_a$rotation),
+barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
   las=3, xlab="", ylab="",
   main="Scree Plot: Volatilities of Principal Components
   of Treasury rates")
 x11(width=6, height=7)
 # Calculate principal component loadings (weights)
-pc_a$rotation
+pcad$rotation
 # Plot loading barplots in multiple panels
 par(mfrow=c(3,2))
 par(mar=c(3.5, 2, 2, 1), oma=c(0, 0, 0, 0))
-for (or_der in 1:NCOL(pc_a$rotation)) {
-  barplot(pc_a$rotation[, or_der], las=3, xlab="", ylab="", main="")
-  title(paste0("PC", or_der), line=-2.0, col.main="red")
+for (ordern in 1:NCOL(pcad$rotation)) {
+  barplot(pcad$rotation[, ordern], las=3, xlab="", ylab="", main="")
+  title(paste0("PC", ordern), line=-2.0, col.main="red")
 }  # end for
 # Standardize (de-mean and scale) the returns
-re_turns <- lapply(re_turns, function(x) {(x - mean(x))/sd(x)})
-re_turns <- rutils::do_call(cbind, re_turns)
-sapply(re_turns, mean)
-sapply(re_turns, sd)
+returns <- lapply(returns, function(x) {(x - mean(x))/sd(x)})
+returns <- rutils::do_call(cbind, returns)
+sapply(returns, mean)
+sapply(returns, sd)
 # Calculate principal component time series
-pca_ts <- re_turns %*% pc_a$rotation
-all.equal(pc_a$x, pca_ts, check.attributes=FALSE)
+pcats <- returns %*% pcad$rotation
+all.equal(pcad$x, pcats, check.attributes=FALSE)
 # Calculate products of principal component time series
-round(t(pca_ts) %*% pca_ts, 2)
+round(t(pcats) %*% pcats, 2)
 # Coerce to xts time series
-pca_ts <- xts(pca_ts, order.by=index(re_turns))
-pca_ts <- cumsum(pca_ts)
+pcats <- xts(pcats, order.by=index(returns))
+pcats <- cumsum(pcats)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-rang_e <- range(pca_ts)
-for (or_der in 1:NCOL(pca_ts)) {
-  plot.zoo(pca_ts[, or_der], ylim=rang_e, xlab="", ylab="")
-  title(paste0("PC", or_der), line=-1, col.main="red")
+rangev <- range(pcats)
+for (ordern in 1:NCOL(pcats)) {
+  plot.zoo(pcats[, ordern], ylim=rangev, xlab="", ylab="")
+  title(paste0("PC", ordern), line=-1, col.main="red")
 }  # end for
 # Invert all the principal component time series
-pca_rets <- re_turns %*% pc_a$rotation
-sol_ved <- pca_rets %*% solve(pc_a$rotation)
-all.equal(coredata(re_turns), sol_ved)
+pcarets <- returns %*% pcad$rotation
+solved <- pcarets %*% solve(pcad$rotation)
+all.equal(coredata(returns), solved)
 # Invert first 3 principal component time series
-sol_ved <- pca_rets[, 1:3] %*% solve(pc_a$rotation)[1:3, ]
-sol_ved <- xts::xts(sol_ved, zoo::index(re_turns))
-sol_ved <- cumsum(sol_ved)
-cum_returns <- cumsum(re_turns)
+solved <- pcarets[, 1:3] %*% solve(pcad$rotation)[1:3, ]
+solved <- xts::xts(solved, zoo::index(returns))
+solved <- cumsum(solved)
+cum_returns <- cumsum(returns)
 # Plot the solved returns
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-for (sym_bol in sym_bols) {
-  plot.zoo(cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
+for (symbol in symbols) {
+  plot.zoo(cbind(cum_returns[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n",
-   legend=paste0(sym_bol, c("", " solved")),
+   legend=paste0(symbol, c("", " solved")),
    title=NULL, inset=0.0, cex=1.0, lwd=6,
    lty=1, col=c("black", "blue"))
 }  # end for

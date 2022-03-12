@@ -369,7 +369,7 @@ sd(datav)  # Sample standard deviation
         <<echo=(-(1:1)),eval=FALSE>>=
 rm(list=ls())
 # VTI returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Number of observations
 nrows <- NROW(returns)
 # Mean of VTI returns
@@ -446,7 +446,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo=datav[cutoff],
-  quan_tile=quantile(datav, probs=confl),
+  quantilev=quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -1424,16 +1424,16 @@ parLapply(cluster, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
-            NROW(index(get(symbol, envir=rutils::etf_env))))
+            NROW(index(get(symbol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
-            NROW(zoo::index(get(symbol, envir=rutils::etf_env))))
+            NROW(zoo::index(get(symbol, envir=rutils::etfenv))))
 # Package zoo loaded in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol) {
             stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-            NROW(index(get(symbol, envir=rutils::etf_env)))
+            NROW(index(get(symbol, envir=rutils::etfenv)))
           })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(cluster)
@@ -1675,7 +1675,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo = datav[cutoff],
-  quan_tile = quantile(datav, probs=confl),
+  quantilev = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -1853,7 +1853,7 @@ boot_data <- mclapply(1:nboot,
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Standard error from formula
 sd(datav)/sqrt(nrows)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
@@ -1904,7 +1904,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -1923,7 +1923,7 @@ stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -1956,7 +1956,7 @@ apply(boot_data, MARGIN=2, function(x)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI returns
 library(rutils)
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 # Sample from VTI returns
@@ -2000,7 +2000,7 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Sample from time series of VTI returns
 library(rutils)
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 # Bootstrap sd and MAD under Windows
@@ -2024,11 +2024,11 @@ boot_data <- rutils::do_call(rbind, boot_data)
 # Standard error assuming normal distribution of returns
 sd(returns)/sqrt(nboot)
 # Means and standard errors from bootstrap
-std_errors <- apply(boot_data, MARGIN=2,
-  function(x) c(mean=mean(x), std_error=sd(x)))
-std_errors
+stderrors <- apply(boot_data, MARGIN=2,
+  function(x) c(mean=mean(x), stderror=sd(x)))
+stderrors
 # Relative standard errors
-std_errors[2, ]/std_errors[1, ]
+stderrors[2, ]/stderrors[1, ]
       @
   \end{columns}
 \end{block}
@@ -2051,9 +2051,9 @@ std_errors[2, ]/std_errors[1, ]
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-prices <- quantmod::Cl(rutils::etf_env$VTI)
+prices <- quantmod::Cl(rutils::etfenv$VTI)
 startd <- as.numeric(prices[1, ])
-returns <- rutils::diff_it(log(prices))
+returns <- rutils::diffit(log(prices))
 class(returns); head(returns)
 sum(is.na(returns))
 nrows <- NROW(returns)
@@ -2119,10 +2119,10 @@ sum(boot_data)/nboot
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 prices <- as.numeric(ohlc[, 4])
 startd <- prices[1]
-returns <- rutils::diff_it(log(prices))
+returns <- rutils::diffit(log(prices))
 nrows <- NROW(returns)
 # Calculate difference of OHLC price columns
 ohlc_diff <- ohlc[, 1:3] - prices
@@ -2238,7 +2238,7 @@ boot_data <- sapply(1:nboot, function(x) {
 x11(width=6, height=5)
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), std_error=sd(boot_data))
+c(mean=mean(boot_data), stderror=sd(boot_data))
 # Plot density of bootstrapped beta coefficients
 plot(density(boot_data), lwd=2, xlab="Regression slopes",
      main="Bootstrapped Regression Slopes")
@@ -2323,7 +2323,7 @@ stopCluster(cluster)  # Stop R processes over cluster under Windows
 class(boot_data)
 boot_data <- unlist(boot_data)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), std_error=sd(boot_data))
+c(mean=mean(boot_data), stderror=sd(boot_data))
 # Plot density of bootstrapped beta coefficients
 plot(density(boot_data),
      lwd=2, xlab="Regression slopes",
@@ -2465,26 +2465,26 @@ set.seed(1121) # Reset random number generator
 nrows <- 1000
 datav <- rnorm(nrows)
 # Cumulative probability from formula
-quan_tile <- (-2)
-pnorm(quan_tile)
-integrate(dnorm, lower=-Inf, upper=quan_tile)
+quantilev <- (-2)
+pnorm(quantilev)
+integrate(dnorm, lower=-Inf, upper=quantilev)
 # Cumulative probability from Naive Monte Carlo
-sum(datav < quan_tile)/nrows
+sum(datav < quantilev)/nrows
 # Generate importance sample
-lambdav <- (-1.5)  # Tilt parameter
-data_tilt <- datav + lambdav  # Tilt the random numbers
+lambda <- (-1.5)  # Tilt parameter
+data_tilt <- datav + lambda  # Tilt the random numbers
 # Cumulative probability from importance sample
-sum(data_tilt < quan_tile)/nrows
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
-sum((data_tilt < quan_tile)*weights)/nrows
+sum(data_tilt < quantilev)/nrows
+weights <- exp(-lambda*data_tilt + lambda^2/2)
+sum((data_tilt < quantilev)*weights)/nrows
 # Bootstrap of standard errors of cumulative probability
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- rnorm(nrows)
-  naivemc <- sum(datav < quan_tile)/nrows
-  datav <- (datav + lambdav)
-  weights <- exp(-lambdav*datav + lambdav^2/2)
-  isample <- sum((datav < quan_tile)*weights)/nrows
+  naivemc <- sum(datav < quantilev)/nrows
+  datav <- (datav + lambda)
+  weights <- exp(-lambda*datav + lambda^2/2)
+  isample <- sum((datav < quantilev)*weights)/nrows
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -2526,8 +2526,8 @@ datav <- sort(datav)
 cutoff <- nrows*confl
 datav[cutoff]  # Naive Monte Carlo value
 # Importance sample weights
-data_tilt <- datav + lambdav  # Tilt the random numbers
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+data_tilt <- datav + lambda  # Tilt the random numbers
+weights <- exp(-lambda*data_tilt + lambda^2/2)
 # Cumulative probabilities using importance sample
 cumprob <- cumsum(weights)/nrows
 # Quantile from importance sample
@@ -2537,8 +2537,8 @@ nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   naivemc <- datav[cutoff]
-  data_tilt <- datav + lambdav
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+  data_tilt <- datav + lambda
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
   isample <- data_tilt[findInterval(confl, cumprob)]
   c(naivemc=naivemc, importmc=isample)
@@ -2583,8 +2583,8 @@ boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   va_r <- datav[cutoff]
   naivemc <- sum((datav < va_r)*datav)/sum((datav < va_r))
-  data_tilt <- datav + lambdav
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+  data_tilt <- datav + lambda
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
   va_r <- data_tilt[findInterval(confl, cumprob)]
   isample <- sum((data_tilt < va_r)*data_tilt*weights)/sum((data_tilt < va_r)*weights)
@@ -2623,9 +2623,9 @@ datav <- matrix(rnorm(nboot*nrows), ncol=nboot)
 datav <- Rfast::sort_mat(datav)  # Sort the columns
 # Calculate vector of quantiles for tilt parameter
 confl <- 0.02; cutoff <- confl/nrows
-calc_quant <- function(lambdav) {
-  data_tilt <- datav + lambdav  # Tilt the random numbers
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+calc_quant <- function(lambda) {
+  data_tilt <- datav + lambda  # Tilt the random numbers
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   # Calculate quantiles for columns
   sapply(1:nboot, function(boo_t) {
     cumprob <- cumsum(weights[, boo_t])/nrows
@@ -2681,21 +2681,21 @@ plot(x=lambda_s, y=stdevs,
       <<echo=TRUE,eval=FALSE>>=
 # Binomial sample
 nrows <- 1000
-pro_b <- 0.1
-datav <- rbinom(n=nrows, size=1, pro_b)
+probv <- 0.1
+datav <- rbinom(n=nrows, size=1, probv)
 head(datav, 33)
 fre_q <- sum(datav)/nrows
 # Tilted binomial sample
-lambdav <- 5
-p_tilted <- lambdav*pro_b/(1 + pro_b*(lambdav - 1))
-weigh_t <- (1 + pro_b*(lambdav - 1))/lambdav
+lambda <- 5
+p_tilted <- lambda*probv/(1 + probv*(lambda - 1))
+weigh_t <- (1 + probv*(lambda - 1))/lambda
 datav <- rbinom(n=nrows, size=1, p_tilted)
 head(datav, 33)
 weigh_t*sum(datav)/nrows
 # Bootstrap of standard errors
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
-  c(naivemc=sum(rbinom(n=nrows, size=1, pro_b))/nrows,
+  c(naivemc=sum(rbinom(n=nrows, size=1, probv))/nrows,
     importmc=weigh_t*sum(rbinom(n=nrows, size=1, p_tilted))/nrows)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -2739,14 +2739,14 @@ datav <- matrix(datav, nc=nsimu)
 # Simulate paths of Brownian motion
 paths <- matrixStats::colCumsums(datav)
 # Tilt the datav
-lambdav <- 0.04  # Tilt parameter
-data_tilt <- datav + lambdav  # Tilt the random numbers
+lambda <- 0.04  # Tilt parameter
+data_tilt <- datav + lambda  # Tilt the random numbers
 paths_tilt <- matrixStats::colCumsums(data_tilt)
 # Calculate path weights
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+weights <- exp(-lambda*data_tilt + lambda^2/2)
 path_weights <- matrixStats::colProds(weights)
 # Or
-path_weights <- exp(-lambdav*colSums(data_tilt) + nrows*lambdav^2/2)
+path_weights <- exp(-lambda*colSums(data_tilt) + nrows*lambda^2/2)
 # Calculate option payout using standard MC
 strikep <- 10  # Strike price
 payouts <- (paths[nrows, ] - strikep)

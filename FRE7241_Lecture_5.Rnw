@@ -97,14 +97,14 @@ knit_theme$set(thm)
       Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       <<echo=TRUE,eval=FALSE>>=
 # Extract log VTI prices
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 closep <- log(quantmod::Cl(ohlc))
 colnames(closep) <- "VTI"
 nrows <- NROW(closep)
 # Calculate EWMA weights
 look_back <- 333
-lambdav <- 0.004
-weights <- exp(-lambdav*(1:look_back))
+lambda <- 0.004
+weights <- exp(-lambda*(1:look_back))
 weights <- weights/sum(weights)
 # Calculate EWMA prices
 ew_ma <- HighFreq::roll_wsum(closep, weights=weights)
@@ -160,7 +160,7 @@ position_s <- sign(closep - ew_ma)
 position_s <- xts::xts(position_s, order.by=index(closep))
 position_s <- rutils::lagit(position_s, lagg=1)
 # Create colors for background shading
-dates <- (rutils::diff_it(position_s) != 0)
+dates <- (rutils::diffit(position_s) != 0)
 shad_e <- position_s[dates]
 dates <- c(index(shad_e), end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
@@ -180,7 +180,7 @@ dyplot
 # Equivalent code to the above
 # Determine trade dates right after EWMA has crossed prices
 indic <- sign(closep - ew_ma)
-trade_dates <- (rutils::diff_it(indic) != 0)
+trade_dates <- (rutils::diffit(indic) != 0)
 trade_dates <- which(trade_dates) + 1
 trade_dates <- trade_dates[trade_dates <.n_rows]
 # Calculate positions, either: -1, 0, or 1
@@ -227,7 +227,7 @@ legend("topleft", legend=colnames(prices),
       The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate daily profits and losses of EWMA strategy
-vtis <- rutils::diff_it(closep)
+vtis <- rutils::diffit(closep)
 colnames(vtis) <- "VTI"
 pnls <- vtis*position_s
 colnames(pnls) <- "EWMA"
@@ -470,7 +470,7 @@ dygraphs::dygraph(cumsum(wealth["2007/"]), main="EWMA Strategy With Transaction 
 simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001, 
                       trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
-  returns <- rutils::diff_it(close)
+  returns <- rutils::diffit(close)
   nrows <- NROW(ohlc)
   # Calculate EWMA prices
   weights <- exp(-lambda*(1:look_back))
@@ -493,7 +493,7 @@ simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001,
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
   pnls <- returns*pos
-  costs <- 0.5*bid_offer*abs(rutils::diff_it(pos))*close
+  costs <- 0.5*bid_offer*abs(rutils::diffit(pos))*close
   pnls <- (pnls - costs)
   # Calculate strategy returns
   pnls <- cbind(pos, pnls)
@@ -521,14 +521,14 @@ simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001,
       So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/lecture_slides/scripts/ewma_model.R")
-lambdavs <- seq(from=0.001, to=0.008, by=0.001)
-# Perform lapply() loop over lambdavs
-pnls <- lapply(lambdavs, function(lambdav) {
+lambdas <- seq(from=0.001, to=0.008, by=0.001)
+# Perform lapply() loop over lambdas
+pnls <- lapply(lambdas, function(lambda) {
   # Simulate EWMA strategy and calculate returns
-  simu_ewma(ohlc=ohlc, lambda=lambdav, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
+  simu_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lambda=", lambdavs)
+colnames(pnls) <- paste0("lambda=", lambdas)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -575,21 +575,21 @@ library(parallel)
 cluster <- makeCluster(detectCores()-1)
 clusterExport(cluster,
   varlist=c("ohlc", "look_back", "simu_ewma"))
-# Perform parallel loop over lambdavs under Windows
-pnls <- parLapply(cluster, lambdavs, function(lambdav) {
+# Perform parallel loop over lambdas under Windows
+pnls <- parLapply(cluster, lambdas, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and calculate returns
-  simu_ewma(ohlc=ohlc, lambda=lambdav, look_back=look_back)[, "pnls"]
+  simu_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
 })  # end parLapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
-# Perform parallel loop over lambdavs under Mac-OSX or Linux
-pnls <- mclapply(lambdavs, function(lambdav) {
+# Perform parallel loop over lambdas under Mac-OSX or Linux
+pnls <- mclapply(lambdas, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and calculate returns
-  simu_ewma(ohlc=ohlc, lambda=lambdav, look_back=look_back)[, "pnls"]
+  simu_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
 })  # end mclapply
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lambda=", lambdavs)
+colnames(pnls) <- paste0("lambda=", lambdas)
       @
   \end{columns}
 \end{block}
@@ -620,19 +620,19 @@ sharper <- sqrt(252)*sapply(pnls, function(xtes) {
 })  # end sapply
 # Plot Sharpe ratios
 dev.new(width=6, height=5, noRStudioGD=TRUE)
-plot(x=lambdavs, y=sharper, t="l",
+plot(x=lambdas, y=sharper, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EWMA Trend Following Strategies
      as Function of the Decay Parameter Lambda")
 # Find optimal lambda
-lambdav <- lambdavs[which.max(sharper)]
+lambda <- lambdas[which.max(sharper)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ewma_trendperformance.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot optimal weights
-weights <- exp(-lambdav*(1:look_back))
+weights <- exp(-lambda*(1:look_back))
 weights <- weights/sum(weights)
 plot(weights, t="l", xlab="days", ylab="weights",
      main="Optimal Weights of EWMA Trend Following Strategy")
@@ -655,13 +655,13 @@ trend_sharpe <- sharper
       The best performing trend following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past prices), and producing less frequent trading.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate best performing strategy
-ewma_trend <- simu_ewma(ohlc=ohlc, lambda=lambdav, look_back=look_back, bid_offer=0, lagg=2)
+ewma_trend <- simu_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bid_offer=0, lagg=2)
 position_s <- ewma_trend[, "positions"]
 pnls <- ewma_trend[, "pnls"]
 wealth <- cbind(vtis, pnls)
 colnames(wealth) <- c("VTI", "EWMA PnL")
 # Create colors for background shading
-dates <- (rutils::diff_it(position_s) != 0)
+dates <- (rutils::diffit(position_s) != 0)
 shad_e <- position_s[dates]
 dates <- c(index(shad_e), end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
@@ -714,14 +714,14 @@ legend("top", legend=colnames(wealth),
       The profitability of mean reverting strategies can be significantly improved by using limit orders, to reduce transaction costs.
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/lecture_slides/scripts/ewma_model.R")
-lambdavs <- seq(0.05, 1.0, 0.05)
-# Perform lapply() loop over lambdavs
-pnls <- lapply(lambdavs, function(lambdav) {
+lambdas <- seq(0.05, 1.0, 0.05)
+# Perform lapply() loop over lambdas
+pnls <- lapply(lambdas, function(lambda) {
   # Simulate EWMA strategy and calculate returns
-  simu_ewma(ohlc=ohlc, lambda=lambdav, look_back=look_back, trend=(-1))[, "pnls"]
+  simu_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, trend=(-1))[, "pnls"]
 })  # end lapply
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lambda=", lambdavs)
+colnames(pnls) <- paste0("lambda=", lambdas)
 # Plot dygraph of mean reverting EWMA strategies
 column_s <- seq(1, NCOL(pnls), by=4)
 colors <- colorRampPalette(c("blue", "red"))(NROW(column_s))
@@ -773,7 +773,7 @@ legend("topleft", legend=colnames(pnls[, column_s]),
 sharper <- sqrt(252)*sapply(pnls, function(xtes) {
   mean(xtes)/sd(xtes)
 })  # end sapply
-plot(x=lambdavs, y=sharper, t="l",
+plot(x=lambdas, y=sharper, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EWMA Mean Reverting Strategies
      as Function of the Decay Parameter Lambda")
@@ -800,10 +800,10 @@ revert_sharpe <- sharper
       But a too large $\lambda$ parameter also causes very high trading frequency, and high transaction costs.
       <<echo=TRUE,eval=FALSE>>=
 # Find optimal lambda
-lambdav <- lambdavs[which.max(sharper)]
+lambda <- lambdas[which.max(sharper)]
 # Simulate best performing strategy
 ewma_revert <- simu_ewma(ohlc=ohlc, bid_offer=0.0,
-  lambda=lambdav, look_back=look_back, trend=(-1))
+  lambda=lambda, look_back=look_back, trend=(-1))
 position_s <- ewma_revert[, "positions"]
 pnls <- ewma_revert[, "pnls"]
 wealth <- cbind(vtis, pnls)
@@ -969,7 +969,7 @@ position_s <- rutils::lagit(position_s, lagg=1)
       \includegraphics[width=0.45\paperwidth]{figure/ewm_dual_strat.png}
       <<echo=TRUE,eval=FALSE>>=
 # Create colors for background shading
-dates <- (rutils::diff_it(position_s) != 0)
+dates <- (rutils::diffit(position_s) != 0)
 shad_e <- position_s[dates]
 dates <- c(index(shad_e), end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
@@ -1013,7 +1013,7 @@ cor(wealth)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_dual_strat_pnl.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ewmadvual_strat_pnl.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot Dual EWMA strategy
 dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>% 
@@ -1049,7 +1049,7 @@ dyplot
 simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333, 
                       bid_offer=0.001, trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
-  returns <- rutils::diff_it(close)
+  returns <- rutils::diffit(close)
   nrows <- NROW(ohlc)
   # Calculate EWMA prices
   weights <- exp(-lambda1*(1:look_back))
@@ -1074,7 +1074,7 @@ simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
   pnls <- returns*pos
-  costs <- 0.5*bid_offer*abs(rutils::diff_it(pos))*close
+  costs <- 0.5*bid_offer*abs(rutils::diffit(pos))*close
   pnls <- (pnls - costs)
   # Calculate strategy returns
   pnls <- cbind(pos, pnls)
@@ -1098,11 +1098,11 @@ simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
       Multiple \emph{Dual EWMA} strategies can be simulated by calling the function \texttt{simu\_ewma2()} in two loops over the vectors of $\lambda$ parameters.
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/lecture_slides/scripts/ewma_model.R")
-lambdavs1 <- seq(from=0.05, to=0.15, by=0.01)
-lambdavs2 <- seq(from=0.03, to=0.1, by=0.01)
+lambdas1 <- seq(from=0.05, to=0.15, by=0.01)
+lambdas2 <- seq(from=0.03, to=0.1, by=0.01)
 # Perform sapply() loops over lambdas
-sharper <- sapply(lambdavs1, function(lambda1) {
-  sapply(lambdavs2, function(lambda2) {
+sharper <- sapply(lambdas1, function(lambda1) {
+  sapply(lambdas2, function(lambda2) {
     if (lambda1 > lambda2) {
       # Simulate Dual EWMA strategy
       pnls <- simu_ewma2(ohlc=ohlc, lambda1=lambda1, lambda2=lambda2, 
@@ -1111,12 +1111,12 @@ sharper <- sapply(lambdavs1, function(lambda1) {
     } else NA
   })  # end sapply
 })  # end sapply
-colnames(sharper) <- lambdavs1
-rownames(sharper) <- lambdavs2
+colnames(sharper) <- lambdas1
+rownames(sharper) <- lambdas2
 # Calculate the PnLs for the optimal strategy
 whichv <- which(sharper == max(sharper, na.rm=TRUE), arr.ind=TRUE)
-lambda1 <- lambdavs1[whichv[2]]
-lambda2 <- lambdavs2[whichv[1]]
+lambda1 <- lambdas1[whichv[2]]
+lambda2 <- lambdas2[whichv[1]]
 pnls <- simu_ewma2(ohlc=ohlc, lambda1=lambda1, lambda2=lambda2, 
                     look_back=look_back, bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
 wealth <- cbind(vtis, pnls)
@@ -1127,7 +1127,7 @@ cor(wealth)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_dual_strat_opt_pnl.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ewmadvual_strat_opt_pnl.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot Optimal Dual EWMA strategy
 dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("Optimal EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>% 
@@ -1161,7 +1161,7 @@ dyplot
       The \emph{VWAP} is often used as a technical indicator in trend following strategies.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log OHLC prices and volumes
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 closep <- log(quantmod::Cl(ohlc))
 colnames(closep) <- "VTI"
 volumes <- quantmod::Vo(ohlc)
@@ -1242,7 +1242,7 @@ sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
       \includegraphics[width=0.45\paperwidth]{figure/vwap_strat_lag.png}
       <<echo=TRUE,eval=FALSE>>=
 # Create colors for background shading
-dates <- (rutils::diff_it(position_s) != 0)
+dates <- (rutils::diffit(position_s) != 0)
 shad_e <- position_s[dates]
 dates <- c(index(shad_e), end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
@@ -1357,7 +1357,7 @@ text(x=0.05, y=0.8*max(residuals), paste("VWAP crossover t-value =", round(summa
 simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
   volumes <- quantmod::Vo(ohlc)
-  returns <- rutils::diff_it(close)
+  returns <- rutils::diffit(close)
   nrows <- NROW(ohlc)
   # Calculate VWAP prices
   vwap <- roll::roll_sum(closep*volumes, width=look_back, min_obs=1)
@@ -1380,7 +1380,7 @@ simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
   pnls <- returns*pos
-  costs <- 0.5*bid_offer*abs(rutils::diff_it(pos))*close
+  costs <- 0.5*bid_offer*abs(rutils::diffit(pos))*close
   pnls <- (pnls - costs)
   # Calculate strategy returns
   pnls <- cbind(pos, pnls)
@@ -1409,7 +1409,7 @@ simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/lecture_slides/scripts/ewma_model.R")
 look_backs <- seq(70, 200, 10)
-# Perform lapply() loop over lambdavs
+# Perform lapply() loop over lambdas
 pnls <- lapply(look_backs, function(look_back) {
   # Simulate VWAP strategy and calculate returns
   simu_vwap(ohlc=ohlc, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
@@ -1493,7 +1493,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo = datav[cutoff],
-  quan_tile = quantile(datav, probs=confl),
+  quantilev = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -1729,9 +1729,9 @@ legend("topright", inset=0.05, title="Sigmas",
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1))
 # Return volatility of VTI etf
-sigmav <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
+sigmav <- sd(rutils::diffit(log(rutils::etfenv$VTI[, 4])))
 sigma2 <- sigmav^2
-nrows <- NROW(rutils::etf_env$VTI)
+nrows <- NROW(rutils::etfenv$VTI)
 # Standard deviation of log-normal prices
 sqrt(nrows)*sigmav
       @
@@ -1873,9 +1873,9 @@ plot.zoo(per_centage, main="Percentage of GBM paths below mean",
       <<echo=TRUE,eval=FALSE>>=
 # Load S&P500 stock prices
 load("C:/Develop/lecture_slides/data/sp500.RData")
-ls(sp500_env)
+ls(sp500env)
 # Extract closing prices
-prices <- eapply(sp500_env, quantmod::Cl)
+prices <- eapply(sp500env, quantmod::Cl)
 # Flatten prices into a single xts series
 prices <- rutils::do_call(cbind, prices)
 # Carry forward and backward non-NA prices
@@ -2128,7 +2128,7 @@ abline(h=eq_price, col='red', lwd=2)
     \column{0.5\textwidth}
       Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices.
       <<echo=TRUE,eval=FALSE>>=
-returns <- rutils::diff_it(prices)
+returns <- rutils::diffit(prices)
 lag_prices <- rutils::lagit(prices)
 formulav <- returns ~ lag_prices
 l_m <- lm(formulav)
@@ -2264,7 +2264,7 @@ abline(h=eq_price, col='red', lwd=2)
         <<echo=TRUE,eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Plot autocorrelations using stats::acf()
 stats::acf(returns, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)
@@ -3256,7 +3256,7 @@ arima_fit$coef
 library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(arimav, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
-returns <- drop(zoo::coredata(na.omit(rutils::etf_env$returns$VTI)))
+returns <- drop(zoo::coredata(na.omit(rutils::etfenv$returns$VTI)))
 design <- sapply(1:5, rutils::lagit, input=returns)
 design_inv <- MASS::ginv(design)
 coeff_fit <- drop(design_inv %*% returns)
@@ -3593,7 +3593,7 @@ drop(design[nrows, -1] %*% coeff_fit)
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 dates <- index(returns)
 returns <- as.numeric(returns)
 nrows <- NROW(returns)
@@ -3773,7 +3773,7 @@ plot(x=look_backs, y=back_tests[, 1],
       The mean squared errors (\emph{MSE}) of the \emph{in-sample} forecasts decrease steadily with the increasing order parameter \emph{n} of the \emph{AR(n)} model.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 dates <- index(vtis)
 vtis <- as.numeric(vtis)
 nrows <- NROW(vtis)
@@ -3889,11 +3889,11 @@ pnls <- xts::xts(pnls, dates[out_sample])
       \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_order.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample PnLs
-color_s <- colorRampPalette(c("red", "blue"))(NCOL(pnls[, 1:4]))
+colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls[, 1:4]))
 colnamev <- colnames(pnls[, 1:4])
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance With Different Order Parameters") %>%
-  dyOptions(colors=color_s, strokeWidth=2) %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -3947,7 +3947,7 @@ pnls <- xts::xts(pnls, dates[out_sample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Predictor") %>%
-  dyOptions(colors=color_s, strokeWidth=2) %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -3986,7 +3986,7 @@ pnls <- xts::xts(pnls, dates[out_sample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Forecasts") %>%
-  dyOptions(colors=color_s, strokeWidth=2) %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -4015,7 +4015,7 @@ dygraphs::dygraph(pnls[, 1:4],
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 dates <- index(vtis)
 vtis <- as.numeric(vtis)
 nrows <- NROW(vtis)

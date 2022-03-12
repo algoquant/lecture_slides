@@ -9,75 +9,75 @@ list(aa=c("a", "b"), bb=1:5)
 data.frame(aa=c("a", "b"), bb=1:2)
 is.atomic(data.frame(aa=c("a", "b"), bb=1:2))
 is.recursive(data.frame(aa=c("a", "b"), bb=1:2))
-my_var <- "hello"
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- runif(5)
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- matrix(1:10, 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- matrix(runif(10), 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- list(aa=c("a", "b"), bb=1:5)
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- data.frame(aa=c("a", "b"), bb=1:2)
-c(typeof(my_var), mode(my_var), class(my_var))
+myvar <- "hello"
+c(typeof(myvar), mode(myvar), class(myvar))
+myvar <- 1:5
+c(typeof(myvar), mode(myvar), class(myvar))
+myvar <- runif(5)
+c(typeof(myvar), mode(myvar), class(myvar))
+myvar <- matrix(1:10, 2, 5)
+c(typeof(myvar), mode(myvar), class(myvar))
+myvar <- matrix(runif(10), 2, 5)
+c(typeof(myvar), mode(myvar), class(myvar))
+myvar <- list(aa=c("a", "b"), bb=1:5)
+c(typeof(myvar), mode(myvar), class(myvar))
+myvar <- data.frame(aa=c("a", "b"), bb=1:2)
+c(typeof(myvar), mode(myvar), class(myvar))
 # A simple vector has no attributes
 attributes(5:10)
-my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
+myvar <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
 # Named vector has "names" attribute
-attributes(my_var)
-my_var <- 1:10
-is.vector(my_var)  # Is the object a vector?
-attributes(my_var) <- list(my_attr="foo")
-my_var
-is.vector(my_var)  # Is the object a vector?
-my_var <- 0
-attributes(my_var) <- list(class="Date")
-my_var  # "Date" object
+attributes(myvar)
+myvar <- 1:10
+is.vector(myvar)  # Is the object a vector?
+attributes(myvar) <- list(my_attr="foo")
+myvar
+is.vector(myvar)  # Is the object a vector?
+myvar <- 0
+attributes(myvar) <- list(class="Date")
+myvar  # "Date" object
 structure(0, class="Date")  # "Date" object
-my_var <- matrix(runif(10), 2, 5)
-class(my_var)  # Has implicit class
+myvar <- matrix(runif(10), 2, 5)
+class(myvar)  # Has implicit class
 # But no explicit "class" attribute
-attributes(my_var)
-c(typeof(my_var), mode(my_var), class(my_var))
+attributes(myvar)
+c(typeof(myvar), mode(myvar), class(myvar))
 # Assign explicit "class" attribute
-class(my_var) <- "my_class"
-class(my_var)  # Has explicit "class"
+class(myvar) <- "my_class"
+class(myvar)  # Has explicit "class"
 # Has explicit "class" attribute
-attributes(my_var)
-is.matrix(my_var)  # Is the object a matrix?
-is.vector(my_var)  # Is the object a vector?
-attributes(unclass(my_var))
+attributes(myvar)
+is.matrix(myvar)  # Is the object a matrix?
+is.vector(myvar)  # Is the object a vector?
+attributes(unclass(myvar))
 # Integer implicit class derived from type
-my_var <- vector(mode="integer", length=10)
-c(typeof(my_var), mode(my_var), class(my_var))
+myvar <- vector(mode="integer", length=10)
+c(typeof(myvar), mode(myvar), class(myvar))
 # Numeric implicit class derived from mode
-my_var <- vector(mode="numeric", length=10)
-c(typeof(my_var), mode(my_var), class(my_var))
+myvar <- vector(mode="numeric", length=10)
+c(typeof(myvar), mode(myvar), class(myvar))
 # Adding dim attribute changes implicit class to matrix
-dim(my_var) <- c(5, 2)
-c(typeof(my_var), mode(my_var), class(my_var))
+dim(myvar) <- c(5, 2)
+c(typeof(myvar), mode(myvar), class(myvar))
 # Data frames have implicit dim attribute
-my_var <- data.frame(aa=c("a", "b"), bb=1:2)
-c(typeof(my_var), mode(my_var), class(my_var))
-attributes(my_var)
-dim(my_var)
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-mode(my_var) <- "character"  # Coerce to "character"
-my_var
-c(typeof(my_var), mode(my_var), class(my_var))
+myvar <- data.frame(aa=c("a", "b"), bb=1:2)
+c(typeof(myvar), mode(myvar), class(myvar))
+attributes(myvar)
+dim(myvar)
+myvar <- 1:5
+c(typeof(myvar), mode(myvar), class(myvar))
+mode(myvar) <- "character"  # Coerce to "character"
+myvar
+c(typeof(myvar), mode(myvar), class(myvar))
 # Explicitly coerce to "character"
-my_var <- as.character(1:5)
-c(typeof(my_var), mode(my_var), class(my_var))
-mat_rix <- matrix(1:10, 2, 5)  # Create matrix
+myvar <- as.character(1:5)
+c(typeof(myvar), mode(myvar), class(myvar))
+matrixv <- matrix(1:10, 2, 5)  # Create matrix
 # Explicitly coerce to "character"
-mat_rix <- as.character(mat_rix)
-c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
+matrixv <- as.character(matrixv)
+c(typeof(matrixv), mode(matrixv), class(matrixv))
 # Coercion converted matrix to vector
-c(is.matrix(mat_rix), is.vector(mat_rix))
+c(is.matrix(matrixv), is.vector(matrixv))
 as.logical(0:3)  # Explicit coercion to "logical"
 as.numeric(c(FALSE, TRUE, TRUE, TRUE))
 c(1:3, "a")  # Implicit coercion to "character"
@@ -85,7 +85,7 @@ c(1:3, "a")  # Implicit coercion to "character"
 as.numeric(c(1:3, "a"))
 "Hello World!"  # Type some text
 # hello is a variable name, because it's not in quotes
-hello  # R interprets "hello" as a variable name
+hello  # R interretsp "hello" as a variable name
 is.vector(1)  # Single number is a vector
 is.vector("a")  # String is a vector
 4:8  # Create a vector
@@ -126,15 +126,15 @@ glob2rx("abc.*")  # Convert globs into regex
 glob2rx("*.doc")
 is.vector(1)  # Single number is a vector
 is.vector("a")  # String is a vector
-vec_tor <- c(8, 6, 5, 7)  # Create vector
-vec_tor
-vec_tor[2]  # Extract second element
+vectorv <- c(8, 6, 5, 7)  # Create vector
+vectorv
+vectorv[2]  # Extract second element
 # Extract all elements, except the second element
-vec_tor[-2]
+vectorv[-2]
 # Create Boolean vector
 c(FALSE, TRUE, TRUE)
 # Extract second and third elements
-vec_tor[c(FALSE, TRUE, TRUE)]
+vectorv[c(FALSE, TRUE, TRUE)]
 letters[5:10]  # Vector of letters
 c("a", letters[5:10])  # Combine two vectors of letters
 0:10  # Vector of integers from 0 to 10
@@ -154,83 +154,83 @@ numeric(0)  # Create zero-length vector
 2*(4:8)  # Multiply a vector
 4:8/2  # Divide a vector
 (0:10)/10  # Divide vector - decimals from 0 to 1.0
-vec_tor <- c(8, 6, 5, 7)  # Create vector
-vec_tor
+vectorv <- c(8, 6, 5, 7)  # Create vector
+vectorv
 # Boolean vector TRUE if element is equal to second one
-vec_tor == vec_tor[2]
+vectorv == vectorv[2]
 # Boolean vector TRUE for elements greater than six
-vec_tor > 6
-2*vec_tor  # Multiply all elements by 2
-vec_tor^2  # Square all elements
+vectorv > 6
+2*vectorv  # Multiply all elements by 2
+vectorv^2  # Square all elements
 c(11, 5:10)  # Combine two vectors
-c(vec_tor, 2.0)  # Append number to vector
-vec_tor <- # Create named vector
+c(vectorv, 2.0)  # Append number to vector
+vectorv <- # Create named vector
   c(pi_const=pi, euler=exp(1), gamma=-digamma(1))
-vec_tor
-names(vec_tor)  # Get names of elements
-vec_tor["euler"]  # Get element named "euler"
-names(vec_tor) <- c("pie","eulery","gammy")  # Rename elements
-vec_tor
-unname(vec_tor)  # Remove names attribute
+vectorv
+names(vectorv)  # Get names of elements
+vectorv["euler"]  # Get element named "euler"
+names(vectorv) <- c("pie","eulery","gammy")  # Rename elements
+vectorv
+unname(vectorv)  # Remove names attribute
 letters[5:10]  # Vector of letters
 c("a", letters[5:10])  # Combine two vectors of letters
 # Create named vector
 structure(sample(1:5), names=paste0("el", 1:5))
-vec_tor  # Named vector
+vectorv  # Named vector
 # Extract second element
-vec_tor[2]
+vectorv[2]
 # Extract all elements, except the second element
-vec_tor[-2]
+vectorv[-2]
 # Extract zero elements - returns zero-length vector
-vec_tor[0]
+vectorv[0]
 # Extract second and third elements
-vec_tor[c(FALSE, TRUE, TRUE)]
+vectorv[c(FALSE, TRUE, TRUE)]
 # Extract elements using their names
-vec_tor["eulery"]
+vectorv["eulery"]
 # Extract elements using their names
-vec_tor[c("pie", "gammy")]
+vectorv[c("pie", "gammy")]
 # Subset whole vector
-vec_tor[] <- 0
-vec_tor <- runif(5)
-vec_tor
-vec_tor > 0.5  # Boolean vector
+vectorv[] <- 0
+vectorv <- runif(5)
+vectorv
+vectorv > 0.5  # Boolean vector
 # Boolean vector of elements equal to the second one
-vec_tor == vec_tor[2]
+vectorv == vectorv[2]
 # Extract all elements equal to the second one
-vec_tor[vec_tor == vec_tor[2]]
-vec_tor < 1  # Boolean vector of elements less than one
+vectorv[vectorv == vectorv[2]]
+vectorv < 1  # Boolean vector of elements less than one
 # Extract all elements greater than one
-vec_tor[vec_tor > 1]
-vec_tor[vec_tor > 0.5]  # Filter elements > 0.5
-which(vec_tor > 0.5)  # Index of elements > 0.5
+vectorv[vectorv > 1]
+vectorv[vectorv > 0.5]  # Filter elements > 0.5
+which(vectorv > 0.5)  # Index of elements > 0.5
 # Create factor vector
-fac_tor <- factor(c("b", "c", "d", "a", "c", "b"))
-fac_tor
-fac_tor[3]
+factorv <- factor(c("b", "c", "d", "a", "c", "b"))
+factorv
+factorv[3]
 # Get factor attributes
-attributes(fac_tor)
+attributes(factorv)
 # Get allowed values
-levels(fac_tor)
+levels(factorv)
 # Get encoding vector
-as.numeric(fac_tor)
-is.vector(fac_tor)
+as.numeric(factorv)
+is.vector(factorv)
 # Coerce vector to factor
 as.factor(1:5)
 # Coerce factor to character vector
 as.vector(as.factor(1:5))
-fac_tor
+factorv
 # Get unique elements
-unique(fac_tor)
+unique(factorv)
 # Get levels attribute of the factor
-levels(fac_tor)
+levels(factorv)
 # Calculate the factor elements from its levels
-levels(fac_tor)[as.numeric(fac_tor)]
+levels(factorv)[as.numeric(factorv)]
 # Get contingency (frequency) table
-table(fac_tor)
+table(factorv)
 # Get contingency table using sapply
-sapply(levels(fac_tor),
- function(le_vel) {
-   sum(le_vel == fac_tor)
+sapply(levels(factorv),
+ function(levelv) {
+   sum(levelv == factorv)
  })  # end sapply
 # Display the formal arguments of findInterval
 args(findInterval)
@@ -256,35 +256,35 @@ feels_like <- names(
 names(tempe_ratures) <- feels_like
 tempe_ratures
 library(microbenchmark)
-da_ta <- sample(0:6) + 0.1
-da_ta
-cut(x=da_ta, breaks=c(2, 4, 6, 8))
-rbind(da_ta, cut(x=da_ta, breaks=c(2, 4, 6, 8)))
+datav <- sample(0:6) + 0.1
+datav
+cut(x=datav, breaks=c(2, 4, 6, 8))
+rbind(datav, cut(x=datav, breaks=c(2, 4, 6, 8)))
 # cut() replicates findInterval()
 cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
     right=FALSE)
 findInterval(x=1:8, vec=c(3, 5, 7))
 # findInterval() is a compiled function, so it's faster than cut()
-vec_tor <- rnorm(1000)
+vectorv <- rnorm(1000)
 summary(microbenchmark(
   find_interval=
-    findInterval(x=vec_tor, vec=c(3, 5, 7)),
+    findInterval(x=vectorv, vec=c(3, 5, 7)),
   cuut=
-    cut(x=vec_tor, breaks=c(3, 5, 7)),
+    cut(x=vectorv, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Calculate VTI percentage returns
-re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-ma_d <- mad(re_turns)
-histo_gram <- hist(re_turns, breaks=100,
-  main="", xlim=c(-5*ma_d, 5*ma_d),
+madv <- mad(returns)
+histo_gram <- hist(returns, breaks=100,
+  main="", xlim=c(-5*madv, 5*madv),
   xlab="", ylab="", freq=FALSE)
 # Draw kernel density of histogram
-lines(density(re_turns), col="red", lwd=2)
+lines(density(returns), col="red", lwd=2)
 # Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)),
+curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
 add=TRUE, type="l", lwd=2, col="blue")
 title(main="VTI Return Distribution", line=0)
 # Add legend
@@ -293,66 +293,66 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
   lwd=6, bg="white", col=c("red", "blue"))
 # Total area under histogram
 sum(diff(histo_gram$breaks) * histo_gram$density)
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
-mat_rix  # By default matrices are constructed column-wise
+matrixv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
+matrixv  # By default matrices are constructed column-wise
 # Create a matrix row-wise
 matrix(5:10, nrow=2, byrow=TRUE)
-mat_rix[2, 3]  # Extract third element from second row
-mat_rix[2, ]  # Extract second row
-mat_rix[, 3]  # Extract third column
-mat_rix[, c(1,3)]  # Extract first and third column
-mat_rix[, -2]  # Remove second column
+matrixv[2, 3]  # Extract third element from second row
+matrixv[2, ]  # Extract second row
+matrixv[, 3]  # Extract third column
+matrixv[, c(1,3)]  # Extract first and third column
+matrixv[, -2]  # Remove second column
 # Subset whole matrix
-mat_rix[] <- 0
+matrixv[] <- 0
 # Get the number of rows or columns
-nrow(vec_tor); ncol(vec_tor)
-NROW(vec_tor); NCOL(vec_tor)
-nrow(mat_rix); ncol(mat_rix)
-NROW(mat_rix); NCOL(mat_rix)
-attributes(mat_rix)  # Get matrix attributes
-dim(mat_rix)  # Get dimension attribute
-class(mat_rix)  # Get class attribute
-rownames(mat_rix) <- c("row1", "row2")  # Rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
-mat_rix
-mat_rix["row2", "col3"]  # Third element from second row
-names(mat_rix)  # Get the names attribute
-dimnames(mat_rix)  # Get dimnames attribute
-attributes(mat_rix)  # Get matrix attributes
-mat_rix  # matrix with column names
-mat_rix[1, ]  # Subset rows by index
-mat_rix[, "col1"]  # Subset columns by name
-mat_rix[, c(TRUE, FALSE, TRUE)]  # Subset columns Boolean vector
-mat_rix[1, ]  # Subsetting can produce a vector!
-class(mat_rix); class(mat_rix[1, ])
-is.matrix(mat_rix[1, ]); is.vector(mat_rix[1, ])
-mat_rix[1, , drop=FALSE]  # Drop=FALSE preserves matrix
-class(mat_rix[1, , drop=FALSE])
-is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
+nrow(vectorv); ncol(vectorv)
+NROW(vectorv); NCOL(vectorv)
+nrow(matrixv); ncol(matrixv)
+NROW(matrixv); NCOL(matrixv)
+attributes(matrixv)  # Get matrix attributes
+dim(matrixv)  # Get dimension attribute
+class(matrixv)  # Get class attribute
+rownames(matrixv) <- c("row1", "row2")  # Rownames attribute
+colnames(matrixv) <- c("col1", "col2", "col3")  # Colnames attribute
+matrixv
+matrixv["row2", "col3"]  # Third element from second row
+names(matrixv)  # Get the names attribute
+dimnames(matrixv)  # Get dimnames attribute
+attributes(matrixv)  # Get matrix attributes
+matrixv  # matrix with column names
+matrixv[1, ]  # Subset rows by index
+matrixv[, "col1"]  # Subset columns by name
+matrixv[, c(TRUE, FALSE, TRUE)]  # Subset columns Boolean vector
+matrixv[1, ]  # Subsetting can produce a vector!
+class(matrixv); class(matrixv[1, ])
+is.matrix(matrixv[1, ]); is.vector(matrixv[1, ])
+matrixv[1, , drop=FALSE]  # Drop=FALSE preserves matrix
+class(matrixv[1, , drop=FALSE])
+is.matrix(matrixv[1, , drop=FALSE]); is.vector(matrixv[1, , drop=FALSE])
 # Create a list with two elements
-lis_t <- list(c("a", "b"), 1:4)
-lis_t
-c(typeof(lis_t), mode(lis_t), class(lis_t))
+listv <- list(c("a", "b"), 1:4)
+listv
+c(typeof(listv), mode(listv), class(listv))
 # Lists are also vectors
-c(is.vector(lis_t), is.list(lis_t))
-NROW(lis_t)
+c(is.vector(listv), is.list(listv))
+NROW(listv)
 # Create named list
-lis_t <- list(first=c("a", "b"), second=1:4)
-lis_t
-names(lis_t)
-unlist(lis_t)
-lis_t[2]  # Extract second element as sublist
-lis_t[[2]]  # Extract second element
-lis_t[[2]][3]  # Extract third element of second element
-lis_t[[c(2, 3)]]  # Third element of second element
-lis_t$second  # Extract second element
-lis_t$s  # Extract second element - partial name matching
-lis_t$second[3]  # Third element of second element
-lis_t <- list()  # Empty list
-lis_t$a <- 1
-lis_t[2] <- 2
-lis_t
-names(lis_t)
+listv <- list(first=c("a", "b"), second=1:4)
+listv
+names(listv)
+unlist(listv)
+listv[2]  # Extract second element as sublist
+listv[[2]]  # Extract second element
+listv[[2]][3]  # Extract third element of second element
+listv[[c(2, 3)]]  # Third element of second element
+listv$second  # Extract second element
+listv$s  # Extract second element - partial name matching
+listv$second[3]  # Third element of second element
+listv <- list()  # Empty list
+listv$a <- 1
+listv[2] <- 2
+listv
+names(listv)
 # Convert vector elements to list elements
 as.list(1:3)
 # Convert whole vector to single list element
@@ -367,7 +367,7 @@ dim(data_frame)  # Get dimension attribute
 colnames(data_frame)  # Get the colnames attribute
 rownames(data_frame)  # Get the rownames attribute
 class(data_frame)  # Get object class
-typeof(data_frame)  # Data frames are lists
+typeof(data_frame)  # Data frames are listv
 is.data.frame(data_frame)
 class(data_frame$type)  # Get column class
 class(data_frame$price)  # Get column class
@@ -433,30 +433,30 @@ data_frame[order(data_frame$price), ]
 # Sort data_frame on color column
 data_frame[order(data_frame$color), ]
 as.matrix(data_frame)
-vec_tor <- sample(9)
-matrix(vec_tor, ncol=3)
-as.matrix(vec_tor, ncol=3)
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
-rownames(mat_rix) <- c("row1", "row2")  # Rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
+vectorv <- sample(9)
+matrix(vectorv, ncol=3)
+as.matrix(vectorv, ncol=3)
+matrixv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
+rownames(matrixv) <- c("row1", "row2")  # Rownames attribute
+colnames(matrixv) <- c("col1", "col2", "col3")  # Colnames attribute
 library(microbenchmark)
 # Call method instead of generic function
-as.data.frame.matrix(mat_rix)
+as.data.frame.matrix(matrixv)
 # A few methods for generic function as.data.frame()
 sample(methods(as.data.frame), size=4)
 # Function method is faster than generic function
 summary(microbenchmark(
   as_data_frame_matrix=
-    as.data.frame.matrix(mat_rix),
-  as_data_frame=as.data.frame(mat_rix),
-  data_frame=data.frame(mat_rix),
+    as.data.frame.matrix(matrixv),
+  as_data_frame=as.data.frame(matrixv),
+  data_frame=data.frame(matrixv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
-  as_list=as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=lapply(seq_along(mat_rix[1, ]),
-     function(in_dex) mat_rix[, in_dex]),
+  as_list=as.list(as.data.frame.matrix(matrixv)),
+  l_apply=lapply(seq_along(matrixv[1, ]),
+     function(indeks) matrixv[, indeks]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # ?iris  # Get information on iris
 dim(iris)
@@ -498,12 +498,12 @@ is.na(c(NA, NaN, 0/0, 1/0))  # Test for NA
 is.nan(c(NA, NaN, 0/0, 1/0))  # Test for NaN
 NA*1:4  # Create vector of Nas
 # Create vector with some NA values
-da_ta <- c(1, 2, NA, 4, NA, 5)
-da_ta
-mean(da_ta)  # Returns NA, when NAs are input
-mean(da_ta, na.rm=TRUE)  # remove NAs from input data
-da_ta[!is.na(da_ta)]  # Delete the NA values
-sum(!is.na(da_ta))  # Count non-NA values
+datav <- c(1, 2, NA, 4, NA, 5)
+datav
+mean(datav)  # Returns NA, when NAs are input
+mean(datav, na.rm=TRUE)  # remove NAs from input data
+datav[!is.na(datav)]  # Delete the NA values
+sum(!is.na(datav))  # Count non-NA values
 # airquality data has some NAs
 head(airquality)
 dim(airquality)
@@ -514,10 +514,10 @@ sum(!complete.cases(airquality))
 # Display rows containing NAs
 head(airquality[!complete.cases(airquality), ])
 # Create vector containing NA values
-vec_tor <- sample(22)
-vec_tor[sample(NROW(vec_tor), 4)] <- NA
+vectorv <- sample(22)
+vectorv[sample(NROW(vectorv), 4)] <- NA
 # Replace NA values with the most recent non-NA values
-zoo::na.locf(vec_tor)
+zoo::na.locf(vectorv)
 # Remove rows containing NAs
 good_air <- airquality[complete.cases(airquality), ]
 dim(good_air)
@@ -533,7 +533,7 @@ dim(good_air)
 head(good_air)
 # Replace NAs in xts time series
 library(rutils)  # load package rutils
-se_ries <- rutils::etfenv$price_s[, 1]
+se_ries <- rutils::etfenv$prices[, 1]
 head(se_ries, 3)
 sum(is.na(se_ries))
 series_zoo <- zoo::na.locf(se_ries, fromLast=TRUE)
@@ -556,18 +556,18 @@ c(1, 2, NULL, 4, 5)
 # But NA value isn't ignored
 c(1, 2, NA, 4, 5)
 # Vectors can be initialized to NULL
-vec_tor <- NULL
-is.null(vec_tor)
+vectorv <- NULL
+is.null(vectorv)
 # Grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
+for (indeks in 1:5)
+  vectorv <- c(vectorv, indeks)
 # Initialize empty vector
-vec_tor <- numeric()
+vectorv <- numeric()
 # Grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
+for (indeks in 1:5)
+  vectorv <- c(vectorv, indeks)
 # Allocate vector
-vec_tor <- numeric(5)
+vectorv <- numeric(5)
 # Assign to vector in a loop - good code
-for (in_dex in 1:5)
-  vec_tor[in_dex] <- runif(1)
+for (indeks in 1:5)
+  vectorv[indeks] <- runif(1)

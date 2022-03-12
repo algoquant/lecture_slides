@@ -105,9 +105,9 @@ knit_theme$set(thm)
       The lag parameter $k$ determines the scale of the extreme local prices, with smaller $k$ producing larger z-scores for more local price extremes.
       <<echo=TRUE,eval=FALSE>>=
 # Extract VTI log OHLC prices
-ohlc <- log(rutils::etf_env$VTI)
+ohlc <- log(rutils::etfenv$VTI)
 closep <- quantmod::Cl(ohlc)
-returns <- rutils::diff_it(closep)
+returns <- rutils::diffit(closep)
 # Calculate the centered volatility
 look_back <- 21
 half_back <- look_back %/% 2
@@ -216,14 +216,14 @@ dygraphs::dygraph(prices, main="VTI Strategy Using In-sample Labels") %>%
 # Calculate volatility z-scores
 volat <- HighFreq::roll_var_ohlc(ohlc=ohlc, look_back=look_back, scale=FALSE)
 volat_mean <- roll::roll_mean(volat, width=look_back, min_obs=1)
-volat_sd <- roll::roll_sd(rutils::diff_it(volat), width=look_back, min_obs=1)
+volat_sd <- roll::roll_sd(rutils::diffit(volat), width=look_back, min_obs=1)
 volat_sd[1] <- 0
 volat_scores <- ifelse(volat_sd > 0, (volat - volat_mean)/volat_sd, 0)
 colnames(volat_scores) <- "volat"
 # Calculate volume z-scores
 volumes <- quantmod::Vo(ohlc)
 volume_mean <- roll::roll_mean(volumes, width=look_back, min_obs=1)
-volume_sd <- roll::roll_sd(rutils::diff_it(volumes), width=look_back, min_obs=1)
+volume_sd <- roll::roll_sd(rutils::diffit(volumes), width=look_back, min_obs=1)
 volume_sd[1] <- 0
 volume_scores <- ifelse(volume_sd > 0, (volumes - volume_mean)/volume_sd, 0)
 colnames(volume_scores) <- "volume"
@@ -306,14 +306,14 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-thresh_old <- quantile(forecasts, 0.95)
+threshold <- quantile(forecasts, 0.95)
 # Calculate confusion matrix in-sample
-confu_sion <- table(actual=!top_s, forecast=(forecasts < thresh_old))
+confu_sion <- table(actual=!top_s, forecast=(forecasts < threshold))
 confu_sion
 # Calculate FALSE positive (type I error)
-sum(!top_s & (forecasts > thresh_old))
+sum(!top_s & (forecasts > threshold))
 # Calculate FALSE negative (type II error)
-sum(top_s & (forecasts < thresh_old))
+sum(top_s & (forecasts < threshold))
       @
   \end{columns}
 \end{block}
@@ -398,13 +398,13 @@ print(xtable::xtable(confusion_matrix,
       \vskip1ex
       The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of thresh_old
+# Confusion matrix as function of threshold
 con_fuse <- function(actual, forecasts, threshold) {
     conf <- table(actual, (forecasts < threshold))
     conf <- conf / rowSums(conf)
     c(typeI=conf[2, 1], typeII=conf[1, 2])
   }  # end con_fuse
-con_fuse(!top_s, forecasts, threshold=thresh_old)
+con_fuse(!top_s, forecasts, threshold=threshold)
 # Define vector of discrimination thresholds
 threshold_s <- quantile(forecasts, seq(0.1, 0.99, by=0.01))
 # Calculate error rates
@@ -429,7 +429,7 @@ error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diff_it(error_rates[, "typeI"])
+false_pos <- rutils::diffit(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
 # Plot ROC Curve for stock tops
 x11(width=5, height=5)
@@ -493,7 +493,7 @@ error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diff_it(error_rates[, "typeI"])
+false_pos <- rutils::diffit(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
 # Plot ROC Curve for stock tops
 x11(width=5, height=5)
@@ -574,7 +574,7 @@ dygraphs::dygraph(prices, main="Logistic Strategy Using Top and Bottom Labels") 
       <<echo=TRUE,eval=FALSE>>=
 # Determine trade dates right after EWMA has crossed prices
 indic <- sign(closep - ew_ma[, 2])
-trade_dates <- (rutils::diff_it(indic) != 0)
+trade_dates <- (rutils::diffit(indic) != 0)
 trade_dates <- which(trade_dates) + 1
 trade_dates <- trade_dates[trade_dates <.n_rows]
 # Calculate positions, either: -1, 0, or 1
@@ -618,7 +618,7 @@ legend("bottomleft", legend=colnames(ew_ma),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate daily profits and losses
 # Calculate pnl for days without trade
-pnls <- rutils::diff_it(closep)*position_s
+pnls <- rutils::diffit(closep)*position_s
 # Calculate realized pnl for days with trade
 close_lag <- rutils::lagit(closep)
 pos_lagged <- rutils::lagit(position_s)
@@ -710,17 +710,17 @@ dygraphs::dygraph(cum_pnls, main=paste(symbol, "EWMA Strategy With Transaction C
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-simu_ewma <- function(ohlc, lambdav=0.01, wid_th=351, bid_offer=0.001, tre_nd=1) {
+simu_ewma <- function(ohlc, lambda=0.01, wid_th=351, bid_offer=0.001, tre_nd=1) {
   nrows <- NROW(ohlc)
   # Calculate EWMA prices
-  weights <- exp(-lambdav*1:wid_th)
+  weights <- exp(-lambda*1:wid_th)
   weights <- weights/sum(weights)
   closep <- quantmod::Cl(ohlc)
   ew_ma <- .Call(stats:::C_cfilter, closep, filter=weights, sides=1, circular=FALSE)
   ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
   # Determine trade dates right after EWMA has crossed prices
   indic <- tre_nd*sign(closep - ew_ma)
-  trade_dates <- (rutils::diff_it(indic) != 0)
+  trade_dates <- (rutils::diffit(indic) != 0)
   trade_dates <- which(trade_dates) + 1
   trade_dates <- trade_dates[trade_dates <.n_rows]
   # Calculate positions, either: -1, 0, or 1
@@ -732,7 +732,7 @@ simu_ewma <- function(ohlc, lambdav=0.01, wid_th=351, bid_offer=0.001, tre_nd=1)
   close_lag <- rutils::lagit(closep)
   pos_lagged <- rutils::lagit(position_s)
   # Calculate daily profits and losses
-  pnls <- rutils::diff_it(closep)*position_s
+  pnls <- rutils::diffit(closep)*position_s
   pnls[trade_dates] <- pos_lagged[trade_dates]*
     (openp[trade_dates] - close_lag[trade_dates])
   pnls[trade_dates] <- pnls[trade_dates] +
@@ -767,15 +767,15 @@ simu_ewma <- function(ohlc, lambdav=0.01, wid_th=351, bid_offer=0.001, tre_nd=1)
       So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/lecture_slides/scripts/ewma_model.R")
-lambdavs <- seq(from=1e-5, to=0.05, by=0.01)
-# Perform lapply() loop over lambdavs
-pnls <- lapply(lambdavs, function(lambdav) {
+lambdas <- seq(from=1e-5, to=0.05, by=0.01)
+# Perform lapply() loop over lambdas
+pnls <- lapply(lambdas, function(lambda) {
   # Simulate EWMA strategy and calculate returns
   startd + cumsum(simu_ewma(ohlc=ohlc,
-    lambdav=lambdav, wid_th=wid_th)[, "pnls"])
+    lambda=lambda, wid_th=wid_th)[, "pnls"])
 })  # end lapply
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lambda=", lambdavs)
+colnames(pnls) <- paste0("lambda=", lambdas)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -817,23 +817,23 @@ library(parallel)
 cluster <- makeCluster(detectCores()-1)
 clusterExport(cluster,
   varlist=c("ohlc", "wid_th", "simu_ewma"))
-# Perform parallel loop over lambdavs under Windows
-pnls <- parLapply(cluster, lambdavs, function(lambdav) {
+# Perform parallel loop over lambdas under Windows
+pnls <- parLapply(cluster, lambdas, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and calculate returns
   startd + cumsum(simu_ewma(ohlc=ohlc,
-    lambdav=lambdav, wid_th=wid_th)[, "pnls"])
+    lambda=lambda, wid_th=wid_th)[, "pnls"])
 })  # end parLapply
-# Perform parallel loop over lambdavs under Mac-OSX or Linux
-returns <- mclapply(lambdavs, function(lambdav) {
+# Perform parallel loop over lambdas under Mac-OSX or Linux
+returns <- mclapply(lambdas, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and calculate returns
   startd + cumsum(simu_ewma(ohlc=ohlc,
-    lambdav=lambdav, wid_th=wid_th)[, "pnls"])
+    lambda=lambda, wid_th=wid_th)[, "pnls"])
 })  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lambda=", lambdavs)
+colnames(pnls) <- paste0("lambda=", lambdas)
       @
   \end{columns}
 \end{block}
@@ -858,13 +858,13 @@ colnames(pnls) <- paste0("lambda=", lambdavs)
       <<echo=TRUE,eval=FALSE>>=
 sharper <- sqrt(252)*sapply(pnls, function(xtes) {
   # Calculate annualized Sharpe ratio of strategy returns
-  xtes <- rutils::diff_it(xtes)
+  xtes <- rutils::diffit(xtes)
   sum(xtes)/sd(xtes)
 })/NROW(pnls)  # end sapply
-plot(x=lambdavs, y=sharper, t="l",
+plot(x=lambdas, y=sharper, t="l",
      main="Performance of EWMA trend following strategies
      as function of the decay parameter lambda")
-trend_returns <- rutils::diff_it(pnls)
+trend_returns <- rutils::diffit(pnls)
 trend_sharpe <- sharper
       @
     \column{0.5\textwidth}
@@ -887,7 +887,7 @@ trend_sharpe <- sharper
       <<echo=TRUE,eval=FALSE>>=
 # Simulate best performing strategy
 ewma_trend <- simu_ewma(ohlc=ohlc,
-  lambdav=lambdavs[which.max(sharper)],
+  lambda=lambdas[which.max(sharper)],
   wid_th=wid_th)
 position_s <- ewma_trend[, "positions"]
 pnls <- startd + cumsum(ewma_trend[, "pnls"])
@@ -926,15 +926,15 @@ legend("top", legend=colnames(pnls),
       If transaction costs could be reduced by using limit orders, then the profitability of mean reverting strategies could be significantly improved.
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/lecture_slides/scripts/ewma_model.R")
-lambdavs <- seq(0.05, 1.0, 0.05)
-# Perform lapply() loop over lambdavs
-pnls <- lapply(lambdavs, function(lambdav) {
+lambdas <- seq(0.05, 1.0, 0.05)
+# Perform lapply() loop over lambdas
+pnls <- lapply(lambdas, function(lambda) {
   # Backtest EWMA strategy and calculate returns
   startd + cumsum(simu_ewma(
-    ohlc=ohlc, lambdav=lambdav, wid_th=wid_th, tre_nd=(-1))[, "pnls"])
+    ohlc=ohlc, lambda=lambda, wid_th=wid_th, tre_nd=(-1))[, "pnls"])
 })  # end lapply
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lambda=", lambdavs)
+colnames(pnls) <- paste0("lambda=", lambdas)
 # Plot EWMA strategies with custom line colors
 column_s <- seq(1, NCOL(pnls), by=4)
 plot_theme <- chart_theme()
@@ -979,13 +979,13 @@ legend("topleft", legend=colnames(pnls[, column_s]),
       <<echo=TRUE,eval=FALSE>>=
 sharper <- sqrt(252)*sapply(pnls, function(xtes) {
   # Calculate annualized Sharpe ratio of strategy returns
-  xtes <- rutils::diff_it(xtes)
+  xtes <- rutils::diffit(xtes)
   sum(xtes)/sd(xtes)
 })/NROW(pnls)  # end sapply
-plot(x=lambdavs, y=sharper, t="l",
+plot(x=lambdas, y=sharper, t="l",
      main="Performance of EWMA mean reverting strategies
      as function of the decay parameter lambda")
-revert_returns <- rutils::diff_it(pnls)
+revert_returns <- rutils::diffit(pnls)
 revert_sharpe <- sharper
       @
   \end{columns}
@@ -1009,7 +1009,7 @@ revert_sharpe <- sharper
       <<echo=TRUE,eval=FALSE>>=
 # Backtest best performing strategy
 ewma_revert <- simu_ewma(ohlc=ohlc, bid_offer=0.0,
-  lambdav=lambdavs[which.max(sharper)],
+  lambda=lambdas[which.max(sharper)],
   wid_th=wid_th, tre_nd=(-1))
 position_s <- ewma_revert[, "positions"]
 pnls <- startd + cumsum(ewma_revert[, "pnls"])
@@ -1052,7 +1052,7 @@ trend_ing <- ewma_trend[, "pnls"]
 colnames(trend_ing) <- "trend"
 revert_ing <- ewma_revert[, "pnls"]
 colnames(revert_ing) <- "revert"
-close_rets <- rutils::diff_it(closep)
+close_rets <- rutils::diffit(closep)
 cor(cbind(trend_ing, revert_ing, close_rets))
 # Calculate combined strategy
 com_bined <- trend_ing + revert_ing
@@ -1148,7 +1148,7 @@ colnames(wealth) <- c(symbol, "Strategy", "VWAP")
 sharp_e <- sqrt(252)*sapply(cbind(returns, pnls), function (x) mean(x)/sd(x))
 # Calculate index for background shading
 indic <- (cumrets > vwapv)
-whichv <- which(rutils::diff_it(indic) != 0)
+whichv <- which(rutils::diffit(indic) != 0)
 indic <- rbind(first(indic), indic[whichv, ], last(indic))
 dates <- index(indic)
 indic <- ifelse(drop(coredata(indic)), "lightgreen", "antiquewhite")
@@ -1261,7 +1261,7 @@ sharp_e <- sqrt(252)*sapply(cbind(returns, pnls),
   function (x) mean(x)/sd(x))
 # Calculate index for background shading
 indic <- (vwap_fast > vwap_slow)
-whichv <- which(rutils::diff_it(indic) != 0)
+whichv <- which(rutils::diffit(indic) != 0)
 indic <- rbind(first(indic), indic[whichv, ], last(indic))
 dates <- index(indic)
 indic <- ifelse(drop(coredata(indic)), "lightgreen", "antiquewhite")
@@ -1488,7 +1488,7 @@ abline(h=eq_price, col='red', lwd=2)
     \column{0.5\textwidth}
       Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices.
       <<echo=TRUE,eval=FALSE>>=
-returns <- rutils::diff_it(prices)
+returns <- rutils::diffit(prices)
 lag_prices <- rutils::lagit(prices)
 formulav <- returns ~ lag_prices
 l_m <- lm(formulav)
@@ -1624,7 +1624,7 @@ abline(h=eq_price, col='red', lwd=2)
         <<echo=TRUE,eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Plot autocorrelations using stats::acf()
 stats::acf(returns, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)

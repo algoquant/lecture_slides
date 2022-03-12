@@ -5,41 +5,41 @@ help(getwd)
 # Open the hypertext documentation
 help.start()
 # Calculate cumulative sum of a vector
-vec_tor <- runif(1e5)
+vectorv <- runif(1e5)
 # Use compiled function
-cum_sum <- cumsum(vec_tor)
+cumsumv <- cumsum(vectorv)
 # Use for loop
-cum_sum2 <- vec_tor
-for (i in 2:NROW(vec_tor))
-  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
+cumsumv2 <- vectorv
+for (i in 2:NROW(vectorv))
+  cumsumv2[i] <- (vectorv[i] + cumsumv2[i-1])
 # Compare the two methods
-all.equal(cum_sum, cum_sum2)
+all.equal(cumsumv, cumsumv2)
 # Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
-  cumsum=cumsum(vec_tor),
+  cumsum=cumsum(vectorv),
   loop_alloc={
-    cum_sum2 <- vec_tor
-    for (i in 2:NROW(vec_tor))
-cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
+    cumsumv2 <- vectorv
+    for (i in 2:NROW(vectorv))
+cumsumv2[i] <- (vectorv[i] + cumsumv2[i-1])
   },
   loop_nalloc={
-    # Doesn't allocate memory to cum_sum3
-    cum_sum3 <- vec_tor[1]
-    for (i in 2:NROW(vec_tor))
-# This command adds an extra element to cum_sum3
-cum_sum3[i] <- (vec_tor[i] + cum_sum3[i-1])
+    # Doesn't allocate memory to cumsumv3
+    cumsumv3 <- vectorv[1]
+    for (i in 2:NROW(vectorv))
+# This command adds an extra element to cumsumv3
+cumsumv3[i] <- (vectorv[i] + cumsumv3[i-1])
   },
   times=10))[, c(1, 4, 5)]
 # "<-" and "=" are valid assignment operators
-my_var <- 3
+myvar <- 3
 # Typing a symbol or expression evaluates it
-my_var
+myvar
 # Text in quotes is interpreted as a string
-my_var <- "Hello World!"
+myvar <- "Hello World!"
 # Typing a symbol or expression evaluates it
-my_var
-my_var  # Text after hash is treated as comment
+myvar
+myvar  # Text after hash is treated as comment
 getwd()  # Get cwd
 setwd("C:/Develop/R")  # Set cwd
 getwd()  # Get cwd
@@ -119,7 +119,7 @@ normalizePath(file.path(R.home(), "etc"), winslash="/")
 normalizePath(file.path(R.home(), "bin/x64"), winslash="/")
 # R documentation directory
 normalizePath(file.path(R.home(), "doc/manual"), winslash="/")
-sample(dir(), 5)  # Get 5 file names - dir() lists all files
+sample(dir(), 5)  # Get 5 file names - dir() listv all files
 sample(dir(pattern="csv"), 5)  # List files containing "csv"
 sample(list.files(R.home()), 5)  # All files in R_HOME directory
 sample(list.files(R.home("etc")), 5)  # All files in "etc" sub-directory of R_HOME directory
@@ -165,9 +165,9 @@ new_env$new_var2 <- 11
 ls(new_env)
 # Get objects in current environment
 ls(environment())
-# Environments are subset like lists
+# Environments are subset like listv
 new_env$new_var1
-# Environments are subset like lists
+# Environments are subset like listv
 new_env[["new_var1"]]
 search()  # Get search path for R objects
 my_list <- list(flowers=c("rose", "daisy", "tulip"),
@@ -180,54 +180,54 @@ detach(my_list)
 head(trees)  # "trees" is in datasets base package
 library(rutils)  # Load package rutils
 # Define ETF symbols
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract sym_bols from rutils::etfenv
-price_s <- mget(sym_bols, envir=rutils::etfenv)
-# price_s is a list of xts series
-class(price_s)
-class(price_s[[1]])
+symbols <- c("VTI", "VEU", "IEF", "VNQ")
+# Extract symbols from rutils::etfenv
+prices <- mget(symbols, envir=rutils::etfenv)
+# prices is a list of xts series
+class(prices)
+class(prices[[1]])
 # Extract Close prices
-price_s <- lapply(price_s, quantmod::Cl)
+prices <- lapply(prices, quantmod::Cl)
 # Collapse list into time series the hard way
-xts_1 <- cbind(price_s[[1]], price_s[[2]], price_s[[3]], price_s[[4]])
-class(xts_1)
-dim(xts_1)
+xts1 <- cbind(prices[[1]], prices[[2]], prices[[3]], prices[[4]])
+class(xts1)
+dim(xts1)
 # Collapse list into time series using do.call()
-price_s <- do.call(cbind, price_s)
-all.equal(xts_1, price_s)
-class(price_s)
-dim(price_s)
+prices <- do.call(cbind, prices)
+all.equal(xts1, prices)
+class(prices)
+dim(prices)
 # Extract and cbind in single step
-price_s <- do.call(cbind, lapply(
-  mget(sym_bols, envir=rutils::etfenv), quantmod::Cl))
+prices <- do.call(cbind, lapply(
+  mget(symbols, envir=rutils::etfenv), quantmod::Cl))
 # Or
-# Extract and bind all data, subset by sym_bols
-price_s <- lapply(sym_bols, function(sym_bol) {
-    quantmod::Cl(get(sym_bol, envir=rutils::etfenv))
+# Extract and bind all data, subset by symbols
+prices <- lapply(symbols, function(symbol) {
+    quantmod::Cl(get(symbol, envir=rutils::etfenv))
 })  # end lapply
 # Same, but loop over etfenv without anonymous function
-price_s <- do.call(cbind,
-  lapply(as.list(rutils::etfenv)[sym_bols], quantmod::Cl))
+prices <- do.call(cbind,
+  lapply(as.list(rutils::etfenv)[symbols], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
-price_s <- do.call(cbind,
-  eapply(rutils::etfenv, quantmod::Cl)[sym_bols])
+prices <- do.call(cbind,
+  eapply(rutils::etfenv, quantmod::Cl)[symbols])
 # Drop ".Close" from column names
-colnames(price_s[, 1:4])
-do.call(rbind, strsplit(colnames(price_s[, 1:4]), split="[.]"))[, 1]
-colnames(price_s) <- do.call(rbind, strsplit(colnames(price_s), split="[.]"))[, 1]
+colnames(prices[, 1:4])
+do.call(rbind, strsplit(colnames(prices[, 1:4]), split="[.]"))[, 1]
+colnames(prices) <- do.call(rbind, strsplit(colnames(prices), split="[.]"))[, 1]
 # Or
-colnames(price_s) <- unname(sapply(colnames(price_s),
-    function(col_name) strsplit(col_name, split="[.]")[[1]][1]))
-tail(price_s, 3)
+colnames(prices) <- unname(sapply(colnames(prices),
+    function(colname) strsplit(colname, split="[.]")[[1]][1]))
+tail(prices, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
-write.zoo(price_s,
+write.zoo(prices,
   file="C:/Develop/lecture_slides/data/etf_series.csv", sep=",")
-# Copy price_s into etfenv
+# Copy prices into etfenv
 etfenv$etf_list <- etf_list
 # Or
-assign("price_s", price_s, envir=etfenv)
+assign("prices", prices, envir=etfenv)
 # Save to .RData file
 save(etfenv, file="etf_data.RData")
 # "trees" is in datasets base package

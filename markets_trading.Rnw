@@ -96,7 +96,7 @@ knit_theme$set(thm)
       <<echo=TRUE,eval=FALSE>>=
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-prices <- eapply(sp500_env, quantmod::Cl)
+prices <- eapply(sp500env, quantmod::Cl)
 prices <- rutils::do_call(cbind, prices)
 # Carry forward non-NA prices
 prices <- zoo::na.locf(prices, na.rm=FALSE)
@@ -150,7 +150,7 @@ prices <- zoo::na.locf(prices, fromLast=TRUE)
 indeks <- xts(rowSums(prices)/ncols, index(prices))
 colnames(indeks) <- "index"
 # Combine index with VTI
-datav <- cbind(indeks[index(etf_env$VTI)], etf_env$VTI[, 4])
+datav <- cbind(indeks[index(etfenv$VTI)], etfenv$VTI[, 4])
 colnamev <- c("index", "VTI")
 colnames(datav) <- colnamev
 # Plot index with VTI
@@ -471,7 +471,7 @@ rates <- rutils::do_call(cbind, rates)
 rates <- zoo::na.locf(rates, na.rm=FALSE)
 rates <- zoo::na.locf(rates, fromLast=TRUE)
 # Calculate daily percentage rates changes
-returns <- rutils::diff_it(log(rates))
+returns <- rutils::diffit(log(rates))
 # De-mean the returns
 returns <- lapply(returns, function(x) {x - mean(x)})
 returns <- rutils::do_call(cbind, returns)
@@ -1458,7 +1458,7 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
 chart_Series(x=Cl(vix_env$vix_index["2007/"]),
              theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
+chart_Series(x=Cl(rutils::etfenv$VTI["2007/"]),
              theme=plot_theme, name="VTI ETF")
       @
     \column{0.5\textwidth}
@@ -1491,7 +1491,7 @@ chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
       <<echo=TRUE,eval=FALSE>>=
 chart_Series(x=Cl(vix_env$vix_index["2017/2018"]),
              theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
+chart_Series(x=Cl(rutils::etfenv$SVXY["2017/2018"]),
              theme=plot_theme, name="SVXY ETF")
       @
     \column{0.5\textwidth}
@@ -1884,7 +1884,7 @@ cat(etf_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/etf_gvkeys.txt", 
       The \emph{GVKEYs} and \emph{CUSIPs} can be saved into text files for use in \emph{WRDS} data queries.
       <<echo=TRUE,eval=FALSE>>=
 # Read .csv file with S&P500 constituents
-sp500table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents_2020.csv")
+sp500table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents2020.csv")
 class(sp500table)
 dim(sp500table)
 head(sp500table)
@@ -2129,11 +2129,11 @@ NROW(sp500_tickers); NROW(ticker_s)
 # Select data only for sp500_tickers
 sp500_prices <- sp500_prices[sp500_prices$tic %in% sp500_tickers, ]
 # Create new data environment
-sp500_env <- new.env()
+sp500env <- new.env()
 # Perform OHLC aggregations by cusip column
 sp500_prices <- split(sp500_prices, sp500_prices$cusip)
 process_ed <- lapply(sp500_prices, format_ohlc,
-                     environ_ment=sp500_env)
+                     environ_ment=sp500env)
       @
   \end{columns}
 \end{block}
@@ -2156,31 +2156,31 @@ process_ed <- lapply(sp500_prices, format_ohlc,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Get end dates of series in sp500_env
-endds <- eapply(sp500_env, end)
+# Get end dates of series in sp500env
+endds <- eapply(sp500env, end)
 endds <- unlist(endds)
 endds <- as.Date(endds)
 # Remove elements with short end dates
 se_lect <- (endds < max(endds))
-rm(list=names(sp500_env)[se_lect], envir=sp500_env)
+rm(list=names(sp500env)[se_lect], envir=sp500env)
 # Rename element "BRK.B" to "BRKB"
-sp500_env$BRKB <- sp500_env$BRK.B
-rm(BRK.B, envir=sp500_env)
-names(sp500_env$BRKB) <- paste("BRKB",
+sp500env$BRKB <- sp500env$BRK.B
+rm(BRK.B, envir=sp500env)
+names(sp500env$BRKB) <- paste("BRKB",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Rename element "LOW" to "LOWES"
-sp500_env$LOWES <- sp500_env$LOW
-names(sp500_env$LOWES) <- paste("LO_WES",
+sp500env$LOWES <- sp500env$LOW
+names(sp500env$LOWES) <- paste("LO_WES",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
-rm(LOW, envir=sp500_env)
+rm(LOW, envir=sp500env)
 # Rename element "BF.B" to "BFB"
-sp500_env$BFB <- sp500_env$BF.B
-names(sp500_env$BFB) <- paste("BFB",
+sp500env$BFB <- sp500env$BF.B
+names(sp500env$BFB) <- paste("BFB",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
-rm(BF.B, envir=sp500_env)
+rm(BF.B, envir=sp500env)
 # Save OHLC prices to .RData file
-save(sp500_env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-plot(quantmod::Cl(sp500_env$MSFT))
+save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+plot(quantmod::Cl(sp500env$MSFT))
       @
 
   \end{columns}
@@ -3016,7 +3016,7 @@ library(rutils)  # Load package rutils
 ohlc <- HighFreq::SPY
 nrows <- NROW(ohlc)
 closep <- log(quantmod::Cl(ohlc))
-returns <- rutils::diff_it(closep)
+returns <- rutils::diffit(closep)
 colnames(returns) <- "SPY"
 # Standardize raw returns to make later comparisons
 returns <- (returns - mean(returns))/sd(returns)
@@ -3071,11 +3071,11 @@ legend("topright", inset=0.05, bty="n",
       <<echo=TRUE,eval=FALSE>>=
 # Hourly SPY percentage returns
 closep <- log(Cl(xts::to.period(x=ohlc, period="hours")))
-hourlly <- rutils::diff_it(closep)
+hourlly <- rutils::diffit(closep)
 hourlly <- (hourlly - mean(hourlly))/sd(hourlly)
 # Daily SPY percentage returns
 closep <- log(Cl(xts::to.period(x=ohlc, period="days")))
-dai_ly <- rutils::diff_it(closep)
+dai_ly <- rutils::diffit(closep)
 dai_ly <- (dai_ly - mean(dai_ly))/sd(dai_ly)
 # Calculate moments
 sapply(list(minutely=returns, hourly=hourlly, daily=dai_ly),
@@ -3255,7 +3255,7 @@ model <- lm(formulav, data=data_frame)
 # Durbin-Watson test for autocorrelation of residuals
 lmtest::dwtest(model)
 # Regress diff log of daily volume vs volatility
-data_frame <- as.data.frame(rutils::diff_it(datav))
+data_frame <- as.data.frame(rutils::diffit(datav))
 model <- lm(formulav, data=data_frame)
 lmtest::dwtest(model)
 summary(model)
@@ -3297,7 +3297,7 @@ datav <- sapply(seq_along(endp), function(it) {
     volatility=sd(ret2013[point_s]))
 })  # end sapply
 datav <- t(datav)
-datav <- rutils::diff_it(log(datav))
+datav <- rutils::diffit(log(datav))
 data_frame <- as.data.frame(datav)
       @
     \column{0.5\textwidth}

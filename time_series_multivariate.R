@@ -1,55 +1,55 @@
 # Perform regression using formula
-mod_el <- lm(XLP ~ VTI, data=rutils::etfenv$re_turns)
+model <- lm(XLP ~ VTI, data=rutils::etfenv$returns)
 # Get regression coefficients
-coef(summary(mod_el))
+coef(summary(model))
 # Get alpha and beta
-coef(summary(mod_el))[, 1]
+coef(summary(model))[, 1]
 # Plot scatterplot of returns with aspect ratio 1
-plot(for_mula, data=rutils::etfenv$re_turns,
+plot(formulav, data=rutils::etfenv$returns,
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1),
      asp=1, main="Regression XLP ~ VTI")
 # Add regression line and perpendicular line
-abline(mod_el, lwd=2, col="red")
-abline(a=0, b=-1/coef(summary(mod_el))[2, 1],
+abline(model, lwd=2, col="red")
+abline(a=0, b=-1/coef(summary(model))[2, 1],
  lwd=2, col="blue")
 # Get regression coefficients
-coef(summary(mod_el))
+coef(summary(model))
 # Calculate regression coefficients from scratch
-de_sign <- na.omit(rutils::etfenv$re_turns[, c("XLP", "VTI")])
-be_ta <- drop(cov(de_sign$XLP, de_sign$VTI)/var(de_sign$VTI))
-al_pha <- drop(mean(de_sign$XLP) - be_ta*mean(de_sign$VTI))
-c(al_pha, be_ta)
+design <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
+betav <- drop(cov(design$XLP, design$VTI)/var(design$VTI))
+alpha <- drop(mean(design$XLP) - betav*mean(design$VTI))
+c(alpha, betav)
 # Calculate the residuals
-residual_s <- (de_sign$XLP - (al_pha + be_ta*de_sign$VTI))
+residuals <- (design$XLP - (alpha + betav*design$VTI))
 # Calculate the standard deviation of residuals
-n_rows <- NROW(residual_s)
-resid_stddev <- sqrt(sum(residual_s^2)/(n_rows - 2))
+nrows <- NROW(residuals)
+resid_stddev <- sqrt(sum(residuals^2)/(nrows - 2))
 # Calculate the standard errors of beta and alpha
-sum2 <- sum((de_sign$VTI - mean(de_sign$VTI))^2)
-beta_stderror <- resid_stddev/sqrt(sum2)
-alpha_stderror <- resid_stddev*sqrt(1/n_rows + mean(de_sign$VTI)^2/sum2)
-c(alpha_stderror, beta_stderror)
+sum2 <- sum((design$VTI - mean(design$VTI))^2)
+betastderror <- resid_stddev/sqrt(sum2)
+alpha_stderror <- resid_stddev*sqrt(1/nrows + mean(design$VTI)^2/sum2)
+c(alpha_stderror, betastderror)
 # Perform the Durbin-Watson test of autocorrelation of residuals
-lmtest::dwtest(mod_el)
+lmtest::dwtest(model)
 library(rutils)  # Load rutils
-re_turns <- rutils::etfenv$re_turns
-symbol_s <- colnames(re_turns)
-symbol_s <- symbol_s[symbol_s != "VTI"]
+returns <- rutils::etfenv$returns
+symbolv <- colnames(returns)
+symbolv <- symbolv[symbolv != "VTI"]
 # Perform regressions and collect statistics
-etf_betas <- sapply(symbol_s, function(sym_bol) {
+etf_betas <- sapply(symbolv, function(symbol) {
 # Specify regression formula
-  for_mula <- as.formula(paste(sym_bol, "~ VTI"))
+  formulav <- as.formula(paste(symbol, "~ VTI"))
 # Perform regression
-  mod_el <- lm(for_mula, data=re_turns)
+  model <- lm(formulav, data=returns)
 # Get regression summary
-  model_sum <- summary(mod_el)
+  model_sum <- summary(model)
 # Collect regression statistics
   with(model_sum, 
     c(beta=coefficients[2, 1], 
 p_beta=coefficients[2, 4],
 alpha=coefficients[1, 1], 
 p_alpha=coefficients[1, 4], 
-p_dw=lmtest::dwtest(mod_el)$p.value))
+p_dw=lmtest::dwtest(model)$p.value))
 })  # end sapply
 etf_betas <- t(etf_betas)
 # Sort by p_alpha
@@ -57,17 +57,17 @@ etf_betas <- etf_betas[order(etf_betas[, "p_alpha"]), ]
 etf_betas
 library(PerformanceAnalytics)
 # Calculate XLP beta
-CAPM.beta(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+CAPM.beta(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
 # Calculate XLP bull beta
-CAPM.beta.bull(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+CAPM.beta.bull(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
 # Calculate XLP bear beta
-CAPM.beta.bear(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+CAPM.beta.bear(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
 # Calculate XLP alpha
-CAPM.alpha(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+CAPM.alpha(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
 library(PerformanceAnalytics)
-etf_betas <- sapply(re_turns[, colnames(re_turns)!="VXX"],
-  CAPM.beta, Rb=re_turns[, "VTI"])
-etf_annrets <- sapply(re_turns[, colnames(re_turns)!="VXX"],
+etf_betas <- sapply(returns[, colnames(returns)!="VXX"],
+  CAPM.beta, Rb=returns[, "VTI"])
+etf_annrets <- sapply(returns[, colnames(returns)!="VXX"],
   Return.annualized)
 # Plot scatterplot
 plot(etf_annrets ~ etf_betas, xlab="betas",
@@ -81,10 +81,10 @@ text(x=etf_betas[label_names], y=etf_annrets[label_names],
      labels=label_names, pos=2, cex=0.8)
 library(PerformanceAnalytics)
 etf_betas <- sapply(
-  re_turns[, colnames(re_turns)!="VXX"],
-  CAPM.beta, Rb=re_turns[, "VTI"])
+  returns[, colnames(returns)!="VXX"],
+  CAPM.beta, Rb=returns[, "VTI"])
 etf_annrets <- sapply(
-  re_turns[, colnames(re_turns)!="VXX"],
+  returns[, colnames(returns)!="VXX"],
   Return.annualized)
 # Plot scatterplot
 plot(etf_annrets ~ etf_betas, xlab="betas",
@@ -101,22 +101,22 @@ text(x=etf_betas[label_names],
      labels=label_names, pos=2, cex=0.8)
 library(PerformanceAnalytics)
 # Calculate XLP Treynor ratio
-TreynorRatio(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+TreynorRatio(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
 # Calculate XLP Information ratio
-InformationRatio(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
-PerformanceAnalytics::table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
-                           Rb=re_turns[, "VTI"], scale=252)
-capmstats <- table.CAPM(Ra=re_turns[, symbol_s],
-        Rb=re_turns[, "VTI"], scale=252)
-col_names <- strsplit(colnames(capmstats), split=" ")
-col_names <- do.call(cbind, col_names)[1, ]
-colnames(capmstats) <- col_names
+InformationRatio(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
+PerformanceAnalytics::table.CAPM(Ra=returns[, c("XLP", "XLF")], 
+                           Rb=returns[, "VTI"], scale=252)
+capmstats <- table.CAPM(Ra=returns[, symbolv],
+        Rb=returns[, "VTI"], scale=252)
+colnames <- strsplit(colnames(capmstats), split=" ")
+colnames <- do.call(cbind, colnames)[1, ]
+colnames(capmstats) <- colnames
 capmstats <- t(capmstats)
 capmstats <- capmstats[, -1]
-col_names <- colnames(capmstats)
-whi_ch <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), col_names)
-col_names[whi_ch] <- c("Alpha", "Information", "Treynor")
-colnames(capmstats) <- col_names
+colnames <- colnames(capmstats)
+whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnames)
+colnames[whichv] <- c("Alpha", "Information", "Treynor")
+colnames(capmstats) <- colnames
 capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
 # Copy capmstats into etfenv and save to .RData file
 etfenv <- rutils::etfenv
@@ -124,79 +124,79 @@ etfenv$capmstats <- capmstats
 save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
 rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
 # Calculate XLP and VTI returns
-re_turns <- na.omit(rutils::etfenv$re_turns[, c("XLP", "VTI")])
+returns <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
-end_p <- xts::endpoints(re_turns, on="months")[-1]
+endp <- xts::endpoints(returns, on="months")[-1]
 # Calculate start points from look-back interval
 look_back <- 12  # Look back 12 months
-start_p <- c(rep(1, look_back), end_p[1:(NROW(end_p)-look_back)])
-head(cbind(end_p, start_p), look_back+2)
+startp <- c(rep(1, look_back), endp[1:(NROW(endp)-look_back)])
+head(cbind(endp, startp), look_back+2)
 # Calculate rolling beta regressions every month in R
-for_mula <- XLP ~ VTI  # Specify regression formula
-betas_r <- sapply(1:NROW(end_p), FUN=function(ep) {
-    da_ta <- re_turns[start_p[ep]:end_p[ep], ]
-    # coef(lm(for_mula, data=da_ta))[2]
-    drop(cov(da_ta[, 1], da_ta[, 2])/var(da_ta[, 2]))
+formulav <- XLP ~ VTI  # Specify regression formula
+betas_r <- sapply(1:NROW(endp), FUN=function(ep) {
+    datav <- returns[startp[ep]:endp[ep], ]
+    # coef(lm(formulav, data=datav))[2]
+    drop(cov(datav[, 1], datav[, 2])/var(datav[, 2]))
   })  # end sapply
 # Calculate rolling betas using RcppArmadillo
-reg_stats <- HighFreq::roll_reg(response=re_turns[, 1], design=re_turns[, 2], endp=(end_p-1), startp=(start_p-1))
-beta_s <- reg_stats[, 2]
-all.equal(beta_s, betas_r)
+reg_stats <- HighFreq::roll_reg(response=returns[, 1], design=returns[, 2], endp=(endp-1), startp=(startp-1))
+betas <- reg_stats[, 2]
+all.equal(betas, betas_r)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(response=re_turns[, 1], design=re_turns[, 2], endp=(end_p-1), startp=(start_p-1)),
-  Rcode=sapply(1:NROW(end_p), FUN=function(ep) {
-    da_ta <- re_turns[start_p[ep]:end_p[ep], ]
-    drop(cov(da_ta[, 1], da_ta[, 2])/var(da_ta[, 2]))
+  Rcpp=HighFreq::roll_reg(response=returns[, 1], design=returns[, 2], endp=(endp-1), startp=(startp-1)),
+  Rcode=sapply(1:NROW(endp), FUN=function(ep) {
+    datav <- returns[startp[ep]:endp[ep], ]
+    drop(cov(datav[, 1], datav[, 2])/var(datav[, 2]))
   }),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # dygraph plot of rolling XLP beta and VTI prices
-date_s <- zoo::index(re_turns[end_p, ])
-price_s <- rutils::etfenv$price_s$VTI[date_s]
-da_ta <- cbind(price_s, beta_s)
-col_names <- colnames(da_ta)
-dygraphs::dygraph(da_ta, main="XLP Rolling 12-month Beta and VTI Prices") %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(name=col_names[1], axis="y", col="blue") %>%
-  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
+dates <- zoo::index(returns[endp, ])
+prices <- rutils::etfenv$prices$VTI[dates]
+datav <- cbind(prices, betas)
+colnames <- colnames(datav)
+dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
+  dyAxis("y", label=colnames[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnames[2], independentTicks=TRUE) %>%
+  dySeries(name=colnames[1], axis="y", col="blue") %>%
+  dySeries(name=colnames[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
 # Calculate XLB and XLE prices
-price_s <- na.omit(rutils::etfenv$price_s[, c("XLB", "XLE")])
-cor(rutils::diff_it(log(price_s)))
-xl_b <- drop(zoo::coredata(price_s$XLB))
-xl_e <- drop(zoo::coredata(price_s$XLE))
+prices <- na.omit(rutils::etfenv$prices[, c("XLB", "XLE")])
+cor(rutils::diffit(log(prices)))
+xl_b <- drop(zoo::coredata(prices$XLB))
+xl_e <- drop(zoo::coredata(prices$XLE))
 # Calculate regression coefficients of XLB ~ XLE
-be_ta <- cov(xl_b, xl_e)/var(xl_e)
-al_pha <- (mean(xl_b) - be_ta*mean(xl_e))
+betav <- cov(xl_b, xl_e)/var(xl_e)
+alpha <- (mean(xl_b) - betav*mean(xl_e))
 # Calculate regression residuals
-fit_ted <- (al_pha + be_ta*xl_e)
-residual_s <- (xl_b - fit_ted)
+fit_ted <- (alpha + betav*xl_e)
+residuals <- (xl_b - fit_ted)
 # Perform ADF test on residuals
-tseries::adf.test(residual_s, k=1)
+tseries::adf.test(residuals, k=1)
 # Plot prices
-dygraphs::dygraph(price_s, main="XLB and XLE Prices") %>%
+dygraphs::dygraph(prices, main="XLB and XLE Prices") %>%
   dyOptions(colors=c("blue", "red"))
 # Plot cointegration residuals
-residual_s <- xts::xts(residual_s, index(price_s))
-dygraphs::dygraph(residual_s, main="XLB and XLE Cointegration Residuals")
+residuals <- xts::xts(residuals, index(prices))
+dygraphs::dygraph(residuals, main="XLB and XLE Cointegration Residuals")
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 # Calculate stock prices and percentage returns
-price_s <- zoo::na.locf(price_s, na.rm=FALSE)
-price_s <- zoo::na.locf(price_s, fromLast=TRUE)
-re_turns <- rutils::diff_it(log(price_s))
+prices <- zoo::na.locf(prices, na.rm=FALSE)
+prices <- zoo::na.locf(prices, fromLast=TRUE)
+returns <- rutils::diffit(log(prices))
 # Standardize (de-mean and scale) the returns
-re_turns <- lapply(re_turns, function(x) {(x - mean(x))/sd(x)})
-re_turns <- rutils::do_call(cbind, re_turns)
+returns <- lapply(returns, function(x) {(x - mean(x))/sd(x)})
+returns <- rutils::do_call(cbind, returns)
 # Perform principal component analysis PCA
-pc_a <- prcomp(re_turns, scale=TRUE)
+pcad <- prcomp(returns, scale=TRUE)
 # Find number of components with variance greater than 2
-n_comp <- which(pc_a$sdev^2 < 2)[1]
+n_comp <- which(pcad$sdev^2 < 2)[1]
 # Plot standard deviations of principal components
-barplot(pc_a$sdev[1:n_comp],
-  names.arg=colnames(pc_a$rotation[, 1:n_comp]),
+barplot(pcad$sdev[1:n_comp],
+  names.arg=colnames(pcad$rotation[, 1:n_comp]),
   las=3, xlab="", ylab="",
   main="Volatilities of S&P500 Principal Components")
 # Calculate principal component loadings (weights)
@@ -205,135 +205,135 @@ n_comps <- 6
 par(mfrow=c(n_comps/2, 2))
 par(mar=c(4, 2, 2, 1), oma=c(0, 0, 0, 0))
 # First principal component weights
-weight_s <- sort(pc_a$rotation[, 1], decreasing=TRUE)
-barplot(weight_s[1:6], las=3, xlab="", ylab="", main="")
+weightv <- sort(pcad$rotation[, 1], decreasing=TRUE)
+barplot(weightv[1:6], las=3, xlab="", ylab="", main="")
 title(paste0("PC", 1), line=-2.0, col.main="red")
-for (or_der in 2:n_comps) {
-  weight_s <- sort(pc_a$rotation[, or_der], decreasing=TRUE)
-  barplot(weight_s[c(1:3, 498:500)], las=3, xlab="", ylab="", main="")
-  title(paste0("PC", or_der), line=-2.0, col.main="red")
+for (ordern in 2:n_comps) {
+  weightv <- sort(pcad$rotation[, ordern], decreasing=TRUE)
+  barplot(weightv[c(1:3, 498:500)], las=3, xlab="", ylab="", main="")
+  title(paste0("PC", ordern), line=-2.0, col.main="red")
 }  # end for
 # Calculate principal component time series
-pca_rets <- xts(re_turns %*% pc_a$rotation[, 1:n_comps],
-          order.by=date_s)
-round(cov(pca_rets), 3)
-pca_ts <- cumsum(pca_rets)
+pcarets <- xts(returns %*% pcad$rotation[, 1:n_comps],
+          order.by=dates)
+round(cov(pcarets), 3)
+pcats <- cumsum(pcarets)
 # Plot principal component time series in multiple panels
 par(mfrow=c(n_comps/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-rang_e <- range(pca_ts)
-for (or_der in 1:n_comps) {
-  plot.zoo(pca_ts[, or_der], ylim=rang_e, xlab="", ylab="")
-  title(paste0("PC", or_der), line=-2.0)
+rangev <- range(pcats)
+for (ordern in 1:n_comps) {
+  plot.zoo(pcats[, ordern], ylim=rangev, xlab="", ylab="")
+  title(paste0("PC", ordern), line=-2.0)
 }  # end for
 par(mfrow=c(n_comps/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 # Invert principal component time series
-inv_rotation <- solve(pc_a$rotation)
-all.equal(inv_rotation, t(pc_a$rotation))
-sol_ved <- pca_rets %*% inv_rotation[1:n_comps, ]
-sol_ved <- xts::xts(sol_ved, date_s)
-sol_ved <- cumsum(sol_ved)
-cum_returns <- cumsum(re_turns)
+inv_rotation <- solve(pcad$rotation)
+all.equal(inv_rotation, t(pcad$rotation))
+solved <- pcarets %*% inv_rotation[1:n_comps, ]
+solved <- xts::xts(solved, dates)
+solved <- cumsum(solved)
+cum_returns <- cumsum(returns)
 # Plot the solved returns
-sym_bols <- c("MSFT", "XOM", "JPM", "AAPL", "BRK_B", "JNJ")
-for (sym_bol in sym_bols) {
-  plot.zoo(cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
+symbols <- c("MSFT", "XOM", "JPM", "AAPL", "BRK_B", "JNJ")
+for (symbol in symbols) {
+  plot.zoo(cbind(cum_returns[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n",
-   legend=paste0(sym_bol, c("", " solved")),
+   legend=paste0(symbol, c("", " solved")),
    title=NULL, inset=0.05, cex=1.0, lwd=6,
    lty=1, col=c("black", "blue"))
 }  # end for
 par(mfrow=c(n_comps/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 # Perform ADF unit root tests on original series and residuals
-sapply(sym_bols, function(sym_bol) {
-  c(series=tseries::adf.test(cum_returns[, sym_bol])$p.value,
-    resid=tseries::adf.test(cum_returns[, sym_bol] - sol_ved[, sym_bol])$p.value)
+sapply(symbols, function(symbol) {
+  c(series=tseries::adf.test(cum_returns[, symbol])$p.value,
+    resid=tseries::adf.test(cum_returns[, symbol] - solved[, symbol])$p.value)
 })  # end sapply
 # Plot the residuals
-for (sym_bol in sym_bols) {
-  plot.zoo(cum_returns[, sym_bol] - sol_ved[, sym_bol],
+for (symbol in symbols) {
+  plot.zoo(cum_returns[, symbol] - solved[, symbol],
     plot.type="single", col="blue", xlab="", ylab="")
-  legend(x="topleft", bty="n", legend=paste(sym_bol, "residuals"),
+  legend(x="topleft", bty="n", legend=paste(symbol, "residuals"),
    title=NULL, inset=0.05, cex=1.0, lwd=6, lty=1, col="blue")
 }  # end for
 # Perform ADF unit root test on principal component time series
-pca_rets <- xts(re_turns %*% pc_a$rotation, order.by=date_s)
-pca_ts <- cumsum(pca_rets)
-adf_pvalues <- sapply(1:NCOL(pca_ts), function(or_der)
-  tseries::adf.test(pca_ts[, or_der])$p.value)
+pcarets <- xts(returns %*% pcad$rotation, order.by=dates)
+pcats <- cumsum(pcarets)
+adf_pvalues <- sapply(1:NCOL(pcats), function(ordern)
+  tseries::adf.test(pcats[, ordern])$p.value)
 # AdF unit root test on stationary time series
 tseries::adf.test(rnorm(1e5))
 library(quantmod)
 #Perform pair-wise correlation analysis
 # Calculate correlation matrix
-cor_mat <- cor(re_turns)
-colnames(cor_mat) <- colnames(re_turns)
-rownames(cor_mat) <- colnames(re_turns)
+cormat <- cor(returns)
+colnames(cormat) <- colnames(returns)
+rownames(cormat) <- colnames(returns)
 # Reorder correlation matrix based on clusters
 # Calculate permutation vector
 library(corrplot)
-or_der <- corrMatOrder(cor_mat, order="hclust",
+ordern <- corrMatOrder(cormat, order="hclust",
         hclust.method="complete")
 # Apply permutation vector
-cor_mat <- cor_mat[or_der, or_der]
+cormat <- cormat[ordern, ordern]
 # Plot the correlation matrix
-col_ors <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, tl.col="black", tl.cex=0.8,
-    method="square", col=col_ors(8),
+colors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cormat, tl.col="black", tl.cex=0.8,
+    method="square", col=colors(8),
     cl.offset=0.75, cl.cex=0.7,
     cl.align.text="l", cl.ratio=0.25)
 # draw rectangles on the correlation matrix plot
-corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
           method="complete", col="red")
 # Convert correlation matrix into distance object
-dis_tance <- as.dist(1-cor_mat)
+dis_tance <- as.dist(1-cormat)
 # Perform hierarchical clustering analysis
-clus_ter <- hclust(dis_tance)
-plot(clus_ter, ann=FALSE, xlab="", ylab="")
+cluster <- hclust(dis_tance)
+plot(cluster, ann=FALSE, xlab="", ylab="")
 title("Dendrogram representing hierarchical clustering
 \nwith dissimilarity = 1-correlation", line=-0.5)
 library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"
-# PC returns from rotation and scaled re_turns
-re_turns_scaled <- apply(re_turns, 2, scale)
-pca_rets <- re_turns_scaled %*% pc_a$rotation
+# PC returns from rotation and scaled returns
+returns_scaled <- apply(returns, 2, scale)
+pcarets <- returns_scaled %*% pcad$rotation
 # "x" matrix contains time series of PC returns
-dim(pc_a$x)
-class(pc_a$x)
-head(pc_a$x[, 1:3], 3)
+dim(pcad$x)
+class(pcad$x)
+head(pcad$x[, 1:3], 3)
 # Convert PC matrix to xts and rescale to decimals
-pca_rets <- xts(pc_a$x/100,
-    order.by=index(re_turns))
+pcarets <- xts(pcad$x/100,
+    order.by=index(returns))
 library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"
 chart.CumReturns(
-  pca_rets[, 1:3], lwd=2, ylab="",
+  pcarets[, 1:3], lwd=2, ylab="",
   legend.loc="topright", main="")
 # Add title
 title(main="ETF cumulative returns", line=-1)
 library(PerformanceAnalytics)
 # Calculate PC correlation matrix
-cor_mat <- cor(pca_rets)
-colnames(cor_mat) <- colnames(pca_rets)
-rownames(cor_mat) <- colnames(pca_rets)
-cor_mat[1:3, 1:3]
-table.CAPM(Ra=pca_rets[, 1:3],
-    Rb=re_turns[, "VTI"], scale=252)
+cormat <- cor(pcarets)
+colnames(cormat) <- colnames(pcarets)
+rownames(cormat) <- colnames(pcarets)
+cormat[1:3, 1:3]
+table.CAPM(Ra=pcarets[, 1:3],
+    Rb=returns[, "VTI"], scale=252)
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 #Perform principal component analysis PCA
-re_turns <- na.omit(rutils::etfenv$re_turns)
-pc_a <- prcomp(re_turns, center=TRUE, scale=TRUE)
-barplot(pc_a$sdev[1:10],
-  names.arg=colnames(pc_a$rotation)[1:10],
+returns <- na.omit(rutils::etfenv$returns)
+pcad <- prcomp(returns, center=TRUE, scale=TRUE)
+barplot(pcad$sdev[1:10],
+  names.arg=colnames(pcad$rotation)[1:10],
   las=3, ylab="STDEV", xlab="PCVec",
   main="PCA Explain VAR")
 # Show first three principal component loadings
-head(pc_a$rotation[,1:3], 3)
+head(pcad$rotation[,1:3], 3)
 # Permute second principal component loadings by size
 pca_vec2 <- as.matrix(
-  pc_a$rotation[order(pc_a$rotation[, 2],
+  pcad$rotation[order(pcad$rotation[, 2],
   decreasing=TRUE), 2])
 colnames(pca_vec2) <- "pca2"
 head(pca_vec2, 3)
@@ -345,22 +345,22 @@ barplot(as.vector(pca_vec2),
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(3,1))  # Set plot panels
 # Get list of principal component vectors
-pca_vecs <- lapply(1:3, function(or_der) {
+pca_vecs <- lapply(1:3, function(ordern) {
   pca_vec <- as.matrix(
-    pc_a$rotation[
-    order(pc_a$rotation[, or_der],
-    decreasing=TRUE), or_der])
-  colnames(pca_vec) <- paste0("pca", or_der)
+    pcad$rotation[
+    order(pcad$rotation[, ordern],
+    decreasing=TRUE), ordern])
+  colnames(pca_vec) <- paste0("pca", ordern)
   pca_vec
 })  # end lapply
 names(pca_vecs) <- c("pca1", "pca2", "pca3")
 # The option las=3 rotates the names.arg labels
-for (or_der in 1:3) {
-  barplot(as.vector(pca_vecs[[or_der]]),
-  names.arg=rownames(pca_vecs[[or_der]]),
+for (ordern in 1:3) {
+  barplot(as.vector(pca_vecs[[ordern]]),
+  names.arg=rownames(pca_vecs[[ordern]]),
   las=3, xlab="", ylab="",
   main=paste("Loadings",
-    colnames(pca_vecs[[or_der]])))
+    colnames(pca_vecs[[ordern]])))
 }  # end for
 library(factorAnalytics)  # Load package "factorAnalytics"
 # Get documentation for package "factorAnalytics"
@@ -376,7 +376,7 @@ ls("package:factorAnalytics")
 detach("package:factorAnalytics")
 library(factorAnalytics)
 # Fit a three-factor model using PCA
-factor_pca <- fitSfm(rutils::etfenv$re_turns, k=3)
+factor_pca <- fitSfm(rutils::etfenv$returns, k=3)
 head(factor_pca$loadings, 3)  # Factor loadings
 # Factor realizations (time series)
 head(factor_pca$factors)

@@ -98,7 +98,7 @@ knit_theme$set(thm)
       A small \emph{p}-value means that the regression coefficients are very unlikely to be zero (given the data).
       <<echo=TRUE,eval=TRUE>>=
 # Perform regression using formula
-model <- lm(XLP ~ VTI, data=rutils::etf_env$returns)
+model <- lm(XLP ~ VTI, data=rutils::etfenv$returns)
 # Get regression coefficients
 coef(summary(model))
 # Get alpha and beta
@@ -110,7 +110,7 @@ coef(summary(model))[, 1]
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot scatterplot of returns with aspect ratio 1
-plot(XLP ~ VTI, data=rutils::etf_env$returns,
+plot(XLP ~ VTI, data=rutils::etfenv$returns,
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
      asp=1, main="Regression XLP ~ VTI")
 # Add regression line and perpendicular line
@@ -140,7 +140,7 @@ abline(a=0, b=-1/coef(summary(model))[2, 1],
 # Get regression coefficients
 coef(summary(model))
 # Calculate regression coefficients from scratch
-design <- na.omit(rutils::etf_env$returns[, c("XLP", "VTI")])
+design <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 betav <- drop(cov(design$XLP, design$VTI)/var(design$VTI))
 alpha <- drop(mean(design$XLP) - betav*mean(design$VTI))
 c(alpha, betav)
@@ -175,7 +175,7 @@ lmtest::dwtest(model)
       Some of the ETFs with significant \emph{alpha} $\alpha$ values are the bond ETFs \emph{IEF} and \emph{TLT} (which have performed very well), and the natural resource ETFs \emph{USO} and \emph{DBC} (which have performed very poorly).
       <<echo=(-(1:1)),eval=TRUE>>=
 library(rutils)  # Load rutils
-returns <- rutils::etf_env$returns
+returns <- rutils::etfenv$returns
 symbolv <- colnames(returns)
 symbolv <- symbolv[symbolv != "VTI"]
 # Perform regressions and collect statistics
@@ -392,27 +392,27 @@ PerformanceAnalytics::table.CAPM(Ra=returns[, c("XLP", "XLF")],
       @
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-capm_stats <- table.CAPM(Ra=returns[, symbolv], 
+capmstats <- table.CAPM(Ra=returns[, symbolv], 
               Rb=returns[, "VTI"], scale=252)
-colnamev <- strsplit(colnames(capm_stats), split=" ")
+colnamev <- strsplit(colnames(capmstats), split=" ")
 colnamev <- do.call(cbind, colnamev)[1, ]
-colnames(capm_stats) <- colnamev
-capm_stats <- t(capm_stats)
-capm_stats <- capm_stats[, -1]
-colnamev <- colnames(capm_stats)
+colnames(capmstats) <- colnamev
+capmstats <- t(capmstats)
+capmstats <- capmstats[, -1]
+colnamev <- colnames(capmstats)
 whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnamev)
 colnamev[whichv] <- c("Alpha", "Information", "Treynor")
-colnames(capm_stats) <- colnamev
-capm_stats <- capm_stats[order(capm_stats[, "Alpha"], decreasing=TRUE), ]
-# Copy capm_stats into etf_env and save to .RData file
-etf_env <- rutils::etf_env
-etf_env$capm_stats <- capm_stats
-save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+colnames(capmstats) <- colnamev
+capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
+# Copy capmstats into etfenv and save to .RData file
+etfenv <- rutils::etfenv
+etfenv$capmstats <- capmstats
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       @
     \column{0.45\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-rutils::etf_env$capm_stats[, c("Beta", "Alpha", "Information", "Treynor")]
+rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
       @
   \end{columns}
 \end{block}
@@ -437,7 +437,7 @@ rutils::etf_env$capm_stats[, c("Beta", "Alpha", "Information", "Treynor")]
       The function \texttt{roll\_reg()} from package \emph{HighFreq} performs rolling regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate XLP and VTI returns
-returns <- na.omit(rutils::etf_env$returns[, c("XLP", "VTI")])
+returns <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
 endp <- xts::endpoints(returns, on="months")[-1]
 # Calculate start points from look-back interval
@@ -471,7 +471,7 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of rolling XLP beta and VTI prices
 dates <- zoo::index(returns[endp, ])
-prices <- rutils::etf_env$prices$VTI[dates]
+prices <- rutils::etfenv$prices$VTI[dates]
 datav <- cbind(prices, betas)
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
@@ -504,8 +504,8 @@ dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
       The regression of prices is not statistically valid because they are not normally distributed.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate XLB and XLE prices
-prices <- na.omit(rutils::etf_env$prices[, c("XLB", "XLE")])
-cor(rutils::diff_it(log(prices)))
+prices <- na.omit(rutils::etfenv$prices[, c("XLB", "XLE")])
+cor(rutils::diffit(log(prices)))
 xlb <- drop(zoo::coredata(prices$XLB))
 xle <- drop(zoo::coredata(prices$XLE))
 # Calculate regression coefficients of XLB ~ XLE
@@ -554,7 +554,7 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 # Calculate stock prices and percentage returns
 prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
-returns <- rutils::diff_it(log(prices))
+returns <- rutils::diffit(log(prices))
 # Standardize (de-mean and scale) the returns
 returns <- lapply(returns, function(x) {(x - mean(x))/sd(x)})
 returns <- rutils::do_call(cbind, returns)
@@ -895,7 +895,7 @@ table.CAPM(Ra=pcarets[, 1:3],
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 ### Perform principal component analysis PCA
-returns <- na.omit(rutils::etf_env$returns)
+returns <- na.omit(rutils::etfenv$returns)
 pcad <- prcomp(returns, center=TRUE, scale=TRUE)
 barplot(pcad$sdev[1:10], 
         names.arg=colnames(pcad$rotation)[1:10], 
@@ -1009,7 +1009,7 @@ detach("package:factorAnalytics")
       <<echo=TRUE,eval=FALSE>>=
 library(factorAnalytics)
 # Fit a three-factor model using PCA
-factor_pca <- fitSfm(rutils::etf_env$returns, k=3)
+factor_pca <- fitSfm(rutils::etfenv$returns, k=3)
 head(factor_pca$loadings, 3)  # Factor loadings
 # Factor realizations (time series)
 head(factor_pca$factors)

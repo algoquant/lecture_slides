@@ -111,10 +111,10 @@ knit_theme$set(thm)
       <<echo=TRUE,eval=FALSE>>=
 # Extract ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
-returns <- rutils::etf_env$returns[, symbolv]
+returns <- rutils::etfenv$returns[, symbolv]
 returns <- na.omit(returns)
 # Or, select rows with IEF data
-# returns <- returns[index(rutils::etf_env$IEF)]
+# returns <- returns[index(rutils::etfenv$IEF)]
 # Copy over NA values
 # returns[1, is.na(returns[1, ])] <- 0
 # returns <- zoo::na.locf(returns, na.rm=FALSE)
@@ -311,7 +311,7 @@ backtestmomentum <- function(returns,
   # Calculate momentum profits and losses
   pnls <- rowSums(weights*future)
   # Calculate transaction costs
-  costs <- 0.5*bid_offer*cumprod(1 + pnls)*rowSums(abs(rutils::diff_it(weights)))
+  costs <- 0.5*bid_offer*cumprod(1 + pnls)*rowSums(abs(rutils::diffit(weights)))
   pnls <- (pnls - costs)
   if (with_weights)
     rutils::lagit(cbind(pnls, weights))
@@ -427,7 +427,7 @@ legend("topleft", legend=colnames(wealth),
       <<echo=TRUE,eval=FALSE>>=
 # Plot the momentum portfolio weights
 weights <- pnls[, -1]
-vtis <- log(quantmod::Cl(rutils::etf_env$VTI[dates]))
+vtis <- log(quantmod::Cl(rutils::etfenv$VTI[dates]))
 colnames(vtis) <- "VTI"
 datav <- cbind(vtis, weights)
 datav <- na.omit(datav)
@@ -488,7 +488,7 @@ zoo::plot.zoo(datav,
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 # Merton-Henriksson test
-vtis <- rutils::diff_it(vtis)
+vtis <- rutils::diffit(vtis)
 design <- cbind(VTI=vtis, 0.5*(vtis+abs(vtis)), vtis^2)
 colnames(design)[2:3] <- c("merton", "treynor")
 model <- lm(retsmom ~ VTI + merton, data=design); summary(model)
@@ -636,7 +636,7 @@ pnls <- rowMeans(weights*returns)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate transaction costs
 bid_offer <- 0.001
-costs <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weights)))
+costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
 pnls <- (pnls - costs)
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
@@ -679,7 +679,7 @@ momentum_daily <- function(returns, look_back=252, bid_offer=0.001, trend=1, ...
   # Calculate momentum profits and losses
   pnls <- trend*rowMeans(weights*returns)
   # Calculate transaction costs
-  costs <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weights)))
+  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
   (pnls - costs)
 }  # end momentum_daily
 @
@@ -761,7 +761,7 @@ momentum_daily <- function(returns, look_back=252, hold_period=5, bid_offer=0.00
   # Calculate momentum profits and losses
   pnls <- trend*rowMeans(weights*returns)
   # Calculate transaction costs
-  costs <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weights)))
+  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
   (pnls - costs)
 }  # end momentum_daily
 @
@@ -917,9 +917,9 @@ legend("topleft", legend=colnames(pnls),
       The \emph{MTUM} ETF is an actively managed ETF following a momentum strategy.
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative returns of VTI vs MTUM ETF
-wealth <- log(na.omit(rutils::etf_env$prices[, c("VTI", "MTUM")]))
+wealth <- log(na.omit(rutils::etfenv$prices[, c("VTI", "MTUM")]))
 colnames(wealth) <- c("VTI", "MTUM")
-wealth <- rutils::diff_it(wealth)
+wealth <- rutils::diffit(wealth)
 dygraphs::dygraph(cumsum(wealth), main="VTI vs MTUM ETF") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -1621,35 +1621,35 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
   switch(calc_method(method)) {
   case method::ranksharpe: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
     break;
   }  // end ranksharpe
   case method::max_sharpe: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Apply regularized inverse
     // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
-    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*mean_cols;
+    // weights = calc_inv(cov(returns), eigen_max)*meancols;
+    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*meancols;
     break;
   }  // end max_sharpe
   case method::max_sharpe_median: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::median(mean_cols));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
     // Apply regularized inverse
     // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*mean_cols;
+    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*meancols;
     break;
   }  // end max_sharpe_median
   case method::min_var: {
@@ -1667,37 +1667,37 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
   }  // end min_varpca
   case method::rank: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
     break;
   }  // end rank
   case method::rankrob: {
     // Median returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
-    // mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
+    // meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Apply regularized inverse
     // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
-    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
+    // weights = calc_inv(cov(returns), eigen_max)*meancols;
+    // weights = calc_inv(cov(returns), eigen_max)*meancols;
     // // Standard deviation by columns
-    // arma::vec sd_cols = mean_cols;
+    // arma::vec sd_cols = meancols;
     // for (arma::uword it=0; it < returns[ncols; it++) {
     //   sd_cols(it) = arma::median(arma::abs((returns.col(it) - sd_cols)));
     // }  // end for
     // sd_cols.replace(0, 1);
-    // mean_cols = mean_cols/sd_cols;
+    // meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
     // level;
     weights = (weights - arma::mean(weights));
     break;
@@ -1829,10 +1829,10 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
       This strategy has performed well for \emph{ETF} portfolios because of the consistent performance of bond ETFs, like \emph{TLT} and \emph{VYM}.
       <<echo=TRUE,eval=FALSE>>=
 # Select all the ETF symbols except "VXX", "SVXY" and "MTUM"
-symbolv <- colnames(rutils::etf_env$returns)
+symbolv <- colnames(rutils::etfenv$returns)
 symbolv <- symbolv[!(symbolv %in% c("VXX", "SVXY", "MTUM", "QUAL", "VLUE", "USMV"))]
-# Extract columns of rutils::etf_env$returns and overwrite NA values
-returns <- rutils::etf_env$returns[, symbolv]
+# Extract columns of rutils::etfenv$returns and overwrite NA values
+returns <- rutils::etfenv$returns[, symbolv]
 nassets <- NCOL(returns)
 # returns <- na.omit(returns)
 returns[1, is.na(returns[1, ])] <- 0
@@ -2238,68 +2238,68 @@ using namespace arma;
 //' @export
 // [[Rcpp::export]]
 arma::vec calc_weights(const arma::mat& returns,
-                       const std::string& typ_e = "max_sharpe",
+                       const std::string& typev = "max_sharpe",
                        int eigen_max = 1,
-                       const double& pro_b = 0.1,
+                       const double& probv = 0.1,
                        const double& alpha = 0.0,
                        const bool scalit = true) {
   // Initialize
   arma::vec weights(returns[ncols);
   if (eigen_max == 1)  eigen_max = returns[ncols;
 
-  // Calculate weights depending on typ_e
-  if (typ_e == "max_sharpe") {
+  // Calculate weights depending on typev
+  if (typev == "max_sharpe") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Apply regularized inverse
-    weights = calc_inv(returns, eigen_max)*mean_cols;
-  } else if (typ_e == "max_sharpe_median") {
+    weights = calc_inv(returns, eigen_max)*meancols;
+  } else if (typev == "max_sharpe_median") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::median(mean_cols));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
     // Apply regularized inverse
-    weights = calc_inv(returns, eigen_max)*mean_cols;
-  } else if (typ_e == "min_var") {
+    weights = calc_inv(returns, eigen_max)*meancols;
+  } else if (typev == "min_var") {
     // Apply regularized inverse to unit vector
     weights = calc_inv(returns, eigen_max)*arma::ones(returns[ncols);
-  } else if (typ_e == "min_varpca") {
+  } else if (typev == "min_varpca") {
     // Calculate highest order principal component
     arma::vec eigen_val;
     arma::mat eigen_vec;
     arma::eig_sym(eigen_val, eigen_vec, cov(returns));
     weights = eigen_vec.col(0);
-  } else if (typ_e == "rank") {
+  } else if (typev == "rank") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
-  } else if (typ_e == "rankrob") {
+  } else if (typev == "rankrob") {
     // Median returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Apply regularized inverse
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
-  } else if (typ_e == "quan_tile") {
+  } else if (typev == "quantilev") {
     // Sum of quantiles for columns
-    arma::vec prob_s = {pro_b, 1-pro_b};
-    weights = conv_to< vec >::from(arma::sum(arma::quantile(returns, prob_s, 0), 0));
+    arma::vec probs = {probv, 1-probv};
+    weights = conv_to< vec >::from(arma::sum(arma::quantile(returns, probs, 0), 0));
     // Weights equal to ranks
     weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(weights)));
     weights = (weights - arma::mean(weights));
   } else {
-    cout << "Warning: Incorrect typ_e argument: " << typ_e << endl;
+    cout << "Warning: Incorrect typev argument: " << typev << endl;
     return arma::ones(returns[ncols);
   }  // end if
 
@@ -2337,9 +2337,9 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
                     const arma::mat& returns, // Portfolio returns
                     const arma::uvec& startp,
                     const arma::uvec& endp,
-                    const std::string& typ_e = "max_sharpe",
+                    const std::string& typev = "max_sharpe",
                     const arma::uword& eigen_max = 1,
-                    const double& pro_b = 0.1,
+                    const double& probv = 0.1,
                     const double& alpha = 0,
                     const bool& scalit = true,
                     const double& coeff = 1.0,
@@ -2352,7 +2352,7 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
   for (arma::uword it=1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typ_e, eigen_max, pro_b, alpha, scalit);
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typev, eigen_max, probv, alpha, scalit);
     // Calculate out-of-sample returns
     pnls.subvec(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
     // Add transaction costs
@@ -3152,29 +3152,29 @@ win_dow <- 111
 half_window <- win_dow %/% 2
 medi_an <- TTR::runMedian(taq$price, n=win_dow)
 medi_an <- rutils::lagit(medi_an, lagg=-half_window, pad_zeros=FALSE)
-ma_d <- TTR::runMAD(taq$price, n=win_dow)
-ma_d <- rutils::lagit(ma_d, lagg=-half_window, pad_zeros=FALSE)
-ma_d[1:half_window] <- 1
-ma_d[ma_d == 0] <- 1
+madv <- TTR::runMAD(taq$price, n=win_dow)
+madv <- rutils::lagit(madv, lagg=-half_window, pad_zeros=FALSE)
+madv[1:half_window] <- 1
+madv[madv == 0] <- 1
 # Calculate Z-scores
-z_scores <- (taq$price - medi_an)/ma_d
-z_scores[is.na(z_scores)] <- 0
-z_scores[!is.finite(z_scores)] <- 0
-sum(is.na(z_scores))
-sum(!is.finite(z_scores))
-range(z_scores)
-mad(z_scores)
-hist(z_scores, breaks=2000, xlim=c(-5*mad(z_scores), 5*mad(z_scores)))
+zscores <- (taq$price - medi_an)/madv
+zscores[is.na(zscores)] <- 0
+zscores[!is.finite(zscores)] <- 0
+sum(is.na(zscores))
+sum(!is.finite(zscores))
+range(zscores)
+mad(zscores)
+hist(zscores, breaks=2000, xlim=c(-5*mad(zscores), 5*mad(zscores)))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_good_ticks_dygraph.png}
       <<echo=TRUE,eval=FALSE>>=
 # Remove price jumps with large z-scores
-thresh_old <- 3
-bad_ticks <- (abs(z_scores) > thresh_old)
+threshold <- 3
+bad_ticks <- (abs(zscores) > threshold)
 good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
-sum(bad_ticks)/NROW(z_scores)
+sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
 xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
 colnames(xtes) <- c("XLK.Close", "XLK.Volume")
@@ -3407,7 +3407,7 @@ library(rutils)  # Load package rutils
 ohlc <- HighFreq::SPY
 nrows <- NROW(ohlc)
 closep <- log(quantmod::Cl(ohlc))
-returns <- rutils::diff_it(closep)
+returns <- rutils::diffit(closep)
 colnames(returns) <- "SPY"
 # Standardize raw returns to make later comparisons
 returns <- (returns - mean(returns))/sd(returns)
@@ -3463,11 +3463,11 @@ legend("topright", inset=0.05, bty="n",
       <<echo=TRUE,eval=FALSE>>=
 # Hourly SPY percentage returns
 closep <- log(Cl(xts::to.period(x=ohlc, period="hours")))
-hourlly <- rutils::diff_it(closep)
+hourlly <- rutils::diffit(closep)
 hourlly <- (hourlly - mean(hourlly))/sd(hourlly)
 # Daily SPY percentage returns
 closep <- log(Cl(xts::to.period(x=ohlc, period="days")))
-dai_ly <- rutils::diff_it(closep)
+dai_ly <- rutils::diffit(closep)
 dai_ly <- (dai_ly - mean(dai_ly))/sd(dai_ly)
 # Calculate moments
 sapply(list(minutely=returns, hourly=hourlly, daily=dai_ly),
@@ -3648,7 +3648,7 @@ model <- lm(formulav, data=data_frame)
 # Durbin-Watson test for autocorrelation of residuals
 lmtest::dwtest(model)
 # Regress diff log of daily volume vs volatility
-data_frame <- as.data.frame(rutils::diff_it(datav))
+data_frame <- as.data.frame(rutils::diffit(datav))
 model <- lm(formulav, data=data_frame)
 lmtest::dwtest(model)
 summary(model)
@@ -3690,7 +3690,7 @@ datav <- sapply(seq_along(endp), function(it) {
     volatility=sd(ret2013[point_s]))
 })  # end sapply
 datav <- t(datav)
-datav <- rutils::diff_it(log(datav))
+datav <- rutils::diffit(log(datav))
 data_frame <- as.data.frame(datav)
       @
     \column{0.5\textwidth}
@@ -4474,7 +4474,7 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
 chart_Series(x=Cl(vix_env$vix_index["2007/"]),
              theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
+chart_Series(x=Cl(rutils::etfenv$VTI["2007/"]),
              theme=plot_theme, name="VTI ETF")
       @
     \column{0.5\textwidth}
@@ -4507,7 +4507,7 @@ chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
       <<echo=TRUE,eval=FALSE>>=
 chart_Series(x=Cl(vix_env$vix_index["2017/2018"]),
              theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
+chart_Series(x=Cl(rutils::etfenv$SVXY["2017/2018"]),
              theme=plot_theme, name="SVXY ETF")
       @
     \column{0.5\textwidth}

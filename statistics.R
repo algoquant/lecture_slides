@@ -23,20 +23,20 @@ lines(x=c(0, 0.25), y=c(0.75, 0.75), lwd=2, col="orange")
 lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="orange")
 # Calculate uniformly distributed pseudo-random
 # Sequence using logistic map function
-uni_form <- function(see_d, n_rows=10) {
+unifunc <- function(seedv, nrows=10) {
   # Pre-allocate vector instead of "growing" it
-  out_put <- numeric(n_rows)
+  output <- numeric(nrows)
   # initialize
-  out_put[1] <- see_d
+  output[1] <- seedv
   # Perform loop
-  for (i in 2:n_rows) {
-    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
+  for (i in 2:nrows) {
+    output[i] <- 4*output[i-1]*(1-output[i-1])
   }  # end for
-  acos(1-2*out_put)/pi
-}  # end uni_form
-uni_form(see_d=0.1, n_rows=15)
+  acos(1-2*output)/pi
+}  # end unifunc
+unifunc(seedv=0.1, nrows=15)
 plot(
-  density(uni_form(see_d=runif(1), n_rows=1e5)),
+  density(unifunc(seedv=runif(1), nrows=1e5)),
   xlab="", ylab="", lwd=2, col="blue",
   main="uniform pseudo-random number density")
 set.seed(1121)  # Reset random number generator
@@ -72,89 +72,89 @@ as.numeric(runif(20) > 0.5)  # Slower
 rm(list=ls())
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
-da_ta <- rnorm(1000)
-mean(da_ta)  # Sample mean
-median(da_ta)  # Sample median
-sd(da_ta)  # Sample standard deviation
+datav <- rnorm(1000)
+mean(datav)  # Sample mean
+median(datav)  # Sample median
+sd(datav)  # Sample standard deviation
 rm(list=ls())
 # VTI returns
-re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Number of observations
-n_rows <- NROW(re_turns)
+nrows <- NROW(returns)
 # Mean of VTI returns
-mea_n <- mean(re_turns)
+mea_n <- mean(returns)
 # Standard deviation of VTI returns
-s_d <- sd(re_turns)
+s_d <- sd(returns)
 # Standardize returns
-re_turns <- (re_turns - mea_n)/s_d
+returns <- (returns - mea_n)/s_d
 # Skewness of VTI returns
-n_rows/((n_rows-1)*(n_rows-2))*sum(re_turns^3)
+nrows/((nrows-1)*(nrows-2))*sum(returns^3)
 # Kurtosis of VTI returns
-n_rows/(n_rows-1)^2*sum(re_turns^4)
+nrows/(nrows-1)^2*sum(returns^4)
 # Random normal returns
-re_turns <- rnorm(n_rows)
+returns <- rnorm(nrows)
 # Mean and standard deviation of random normal returns
-mean(re_turns); sd(re_turns)
+mean(returns); sd(returns)
 # Skewness and kurtosis of random normal returns
-n_rows/((n_rows-1)*(n_rows-2))*sum(re_turns^3)
-n_rows/(n_rows-1)^2*sum(re_turns^4)
+nrows/((nrows-1)*(nrows-2))*sum(returns^3)
+nrows/(nrows-1)^2*sum(returns^4)
 # Calculate cumulative standard normal distribution
 c(pnorm(-2), pnorm(2))
 # Calculate inverse cumulative standard normal distribution
 c(qnorm(0.75), qnorm(0.25))
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
+nrows <- 1000
+datav <- rnorm(nrows)
 # Sample mean - MC estimate
-mean(da_ta)
+mean(datav)
 # Sample standard deviation - MC estimate
-sd(da_ta)
+sd(datav)
 # Monte Carlo estimate of cumulative probability
-c(pnorm(1), sum(da_ta < 1)/n_rows)
+c(pnorm(1), sum(datav < 1)/nrows)
 # Monte Carlo estimate of quantile
-conf_level <- 0.99
-qnorm(conf_level)
-cut_off <- conf_level*n_rows
-da_ta <- sort(da_ta)
-c(da_ta[cut_off], quantile(da_ta, probs=conf_level))
+confl <- 0.99
+qnorm(confl)
+cutoff <- confl*nrows
+datav <- sort(datav)
+c(datav[cutoff], quantile(datav, probs=confl))
 # Read the source code of quantile()
 stats:::quantile.default
 # microbenchmark quantile
 library(microbenchmark)
 summary(microbenchmark(
-  monte_carlo=da_ta[cut_off],
-  quan_tile=quantile(da_ta, probs=conf_level),
+  monte_carlo=datav[cutoff],
+  quantilev=quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
+nrows <- 1000
+datav <- rnorm(nrows)
 # Sample mean
-mean(da_ta)
+mean(datav)
 # Sample standard deviation
-sd(da_ta)
+sd(datav)
 # Standard error of sample mean
-sd(da_ta)/sqrt(n_rows)
+sd(datav)/sqrt(nrows)
 # Define Hermite polynomials
 her_mite <- function(x, n) {
     switch(n+1, 1, x, (x^2 - 1), (x^3 - 3*x), 0)
 }  # end her_mite
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-col_ors <- c("red", "blue", "green")
-for (in_dex in 1:3) {  # Plot three curves
-  curve(expr=her_mite(x, in_dex),
+colors <- c("red", "blue", "green")
+for (indeks in 1:3) {  # Plot three curves
+  curve(expr=her_mite(x, indeks),
   xlim=c(-3, 3), ylim=c(-2.5, 2.5),
-  xlab="", ylab="", lwd=4, col=col_ors[in_dex],
-  add=as.logical(in_dex-1))
+  xlab="", ylab="", lwd=4, col=colors[indeks],
+  add=as.logical(indeks-1))
 }  # end for
 # Add title and legend
 title(main="Hermite Polynomials", line=0.5)
 lab_els <- paste("Order", 1:3, sep=" = ")
 legend("top", inset=0.0, bty="n",
  title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
- col=col_ors)
+ col=colors)
 # Define Hermite functions
 hermite_fun <- function(x, n)
   exp(-x^2/4)*her_mite(x, n)/(2*pi)^(0.25)/sqrt(factorial(n))
@@ -164,19 +164,19 @@ integrate(function(x, n, m)
   lower=(-Inf), upper=Inf, n=2, m=3)
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-col_ors <- c("red", "blue", "green")
-for (in_dex in 1:3) {  # Plot three curves
-  curve(expr=hermite_fun(x, in_dex),
+colors <- c("red", "blue", "green")
+for (indeks in 1:3) {  # Plot three curves
+  curve(expr=hermite_fun(x, indeks),
   xlim=c(-6, 6), ylim=c(-0.6, 0.6),
-  xlab="", ylab="", lwd=4, col=col_ors[in_dex],
-  add=as.logical(in_dex-1))
+  xlab="", ylab="", lwd=4, col=colors[indeks],
+  add=as.logical(indeks-1))
 }  # end for
 # Add title and legend
 title(main="Hermite Functions", line=0.5)
 lab_els <- paste("Order", 1:3, sep=" = ")
 legend("topright", inset=0.0, bty="n",
  title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
- col=col_ors)
+ col=colors)
 # Integrate Hermite functions
 integrate(her_mite, lower=(-Inf), upper=Inf, n=2)
 integrate(function(x, n, m) her_mite(x, n)*her_mite(x, m),
@@ -185,27 +185,27 @@ integrate(function(x, n, m) her_mite(x, n)*her_mite(x, m),
     lower=(-Inf), upper=Inf, n=2, m=2)
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-col_ors <- c("red", "blue", "green")
-for (in_dex in 1:3) {  # Plot three curves
-  curve(expr=her_mite(x, in_dex),
+colors <- c("red", "blue", "green")
+for (indeks in 1:3) {  # Plot three curves
+  curve(expr=her_mite(x, indeks),
   xlim=c(-4, 4), ylim=c(-0.6, 0.6),
-  xlab="", ylab="", lwd=3, col=col_ors,
-  add=as.logical(in_dex-1))
+  xlab="", ylab="", lwd=3, col=colors,
+  add=as.logical(indeks-1))
 }  # end for
 # Add title and legend
 title(main="Hermite Functions", line=0.5)
 lab_els <- paste("Order", 1:3, sep=" = ")
 legend("topright", inset=0.05, bty="n",
  title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
- col=col_ors)
+ col=colors)
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
+nrows <- 1000
+datav <- rnorm(nrows)
 # Sample mean
-mean(da_ta)
+mean(datav)
 # Sample standard deviation
-sd(da_ta)
+sd(datav)
 #Perform two-tailed test that sample is
 #from Standard Normal Distribution (mean=0, SD=1)
 # generate vector of samples and store in data frame
@@ -229,9 +229,9 @@ curve(expr=dnorm(x, sd=1), type="l", xlim=c(-4, 4),
 xlab="", ylab="", lwd=3, col="blue")
 title(main="Two-tailed Test", line=0.5)
 # Plot tails of the distribution using polygons
-star_t <- 2; e_nd <- 4
+startd <- 2; e_nd <- 4
 # Plot right tail using polygon
-x_var <- seq(star_t, e_nd, length=100)
+x_var <- seq(startd, e_nd, length=100)
 y_var <- dnorm(x_var, sd=1)
 y_var[1] <- (-1)
 y_var[NROW(y_var)] <- (-1)
@@ -329,24 +329,24 @@ legend("topright", inset=0.05, bty="n",
        col=c("black", "red"))
 # Calculate VTI percentage returns
 library(rutils)
-re_turns <- na.omit(rutils::etfenv$re_turns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Reset output digits
 dig_its <- options(digits=5)
 # Shapiro-Wilk test for normal distribution
-shapiro.test(rnorm(NROW(re_turns)))
+shapiro.test(rnorm(NROW(returns)))
 # Shapiro-Wilk test for VTI returns
-shapiro.test(as.numeric(re_turns))
+shapiro.test(as.numeric(returns))
 # Shapiro-Wilk test for uniform distribution
-shapiro.test(runif(NROW(re_turns)))
+shapiro.test(runif(NROW(returns)))
 # Restore output digits
 options(digits=dig_its$digits)
 library(tseries)  # Load package tseries
 # Jarque-Bera test for normal distribution
-jarque.bera.test(rnorm(NROW(re_turns)))
+jarque.bera.test(rnorm(NROW(returns)))
 # Jarque-Bera test for VTI returns
-jarque.bera.test(re_turns)
+jarque.bera.test(returns)
 # Jarque-Bera test for uniform distribution
-jarque.bera.test(runif(NROW(re_turns)))
+jarque.bera.test(runif(NROW(returns)))
 # KS test for normal distribution
 ks_test <- ks.test(rnorm(100), pnorm)
 ks_test$p.value
@@ -357,49 +357,49 @@ ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
 ks.test(rnorm(100), rnorm(100, sd=2.0))
 # KS test for VTI returns vs normal distribution
-re_turns <- as.numeric(na.omit(rutils::etfenv$re_turns$VTI))
-re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
-ks.test(re_turns, rnorm)
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
+returns <- (returns - mean(returns))/sd(returns)
+ks.test(returns, rnorm)
 # Fit t-dist into VTI returns
-optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
+optim_fit <- MASS::fitdistr(returns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
-scal_e <- optim_fit$estimate[2]
+scalit <- optim_fit$estimate[2]
 # KS test for VTI returns vs t-distribution
 # define non-standard Student’s t-distribution
 tdistr <- function(x, dfree, loc, scale) {
   dt((x-loc)/scale, df=dfree)/scale
 }  # end likeli_hood
-# tdistr(x=re_turns[1], dfree=2, loc=lo_cation, scale=scal_e)
-# Plot shows that tdistr() fits re_turns very well
-den_sity <- density(re_turns)
-ma_d <- mad(re_turns)
-plot(den_sity, xlim=c(-5*ma_d, 5*ma_d),
+# tdistr(x=returns[1], dfree=2, loc=lo_cation, scale=scalit)
+# Plot shows that tdistr() fits returns very well
+densityv <- density(returns)
+madv <- mad(returns)
+plot(densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      col="blue", lwd=2, main="Density of VTI Returns")
-curve(expr=tdistr(x, dfree=2, loc=lo_cation, scale=scal_e), col="red", lwd=2, add=TRUE)
+curve(expr=tdistr(x, dfree=2, loc=lo_cation, scale=scalit), col="red", lwd=2, add=TRUE)
 # Or
 tdistr <- function(x, dfree, loc, scale) {
   gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scale)*
     (1+((x-loc)/scale)^2/dfree)^(-(dfree+1)/2)
 }  # end likeli_hood
-# tdistr(x=re_turns[1], dfree=2, loc=lo_cation, scale=scal_e)
+# tdistr(x=returns[1], dfree=2, loc=lo_cation, scale=scalit)
 # Not the same as the below - gives p-value << 0.01 - rejects NULL
-ks.test(re_turns, tdistr, dfree=2, loc=lo_cation, scale=scal_e)
+ks.test(returns, tdistr, dfree=2, loc=lo_cation, scale=scalit)
 # Not the same as the above - gives p-value > 0.02 most of the time - doesn't reject NULL
 # KS test for VTI returns vs t-distribution
-da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
-ks.test(re_turns, da_ta)
+datav <- lo_cation + scalit*rt(NROW(returns), df=2)
+ks.test(returns, datav)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
 deg_free <- c(2, 5, 8, 11)
 # Plot four curves in loop
-col_ors <- c("red", "black", "blue", "green")
-for (in_dex in 1:4) {
-  curve(expr=dchisq(x, df=deg_free[in_dex]),
+colors <- c("red", "black", "blue", "green")
+for (indeks in 1:4) {
+  curve(expr=dchisq(x, df=deg_free[indeks]),
   xlim=c(0, 20), ylim=c(0, 0.3),
-  xlab="", ylab="", col=col_ors[in_dex],
-  lwd=2, add=as.logical(in_dex-1))
+  xlab="", ylab="", col=colors[indeks],
+  lwd=2, add=as.logical(indeks-1))
 }  # end for
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
@@ -407,12 +407,12 @@ title(main="Chi-squared Distributions", line=0.5)
 lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=1, col=col_ors)
+       cex=0.8, lwd=6, lty=1, col=colors)
 # Observed frequencies from random normal data
 histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
 # Theoretical frequencies
-freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Return p-value
@@ -422,48 +422,48 @@ chisq_test$p.value
 histo_gram <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts/sum(histo_gram$counts)
 # Theoretical frequencies
-freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for shifted normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Calculate histogram of VTI returns
-histo_gram <- hist(re_turns, breaks=100, plot=FALSE)
+histo_gram <- hist(returns, breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
 # Calculate cumulative probabilities and then difference them
-freq_t <- pt((histo_gram$breaks-lo_cation)/scal_e, df=2)
-freq_t <- rutils::diff_it(freq_t)
+freq_t <- pt((histo_gram$breaks-lo_cation)/scalit, df=2)
+freq_t <- rutils::diffit(freq_t)
 # Perform Chi-squared test for VTI returns
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Sort a vector into ascending order
-da_ta <- round(runif(7), 3)
-sort_ed <- sort(da_ta)
-da_ta  # original data
+datav <- round(runif(7), 3)
+sort_ed <- sort(datav)
+datav  # original data
 sort_ed  # sorted data
 # Calculate index to sort into ascending order
-in_dex <- order(da_ta)
-in_dex  # permutation index to sort
-all.equal(sort_ed, da_ta[in_dex])
+indeks <- order(datav)
+indeks  # permutation index to sort
+all.equal(sort_ed, datav[indeks])
 # Sort the ordered vector back to its original unsorted order
-in_dex <- order(order(da_ta))
-in_dex  # permutation index to unsort
-all.equal(da_ta, sort_ed[in_dex])
+indeks <- order(order(datav))
+indeks  # permutation index to unsort
+all.equal(datav, sort_ed[indeks])
 # Calculate ranks of the vector elements
-rank(da_ta)
-all.equal(rank(da_ta), in_dex)
+rank(datav)
+all.equal(rank(datav), indeks)
 # VTI returns
-re_turns <- as.numeric(na.omit(rutils::etfenv$re_turns[, "VTI"]))
-n_rows <- NROW(re_turns)
-re_turns <- 100*(re_turns-mean(re_turns))/sd(re_turns)
+returns <- as.numeric(na.omit(rutils::etfenv$returns[, "VTI"]))
+nrows <- NROW(returns)
+returns <- 100*(returns-mean(returns))/sd(returns)
 # Simulate normal random data
-n_data <- rnorm(n_rows, sd=100)
+ndata <- rnorm(nrows, sd=100)
 # Bootstrap the mean and median estimators
 boot_data <- sapply(1:1e3, function(x) {
   # Simulate data
-  n_data <- rnorm(n_rows, sd=100)
-  re_turns <- re_turns[sample.int(n_rows, replace=TRUE)]
-  c(n_mean=mean(n_data),
-    n_median=median(n_data),
-    vti_mean=mean(re_turns),
-    vti_median=median(re_turns))
+  ndata <- rnorm(nrows, sd=100)
+  returns <- returns[sample.int(nrows, replace=TRUE)]
+  c(n_mean=mean(ndata),
+    n_median=median(ndata),
+    vti_mean=mean(returns),
+    vti_median=median(returns))
 })  # end sapply
 boot_data <- t(boot_data)
 # Analyze bootstrapped data
@@ -471,36 +471,36 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and medians from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:1e4,
-  function(x, n_rows, re_turns) {
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # initialize compute cluster
+boot_data <- parLapply(cluster, 1:1e4,
+  function(x, nrows, returns) {
     # Simulate data
-    n_data <- rnorm(n_rows, sd=100)
-    re_turns <- re_turns[sample.int(n_rows, replace=TRUE)]
-    c(n_mean=mean(n_data),
-n_median=median(n_data),
-vti_mean=mean(re_turns),
-vti_median=median(re_turns))
-  }, n_rows, re_turns)  # end parLapply
-stopCluster(clus_ter)  # Stop R processes over cluster
+    ndata <- rnorm(nrows, sd=100)
+    returns <- returns[sample.int(nrows, replace=TRUE)]
+    c(n_mean=mean(ndata),
+n_median=median(ndata),
+vti_mean=mean(returns),
+vti_median=median(returns))
+  }, nrows, returns)  # end parLapply
+stopCluster(cluster)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:1e4, function(x) {
   # Simulate data
-  n_data <- rnorm(n_rows)
-  t_data <- rt(n_rows, df=2)
-  c(n_mean=mean(n_data),
-    n_median=median(n_data),
+  ndata <- rnorm(nrows)
+  t_data <- rt(nrows, df=2)
+  c(n_mean=mean(ndata),
+    n_median=median(ndata),
     vti_mean=mean(t_data),
     vti_median=median(t_data))
-}, mc.cores=n_cores)  # end mclapply
+}, mc.cores=ncores)  # end mclapply
 # Means and medians from bootstrap
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Bias and variance from bootstrap
 bias_var <- apply(boot_data, MARGIN=2,
   function(x) c(bias=mean(x), variance=var(x)))
@@ -508,21 +508,21 @@ bias_var <- apply(boot_data, MARGIN=2,
 bias_var[1, 3]^2 + bias_var[2, 3]
 # MSE of median
 bias_var[1, 4]^2 + bias_var[2, 4]
-re_turns <- as.numeric(na.omit(rutils::etfenv$re_turns[, "VTI"]))
-n_rows <- NROW(re_turns)
-re_turns <- 100*(re_turns-mean(re_turns))/sd(re_turns)
+returns <- as.numeric(na.omit(rutils::etfenv$returns[, "VTI"]))
+nrows <- NROW(returns)
+returns <- 100*(returns-mean(returns))/sd(returns)
 # Simulate normal random data
-n_data <- rnorm(n_rows, sd=100)
+ndata <- rnorm(nrows, sd=100)
 # Hodges-Lehmann estimator
 # Bootstrap the mean and median estimators
 boot_data <- sapply(1:1e3, function(x) {
   # Simulate data
-  n_data <- rnorm(n_rows, sd=100)
-  re_turns <- re_turns[sample.int(n_rows, replace=TRUE)]
-  c(n_mean=mean(n_data),
-    n_median=median(n_data),
-    vti_mean=mean(re_turns),
-    vti_median=median(re_turns))
+  ndata <- rnorm(nrows, sd=100)
+  returns <- returns[sample.int(nrows, replace=TRUE)]
+  c(n_mean=mean(ndata),
+    n_median=median(ndata),
+    vti_mean=mean(returns),
+    vti_median=median(returns))
 })  # end sapply
 boot_data <- t(boot_data)
 # Analyze bootstrapped data
@@ -530,17 +530,17 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and medians from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
-sd(da_ta)
-mad(da_ta)
-median(abs(da_ta - median(da_ta)))
-median(abs(da_ta - median(da_ta)))/qnorm(0.75)
+  c(mean=mean(x), stderror=sd(x)))
+nrows <- 1e3
+datav <- rnorm(nrows)
+sd(datav)
+mad(datav)
+median(abs(datav - median(datav)))
+median(abs(datav - median(datav)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 boot_data <- sapply(1:1e4, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  c(sd=sd(sampl_e), mad=mad(sampl_e))
+  samplev <- datav[sample.int(nrows, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
 })  # end sapply
 boot_data <- t(boot_data)
 # Analyze bootstrapped variance
@@ -548,172 +548,172 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:1e4,
-  function(x, da_ta) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, da_ta=da_ta)  # end parLapply
-stopCluster(clus_ter)  # Stop R processes over cluster
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # initialize compute cluster
+boot_data <- parLapply(cluster, 1:1e4,
+  function(x, datav) {
+    samplev <- datav[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, datav=datav)  # end parLapply
+stopCluster(cluster)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:1e4, function(x) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, mc.cores=n_cores)  # end mclapply
+    samplev <- datav[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, mc.cores=ncores)  # end mclapply
 # Means and standard errors from bootstrap
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
+nrows <- 1e3
+datav <- rnorm(nrows)
 # Sample mean
-mean(da_ta)
+mean(datav)
 # Sample standard deviation
-sd(da_ta)
-n_rows <- 1e3
+sd(datav)
+nrows <- 1e3
 # Wilcoxon test for normal distribution
-nor_mal <- rnorm(n_rows)
-wilcox.test(nor_mal)
-wilcox.test(nor_mal+1)
+normv <- rnorm(nrows)
+wilcox.test(normv)
+wilcox.test(normv+1)
 # Skewed distribution with median=0
-log_norm <- exp(nor_mal)
-# log_norm <- rlnorm(n_rows, sdlog=1)
-mean(log_norm); median(log_norm)
+lognormv <- exp(normv)
+# lognormv <- rlnorm(nrows, sdlog=1)
+mean(lognormv); median(lognormv)
 # Skewed distribution with median!=0
-wilcox.test(log_norm)
+wilcox.test(lognormv)
 # Skewed distribution with median=0
-wilcox.test(log_norm-median(log_norm))
+wilcox.test(lognormv-median(lognormv))
 # Skewed distributions with median!=0
-wilcox.test(log_norm, nor_mal, paired=TRUE)
+wilcox.test(lognormv, normv, paired=TRUE)
 # Two distributions with median=0
-wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
+wilcox.test(lognormv-median(lognormv), normv-median(normv),
       paired=TRUE)
 # Skewed distribution with median=0
-wilcox.test(log_norm-median(log_norm))
+wilcox.test(lognormv-median(lognormv))
 # Skewed distribution with mean=0
-mean(log_norm); median(log_norm)
-wilcox.test(log_norm-median(log_norm))
+mean(lognormv); median(lognormv)
+wilcox.test(lognormv-median(lognormv))
 # Same as
-wilcox.test(log_norm-median(log_norm), rep(0, n_rows), paired=TRUE)
+wilcox.test(lognormv-median(lognormv), rep(0, nrows), paired=TRUE)
 # Skewed distributions with median!=0
-wilcox.test(log_norm, nor_mal, paired=TRUE)
+wilcox.test(lognormv, normv, paired=TRUE)
 # Two distributions with median=0
-wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
+wilcox.test(lognormv-median(lognormv), normv-median(normv),
       paired=TRUE)
 # Normal samples with different standard deviations
-sample1 <- rnorm(n_rows, sd=1)
-sample2 <- rnorm(n_rows, sd=10)
+sample1 <- rnorm(nrows, sd=1)
+sample2 <- rnorm(nrows, sd=10)
 wilcox.test(sample1, sample2, paired=TRUE)
 # Wilcoxon test for random data around 0
-un_if <- (runif(n_rows) - 0.5)
-wil_cox <- wilcox.test(un_if)
+unifv <- (runif(nrows) - 0.5)
+wilcoxt <- wilcox.test(unifv)
 # Calculate V statistic of Wilcoxon test
-wil_cox$statistic
-sum(rank(abs(un_if))[un_if>0])
+wilcoxt$statistic
+sum(rank(abs(unifv))[unifv>0])
 # Calculate W statistic of Wilcoxon test
-sum(sign(un_if)*rank(abs(un_if)))
+sum(sign(unifv)*rank(abs(unifv)))
 # Two sets of normal data
-sample1 <- rnorm(n_rows)
-sample2 <- rnorm(n_rows, mean=0.1)
+sample1 <- rnorm(nrows)
+sample2 <- rnorm(nrows, mean=0.1)
 # Wilcoxon test
-wil_cox <- wilcox.test(sample1, sample2, paired=TRUE)
-wil_cox$statistic
+wilcoxt <- wilcox.test(sample1, sample2, paired=TRUE)
+wilcoxt$statistic
 # Calculate V statistic of Wilcoxon test
-da_ta <- (sample1 - sample2)
-sum(rank(abs(da_ta))[da_ta>0])
+datav <- (sample1 - sample2)
+sum(rank(abs(datav))[datav>0])
 # Calculate W statistic of Wilcoxon test
-sum(sign(da_ta)*rank(abs(da_ta)))
+sum(sign(datav)*rank(abs(datav)))
 # Calculate distributon of Wilcoxon W statistic
-wilcox_w <- sapply(1:1e3, function(x) {
-  da_ta <- (runif(n_rows) - 0.5)
-  sum(sign(da_ta)*rank(abs(da_ta)))
+wilcoxw <- sapply(1:1e3, function(x) {
+  datav <- (runif(nrows) - 0.5)
+  sum(sign(datav)*rank(abs(datav)))
 })  # end sapply
-wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
-var(wilcox_w)
+wilcoxw <- wilcoxw/sqrt(nrows*(nrows+1)*(2*nrows+1)/6)
+var(wilcoxw)
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-hist(wilcox_w, col="lightgrey",
+hist(wilcoxw, col="lightgrey",
      xlab="returns", breaks=50, xlim=c(-3, 3),
      ylab="frequency", freq=FALSE,
      main="Wilcoxon W Statistic Histogram")
-lines(density(wilcox_w, bw=0.4), lwd=3, col="red")
+lines(density(wilcoxw, bw=0.4), lwd=3, col="red")
 curve(expr=dnorm, add=TRUE, lwd=3, col="blue")
 # Add legend
 legend("topright", inset=0.05, bty="n",
  leg=c("W density", "Normal"),
  lwd=6, lty=1, col=c("red", "blue"))
-n_rows <- 1e3
+nrows <- 1e3
 # Wilcoxon test for normal distribution
-nor_mal <- rnorm(n_rows)
-wilcox.test(nor_mal)
-wilcox.test(nor_mal+1)
+normv <- rnorm(nrows)
+wilcox.test(normv)
+wilcox.test(normv+1)
 # Skewed distribution with median=0
-log_norm <- rlnorm(n_rows, sdlog=1)
-mean(log_norm); median(log_norm)
+lognormv <- rlnorm(nrows, sdlog=1)
+mean(lognormv); median(lognormv)
 # Skewed distribution with median!=0
-wilcox.test(log_norm)
+wilcox.test(lognormv)
 # Skewed distribution with median=0
-wilcox.test(log_norm-median(log_norm))
+wilcox.test(lognormv-median(lognormv))
 # Skewed distributions with median!=0
-wilcox.test(log_norm, nor_mal, paired=TRUE)
+wilcox.test(lognormv, normv, paired=TRUE)
 # Two distributions with median=0
-wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
+wilcox.test(lognormv-median(lognormv), normv-median(normv),
       paired=TRUE)
 # Skewed distribution with median=0
-wilcox.test(log_norm-median(log_norm))
+wilcox.test(lognormv-median(lognormv))
 # Skewed distribution with mean=0
-mean(log_norm); median(log_norm)
-wilcox.test(log_norm-median(log_norm))
+mean(lognormv); median(lognormv)
+wilcox.test(lognormv-median(lognormv))
 # Same as
-wilcox.test(log_norm-median(log_norm), rep(0, n_rows), paired=TRUE)
+wilcox.test(lognormv-median(lognormv), rep(0, nrows), paired=TRUE)
 # Skewed distributions with median!=0
-wilcox.test(log_norm, nor_mal, paired=TRUE)
+wilcox.test(lognormv, normv, paired=TRUE)
 # Two distributions with median=0
-wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
+wilcox.test(lognormv-median(lognormv), normv-median(normv),
       paired=TRUE)
 # Normal samples with different standard deviations
-sample1 <- rnorm(n_rows, sd=1)
-sample2 <- rnorm(n_rows, sd=10)
+sample1 <- rnorm(nrows, sd=1)
+sample2 <- rnorm(nrows, sd=10)
 wilcox.test(sample1, sample2, paired=TRUE)
 # Wilcoxon test for random data around 0
-un_if <- (runif(n_rows) - 0.5)
-wil_cox <- wilcox.test(un_if)
+unifv <- (runif(nrows) - 0.5)
+wilcoxt <- wilcox.test(unifv)
 # Calculate V statistic of Wilcoxon test
-wil_cox$statistic
-sum(rank(abs(un_if))[un_if>0])
+wilcoxt$statistic
+sum(rank(abs(unifv))[unifv>0])
 # Calculate W statistic of Wilcoxon test
-sum(sign(un_if)*rank(abs(un_if)))
+sum(sign(unifv)*rank(abs(unifv)))
 # Two sets of normal data
-sample1 <- rnorm(n_rows)
-sample2 <- rnorm(n_rows, mean=0.1)
+sample1 <- rnorm(nrows)
+sample2 <- rnorm(nrows, mean=0.1)
 # Wilcoxon test
-wil_cox <- wilcox.test(sample1, sample2, paired=TRUE)
-wil_cox$statistic
+wilcoxt <- wilcox.test(sample1, sample2, paired=TRUE)
+wilcoxt$statistic
 # Calculate V statistic of Wilcoxon test
-da_ta <- (sample1 - sample2)
-sum(rank(abs(da_ta))[da_ta>0])
+datav <- (sample1 - sample2)
+sum(rank(abs(datav))[datav>0])
 # Calculate W statistic of Wilcoxon test
-sum(sign(da_ta)*rank(abs(da_ta)))
+sum(sign(datav)*rank(abs(datav)))
 # Calculate distributon of Wilcoxon W statistic
-wilcox_w <- sapply(1:1e3, function(x) {
-  da_ta <- (runif(n_rows) - 0.5)
-  sum(sign(da_ta)*rank(abs(da_ta)))
+wilcoxw <- sapply(1:1e3, function(x) {
+  datav <- (runif(nrows) - 0.5)
+  sum(sign(datav)*rank(abs(datav)))
 })  # end sapply
-wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
-var(wilcox_w)
+wilcoxw <- wilcoxw/sqrt(nrows*(nrows+1)*(2*nrows+1)/6)
+var(wilcoxw)
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-hist(wilcox_w, col="lightgrey",
+hist(wilcoxw, col="lightgrey",
      xlab="returns", breaks=50, xlim=c(-3, 3),
      ylab="frequency", freq=FALSE,
      main="Wilcoxon W Statistic Histogram")
-lines(density(wilcox_w, bw=0.4), lwd=3, col="red")
+lines(density(wilcoxw, bw=0.4), lwd=3, col="red")
 curve(expr=dnorm, add=TRUE, lwd=3, col="blue")
 # Add legend
 legend("topright", inset=0.05, bty="n",
@@ -732,17 +732,17 @@ wilcox.test(sample1, sample2,
       paired=TRUE)$p.value
 t.test(sample1, sample2)$p.value
 # Data samples
-da_ta <- sort(rnorm(38))
-in_dex <- c(1:9, 20:29)
+datav <- sort(rnorm(38))
+indeks <- c(1:9, 20:29)
 # Or
-da_ta <- sort(rnorm(398))
-in_dex <- c(1:99, 200:299)
-sample1 <- da_ta[in_dex]
-sample2 <- da_ta[-in_dex]
+datav <- sort(rnorm(398))
+indeks <- c(1:99, 200:299)
+sample1 <- datav[indeks]
+sample2 <- datav[-indeks]
 # Or
-in_dex <- sample(1:n_rows, size=n_rows/2)
-sample1 <- re_turns[in_dex]
-sample2 <- (-re_turns[-in_dex])
+indeks <- sample(1:nrows, size=nrows/2)
+sample1 <- returns[indeks]
+sample2 <- (-returns[-indeks])
 sample1 <- (sample1- median(sample1))
 sample2 <- (sample2- median(sample2))
 moments::moment(sample1, order=3)
@@ -756,41 +756,41 @@ barplot(sample2, col=red)
 barplot(sample1, col=blue, add=TRUE)
 hist(sample1)
 # Mann-Whitney test for normal distribution
-da_ta <- rnorm(n_rows, sd=100)
-wilcox.test(da_ta, paired=FALSE)
+datav <- rnorm(nrows, sd=100)
+wilcox.test(datav, paired=FALSE)
 # Skewed distribution with mean=0
-mean(re_turns); median(re_turns)
-wilcox.test(re_turns-mean(re_turns),
+mean(returns); median(returns)
+wilcox.test(returns-mean(returns),
       paired=FALSE)
 # Skewed distribution with median=0
-wilcox.test(re_turns-median(re_turns),
+wilcox.test(returns-median(returns),
       paired=FALSE)
 # Skewed distribution with median=0
-wilcox.test(re_turns-median(re_turns),
-      da_ta, paired=FALSE)
-sample1 <- sample(re_turns, size=n_rows)
+wilcox.test(returns-median(returns),
+      datav, paired=FALSE)
+sample1 <- sample(returns, size=nrows)
 sample2 <- (-sample1)
 sample1 <- (sample1-median(sample1))
 sample2 <- (sample2-median(sample2))
 # Mann-Whitney-Wilcoxon rank sum test
 wilcox.test(sample1, sample2,
       paired=FALSE)$p.value
-da_ta <- (-re_turns)
-da_ta <- (da_ta-median(da_ta))
-wilcox.test(re_turns-median(re_turns),
-      da_ta, paired=FALSE)
-wilcox.test(re_turns-median(re_turns),
-      da_ta, paired=TRUE)
-da_ta <- (-re_turns)
-da_ta <- (da_ta-mean(da_ta))
-wilcox.test(re_turns-mean(re_turns),
-      da_ta, paired=FALSE)
-wilcox.test(re_turns-mean(re_turns),
-      da_ta, paired=TRUE)
+datav <- (-returns)
+datav <- (datav-median(datav))
+wilcox.test(returns-median(returns),
+      datav, paired=FALSE)
+wilcox.test(returns-median(returns),
+      datav, paired=TRUE)
+datav <- (-returns)
+datav <- (datav-mean(datav))
+wilcox.test(returns-mean(returns),
+      datav, paired=FALSE)
+wilcox.test(returns-mean(returns),
+      datav, paired=TRUE)
 foo <- sapply(1:100, function(x) {
   # Data samples
-  sample1 <- sample(re_turns, size=n_rows/2)
-  sample2 <- sample(-re_turns, size=n_rows/2)
+  sample1 <- sample(returns, size=nrows/2)
+  sample2 <- sample(-returns, size=nrows/2)
   sample1 <- (sample1-median(sample1))
   sample2 <- (sample2-median(sample2))
   # Mann-Whitney-Wilcoxon rank sum test
@@ -798,43 +798,43 @@ foo <- sapply(1:100, function(x) {
 })
 hist(foo)
 # Skewed distribution with mean=0
-mean(re_turns); median(re_turns)
-wilcox.test(re_turns-mean(re_turns))
+mean(returns); median(returns)
+wilcox.test(returns-mean(returns))
 # Same as
-wilcox.test(re_turns-mean(re_turns),
-      rep(0, n_rows),
+wilcox.test(returns-mean(returns),
+      rep(0, nrows),
       paired=TRUE)
 # Skewed distribution with median=0
-wilcox.test(re_turns-median(re_turns))
+wilcox.test(returns-median(returns))
 # Data samples
 sample1 <- rnorm(200)
 sample2 <- rnorm(100, mean=0.1)
 # Mann-Whitney-Wilcoxon rank sum test
-wil_cox <- wilcox.test(sample1, sample2,
+wilcoxt <- wilcox.test(sample1, sample2,
                  paired=FALSE)
-wil_cox$statistic
+wilcoxt$statistic
 # Calculate U statistics of Mann-Whitney-Wilcoxon test
-da_ta <- c(sample1, sample2)
-rank_s <- rank(da_ta)
-sum(rank_s[1:200]) - 100*201
-sum(rank_s[201:300]) - 50*101
+datav <- c(sample1, sample2)
+ranks <- rank(datav)
+sum(ranks[1:200]) - 100*201
+sum(ranks[201:300]) - 50*101
 # Wilcoxon test for random data around 0
-n_rows <- 1e3
-da_ta <- (runif(n_rows) - 0.5)
-wil_cox <- wilcox.test(da_ta)
+nrows <- 1e3
+datav <- (runif(nrows) - 0.5)
+wilcoxt <- wilcox.test(datav)
 # Calculate V statistic of Wilcoxon test
-wil_cox$statistic
-sum(rank(abs(da_ta))[da_ta>0])
+wilcoxt$statistic
+sum(rank(abs(datav))[datav>0])
 # Calculate W statistic of Wilcoxon test
-sum(sign(da_ta)*rank(abs(da_ta)))
+sum(sign(datav)*rank(abs(datav)))
 # Calculate distributon of Wilcoxon W statistic
-wilcox_w <- sapply(1:1e3, function(x) {
-  da_ta <- (runif(n_rows) - 0.5)
-  sum(sign(da_ta)*rank(abs(da_ta)))
+wilcoxw <- sapply(1:1e3, function(x) {
+  datav <- (runif(nrows) - 0.5)
+  sum(sign(datav)*rank(abs(datav)))
 })  # end sapply
-wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
-var(wilcox_w)
-hist(wilcox_w)
+wilcoxw <- wilcoxw/sqrt(nrows*(nrows+1)*(2*nrows+1)/6)
+var(wilcoxw)
+hist(wilcoxw)
 # iris data frame
 aggregate(Sepal.Length ~ Species, data=iris,
   FUN=function(x) c(mean=mean(x), sd=sd(x)))
@@ -845,15 +845,15 @@ k_test$statistic
 # Kruskal-Wallis test for independent normal distributions
 sample1 <- rnorm(1e3)
 sample2 <- rnorm(1e3)
-fac_tor <- c(rep(TRUE, 1e3), rep(FALSE, 1e3))
-kruskal.test(x=c(sample1, sample2), g=fac_tor)
+factorv <- c(rep(TRUE, 1e3), rep(FALSE, 1e3))
+kruskal.test(x=c(sample1, sample2), g=factorv)
 # Kruskal-Wallis test for shifted normal distributions
-kruskal.test(x=c(sample1+1, sample2), g=fac_tor)
+kruskal.test(x=c(sample1+1, sample2), g=factorv)
 # Kruskal-Wallis test for beta distributions
 sample1 <- rbeta(1e3, 2, 8) + 0.3
 sample2 <- rbeta(1e3, 8, 2) - 0.3
 mean(sample1); mean(sample2)
-kruskal.test(x=c(sample1, sample2), g=fac_tor)
+kruskal.test(x=c(sample1, sample2), g=factorv)
 # Plot the beta distributions
 x11()
 plot(density(sample1), col="blue", lwd=3,
@@ -863,14 +863,14 @@ lines(density(sample2), col="red", lwd=3)
 # Kruskal-Wallis test for iris data
 k_test <- kruskal.test(Sepal.Length ~ Species, data=iris)
 # Calculate Kruskal-Wallis test Statistic
-n_rows <- NROW(iris)
-iris_data <- data.frame(rank_s=rank(iris$Sepal.Length),
+nrows <- NROW(iris)
+iris_data <- data.frame(ranks=rank(iris$Sepal.Length),
                   spe_cies=iris$Species)
-kruskal_stat <- (12/n_rows/(n_rows+1))*sum(
-  aggregate(rank_s ~ spe_cies,
+kruskal_stat <- (12/nrows/(nrows+1))*sum(
+  aggregate(ranks ~ spe_cies,
       data=iris_data,
       FUN=function(x) {
-        NROW(x)*((n_rows+1)/2 - mean(x))^2
+        NROW(x)*((nrows+1)/2 - mean(x))^2
       })[, 2])
 c(k_test=unname(k_test$statistic),
   k_stat=kruskal_stat)
@@ -878,19 +878,19 @@ c(k_test=unname(k_test$statistic),
 sample1 <- rnorm(1e3)
 sample2 <- rnorm(1e3)
 sample2[1:11] <- sample2[1:11] + 50
-fac_tor <- c(rep(TRUE, 1e3), rep(FALSE, 1e3))
-kruskal.test(x=c(sample1, sample2), g=fac_tor)$p.value
+factorv <- c(rep(TRUE, 1e3), rep(FALSE, 1e3))
+kruskal.test(x=c(sample1, sample2), g=factorv)$p.value
 t.test(sample1, sample2)$p.value
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
-sd(da_ta)
-mad(da_ta)
-median(abs(da_ta - median(da_ta)))
-median(abs(da_ta - median(da_ta)))/qnorm(0.75)
+nrows <- 1e3
+datav <- rnorm(nrows)
+sd(datav)
+mad(datav)
+median(abs(datav - median(datav)))
+median(abs(datav - median(datav)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 boot_data <- sapply(1:1e4, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  c(sd=sd(sampl_e), mad=mad(sampl_e))
+  samplev <- datav[sample.int(nrows, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
 })  # end sapply
 boot_data <- t(boot_data)
 # Analyze bootstrapped variance
@@ -898,37 +898,37 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
+function(x) c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:1e4,
-  function(x, da_ta) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, da_ta=da_ta)  # end parLapply
-stopCluster(clus_ter)  # Stop R processes over cluster
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # initialize compute cluster
+boot_data <- parLapply(cluster, 1:1e4,
+  function(x, datav) {
+    samplev <- datav[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, datav=datav)  # end parLapply
+stopCluster(cluster)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:1e4,
   function(x) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, mc.cores=n_cores)  # end mclapply
+    samplev <- datav[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, mc.cores=ncores)  # end mclapply
 # Means and standard errors from bootstrap
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
-sd(da_ta)
-mad(da_ta)
-median(abs(da_ta - median(da_ta)))
-median(abs(da_ta - median(da_ta)))/qnorm(0.75)
+  c(mean=mean(x), stderror=sd(x)))
+nrows <- 1e3
+datav <- rnorm(nrows)
+sd(datav)
+mad(datav)
+median(abs(datav - median(datav)))
+median(abs(datav - median(datav)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 boot_data <- sapply(1:1e4, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  c(sd=sd(sampl_e), mad=mad(sampl_e))
+  samplev <- datav[sample.int(nrows, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
 })  # end sapply
 boot_data <- t(boot_data)
 # Analyze bootstrapped variance
@@ -936,34 +936,34 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:1e4,
-  function(x, da_ta) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, da_ta=da_ta)  # end parLapply
-stopCluster(clus_ter)  # Stop R processes over cluster
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # initialize compute cluster
+boot_data <- parLapply(cluster, 1:1e4,
+  function(x, datav) {
+    samplev <- datav[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, datav=datav)  # end parLapply
+stopCluster(cluster)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:1e4, function(x) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, mc.cores=n_cores)  # end mclapply
+    samplev <- datav[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, mc.cores=ncores)  # end mclapply
 # Means and standard errors from bootstrap
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 set.seed(1121)  # initialize random number generator
 # Define variables and calculate correlation
-n_rows <- 100
-x_var <- runif(n_rows); y_var <- runif(n_rows)
+nrows <- 100
+x_var <- runif(nrows); y_var <- runif(nrows)
 cor(x_var, y_var)
 # Correlate the variables and calculate correlation
-rh_o <- 0.5
-y_var <- rh_o*x_var + (1-rh_o)*y_var
+rho <- 0.5
+y_var <- rho*x_var + (1-rho)*y_var
 # Plot in x11 window
 x11(width=5, height=4)
 # Set plot parameters to reduce whitespace around plot
@@ -971,69 +971,69 @@ par(mar=c(4, 4, 2, 1), oma=c(0.5, 0.5, 0, 0))
 # Plot scatterplot and exact regression line
 plot(x_var, y_var, xlab="x_var", ylab="y_var")
 title(main="Correlated Variables", line=0.5)
-abline(a=0.25, b=rh_o, lwd=3, col="blue")
+abline(a=0.25, b=rho, lwd=3, col="blue")
 # Calculate regression
 summary(lm(y_var ~ x_var))
 # Simulation of sample correlation
-n_rows <- 1e4
-rh_o <- 0.99
-rho_2 <- sqrt(1-rh_o^2)
-da_ta <- sapply(1:1000, function(x) {
-  x_var <- rnorm(n_rows)
-  y_var <- (rh_o*x_var + rho_2*rnorm(n_rows))
+nrows <- 1e4
+rho <- 0.99
+rho2 <- sqrt(1-rho^2)
+datav <- sapply(1:1000, function(x) {
+  x_var <- rnorm(nrows)
+  y_var <- (rho*x_var + rho2*rnorm(nrows))
   cor(x_var, y_var)
 })  # end sapply
-sd(da_ta)
+sd(datav)
 # Correct formula
-(1-rh_o^2)/sqrt(n_rows-2)
+(1-rho^2)/sqrt(nrows-2)
 # Incorrect formula
-sqrt((1-rh_o^2)/(n_rows-2))
+sqrt((1-rho^2)/(nrows-2))
 # Correlation
 co_r <- cor(x_var, y_var)
 # Standard error of correlation
-std_error <- sqrt((1-co_r^2)/(n_rows-2))
+stderror <- sqrt((1-co_r^2)/(nrows-2))
 # t-value of correlation
-co_r/std_error
+co_r/stderror
 # 95% confidence intervals
-co_r*c(1-qnorm(0.975)*std_error, 1+qnorm(0.975)*std_error)
+co_r*c(1-qnorm(0.975)*stderror, 1+qnorm(0.975)*stderror)
 # Test statistical significance of correlation
 cor.test(x_var, y_var)
-rh_o <- 0.9
-rho_2 <- sqrt(1-rh_o^2)
+rho <- 0.9
+rho2 <- sqrt(1-rho^2)
 set.seed(1121)
 # Bootstrap of sample mean and median
 boot_data <- sapply(1:1000, function(x) {
-  x_var <- rnorm(n_rows)
-  y_var <- (rh_o*x_var + rho_2*rnorm(n_rows))
+  x_var <- rnorm(nrows)
+  y_var <- (rho*x_var + rho2*rnorm(nrows))
   c(rho=mean(y_var*x_var), y_sd=sd(y_var), cor=cor(x_var, y_var))
 })  # end sapply
 # Means and standard errors from bootstrap
 foo <- apply(boot_data, MARGIN=1, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 foo[2, ]
-(1-rh_o^2)/sqrt(n_rows-2)
-sqrt((1-rh_o^2)/(n_rows-2))
-rho_2^2
-rh_o^4
+(1-rho^2)/sqrt(nrows-2)
+sqrt((1-rho^2)/(nrows-2))
+rho2^2
+rho^4
 # Simulation of sample correlation
-rh_o <- 0.99
-rho_2 <- sqrt(1-rh_o^2)
-da_ta <- sapply(1:10000, function(x) {
-  x_var <- rnorm(n_rows)
-  y_var <- (rh_o*x_var + rho_2*rnorm(n_rows))
+rho <- 0.99
+rho2 <- sqrt(1-rho^2)
+datav <- sapply(1:10000, function(x) {
+  x_var <- rnorm(nrows)
+  y_var <- (rho*x_var + rho2*rnorm(nrows))
   cor(x_var, y_var)
 })  # end sapply
-sd(da_ta)
+sd(datav)
 # Correct formula
-(1-rh_o^2)/sqrt(n_rows-2)
+(1-rho^2)/sqrt(nrows-2)
 # Incorrect formula
-sqrt((1-rh_o^2)/(n_rows-2))
-da_ta <- sapply(1:10000, function(x) {
-  rnorm(n_rows)^2 * rnorm(n_rows)^2
+sqrt((1-rho^2)/(nrows-2))
+datav <- sapply(1:10000, function(x) {
+  rnorm(nrows)^2 * rnorm(nrows)^2
 })  # end sapply
-sd(da_ta)
-foo <- (rnorm(n_rows)^2 * rnorm(n_rows)^2)
-mean(rnorm(n_rows)^2 * rnorm(n_rows)^2)
+sd(datav)
+foo <- (rnorm(nrows)^2 * rnorm(nrows)^2)
+mean(rnorm(nrows)^2 * rnorm(nrows)^2)
 # Calculate correlations
 cor(x_var, y_var, method="pearson")
 cor(x_var, y_var, method="spearman")

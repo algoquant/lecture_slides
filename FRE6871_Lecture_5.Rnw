@@ -1551,7 +1551,7 @@ plot(fit_sd, type="l", lwd=3, col="blue",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load time series of ETF percentage returns
-returns <- rutils::etf_env$returns[, c("XLF", "XLE")]
+returns <- rutils::etfenv$returns[, c("XLF", "XLE")]
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 head(returns)
@@ -1574,7 +1574,7 @@ model_sum$coefficients
 # Means and standard errors from bootstrap
 dim(boot_data)
 t(apply(boot_data, MARGIN=1,
-      function(x) c(mean=mean(x), std_error=sd(x))))
+      function(x) c(mean=mean(x), stderror=sd(x))))
       @
   \end{columns}
 \end{block}
@@ -1728,12 +1728,12 @@ attributes(model$terms)$intercept <- 1
 # Regression summary
 model_sum <- summary(model)
 # Regression R-squared
-r_squared <- e_ss/t_ss
-all.equal(r_squared, model_sum$r.squared)
+rsquared <- e_ss/t_ss
+all.equal(rsquared, model_sum$r.squared)
 # Correlation between response and fitted values
 cor_fitted <- drop(cor(response, fittedv))
 # Squared correlation between response and fitted values
-all.equal(cor_fitted^2, r_squared)
+all.equal(cor_fitted^2, rsquared)
       @
   \end{columns}
 \end{block}
@@ -1767,9 +1767,9 @@ ncols <- NCOL(design)
 # Degrees of freedom of residuals
 deg_free <- (NROW(risk_ret -.n_cols)
 # Adjusted R-squared
-r_squared_adj <- (1-sum(residuals^2)/deg_free/var(response))
+rsquared_adj <- (1-sum(residuals^2)/deg_free/var(response))
 # Compare adjusted R-squared from lm()
-all.equal(drop(r_squared_adj), model_sum$adj.r.squared)
+all.equal(drop(rsquared_adj), model_sum$adj.r.squared)
       @
   \end{columns}
 \end{block}
@@ -1922,10 +1922,10 @@ model_sum$fstatistic
 # Degrees of freedom of residuals
 deg_free <- (NROW(risk_ret -.n_cols)
 # F-statistic from ESS and RSS
-f_stat <- (e_ss/.n_cols-1))/(r_ss/deg_free)
-all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
+fstat <- (e_ss/.n_cols-1))/(r_ss/deg_free)
+all.equal(fstat, model_sum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
-1-pf(q=f_stat, df1.n_cols-1, df2:nrows.n_cols)
+1-pf(q=fstat, df1.n_cols-1, df2:nrows.n_cols)
       @
   \end{columns}
 \end{block}
@@ -1968,7 +1968,7 @@ all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate ETF returns
-returns <- na.omit(rutils::etf_env$returns)
+returns <- na.omit(rutils::etfenv$returns)
 # Perform singular value decomposition
 svdec <- svd(returns)
 x11(width=6, height=5)
@@ -2065,11 +2065,11 @@ all.equal(influ_ence, influence_trans)
       \end{displaymath}
       The function \texttt{plogis()} gives the cumulative probability of the \emph{Logistic} distribution,
         <<echo=TRUE,eval=FALSE>>=
-lambdav <- c(0.5, 1, 1.5)
+lambda <- c(0.5, 1, 1.5)
 colors <- c("red", "blue", "green")
 # Plot three curves in loop
 for (indeks in 1:3) {
-  curve(expr=plogis(x, scale=lambdav[indeks]),
+  curve(expr=plogis(x, scale=lambda[indeks]),
         xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
         col=colors[indeks], add=(indeks>1))
 }  # end for
@@ -2082,7 +2082,7 @@ for (indeks in 1:3) {
 title(main="Logistic function", line=0.5)
 # Add legend
 legend("topleft", title="Scale parameters",
-       paste("lambda", lambdav, sep="="),
+       paste("lambda", lambda, sep="="),
        inset=0.05, cex=0.8, lwd=6, bty="n",
        lty=1, col=colors)
       @
@@ -2672,9 +2672,9 @@ boxplot(formula=balance ~ !stu_dent,
 forecasts <- predict(glmod, type="response")
 all.equal(glmod$fitted.values, forecasts)
 # Define discrimination threshold value
-thresh_old <- 0.7
+threshold <- 0.7
 # Calculate confusion matrix in-sample
-table(actual=!de_fault, forecast=(forecasts < thresh_old))
+table(actual=!de_fault, forecast=(forecasts < threshold))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
@@ -2686,7 +2686,7 @@ test_data <- Default[-samplev, ]
 forecasts <- predict(glmod, newdata=test_data, type="response")
 # Calculate confusion matrix out-of-sample
 table(actual=!test_data$de_fault, 
-      forecast=(forecasts < thresh_old))
+      forecast=(forecasts < threshold))
       @
   \end{columns}
 \end{block}
@@ -2717,12 +2717,12 @@ table(actual=!test_data$de_fault,
       <<echo=TRUE,eval=TRUE>>=
 # Calculate confusion matrix out-of-sample
 confu_sion <- table(actual=!test_data$de_fault, 
-      forecast=(forecasts < thresh_old))
+      forecast=(forecasts < threshold))
 confu_sion
 # Calculate FALSE positive (type I error)
-sum(!test_data$de_fault & (forecasts > thresh_old))
+sum(!test_data$de_fault & (forecasts > threshold))
 # Calculate FALSE negative (type II error)
-sum(test_data$de_fault & (forecasts < thresh_old))
+sum(test_data$de_fault & (forecasts < threshold))
       @
   \end{columns}
 \end{block}
@@ -2806,13 +2806,13 @@ print(xtable::xtable(confusion_matrix,
       \vskip1ex
       The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of thresh_old
-con_fuse <- function(actu_al, forecasts, thresh_old) {
-    confu_sion <- table(actu_al, (forecasts < thresh_old))
+# Confusion matrix as function of threshold
+con_fuse <- function(actu_al, forecasts, threshold) {
+    confu_sion <- table(actu_al, (forecasts < threshold))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(!test_data$de_fault, forecasts, thresh_old=thresh_old)
+con_fuse(!test_data$de_fault, forecasts, threshold=threshold)
 # Define vector of discrimination thresholds
 threshold_s <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
@@ -2825,7 +2825,7 @@ error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diff_it(error_rates[, "typeI"])
+false_pos <- rutils::diffit(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
       @
     \column{0.5\textwidth}

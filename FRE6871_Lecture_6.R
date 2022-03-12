@@ -1,27 +1,27 @@
 # Create a list with two elements
-lis_t <- list(c("a", "b"), 1:4)
-lis_t
-c(typeof(lis_t), mode(lis_t), class(lis_t))
+listv <- list(c("a", "b"), 1:4)
+listv
+c(typeof(listv), mode(listv), class(listv))
 # Lists are also vectors
-c(is.vector(lis_t), is.list(lis_t))
-NROW(lis_t)
+c(is.vector(listv), is.list(listv))
+NROW(listv)
 # Create named list
-lis_t <- list(first=c("a", "b"), second=1:4)
-lis_t
-names(lis_t)
-unlist(lis_t)
-lis_t[2]  # Extract second element as sublist
-lis_t[[2]]  # Extract second element
-lis_t[[2]][3]  # Extract third element of second element
-lis_t[[c(2, 3)]]  # Third element of second element
-lis_t$second  # Extract second element
-lis_t$s  # Extract second element - partial name matching
-lis_t$second[3]  # Third element of second element
-lis_t <- list()  # Empty list
-lis_t$a <- 1
-lis_t[2] <- 2
-lis_t
-names(lis_t)
+listv <- list(first=c("a", "b"), second=1:4)
+listv
+names(listv)
+unlist(listv)
+listv[2]  # Extract second element as sublist
+listv[[2]]  # Extract second element
+listv[[2]][3]  # Extract third element of second element
+listv[[c(2, 3)]]  # Third element of second element
+listv$second  # Extract second element
+listv$s  # Extract second element - partial name matching
+listv$second[3]  # Third element of second element
+listv <- list()  # Empty list
+listv$a <- 1
+listv[2] <- 2
+listv
+names(listv)
 # Convert vector elements to list elements
 as.list(1:3)
 # Convert whole vector to single list element
@@ -36,7 +36,7 @@ dim(data_frame)  # Get dimension attribute
 colnames(data_frame)  # Get the colnames attribute
 rownames(data_frame)  # Get the rownames attribute
 class(data_frame)  # Get object class
-typeof(data_frame)  # Data frames are lists
+typeof(data_frame)  # Data frames are listv
 is.data.frame(data_frame)
 class(data_frame$type)  # Get column class
 class(data_frame$price)  # Get column class
@@ -102,29 +102,29 @@ data_frame[order(data_frame$price), ]
 # Sort data_frame on color column
 data_frame[order(data_frame$color), ]
 as.matrix(data_frame)
-vec_tor <- sample(9)
-matrix(vec_tor, ncol=3)
-as.matrix(vec_tor, ncol=3)
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
-rownames(mat_rix) <- c("row1", "row2")  # Rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
+vectorv <- sample(9)
+matrix(vectorv, ncol=3)
+as.matrix(vectorv, ncol=3)
+matrixv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
+rownames(matrixv) <- c("row1", "row2")  # Rownames attribute
+colnames(matrixv) <- c("col1", "col2", "col3")  # Colnames attribute
 library(microbenchmark)
 # Call method instead of generic function
-as.data.frame.matrix(mat_rix)
+as.data.frame.matrix(matrixv)
 # A few methods for generic function as.data.frame()
 sample(methods(as.data.frame), size=4)
 # Function method is faster than generic function
 summary(microbenchmark(
-  as_data_frame_matrix=as.data.frame.matrix(mat_rix),
-  as_data_frame=as.data.frame(mat_rix),
-  data_frame=data.frame(mat_rix),
+  as_data_frame_matrix=as.data.frame.matrix(matrixv),
+  as_data_frame=as.data.frame(matrixv),
+  data_frame=data.frame(matrixv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
-  as_list=as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=lapply(seq_along(mat_rix[1, ]),
-     function(in_dex) mat_rix[, in_dex]),
+  as_list=as.list(as.data.frame.matrix(matrixv)),
+  l_apply=lapply(seq_along(matrixv[1, ]),
+     function(indeks) matrixv[, indeks]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # ?iris  # Get information on iris
 dim(iris)
@@ -166,12 +166,12 @@ is.na(c(NA, NaN, 0/0, 1/0))  # Test for NA
 is.nan(c(NA, NaN, 0/0, 1/0))  # Test for NaN
 NA*1:4  # Create vector of Nas
 # Create vector with some NA values
-da_ta <- c(1, 2, NA, 4, NA, 5)
-da_ta
-mean(da_ta)  # Returns NA, when NAs are input
-mean(da_ta, na.rm=TRUE)  # remove NAs from input data
-da_ta[!is.na(da_ta)]  # Delete the NA values
-sum(!is.na(da_ta))  # Count non-NA values
+datav <- c(1, 2, NA, 4, NA, 5)
+datav
+mean(datav)  # Returns NA, when NAs are input
+mean(datav, na.rm=TRUE)  # remove NAs from input data
+datav[!is.na(datav)]  # Delete the NA values
+sum(!is.na(datav))  # Count non-NA values
 # airquality data has some NAs
 head(airquality)
 dim(airquality)
@@ -182,10 +182,10 @@ sum(!complete.cases(airquality))
 # Display rows containing NAs
 head(airquality[!complete.cases(airquality), ])
 # Create vector containing NA values
-vec_tor <- sample(22)
-vec_tor[sample(NROW(vec_tor), 4)] <- NA
+vectorv <- sample(22)
+vectorv[sample(NROW(vectorv), 4)] <- NA
 # Replace NA values with the most recent non-NA values
-zoo::na.locf(vec_tor)
+zoo::na.locf(vectorv)
 # Remove rows containing NAs
 good_air <- airquality[complete.cases(airquality), ]
 dim(good_air)
@@ -201,7 +201,7 @@ dim(good_air)
 head(good_air)
 # Replace NAs in xts time series
 library(rutils)  # load package rutils
-se_ries <- rutils::etfenv$price_s[, 1]
+se_ries <- rutils::etfenv$prices[, 1]
 head(se_ries, 3)
 sum(is.na(se_ries))
 series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
@@ -224,33 +224,33 @@ c(1, 2, NULL, 4, 5)
 # But NA value isn't ignored
 c(1, 2, NA, 4, 5)
 # Vectors can be initialized to NULL
-vec_tor <- NULL
-is.null(vec_tor)
+vectorv <- NULL
+is.null(vectorv)
 # Grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
+for (indeks in 1:5)
+  vectorv <- c(vectorv, indeks)
 # Initialize empty vector
-vec_tor <- numeric()
+vectorv <- numeric()
 # Grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
+for (indeks in 1:5)
+  vectorv <- c(vectorv, indeks)
 # Allocate vector
-vec_tor <- numeric(5)
+vectorv <- numeric(5)
 # Assign to vector in a loop - good code
-for (in_dex in 1:5)
-  vec_tor[in_dex] <- runif(1)
+for (indeks in 1:5)
+  vectorv[indeks] <- runif(1)
 # Create list of vectors
-li_st <- lapply(1:3, function(x) sample(6))
+listv <- lapply(1:3, function(x) sample(6))
 # Bind list elements into matrix - doesn't work
-rbind(li_st)
+rbind(listv)
 # Bind list elements into matrix - tedious
-rbind(li_st[[1]], li_st[[2]], li_st[[3]])
+rbind(listv[[1]], listv[[2]], listv[[3]])
 # Bind list elements into matrix - works!
-do.call(rbind, li_st)
+do.call(rbind, listv)
 # Create numeric list
-li_st <- list(1, 2, 3, 4)
-do.call(rbind, li_st)  # Returns single column matrix
-do.call(cbind, li_st)  # Returns single row matrix
+listv <- list(1, 2, 3, 4)
+do.call(rbind, listv)  # Returns single column matrix
+do.call(cbind, listv)  # Returns single row matrix
 # Recycling rule applied
 do.call(cbind, list(1:2, 3:5))
 # NULL element is skipped
@@ -259,22 +259,22 @@ do.call(cbind, list(1, NULL, 3, 4))
 do.call(cbind, list(1, NA, 3, 4))
 library(microbenchmark)
 list_vectors <- lapply(1:5, rnorm, n=10)
-mat_rix <- do.call(rbind, list_vectors)
-dim(mat_rix)
-do_call_rbind <- function(li_st) {
-  while (NROW(li_st) > 1) {
+matrixv <- do.call(rbind, list_vectors)
+dim(matrixv)
+do_call_rbind <- function(listv) {
+  while (NROW(listv) > 1) {
 # Index of odd list elements
-    odd_index <- seq(from=1, to=NROW(li_st), by=2)
-# Bind odd and even elements, and divide li_st by half
-    li_st <- lapply(odd_index, function(in_dex) {
-if (in_dex==NROW(li_st)) return(li_st[[in_dex]])
-rbind(li_st[[in_dex]], li_st[[in_dex+1]])
+    odd_index <- seq(from=1, to=NROW(listv), by=2)
+# Bind odd and even elements, and divide listv by half
+    listv <- lapply(odd_index, function(indeks) {
+if (indeks==NROW(listv)) return(listv[[indeks]])
+rbind(listv[[indeks]], listv[[indeks+1]])
     })  # end lapply
   }  # end while
-# li_st has only one element - return it
-  li_st[[1]]
+# listv has only one element - return it
+  listv[[1]]
 }  # end do_call_rbind
-identical(mat_rix, do_call_rbind(list_vectors))
+identical(matrixv, do_call_rbind(list_vectors))
 library(microbenchmark)
 airquality[(airquality$Solar.R>320 &
         !is.na(airquality$Solar.R)), ]
@@ -286,18 +286,18 @@ summary(microbenchmark(
 times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 unique(iris$Species)  # Species has three distinct values
 # Split into separate data frames by hand
-set_osa <- iris[iris$Species=="setosa", ]
-versi_color <- iris[iris$Species=="versicolor", ]
-virgin_ica <- iris[iris$Species=="virginica", ]
-dim(set_osa)
-head(set_osa, 2)
+setosa <- iris[iris$Species=="setosa", ]
+versi <- iris[iris$Species=="versicolor", ]
+virgin <- iris[iris$Species=="virginica", ]
+dim(setosa)
+head(setosa, 2)
 # Split iris into list based on Species
 split_iris <- split(iris, iris$Species)
 str(split_iris, max.level=1)
 names(split_iris)
 dim(split_iris$setosa)
 head(split_iris$setosa, 2)
-all.equal(set_osa, split_iris$setosa)
+all.equal(setosa, split_iris$setosa)
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
@@ -385,9 +385,9 @@ sec_ind2 <- with(panel_data,
   aggregate(x=Industry, by=list(Sector),
     FUN=function(x) as.vector(unique(x))))
 # Coerce sec_ind2 into a jagged array
-name_s <- as.vector(sec_ind2[, 1])
+namesv <- as.vector(sec_ind2[, 1])
 sec_ind2 <- sec_ind2[, 2]
-names(sec_ind2) <- name_s
+names(sec_ind2) <- namesv
 all.equal(sec_ind2, sec_ind)
 # Or use tapply() (returns an array)
 sec_ind2 <- with(panel_data,
@@ -421,13 +421,13 @@ aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
 getOption("warn")  # Global option for "warn"
 options("warn")  # Global option for "warn"
 getOption("error")  # Global option for "error"
-sqrt_safe <- function(in_put) {
+sqrt_safe <- function(input) {
 # Returns its argument
-  if (in_put<0) {
-    warning("sqrt_safe: in_put is negative")
+  if (input<0) {
+    warning("sqrt_safe: input is negative")
     NULL  # Return NULL for negative argument
   } else {
-    sqrt(in_put)
+    sqrt(input)
   }  # end if
 }  # end sqrt_safe
 sqrt_safe(5)
@@ -440,110 +440,110 @@ options(warn=1)
 sqrt_safe()
 options(warn=3)
 sqrt_safe()
-# Function vali_date validates its arguments
-vali_date <- function(in_put=NULL) {
+# Function valido validates its arguments
+valido <- function(input=NULL) {
 # Check if argument is valid and return double
-  if (is.null(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# vali_date validates arguments using missing()
-vali_date <- function(in_put) {
+  if (is.null(input)) {
+    return("valido: input is missing")
+  } else if (is.numeric(input)) {
+    2*input
+  } else cat("valido: input not numeric")
+}  # end valido
+valido(3)
+valido("a")
+valido()
+# valido validates arguments using missing()
+valido <- function(input) {
 # Check if argument is valid and return double
-  if (missing(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put is not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# vali_date() validates its arguments and assertions
-vali_date <- function(in_put) {
+  if (missing(input)) {
+    return("valido: input is missing")
+  } else if (is.numeric(input)) {
+    2*input
+  } else cat("valido: input is not numeric")
+}  # end valido
+valido(3)
+valido("a")
+valido()
+# valido() validates its arguments and assertions
+valido <- function(input) {
 # Check if argument is valid and return double
-  if (missing(in_put)) {
-    stop("vali_date: in_put is missing")
-  } else if (!is.numeric(in_put)) {
-    cat("in_put =", in_put, "\n")
-    stop("vali_date: in_put is not numeric")
-  } else 2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
+  if (missing(input)) {
+    stop("valido: input is missing")
+  } else if (!is.numeric(input)) {
+    cat("input =", input, "\n")
+    stop("valido: input is not numeric")
+  } else 2*input
+}  # end valido
+valido(3)
+valido("a")
+valido()
 # Print the call stack
 traceback()
-vali_date <- function(in_put) {
+valido <- function(input) {
 # Check argument using long form '&&' operator
-  stopifnot(!missing(in_put) && is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date()
-vali_date("a")
-vali_date <- function(in_put) {
+  stopifnot(!missing(input) && is.numeric(input))
+  2*input
+}  # end valido
+valido(3)
+valido()
+valido("a")
+valido <- function(input) {
 # Check argument using logical '&' operator
-  stopifnot(!missing(in_put) & is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()
-vali_date("a")
-# sum_two() returns the sum of its two arguments
-sum_two <- function(in_put1, in_put2) {  # Even more robust
+  stopifnot(!missing(input) & is.numeric(input))
+  2*input
+}  # end valido
+valido()
+valido("a")
+# sumtwo() returns the sum of its two arguments
+sumtwo <- function(input1, input2) {  # Even more robust
 # Check if at least one argument is not missing
-  stopifnot(!missing(in_put1) &&
-        !missing(in_put2))
+  stopifnot(!missing(input1) &&
+        !missing(input2))
 # Check if arguments are valid and return sum
-  if (is.numeric(in_put1) && is.numeric(in_put2)) {
-    in_put1 + in_put2  # Both valid
-  } else if (is.numeric(in_put1)) {
-    cat("in_put2 is not numeric\n")
-    in_put1  # in_put1 is valid
-  } else if (is.numeric(in_put2)) {
-    cat("in_put1 is not numeric\n")
-    in_put2  # in_put2 is valid
+  if (is.numeric(input1) && is.numeric(input2)) {
+    input1 + input2  # Both valid
+  } else if (is.numeric(input1)) {
+    cat("input2 is not numeric\n")
+    input1  # input1 is valid
+  } else if (is.numeric(input2)) {
+    cat("input1 is not numeric\n")
+    input2  # input2 is valid
   } else {
     stop("none of the arguments are numeric")
   }
-}  # end sum_two
-sum_two(1, 2)
-sum_two(5, 'a')
-sum_two('a', 5)
-sum_two('a', 'b')
-sum_two()
-# Flag "vali_date" for debugging
-debug(vali_date)
-# Calling "vali_date" starts debugger
-vali_date(3)
-# unflag "vali_date" for debugging
-undebug(vali_date)
-vali_date <- function(in_put) {
+}  # end sumtwo
+sumtwo(1, 2)
+sumtwo(5, 'a')
+sumtwo('a', 5)
+sumtwo('a', 'b')
+sumtwo()
+# Flag "valido" for debugging
+debug(valido)
+# Calling "valido" starts debugger
+valido(3)
+# unflag "valido" for debugging
+undebug(valido)
+valido <- function(input) {
   browser()  # Pause and invoke debugger
 # Check argument using long form '&&' operator
-  stopifnot(!missing(in_put) && is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()  # Invokes debugger
+  stopifnot(!missing(input) && is.numeric(input))
+  2*input
+}  # end valido
+valido()  # Invokes debugger
 options("error")  # Show default NULL "error" option
 options(error=recover)  # Set "error" option to "recover"
 options(error=NULL)  # Set back to default "error" option
 str(tryCatch)  # Get arguments of tryCatch()
 tryCatch(  # Without error handler
   {  # Evaluate expressions
-    num_var <- 101  # Assign
+    numv <- 101  # Assign
     stop('my error')  # Produce error
   },
-  finally=print(paste("num_var=", num_var))
+  finally=print(paste("numv=", numv))
 )  # end tryCatch
 tryCatch(  # With error handler
   {  # Evaluate expressions
-    num_var <- 101  # Assign
+    numv <- 101  # Assign
     stop('my error')  # Produce error
   },
   # Error handler captures error condition
@@ -554,31 +554,31 @@ tryCatch(  # With error handler
   warning=function(warning_cond) {
     print(paste("warning handler: ", warning_cond))
   },  # end warning handler
-  finally=print(paste("num_var=", num_var))
+  finally=print(paste("numv=", numv))
 )  # end tryCatch
 # Apply loop without tryCatch
-apply(matrix(1:5), 1, function(num_var) {  # Anonymous function
-    stopifnot(!(num_var = 3))  # Check for error
+apply(matrix(1:5), 1, function(numv) {  # Anonymous function
+    stopifnot(!(numv = 3))  # Check for error
     # Broadcast message to console
-    cat("(cat) num_var =", num_var, "\n")
+    cat("(cat) numv =", numv, "\n")
     # Return a value
-    paste("(return) num_var =", num_var)
+    paste("(return) numv =", numv)
   }  # end anonymous function
 )  # end apply
 # Apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+apply(as.matrix(1:5), 1, function(numv) {  # Anonymous function
     tryCatch(  # With error handler
 {  # Body
-  stopifnot(num_var != 3)  # Check for error
+  stopifnot(numv != 3)  # Check for error
   # Broadcast message to console
-  cat("(cat) num_var =", num_var, "\t")
+  cat("(cat) numv =", numv, "\t")
   # Return a value
-  paste("(return) num_var =", num_var)
+  paste("(return) numv =", numv)
 },
 # Error handler captures error condition
 error=function(error_cond)
   paste("handler: ", error_cond),
-finally=print(paste("(finally) num_var =", num_var))
+finally=print(paste("(finally) numv =", numv))
     )  # end tryCatch
   }  # end anonymous function
 )  # end apply

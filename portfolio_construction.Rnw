@@ -495,7 +495,7 @@ library(Rglpk)
 symbolv <- c("VTI", "IEF", "DBC")
 nweights <- NROW(symbolv)
 # Calculate mean returns
-returns <- rutils::etf_env$returns[, symbolv]
+returns <- rutils::etfenv$returns[, symbolv]
 returns <- zoo::na.locf(returns, na.rm=FALSE)
 returns <- na.omit(returns)
 mean_rets <- colMeans(returns)
@@ -1359,7 +1359,7 @@ n_portf <- 1000
 ret_sd <- sapply(1:n_portf, function(indeks) {
   weights <- runif(nweights, min=0, max=10)
   weights <- weights/sum(weights)
-  retsp <- etf_env$returns[, symbolv] %*% weights
+  retsp <- etfenv$returns[, symbolv] %*% weights
   100*c(ret=mean(retsp), sd=sd(retsp))
 })  # end sapply
 # Plot scatterplot of random portfolios
@@ -1515,7 +1515,7 @@ symbolv <- c("VTI", "IEF")
 weights <- seq(from=-1, to=2, length.out=31)
 weights <- cbind(weights, 1-weights)
 # Calculate portfolio returns and volatilities
-returns <- rutils::etf_env$returns[, symbolv]
+returns <- rutils::etfenv$returns[, symbolv]
 ret_sd <- returns %*% t(weights)
 ret_sd <- cbind(252*colMeans(ret_sd),
   sqrt(252)*matrixStats::colSds(ret_sd))
@@ -1624,7 +1624,7 @@ legend("top", legend=colnames(optim_rets),
 x11(width=6, height=4)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 # VTI percentage returns
-returns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
+returns <- rutils::diffit(log(quantmod::Cl(rutils::etfenv$VTI)))
 confl <- 0.1
 varisk <- quantile(returns, confl)
 cvar <- mean(returns[returns < varisk])
@@ -1690,7 +1690,7 @@ library(Rglpk)
 # Vector of symbol names and returns
 symbolv <- c("VTI", "IEF", "DBC")
 nweights <- NROW(symbolv)
-returns <- rutils::etf_env$returns[((NROW(returns)-6):NROW(returns)), symbolv]
+returns <- rutils::etfenv$returns[((NROW(returns)-6):NROW(returns)), symbolv]
 mean_rets <- colMeans(returns)
 confl <- 0.05
 rmin <- 0 ; wmin <- 0 ; wmax <- 1
@@ -1736,7 +1736,7 @@ as.numeric(optimd$solution[1:ncols])
         <<echo=(-(1:3)),eval=FALSE>>=
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
-returns <- rutils::etf_env$returns[, symbolv]
+returns <- rutils::etfenv$returns[, symbolv]
 # Create initial vector of portfolio weights
 weights <- rep(1, NROW(symbolv))
 names(weights) <- symbolv
@@ -1891,7 +1891,7 @@ text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
 # Objective function equal to minus Sharpe ratio
 riskf <- 0.03
 object <- function(weights) {
-  retsp <- 100*etf_env$returns[, names(weights)] %*% weights / sum(weights)
+  retsp <- 100*etfenv$returns[, names(weights)] %*% weights / sum(weights)
   -mean(retsp-riskf)/sd(retsp)
 }  # end object
 # Perform portfolio optimization
@@ -2181,7 +2181,7 @@ unlist(optimize(f=object, interval=c(-1, 2)))
         <<echo=TRUE,eval=FALSE>>=
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
-returns <- rutils::etf_env$returns[, symbolv]
+returns <- rutils::etfenv$returns[, symbolv]
 # Calculate the covariance matrix
 covmat <- cov(returns)
 # Minimum variance weights, with sum equal to 1
@@ -2268,7 +2268,7 @@ plot(optimd)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate daily percentage returns
-returns <- rutils::etf_env$returns[, symbolv]
+returns <- rutils::etfenv$returns[, symbolv]
 # Objective equal to minus Sharpe ratio
 object <- function(weights, returns) {
   retsp <- returns %*% weights
@@ -2313,12 +2313,12 @@ names(weights) <- colnames(returns)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Objective with shrinkage penalty
-object <- function(weights, returns, lambdav, alpha) {
+object <- function(weights, returns, lambda, alpha) {
   retsp <- returns %*% weights
   if (sd(retsp) == 0)
     return(0)
   else {
-    penal_ty <- lambdav*((1-alpha)*sum(weights^2) +
+    penal_ty <- lambda*((1-alpha)*sum(weights^2) +
         alpha*sum(abs(weights)))
     return(-mean(retsp)/sd(retsp) + penal_ty)
   }
@@ -2326,15 +2326,15 @@ object <- function(weights, returns, lambdav, alpha) {
 # Objective for equal weight portfolio
 weights <- rep(1, NROW(symbolv))
 names(weights) <- symbolv
-lambdav <- 0.5 ; alpha <- 0.5
+lambda <- 0.5 ; alpha <- 0.5
 object(weights, returns=returns,
-  lambdav=lambdav, alpha=alpha)
+  lambda=lambda, alpha=alpha)
 # Perform optimization using DEoptim
 optimd <- DEoptim::DEoptim(fn=object,
   upper=rep(10, NCOL(returns)),
   lower=rep(-10, NCOL(returns)),
   returns=returns,
-  lambdav=lambdav,
+  lambda=lambda,
   alpha=alpha,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weights <- optimd$optim$bestmem/sum(abs(optimd$optim$bestmem))
@@ -2392,7 +2392,7 @@ tail(st_ox[, 1:4])
     \column{0.4\textwidth}
       The package \emph{PortfolioAnalytics} contains functions and data sets for portfolio optimization.
       \vskip1ex
-      The function \texttt{data()} loads external data or lists data sets in a package.
+      The function \texttt{data()} loads external data or listv data sets in a package.
       \vskip1ex
     \column{0.6\textwidth}
       \vspace{-1em}
@@ -2485,7 +2485,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_env$returns[, portf_names],  # Specify returns
+  R=etfenv$returns[, portf_names],  # Specify returns
   portfolio=portf_maxSR,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSR=TRUE,  # Maximize Sharpe
@@ -2529,7 +2529,7 @@ chart.RiskReward(maxSR_DEOpt,
   return.col="mean")
 
 # Plot risk/ret points in portfolio scatterplot
-risk_ret_points <- function(rets=etf_env$returns,
+risk_ret_points <- function(rets=etfenv$returns,
         risk=c("sd", "ETL"), symbolv=c("VTI", "IEF")) {
   risk <- match.arg(risk)  # Match to arg list
   if (risk=="ETL") {
@@ -2570,7 +2570,7 @@ risk_ret_points()
       <<optim_portf_SR_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 library(PortfolioAnalytics)
 plot_portf <- function(portfolio,
-            rets_data=etf_env$returns) {
+            rets_data=etfenv$returns) {
   weights <- portfolio$weights
   portf_names <- names(weights)
   # Calculate xts of portfolio
@@ -2660,7 +2660,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSRN_DEOpt <- optimize.portfolio(
-  R=etf_env$returns[, portf_names],  # Specify returns
+  R=etfenv$returns[, portf_names],  # Specify returns
   portfolio=portf_maxSRN,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSR=TRUE,  # Maximize Sharpe
@@ -2809,7 +2809,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSTARR_DEOpt <- optimize.portfolio(
-  R=etf_env$returns[, portf_names],  # Specify returns
+  R=etfenv$returns[, portf_names],  # Specify returns
   portfolio=portf_maxSTARR,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSTARR=TRUE,  # Maximize STARR
@@ -2980,7 +2980,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 minESROI <- optimize.portfolio(
-  R=etf_env$returns[, portf_names],  # Specify returns
+  R=etfenv$returns[, portf_names],  # Specify returns
   portfolio=portf_minES,  # Specify portfolio
   optimize_method="ROI", # Use ROI
   trace=TRUE, traceDE=0)
@@ -3024,7 +3024,7 @@ minESROI$objective_measures$ES[[1]]
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_minES_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_minESvis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 library(PortfolioAnalytics)
 minESROI_xts <-
   plot_portf(portfolio=minESROI)
@@ -3046,7 +3046,7 @@ minESROI_xts <-
   \begin{columns}[T]
     \column{0.5\textwidth}
       \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns.
-      <<optim_SR_minES_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<optim_SR_minESvis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PerformanceAnalytics)
 load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 chart.CumReturns(
@@ -3082,13 +3082,13 @@ minESROI$objective_measures$ES[[1]])
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_1h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_SR1h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 options(width=50)
 # Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_env$returns["/2011", portf_names],
+  R=etfenv$returns["/2011", portf_names],
   portfolio=portf_maxSR,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSR=TRUE,  # Maximize Sharpe
@@ -3122,7 +3122,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_env$returns["2011/", portf_names],
+  R=etfenv$returns["2011/", portf_names],
   portfolio=portf_maxSR,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSR=TRUE,  # Maximize Sharpe
@@ -3631,12 +3631,12 @@ text(x=0.1, y=10, lwd=2, pos=4,
 func <- function(x) {1/((x+1)*sqrt(x))}
 integrate(func, lower=0, upper=10)
 integrate(func, lower=0, upper=Inf)
-# Integrate function with parameter lambdav
-func <- function(x, lambdav=1) {
-  exp(-x*lambdav)
+# Integrate function with parameter lambda
+func <- function(x, lambda=1) {
+  exp(-x*lambda)
 }  # end func
 integrate(func, lower=0, upper=Inf)
-integrate(func, lower=0, upper=Inf, lambdav=2)
+integrate(func, lower=0, upper=Inf, lambda=2)
 # Cumulative probability over normal distribution
 pnorm(-2)
 integrate(dnorm, low=2, up=Inf)
@@ -4235,13 +4235,13 @@ boot_data <- sapply(rep(lgd, nboot), calcvar,
   nsimu=nsimu, levels=levels)  # end sapply
 boot_data <- t(boot_data)
 # Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
+stderror_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
+stderror_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+stderror_var[2, ] <- stderror_var[2, ]/stderror_var[1, ]
+stderror_cvar[2, ] <- stderror_cvar[2, ]/stderror_cvar[1, ]
       @
   \end{columns}
 \end{block}
@@ -4274,12 +4274,12 @@ std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
 # Plot the standard errors of VaRs and CVaRs
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(x=colnames(std_error_cvar), y=std_error_cvar[2, ], 
+plot(x=colnames(stderror_cvar), y=stderror_cvar[2, ], 
   t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  ylim=range(c(stderror_var[2, ], stderror_cvar[2, ])),
   xlab="confidence level", ylab="standard error",
   main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+lines(x=colnames(stderror_var), y=stderror_var[2, ], lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
        title=NULL, inset=0.05, cex=0.8, bg="white",
        lwd=6, lty=1, col=c("red", "black"))
@@ -4316,13 +4316,13 @@ boot_data <- mclapply(rep(lgd, nboot),
 boot_data <- rutils::do_call(rbind, boot_data)
 stopCluster(cluster)  # Stop R processes over cluster
 # Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
+stderror_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
+stderror_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
-std_error_varscaled <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvarscaled <- std_error_cvar[2, ]/std_error_cvar[1, ]
+stderror_varscaled <- stderror_var[2, ]/stderror_var[1, ]
+stderror_cvarscaled <- stderror_cvar[2, ]/stderror_cvar[1, ]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -4330,12 +4330,12 @@ std_error_cvarscaled <- std_error_cvar[2, ]/std_error_cvar[1, ]
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
 x11(width=6, height=5)
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvarscaled, t="l", col="red", lwd=2,
-  ylim=range(c(std_error_varscaled, std_error_cvarscaled)),
+plot(x=colnames(stderror_cvar),
+  y=stderror_cvarscaled, t="l", col="red", lwd=2,
+  ylim=range(c(stderror_varscaled, stderror_cvarscaled)),
   xlab="confidence level", ylab="standard error",
   main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_varscaled, lwd=2)
+lines(x=colnames(stderror_var), y=stderror_varscaled, lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
        title=NULL, inset=0.05, cex=0.8, bg="white",
        lwd=6, lty=1, col=c("red", "black"))
@@ -4416,9 +4416,9 @@ boot_data <- mclapply(rep(lgd, nboot),
 boot_data <- rutils::do_call(rbind, boot_data)
 stopCluster(cluster)  # Stop R processes over cluster
 # Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var_param <- apply(boot_data[, 1:7], MARGIN=2,
+stderror_var_param <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar_param <- apply(boot_data[, 8:14], MARGIN=2,
+stderror_cvar_param <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
       @
     \column{0.5\textwidth}
@@ -4426,13 +4426,13 @@ std_error_cvar_param <- apply(boot_data[, 8:14], MARGIN=2,
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs under uncertain default probabilities
 x11(width=6, height=5)
-plot(x=colnames(std_error_var),
-  y=std_error_var[2, ], t="l", lwd=3,
-  ylim=range(c(std_error_var[2, ], std_error_var_param[2, ])),
+plot(x=colnames(stderror_var),
+  y=stderror_var[2, ], t="l", lwd=3,
+  ylim=range(c(stderror_var[2, ], stderror_var_param[2, ])),
   xlab="confidence level", ylab="standard error",
   main="Standard Errors of VaR 
   with Uncertain Default Probabilities")
-lines(x=colnames(std_error_var), y=std_error_var_param[2, ],
+lines(x=colnames(stderror_var), y=stderror_var_param[2, ],
       col="red", lwd=3)
 legend(x=0.95, y=0.02, bty="n",
        legend=c("VaR Fixed Def Probs", "VaR Random Def Probs"), 
@@ -4455,23 +4455,23 @@ legend(x=0.95, y=0.02, bty="n",
       The \emph{scaled} (relative) standard errors of \emph{VaR} and \emph{CVaR} under uncertain default probabilities decrease with higher confidence level, because the standard errors are less dependent on the confidence level and don't increase as fast as the \emph{VaR} does.
       <<echo=TRUE,eval=FALSE>>=
 # Scale the standard errors of VaRs and CVaRs
-std_error_varscaled <- std_error_var_param[2, ]/
-  std_error_var_param[1, ]
-std_error_cvarscaled <- std_error_cvar_param[2, ]/
-  std_error_cvar_param[1, ]
+stderror_varscaled <- stderror_var_param[2, ]/
+  stderror_var_param[1, ]
+stderror_cvarscaled <- stderror_cvar_param[2, ]/
+  stderror_cvar_param[1, ]
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_stderror_default_uncertainty.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
 x11(width=6, height=5)
-plot(x=colnames(std_error_cvar_param),
-  y=std_error_cvarscaled, t="l", col="red", lwd=3,
-  ylim=range(c(std_error_varscaled, std_error_cvarscaled)),
+plot(x=colnames(stderror_cvar_param),
+  y=stderror_cvarscaled, t="l", col="red", lwd=3,
+  ylim=range(c(stderror_varscaled, stderror_cvarscaled)),
   xlab="confidence level", ylab="standard error",
   main="Relative Standard Errors of VaR and CVaR
   with Uncertain Default Probabilities")
-lines(x=names(std_error_varscaled), y=std_error_varscaled, lwd=3)
+lines(x=names(stderror_varscaled), y=stderror_varscaled, lwd=3)
 legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
        title=NULL, inset=0.05, cex=1.0, bg="white",
        lwd=6, lty=1, col=c("red", "black"))
@@ -4558,7 +4558,7 @@ levels <- seq(0.93, 0.99, 0.01)
 vars <- quantile(losses, probs=levels)
 
 # Importance sampling losses
-lambdav <- 3
+lambda <- 3
 assets <-
   t(rho_sqrt*sysv + t(rho_sqrtm*idio_syncratic))
 
@@ -4566,9 +4566,9 @@ cond_thresh <- outer(rho_sqrtm*def_thresh, -rho_sqrt*sysv, FUN="+")
 
 cond_probs <- pnorm(cond_thresh)
 
-tilt_probs <- lambdav*cond_probs/(1 + cond_probs*(lambdav - 1))
+tilt_probs <- lambda*cond_probs/(1 + cond_probs*(lambda - 1))
 
-weights <- (1 + tilt_probs*(lambdav - 1))/lambdav
+weights <- (1 + tilt_probs*(lambda - 1))/lambda
 
 tilt_thresh <- qnorm(tilt_probs)
 
@@ -4586,7 +4586,7 @@ def_thresh <- qnorm(def_probs)
 
 
 
-assets <- t(rho_sqrt*(sysv - lambdav) +
+assets <- t(rho_sqrt*(sysv - lambda) +
       t(rho_sqrtm*idio_syncratic))
 losses <-
   lgd*colSums(assets < def_thresh)/nassets
@@ -4594,7 +4594,7 @@ losses <-
 vars <- quantile(losses, probs=levels)
 
 
-assets <- t(rho_sqrt*(sysv - lambdav) +
+assets <- t(rho_sqrt*(sysv - lambda) +
       t(rho_sqrtm*idio_syncratic))
 losses <-
   lgd*colSums(assets < def_thresh)/nassets
@@ -4646,13 +4646,13 @@ boot_data <- sapply(rep(lgd, nboot),
   nsimu=nsimu, levels=levels)  # end sapply
 boot_data <- t(boot_data)
 # Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
+stderror_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
+stderror_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+stderror_var[2, ] <- stderror_var[2, ]/stderror_var[1, ]
+stderror_cvar[2, ] <- stderror_cvar[2, ]/stderror_cvar[1, ]
       @
   \end{columns}
 \end{block}

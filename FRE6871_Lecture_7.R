@@ -1,4 +1,4 @@
-cat("Enter\ttab")  # Cat() interprets backslash escape sequences
+cat("Enter\ttab")  # Cat() interretsp backslash escape sequences
 print("Enter\ttab")
 my_text <- print("hello")
 my_text  # Print() returns its argument
@@ -21,10 +21,10 @@ scan(file="mytext.txt", what=character(), sep="\n")
 # Read lines from file
 readLines(con="mytext.txt")
 # Read text from console
-in_put <- readline("Enter a number: ")
-class(in_put)
+input <- readline("Enter a number: ")
+class(input)
 # Coerce to numeric
-in_put <- as.numeric(in_put)
+input <- as.numeric(input)
 # Read text from file and display in editor:
 # file.show("mytext.txt")
 # file.show("mytext.txt", pager="")
@@ -33,15 +33,15 @@ data_frame <- data.frame(type=c("rose", "daisy", "tulip"),
   color=c("red", "white", "yellow"),
   price=c(1.5, 0.5, 1.0),
   row.names=c("flower1", "flower2", "flower3"))  # end data.frame
-mat_rix <- matrix(sample(1:12), ncol=3,
+matrixv <- matrix(sample(1:12), ncol=3,
   dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
+rownames(matrixv) <- paste("row", 1:NROW(matrixv), sep="")
 # Write data frame to text file, and then read it back
 write.table(data_frame, file="florist.txt")
 data_read <- read.table(file="florist.txt")
 data_read  # A data frame
 # Write matrix to text file, and then read it back
-write.table(mat_rix, file="matrix.txt")
+write.table(matrixv, file="matrix.txt")
 mat_read <- read.table(file="matrix.txt")
 mat_read  # write.table() coerced matrix to data frame
 class(mat_read)
@@ -86,36 +86,36 @@ data_read  # A data frame without row names
 # Open a read connection to a file
 con_read = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
 # Read the first 10 rows
-data_10 <- read.csv(con_read, nrows=10)
+data10 <- read.csv(con_read, nrows=10)
 # Read another 10 rows
-data_20 <- read.csv(con_read, nrows=10, header=FALSE)
-colnames(data_20) <- colnames(data_10)
+data20 <- read.csv(con_read, nrows=10, header=FALSE)
+colnames(data20) <- colnames(data10)
 # Close the connection to the file
 close(con_read)
 # Open a read connection to a file
 con_read = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
 # Read the first 1000 rows
-data_10 <- read.csv(con_read, nrows=1e3)
-col_names <- colnames(data_10)
+data10 <- read.csv(con_read, nrows=1e3)
+colnames <- colnames(data10)
 # Write to a file
-coun_t <- 1
-write.csv(data_10, paste0("C:/Develop/data/temp/etf_prices_", coun_t, ".csv"))
+countv <- 1
+write.csv(data10, paste0("C:/Develop/data/temp/etf_prices_", countv, ".csv"))
 # Read remaining rows in a loop 10 rows at a time
 # Can produce error without getting to end of file
 while (isOpen(con_read)) {
-  da_ta <- read.csv(con_read, nrows=1e3)
-  colnames(da_ta) <- col_names
-  write.csv(da_ta, paste0("C:/Develop/data/temp/etf_prices_", coun_t, ".csv"))
-  coun_t <- coun_t + 1
+  datav <- read.csv(con_read, nrows=1e3)
+  colnames(datav) <- colnames
+  write.csv(datav, paste0("C:/Develop/data/temp/etf_prices_", countv, ".csv"))
+  countv <- countv + 1
 }  # end while
 # Write matrix to csv file, and then read it back
-write.csv(mat_rix, file="matrix.csv")
+write.csv(matrixv, file="matrix.csv")
 mat_read <- read.csv(file="matrix.csv", row.names=1)
 mat_read  # Read.csv() reads matrix as data frame
 class(mat_read)
 mat_read <- as.matrix(mat_read)  # Coerce to matrix
-identical(mat_rix, mat_read)
-write.csv(mat_rix, row.names=FALSE,
+identical(matrixv, mat_read)
+write.csv(matrixv, row.names=FALSE,
     file="matrix_ex_rows.csv")
 mat_read <- read.csv(file="matrix_ex_rows.csv")
 mat_read <- as.matrix(mat_read)
@@ -123,20 +123,20 @@ mat_read  # A matrix without row names
 setwd("/Users/jerzy/Develop/lecture_slides/data")
 library(MASS)  # Load package "MASS"
 # Write to CSV file by row - it's very SLOW!!!
-MASS::write.matrix(mat_rix, file="matrix.csv", sep=",")
+MASS::write.matrix(matrixv, file="matrix.csv", sep=",")
 # Read using scan() and skip first line with colnames
 mat_read <- scan(file="matrix.csv", sep=",", skip=1,
   what=numeric())
 # Read colnames
-col_names <- readLines(con="matrix.csv", n=1)
-col_names  # this is a string!
+colnames <- readLines(con="matrix.csv", n=1)
+colnames  # this is a string!
 # Convert to char vector
-col_names <- strsplit(col_names, split=",")[[1]]
+colnames <- strsplit(colnames, split=",")[[1]]
 mat_read  # mat_read is a vector, not matrix!
 # Coerce by row to matrix
-mat_read <- matrix(mat_read, ncol=NROW(col_names), byrow=TRUE)
+mat_read <- matrix(mat_read, ncol=NROW(colnames), byrow=TRUE)
 # Restore colnames
-colnames(mat_read) <- col_names
+colnames(mat_read) <- colnames
 mat_read
 # Scan() is a little faster than read.csv()
 library(microbenchmark)
@@ -146,29 +146,29 @@ summary(microbenchmark(
     skip=1, what=numeric()),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Read data from a csv file, including row names
-mat_rix <- read.csv(file="matrix_bad.csv", row.names=1)
-mat_rix
-class(mat_rix)
+matrixv <- read.csv(file="matrix_bad.csv", row.names=1)
+matrixv
+class(matrixv)
 # Columns with bad data are character or factor
-sapply(mat_rix, class)
+sapply(matrixv, class)
 # Copy row names
-row_names <- row.names(mat_rix)
+row_names <- row.names(matrixv)
 # sapply loop over columns and coerce to numeric
-mat_rix <- sapply(mat_rix, as.numeric)
+matrixv <- sapply(matrixv, as.numeric)
 # Restore row names
-row.names(mat_rix) <- row_names
+row.names(matrixv) <- row_names
 # Replace NAs with zero
-mat_rix[is.na(mat_rix)] <- 0
+matrixv[is.na(matrixv)] <- 0
 # matrix without NAs
-mat_rix
+matrixv
 setwd("/Users/jerzy/Develop/lecture_slides/data")
 rm(list=ls())
 set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
 # Create zoo with Date index
-date_s <- seq(from=as.Date("2013-06-15"), by="day",
+dates <- seq(from=as.Date("2013-06-15"), by="day",
         length.out=100)
-zoo_series <- zoo(rnorm(NROW(date_s)), order.by=date_s)
+zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
 head(zoo_series, 3)
 # Write zoo series to text file, and then read it back
 write.zoo(zoo_series, file="zoo_series.txt")
@@ -177,7 +177,7 @@ all.equal(zoo_read, zoo_series)
 # Perform the same using write.table() and read.table()
 # First coerce zoo_series into data frame
 data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(date_s, data_frame)
+data_frame <- cbind(dates, data_frame)
 # Write zoo_series to text file using write.table
 write.table(data_frame, file="zoo_series.txt",
       row.names=FALSE, col.names=FALSE)
@@ -198,9 +198,9 @@ zoo_read <- read.zoo(file="zoo_series.csv",
 all.equal(zoo_series, drop(zoo_read))
 set.seed(1121)  # Reset random number generator
 # Create zoo with POSIXct date-time index
-date_s <- seq(from=as.POSIXct("2013-06-15"),
+dates <- seq(from=as.POSIXct("2013-06-15"),
         by="hour", length.out=100)
-zoo_series <- zoo(rnorm(NROW(date_s)), order.by=date_s)
+zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
 head(zoo_series, 3)
 # Write zoo series to CSV file, and then read it back
 write.zoo(zoo_series, file="zoo_series.csv",
@@ -209,11 +209,11 @@ write.zoo(zoo_series, file="zoo_series.csv",
 zoo_read <- read.csv.zoo(file="zoo_series.csv")
 all.equal(zoo_series, zoo_read)
 # Coerce to xts series
-x_ts <- xts::as.xts(zoo_read)
-class(x_ts); head(x_ts, 3)
+xtes <- xts::as.xts(zoo_read)
+class(xtes); head(xtes, 3)
 # Coerce zoo series into data frame with custom date format
 data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(format(date_s, "%m-%d-%Y %H:%M:%S"),
+data_frame <- cbind(format(dates, "%m-%d-%Y %H:%M:%S"),
               data_frame)
 head(data_frame, 3)
 # Write zoo series to csv file using write.table
@@ -265,13 +265,13 @@ load_ed <- load(file="my_data.RData")
 load_ed  # vector of loaded objects
 ls()  # List objects
 # Assign new values to objects in  global environment
-sapply(load_ed, function(sym_bol) {
-  assign(sym_bol, runif(1), envir=globalenv())
+sapply(load_ed, function(symbol) {
+  assign(symbol, runif(1), envir=globalenv())
 })  # end sapply
 ls()  # List objects
 # Assign new values to objects using for loop
-for (sym_bol in load_ed) {
-  assign(sym_bol, runif(1))
+for (symbol in load_ed) {
+  assign(symbol, runif(1))
 }  # end for
 ls()  # List objects
 # Save vector of objects
@@ -287,14 +287,14 @@ cat("\nEnd data\nbye\n")
 sink()  # turn redirect off
 ("Rgraph.", width=7, height=4)  # Redirect graphics to  file
 cat("Redirect data from R into  file\n")
-my_var <- seq(-2*pi, 2*pi, len=100)
-plot(x=my_var, y=sin(my_var), main="Sine wave",
+myvar <- seq(-2*pi, 2*pi, len=100)
+plot(x=myvar, y=sin(myvar), main="Sine wave",
    xlab="", ylab="", type="l", lwd=2, col="red")
 cat("\nEnd data\nbye\n")
 dev.off()  # turn  output off
 png("r_plot.png")  # Redirect graphics output to png file
 cat("Redirect graphics from R into png file\n")
-plot(x=my_var, y=sin(my_var), main="Sine wave",
+plot(x=myvar, y=sin(myvar), main="Sine wave",
  xlab="", ylab="", type="l", lwd=2, col="red")
 cat("\nEnd data\nbye\n")
 dev.off()  # turn png output off
@@ -323,10 +323,10 @@ class(data_table); data_table
 data_table[, col2]
 # Row referenced without a following comma
 data_table[2]
-# Print option "datatable.print.nrows"
-getOption("datatable.print.nrows")
-options(datatable.print.nrows=10)
-getOption("datatable.print.nrows")
+# Print option "datatable.print.n_rows"
+getOption("datatable.print.n_rows")
+options(datatable.print.n_rows=10)
+getOption("datatable.print.n_rows")
 # Number of rows in data_table
 NROW(data_table)
 # Or
@@ -550,22 +550,22 @@ summary(microbenchmark(
   setDF=data.table::setDF(data_table),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Coerce xts to a data frame
-price_s <- rutils::etfenv$VTI
-class(price_s); head(price_s)
-price_s <- as.data.frame(price_s)
-class(price_s); head(price_s)
+prices <- rutils::etfenv$VTI
+class(prices); head(prices)
+prices <- as.data.frame(prices)
+class(prices); head(prices)
 # Coerce data frame to a data table
-data.table::setDT(price_s, keep.rownames=TRUE)
-class(price_s); head(price_s)
+data.table::setDT(prices, keep.rownames=TRUE)
+class(prices); head(prices)
 # Dates are coerced to strings
-sapply(price_s, class)
+sapply(prices, class)
 # Coerce xts directly to a data table
 data_table <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(data_table); head(data_table)
 # Dates are not coerced to strings
 sapply(data_table, class)
-all.equal(price_s, data_table, check.attributes=FALSE)
+all.equal(prices, data_table, check.attributes=FALSE)
 # Install package fst
 install.packages("fst")
 # Load package fst
@@ -679,12 +679,12 @@ inner_mult(1:3, 6:4)
 inner_mult(1:3, 6:3)
 # Define Rcpp Sugar function with loop
 Rcpp::cppFunction("
-double inner_mult_sugar(NumericVector x, NumericVector y) {
+double inner_lagmugar(NumericVector x, NumericVector y) {
   return sum(x * y);
 }")  # end cppFunction
 # Run Rcpp Sugar function
-inner_mult_sugar(1:3, 6:4)
-inner_mult_sugar(1:3, 6:3)
+inner_lagmugar(1:3, 6:4)
+inner_lagmugar(1:3, 6:3)
 # Define R function with loop
 inner_mult_r <- function(x, y) {
     to_tal <- 0
@@ -702,85 +702,85 @@ summary(microbenchmark(
   pure_r=inner_mult_r(1:10000, 1:10000),
   inner_r=1:10000 %*% 1:10000,
   r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
+  r_cpp_sugar=inner_lagmugar(1:10000, 1:10000),
   times=10))[, c(1, 4, 5)]
 # Define Ornstein-Uhlenbeck function in R
-sim_ou <- function(n_rows=1000, eq_price=5.0,
-              vol_at=0.01, theta=0.01) {
-  re_turns <- numeric(n_rows)
-  price_s <- numeric(n_rows)
-  price_s[1] <- eq_price
-  for (i in 2:n_rows) {
-    re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
-    price_s[i] <- price_s[i-1] + re_turns[i]
+sim_ou <- function(nrows=1000, eq_price=5.0,
+              volat=0.01, theta=0.01) {
+  returns <- numeric(nrows)
+  prices <- numeric(nrows)
+  prices[1] <- eq_price
+  for (i in 2:nrows) {
+    returns[i] <- thetav*(eq_price - prices[i-1]) + volat*rnorm(1)
+    prices[i] <- prices[i-1] + returns[i]
   }  # end for
-  price_s
+  prices
 }  # end sim_ou
 # Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sig_ma <- 0.01
-the_ta <- 0.01; n_rows <- 1000
+eq_price <- 5.0; sigmav <- 0.01
+thetav <- 0.01; nrows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
+ou_sim <- sim_ou(nrows=nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
 # Define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
 NumericVector sim_ou_rcpp(double eq_price,
-                double vol_at,
-                double the_ta,
-                NumericVector in_nov) {
-  int n_rows = in_nov.size();
-  NumericVector price_s(n_rows);
-  NumericVector re_turns(n_rows);
-  price_s[0] = eq_price;
-  for (int it = 1; it < n_rows; it++) {
-    re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
-    price_s[it] = price_s[it-1] + re_turns[it];
+                double volat,
+                double thetav,
+                NumericVector innov) {
+  int nrows = innov.size();
+  NumericVector prices(nrows);
+  NumericVector returns(nrows);
+  prices[0] = eq_price;
+  for (int it = 1; it < nrows; it++) {
+    returns[it] = thetav*(eq_price - prices[it-1]) + volat*innov[it-1];
+    prices[it] = prices[it-1] + returns[it];
   }  // end for
-  return price_s;
+  return prices;
 }")  # end cppFunction
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  vol_at=sig_ma,
-  the_ta=the_ta,
-  in_nov=rnorm(n_rows))
+  volat=sigmav,
+  thetav=thetav,
+  innov=rnorm(nrows))
 all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta, in_nov=rnorm(n_rows)),
+  pure_r=sim_ou(nrows=nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, thetav=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
 # Source Rcpp function for Ornstein-Uhlenbeck process from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_ou.cpp")
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  vol_at=sig_ma,
-  theta=the_ta,
-  innov=rnorm(n_rows))
+  volat=sigmav,
+  theta=thetav,
+  innov=rnorm(nrows))
 all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, theta=the_ta, innov=rnorm(n_rows)),
+  pure_r=sim_ou(nrows=nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
 # Calculate uniformly distributed pseudo-random sequence
-uni_form <- function(see_d, n_rows=10) {
-  out_put <- numeric(n_rows)
-  out_put[1] <- see_d
-  for (i in 2:n_rows) {
-    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
+unifunc <- function(seedv, nrows=10) {
+  output <- numeric(nrows)
+  output[1] <- seedv
+  for (i in 2:nrows) {
+    output[i] <- 4*output[i-1]*(1-output[i-1])
   }  # end for
-  acos(1-2*out_put)/pi
-}  # end uni_form
+  acos(1-2*output)/pi
+}  # end unifunc
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/uni_form.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifunc.cpp")
 # Microbenchmark Rcpp code
 library(microbenchmark)
 summary(microbenchmark(
   pure_r=runif(1e5),
-  r_loop=uni_form(0.3, 1e5),
+  r_loop=unifunc(0.3, 1e5),
   r_cpp=uniform_rcpp(0.3, 1e5),
   times=10))[, c(1, 4, 5)]
 library(RcppArmadillo)
@@ -803,36 +803,36 @@ summary(microbenchmark(
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_arima.cpp")
 # Define AR(2) coefficients
-co_eff <- c(0.9, 0.09)
-n_rows <- 1e4
+coeff <- c(0.9, 0.09)
+nrows <- 1e4
 set.seed(1121)
-in_nov <- rnorm(n_rows)
+innov <- rnorm(nrows)
 # Simulate ARIMA using filter()
-arima_filter <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
+arima_filter <- filter(x=innov,
+  filter=coeff, method="recursive")
 # Simulate ARIMA using sim_arima()
-ari_ma <- sim_arima(in_nov, rev(co_eff))
-all.equal(drop(ari_ma),
+arimav <- sim_arima(innov, rev(coeff))
+all.equal(drop(arimav),
   as.numeric(arima_filter))
 # Microbenchmark RcppArmadillo code
 summary(microbenchmark(
-  sim_arima = sim_arima(in_nov, rev(co_eff)),
-  filter = filter(x=in_nov, filter=co_eff, method="recursive"),
+  sim_arima = sim_arima(innov, rev(coeff)),
+  filter = filter(x=innov, filter=coeff, method="recursive"),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/armadillo_functions.cpp")
-mat_rix <- matrix(runif(1e5), nc=1e3)
+matrixv <- matrix(runif(1e5), nc=1e3)
 # De-mean using apply()
-new_mat <- apply(mat_rix, 2,
+new_mat <- apply(matrixv, 2,
   function(x) (x-mean(x)))
 # De-mean using demean_mat()
-demean_mat(mat_rix)
-all.equal(new_mat, mat_rix)
+demean_mat(matrixv)
+all.equal(new_mat, matrixv)
 # Microbenchmark RcppArmadillo code
 summary(microbenchmark(
-  apply = (apply(mat_rix, 2, mean)),
-  demean_mat = demean_mat(mat_rix),
+  apply = (apply(matrixv, 2, mean)),
+  demean_mat = demean_mat(matrixv),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 # Microbenchmark shows:
 # Demean_mat() is over 70 times faster than apply()
@@ -841,17 +841,17 @@ summary(microbenchmark(
 # 2      apply 10781.7534 9291.674
 # Perform matrix inversion
 # Create random positive semi-definite matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- t(mat_rix) %*% mat_rix
+matrixv <- matrix(runif(25), nc=5)
+matrixv <- t(matrixv) %*% matrixv
 # Invert the matrix
-matrix_inv <- solve(mat_rix)
-inv_mat(mat_rix)
-all.equal(inv_mat, mat_rix)
+matrix_inv <- solve(matrixv)
+inv_mat(matrixv)
+all.equal(inv_mat, matrixv)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
-  solve = solve(mat_rix),
-  inv_mat = inv_mat(mat_rix),
+  solve = solve(matrixv),
+  inv_mat = inv_mat(matrixv),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 # Microbenchmark shows:
 # inv_mat() is over 10 times faster than solve()
@@ -862,24 +862,24 @@ library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/calc_weights.cpp")
 # Calculate matrix of random returns
-mat_rix <- matrix(rnorm(300), nc=5)
+matrixv <- matrix(rnorm(300), nc=5)
 # Regularized inverse of covariance matrix
 eigen_max <- 4
-ei_gen <- eigen(cov(mat_rix))
-cov_inv <- ei_gen$vectors[, 1:eigen_max] %*%
-  (t(ei_gen$vectors[, 1:eigen_max]) / ei_gen$values[1:eigen_max])
+eigend <- eigen(cov(matrixv))
+covinv <- eigend$vectors[, 1:eigen_max] %*%
+  (t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])
 # Regularized inverse using RcppArmadillo
-cov_inv_arma <- calc_inv(mat_rix, eigen_max)
-all.equal(cov_inv, cov_inv_arma)
+covinv_arma <- calc_inv(matrixv, eigen_max)
+all.equal(covinv, covinv_arma)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
   Rcode = {
-    ei_gen <- eigen(cov(mat_rix))
-    ei_gen$vectors[, 1:eigen_max] %*%
-(t(ei_gen$vectors[, 1:eigen_max]) / ei_gen$values[1:eigen_max])
+    eigend <- eigen(cov(matrixv))
+    eigend$vectors[, 1:eigen_max] %*%
+(t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])
   },
-  Rcpp = calc_inv(mat_rix, eigen_max),
+  Rcpp = calc_inv(matrixv, eigen_max),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 Sys.Date()  # Get today's date
 as.Date(1e3)  # Coerce numeric into date object
@@ -1060,23 +1060,23 @@ date_time %m-% lubridate::months(13:1)
 library(zoo)  # Load zoo
 library(RQuantLib)  # Load RQuantLib
 # Create daily date series of class "Date"
-date_s <- Sys.Date() + -5:2
-date_s
+dates <- Sys.Date() + -5:2
+dates
 # Create Boolean vector of business days
 is_busday <- isBusinessDay(  # RQuantLib calendar
-  calendar="UnitedStates/GovernmentBond", date_s)
+  calendar="UnitedStates/GovernmentBond", dates)
 # Create daily series of business days
-bus_index <- date_s[is_busday]
+bus_index <- dates[is_busday]
 bus_index
 library(zoo)  # Load package zoo
 date_time <- Sys.Date()  # Create date series of class "Date"
-date_s <- date_time + 0:365  # Daily series over one year
-head(date_s, 4)  # Print first few dates
-format(head(date_s, 4), "%m/%d/%Y")  # Print first few dates
+dates <- date_time + 0:365  # Daily series over one year
+head(dates, 4)  # Print first few dates
+format(head(dates, 4), "%m/%d/%Y")  # Print first few dates
 # Create daily date-time series of class "POSIXct"
-date_s <- seq(Sys.time(), by="days", length.out=365)
-head(date_s, 4)  # Print first few dates
-format(head(date_s, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
+dates <- seq(Sys.time(), by="days", length.out=365)
+head(dates, 4)  # Print first few dates
+format(head(dates, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
 # Create series of monthly dates of class "zoo"
 monthly_index <- yearmon(2010+0:36/12)
 head(monthly_index, 4)  # Print first few dates
@@ -1089,13 +1089,13 @@ as.POSIXct(head(qrtly_index, 4))
 library(lubridate)  # Load lubridate
 set.seed(1121)  # Reset random number generator
 # Create daily time series ending today
-start_date <- decimal_date(Sys.Date()-6)
-end_date <- decimal_date(Sys.Date())
+startd <- decimal_date(Sys.Date()-6)
+endd <- decimal_date(Sys.Date())
 # Create vector of geometric Brownian motion
-da_ta <- exp(cumsum(rnorm(6)/100))
-fre_quency <- NROW(da_ta)/(end_date-start_date)
-ts_series <- ts(data=da_ta,
-          start=start_date,
+datav <- exp(cumsum(rnorm(6)/100))
+fre_quency <- NROW(datav)/(endd-startd)
+ts_series <- ts(data=datav,
+          start=startd,
           frequency=fre_quency)
 ts_series  # Display time series
 # Display index dates
@@ -1138,8 +1138,8 @@ legend(x=1992, y=8000,
 set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
 # Create zoo time series of random returns
-date_s <- Sys.Date() + 0:3
-zoo_series <- zoo(rnorm(NROW(date_s)), order.by=date_s)
+dates <- Sys.Date() + 0:3
+zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
 zoo_series
 attributes(zoo_series)
 class(zoo_series)  # Class "zoo"
@@ -1174,11 +1174,11 @@ lag(zoo_series, -2, na.pad=TRUE)
 set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
 # Create index of daily dates
-date_s <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
+dates <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 # Create vector of geometric Brownian motion
-zoo_data <- exp(cumsum(rnorm(NROW(date_s))/100))
+zoo_data <- exp(cumsum(rnorm(NROW(dates))/100))
 # Create zoo series of geometric Brownian motion
-zoo_series <- zoo(x=zoo_data, order.by=date_s)
+zoo_series <- zoo(x=zoo_data, order.by=dates)
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot using plot.zoo method
 plot(zoo_series, xlab="", ylab="")
@@ -1222,32 +1222,32 @@ merge(zoo_series1, zoo_series2)  # union of dates
 # Intersection of dates
 merge(zoo_series1, zoo_series2, all=FALSE)
 # Create matrix containing NA values
-mat_rix <- sample(18)
-mat_rix[sample(NROW(mat_rix), 4)] <- NA
-mat_rix <- matrix(mat_rix, nc=3)
+matrixv <- sample(18)
+matrixv[sample(NROW(matrixv), 4)] <- NA
+matrixv <- matrix(matrixv, nc=3)
 # Replace NA values with most recent non-NA values
-zoo::na.locf(mat_rix)
-rutils::na_locf(mat_rix)
+zoo::na.locf(matrixv)
+rutils::na_locf(matrixv)
 # Get time series of prices
-price_s <- mget(c("VTI", "VXX"), envir=rutils::etfenv)
-price_s <- lapply(price_s, quantmod::Cl)
-price_s <- rutils::do_call(cbind, price_s)
-sum(is.na(price_s))
+prices <- mget(c("VTI", "VXX"), envir=rutils::etfenv)
+prices <- lapply(prices, quantmod::Cl)
+prices <- rutils::do_call(cbind, prices)
+sum(is.na(prices))
 # Carry forward and backward non-NA prices
-price_s <- zoo::na.locf(price_s, na.rm=FALSE)
-price_s <- zoo::na.locf(price_s, na.rm=FALSE, fromLast=TRUE)
-sum(is.na(price_s))
+prices <- zoo::na.locf(prices, na.rm=FALSE)
+prices <- zoo::na.locf(prices, na.rm=FALSE, fromLast=TRUE)
+sum(is.na(prices))
 # Remove whole rows containing NA returns
-re_turns <- rutils::etfenv$re_turns
-sum(is.na(re_turns))
-re_turns <- na.omit(re_turns)
+returns <- rutils::etfenv$returns
+sum(is.na(returns))
+returns <- na.omit(returns)
 # Or carry forward non-NA returns (preferred)
-re_turns <- rutils::etfenv$re_turns
-re_turns[1, is.na(re_turns[1, ])] <- 0
-re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
-sum(is.na(re_turns))
+returns <- rutils::etfenv$returns
+returns[1, is.na(returns[1, ])] <- 0
+returns <- zoo::na.locf(returns, na.rm=FALSE)
+sum(is.na(returns))
 # Replace NAs in xts time series
-se_ries <- rutils::etfenv$price_s[, 1]
+se_ries <- rutils::etfenv$prices[, 1]
 head(se_ries)
 sum(is.na(se_ries))
 library(quantmod)
@@ -1280,23 +1280,23 @@ library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 set.seed(1121)  # Reset random number generator
 # Create index of daily dates
-date_s <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
+dates <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 # Create vector of geometric Brownian motion
-zoo_data <- exp(cumsum(rnorm(NROW(date_s))/100))
+zoo_data <- exp(cumsum(rnorm(NROW(dates))/100))
 # Create zoo time series of geometric Brownian motion
-zoo_series <- zoo(x=zoo_data, order.by=date_s)
+zoo_series <- zoo(x=zoo_data, order.by=dates)
 head(zoo_series, 3)  # zoo object
 # as.ts() creates ts object with frequency=1
 ts_series <- as.ts(zoo_series)
 tsp(ts_series)  # Frequency=1
 # Get start and end dates of zoo_series
-start_date <- decimal_date(start(zoo_series))
-end_date <- decimal_date(end(zoo_series))
+startd <- decimal_date(start(zoo_series))
+endd <- decimal_date(end(zoo_series))
 # Calculate frequency of zoo_series
-fre_quency <- NROW(zoo_series)/(end_date-start_date)
-da_ta <- zoo::coredata(zoo_series)  # Extract data from zoo_series
+fre_quency <- NROW(zoo_series)/(endd-startd)
+datav <- zoo::coredata(zoo_series)  # Extract data from zoo_series
 # Create ts object using ts()
-ts_series <- ts(data=da_ta, start=start_date,
+ts_series <- ts(data=datav, start=startd,
           frequency=fre_quency)
 # Display start of time series
 window(ts_series, start=start(ts_series),
@@ -1316,26 +1316,26 @@ head(zoo_series, 7)  # zoo object
 ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
 # Create vector of regular dates, including weekends
-date_s <- seq(from=start(zoo_series),
+dates <- seq(from=start(zoo_series),
             by="day",
             length.out=NROW(zoo_series))
-zoo::index(zoo_series) <- date_s
+zoo::index(zoo_series) <- dates
 ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
 set.seed(1121)  # Reset random number generator
 library(xts)  # Load package xts
 # Create xts time series of random returns
-date_s <- Sys.Date() + 0:3
-x_ts <- xts(rnorm(NROW(date_s)), order.by=date_s)
-names(x_ts) <- "random"
-x_ts
-tail(x_ts, 3)  # Get last few elements
-first(x_ts)  # Get first element
-last(x_ts)  # Get last element
-class(x_ts)  # Class "xts"
-attributes(x_ts)
+dates <- Sys.Date() + 0:3
+xtes <- xts(rnorm(NROW(dates)), order.by=dates)
+names(xtes) <- "random"
+xtes
+tail(xtes, 3)  # Get last few elements
+first(xtes)  # Get first element
+last(xtes)  # Get last element
+class(xtes)  # Class "xts"
+attributes(xtes)
 # Get the time zone of an xts object
-indexTZ(x_ts)
+indexTZ(xtes)
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 library(xts)  # Load package xts
 # as.xts() coerces zoo series into xts series
@@ -1348,41 +1348,41 @@ title(main="MSFT Prices")  # Add title
 library(xts)  # Load xts
 library(lubridate)  # Load lubridate
 # Coerce EuStockMarkets into class xts
-x_ts <- xts(zoo::coredata(EuStockMarkets),
+xtes <- xts(zoo::coredata(EuStockMarkets),
       order.by=date_decimal(zoo::index(EuStockMarkets)))
 # Plot all columns in single panel: xts v.0.9-8
-col_ors <- rainbow(NCOL(x_ts))
-plot(x_ts, main="EuStockMarkets using xts",
-     col=col_ors, major.ticks="years",
+colors <- rainbow(NCOL(xtes))
+plot(xtes, main="EuStockMarkets using xts",
+     col=colors, major.ticks="years",
      minor.ticks=FALSE)
 legend("topleft", legend=colnames(EuStockMarkets),
- inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)),
- lwd=3, col=col_ors, bg="white")
+ inset=0.2, cex=0.7, , lty=rep(1, NCOL(xtes)),
+ lwd=3, col=colors, bg="white")
 # Plot only first column: xts v.0.9-7
-plot(x_ts[, 1], main="EuStockMarkets using xts",
-     col=col_ors[1], major.ticks="years",
+plot(xtes[, 1], main="EuStockMarkets using xts",
+     col=colors[1], major.ticks="years",
      minor.ticks=FALSE)
 # Plot remaining columns
-for (col_umn in 2:NCOL(x_ts))
-  lines(x_ts[, col_umn], col=col_ors[col_umn])
+for (colnum in 2:NCOL(xtes))
+  lines(xtes[, colnum], col=colors[colnum])
 # Plot using quantmod
 library(quantmod)
 plot_theme <- chart_theme()
-plot_theme$col$line.col <- col_ors
-chart_Series(x=x_ts, theme=plot_theme,
+plot_theme$col$line.col <- colors
+chart_Series(x=xtes, theme=plot_theme,
        name="EuStockMarkets using quantmod")
 legend("topleft", legend=colnames(EuStockMarkets),
- inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)),
- lwd=3, col=col_ors, bg="white")
+ inset=0.2, cex=0.7, , lty=rep(1, NCOL(xtes)),
+ lwd=3, col=colors, bg="white")
 library(rutils)
 library(ggplot2)
-price_s <- rutils::etfenv$price_s[, 1]
-price_s <- na.omit(price_s)
+prices <- rutils::etfenv$prices[, 1]
+prices <- na.omit(prices)
 # Create ggplot object
-etf_gg <- qplot(x=zoo::index(price_s),
-          y=as.numeric(price_s),
+etf_gg <- qplot(x=zoo::index(prices),
+          y=as.numeric(prices),
           geom="line",
-          main=names(price_s)) +
+          main=names(prices)) +
   xlab("") + ylab("") +
   theme(  # Add legend and title
     legend.position=c(0.1, 0.5),
@@ -1394,11 +1394,11 @@ etf_gg
 library(rutils)  # Load xts time series data
 library(reshape2)
 library(ggplot2)
-price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
-price_s <- na.omit(price_s)
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
+prices <- na.omit(prices)
 # Create data frame of time series
-data_frame <- data.frame(dates=zoo::index(price_s),
-    zoo::coredata(price_s))
+data_frame <- data.frame(dates=zoo::index(prices),
+    zoo::coredata(prices))
 # Reshape data into a single column
 data_frame <-
   reshape2::melt(data_frame, id="dates")
@@ -1416,20 +1416,20 @@ ggplot(data=data_frame,
 # Load rutils which contains etfenv dataset
 library(rutils)
 library(dygraphs)
-price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
-price_s <- na.omit(price_s)
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
+prices <- na.omit(prices)
 # Plot dygraph with date range selector
-dygraph(price_s, main="VTI and IEF prices") %>%
+dygraph(prices, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
   dyRangeSelector()
 # Load rutils which contains etfenv dataset
 library(rutils)
 library(plotly)
-price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
-price_s <- na.omit(price_s)
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
+prices <- na.omit(prices)
 # Create data frame of time series
-data_frame <- data.frame(dates=zoo::index(price_s),
-    zoo::coredata(price_s))
+data_frame <- data.frame(dates=zoo::index(prices),
+    zoo::coredata(prices))
 # Plotly syntax using pipes
 data_frame %>%
   plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
@@ -1444,50 +1444,50 @@ p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
 # Subset xts using a date range string
-price_s <- rutils::etfenv$price_s
-sub_prices <- price_s["2014-10-15/2015-01-10", 1:4]
+prices <- rutils::etfenv$prices
+sub_prices <- prices["2014-10-15/2015-01-10", 1:4]
 first(sub_prices)
 last(sub_prices)
 # Subset Nov 2014 using a date string
-sub_prices <- price_s["2014-11", 1:4]
+sub_prices <- prices["2014-11", 1:4]
 first(sub_prices)
 last(sub_prices)
 # Subset all data after Nov 2014
-sub_prices <- price_s["2014-11/", 1:4]
+sub_prices <- prices["2014-11/", 1:4]
 first(sub_prices)
 last(sub_prices)
 # Comma after date range not necessary
-all.equal(price_s["2014-11", ], price_s["2014-11"])
+all.equal(prices["2014-11", ], prices["2014-11"])
 # .subset_xts() is faster than the bracket []
 library(microbenchmark)
 summary(microbenchmark(
-  bracket=price_s[10:20, ],
-  subset=xts::.subset_xts(price_s, 10:20),
+  bracket=prices[10:20, ],
+  subset=xts::.subset_xts(prices, 10:20),
   times=10))[, c(1, 4, 5)]
 # Specify string representing a date
 dat_e <- "2014-10-15"
-# Subset price_s in two different ways
-price_s <- rutils::etfenv$price_s
-all.equal(price_s[zoo::index(price_s) >= dat_e],
-    price_s[paste0(dat_e, "/")])
+# Subset prices in two different ways
+prices <- rutils::etfenv$prices
+all.equal(prices[zoo::index(prices) >= dat_e],
+    prices[paste0(dat_e, "/")])
 # Boolean subsetting is slower because coercing string into date
 library(microbenchmark)
 summary(microbenchmark(
-  boolean=(price_s[zoo::index(price_s) >= dat_e]),
-  date=(price_s[paste0(dat_e, "/")]),
+  boolean=(prices[zoo::index(prices) >= dat_e]),
+  date=(prices[paste0(dat_e, "/")]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Coerce string into a date
 dat_e <- as.Date("2014-10-15")
 # Boolean subsetting is faster than using date string
 summary(microbenchmark(
-  boolean=(price_s[zoo::index(price_s) >= dat_e]),
-  date=(price_s[paste0(dat_e, "/")]),
+  boolean=(prices[zoo::index(prices) >= dat_e]),
+  date=(prices[paste0(dat_e, "/")]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-price_s <- HighFreq::SPY["2012-04"]
+prices <- HighFreq::SPY["2012-04"]
 # Subset recurring time interval using "T notation",
-price_s <- price_s["T10:30:00/T15:00:00"]
-first(price_s["2012-04-16"])  # First element of day
-last(price_s["2012-04-16"])  # Last element of day
+prices <- prices["T10:30:00/T15:00:00"]
+first(prices["2012-04-16"])  # First element of day
+last(prices["2012-04-16"])  # Last element of day
 # Suppress timezone warning messages
 options(xts_check_tz=FALSE)
 # Create time series with overlapping time indices
@@ -1496,46 +1496,46 @@ vti2 <- rutils::etfenv$VTI["2014/"]
 dates1 <- index(vti1)
 dates2 <- index(vti2)
 # Join by rows
-vt_i <- rbind(vti1, vti2)
-date_s <- index(vt_i)
-sum(duplicated(date_s))
-vt_i <- vt_i[!duplicated(date_s), ]
-all.equal(vt_i, rutils::etfenv$VTI)
+vtis <- rbind(vti1, vti2)
+dates <- index(vtis)
+sum(duplicated(dates))
+vtis <- vtis[!duplicated(dates), ]
+all.equal(vtis, rutils::etfenv$VTI)
 # Alternative method - slightly slower
-vt_i <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
-all.equal(vt_i, rutils::etfenv$VTI)
+vtis <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
+all.equal(vtis, rutils::etfenv$VTI)
 # Remove duplicates starting from the end
-vt_i <- rbind(vti1, vti2)
-vt_i <- vt_i[!duplicated(date_s), ]
-vti_fl <- vt_i[!duplicated(date_s, fromLast=TRUE), ]
-all.equal(vt_i, vti_fl)
-price_s <- rutils::etfenv$price_s[, c("VTI", "IEF")]
-price_s <- na.omit(price_s)
-str(price_s)  # Display structure of xts
+vtis <- rbind(vti1, vti2)
+vtis <- vtis[!duplicated(dates), ]
+vti_fl <- vtis[!duplicated(dates, fromLast=TRUE), ]
+all.equal(vtis, vti_fl)
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
+prices <- na.omit(prices)
+str(prices)  # Display structure of xts
 # Subsetting zoo to single column drops dim attribute
-zoo_prices <- as.zoo(price_s)
+zoo_prices <- as.zoo(prices)
 dim(zoo_prices)
 dim(zoo_prices[, 1])
 # zoo with single column are vectors not matrices
 c(is.matrix(zoo_prices), is.matrix(zoo_prices[, 1]))
 # xts always have a dim attribute
-rbind(base=dim(price_s), subs=dim(price_s[, 1]))
-c(is.matrix(price_s), is.matrix(price_s[, 1]))
+rbind(base=dim(prices), subs=dim(prices[, 1]))
+c(is.matrix(prices), is.matrix(prices[, 1]))
 # Lag of zoo shortens it by one row
 rbind(base=dim(zoo_prices), lag=dim(lag(zoo_prices)))
 # Lag of xts doesn't shorten it
-rbind(base=dim(price_s), lag=dim(lag(price_s)))
+rbind(base=dim(prices), lag=dim(lag(prices)))
 # Lag of zoo is in opposite direction from xts
 head(lag(zoo_prices, -1), 4)
-head(lag(price_s), 4)
+head(lag(prices), 4)
 # library(rutils)  # Load package rutils
 # Indices of last observations in each hour
-end_p <- xts::endpoints(price_s, on="hours")
-head(end_p)
+endp <- xts::endpoints(prices, on="hours")
+head(endp)
 # Extract the last observations in each hour
-head(price_s[end_p, ])
+head(prices[endp, ])
 # Lower the periodicity to months
-xts_monthly <- to.period(x=price_s,
+xts_monthly <- to.period(x=prices,
              period="months", name="MSFT")
 # Convert colnames to standard OHLC format
 colnames(xts_monthly)
@@ -1563,9 +1563,9 @@ stox_sub <- st_ox["2014-11", 1:4]
 xts::plot.xts(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # Add title
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-ts_stx <- as.ts(zoo_stx)
-class(ts_stx)
-tail(ts_stx[, 1:4])
+stxts <- as.ts(zoo_stx)
+class(stxts)
+tail(stxts[, 1:4])
 library(xts)
 st_ox <- as.xts(zoo_stx)
 class(st_ox)

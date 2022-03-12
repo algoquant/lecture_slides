@@ -372,7 +372,7 @@ sd(datav)  # Sample standard deviation
         <<echo=(-(1:1)),eval=FALSE>>=
 rm(list=ls())
 # VTI returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Number of observations
 nrows <- NROW(returns)
 # Mean of VTI returns
@@ -448,7 +448,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo=datav[cutoff],
-  quan_tile=quantile(datav, probs=confl),
+  quantilev=quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -1087,7 +1087,7 @@ geom_vline(  # Add vertical line
   \begin{columns}[T]
     \column{0.5\textwidth}
       In two-tailed hypothesis tests, both tails of the probability distribution contribute to the \emph{p}-value.
-      <<hyp_test_ggp22,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+      <<hyp_test_ggp2_2,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
 rm(list=ls())
 par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 ### Create ggplot2 with shaded area
@@ -1265,7 +1265,7 @@ legend("topright", inset=0.05, bty="n",
       <<echo=TRUE,eval=TRUE>>=
 # Calculate VTI percentage returns
 library(rutils)
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Reset output digits
 dig_its <- options(digits=5)
 # Shapiro-Wilk test for normal distribution
@@ -1357,7 +1357,7 @@ ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
 ks.test(rnorm(100), rnorm(100, sd=2.0))
 # KS test for VTI returns vs normal distribution
-returns <- as.numeric(na.omit(rutils::etf_env$returns$VTI))
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
 returns <- (returns - mean(returns))/sd(returns)
 ks.test(returns, rnorm)
 # Fit t-dist into VTI returns
@@ -1372,8 +1372,8 @@ tdistr <- function(x, dfree, loc, scale) {
 # tdistr(x=returns[1], dfree=2, loc=lo_cation, scale=scalit)
 # Plot shows that tdistr() fits returns very well
 densityv <- density(returns)
-ma_d <- mad(returns)
-plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
+madv <- mad(returns)
+plot(densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      col="blue", lwd=2, main="Density of VTI Returns")
 curve(expr=tdistr(x, dfree=2, loc=lo_cation, scale=scalit), col="red", lwd=2, add=TRUE)
@@ -1475,7 +1475,7 @@ legend("topright", inset=0.05, bty="n",
 histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
 # Theoretical frequencies
-freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Return p-value
@@ -1485,7 +1485,7 @@ chisq_test$p.value
 histo_gram <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts/sum(histo_gram$counts)
 # Theoretical frequencies
-freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for shifted normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Calculate histogram of VTI returns
@@ -1493,7 +1493,7 @@ histo_gram <- hist(returns, breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
 # Calculate cumulative probabilities and then difference them
 freq_t <- pt((histo_gram$breaks-lo_cation)/scalit, df=2)
-freq_t <- rutils::diff_it(freq_t)
+freq_t <- rutils::diffit(freq_t)
 # Perform Chi-squared test for VTI returns
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
       @
@@ -1578,7 +1578,7 @@ all.equal(rank(datav), indeks)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # VTI returns
-returns <- as.numeric(na.omit(rutils::etf_env$returns[, "VTI"]))
+returns <- as.numeric(na.omit(rutils::etfenv$returns[, "VTI"]))
 nrows <- NROW(returns)
 returns <- 100*(returns-mean(returns))/sd(returns)
 # Simulate normal random data
@@ -1599,7 +1599,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and medians from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -1628,7 +1628,7 @@ boot_data <- mclapply(1:1e4, function(x) {
 # Means and medians from bootstrap
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -1717,7 +1717,7 @@ bias_var[1, 4]^2 + bias_var[2, 4]
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-returns <- as.numeric(na.omit(rutils::etf_env$returns[, "VTI"]))
+returns <- as.numeric(na.omit(rutils::etfenv$returns[, "VTI"]))
 nrows <- NROW(returns)
 returns <- 100*(returns-mean(returns))/sd(returns)
 # Simulate normal random data
@@ -1742,7 +1742,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and medians from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -1798,7 +1798,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -1817,7 +1817,7 @@ boot_data <- mclapply(1:1e4, function(x) {
 # Means and standard errors from bootstrap
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -2601,7 +2601,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2,
-      function(x) c(mean=mean(x), std_error=sd(x)))
+      function(x) c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -2621,7 +2621,7 @@ boot_data <- mclapply(1:1e4,
 # Means and standard errors from bootstrap
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -2673,7 +2673,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -2692,7 +2692,7 @@ boot_data <- mclapply(1:1e4, function(x) {
 # Means and standard errors from bootstrap
 boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -2808,11 +2808,11 @@ sqrt((1-rho^2)/(nrows-2))
 # Correlation
 co_r <- cor(x_var, y_var)
 # Standard error of correlation
-std_error <- sqrt((1-co_r^2)/(nrows-2))
+stderror <- sqrt((1-co_r^2)/(nrows-2))
 # t-value of correlation
-co_r/std_error
+co_r/stderror
 # 95% confidence intervals
-co_r*c(1-qnorm(0.975)*std_error, 1+qnorm(0.975)*std_error)
+co_r*c(1-qnorm(0.975)*stderror, 1+qnorm(0.975)*stderror)
 
 
 # Test statistical significance of correlation
@@ -2830,7 +2830,7 @@ boot_data <- sapply(1:1000, function(x) {
 
 # Means and standard errors from bootstrap
 foo <- apply(boot_data, MARGIN=1, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 foo[2, ]
 (1-rho^2)/sqrt(nrows-2)
 sqrt((1-rho^2)/(nrows-2))

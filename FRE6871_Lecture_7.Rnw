@@ -923,7 +923,7 @@ detach("package:data.table")
       \vskip1ex
       \emph{Data table} columns can be referenced directly by their names (without quotes), and their rows can be referenced without a following comma.
       \vskip1ex
-      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.nrows")} is less than \texttt{100}).
+      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.n_rows")} is less than \texttt{100}).
       \vskip1ex
       The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
       \vskip1ex
@@ -941,10 +941,10 @@ class(data_table); data_table
 data_table[, col2]
 # Row referenced without a following comma
 data_table[2]
-# Print option "datatable.print.nrows"
-getOption("datatable.print.nrows")
-options(datatable.print.nrows=10)
-getOption("datatable.print.nrows")
+# Print option "datatable.print.n_rows"
+getOption("datatable.print.n_rows")
+options(datatable.print.n_rows=10)
+getOption("datatable.print.n_rows")
 # Number of rows in data_table
 NROW(data_table)
 # Or
@@ -1425,7 +1425,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
-prices <- rutils::etf_env$VTI
+prices <- rutils::etfenv$VTI
 class(prices); head(prices)
 prices <- as.data.frame(prices)
 class(prices); head(prices)
@@ -1435,7 +1435,7 @@ class(prices); head(prices)
 # Dates are coerced to strings
 sapply(prices, class)
 # Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
+data_table <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(data_table); head(data_table)
 # Dates are not coerced to strings
@@ -2262,68 +2262,68 @@ using namespace arma;
 //' @export
 // [[Rcpp::export]]
 arma::vec calc_weights(const arma::mat& returns,
-                       const std::string& typ_e = "max_sharpe",
+                       const std::string& typev = "max_sharpe",
                        int eigen_max = 1,
-                       const double& pro_b = 0.1,
+                       const double& probv = 0.1,
                        const double& alpha = 0.0,
                        const bool scalit = true) {
   // Initialize
   arma::vec weights(returns[ncols);
   if (eigen_max == 1)  eigen_max = returns[ncols;
 
-  // Calculate weights depending on typ_e
-  if (typ_e == "max_sharpe") {
+  // Calculate weights depending on typev
+  if (typev == "max_sharpe") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Apply regularized inverse
-    weights = calc_inv(returns, eigen_max)*mean_cols;
-  } else if (typ_e == "max_sharpe_median") {
+    weights = calc_inv(returns, eigen_max)*meancols;
+  } else if (typev == "max_sharpe_median") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::median(mean_cols));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
     // Apply regularized inverse
-    weights = calc_inv(returns, eigen_max)*mean_cols;
-  } else if (typ_e == "min_var") {
+    weights = calc_inv(returns, eigen_max)*meancols;
+  } else if (typev == "min_var") {
     // Apply regularized inverse to unit vector
     weights = calc_inv(returns, eigen_max)*arma::ones(returns[ncols);
-  } else if (typ_e == "min_varpca") {
+  } else if (typev == "min_varpca") {
     // Calculate highest order principal component
     arma::vec eigen_val;
     arma::mat eigen_vec;
     arma::eig_sym(eigen_val, eigen_vec, cov(returns));
     weights = eigen_vec.col(0);
-  } else if (typ_e == "rank") {
+  } else if (typev == "rank") {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
-  } else if (typ_e == "rankrob") {
+  } else if (typev == "rankrob") {
     // Median returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Apply regularized inverse
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
-  } else if (typ_e == "quan_tile") {
+  } else if (typev == "quantilev") {
     // Sum of quantiles for columns
-    arma::vec prob_s = {pro_b, 1-pro_b};
-    weights = conv_to< vec >::from(arma::sum(arma::quantile(returns, prob_s, 0), 0));
+    arma::vec probs = {probv, 1-probv};
+    weights = conv_to< vec >::from(arma::sum(arma::quantile(returns, probs, 0), 0));
     // Weights equal to ranks
     weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(weights)));
     weights = (weights - arma::mean(weights));
   } else {
-    cout << "Warning: Incorrect typ_e argument: " << typ_e << endl;
+    cout << "Warning: Incorrect typev argument: " << typev << endl;
     return arma::ones(returns[ncols);
   }  // end if
 
@@ -2361,9 +2361,9 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
                     const arma::mat& returns, // Portfolio returns
                     const arma::uvec& startp,
                     const arma::uvec& endp,
-                    const std::string& typ_e = "max_sharpe",
+                    const std::string& typev = "max_sharpe",
                     const arma::uword& eigen_max = 1,
-                    const double& pro_b = 0.1,
+                    const double& probv = 0.1,
                     const double& alpha = 0,
                     const bool& scalit = true,
                     const double& coeff = 1.0,
@@ -2376,7 +2376,7 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
   for (arma::uword it=1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typ_e, eigen_max, pro_b, alpha, scalit);
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typev, eigen_max, probv, alpha, scalit);
     // Calculate out-of-sample returns
     pnls.subvec(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
     // Add transaction costs
@@ -3453,7 +3453,7 @@ matrixv <- matrix(matrixv, nc=3)
 zoo::na.locf(matrixv)
 rutils::na_locf(matrixv)
 # Get time series of prices
-prices <- mget(c("VTI", "VXX"), envir=rutils::etf_env)
+prices <- mget(c("VTI", "VXX"), envir=rutils::etfenv)
 prices <- lapply(prices, quantmod::Cl)
 prices <- rutils::do_call(cbind, prices)
 sum(is.na(prices))
@@ -3462,11 +3462,11 @@ prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, na.rm=FALSE, fromLast=TRUE)
 sum(is.na(prices))
 # Remove whole rows containing NA returns
-returns <- rutils::etf_env$returns
+returns <- rutils::etfenv$returns
 sum(is.na(returns))
 returns <- na.omit(returns)
 # Or carry forward non-NA returns (preferred)
-returns <- rutils::etf_env$returns
+returns <- rutils::etfenv$returns
 returns[1, is.na(returns[1, ])] <- 0
 returns <- zoo::na.locf(returns, na.rm=FALSE)
 sum(is.na(returns))
@@ -3490,7 +3490,7 @@ sum(is.na(returns))
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Replace NAs in xts time series
-se_ries <- rutils::etf_env$prices[, 1]
+se_ries <- rutils::etfenv$prices[, 1]
 head(se_ries)
 sum(is.na(se_ries))
 library(quantmod)
@@ -3786,7 +3786,7 @@ legend("topleft", legend=colnames(EuStockMarkets),
       <<xts_ggplot,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.show='hide'>>=
 library(rutils)
 library(ggplot2)
-prices <- rutils::etf_env$prices[, 1]
+prices <- rutils::etfenv$prices[, 1]
 prices <- na.omit(prices)
 # Create ggplot object
 etf_gg <- qplot(x=zoo::index(prices),
@@ -3824,7 +3824,7 @@ etf_gg
 library(rutils)  # Load xts time series data
 library(reshape2)
 library(ggplot2)
-prices <- rutils::etf_env$prices[, c("VTI", "IEF")]
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 # Create data frame of time series
 data_frame <- data.frame(dates=zoo::index(prices),
@@ -3866,10 +3866,10 @@ ggplot(data=data_frame,
       \vskip1ex
       The function \texttt{dyRangeSelector()} adds a date range selector to the bottom of a \emph{dygraphs} plot.
       <<echo=TRUE,eval=FALSE>>=
-# Load rutils which contains etf_env dataset
+# Load rutils which contains etfenv dataset
 library(rutils)
 library(dygraphs)
-prices <- rutils::etf_env$prices[, c("VTI", "IEF")]
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 # Plot dygraph with date range selector
 dygraph(prices, main="VTI and IEF prices") %>%
@@ -3905,10 +3905,10 @@ dygraph(prices, main="VTI and IEF prices") %>%
       The function \texttt{layout()} modifies the layout of a \emph{plotly} plot.
       \vspace{-1em}
       <<time_series_plotly,echo=TRUE,eval=FALSE>>=
-# Load rutils which contains etf_env dataset
+# Load rutils which contains etfenv dataset
 library(rutils)
 library(plotly)
-prices <- rutils::etf_env$prices[, c("VTI", "IEF")]
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 # Create data frame of time series
 data_frame <- data.frame(dates=zoo::index(prices),
@@ -3955,7 +3955,7 @@ p_lot
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Subset xts using a date range string
-prices <- rutils::etf_env$prices
+prices <- rutils::etfenv$prices
 sub_prices <- prices["2014-10-15/2015-01-10", 1:4]
 first(sub_prices)
 last(sub_prices)
@@ -4000,7 +4000,7 @@ summary(microbenchmark(
 # Specify string representing a date
 dat_e <- "2014-10-15"
 # Subset prices in two different ways
-prices <- rutils::etf_env$prices
+prices <- rutils::etfenv$prices
 all.equal(prices[zoo::index(prices) >= dat_e],
           prices[paste0(dat_e, "/")])
 # Boolean subsetting is slower because coercing string into date
@@ -4074,8 +4074,8 @@ options(xts_check_tz=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create time series with overlapping time indices
-vti1 <- rutils::etf_env$VTI["/2015"]
-vti2 <- rutils::etf_env$VTI["2014/"]
+vti1 <- rutils::etfenv$VTI["/2015"]
+vti2 <- rutils::etfenv$VTI["2014/"]
 dates1 <- index(vti1)
 dates2 <- index(vti2)
 # Join by rows
@@ -4083,10 +4083,10 @@ vtis <- rbind(vti1, vti2)
 dates <- index(vtis)
 sum(duplicated(dates))
 vtis <- vtis[!duplicated(dates), ]
-all.equal(vtis, rutils::etf_env$VTI)
+all.equal(vtis, rutils::etfenv$VTI)
 # Alternative method - slightly slower
 vtis <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
-all.equal(vtis, rutils::etf_env$VTI)
+all.equal(vtis, rutils::etfenv$VTI)
 # Remove duplicates starting from the end
 vtis <- rbind(vti1, vti2)
 vtis <- vtis[!duplicated(dates), ]
@@ -4116,7 +4116,7 @@ all.equal(vtis, vti_fl)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-prices <- rutils::etf_env$prices[, c("VTI", "IEF")]
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 str(prices)  # Display structure of xts
 # Subsetting zoo to single column drops dim attribute

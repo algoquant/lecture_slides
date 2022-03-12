@@ -120,7 +120,7 @@ knit_theme$set(thm)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(PerformanceAnalytics)
-returns <- rutils::etf_env$returns[, c("VTI", "IEF")]
+returns <- rutils::etfenv$returns[, c("VTI", "IEF")]
 returns <- na.omit(returns)
 # Calculate the Sharpe ratio
 confl <- 0.05
@@ -163,7 +163,7 @@ c_var <- sapply(returns, function(x) {
       So stocks become less risky over longer holding periods, and investors may choose to own a higher percentage of stocks, provided they hold them for a longer period of time.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 returns <- drop(zoo::coredata(returns))
 nrows <- NROW(returns)
 # Calculate compounded VTI returns
@@ -236,7 +236,7 @@ legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
       A small \emph{p}-value means that the regression coefficients are very unlikely to be zero (given the data).
       <<echo=TRUE,eval=TRUE>>=
 # Perform regression using formula
-model <- lm(XLP ~ VTI, data=rutils::etf_env$returns)
+model <- lm(XLP ~ VTI, data=rutils::etfenv$returns)
 # Get regression coefficients
 coef(summary(model))
 # Get alpha and beta
@@ -248,7 +248,7 @@ coef(summary(model))[, 1]
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot scatterplot of returns with aspect ratio 1
-plot(formulav, data=rutils::etf_env$returns,
+plot(formulav, data=rutils::etfenv$returns,
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
      asp=1, main="Regression XLP ~ VTI")
 # Add regression line and perpendicular line
@@ -278,7 +278,7 @@ abline(a=0, b=-1/coef(summary(model))[2, 1],
 # Get regression coefficients
 coef(summary(model))
 # Calculate regression coefficients from scratch
-design <- na.omit(rutils::etf_env$returns[, c("XLP", "VTI")])
+design <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 betav <- drop(cov(design$XLP, design$VTI)/var(design$VTI))
 alpha <- drop(mean(design$XLP) - betav*mean(design$VTI))
 c(alpha, betav)
@@ -313,7 +313,7 @@ lmtest::dwtest(model)
       Some of the ETFs with significant \emph{alpha} $\alpha$ values are the bond ETFs \emph{IEF} and \emph{TLT} (which have performed very well), and the natural resource ETFs \emph{USO} and \emph{DBC} (which have performed very poorly).
       <<echo=(-(1:1)),eval=TRUE>>=
 library(rutils)  # Load rutils
-returns <- rutils::etf_env$returns
+returns <- rutils::etfenv$returns
 symbolv <- colnames(returns)
 symbolv <- symbolv[symbolv != "VTI"]
 # Perform regressions and collect statistics
@@ -483,27 +483,27 @@ PerformanceAnalytics::table.CAPM(Ra=returns[, c("XLP", "XLF")],
       @
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-capm_stats <- table.CAPM(Ra=returns[, symbolv], 
+capmstats <- table.CAPM(Ra=returns[, symbolv], 
               Rb=returns[, "VTI"], scale=252)
-colnamev <- strsplit(colnames(capm_stats), split=" ")
+colnamev <- strsplit(colnames(capmstats), split=" ")
 colnamev <- do.call(cbind, colnamev)[1, ]
-colnames(capm_stats) <- colnamev
-capm_stats <- t(capm_stats)
-capm_stats <- capm_stats[, -1]
-colnamev <- colnames(capm_stats)
+colnames(capmstats) <- colnamev
+capmstats <- t(capmstats)
+capmstats <- capmstats[, -1]
+colnamev <- colnames(capmstats)
 whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnamev)
 colnamev[whichv] <- c("Alpha", "Information", "Treynor")
-colnames(capm_stats) <- colnamev
-capm_stats <- capm_stats[order(capm_stats[, "Alpha"], decreasing=TRUE), ]
-# Copy capm_stats into etf_env and save to .RData file
-etf_env <- rutils::etf_env
-etf_env$capm_stats <- capm_stats
-save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
+colnames(capmstats) <- colnamev
+capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
+# Copy capmstats into etfenv and save to .RData file
+etfenv <- rutils::etfenv
+etfenv$capmstats <- capmstats
+save(etfenv, file="C:/Develop/lecture_slides/data/etf_data.RData")
       @
     \column{0.45\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-rutils::etf_env$capm_stats[, c("Beta", "Alpha", "Information", "Treynor")]
+rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
       @
   \end{columns}
 \end{block}
@@ -543,7 +543,7 @@ rutils::etf_env$capm_stats[, c("Beta", "Alpha", "Information", "Treynor")]
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 # Test if IEF can time VTI
-returns <- na.omit(rutils::etf_env$returns[, c("IEF", "VTI")])
+returns <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
 vtis <- returns$VTI
 design <- cbind(returns, 0.5*(vtis+abs(vtis)), vtis^2)
 colnames(design)[3:4] <- c("merton", "treynor")
@@ -594,17 +594,17 @@ text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(model)$coeff[
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)
-# Extract ETF prices from rutils::etf_env$prices
-prices <- rutils::etf_env$prices
+# Extract ETF prices from rutils::etfenv$prices
+prices <- rutils::etfenv$prices
 prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
 # Calculate simple dollar returns
-rets_dollar <- rutils::diff_it(prices)
+rets_dollar <- rutils::diffit(prices)
 # Or
 # rets_dollar <- lapply(prices, rutils::diffit)
 # rets_dollar <- rutils::do_call(cbind, rets_dollar)
 # Calculate log returns
-rets_log <- rutils::diff_it(log(prices))
+rets_log <- rutils::diffit(log(prices))
 # Calculate percentage returns
 rets_percent <- rets_dollar/
   rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
@@ -664,7 +664,7 @@ new_prices <- rutils::do_call(cbind, new_prices)
 # Only approximately equal
 all.equal(new_prices, log(prices))
 # Plot log VTI prices
-dygraphs::dygraph(log(quantmod::Cl(rutils::etf_env$VTI)),
+dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)),
   main="Logarithm of VTI Prices") %>%
   dyOptions(colors="blue", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
@@ -693,9 +693,9 @@ dygraphs::dygraph(log(quantmod::Cl(rutils::etf_env$VTI)),
       The \emph{cumulative funding costs} $\sum_{i=1}^t c^f_i$ must be added to the \emph{margin account}: $m_t + \sum_{i=1}^t c^f_i$.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage VTI returns
-prices <- rutils::etf_env$prices$VTI
+prices <- rutils::etfenv$prices$VTI
 prices <- na.omit(prices)
-returns <- rutils::diff_it(prices)/
+returns <- rutils::diffit(prices)/
   rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
       @
     \column{0.5\textwidth}
@@ -819,10 +819,10 @@ dygraphs::dygraph(datav, main="VTI Transaction Costs") %>%
       This \emph{rebalancing} acts as a mean reverting strategy - selling shares when their price goes up, and vice versa.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI and IEF dollar returns
-prices <- rutils::etf_env$prices[, c("VTI", "IEF")]
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 dates <- index(prices)
-rets_dollar <- rutils::diff_it(prices)
+rets_dollar <- rutils::diffit(prices)
 # Calculate VTI and IEF percentage returns
 rets_percent <- rets_dollar/
   rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
@@ -1013,7 +1013,7 @@ dygraphs::dygraph(wealth, main="Transaction Costs With Fixed Dollar Ratios") %>%
       Active investment strategies are expected to outperform static stock and bond portfolios.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate stock and bond returns
-returns <- na.omit(rutils::etf_env$returns[, c("VTI", "IEF")])
+returns <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 weights <- c(0.4, 0.6)
 returns <- cbind(returns, returns %*% weights)
 colnames(returns)[3] <- "Combined"
@@ -1066,7 +1066,7 @@ dygraphs::dygraph(log(wealth), main="Stock and Bond Portfolio") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Extract ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
-returns <- na.omit(rutils::etf_env$returns[, symbolv])
+returns <- na.omit(rutils::etfenv$returns[, symbolv])
 # Calculate all-weather portfolio wealth
 weightsaw <- c(0.30, 0.55, 0.15)
 returns <- cbind(returns, returns %*% weightsaw)
@@ -1124,9 +1124,9 @@ legend("topleft", legend=colnames(wealth),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate dollar and percentage returns for VTI and IEF.
-prices <- rutils::etf_env$prices[, c("VTI", "IEF")]
+prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
-rets_dollar <- rutils::diff_it(prices)
+rets_dollar <- rutils::diffit(prices)
 rets_percent <- rets_dollar/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
 # Calculate wealth of fixed ratio of dollar amounts.
 weights <- c(0.5, 0.5)
@@ -1174,7 +1174,7 @@ wealth <- log(cbind(wealth_fixed_ratio, wealth_risk_parity))
 wealth <- xts::xts(wealth, index(prices))
 colnames(wealth) <- c("Fixed Ratio", "Risk Parity")
 # Calculate the Sharpe ratios.
-sqrt(252)*sapply(rutils::diff_it(wealth), function (x) mean(x)/sd(x))
+sqrt(252)*sapply(rutils::diffit(wealth), function (x) mean(x)/sd(x))
 # Plot a dygraph of the log wealths.
 dygraphs::dygraph(wealth, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios") %>%
   dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
@@ -1200,7 +1200,7 @@ dygraphs::dygraph(wealth, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios
       The t-value of the \emph{Treynor-Mazuy} test is slightly significant, indicating some market timing skill of the risk parity strategy for \emph{VTI} and \emph{IEF}. 
       <<echo=TRUE,eval=FALSE>>=
 # Test risk parity market timing of VTI using Treynor-Mazuy test
-returns <- rutils::diff_it(wealth)
+returns <- rutils::diffit(wealth)
 vtis <- rets_percent$VTI
 design <- cbind(returns, vtis, vtis^2)
 design <- na.omit(design)
@@ -1253,7 +1253,7 @@ text(x=0.05, y=0.02, paste("Fixed Ratio t-value =", round(summary(model)$coeff["
       \href{https://en.wikipedia.org/wiki/Sell_in_May}{\emph{Sell in May}} is a \emph{market timing} \emph{calendar strategy}, in which stocks are sold at the beginning of May, and then bought back at the beginning of November.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate positions
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 position_s <- rep(NA_integer_, NROW(vtis))
 dates <- index(vtis)
 dates <- format(dates, "%m-%d")
@@ -1353,14 +1353,14 @@ text(x=0.05, y=0.05, paste("Treynor test t-value =", round(summary(model)$coeff[
       The \emph{Overnight Market Anomaly} has mostly disappeared after the \texttt{2008-2009} financial crisis.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the log of OHLC VTI prices
-ohlc <- log(rutils::etf_env$VTI)
+ohlc <- log(rutils::etfenv$VTI)
 openp <- quantmod::Op(ohlc)
 highp <- quantmod::Hi(ohlc)
 lowp <- quantmod::Lo(ohlc)
 closep <- quantmod::Cl(ohlc)
 # Calculate the close-to-close log returns, the intraday 
 # open-to-close returns and the overnight close-to-open returns.
-close_close <- rutils::diff_it(closep)
+close_close <- rutils::diffit(closep)
 colnames(close_close) <- "close_close"
 open_close <- (closep - openp)
 colnames(open_close) <- "open_close"
@@ -1407,11 +1407,11 @@ dygraphs::dygraph(cumsum(wealth),
       This would explain why the \emph{TOM} effect has been more pronounced for less liquid small-cap stocks.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI returns
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 dates <- zoo::index(vtis)
 # Calculate first business day of every month
 day_s <- as.numeric(format(dates, "%d"))
-indeks <- which(rutils::diff_it(day_s) < 0)
+indeks <- which(rutils::diffit(day_s) < 0)
 dates[head(indeks)]
 # Calculate Turn of the Month dates
 indeks <- lapply((-1):2, function(x) indeks + x)
@@ -1464,7 +1464,7 @@ dygraphs::dygraph(cumsum(wealth), main="Turn of the Month Strategy") %>%
       For example, a simple stop-loss rule is to sell the stock if its price drops by $5\%$ below the recent maximum price, and buy it back when the price recovers.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI returns
-vtis <- na.omit(rutils::etf_env$returns$VTI)
+vtis <- na.omit(rutils::etfenv$returns$VTI)
 dates <- zoo::index(vtis)
 vtis <- drop(coredata(vtis))
 nrows <- NROW(vtis)

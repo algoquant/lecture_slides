@@ -12,18 +12,18 @@ test_func(3, 2)  # error - glob_var doesn't exist yet!
 glob_var <- 10  # Create glob_var
 test_func(3, 2)  # Now works
 # Define function that returns NULL for non-numeric argument
-test_func <- function(in_put) {
-  if (!is.numeric(in_put)) {
-    warning(paste("argument", in_put, "isn't numeric"))
+test_func <- function(input) {
+  if (!is.numeric(input)) {
+    warning(paste("argument", input, "isn't numeric"))
     return(NULL)
   }
-  2*in_put
+  2*input
 }  # end test_func
 test_func(2)
 test_func("hello")
 # Define a function that returns invisibly
-return_invisible <- function(in_put) {
-  invisible(in_put)
+return_invisible <- function(input) {
+  invisible(input)
 }  # end return_invisible
 return_invisible(2)
 glob_var <- return_invisible(2)
@@ -46,44 +46,44 @@ test_func(2)  # Not enough arguments
 # Function "paste" has two arguments with default values
 str(paste)
 # Default values of arguments can be specified in argument list
-test_func <- function(first_arg, fac_tor=1) {
-  fac_tor*first_arg
+test_func <- function(first_arg, factorv=1) {
+  factorv*first_arg
 }  # end test_func
 test_func(3)  # Default value used for second argument
 test_func(3, 2)  # Default value over-ridden
 # Default values can be a vector of strings
-test_func <- function(in_put=c("first_val", "second_val")) {
-  in_put <- match.arg(in_put)  # Match to arg list
-  in_put
+test_func <- function(input=c("first_val", "second_val")) {
+  input <- match.arg(input)  # Match to arg list
+  input
 }  # end test_func
 test_func("second_val")
 test_func("se")  # Partial name binding
 test_func("some_val")  # Invalid string
 # VTI percentage returns
-re_turns <- rutils::diff_it(log(Cl(rutils::etfenv$VTI)))
+returns <- rutils::diffit(log(Cl(rutils::etfenv$VTI)))
 # calc_skew() calculates skew of time series of returns
 # Default is normal time series
-calc_skew <- function(re_turns=rnorm(1000)) {
+calc_skew <- function(returns=rnorm(1000)) {
   # Number of observations
-  n_rows <- NROW(re_turns)
-  # Standardize re_turns
-  re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
+  nrows <- NROW(returns)
+  # Standardize returns
+  returns <- (returns - mean(returns))/sd(returns)
   # Calculate skew - last statement automatically returned
-  n_rows*sum(re_turns^3)/((n_rows-1)*(n_rows-2))
+  nrows*sum(returns^3)/((nrows-1)*(nrows-2))
 }  # end calc_skew
 # Calculate skew of DAX returns
 # Bind arguments by name
-calc_skew(re_turns=re_turns)
+calc_skew(returns=returns)
 # Bind arguments by position
-calc_skew(re_turns)
+calc_skew(returns)
 # Use default value of arguments
 calc_skew()
 str(plot)  # Dots for additional plot parameters
-bind_dots <- function(in_put, ...) {
-  paste0("in_put=", in_put, ", dots=", paste(..., sep=", "))
+bind_dots <- function(input, ...) {
+  paste0("input=", input, ", dots=", paste(..., sep=", "))
 }  # end bind_dots
-bind_dots(1, 2, 3)  # "in_put" bound by position
-bind_dots(2, in_put=1, 3)  # "in_put" bound by name
+bind_dots(1, 2, 3)  # "input" bound by position
+bind_dots(2, input=1, 3)  # "input" bound by name
 bind_dots(1, 2, 3, foo=10)  # Named argument bound to dots
 bind_dots <- function(arg1, arg2, ...) {
   arg1 + 2*arg2 + sum(...)
@@ -93,19 +93,19 @@ bind_dots(3, 2, 5, 8)  # Extra arguments bound to dots
 str(sum)  # Dots before other arguments
 sum(1, 2, 3)  # Dots bind before other arguments
 sum(1, 2, NA, 3, na.rm=TRUE)
-bind_dots <- function(..., in_put) {
-  paste0("in_put=", in_put,
+bind_dots <- function(..., input) {
+  paste0("input=", input,
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 # Arguments after dots must be bound by full name
-bind_dots(1, 2, 3, in_put=10)
-bind_dots(1, 2, 3, in_put=10, foo=4)  # Dots bound
-bind_dots(1, 2, 3)  # "in_put" not bound
-bind_dots <- function(..., in_put=10) {
-  paste0("in_put=", in_put,
+bind_dots(1, 2, 3, input=10)
+bind_dots(1, 2, 3, input=10, foo=4)  # Dots bound
+bind_dots(1, 2, 3)  # "input" not bound
+bind_dots <- function(..., input=10) {
+  paste0("input=", input,
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
-bind_dots(1, 2, 3)  # "in_put" not bound, but has default
+bind_dots(1, 2, 3)  # "input" not bound, but has default
 # Wrapper for mean() with default na.rm=TRUE
 my_mean <- function(x, na.rm=TRUE, ...) {
   mean(x=x, na.rm=na.rm, ...)
@@ -127,46 +127,46 @@ foo <- 1:10
 save_data(foo, file="scratch.RData")
 save_data(foo, file="scratch.RData", my_dir="C:/Develop")
 # Wrapper for testing negative arguments
-stop_if_neg <- function(in_put) {
-  if (!is.numeric(in_put) || in_put<0)
+stop_if_neg <- function(input) {
+  if (!is.numeric(input) || input<0)
     stop("argument not numeric or negative")
 }  # end stop_if_neg
 # Wrapper for sqrt()
-my_sqrt <- function(in_put) {
-  stop_if_neg(in_put)
-  sqrt(in_put)
+my_sqrt <- function(input) {
+  stop_if_neg(input)
+  sqrt(input)
 }  # end my_sqrt
 my_sqrt(2)
 my_sqrt(-2)
 my_sqrt(NA)
 # Recursive function sums its argument list
-sum_dots <- function(in_put, ...) {
+sum_dots <- function(input, ...) {
   if (missing(...)) {  # Check if dots are empty
-    return(in_put)  # just one argument left
+    return(input)  # just one argument left
   } else {
-    in_put + sum_dots(...)  # Sum remaining arguments
+    input + sum_dots(...)  # Sum remaining arguments
   }  # end if
 }  # end sum_dots
 sum_dots(1, 2, 3, 4)
 # Recursive function sums its argument list
-sum_dots <- function(in_put, ...) {
+sum_dots <- function(input, ...) {
   if (NROW(list(...)) == 0) {  # Check if dots are empty
-    return(in_put)  # just one argument left
+    return(input)  # just one argument left
   } else {
-    in_put + sum_dots(...)  # Sum remaining arguments
+    input + sum_dots(...)  # Sum remaining arguments
   }  # end if
 }  # end sum_dots
 sum_dots(1, 2, 3, 4)
-fibo_nacci <- function(len_gth) {
-  if (len_gth > 2) {
-    fib_seq <- fibo_nacci(len_gth-1)  # Recursion
+fibonacci <- function(nrows) {
+  if (nrows > 2) {
+    fib_seq <- fibonacci(nrows-1)  # Recursion
     c(fib_seq, sum(tail(fib_seq, 2)))  # Return this
   } else {
     c(0, 1)  # Initialize and return
   }
-}  # end fibo_nacci
-fibo_nacci(10)
-tail(fibo_nacci(9), 2)
+}  # end fibonacci
+fibonacci(10)
+tail(fibonacci(9), 2)
 # Show the function code
 plot.default
 # Display function
@@ -233,10 +233,10 @@ b <- a  # Define a new variable
 # When "b" is modified, R makes a copy of it
 b <- b+1
 # Function doubles its argument and returns it
-double_it <- function(in_put) {
-  in_put <- 2*in_put
-  cat("input argument was doubled to:", in_put, "\n")
-  in_put
+double_it <- function(input) {
+  input <- 2*input
+  cat("input argument was doubled to:", input, "\n")
+  input
 }
 double_it(a)
 a  # variable "a" is unchanged
@@ -264,10 +264,10 @@ glob_var
 # Infix operator applied using prefix syntax
 "+"(2, 3)
 # Standard bracket operator
-vec_tor <- c(4, 3, 5, 6)
-vec_tor[2]
+vectorv <- c(4, 3, 5, 6)
+vectorv[2]
 # Bracket operator applied using prefix syntax
-"["(vec_tor, 2)
+"["(vectorv, 2)
 # Define infix operator that returns string
 '%+%' <- function(a, b) paste(a, b, sep=" + ")
 2 %+% 3
@@ -279,30 +279,30 @@ class(obj_string)
 class(obj_string) <- "string"
 class(obj_string)
 # Define function last()
-last <- function(vec_tor) {
-  vec_tor[NROW(vec_tor)]
+last <- function(vectorv) {
+  vectorv[NROW(vectorv)]
 }  # end last
 last(1:10)
 # Define replacement function last()
-'last<-' <- function(vec_tor, value) {
-  vec_tor[NROW(vec_tor)] <- value
-  vec_tor
+'last<-' <- function(vectorv, value) {
+  vectorv[NROW(vectorv)] <- value
+  vectorv
 }  # end last
 x <- 1:5
 last(x) <- 11
 x
 # Create functional that accepts a function as input argument
-func_tional <- function(func_name) {
+funcal <- function(func_name) {
 # Calculates statistic on random numbers
   set.seed(1)
   func_name(runif(1e4))  # Apply the function name
-}  # end func_tional
-func_tional(mean)
-func_tional(sd)
+}  # end funcal
+funcal(mean)
+funcal(sd)
 # Define a power function factory
 make_func <- function(arg_param) {  # Wrapper function
-  function(in_put) {  # Anonymous closure
-    in_put^arg_param
+  function(input) {  # Anonymous closure
+    input^arg_param
   }
 }  # end make_func
 square_func <- make_func(2)  # Define square function
@@ -392,50 +392,50 @@ get_balance()  # Get account balance
 ls(environment(get_balance))
 detach(my_account)  # Remove my_account from search path
 # Func_tional accepts function name and additional argument
-func_tional <- function(func_name, in_put) {
+funcal <- function(func_name, input) {
 # Produce function name from argument
   func_name <- match.fun(func_name)
 # Execute function call
-  func_name(in_put)
-}  # end func_tional
-func_tional(sqrt, 4)
+  func_name(input)
+}  # end funcal
+funcal(sqrt, 4)
 # String also works because match.fun() converts it to a function
-func_tional("sqrt", 4)
+funcal("sqrt", 4)
 str(sum)  # Sum() accepts multiple arguments
 # Func_tional can't accept indefinite number of arguments
-func_tional(sum, 1, 2, 3)
+funcal(sum, 1, 2, 3)
 # Func_tional accepts function name and dots '...' argument
-func_tional <- function(func_name, ...) {
+funcal <- function(func_name, ...) {
   func_name <- match.fun(func_name)
   func_name(...)  # Execute function call
-}  # end func_tional
-func_tional(sum, 1, 2, 3)
-func_tional(sum, 1, 2, NA, 4, 5)
-func_tional(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
+}  # end funcal
+funcal(sum, 1, 2, 3)
+funcal(sum, 1, 2, NA, 4, 5)
+funcal(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
 # Function with three arguments and dots '...' arguments
-my_func <- function(in_put, param1, param2, ...) {
-  c(input=in_put, param1=param1, param2=param2,
+my_func <- function(input, param1, param2, ...) {
+  c(input=input, param1=param1, param2=param2,
 dots=c(...))
 }  # end my_func
 my_func(1, 2, 3, param2=4, param1=5)
-func_tional(my_func, 1, 2, 3, param2=4, param1=5)
-func_tional(my_func, 1, 2, 3, 4, 5)
+funcal(my_func, 1, 2, 3, param2=4, param1=5)
+funcal(my_func, 1, 2, 3, 4, 5)
 # Simple anonymous function
 (function(x) (x + 3)) (10)
-# Anonymous function passed to func_tional
-func_tional(func_name=(function(x) (x + 3)), 5)
+# Anonymous function passed to funcal
+funcal(func_name=(function(x) (x + 3)), 5)
 # Anonymous function is default value
-func_tional <-
+funcal <-
   function(..., func_name=function(x, y, z) {x+y+z}) {
     func_name <- match.fun(func_name)
     func_name(...)  # Execute function call
-}  # end func_tional
-func_tional(2, 3, 4)  # Use default func_name
-func_tional(2, 3, 4, 5)
+}  # end funcal
+funcal(2, 3, 4)  # Use default func_name
+funcal(2, 3, 4, 5)
 # Func_name bound by name
-func_tional(func_name=sum, 2, 3, 4, 5)
+funcal(func_name=sum, 2, 3, 4, 5)
 # Pass anonymous function to func_name
-func_tional(func_name=function(x, y, z) {x*y*z},
+funcal(func_name=function(x, y, z) {x*y*z},
     2, 3, 4)
 str(sum)  # Sum() accepts multiple arguments
 # Sum() can't accept list of arguments
@@ -446,14 +446,14 @@ do.call(sum, list(1, 2, 3))
 do.call(sum, list(1, 2, NA, 3))
 do.call(sum, list(1, 2, NA, 3, na.rm=TRUE))
 # Func_tional() accepts list with function name and arguments
-func_tional <- function(list_arg) {
+funcal <- function(list_arg) {
 # Produce function name from argument
   func_name <- match.fun(list_arg[[1]])
 # Execute function call uing do.call()
   do.call(func_name, list_arg[-1])
-}  # end func_tional
+}  # end funcal
 arg_list <- list("sum", 1, 2, 3)
-func_tional(arg_list)
+funcal(arg_list)
 # Do_call() performs same operation as do.call()
 all.equal(
   do.call(sum, list(1, 2, NA, 3, na.rm=TRUE)),
@@ -461,80 +461,80 @@ all.equal(
 rm(list=ls())
 str(apply)  # Get list of arguments
 # Create a matrix
-mat_rix <- matrix(6:1, nrow=2, ncol=3)
-mat_rix
+matrixv <- matrix(6:1, nrow=2, ncol=3)
+matrixv
 # Sum the rows and columns
-row_sums <- apply(mat_rix, 1, sum)
-col_sums <- apply(mat_rix, 2, sum)
-mat_rix <- cbind(c(sum(row_sums), row_sums),
-          rbind(col_sums, mat_rix))
-dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"),
+row_sums <- apply(matrixv, 1, sum)
+col_sums <- apply(matrixv, 2, sum)
+matrixv <- cbind(c(sum(row_sums), row_sums),
+          rbind(col_sums, matrixv))
+dimnames(matrixv) <- list(c("col_sums", "row1", "row2"),
                  c("row_sums", "col1", "col2", "col3"))
-mat_rix
+matrixv
 str(apply)  # Get list of arguments
-mat_rix <- matrix(sample(12), nrow=3, ncol=4)  # Create a matrix
-mat_rix
-apply(mat_rix, 2, sort)  # Sort matrix columns
-apply(mat_rix, 2, sort, decreasing=TRUE)  # Sort decreasing order
-mat_rix[2, 2] <- NA  # Introduce NA value
-mat_rix
+matrixv <- matrix(sample(12), nrow=3, ncol=4)  # Create a matrix
+matrixv
+apply(matrixv, 2, sort)  # Sort matrix columns
+apply(matrixv, 2, sort, decreasing=TRUE)  # Sort decreasing order
+matrixv[2, 2] <- NA  # Introduce NA value
+matrixv
 # Calculate median of columns
-apply(mat_rix, 2, median)
+apply(matrixv, 2, median)
 # Calculate median of columns with na.rm=TRUE
-apply(mat_rix, 2, median, na.rm=TRUE)
+apply(matrixv, 2, median, na.rm=TRUE)
 # VTI percentage returns
-re_turns <- rutils::diff_it(log(Cl(rutils::etfenv$VTI)))
+returns <- rutils::diffit(log(Cl(rutils::etfenv$VTI)))
 library(moments)  # Load package moments
 str(moment)  # Get list of arguments
 # Apply moment function
-moment(x=re_turns, order=3)
+moment(x=returns, order=3)
 # 4x1 matrix of moment orders
 moment_orders <- as.matrix(1:4)
 # Anonymous function allows looping over function parameters
 apply(X=moment_orders, MARGIN=1,
 FUN=function(moment_order) {
-    moment(x=re_turns, order=moment_order)
+    moment(x=returns, order=moment_order)
   }  # end anonymous function
 )  # end apply
 # Another way of passing parameters into moment() function
-apply(X=moment_orders, MARGIN=1, FUN=moment, x=re_turns)
+apply(X=moment_orders, MARGIN=1, FUN=moment, x=returns)
 # Function with three arguments
 my_func <- function(arg1, arg2, arg3) {
   c(arg1=arg1, arg2=arg2, arg3=arg3)
 }  # end my_func
 my_func(1, 2, 3)
-da_ta <- as.matrix(1:4)
-# Pass da_ta to arg1
-apply(X=da_ta, MAR=1, FUN=my_func, arg2=2, arg3=3)
-# Pass da_ta to arg2
-apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg3=3)
-# Pass da_ta to arg3
-apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
+datav <- as.matrix(1:4)
+# Pass datav to arg1
+apply(X=datav, MAR=1, FUN=my_func, arg2=2, arg3=3)
+# Pass datav to arg2
+apply(X=datav, MAR=1, FUN=my_func, arg1=1, arg3=3)
+# Pass datav to arg3
+apply(X=datav, MAR=1, FUN=my_func, arg1=1, arg2=2)
 # Vector of means of numeric columns
 sapply(iris[, -5], mean)
 # List of means of numeric columns
 lapply(iris[, -5], mean)
 # Lapply using anonymous function
 unlist(lapply(iris,
-      function(col_umn) {
-        if (is.numeric(col_umn)) mean(col_umn)
+      function(colnum) {
+        if (is.numeric(colnum)) mean(colnum)
       }  # end anonymous function
       )  # end lapply
        )  # end unlist
-unlist(sapply(iris, function(col_umn) {
-  if (is.numeric(col_umn)) mean(col_umn)}))
+unlist(sapply(iris, function(colnum) {
+  if (is.numeric(colnum)) mean(colnum)}))
 sapply(6:10, sqrt)  # Sapply on vector
 sapply(list(6, 7, 8, 9, 10), sqrt)  # Sapply on list
 # Calculate means of iris data frame columns
 sapply(iris, mean)  # Returns NA for Species
 # Create a matrix
-mat_rix <- matrix(sample(100), ncol=4)
+matrixv <- matrix(sample(100), ncol=4)
 # Calculate column means using apply
-apply(mat_rix, 2, mean)
+apply(matrixv, 2, mean)
 # Calculate column means using sapply, with anonymous function
-sapply(1:NCOL(mat_rix),
+sapply(1:NCOL(matrixv),
        function(col_index) {  # Anonymous function
- mean(mat_rix[, col_index])
+ mean(matrixv[, col_index])
   }  # end anonymous function
 )  # end sapply
 # Vectors form columns of matrix returned by sapply

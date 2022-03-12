@@ -283,13 +283,13 @@ print(0.2, digits=22)
 func <- function(x) {1/((x+1)*sqrt(x))}
 integrate(func, lower=0, upper=10)
 integrate(func, lower=0, upper=Inf)
-# Integrate function with parameter lambdav
-func <- function(x, lambdav=1) {
-  exp(-x*lambdav)
+# Integrate function with parameter lambda
+func <- function(x, lambda=1) {
+  exp(-x*lambda)
 }  # end func
 integrate(func, lower=0, upper=Inf)
 integrate(func, lower=0, upper=Inf,
-          lambdav=2)
+          lambda=2)
 # Cumulative probability over normal distribution
 pnorm(-2)
 integrate(dnorm, low=2, up=Inf)
@@ -333,20 +333,20 @@ integrate(function(x) x*dnorm(x),
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- drop(coredata(na.omit(returns)))
 nrows <- NROW(returns)
 # Mean and standard deviation of returns
 c(mean(returns), sd(returns))
 # Calculate the MAD of returns 10 points apart
 returns <- sort(returns)
-b_w <- 10*mad(rutils::diff_it(returns, lagg=10))
+b_w <- 10*mad(rutils::diffit(returns, lagg=10))
 # Calculate the kernel density
 densityv <- sapply(1:nrows, function(i_d) {
   sum(dnorm(returns-returns[i_d], sd=b_w))
 })  # end sapply
-ma_d <- mad(returns)
-plot(returns, densityv, xlim=c(-5*ma_d, 5*ma_d), 
+madv <- mad(returns)
+plot(returns, densityv, xlim=c(-5*madv, 5*madv), 
      t="l", col="blue", lwd=3, 
      xlab="returns", ylab="density",
      main="Density of VTI Returns")
@@ -354,13 +354,13 @@ plot(returns, densityv, xlim=c(-5*ma_d, 5*ma_d),
 densityv <- density(returns, bw=b_w)
 NROW(densityv$y)
 x11(width=6, height=5)
-plot(densityv, xlim=c(-5*ma_d, 5*ma_d), 
+plot(densityv, xlim=c(-5*madv, 5*madv), 
      xlab="returns", ylab="density",
      col="blue", lwd=3, main="Density of VTI Returns")
 # Interpolate the densityv vector into returns
 densityv <- approx(densityv$x, densityv$y, xout=returns)
 all.equal(densityv$x, returns)
-plot(densityv, xlim=c(-5*ma_d, 5*ma_d), 
+plot(densityv, xlim=c(-5*madv, 5*madv), 
      xlab="returns", ylab="density",
      t="l", col="blue", lwd=3, 
      main="Density of VTI Returns")
@@ -392,7 +392,7 @@ plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
 histo_gram <- hist(returns, breaks=100, freq=FALSE,
-  xlim=c(-5*ma_d, 5*ma_d), xlab="", ylab="", 
+  xlim=c(-5*madv, 5*madv), xlab="", ylab="", 
   main="VTI Return Distribution")
 # Draw kernel density of histogram
 lines(densityv, col="red", lwd=2)
@@ -452,10 +452,10 @@ sort(sapply(mget(ls()), function(ob_ject) {
 ))
 # Get total size of all objects in workspace
 format(object.size(x=mget(ls())), units="MB")
-# Get sizes of objects in rutils::etf_env environment
-sort(sapply(ls(rutils::etf_env), function(ob_ject) {
-  object.size(get(ob_ject, rutils::etf_env))}))
-sort(sapply(mget(ls(rutils::etf_env), rutils::etf_env),
+# Get sizes of objects in rutils::etfenv environment
+sort(sapply(ls(rutils::etfenv), function(ob_ject) {
+  object.size(get(ob_ject, rutils::etfenv))}))
+sort(sapply(mget(ls(rutils::etfenv), rutils::etfenv),
             object.size))
 library(gdata)  # Load package gdata
 # Get size of data frame columns
@@ -465,8 +465,8 @@ ob_jects <- gdata::ll(unit="bytes")
 # Sort by memory size (descending)
 ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
 gdata::ll()[order(ll()$KB, decreasing=TRUE), ]
-# Get sizes of objects in etf_env environment
-gdata::ll(unit="bytes", etf_env)
+# Get sizes of objects in etfenv environment
+gdata::ll(unit="bytes", etfenv)
       @
   \end{columns}
 \end{block}
@@ -492,7 +492,7 @@ gdata::ll(unit="bytes", etf_env)
       \vskip1ex
       The stored objects aren't listed in the \texttt{R} workspace, but they are visible on the search path as \emph{promises}.
       \vskip1ex
-      The function \texttt{Ls()} lists the objects stored in the \emph{object cache}, and attaches the \emph{cache} to the search path.
+      The function \texttt{Ls()} listv the objects stored in the \emph{object cache}, and attaches the \emph{cache} to the search path.
       \vskip1ex
       The function \texttt{find()} finds where objects are located on the search path.
       \vskip1ex
@@ -1979,16 +1979,16 @@ parLapply(cluster, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
-            NROW(index(get(symbol, envir=rutils::etf_env))))
+            NROW(index(get(symbol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
-            NROW(zoo::index(get(symbol, envir=rutils::etf_env))))
+            NROW(zoo::index(get(symbol, envir=rutils::etfenv))))
 # Package zoo loaded in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol) {
             stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-            NROW(index(get(symbol, envir=rutils::etf_env)))
+            NROW(index(get(symbol, envir=rutils::etfenv)))
           })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(cluster)
@@ -2230,7 +2230,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo = datav[cutoff],
-  quan_tile = quantile(datav, probs=confl),
+  quantilev = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -2408,7 +2408,7 @@ boot_data <- mclapply(1:nboot,
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Standard error from formula
 sd(datav)/sqrt(nrows)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
@@ -2459,7 +2459,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -2478,7 +2478,7 @@ stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -2511,7 +2511,7 @@ apply(boot_data, MARGIN=2, function(x)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI returns
 library(rutils)
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 # Sample from VTI returns
@@ -2555,7 +2555,7 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Sample from time series of VTI returns
 library(rutils)
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 # Bootstrap sd and MAD under Windows
@@ -2579,11 +2579,11 @@ boot_data <- rutils::do_call(rbind, boot_data)
 # Standard error assuming normal distribution of returns
 sd(returns)/sqrt(nboot)
 # Means and standard errors from bootstrap
-std_errors <- apply(boot_data, MARGIN=2,
-  function(x) c(mean=mean(x), std_error=sd(x)))
-std_errors
+stderrors <- apply(boot_data, MARGIN=2,
+  function(x) c(mean=mean(x), stderror=sd(x)))
+stderrors
 # Relative standard errors
-std_errors[2, ]/std_errors[1, ]
+stderrors[2, ]/stderrors[1, ]
       @
   \end{columns}
 \end{block}
@@ -2606,9 +2606,9 @@ std_errors[2, ]/std_errors[1, ]
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-prices <- quantmod::Cl(rutils::etf_env$VTI)
+prices <- quantmod::Cl(rutils::etfenv$VTI)
 startd <- as.numeric(prices[1, ])
-returns <- rutils::diff_it(log(prices))
+returns <- rutils::diffit(log(prices))
 class(returns); head(returns)
 sum(is.na(returns))
 nrows <- NROW(returns)
@@ -2674,10 +2674,10 @@ sum(boot_data)/nboot
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 prices <- as.numeric(ohlc[, 4])
 startd <- prices[1]
-returns <- rutils::diff_it(log(prices))
+returns <- rutils::diffit(log(prices))
 nrows <- NROW(returns)
 # Calculate difference of OHLC price columns
 ohlc_diff <- ohlc[, 1:3] - prices
@@ -2793,7 +2793,7 @@ boot_data <- sapply(1:nboot, function(x) {
 x11(width=6, height=5)
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), std_error=sd(boot_data))
+c(mean=mean(boot_data), stderror=sd(boot_data))
 # Plot density of bootstrapped beta coefficients
 plot(density(boot_data), lwd=2, xlab="Regression slopes",
      main="Bootstrapped Regression Slopes")
@@ -2878,7 +2878,7 @@ stopCluster(cluster)  # Stop R processes over cluster under Windows
 class(boot_data)
 boot_data <- unlist(boot_data)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), std_error=sd(boot_data))
+c(mean=mean(boot_data), stderror=sd(boot_data))
 # Plot density of bootstrapped beta coefficients
 plot(density(boot_data),
      lwd=2, xlab="Regression slopes",
@@ -3020,26 +3020,26 @@ set.seed(1121) # Reset random number generator
 nrows <- 1000
 datav <- rnorm(nrows)
 # Cumulative probability from formula
-quan_tile <- (-2)
-pnorm(quan_tile)
-integrate(dnorm, lower=-Inf, upper=quan_tile)
+quantilev <- (-2)
+pnorm(quantilev)
+integrate(dnorm, lower=-Inf, upper=quantilev)
 # Cumulative probability from Naive Monte Carlo
-sum(datav < quan_tile)/nrows
+sum(datav < quantilev)/nrows
 # Generate importance sample
-lambdav <- (-1.5)  # Tilt parameter
-data_tilt <- datav + lambdav  # Tilt the random numbers
+lambda <- (-1.5)  # Tilt parameter
+data_tilt <- datav + lambda  # Tilt the random numbers
 # Cumulative probability from importance sample
-sum(data_tilt < quan_tile)/nrows
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
-sum((data_tilt < quan_tile)*weights)/nrows
+sum(data_tilt < quantilev)/nrows
+weights <- exp(-lambda*data_tilt + lambda^2/2)
+sum((data_tilt < quantilev)*weights)/nrows
 # Bootstrap of standard errors of cumulative probability
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- rnorm(nrows)
-  naivemc <- sum(datav < quan_tile)/nrows
-  datav <- (datav + lambdav)
-  weights <- exp(-lambdav*datav + lambdav^2/2)
-  isample <- sum((datav < quan_tile)*weights)/nrows
+  naivemc <- sum(datav < quantilev)/nrows
+  datav <- (datav + lambda)
+  weights <- exp(-lambda*datav + lambda^2/2)
+  isample <- sum((datav < quantilev)*weights)/nrows
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -3081,8 +3081,8 @@ datav <- sort(datav)
 cutoff <- nrows*confl
 datav[cutoff]  # Naive Monte Carlo value
 # Importance sample weights
-data_tilt <- datav + lambdav  # Tilt the random numbers
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+data_tilt <- datav + lambda  # Tilt the random numbers
+weights <- exp(-lambda*data_tilt + lambda^2/2)
 # Cumulative probabilities using importance sample
 cumprob <- cumsum(weights)/nrows
 # Quantile from importance sample
@@ -3092,8 +3092,8 @@ nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   naivemc <- datav[cutoff]
-  data_tilt <- datav + lambdav
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+  data_tilt <- datav + lambda
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
   isample <- data_tilt[findInterval(confl, cumprob)]
   c(naivemc=naivemc, importmc=isample)
@@ -3138,8 +3138,8 @@ boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   varisk <- datav[cutoff]
   naivemc <- sum((datav < varisk)*datav)/sum((datav < varisk))
-  data_tilt <- datav + lambdav
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+  data_tilt <- datav + lambda
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
   varisk <- data_tilt[findInterval(confl, cumprob)]
   isample <- sum((data_tilt < varisk)*data_tilt*weights)/sum((data_tilt < varisk)*weights)
@@ -3178,9 +3178,9 @@ datav <- matrix(rnorm(nboot*nrows), ncol=nboot)
 datav <- Rfast::sort_mat(datav)  # Sort the columns
 # Calculate vector of quantiles for tilt parameter
 confl <- 0.02; cutoff <- confl/nrows
-calc_quant <- function(lambdav) {
-  data_tilt <- datav + lambdav  # Tilt the random numbers
-  weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+calc_quant <- function(lambda) {
+  data_tilt <- datav + lambda  # Tilt the random numbers
+  weights <- exp(-lambda*data_tilt + lambda^2/2)
   # Calculate quantiles for columns
   sapply(1:nboot, function(boo_t) {
     cumprob <- cumsum(weights[, boo_t])/nrows
@@ -3265,21 +3265,21 @@ plot(x=lambda_s, y=stdevs,
       <<echo=TRUE,eval=FALSE>>=
 # Binomial sample
 nrows <- 1000
-pro_b <- 0.1
-datav <- rbinom(n=nrows, size=1, pro_b)
+probv <- 0.1
+datav <- rbinom(n=nrows, size=1, probv)
 head(datav, 33)
 fre_q <- sum(datav)/nrows
 # Tilted binomial sample
-lambdav <- 5
-p_tilted <- lambdav*pro_b/(1 + pro_b*(lambdav - 1))
-weigh_t <- (1 + pro_b*(lambdav - 1))/lambdav
+lambda <- 5
+p_tilted <- lambda*probv/(1 + probv*(lambda - 1))
+weigh_t <- (1 + probv*(lambda - 1))/lambda
 datav <- rbinom(n=nrows, size=1, p_tilted)
 head(datav, 33)
 weigh_t*sum(datav)/nrows
 # Bootstrap of standard errors
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
-  c(naivemc=sum(rbinom(n=nrows, size=1, pro_b))/nrows,
+  c(naivemc=sum(rbinom(n=nrows, size=1, probv))/nrows,
     importmc=weigh_t*sum(rbinom(n=nrows, size=1, p_tilted))/nrows)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -3323,14 +3323,14 @@ datav <- matrix(datav, nc=nsimu)
 # Simulate paths of Brownian motion
 paths <- matrixStats::colCumsums(datav)
 # Tilt the datav
-lambdav <- 0.04  # Tilt parameter
-data_tilt <- datav + lambdav  # Tilt the random numbers
+lambda <- 0.04  # Tilt parameter
+data_tilt <- datav + lambda  # Tilt the random numbers
 paths_tilt <- matrixStats::colCumsums(data_tilt)
 # Calculate path weights
-weights <- exp(-lambdav*data_tilt + lambdav^2/2)
+weights <- exp(-lambda*data_tilt + lambda^2/2)
 path_weights <- matrixStats::colProds(weights)
 # Or
-path_weights <- exp(-lambdav*colSums(data_tilt) + nrows*lambdav^2/2)
+path_weights <- exp(-lambda*colSums(data_tilt) + nrows*lambda^2/2)
 # Calculate option payout using standard MC
 strikep <- 10  # Strike price
 payouts <- (paths[nrows, ] - strikep)
@@ -4006,7 +4006,7 @@ boot_data <- function(datav, nboot=nboot) {
   sum(is.na(boot_data))
   # Means and standard errors from bootstrap
   apply(boot_data, MARGIN=2,
-    function(x) c(mean=mean(x), std_error=sd(x)))
+    function(x) c(mean=mean(x), stderror=sd(x)))
 
   returns <- numeric(nrows)
   prices <- numeric(nrows)
@@ -4285,7 +4285,7 @@ boot_data <- function(datav, nboot=1000) {
   sum(is.na(boot_data))
   # Means and standard errors from bootstrap
   apply(boot_data, MARGIN=2,
-    function(x) c(mean=mean(x), std_error=sd(x)))
+    function(x) c(mean=mean(x), stderror=sd(x)))
 
   returns <- numeric(nrows)
   prices <- numeric(nrows)
@@ -4375,7 +4375,7 @@ boot_data <- function(datav, nboot=1000) {
   sum(is.na(boot_data))
   # Means and standard errors from bootstrap
   apply(boot_data, MARGIN=2,
-        function(x) c(mean=mean(x), std_error=sd(x)))
+        function(x) c(mean=mean(x), stderror=sd(x)))
 
   returns <- numeric(nrows)
   prices <- numeric(nrows)
@@ -4765,35 +4765,35 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
   switch(calc_method(method)) {
   case method::ranksharpe: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
     break;
   }  // end ranksharpe
   case method::max_sharpe: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Apply regularized inverse
     // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
-    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*mean_cols;
+    // weights = calc_inv(cov(returns), eigen_max)*meancols;
+    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*meancols;
     break;
   }  // end max_sharpe
   case method::max_sharpe_median: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
-    // Shrink mean_cols to the mean of returns
-    mean_cols = ((1-alpha)*mean_cols + alpha*arma::median(mean_cols));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
+    // Shrink meancols to the mean of returns
+    meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
     // Apply regularized inverse
     // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*mean_cols;
+    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*meancols;
     break;
   }  // end max_sharpe_median
   case method::min_var: {
@@ -4811,37 +4811,37 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
   }  // end min_varpca
   case method::rank: {
     // Mean returns by columns
-    arma::vec mean_cols = arma::trans(arma::mean(returns, 0));
+    arma::vec meancols = arma::trans(arma::mean(returns, 0));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
     weights = (weights - arma::mean(weights));
     break;
   }  // end rank
   case method::rankrob: {
     // Median returns by columns
-    arma::vec mean_cols = arma::trans(arma::median(returns, 0));
-    // mean_cols = ((1-alpha)*mean_cols + alpha*arma::mean(mean_cols));
+    arma::vec meancols = arma::trans(arma::median(returns, 0));
+    // meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Standard deviation by columns
     arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
     sd_cols.replace(0, 1);
-    mean_cols = mean_cols/sd_cols;
+    meancols = meancols/sd_cols;
     // Apply regularized inverse
     // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
-    // weights = calc_inv(cov(returns), eigen_max)*mean_cols;
+    // weights = calc_inv(cov(returns), eigen_max)*meancols;
+    // weights = calc_inv(cov(returns), eigen_max)*meancols;
     // // Standard deviation by columns
-    // arma::vec sd_cols = mean_cols;
+    // arma::vec sd_cols = meancols;
     // for (arma::uword it=0; it < returns[ncols; it++) {
     //   sd_cols(it) = arma::median(arma::abs((returns.col(it) - sd_cols)));
     // }  // end for
     // sd_cols.replace(0, 1);
-    // mean_cols = mean_cols/sd_cols;
+    // meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
     // level;
     weights = (weights - arma::mean(weights));
     break;

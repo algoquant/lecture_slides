@@ -891,7 +891,7 @@ inverse <- solve(cov_shrink)
       The first principal component can be
       returns of \emph{XLP} and \emph{VTI} are highly correlated because they both share a common factor of market returns.
       <<echo=TRUE,eval=FALSE>>=
-returns <- scale(na.omit(rutils::etf_env$returns
+returns <- scale(na.omit(rutils::etfenv$returns
                 [, as.character(formulav)[-1]]))
 crossprod(returns) / NROW(returns)
 w1 <- sqrt(0.5); w2 <- w1
@@ -967,7 +967,7 @@ lmtest::dwtest(model)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot scatterplot of returns
-plot(formulav, data=rutils::etf_env$returns,
+plot(formulav, data=rutils::etfenv$returns,
      main="Regression XLP ~ VTI")
 # Add regression line
 abline(model, lwd=2, col="red")
@@ -996,11 +996,11 @@ library(rutils)
 # Select ETF symbols
 symbolv <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # Calculate ETF prices and percentage returns
-prices <- rutils::etf_env$prices[, symbolv]
+prices <- rutils::etfenv$prices[, symbolv]
 prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
 # Calculate log returns without standardizing
-returns <- rutils::diff_it(log(prices))
+returns <- rutils::diffit(log(prices))
 # Calculate covariance matrix
 covmat <- cov(returns)
 # Standardize (de-mean and scale) the returns
@@ -2092,7 +2092,7 @@ lmtest::dwtest(model)
       The Q-Q plot also shows that residuals are \emph{not} normally distributed.
       \vspace{-1em}
         <<echo=(-(1:3)),eval=FALSE>>=
-foo <- etf_env$returns[, c("VTI", "VEU")]
+foo <- etfenv$returns[, c("VTI", "VEU")]
 endp <- endpoints(foo, on="months")
 head(foo)
 tail(foo)
@@ -2986,7 +2986,7 @@ plot(fit_sd, type="l", lwd=3, col="blue",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load time series of ETF percentage returns
-returns <- rutils::etf_env$returns[, c("XLF", "XLE")]
+returns <- rutils::etfenv$returns[, c("XLF", "XLE")]
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 head(returns)
@@ -3009,7 +3009,7 @@ model_sum$coefficients
 # Means and standard errors from bootstrap
 dim(boot_data)
 t(apply(boot_data, MARGIN=1,
-      function(x) c(mean=mean(x), std_error=sd(x))))
+      function(x) c(mean=mean(x), stderror=sd(x))))
       @
   \end{columns}
 \end{block}
@@ -3163,12 +3163,12 @@ attributes(model$terms)$intercept <- 1
 # Regression summary
 model_sum <- summary(model)
 # Regression R-squared
-r_squared <- e_ss/t_ss
-all.equal(r_squared, model_sum$r.squared)
+rsquared <- e_ss/t_ss
+all.equal(rsquared, model_sum$r.squared)
 # Correlation between response and fitted values
 cor_fitted <- drop(cor(response, fittedv))
 # Squared correlation between response and fitted values
-all.equal(cor_fitted^2, r_squared)
+all.equal(cor_fitted^2, rsquared)
       @
   \end{columns}
 \end{block}
@@ -3202,9 +3202,9 @@ ncols <- NCOL(design)
 # Degrees of freedom of residuals
 deg_free <- (NROW(risk_ret -.n_cols)
 # Adjusted R-squared
-r_squared_adj <- (1-sum(residuals^2)/deg_free/var(response))
+rsquared_adj <- (1-sum(residuals^2)/deg_free/var(response))
 # Compare adjusted R-squared from lm()
-all.equal(drop(r_squared_adj), model_sum$adj.r.squared)
+all.equal(drop(rsquared_adj), model_sum$adj.r.squared)
       @
   \end{columns}
 \end{block}
@@ -3357,10 +3357,10 @@ model_sum$fstatistic
 # Degrees of freedom of residuals
 deg_free <- (NROW(risk_ret -.n_cols)
 # F-statistic from ESS and RSS
-f_stat <- (e_ss/.n_cols-1))/(r_ss/deg_free)
-all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
+fstat <- (e_ss/.n_cols-1))/(r_ss/deg_free)
+all.equal(fstat, model_sum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
-1-pf(q=f_stat, df1.n_cols-1, df2:nrows.n_cols)
+1-pf(q=fstat, df1.n_cols-1, df2:nrows.n_cols)
       @
   \end{columns}
 \end{block}
@@ -3404,7 +3404,7 @@ all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
       \includegraphics[width=0.35\paperwidth]{figure/reg_svd.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate ETF returns
-returns <- na.omit(rutils::etf_env$returns)
+returns <- na.omit(rutils::etfenv$returns)
 # Perform singular value decomposition
 svdec <- svd(returns)
 x11(width=6, height=5)
@@ -3501,13 +3501,13 @@ all.equal(influ_ence, influence_trans)
         <<echo=TRUE,eval=TRUE>>=
 # Perform PCA
 pcad <- prcomp(design, center=FALSE, scale=FALSE)
-design_pcr <- pcad$x
+designpcr <- pcad$x
 # Principal components are orthogonal to each other
-round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2,
+round(t(designpcr) %*% designpcr, 2)
+round(apply(designpcr, 2,
   function(x) c(mean=mean(x), sd=sd(x))), 3)
 # Calculate the PCR influence matrix
-influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
+influence_pcr <- designpcr %*% MASS::ginv(designpcr)
 all.equal(influ_ence, influence_pcr)
       @
   \end{columns}
@@ -3542,13 +3542,13 @@ all.equal(influ_ence, influence_pcr)
         <<echo=TRUE,eval=TRUE>>=
 # Perform PCA
 pcad <- prcomp(design, center=FALSE, scale=FALSE)
-design_pcr <- pcad$x
+designpcr <- pcad$x
 # Principal components are orthogonal to each other
-round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2,
+round(t(designpcr) %*% designpcr, 2)
+round(apply(designpcr, 2,
   function(x) c(mean=mean(x), sd=sd(x))), 3)
 # Calculate the PCR influence matrix
-influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
+influence_pcr <- designpcr %*% MASS::ginv(designpcr)
 all.equal(influ_ence, influence_pcr)
       @
   \end{columns}
@@ -3583,13 +3583,13 @@ all.equal(influ_ence, influence_pcr)
         <<echo=TRUE,eval=TRUE>>=
 # Perform PCA
 pcad <- prcomp(design, center=FALSE, scale=FALSE)
-design_pcr <- pcad$x
+designpcr <- pcad$x
 # Principal components are orthogonal to each other
-round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2,
+round(t(designpcr) %*% designpcr, 2)
+round(apply(designpcr, 2,
   function(x) c(mean=mean(x), sd=sd(x))), 3)
 # Calculate the PCR influence matrix
-influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
+influence_pcr <- designpcr %*% MASS::ginv(designpcr)
 all.equal(influ_ence, influence_pcr)
       @
   \end{columns}
@@ -3624,13 +3624,13 @@ all.equal(influ_ence, influence_pcr)
         <<echo=TRUE,eval=TRUE>>=
 # Perform PCA
 pcad <- prcomp(design, center=FALSE, scale=FALSE)
-design_pcr <- pcad$x
+designpcr <- pcad$x
 # Principal components are orthogonal to each other
-round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2,
+round(t(designpcr) %*% designpcr, 2)
+round(apply(designpcr, 2,
   function(x) c(mean=mean(x), sd=sd(x))), 3)
 # Calculate the PCR influence matrix
-influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
+influence_pcr <- designpcr %*% MASS::ginv(designpcr)
 all.equal(influ_ence, influence_pcr)
       @
   \end{columns}
@@ -4330,9 +4330,9 @@ legend(x="topright", bty="n",
 forecasts <- predict(glmod, type="response")
 all.equal(glmod$fitted.values, forecasts)
 # Define discrimination threshold value
-thresh_old <- 0.7
+threshold <- 0.7
 # Calculate confusion matrix in-sample
-table(actual=!de_fault, forecast=(forecasts < thresh_old))
+table(actual=!de_fault, forecast=(forecasts < threshold))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
@@ -4344,7 +4344,7 @@ test_data <- Default[-samplev, ]
 forecasts <- predict(glmod, newdata=test_data, type="response")
 # Calculate confusion matrix out-of-sample
 table(actual=!test_data$de_fault, 
-      forecast=(forecasts < thresh_old))
+      forecast=(forecasts < threshold))
       @
   \end{columns}
 \end{block}
@@ -4375,12 +4375,12 @@ table(actual=!test_data$de_fault,
       <<echo=TRUE,eval=TRUE>>=
 # Calculate confusion matrix out-of-sample
 confu_sion <- table(actual=!test_data$de_fault, 
-      forecast=(forecasts < thresh_old))
+      forecast=(forecasts < threshold))
 confu_sion
 # Calculate FALSE positive (type I error)
-sum(!test_data$de_fault & (forecasts > thresh_old))
+sum(!test_data$de_fault & (forecasts > threshold))
 # Calculate FALSE negative (type II error)
-sum(test_data$de_fault & (forecasts < thresh_old))
+sum(test_data$de_fault & (forecasts < threshold))
       @
   \end{columns}
 \end{block}
@@ -4464,13 +4464,13 @@ print(xtable::xtable(confusion_matrix,
       \vskip1ex
       The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of thresh_old
-con_fuse <- function(actu_al, forecasts, thresh_old) {
-    confu_sion <- table(actu_al, (forecasts < thresh_old))
+# Confusion matrix as function of threshold
+con_fuse <- function(actu_al, forecasts, threshold) {
+    confu_sion <- table(actu_al, (forecasts < threshold))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(!test_data$de_fault, forecasts, thresh_old=thresh_old)
+con_fuse(!test_data$de_fault, forecasts, threshold=threshold)
 # Define vector of discrimination thresholds
 threshold_s <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
@@ -4483,7 +4483,7 @@ error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diff_it(error_rates[, "typeI"])
+false_pos <- rutils::diffit(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
       @
     \column{0.5\textwidth}
@@ -4628,28 +4628,28 @@ half_back <- look_back %/% 2
 medi_an <- roll::roll_median(taq$price, width=look_back)
 # medi_an <- TTR::runMedian(taq$price, n=look_back)
 medi_an <- rutils::lagit(medi_an, lagg=-half_back, pad_zeros=FALSE)
-ma_d <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
-# ma_d <- TTR::runMAD(taq$price, n=look_back)
-ma_d <- rutils::lagit(ma_d, lagg=-half_back, pad_zeros=FALSE)
+madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(taq$price, n=look_back)
+madv <- rutils::lagit(madv, lagg=-half_back, pad_zeros=FALSE)
 # Calculate Z-scores
-z_scores <- (taq$price - medi_an)/ma_d
-z_scores[is.na(z_scores)] <- 0
-z_scores[!is.finite(z_scores)] <- 0
-sum(is.na(z_scores))
-sum(!is.finite(z_scores))
-range(z_scores); mad(z_scores)
-hist(z_scores, breaks=2000, xlim=c(-5*mad(z_scores), 5*mad(z_scores)))
+zscores <- (taq$price - medi_an)/madv
+zscores[is.na(zscores)] <- 0
+zscores[!is.finite(zscores)] <- 0
+sum(is.na(zscores))
+sum(!is.finite(zscores))
+range(zscores); mad(zscores)
+hist(zscores, breaks=2000, xlim=c(-5*mad(zscores), 5*mad(zscores)))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_good_ticks_dygraph.png}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-thresh_old <- 6*mad(z_scores)
+threshold <- 6*mad(zscores)
 # Remove price jumps with large z-scores
-bad_ticks <- (abs(z_scores) > thresh_old)
+bad_ticks <- (abs(zscores) > threshold)
 good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
-sum(bad_ticks)/NROW(z_scores)
+sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
 xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
 colnames(xtes) <- c("XLK.Close", "XLK.Volume")
@@ -4693,9 +4693,9 @@ quantmod::chart_Series(x=xtes$XLK.Close,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-thresh_old <- 6*mad(z_scores)
+threshold <- 6*mad(zscores)
 # Calculate number of prices classified as bad data
-is_bad <- (abs(z_scores) > thresh_old)
+is_bad <- (abs(zscores) > threshold)
 sum(is_bad)
 # Add 200 random price jumps into prices
 set.seed(1121)
@@ -4710,12 +4710,12 @@ dygraphs::dygraph(cbind(closep, medi_an), main="VTI median") %>%
 # Calculate time series of z-scores
 medi_an <- roll::roll_median(closep, width=look_back)
 # medi_an <- TTR::runMedian(closep, n=look_back)
-ma_d <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
-# ma_d <- TTR::runMAD(closep, n=look_back)
-z_scores <- (closep - medi_an)/ma_d
-z_scores[1:look_back, ] <- 0
+madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(closep, n=look_back)
+zscores <- (closep - medi_an)/madv
+zscores[1:look_back, ] <- 0
 # Calculate number of prices classified as bad data
-is_bad <- (abs(z_scores) > thresh_old)
+is_bad <- (abs(zscores) > threshold)
 sum(is_bad)
       @
   \end{columns}
@@ -4792,18 +4792,18 @@ sum(is_jump & !is_bad)
       \vskip1ex
       The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of thresh_old
-con_fuse <- function(actu_al, z_scores, thresh_old) {
-    confu_sion <- table(!actu_al, !(abs(z_scores) > thresh_old))
+# Confusion matrix as function of threshold
+con_fuse <- function(actu_al, zscores, threshold) {
+    confu_sion <- table(!actu_al, !(abs(zscores) > threshold))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(is_jump, z_scores, thresh_old=thresh_old)
+con_fuse(is_jump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
 threshold_s <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  actu_al=is_jump, z_scores=z_scores)  # end sapply
+  actu_al=is_jump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshold_s
 error_rates <- rbind(c(1, 0), error_rates)
@@ -4811,7 +4811,7 @@ error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diff_it(error_rates[, "typeI"])
+false_pos <- rutils::diffit(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
       @
     \column{0.5\textwidth}
@@ -4849,18 +4849,18 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       \vskip1ex
       The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of thresh_old
-con_fuse <- function(actu_al, z_scores, thresh_old) {
-    confu_sion <- table(!actu_al, !(abs(z_scores) > thresh_old))
+# Confusion matrix as function of threshold
+con_fuse <- function(actu_al, zscores, threshold) {
+    confu_sion <- table(!actu_al, !(abs(zscores) > threshold))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(is_jump, z_scores, thresh_old=thresh_old)
+con_fuse(is_jump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
 threshold_s <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  actu_al=is_jump, z_scores=z_scores)  # end sapply
+  actu_al=is_jump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshold_s
 error_rates <- rbind(c(1, 0), error_rates)
@@ -4868,7 +4868,7 @@ error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diff_it(error_rates[, "typeI"])
+false_pos <- rutils::diffit(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
       @
     \column{0.5\textwidth}
@@ -4905,23 +4905,23 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 medi_an <- roll::roll_median(taq$price, width=3)
 medi_an[1:2] <- taq$price[1:2]
 medi_an <- rutils::lagit(medi_an, lagg=-1, pad_zeros=FALSE)
-ma_d <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
-ma_d <- rutils::lagit(ma_d, lagg=-1, pad_zeros=FALSE)
+madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=-1, pad_zeros=FALSE)
 # Calculate Z-scores
-z_scores <- ifelse(ma_d > 0, (taq$price - medi_an)/ma_d, 0)
-range(z_scores); mad(z_scores)
-ma_d <- mad(z_scores[abs(z_scores)>0])
-hist(z_scores, breaks=2000, xlim=c(-5*ma_d, 5*ma_d))
+zscores <- ifelse(madv > 0, (taq$price - medi_an)/madv, 0)
+range(zscores); mad(zscores)
+madv <- mad(zscores[abs(zscores)>0])
+hist(zscores, breaks=2000, xlim=c(-5*madv, 5*madv))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_good_ticks_dygraph.png}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-thresh_old <- 6*ma_d
-bad_ticks <- (abs(z_scores) > thresh_old)
+threshold <- 6*madv
+bad_ticks <- (abs(zscores) > threshold)
 good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
-sum(bad_ticks)/NROW(z_scores)
+sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
 xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
 colnames(xtes) <- c("XLK.Close", "XLK.Volume")

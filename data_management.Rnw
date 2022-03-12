@@ -925,7 +925,7 @@ detach("package:data.table")
       \vskip1ex
       \emph{Data table} columns can be referenced directly by their names (without quotes), and their rows can be referenced without a following comma.
       \vskip1ex
-      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.nrows")} is less than \texttt{100}).
+      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.n_rows")} is less than \texttt{100}).
       \vskip1ex
       The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
       \vskip1ex
@@ -943,10 +943,10 @@ class(data_table); data_table
 data_table[, col2]
 # Row referenced without a following comma
 data_table[2]
-# Print option "datatable.print.nrows"
-getOption("datatable.print.nrows")
-options(datatable.print.nrows=10)
-getOption("datatable.print.nrows")
+# Print option "datatable.print.n_rows"
+getOption("datatable.print.n_rows")
+options(datatable.print.n_rows=10)
+getOption("datatable.print.n_rows")
 # Number of rows in data_table
 NROW(data_table)
 # Or
@@ -1514,7 +1514,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
-prices <- rutils::etf_env$VTI
+prices <- rutils::etfenv$VTI
 class(prices); head(prices)
 prices <- as.data.frame(prices)
 class(prices); head(prices)
@@ -1524,7 +1524,7 @@ class(prices); head(prices)
 # Dates are coerced to strings
 sapply(prices, class)
 # Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
+data_table <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(data_table); head(data_table)
 # Dates are not coerced to strings
@@ -1554,7 +1554,7 @@ all.equal(prices, data_table, check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
-prices <- rutils::etf_env$VTI
+prices <- rutils::etfenv$VTI
 class(prices); head(prices)
 prices <- as.data.frame(prices)
 class(prices); head(prices)
@@ -1564,7 +1564,7 @@ class(prices); head(prices)
 # Dates are coerced to strings
 sapply(prices, class)
 # Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
+data_table <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(data_table); head(data_table)
 # Dates are not coerced to strings
@@ -1594,7 +1594,7 @@ all.equal(prices, data_table, check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
-prices <- rutils::etf_env$VTI
+prices <- rutils::etfenv$VTI
 class(prices); head(prices)
 prices <- as.data.frame(prices)
 class(prices); head(prices)
@@ -1604,7 +1604,7 @@ class(prices); head(prices)
 # Dates are coerced to strings
 sapply(prices, class)
 # Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
+data_table <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(data_table); head(data_table)
 # Dates are not coerced to strings
@@ -2019,11 +2019,11 @@ symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
   "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
   "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
 library(rutils)  # Load package rutils
-etf_env <- new.env()  # New environment for data
+etfenv <- new.env()  # New environment for data
 # Boolean vector of symbols already downloaded
-isdownloaded <- symbolv %in% ls(etf_env)
+isdownloaded <- symbolv %in% ls(etfenv)
 # Download data for symbolv using single command - creates pacing error
-getSymbols.av(symbolv, adjust=TRUE, env=etf_env,
+getSymbols.av(symbolv, adjust=TRUE, env=etfenv,
   output.size="full", api.key="T7JPW54ES8G75310")
 # Download data from Alpha Vantage using while loop
 nattempts <- 0  # number of download attempts
@@ -2034,7 +2034,7 @@ while (((sum(!isdownloaded)) > 0) & (nattempts<10)) {
   for (symbol in na.omit(symbolv[!isdownloaded][1:5])) {
     cat("Processing: ", symbol, "\n")
     tryCatch(  # With error handler
-      quantmod::getSymbols.av(symbol, adjust=TRUE, env=etf_env, auto.assign=TRUE, output.size="full", api.key="T7JPW54ES8G75310"),
+      quantmod::getSymbols.av(symbol, adjust=TRUE, env=etfenv, auto.assign=TRUE, output.size="full", api.key="T7JPW54ES8G75310"),
       # Error handler captures error condition
       error=function(error_cond) {
         print(paste("error handler: ", error_cond))
@@ -2043,12 +2043,12 @@ while (((sum(!isdownloaded)) > 0) & (nattempts<10)) {
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
-  isdownloaded <- symbolv %in% ls(etf_env)
+  isdownloaded <- symbolv %in% ls(etfenv)
   cat("Pausing 1 minute to avoid pacing...\n")
   Sys.sleep(65)
 }  # end while
 # Download all symbolv using single command - creates pacing error
-# quantmod::getSymbols.av(symbolv, env=etf_env, adjust=TRUE, from="2005-01-03", output.size="full", api.key="T7NHW54ES8GG501C")
+# quantmod::getSymbols.av(symbolv, env=etfenv, adjust=TRUE, from="2005-01-03", output.size="full", api.key="T7NHW54ES8GG501C")
       @
   \end{columns}
 \end{block}
@@ -2069,22 +2069,22 @@ while (((sum(!isdownloaded)) > 0) & (nattempts<10)) {
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-ls(etf_env)  # List files in etf_env
-# Get class of object in etf_env
-class(get(x=symbolv[1], envir=etf_env))
+ls(etfenv)  # List files in etfenv
+# Get class of object in etfenv
+class(get(x=symbolv[1], envir=etfenv))
 # Another way
-class(etf_env$VTI)
-colnames(etf_env$VTI)
+class(etfenv$VTI)
+colnames(etfenv$VTI)
 # Get first 3 rows of data
-head(etf_env$VTI, 3)
+head(etfenv$VTI, 3)
 # Get last 11 rows of data
-tail(etf_env$VTI, 11)
-# Get class of all objects in etf_env
-eapply(etf_env, class)
+tail(etfenv$VTI, 11)
+# Get class of all objects in etfenv
+eapply(etfenv, class)
 # Get class of all objects in R workspace
 lapply(ls(), function(ob_ject) class(get(ob_ject)))
-# Get end dates of all objects in etf_env
-as.Date(sapply(etf_env, end))
+# Get end dates of all objects in etfenv
+as.Date(sapply(etfenv, end))
       @
   \end{columns}
 \end{block}
@@ -2117,20 +2117,20 @@ as.Date(sapply(etf_env, end))
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Check of object is an OHLC time series
-is.OHLC(etf_env$VTI)
+is.OHLC(etfenv$VTI)
 # Adjust single OHLC object using its name
-etf_env$VTI <- adjustOHLC(etf_env$VTI, use.Adjusted=TRUE)
+etfenv$VTI <- adjustOHLC(etfenv$VTI, use.Adjusted=TRUE)
 
 # Adjust OHLC object using string as name
 assign(symbolv[1], adjustOHLC(
-    get(x=symbolv[1], envir=etf_env), use.Adjusted=TRUE),
-  envir=etf_env)
+    get(x=symbolv[1], envir=etfenv), use.Adjusted=TRUE),
+  envir=etfenv)
 
 # Adjust objects in environment using vector of strings
-for (symbol in ls(etf_env)) {
+for (symbol in ls(etfenv)) {
   assign(symbol,
-         adjustOHLC(get(symbol, envir=etf_env), use.Adjusted=TRUE),
-         envir=etf_env)
+         adjustOHLC(get(symbol, envir=etfenv), use.Adjusted=TRUE),
+         envir=etfenv)
 }  # end for
       @
   \end{columns}
@@ -2165,8 +2165,8 @@ for (symbol in ls(etf_env)) {
 library(rutils)  # Load package rutils
 # Define ETF symbols
 symbolv <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract symbolv from rutils::etf_env
-prices <- mget(symbolv, envir=rutils::etf_env)
+# Extract symbolv from rutils::etfenv
+prices <- mget(symbolv, envir=rutils::etfenv)
 # prices is a list of xts series
 class(prices)
 class(prices[[1]])
@@ -2185,17 +2185,17 @@ class(prices)
 dim(prices)
 # Or extract and cbind in single step
 prices <- do.call(cbind, lapply(
-  mget(symbolv, envir=rutils::etf_env), quantmod::Cl))
+  mget(symbolv, envir=rutils::etfenv), quantmod::Cl))
 # Or extract and bind all data, subset by symbolv
 prices <- lapply(symbolv, function(symbol) {
-    quantmod::Cl(get(symbol, envir=rutils::etf_env))
+    quantmod::Cl(get(symbol, envir=rutils::etfenv))
 })  # end lapply
-# Or loop over etf_env without anonymous function
+# Or loop over etfenv without anonymous function
 prices <- do.call(cbind,
-  lapply(as.list(rutils::etf_env)[symbolv], quantmod::Cl))
+  lapply(as.list(rutils::etfenv)[symbolv], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
 prices <- do.call(cbind,
-  eapply(rutils::etf_env, quantmod::Cl)[symbolv])
+  eapply(rutils::etfenv, quantmod::Cl)[symbolv])
       @
   \end{columns}
 \end{block}
@@ -2240,12 +2240,12 @@ unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(prices,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
-# Copy prices into etf_env
-etf_env$etf_list <- etf_list
+# Copy prices into etfenv
+etfenv$etf_list <- etf_list
 # Or
-assign("prices", prices, envir=etf_env)
+assign("prices", prices, envir=etfenv)
 # Save to .RData file
-save(etf_env, file="etf_data.RData")
+save(etfenv, file="etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -2267,7 +2267,7 @@ save(etf_env, file="etf_data.RData")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract VTI prices
-vtis <- etf_env$prices[ ,"VTI"]
+vtis <- etfenv$prices[ ,"VTI"]
 vtis <- na.omit(vtis)
 # Calculate percentage returns "by hand"
 vti_lag <- as.numeric(vtis)
@@ -2278,8 +2278,8 @@ vti_returns <- (vtis-vti_lag)/vti_lag
 daily_returns <- quantmod::dailyReturn(vtis)
 head(cbind(daily_returns, vti_returns))
 all.equal(daily_returns, vti_returns, check.attributes=FALSE)
-# Calculate returns for all prices in etf_env$prices
-returns <- lapply(etf_env$prices, function(xtes) {
+# Calculate returns for all prices in etfenv$prices
+returns <- lapply(etfenv$prices, function(xtes) {
   daily_returns <- quantmod::dailyReturn(na.omit(xtes))
   colnames(daily_returns) <- names(xtes)
   daily_returns
@@ -2291,10 +2291,10 @@ class(returns[[1]])
 returns <- do.call(cbind, returns)
 class(returns)
 dim(returns)
-# Copy returns into etf_env and save to .RData file
-# assign("returns", returns, envir=etf_env)
-etf_env$returns <- returns
-save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+# Copy returns into etfenv and save to .RData file
+# assign("returns", returns, envir=etfenv)
+etfenv$returns <- returns
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -2309,7 +2309,7 @@ save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{as.environment()} coerces objects (lists) into an environment.
+      The function \texttt{as.environment()} coerces objects (listv) into an environment.
       \vskip1ex
       The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list.
       \vskip1ex
@@ -2320,26 +2320,26 @@ save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
 library(quantmod)
 startd <- "2012-05-10"; endd <- "2013-11-20"
 # Select all objects in environment and return as environment
-new_env <- as.environment(eapply(etf_env, "[",
+new_env <- as.environment(eapply(etfenv, "[",
                   paste(startd, endd, sep="/")))
 # Select only symbolv in environment and return as environment
 new_env <- as.environment(
-  lapply(as.list(etf_env)[symbolv], "[",
+  lapply(as.list(etfenv)[symbolv], "[",
          paste(startd, endd, sep="/")))
 # Extract and cbind Close prices and return to environment
 assign("prices", rutils::do_call(cbind,
-               lapply(ls(etf_env), function(symbol) {
-                 xtes <- quantmod::Cl(get(symbol, etf_env))
+               lapply(ls(etfenv), function(symbol) {
+                 xtes <- quantmod::Cl(get(symbol, etfenv))
                  colnames(xtes) <- symbol
                  xtes
                })), envir=new_env)
-# Get sizes of OHLC xts series in etf_env
-sapply(mget(symbolv, envir=etf_env), object.size)
+# Get sizes of OHLC xts series in etfenv
+sapply(mget(symbolv, envir=etfenv), object.size)
 # Extract and cbind adjusted prices and return to environment
 colname <- function(xtes)
   strsplit(colnames(xtes), split="[.]")[[1]][1]
 assign("prices", rutils::do_call(cbind,
-               lapply(mget(etf_env$symbolv, envir=etf_env),
+               lapply(mget(etfenv$symbolv, envir=etfenv),
                       function(xtes) {
                         xtes <- Ad(xtes)
                         colnames(xtes) <- colname(xtes)
@@ -2582,7 +2582,7 @@ unlist(file_names)
     \column{0.5\textwidth}
       The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace.
       \vskip1ex
-      The function \texttt{Sys.glob()} lists files matching names obtained from wildcard expansion.
+      The function \texttt{Sys.glob()} listv files matching names obtained from wildcard expansion.
       \vskip1ex
       The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
       \vskip1ex
@@ -2708,10 +2708,10 @@ getSymbolLookup()
 # view and clear options
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
-# Download S&P500 prices into etf_env
-quantmod::getSymbols("SP500", env=etf_env,
+# Download S&P500 prices into etfenv
+quantmod::getSymbols("SP500", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$SP500["2016/"],
+chart_Series(x=etfenv$SP500["2016/"],
              TA="add_Vo()", name="S&P500 index")
       @
   \end{columns}
@@ -2746,10 +2746,10 @@ getSymbolLookup()
 # view and clear options
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
-# Download DJIA prices into etf_env
-quantmod::getSymbols("DJIA", env=etf_env,
+# Download DJIA prices into etfenv
+quantmod::getSymbols("DJIA", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$DJIA["2016/"],
+chart_Series(x=etfenv$DJIA["2016/"],
              TA="add_Vo()", name="DJIA index")
       @
   \end{columns}
@@ -2891,9 +2891,9 @@ symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
   "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
   "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
 # Setup code
-etf_env <- new.env()  # New environment for data
+etfenv <- new.env()  # New environment for data
 # Boolean vector of symbols already downloaded
-isdownloaded <- symbolv %in% ls(etf_env)
+isdownloaded <- symbolv %in% ls(etfenv)
       @
     \column{0.6\textwidth}
       \vspace{-1em}
@@ -2920,7 +2920,7 @@ while (sum(!isdownloaded) > 0) {
       colnames(ohlc) <- paste0(symbol, ".", c("Open", "High", "Low", "Close", "Volume", "VWAP"))
       ohlc <- xts::xts(ohlc, order.by=dates)
       # Save to environment
-      assign(symbol, ohlc, envir=etf_env)
+      assign(symbol, ohlc, envir=etfenv)
       Sys.sleep(1)
       },
     error={function(error_cond) print(paste("Error handler:", error_cond))},
@@ -2928,9 +2928,9 @@ while (sum(!isdownloaded) > 0) {
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
-  isdownloaded <- symbolv %in% ls(etf_env)
+  isdownloaded <- symbolv %in% ls(etfenv)
 }  # end while
-save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -2956,41 +2956,41 @@ save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # Extract Close prices
-prices <- eapply(etf_env, quantmod::Cl)
+prices <- eapply(etfenv, quantmod::Cl)
 prices <- do.call(cbind, prices)
 # Drop ".Close" from colnames
 colnames(prices) <- do.call(rbind, strsplit(colnames(prices), split="[.]"))[, 1]
 # Calculate the log returns
 returns <- xts::diff.xts(log(prices))
-# Copy prices and returns into etf_env
-etf_env$prices <- prices
-etf_env$returns <- returns
-# Copy symbolv into etf_env
-etf_env$symbolv <- symbolv
+# Copy prices and returns into etfenv
+etfenv$prices <- prices
+etfenv$returns <- returns
+# Copy symbolv into etfenv
+etfenv$symbolv <- symbolv
 # Calculate the risk-return statistics
-risk_return <- PerformanceAnalytics::table.Stats(returns)
+riskstats <- PerformanceAnalytics::table.Stats(returns)
 # Transpose the data frame
-risk_return <- as.data.frame(t(risk_return))
+riskstats <- as.data.frame(t(riskstats))
 # Add Name column
-risk_return$Name <- rownames(risk_return)
-# Copy risk_return into etf_env
-etf_env$risk_return <- risk_return
+riskstats$Name <- rownames(riskstats)
+# Copy riskstats into etfenv
+etfenv$riskstats <- riskstats
 # Calculate the beta, alpha, Treynor ratio, and other performance statistics
-capm_stats <- PerformanceAnalytics::table.CAPM(Ra=returns[, symbolv], 
+capmstats <- PerformanceAnalytics::table.CAPM(Ra=returns[, symbolv], 
                                                Rb=returns[, "VTI"], scale=252)
-colnamev <- strsplit(colnames(capm_stats), split=" ")
+colnamev <- strsplit(colnames(capmstats), split=" ")
 colnamev <- do.call(cbind, colnamev)[1, ]
-colnames(capm_stats) <- colnamev
-capm_stats <- t(capm_stats)
-capm_stats <- capm_stats[, -1]
-colnamev <- colnames(capm_stats)
+colnames(capmstats) <- colnamev
+capmstats <- t(capmstats)
+capmstats <- capmstats[, -1]
+colnamev <- colnames(capmstats)
 whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnamev)
 colnamev[whichv] <- c("Alpha", "Information", "Treynor")
-colnames(capm_stats) <- colnamev
-capm_stats <- capm_stats[order(capm_stats[, "Alpha"], decreasing=TRUE), ]
-# Copy capm_stats into etf_env
-etf_env$capm_stats <- capm_stats
-save(etf_env, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+colnames(capmstats) <- colnamev
+capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
+# Copy capmstats into etfenv
+etfenv$capmstats <- capmstats
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -3028,10 +3028,10 @@ getSymbolLookup()
 # view and clear options
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
-# Download S&P500 prices into etf_env
-quantmod::getSymbols("SP500", env=etf_env,
+# Download S&P500 prices into etfenv
+quantmod::getSymbols("SP500", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$SP500["2016/"],
+chart_Series(x=etfenv$SP500["2016/"],
              TA="add_Vo()", name="S&P500 index")
       @
   \end{columns}
@@ -3281,7 +3281,7 @@ chart_Series(prices["2016/", 1], name="AAPL Hurst")
       Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delievery months, start date, etc.
       \vskip1ex
       \href{https://www.quandl.com/}{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
-      \hskip1em\url{https://www.quandl.com/blog/useful-lists}
+      \hskip1em\url{https://www.quandl.com/blog/useful-listv}
       \vskip1ex
       \href{https://www.quandl.com/}{Quandl} also provides constituents for stock indices, for example the \emph{S\&P500}, \emph{Dow Jones Industrial Average}, \emph{NASDAQ Composite}, \emph{FTSE 100}, etc.
     \column{0.5\textwidth}
@@ -3794,7 +3794,7 @@ R.EigenValues(A1:H8)
       If you already have a \emph{Google} account, then your personal \emph{Google Sheets} can be found at:\\
       \hskip1em\url{https://docs.google.com/spreadsheets/}
       \vskip1ex
-      The function \texttt{gs\_ls()} lists the files in \emph{Google Sheets}.
+      The function \texttt{gs\_ls()} listv the files in \emph{Google Sheets}.
       \vskip1ex
       The function \texttt{gs\_title()} registers a \emph{Google} sheet, and returns a \texttt{googlesheet} object.
       \vskip1ex
@@ -3859,7 +3859,7 @@ gs_browse(google_sheet)
       If you already have a \emph{Google} account, then your personal \emph{Google Sheets} can be found at:\\
       \hskip1em\url{https://docs.google.com/spreadsheets/}
       \vskip1ex
-      The function \texttt{gs\_ls()} lists the files in \emph{Google Sheets}.
+      The function \texttt{gs\_ls()} listv the files in \emph{Google Sheets}.
       \vskip1ex
       The function \texttt{gs\_title()} registers a \emph{Google} sheet, and returns a \texttt{googlesheet} object.
       \vskip1ex

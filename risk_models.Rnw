@@ -115,20 +115,20 @@ knit_theme$set(thm)
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- drop(coredata(na.omit(returns)))
 nrows <- NROW(returns)
 # Mean and standard deviation of returns
 c(mean(returns), sd(returns))
 # Calculate the smoothing bandwidth as the MAD of returns 10 points apart
 returns <- sort(returns)
-bwidth <- 10*mad(rutils::diff_it(returns, lagg=10))
+bwidth <- 10*mad(rutils::diffit(returns, lagg=10))
 # Calculate the kernel density
 densityv <- sapply(1:nrows, function(i_d) {
   sum(dnorm(returns-returns[i_d], sd=bwidth))
 })  # end sapply
-ma_d <- mad(returns)
-plot(returns, densityv, xlim=c(-5*ma_d, 5*ma_d),
+madv <- mad(returns)
+plot(returns, densityv, xlim=c(-5*madv, 5*madv),
      t="l", col="blue", lwd=3,
      xlab="returns", ylab="density",
      main="Density of VTI Returns")
@@ -136,13 +136,13 @@ plot(returns, densityv, xlim=c(-5*ma_d, 5*ma_d),
 densityv <- density(returns, bw=bwidth)
 NROW(densityv$y)
 x11(width=6, height=5)
-plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
+plot(densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      col="blue", lwd=3, main="Density of VTI Returns")
 # Interpolate the densityv vector into returns
 densityv <- approx(densityv$x, densityv$y, xout=returns)
 all.equal(densityv$x, returns)
-plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
+plot(densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      t="l", col="blue", lwd=3,
      main="Density of VTI Returns")
@@ -174,7 +174,7 @@ plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
 histo_gram <- hist(returns, breaks=100, freq=FALSE,
-  xlim=c(-5*ma_d, 5*ma_d), xlab="", ylab="",
+  xlim=c(-5*madv, 5*madv), xlab="", ylab="",
   main="VTI Return Distribution")
 # Draw kernel density of histogram
 lines(densityv, col="red", lwd=2)
@@ -211,7 +211,7 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Mean and standard deviation of returns
 c(mean(returns), sd(returns))
       @
@@ -223,9 +223,9 @@ c(mean(returns), sd(returns))
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-ma_d <- mad(returns)
+madv <- mad(returns)
 histo_gram <- hist(returns, breaks=100,
-  main="", xlim=c(-5*ma_d, 5*ma_d),
+  main="", xlim=c(-5*madv, 5*madv),
   xlab="", ylab="", freq=FALSE)
 # Draw kernel density of histogram
 lines(density(returns), col="red", lwd=2)
@@ -345,7 +345,7 @@ boxplot(x=diff(log(EuStockMarkets)))
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Number of observations
 nrows <- NROW(returns)
 # Mean of VTI returns
@@ -696,7 +696,7 @@ likeli_hood <- function(par, dfree, data) {
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Initial parameters
 par_init <- c(mean=0, scale=0.01)
 # Fit distribution using optim()
@@ -831,9 +831,9 @@ legend("topleft", inset=0.05, bty="n",
       The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns and trading volumes
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 closep <- drop(coredata(quantmod::Cl(ohlc)))
-returns <- rutils::diff_it(log(closep))
+returns <- rutils::diffit(log(closep))
 volumes <- coredata(quantmod::Vo(ohlc))
 # Calculate rolling variance
 look_back <- 121
@@ -894,13 +894,13 @@ sapply(list(returns=returns, rets_scaled=rets_scaled),
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
-ma_d <- mad(returns)
-# bwidth <- mad(rutils::diff_it(returns))
-plot(density(returns, bw=ma_d/10), xlim=c(-5*ma_d, 5*ma_d),
+madv <- mad(returns)
+# bwidth <- mad(rutils::diffit(returns))
+plot(density(returns, bw=madv/10), xlim=c(-5*madv, 5*madv),
      lwd=3, mgp=c(2, 1, 0), col="blue",
      xlab="returns (standardized)", ylab="frequency",
      main="Density of Volume-scaled VTI Returns")
-lines(density(rets_scaled, bw=ma_d/10), lwd=3, col="red")
+lines(density(rets_scaled, bw=madv/10), lwd=3, col="red")
 curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
       add=TRUE, lwd=3, col="green")
 # Add legend
@@ -973,7 +973,7 @@ quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
       <<echo=TRUE,eval=TRUE>>=
 # Calculate VTI percentage returns
 library(rutils)
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Reset output digits
 dig_its <- options(digits=5)
 # Shapiro-Wilk test for normal distribution
@@ -1065,7 +1065,7 @@ ks.test(rnorm(100), rnorm(100, mean=0.1))
 # KS test for two different normal distributions
 ks.test(rnorm(100), rnorm(100, sd=2.0))
 # KS test for VTI returns vs normal distribution
-returns <- as.numeric(na.omit(rutils::etf_env$returns$VTI))
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
 returns <- (returns - mean(returns))/sd(returns)
 ks.test(returns, rnorm)
 # Fit t-dist into VTI returns
@@ -1080,8 +1080,8 @@ tdistr <- function(x, dfree, loc, scale) {
 # tdistr(x=returns[1], dfree=2, loc=lo_cation, scale=scalit)
 # Plot shows that tdistr() fits returns very well
 densityv <- density(returns)
-ma_d <- mad(returns)
-plot(densityv, xlim=c(-5*ma_d, 5*ma_d),
+madv <- mad(returns)
+plot(densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      col="blue", lwd=2, main="Density of VTI Returns")
 curve(expr=tdistr(x, dfree=2, loc=lo_cation, scale=scalit), col="red", lwd=2, add=TRUE)
@@ -1183,7 +1183,7 @@ legend("topright", inset=0.05, bty="n",
 histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
 # Theoretical frequencies
-freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Return p-value
@@ -1193,7 +1193,7 @@ chisq_test$p.value
 histo_gram <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts/sum(histo_gram$counts)
 # Theoretical frequencies
-freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for shifted normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 # Calculate histogram of VTI returns
@@ -1201,7 +1201,7 @@ histo_gram <- hist(returns, breaks=100, plot=FALSE)
 freq_o <- histo_gram$counts
 # Calculate cumulative probabilities and then difference them
 freq_t <- pt((histo_gram$breaks-lo_cation)/scalit, df=2)
-freq_t <- rutils::diff_it(freq_t)
+freq_t <- rutils::diffit(freq_t)
 # Perform Chi-squared test for VTI returns
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
       @
@@ -1227,7 +1227,7 @@ chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
       \href{https://cran.r-project.org/web/packages/PerformanceAnalytics/index.html}{\emph{PerformanceAnalytics}} 
       contains functions for calculating risk and performance statistics, such as the variance, skewness, kurtosis, beta, alpha, etc.
       \vskip1ex
-      The function \texttt{data()} loads external data or lists data sets in a package.
+      The function \texttt{data()} loads external data or listv data sets in a package.
       \vskip1ex
       \texttt{managers} is an \emph{xts} time series containing monthly percentage returns of six asset managers (HAM1 through HAM6), the EDHEC Long-Short Equity hedge fund index, the \texttt{S\&P 500}, and US Treasury 10-year bond and 3-month bill total returns.
     \column{0.5\textwidth}
@@ -1276,7 +1276,7 @@ head(managers, 3)
 # Load package "PerformanceAnalytics"
 library(PerformanceAnalytics)
 # Calculate ETF returns
-returns <- rutils::etf_env$returns[, c("VTI", "DBC", "IEF")]
+returns <- rutils::etfenv$returns[, c("VTI", "DBC", "IEF")]
 returns <- na.omit(returns)
 # Plot cumulative ETF returns
 x11(width=6, height=5)
@@ -1301,7 +1301,7 @@ chart.CumReturns(returns, lwd=2, ylab="",
     \column{0.5\textwidth}
       The function \texttt{chart.Histogram()} from package \emph{PerformanceAnalytics} plots the histogram (frequency distribution) and the density of returns.
       <<echo=TRUE,eval=FALSE>>=
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 x11(width=6, height=5)
 chart.Histogram(returns, xlim=c(-0.04, 0.04),
@@ -1337,7 +1337,7 @@ legend("topright", inset=0.05, bty="n",
       The vertical lines (whiskers) represent values beyond the quartiles, \\
       Open circles represent values beyond the nominal range (outliers).
       <<echo=TRUE,eval=FALSE>>=
-returns <- rutils::etf_env$returns[,
+returns <- rutils::etfenv$returns[,
   c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")]
 x11(width=6, height=5)
 chart.Boxplot(namesv=FALSE, returns)
@@ -1392,7 +1392,7 @@ head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -1411,7 +1411,7 @@ stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -1447,7 +1447,7 @@ apply(boot_data, MARGIN=2, function(x)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns
-returns <- rutils::etf_env$returns$VTI
+returns <- rutils::etfenv$returns$VTI
 returns <- na.omit(returns)
 nrows <- NROW(returns)
 sd(returns)
@@ -1460,7 +1460,7 @@ boot_data <- sapply(1:10000, function(x) {
 boot_data <- t(boot_data)
 # Means and standard errors from bootstrap
 100*apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 numcores <- detectCores() - 1  # Number of cores
@@ -1480,7 +1480,7 @@ stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), std_error=sd(x)))
+  c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -1541,7 +1541,7 @@ all.equal(sqrt(sum(returns_sub^2)/nrows),
       \emph{Drawdown risk} determines the risk of liquidation due to stop loss limits.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI drawdowns
-closep <- log(quantmod::Cl(rutils::etf_env$VTI))
+closep <- log(quantmod::Cl(rutils::etfenv$VTI))
 draw_downs <- (closep - cummax(closep))
 # Extract the date index from the time series closep 
 dates <- zoo::index(closep)
@@ -1603,8 +1603,8 @@ text(x=xval, y=0.85*yval, "end drawdown", col="green", cex=0.9)
       <<echo=TRUE,eval=FALSE>>=
 library(xtable)
 library(PerformanceAnalytics)
-closep <- log(quantmod::Cl(rutils::etf_env$VTI))
-returns <- rutils::diff_it(closep)
+closep <- log(quantmod::Cl(rutils::etfenv$VTI))
+returns <- rutils::diffit(closep)
 # Calculate table of VTI drawdowns
 tablev <- PerformanceAnalytics::table.Drawdowns(returns, geometric=FALSE)
 # Convert dates to strings
@@ -1615,8 +1615,8 @@ print(xtable(tablev), comment=FALSE, size="tiny", include.rownames=FALSE)
       <<echo=FALSE,eval=TRUE,size="tiny",results='asis'>>=
 library(xtable)
 library(PerformanceAnalytics)
-closep <- log(quantmod::Cl(rutils::etf_env$VTI))
-returns <- rutils::diff_it(closep)
+closep <- log(quantmod::Cl(rutils::etfenv$VTI))
+returns <- rutils::diffit(closep)
 # Calculate table of VTI drawdowns
 tablev <- PerformanceAnalytics::table.Drawdowns(returns, geometric=FALSE)
 # Convert dates to strings
@@ -1672,7 +1672,7 @@ charts.PerformanceSummary(ham1,
       The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.1
 varisk <- quantile(returns, confl)
 cvar <- mean(returns[returns < varisk])
@@ -1729,7 +1729,7 @@ polygon(c(var_max, densv$x[rangev], varisk),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.05
 # Calculate VaR as quantile
 varisk <- quantile(returns, probs=confl)
@@ -1802,7 +1802,7 @@ all.equal(cvar,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the risk-return statistics
 risk_ret <-
-  PerformanceAnalytics::table.Stats(rutils::etf_env$returns)
+  PerformanceAnalytics::table.Stats(rutils::etfenv$returns)
 class(risk_ret)
 # Transpose the data frame
 risk_ret <- as.data.frame(t(risk_ret))
@@ -1816,7 +1816,7 @@ risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
     \column{0.5\textwidth}
       <<echo=FALSE,eval=TRUE,size="tiny">>=
 # Copy from rutils to save time
-risk_ret <- rutils::etf_env$risk_return
+risk_ret <- rutils::etfenv$riskstats
 # Add Sharpe ratio column
 risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
 # Sort on Sharpe ratio
@@ -1857,7 +1857,7 @@ knitr::kable(risk_ret[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
       \includegraphics[width=0.45\paperwidth]{figure/vix_vxx_svxy.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of VXX versus SVXY
-prices <- na.omit(rutils::etf_env$prices[, c("VXX", "SVXY")])
+prices <- na.omit(rutils::etfenv$prices[, c("VXX", "SVXY")])
 prices <- prices["2017/"]
 colnamev <- c("VXX", "SVXY")
 colnames(prices) <- colnamev
@@ -1907,7 +1907,7 @@ text(x=risk_ret$Skewness, y=risk_ret$Kurtosis,
           labels=risk_ret$Name, pos=1, cex=0.8)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/etf_skew_sharp.png}
+      \includegraphics[width=0.45\paperwidth]{figure/etf_skewsharp.png}
       % \includegraphics[width=0.45\paperwidth]{figure/etf_skew_kurtosis.png}
   \end{columns}
 \end{block}
@@ -1937,7 +1937,7 @@ cutoff <- (NROW(risk_ret) %/% 2)
 high_skew <- risk_ret$Name[1:cutoff]
 low_skew <- risk_ret$Name[(cutoff+1):NROW(risk_ret)]
 # Calculate returns and log prices
-returns <- rutils::etf_env$returns
+returns <- rutils::etfenv$returns
 returns <- zoo::na.locf(returns, na.rm=FALSE)
 returns[is.na(returns)] <- 0
 sum(is.na(returns))
@@ -2036,7 +2036,7 @@ dygraphs::dygraph(wealth, main="Log Wealth of High and Low Skew Stocks") %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(PerformanceAnalytics)
-returns <- rutils::etf_env$returns[, c("VTI", "IEF")]
+returns <- rutils::etfenv$returns[, c("VTI", "IEF")]
 returns <- na.omit(returns)
 # Calculate the Sharpe ratio
 confl <- 0.05
@@ -2079,7 +2079,7 @@ cvar <- sapply(returns, function(x) {
       So stocks become less risky over longer holding periods, and investors may choose to own a higher percentage of stocks, provided they hold them for a longer period of time.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 returns <- drop(zoo::coredata(returns))
 nrows <- NROW(returns)
 # Calculate compounded VTI returns
@@ -2240,7 +2240,7 @@ data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Inspect the R code of the function filter()
 filter
 # Calculate EWMA weights
@@ -2248,16 +2248,16 @@ look_back <- 21
 weights <- exp(-0.1*1:look_back)
 weights <- weights/sum(weights)
 # Calculate convolution using filter()
-filter_ed <- filter(closep, filter=weights,
+filtered <- filter(closep, filter=weights,
                     method="convolution", sides=1)
 # filter() returns time series of class "ts"
-class(filter_ed)
+class(filtered)
 # Get information about C_cfilter()
 getAnywhere(C_cfilter)
 # Filter using C_cfilter() over past values (sides=1).
 filter_fast <- .Call(stats:::C_cfilter, closep, filter=weights,
                      sides=1, circular=FALSE)
-all.equal(as.numeric(filter_ed), filter_fast, check.attributes=FALSE)
+all.equal(as.numeric(filtered), filter_fast, check.attributes=FALSE)
 # Calculate EWMA prices using roll::roll_sum()
 weights_rev <- rev(weights)
 roll_ed <- roll::roll_sum(closep, width=look_back, weights=weights_rev, min_obs=1)
@@ -2346,14 +2346,14 @@ look_back <- 21
 weights <- exp(-0.1*1:look_back)
 weights <- weights/sum(weights)
 weights_rev <- rev(weights)
-filter_ed <- roll::roll_sum(closep, width=NROW(weights), weights=weights_rev)
+filtered <- roll::roll_sum(closep, width=NROW(weights), weights=weights_rev)
 # Copy warmup period
-filter_ed[1:look_back] <- closep[1:look_back]
+filtered[1:look_back] <- closep[1:look_back]
 # Combine prices with smoothed prices
-prices <- cbind(closep, filter_ed)
+prices <- cbind(closep, filtered)
 colnames(prices)[2] <- "VTI Smooth"
 # Calculate standard deviations of returns
-sapply(rutils::diff_it(prices), sd)
+sapply(rutils::diffit(prices), sd)
 # Plot dygraph
 dygraphs::dygraph(prices["2009"], main="VTI Prices and Trailing Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
@@ -2365,16 +2365,16 @@ dygraphs::dygraph(prices["2009"], main="VTI Prices and Trailing Smoothed Prices"
 # Calculate centered EWMA prices using roll::roll_sum()
 weights <- c(weights_rev, weights[-1])
 weights <- weights/sum(weights)
-filter_ed <- roll::roll_sum(closep, width=NROW(weights), weights=weights, online=FALSE)
+filtered <- roll::roll_sum(closep, width=NROW(weights), weights=weights, online=FALSE)
 # Copy warmup period
-filter_ed[1:(2*look_back)] <- closep[1:(2*look_back)]
+filtered[1:(2*look_back)] <- closep[1:(2*look_back)]
 # Center the data
-filter_ed <- rutils::lagit(filter_ed, -(look_back-1), pad_zeros=FALSE)
+filtered <- rutils::lagit(filtered, -(look_back-1), pad_zeros=FALSE)
 # Combine prices with smoothed prices
-prices <- cbind(closep, filter_ed)
+prices <- cbind(closep, filtered)
 colnames(prices)[2] <- "VTI Smooth"
 # Calculate standard deviations of returns
-sapply(rutils::diff_it(prices), sd)
+sapply(rutils::diffit(prices), sd)
 # Plot dygraph
 dygraphs::dygraph(prices["2009"], main="VTI Prices and Centered Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
@@ -2398,10 +2398,10 @@ library(rutils)  # Load package rutils
 library(ggplot2)  # Load ggplot2
 library(gridExtra)  # Load gridExtra
 # Coerce to zoo and merge the time series
-filter_ed <- cbind(closep, filter_ed)
-colnames(filter_ed) <- c("VTI", "VTI filtered")
+filtered <- cbind(closep, filtered)
+colnames(filtered) <- c("VTI", "VTI filtered")
 # Plot ggplot2
-autoplot(filter_ed["2008/2010"],
+autoplot(filtered["2008/2010"],
     main="Filtered VTI", facets=NULL) +  # end autoplot
 xlab("") + ylab("") +
 theme(  # Modify plot theme
@@ -2469,7 +2469,7 @@ title(main="ACF of Smoothed VTI Returns", line=-1)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Get close prices and calculate close-to-close returns
-# closep <- quantmod::Cl(rutils::etf_env$VTI)
+# closep <- quantmod::Cl(rutils::etfenv$VTI)
 closep <- quantmod::Cl(HighFreq::SPY)
 colnames(closep) <- rutils::get_name(colnames(closep))
 returns <- TTR::ROC(closep)
@@ -2527,14 +2527,14 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[endp], lwd=c(2, 2, 2),
       The function \texttt{HighFreq::roll\_wsum()} calculates the convolution of a time series with a vector of weights.
       <<echo=TRUE,eval=FALSE>>=
 # Extract log VTI prices
-ohlc <- log(rutils::etf_env$VTI)
+ohlc <- log(rutils::etfenv$VTI)
 closep <- quantmod::Cl(ohlc)
 colnames(closep) <- "VTI"
 nrows <- NROW(closep)
 # Calculate EWMA weights
 look_back <- 333
-lambdav <- 0.9
-weights <- lambdav^(1:look_back)
+lambda <- 0.9
+weights <- lambda^(1:look_back)
 weights <- weights/sum(weights)
 # Calculate EWMA prices as the convolution
 ew_ma <- HighFreq::roll_wsum(closep, weights=weights)
@@ -2588,18 +2588,18 @@ legend("topleft", legend=colnames(prices),
       The function \texttt{HighFreq::run\_mean()} calculates the exponentially weighted moving average prices recursively.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate EWMA prices recursively using C++ code
-ewma_rfilter <- .Call(stats:::C_rfilter, closep, lambdav, c(as.numeric(closep[1])/(1-lambdav), double(NROW(closep))))[-1]
+ewma_rfilter <- .Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep))))[-1]
 # Or R code
-# ewma_rfilter <- filter(closep, filter=lambdav, init=as.numeric(closep[1, 1])/(1-lambdav), method="recursive")
-ewma_rfilter <- (1-lambdav)*ewma_rfilter
+# ewma_rfilter <- filter(closep, filter=lambda, init=as.numeric(closep[1, 1])/(1-lambda), method="recursive")
+ewma_rfilter <- (1-lambda)*ewma_rfilter
 # Calculate EWMA prices recursively using RcppArmadillo
-ew_ma <- HighFreq::run_mean(closep, lambda=lambdav)
+ew_ma <- HighFreq::run_mean(closep, lambda=lambda)
 all.equal(drop(ew_ma), ewma_rfilter)
 # Compare the speed of C++ code with RcppArmadillo
 library(microbenchmark)
 summary(microbenchmark(
-  run_mean=HighFreq::run_mean(closep, lambda=lambdav),
-  rfilter=.Call(stats:::C_rfilter, closep, lambdav, c(as.numeric(closep[1])/(1-lambdav), double(NROW(closep)))),
+  run_mean=HighFreq::run_mean(closep, lambda=lambda),
+  rfilter=.Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep)))),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -2649,7 +2649,7 @@ legend("topleft", legend=colnames(prices),
       The \emph{VWAP} is often used as a technical indicator in trend following strategies.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log OHLC prices and volumes
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 closep <- log(quantmod::Cl(ohlc))
 colnames(closep) <- "VTI"
 volumes <- quantmod::Vo(ohlc)
@@ -2715,11 +2715,11 @@ legend("bottomright", legend=colnames(prices),
       \includegraphics[width=0.4\paperwidth]{figure/vwap_recursive.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VWAP prices recursively using C++ code
-volume_rec <- .Call(stats:::C_rfilter, volumes, lambdav, c(as.numeric(volumes[1])/(1-lambdav), double(NROW(volumes))))[-1]
-price_rec <- .Call(stats:::C_rfilter, volumes*closep, lambdav, c(as.numeric(volumes[1]*closep[1])/(1-lambdav), double(NROW(closep))))[-1]
+volume_rec <- .Call(stats:::C_rfilter, volumes, lambda, c(as.numeric(volumes[1])/(1-lambda), double(NROW(volumes))))[-1]
+price_rec <- .Call(stats:::C_rfilter, volumes*closep, lambda, c(as.numeric(volumes[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
 vwap_rec <- price_rec/volume_rec
 # Calculate VWAP prices recursively using RcppArmadillo
-vwap_arma <- HighFreq::run_mean(closep, lambda=lambdav, weights=volumes)
+vwap_arma <- HighFreq::run_mean(closep, lambda=lambda, weights=volumes)
 all.equal(vwap_rec, drop(vwap_arma))
 # Dygraphs plot the VWAP prices
 prices <- xts(cbind(vwap, vwap_arma), zoo::index(ohlc))
@@ -2754,12 +2754,12 @@ dygraphs::dygraph(prices["2009"], main="VWAP Prices") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate two EWMA prices
 look_back <- 21
-lambdav <- 0.1
-weights <- exp(lambdav*1:look_back)
+lambda <- 0.1
+weights <- exp(lambda*1:look_back)
 weights <- weights/sum(weights)
 ewma_fast <- roll::roll_sum(closep, width=look_back, weights=weights, min_obs=1)
-lambdav <- 0.05
-weights <- exp(lambdav*1:look_back)
+lambda <- 0.05
+weights <- exp(lambda*1:look_back)
 weights <- weights/sum(weights)
 ewma_slow <- roll::roll_sum(closep, width=look_back, weights=weights, min_obs=1)
       @
@@ -2852,8 +2852,8 @@ dygraphs::dygraph(prices["2009"], main=paste(symbol, "Fractional Returns")) %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI log returns
-closep <- log(quantmod::Cl(rutils::etf_env$VTI))
-returns <- rutils::diff_it(closep)
+closep <- log(quantmod::Cl(rutils::etfenv$VTI))
+returns <- rutils::diffit(closep)
 # Perform ADF test for prices
 tseries::adf.test(closep)
 # Perform ADF test for returns
@@ -2886,25 +2886,25 @@ returns <- do.call(cbind, returns)
 returns <- cbind(closep, returns)
 colnames(returns) <- c("VTI", paste0("frac_", delta_s))
 # Calculate ADF test statistics
-adf_stats <- sapply(returns, function(x)
+adfstats <- sapply(returns, function(x)
   suppressWarnings(tseries::adf.test(x)$statistic)
 )  # end sapply
-names(adf_stats) <- colnames(returns)
+names(adfstats) <- colnames(returns)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/features_fracrets.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of fractional VTI returns
-color_s <- colorRampPalette(c("blue", "red"))(NCOL(returns))
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(returns))
 colnamev <- colnames(returns)
 dyplot <- dygraphs::dygraph(returns["2019"], main="Fractional Returns") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col=color_s[1])
+  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col=colorv[1])
 for (i in 2:NROW(colnamev))
   dyplot <- dyplot %>%
   dyAxis("y2", label=colnamev[i], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[i], axis="y2", label=colnamev[i], strokeWidth=2, col=color_s[i])
+  dySeries(name=colnamev[i], axis="y2", label=colnamev[i], strokeWidth=2, col=colorv[i])
 dyplot <- dyplot %>% dyLegend(width=500)
 dyplot
       @
@@ -2930,10 +2930,10 @@ dyplot
       The \emph{volume z-scores} are positively skewed because returns are negatively skewed.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volume z-scores
-volumes <- quantmod::Vo(rutils::etf_env$VTI)
+volumes <- quantmod::Vo(rutils::etfenv$VTI)
 look_back <- 21
 volume_mean <- roll::roll_mean(volumes, width=look_back, min_obs=1)
-volume_sd <- roll::roll_sd(rutils::diff_it(volumes), width=look_back, min_obs=1)
+volume_sd <- roll::roll_sd(rutils::diffit(volumes), width=look_back, min_obs=1)
 volume_sd[1] <- 0
 volume_scores <- ifelse(volume_sd > 0, (volumes - volume_mean)/volume_sd, 0)
 # Plot histogram of volume z-scores
@@ -2978,12 +2978,12 @@ dygraphs::dygraph(prices["2009"], main="VTI Volume Z-Scores") %>%
       The \emph{volatility z-scores} are positively skewed because returns are negatively skewed.
       <<echo=TRUE,eval=FALSE>>=
 # Extract VTI log OHLC prices
-ohlc <- log(rutils::etf_env$VTI)
+ohlc <- log(rutils::etfenv$VTI)
 # Calculate volatility z-scores
 volat <- quantmod::Hi(ohlc)-quantmod::Lo(ohlc)
 look_back <- 21
 volat_mean <- roll::roll_mean(volat, width=look_back, min_obs=1)
-volat_sd <- roll::roll_sd(rutils::diff_it(volat), width=look_back, min_obs=1)
+volat_sd <- roll::roll_sd(rutils::diffit(volat), width=look_back, min_obs=1)
 volat_sd[1] <- 0
 volat_scores <- ifelse(volat_sd > 0, (volat - volat_mean)/volat_sd, 0)
 # Plot histogram of volatility z-scores
@@ -3034,7 +3034,7 @@ dygraphs::dygraph(prices["2009"], main="VTI Volatility Z-Scores") %>%
 # Calculate the centered volatility
 look_back <- 21
 half_back <- look_back %/% 2
-returns <- rutils::diff_it(closep)
+returns <- rutils::diffit(closep)
 volat <- roll::roll_sd(returns, width=look_back, min_obs=1)
 volat <- rutils::lagit(volat, lagg=(-half_back))
 # Calculate the z-scores of prices
@@ -3179,20 +3179,20 @@ dygraphs::dygraph(prices["2009"], main="VTI Price Z-Scores") %>%
       A time series of \emph{z-scores} over past data can be calculated using a rolling look-back window.
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Define look-back window
 look_back <- 11
 # Calculate time series of medians
 medi_an <- roll::roll_median(closep, width=look_back)
 # medi_an <- TTR::runMedian(closep, n=look_back)
 # Calculate time series of MAD
-ma_d <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
-# ma_d <- TTR::runMAD(closep, n=look_back)
+madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(closep, n=look_back)
 # Calculate time series of z-scores
-z_scores <- (closep - medi_an)/ma_d
-z_scores[1:look_back, ] <- 0
-tail(z_scores, look_back)
-range(z_scores)
+zscores <- (closep - medi_an)/madv
+zscores[1:look_back, ] <- 0
+tail(zscores, look_back)
+range(zscores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3204,10 +3204,10 @@ x11(width=6, height=5)
 dygraphs::dygraph(cbind(closep, medi_an), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Plot histogram of z-scores
-histo_gram <- hist(z_scores, col="lightgrey",
+histo_gram <- hist(zscores, col="lightgrey",
   xlab="z-scores", breaks=50, xlim=c(-4, 4),
   ylab="frequency", freq=FALSE, main="Hampel Z-scores histogram")
-lines(density(z_scores, adjust=1.5), lwd=3, col="blue")
+lines(density(zscores, adjust=1.5), lwd=3, col="blue")
       @
   \end{columns}
 \end{block}
@@ -3239,20 +3239,20 @@ lines(density(z_scores, adjust=1.5), lwd=3, col="blue")
 # Calculate one-sided Hampel z-scores
 medi_an <- roll::roll_median(closep, width=look_back)
 # medi_an <- TTR::runMedian(closep, n=look_back)
-ma_d <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
-# ma_d <- TTR::runMAD(closep, n=look_back)
-z_scores <- (closep - medi_an)/ma_d
-z_scores[1:look_back, ] <- 0
-tail(z_scores, look_back)
-range(z_scores)
+madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(closep, n=look_back)
+zscores <- (closep - medi_an)/madv
+zscores[1:look_back, ] <- 0
+tail(zscores, look_back)
+range(zscores)
 # Calculate two-sided Hampel z-scores
 half_back <- look_back %/% 2
 medi_an <- rutils::lagit(medi_an, lagg=-half_back)
-ma_d <- rutils::lagit(ma_d, lagg=-half_back)
-z_scores <- (closep - medi_an)/ma_d
-z_scores[1:look_back, ] <- 0
-tail(z_scores, look_back)
-range(z_scores)
+madv <- rutils::lagit(madv, lagg=-half_back)
+zscores <- (closep - medi_an)/madv
+zscores[1:look_back, ] <- 0
+tail(zscores, look_back)
+range(zscores)
       @
   \end{columns}
 \end{block}
@@ -3337,7 +3337,7 @@ quantmod::chart_Series(xtes, name="VTI EWMA Volatility")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(returns)
 # Define end points
 endp <- 1:NROW(returns)
@@ -3526,13 +3526,13 @@ variance[1:(look_back-1)] <- 0
 library(HighFreq)  # Load HighFreq
 # Minutely SPY returns (unit per minute) single day
 # Minutely SPY volatility (unit per minute)
-returns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
+returns <- rutils::diffit(log(SPY["2012-02-13", 4]))
 sd(returns)
 # SPY returns multiple days (includes overnight jumps)
-returns <- rutils::diff_it(log(SPY[, 4]))
+returns <- rutils::diffit(log(SPY[, 4]))
 sd(returns)
 # Table of time intervals - 60 second is most frequent
-indeks <- rutils::diff_it(.index(SPY))
+indeks <- rutils::diffit(.index(SPY))
 table(indeks)
 # SPY returns divided by the overnight time intervals (unit per second)
 returns <- returns / indeks
@@ -3622,8 +3622,8 @@ dygraphs::dygraph(variance["2009-02"],
 # Benchmark the speed of HighFreq vs TTR
 library(microbenchmark)
 summary(microbenchmark(
-  ttr=TTR::volatility(rutils::etf_env$VTI, N=1, calc="yang.zhang"),
-  highfreq=HighFreq::calc_var_ohlc(log(rutils::etf_env$VTI), method="yang_zhang"),
+  ttr=TTR::volatility(rutils::etfenv$VTI, N=1, calc="yang.zhang"),
+  highfreq=HighFreq::calc_var_ohlc(log(rutils::etfenv$VTI), method="yang_zhang"),
   times=2))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -3646,12 +3646,12 @@ summary(microbenchmark(
       But \emph{VXX} prices exhibit a very strong downward trend which makes them hard to compare with the rolling volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VXX log prices
-vx_x <- na.omit(rutils::etf_env$prices$VXX)
+vx_x <- na.omit(rutils::etfenv$prices$VXX)
 dates <- zoo::index(vx_x)
 look_back <- 41
 vx_x <- log(vx_x)
 # Calculate rolling VTI volatility
-closep <- get("VTI", rutils::etf_env)[dates]
+closep <- get("VTI", rutils::etfenv)[dates]
 closep <- log(closep)
 volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalit=FALSE))
 volat[1:look_back] <- volat[look_back+1]
@@ -3692,14 +3692,14 @@ dygraphs::dygraph(datav[, 1:2], main=cap_tion) %>%
       Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing larger variance spikes and higher kurtosis.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VXX log prices
-vx_x <- na.omit(rutils::etf_env$prices$VXX)
+vx_x <- na.omit(rutils::etfenv$prices$VXX)
 dates <- zoo::index(vx_x)
 look_back <- 41
 vx_x <- log(vx_x)
 vx_x <- (vx_x - roll::roll_mean(vx_x, width=look_back))
 vx_x[1:look_back] <- vx_x[look_back+1]
 # Calculate rolling VTI volatility
-closep <- get("VTI", rutils::etf_env)[dates]
+closep <- get("VTI", rutils::etfenv)[dates]
 closep <- log(closep)
 volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalit=FALSE))
 volat[1:look_back] <- volat[look_back+1]
@@ -3745,7 +3745,7 @@ dygraphs::dygraph(datav[, 1:2], main=cap_tion) %>%
 x11(width=6, height=5)
 par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etf_env$returns$VTI)
+returns <- na.omit(rutils::etfenv$returns$VTI)
 # Calculate rolling VTI variance using package roll
 look_back <- 22
 variance <- roll::roll_var(returns, width=look_back)
@@ -4378,7 +4378,7 @@ cbind(actual=c(alpha=alpha, beta=betav, omega=om_ega),
       The \emph{GARCH} formula can be viewed as a generalization of the \emph{EWMA} rolling variance.
       <<eval=FALSE,echo=TRUE>>=
 # Calculate VTI returns
-returns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
+returns <- rutils::diffit(log(quantmod::Cl(rutils::etfenv$VTI)))
 # Find max likelihood parameters using DEoptim
 optimd <- DEoptim::DEoptim(fn=likeli_hood,
   upper=c(0.4, 0.9, variance), # Upper constraint
@@ -4508,20 +4508,20 @@ quartz.save("figure/garch_forecast.png", type="png",
         <<echo=TRUE,eval=FALSE>>=
 library(HighFreq)  # Load HighFreq
 # Minutely SPY returns (unit per minute) single day
-returns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
+returns <- rutils::diffit(log(SPY["2012-02-13", 4]))
 # Minutely SPY volatility (unit per minute)
 sd(returns)
 # Divide minutely SPY returns by time intervals (unit per second)
-returns <- returns / rutils::diff_it(.index(SPY["2012-02-13"]))
+returns <- returns / rutils::diffit(.index(SPY["2012-02-13"]))
 returns[1] <- 0
 # Minutely SPY volatility scaled to unit per minute
 60*sd(returns)
 # SPY returns multiple days
-returns <- rutils::diff_it(log(SPY[, 4]))
+returns <- rutils::diffit(log(SPY[, 4]))
 # Minutely SPY volatility (includes overnight jumps)
 sd(returns)
 # Table of intervals - 60 second is most frequent
-indeks <- rutils::diff_it(.index(SPY))
+indeks <- rutils::diffit(.index(SPY))
 table(indeks)
 # hist(indeks)
 # SPY returns with overnight scaling (unit per second)
@@ -4563,22 +4563,22 @@ library(HighFreq)  # Load HighFreq
 # Minutely OHLC SPY prices aggregated to daily prices
 SPY_daily <- rutils::to_period(ohlc=HighFreq::SPY, period="days")
 # Daily SPY volatility from daily returns
-sd(rutils::diff_it(log(SPY_daily[, 4])))
+sd(rutils::diffit(log(SPY_daily[, 4])))
 # Minutely SPY returns (unit per minute)
-returns <- rutils::diff_it(log(SPY[, 4]))
+returns <- rutils::diffit(log(SPY[, 4]))
 # Minutely SPY volatility scaled to daily interval
 sqrt(6.5*60)*sd(returns)
 # Minutely SPY returns with overnight scaling (unit per second)
-returns <- rutils::diff_it(log(SPY[, 4]))
-indeks <- rutils::diff_it(.index(SPY))
+returns <- rutils::diffit(log(SPY[, 4]))
+indeks <- rutils::diffit(.index(SPY))
 returns <- returns / indeks
 returns[1] <- 0
 # Daily SPY volatility from minutely returns
 sqrt(6.5*60)*60*sd(returns)
 # Daily SPY volatility
 # Scale by extra time over weekends and holidays
-24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4]))[-1] /
-            rutils::diff_it(.index(SPY_daily))[-1])
+24*60*60*sd(rutils::diffit(log(SPY_daily[, 4]))[-1] /
+            rutils::diffit(.index(SPY_daily))[-1])
       @
   \end{columns}
 \end{block}
@@ -4601,8 +4601,8 @@ sqrt(6.5*60)*60*sd(returns)
         <<echo=TRUE,eval=FALSE>>=
 # Calculate SPY returns adjusted for overnight jumps
 closep <- log(as.numeric(Cl(HighFreq::SPY[, 4])))
-returns <- rutils::diff_it(closep) / 
-  rutils::diff_it(.index(HighFreq::SPY))
+returns <- rutils::diffit(closep) / 
+  rutils::diffit(.index(HighFreq::SPY))
 returns[1] <- 0
 closep <- cumsum(returns)
 nrows <- NROW(closep)
@@ -4612,7 +4612,7 @@ vol_s <- sapply(interval_s, function(interval) {
   num_agg <- nrows %/% interval
   endp <- c(0, nrows - num_agg*interval + (0:num_agg)*interval)
   # endp <- rutils::calc_endpoints(closep, interval=interval)
-  sd(rutils::diff_it(closep[endp]))
+  sd(rutils::diffit(closep[endp]))
 })  # end sapply
 # Calculate Hurst as regression slope using formula
 vol_log <- log(vol_s)
@@ -4758,7 +4758,7 @@ text(inter_log[2], rs_log[NROW(rs_log)-1],
       During the May 6, 2010 \emph{flash crash}, range volatility spiked more than the \emph{Close-to-Close} volatility.
       <<echo=TRUE,eval=FALSE>>=
 library(HighFreq)  # Load HighFreq
-ohlc <- log(rutils::etf_env$VTI)
+ohlc <- log(rutils::etfenv$VTI)
 # Calculate variance
 var_close <- HighFreq::run_variance(ohlc=ohlc,
         method="close")
@@ -4826,9 +4826,9 @@ lines(density(foo[, 2]), col='red', lwd=2)
       \end{displaymath}
       The range logarithm fits better into the normal distribution than the range percentage.
       <<echo=TRUE,eval=FALSE>>=
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 returns <- log((ohlc[, 2] - ohlc[, 3]) / (ohlc[, 2] + ohlc[, 3]))
-foo <- rutils::diff_it(log(ohlc[, 4]))
+foo <- rutils::diffit(log(ohlc[, 4]))
 plot(as.numeric(foo)^2, as.numeric(returns)^2)
 bar <- lm(returns ~ foo)
 summary(bar)
@@ -4957,8 +4957,8 @@ pacf(var_yang_zhang, lag=10, xlab=NA, ylab=NA)
 title(main="VTI YZ variance partial autocorrelations")
 
 # Squared range partial autocorrelations
-returns <- log(rutils::etf_env$VTI[,2] /
-                  rutils::etf_env$VTI[,3])
+returns <- log(rutils::etfenv$VTI[,2] /
+                  rutils::etfenv$VTI[,3])
 pacf(returns^2, lag=10, xlab=NA, ylab=NA)
 title(main="VTI squared range partial autocorrelations")
       @
@@ -5024,7 +5024,7 @@ title(main="VTI squared range partial autocorrelations")
     \column{0.5\textwidth}
 \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-ohlc <- rutils::etf_env$VTI
+ohlc <- rutils::etfenv$VTI
 # Number of data points
 nrows <- NROW(ohlc["2018-06/"])
 # Define endp at each point in time
@@ -5075,7 +5075,7 @@ endp <- xts::endpoints(closep, on="months")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/intervals_end_points.png}
+      \includegraphics[width=0.45\paperwidth]{figure/intervals_endpoints.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot data and endpoints as vertical lines
@@ -5108,7 +5108,7 @@ abline(v=endp, col="red", lwd=2)
       An example of an overlapping interval aggregation are trailing 12-month asset returns calculated every month.
       <<echo=TRUE,eval=FALSE>>=
 # Number of data points
-nrows <- NROW(rutils::etf_env$VTI["2019/"])
+nrows <- NROW(rutils::etfenv$VTI["2019/"])
 # Number of npoints that fit over nrows
 npoints <- 21
 nagg <- nrows %/% npoints
@@ -5155,7 +5155,7 @@ cbind(startp, endp)
     \column{0.5\textwidth}
       <<echo=TRUE,eval=FALSE>>=
 # Number of data points
-nrows <- NROW(rutils::etf_env$VTI["2019/"])
+nrows <- NROW(rutils::etfenv$VTI["2019/"])
 # Number of data points per interval
 npoints <- 21
 # Number of npointss that fit over nrows
@@ -5195,7 +5195,7 @@ startp <- c(0, endp[1:(NROW(endp)-1)]+1)
       \vspace{-1em}
       <<TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 endp <- 0:NROW(closep)  # End points at each point
 nrows <- NROW(endp)
 look_back <- 22  # Number of data points per look-back interval
@@ -5492,26 +5492,26 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Calculate EWMA prices using filter()
 look_back <- 21
 weights <- exp(-0.1*1:look_back)
 weights <- weights/sum(weights)
-filter_ed <- stats::filter(closep, filter=weights,
+filtered <- stats::filter(closep, filter=weights,
                          method="convolution", sides=1)
-filter_ed <- as.numeric(filter_ed)
+filtered <- as.numeric(filtered)
 # filter() returns time series of class "ts"
-class(filter_ed)
+class(filtered)
 # Filter using compiled C++ function directly
 getAnywhere(C_cfilter)
 str(stats:::C_cfilter)
 filter_fast <- .Call(stats:::C_cfilter, closep, 
                      filter=weights, sides=1, circular=FALSE)
-all.equal(as.numeric(filter_ed), filter_fast, check.attributes=FALSE)
+all.equal(as.numeric(filtered), filter_fast, check.attributes=FALSE)
 # Calculate EWMA prices using roll::roll_sum()
 weights_rev <- rev(weights)
 roll_ed <- roll::roll_sum(closep, width=look_back, weights=weights_rev, min_obs=1)
-all.equal(filter_ed[-(1:look_back)],
+all.equal(filtered[-(1:look_back)],
           as.numeric(roll_ed)[-(1:look_back)],
           check.attributes=FALSE)
 # Benchmark speed of rolling calculations
@@ -5613,7 +5613,7 @@ summary(microbenchmark(
 library(rutils)
 # Calculate rolling VTI variance using package roll
 library(roll)  # Load roll
-returns <- na.omit(rutils::etf_env$returns[, "VTI"])
+returns <- na.omit(rutils::etfenv$returns[, "VTI"])
 look_back <- 22
 # Calculate rolling sum using RcppRoll
 sum_roll <- roll::roll_sum(returns, width=look_back, min_obs=1)
@@ -5673,7 +5673,7 @@ summary(microbenchmark(
   rutils=rutils::roll_sum(returns, look_back=look_back),
   times=10))[, c(1, 4, 5)]
 # Calculate EWMA prices using RcppRoll
-closep <- quantmod::Cl(rutils::etf_env$VTI)
+closep <- quantmod::Cl(rutils::etfenv$VTI)
 weights <- exp(0.1*1:look_back)
 prices_ewma <- RcppRoll::roll_mean(closep,
       align="right", n=look_back, weights=weights)
@@ -5737,7 +5737,7 @@ med_ian <- runmed(x=closep, k=look_back)
 sigmav <- runsd(x=closep, k=look_back,
                 endrule="constant", align="center")
 # Vector of rolling quantiles
-quan_tiles <- runquantile(x=closep, k=look_back,
+quantilevs <- runquantile(x=closep, k=look_back,
   probs=0.9, endrule="constant", align="center")
       @
   \end{columns}
@@ -5878,7 +5878,7 @@ head(closep[endp, ])
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
-closep <- log(na.omit(rutils::etf_env$prices$VTI))
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Number of data points
 nrows <- NROW(closep)
 # Number of data points per interval
@@ -6039,7 +6039,7 @@ head(agg_s)
 # Load package HighFreq
 library(HighFreq)
 # Extract closing minutely prices
-closep <- quantmod::Cl(rutils::etf_env$VTI["2019"])
+closep <- quantmod::Cl(rutils::etfenv$VTI["2019"])
 # Apply "mean" over daily periods
 agg_s <- apply.daily(closep, FUN=sum)
 head(agg_s)
