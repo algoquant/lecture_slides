@@ -1,3 +1,10 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="tiny", fig.width=4, fig.height=4)
+options(digits=3)
+options(width=80, dev="pdf")
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+
 # Single numbers are vectors of length 1
 1
 # Character strings are vectors of length 1
@@ -9,24 +16,32 @@ list(aa=c("a", "b"), bb=1:5)
 data.frame(aa=c("a", "b"), bb=1:2)
 is.atomic(data.frame(aa=c("a", "b"), bb=1:2))
 is.recursive(data.frame(aa=c("a", "b"), bb=1:2))
+
 myvar <- "hello"
 c(typeof(myvar), mode(myvar), class(myvar))
+
 myvar <- 1:5
 c(typeof(myvar), mode(myvar), class(myvar))
+
 myvar <- runif(5)
 c(typeof(myvar), mode(myvar), class(myvar))
+
 myvar <- matrix(1:10, 2, 5)
 c(typeof(myvar), mode(myvar), class(myvar))
+
 myvar <- matrix(runif(10), 2, 5)
 c(typeof(myvar), mode(myvar), class(myvar))
+
 myvar <- list(aa=c("a", "b"), bb=1:5)
 c(typeof(myvar), mode(myvar), class(myvar))
+
 myvar <- data.frame(aa=c("a", "b"), bb=1:2)
 c(typeof(myvar), mode(myvar), class(myvar))
+
 # A simple vector has no attributes
 attributes(5:10)
 myvar <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-# Named vector has "names" attribute
+# Named vector has "namesv" attribute
 attributes(myvar)
 myvar <- 1:10
 is.vector(myvar)  # Is the object a vector?
@@ -37,6 +52,7 @@ myvar <- 0
 attributes(myvar) <- list(class="Date")
 myvar  # "Date" object
 structure(0, class="Date")  # "Date" object
+
 myvar <- matrix(runif(10), 2, 5)
 class(myvar)  # Has implicit class
 # But no explicit "class" attribute
@@ -50,6 +66,7 @@ attributes(myvar)
 is.matrix(myvar)  # Is the object a matrix?
 is.vector(myvar)  # Is the object a vector?
 attributes(unclass(myvar))
+
 # Integer implicit class derived from type
 myvar <- vector(mode="integer", length=10)
 c(typeof(myvar), mode(myvar), class(myvar))
@@ -64,6 +81,7 @@ myvar <- data.frame(aa=c("a", "b"), bb=1:2)
 c(typeof(myvar), mode(myvar), class(myvar))
 attributes(myvar)
 dim(myvar)
+
 myvar <- 1:5
 c(typeof(myvar), mode(myvar), class(myvar))
 mode(myvar) <- "character"  # Coerce to "character"
@@ -83,29 +101,34 @@ as.numeric(c(FALSE, TRUE, TRUE, TRUE))
 c(1:3, "a")  # Implicit coercion to "character"
 # Explicit coercion to "numeric"
 as.numeric(c(1:3, "a"))
-"Hello World!"  # Type some text
-# hello is a variable name, because it's not in quotes
-hello  # R interretsp "hello" as a variable name
-is.vector(1)  # Single number is a vector
-is.vector("a")  # String is a vector
-4:8  # Create a vector
-# Create vector using c() combine function
-c(1, 2, 3, 4, 5)
-# Create vector using c() combine function
-c("a", "b", "c")
-# Create vector using c() combine function
-c(1, "b", "c")
+
+## "Hello World!"  # Type some text
+## # hello is a variable name, because it's not in quotes
+## hello  # R interretsp "hello" as a variable name
+## is.vector(1)  # Single number is a vector
+## is.vector("a")  # String is a vector
+## 4:8  # Create a vector
+## # Create vector using c() combine function
+## c(1, 2, 3, 4, 5)
+## # Create vector using c() combine function
+## c("a", "b", "c")
+## # Create vector using c() combine function
+## c(1, "b", "c")
+
 str_var <- "Some string"
 str_var
 str_var[1]
 str_var[2]
+
 NROW(str_var)  # length of vector
 nchar(str_var)  # length of string
+
 # Concatenate and echo to console
 cat("Hello", "World!")
 cat("Enter\ttab")
 cat("Enter\nnewline")
 cat("Enter\\backslash")
+
 str_var1 <- "Hello"  # Define a character string
 str_var2 <- "World!"  # Define a character string
 paste(str_var1, str_var2, sep=" ")  # Concatenate and return value
@@ -119,11 +142,16 @@ strsplit("Hello World", split="r")  # Split string
 strsplit("Hello.World", split="[.]")  # Split string
 strsplit("Hello.World", split=".", fixed=TRUE)  # Split string
 substring("Hello World", 3, 6)  # Extract characters from 3 to 6
+
 gsub("is", "XX", "is this gratis?")  # Replace "is" with "XX"
+
 grep("b", c("abc", "xyz", "cba d", "bbb"))  # Get indexes
+
 grep("b", c("abc", "xyz", "cba d", "bbb"), value=TRUE)  # Get values
+
 glob2rx("abc.*")  # Convert globs into regex
 glob2rx("*.doc")
+
 is.vector(1)  # Single number is a vector
 is.vector("a")  # String is a vector
 vectorv <- c(8, 6, 5, 7)  # Create vector
@@ -137,6 +165,7 @@ c(FALSE, TRUE, TRUE)
 vectorv[c(FALSE, TRUE, TRUE)]
 letters[5:10]  # Vector of letters
 c("a", letters[5:10])  # Combine two vectors of letters
+
 0:10  # Vector of integers from 0 to 10
 vector()  # Create empty vector
 vector(mode="numeric", length=10)  # Numeric vector of zeros
@@ -150,6 +179,7 @@ rep(100, times=5)  # Replicate a number
 character(5)  # Create empty character vector
 numeric(5)  # Create empty numeric vector
 numeric(0)  # Create zero-length vector
+
 2*4:8  # Multiply a vector
 2*(4:8)  # Multiply a vector
 4:8/2  # Divide a vector
@@ -164,6 +194,7 @@ vectorv > 6
 vectorv^2  # Square all elements
 c(11, 5:10)  # Combine two vectors
 c(vectorv, 2.0)  # Append number to vector
+
 vectorv <- # Create named vector
   c(pi_const=pi, euler=exp(1), gamma=-digamma(1))
 vectorv
@@ -175,7 +206,8 @@ unname(vectorv)  # Remove names attribute
 letters[5:10]  # Vector of letters
 c("a", letters[5:10])  # Combine two vectors of letters
 # Create named vector
-structure(sample(1:5), names=paste0("el", 1:5))
+structure(sample(1:5), namesv=paste0("el", 1:5))
+
 vectorv  # Named vector
 # Extract second element
 vectorv[2]
@@ -191,6 +223,7 @@ vectorv["eulery"]
 vectorv[c("pie", "gammy")]
 # Subset whole vector
 vectorv[] <- 0
+
 vectorv <- runif(5)
 vectorv
 vectorv > 0.5  # Boolean vector
@@ -203,6 +236,7 @@ vectorv < 1  # Boolean vector of elements less than one
 vectorv[vectorv > 1]
 vectorv[vectorv > 0.5]  # Filter elements > 0.5
 which(vectorv > 0.5)  # Index of elements > 0.5
+
 # Create factor vector
 factorv <- factor(c("b", "c", "d", "a", "c", "b"))
 factorv
@@ -218,6 +252,7 @@ is.vector(factorv)
 as.factor(1:5)
 # Coerce factor to character vector
 as.vector(as.factor(1:5))
+
 factorv
 # Get unique elements
 unique(factorv)
@@ -232,6 +267,7 @@ sapply(levels(factorv),
  function(levelv) {
    sum(levelv == factorv)
  })  # end sapply
+
 # Display the formal arguments of findInterval
 args(findInterval)
 # Get index of the element of "vec" that matches 5
@@ -246,6 +282,7 @@ findInterval(x=1:8, vec=c(3, 5, 7))
 findInterval(x=1:8, vec=c(3, 5, 7), all.inside=TRUE)
 # make rightmost interval inclusive
 findInterval(x=1:8, vec=c(3, 5, 7), rightmost.closed=TRUE)
+
 # Named numeric vector of breakpoints
 brea_ks <- c(freezing=0, very_cold=30, cold=50, 
        pleasant=60, warm=80, hot=90)
@@ -255,6 +292,7 @@ feels_like <- names(
   brea_ks[findInterval(x=tempe_ratures, vec=brea_ks)])
 names(tempe_ratures) <- feels_like
 tempe_ratures
+
 library(microbenchmark)
 datav <- sample(0:6) + 0.1
 datav
@@ -272,27 +310,30 @@ summary(microbenchmark(
   cuut=
     cut(x=vectorv, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Calculate VTI percentage returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
-# Plot histogram
-x11(width=6, height=5)
-par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-madv <- mad(returns)
-histo_gram <- hist(returns, breaks=100,
-  main="", xlim=c(-5*madv, 5*madv),
-  xlab="", ylab="", freq=FALSE)
-# Draw kernel density of histogram
-lines(density(returns), col="red", lwd=2)
-# Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
-add=TRUE, type="l", lwd=2, col="blue")
-title(main="VTI Return Distribution", line=0)
-# Add legend
-legend("topright", inset=0.05, cex=0.8, title=NULL,
-  leg=c("VTI", "Normal"), bty="n",
-  lwd=6, bg="white", col=c("red", "blue"))
-# Total area under histogram
-sum(diff(histo_gram$breaks) * histo_gram$density)
+
+## # Calculate VTI percentage returns
+## returns <- na.omit(rutils::etfenv$returns$VTI)
+## # Plot histogram
+## x11(width=6, height=5)
+## par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+## madv <- mad(returns)
+## histo_gram <- hist(returns, breaks=100,
+##   main="", xlim=c(-5*madv, 5*madv),
+##   xlab="", ylab="", freq=FALSE)
+
+## # Draw kernel density of histogram
+## lines(density(returns), col="red", lwd=2)
+## # Add density of normal distribution
+## curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
+## add=TRUE, type="l", lwd=2, col="blue")
+## title(main="VTI Return Distribution", line=0)
+## # Add legend
+## legend("topright", inset=0.05, cex=0.8, title=NULL,
+##   leg=c("VTI", "Normal"), bty="n",
+##   lwd=6, bg="white", col=c("red", "blue"))
+## # Total area under histogram
+## sum(diff(histo_gram$breaks) * histo_gram$density)
+
 matrixv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
 matrixv  # By default matrices are constructed column-wise
 # Create a matrix row-wise
@@ -309,6 +350,7 @@ nrow(vectorv); ncol(vectorv)
 NROW(vectorv); NCOL(vectorv)
 nrow(matrixv); ncol(matrixv)
 NROW(matrixv); NCOL(matrixv)
+
 attributes(matrixv)  # Get matrix attributes
 dim(matrixv)  # Get dimension attribute
 class(matrixv)  # Get class attribute
@@ -319,6 +361,7 @@ matrixv["row2", "col3"]  # Third element from second row
 names(matrixv)  # Get the names attribute
 dimnames(matrixv)  # Get dimnames attribute
 attributes(matrixv)  # Get matrix attributes
+
 matrixv  # matrix with column names
 matrixv[1, ]  # Subset rows by index
 matrixv[, "col1"]  # Subset columns by name
@@ -329,6 +372,7 @@ is.matrix(matrixv[1, ]); is.vector(matrixv[1, ])
 matrixv[1, , drop=FALSE]  # Drop=FALSE preserves matrix
 class(matrixv[1, , drop=FALSE])
 is.matrix(matrixv[1, , drop=FALSE]); is.vector(matrixv[1, , drop=FALSE])
+
 # Create a list with two elements
 listv <- list(c("a", "b"), 1:4)
 listv
@@ -341,6 +385,7 @@ listv <- list(first=c("a", "b"), second=1:4)
 listv
 names(listv)
 unlist(listv)
+
 listv[2]  # Extract second element as sublist
 listv[[2]]  # Extract second element
 listv[[2]][3]  # Extract third element of second element
@@ -353,10 +398,12 @@ listv$a <- 1
 listv[2] <- 2
 listv
 names(listv)
+
 # Convert vector elements to list elements
 as.list(1:3)
 # Convert whole vector to single list element
 list(1:3)
+
 data_frame <- data.frame(  # Create a data frame
                 type=c("rose", "daisy", "tulip"),
                 color=c("red", "white", "yellow"),
@@ -369,8 +416,10 @@ rownames(data_frame)  # Get the rownames attribute
 class(data_frame)  # Get object class
 typeof(data_frame)  # Data frames are listv
 is.data.frame(data_frame)
+
 class(data_frame$type)  # Get column class
 class(data_frame$price)  # Get column class
+
 data_frame[, 3]  # Extract third column as vector
 data_frame[[3]]  # Extract third column as vector
 data_frame[3]  # Extract third column as data frame
@@ -383,6 +432,7 @@ data_frame[2, ][3]  # Third element from second column
 data_frame[2, 3]  # Third element from second column
 unlist(data_frame[2, ])  # Coerce to vector
 is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
+
 data_frame <- data.frame(  # Create a data frame
                 type=c("rose", "daisy", "tulip"),
                 color=c("red", "white", "yellow"),
@@ -396,10 +446,12 @@ class(data_frame$price)  # Get column class
 options("stringsAsFactors")
 default.stringsAsFactors()
 options(stringsAsFactors=FALSE)
+
 str(data_frame)  # Display the object structure
 dim(cars)  # The cars data frame has 50 rows
 head(cars, n=5)  # Get first five rows
 tail(cars, n=5)  # Get last five rows
+
 # Create a named vector of student scores
 score_s <- sample(round(runif(5, min=1, max=10), digits=2))
 names(score_s) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
@@ -418,6 +470,7 @@ score_s
 # Examples for sort() with ties
 order(c(2, 1:4))  # There's a tie
 order(c(2, 1:4), 1:5)  # There's a tie
+
 # Create a vector of student ranks
 ra_nks <- c("fifth", "fourth", "third", "second", "first")
 # Reverse sort the student ranks according to students
@@ -432,10 +485,13 @@ order(data_frame$price)
 data_frame[order(data_frame$price), ]
 # Sort data_frame on color column
 data_frame[order(data_frame$color), ]
+
+
 as.matrix(data_frame)
 vectorv <- sample(9)
 matrix(vectorv, ncol=3)
 as.matrix(vectorv, ncol=3)
+
 matrixv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
 rownames(matrixv) <- c("row1", "row2")  # Rownames attribute
 colnames(matrixv) <- c("col1", "col2", "col3")  # Colnames attribute
@@ -451,6 +507,7 @@ summary(microbenchmark(
   as_data_frame=as.data.frame(matrixv),
   data_frame=data.frame(matrixv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
@@ -458,6 +515,7 @@ summary(microbenchmark(
   l_apply=lapply(seq_along(matrixv[1, ]),
      function(indeks) matrixv[, indeks]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 # ?iris  # Get information on iris
 dim(iris)
 head(iris, 2)
@@ -468,6 +526,7 @@ class(unique(iris$Species))
 sapply(iris, is.numeric)
 # Calculate means of iris columns
 sapply(iris, mean)  # Returns NA for Species
+
 # ?mtcars  # mtcars data from 1974 Motor Trend magazine
 # mpg   Miles/(US) gallon
 # qsec   1/4 mile time
@@ -480,16 +539,18 @@ colnames(mtcars)
 head(rownames(mtcars), 3)
 unique(mtcars$cyl)  # Extract list of car cylinders
 sapply(mtcars, mean)  # Calculate means of mtcars columns
-library(MASS)
-# ?Cars93  # Get information on Cars93
-dim(Cars93)
-head(colnames(Cars93))
-# head(Cars93, 2)
-unique(Cars93$Type)  # Extract list of car types
-# sapply(Cars93, mean)  # Calculate means of Cars93 columns
-# Plot histogram of Highway MPG using the Freedman-Diaconis rule
-hist(Cars93$MPG.highway, col="lightblue1",
-     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+
+## library(MASS)
+## # ?Cars93  # Get information on Cars93
+## dim(Cars93)
+## head(colnames(Cars93))
+## # head(Cars93, 2)
+## unique(Cars93$Type)  # Extract list of car types
+## # sapply(Cars93, mean)  # Calculate means of Cars93 columns
+## # Plot histogram of Highway MPG using the Freedman-Diaconis rule
+## hist(Cars93$MPG.highway, col="lightblue1",
+##      main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+
 rm(list=ls())
 as.numeric(c(1:3, "a"))  # NA from coercion
 0/0  # NaN from ambiguous math
@@ -504,6 +565,7 @@ mean(datav)  # Returns NA, when NAs are input
 mean(datav, na.rm=TRUE)  # remove NAs from input data
 datav[!is.na(datav)]  # Delete the NA values
 sum(!is.na(datav))  # Count non-NA values
+
 # airquality data has some NAs
 head(airquality)
 dim(airquality)
@@ -513,6 +575,7 @@ sum(is.na(airquality))
 sum(!complete.cases(airquality))
 # Display rows containing NAs
 head(airquality[!complete.cases(airquality), ])
+
 # Create vector containing NA values
 vectorv <- sample(22)
 vectorv[sample(NROW(vectorv), 4)] <- NA
@@ -531,6 +594,7 @@ good_air <- zoo::na.locf(airquality)
 dim(good_air)
 # NAs replaced
 head(good_air)
+
 # Replace NAs in xts time series
 library(rutils)  # load package rutils
 se_ries <- rutils::etfenv$prices[, 1]
@@ -545,6 +609,7 @@ summary(microbenchmark(
   zoo=zoo::na.locf(se_ries, fromLast=TRUE),
   xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 # NULL values have no mode or type
 c(mode(NULL), mode(NA))
 c(typeof(NULL), typeof(NA))
