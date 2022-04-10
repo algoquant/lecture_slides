@@ -4,22 +4,22 @@ nassets <- 100
 def_probs <- runif(nassets, max=0.2)
 mean(def_probs)
 # Simulate number of defaults
-unifunc <- runif(nassets)
-sum(unifunc < def_probs)
+unifun <- runif(nassets)
+sum(unifun < def_probs)
 # Simulate average number of defaults using for() loop (inefficient way)
 nsimu <- 1000
 set.seed(1121)
 de_faults <- numeric(nsimu)
 for (i in 1:nsimu) {  # Perform loop
-  unifunc <- runif(nassets)
-  de_faults[i] <- sum(unifunc < def_probs)
+  unifun <- runif(nassets)
+  de_faults[i] <- sum(unifun < def_probs)
 }  # end for
 # Calculate average number of defaults
 mean(de_faults)
 # Simulate using vectorized functions  (efficient way)
 set.seed(1121)
-unifunc <- matrix(runif(nsimu*nassets), ncol=nsimu)
-de_faults <- colSums(unifunc < def_probs)
+unifun <- matrix(runif(nsimu*nassets), ncol=nsimu)
+de_faults <- colSums(unifun < def_probs)
 mean(de_faults)
 # Plot the distribution of defaults
 x11(width=6, height=5)
@@ -28,7 +28,7 @@ plot(density(de_faults), main="Distribution of Defaults",
 abline(v=mean(de_faults), lwd=3, col="red")
 # Calculate default thresholds and asset values
 def_thresh <- qnorm(def_probs)
-assets <- qnorm(unifunc)
+assets <- qnorm(unifun)
 # Simulate defaults
 de_faults <- colSums(assets < def_thresh)
 mean(de_faults)
@@ -42,11 +42,11 @@ abline(v=def_thresh, col="red", lwd=3)
 text(x=def_thresh-0.1, y=0.15, labels="default threshold",
  lwd=2, srt=90, pos=3)
 # Plot polygon area
-x_var <- seq(-xlim, xlim, length=100)
-y_var <- dnorm(x_var)
-are_a <- ((x_var >= (-xlim)) & (x_var <= def_thresh))
-polygon(c(xlim, x_var[are_a], def_thresh),
-  c(-1, y_var[are_a], -1), col="red")
+xvar <- seq(-xlim, xlim, length=100)
+yvar <- dnorm(xvar)
+are_a <- ((xvar >= (-xlim)) & (xvar <= def_thresh))
+polygon(c(xlim, xvar[are_a], def_thresh),
+  c(-1, yvar[are_a], -1), col="red")
 # Define correlation parameters
 rho <- 0.2
 rho_sqrt <- sqrt(rho) ; rho_sqrtm <- sqrt(1-rho)
@@ -72,7 +72,7 @@ cor(assets)
 # benchmark the speed of the two methods
 library(microbenchmark)
 summary(microbenchmark(
-  for_loop={for (i in 1:nsimu) {
+  forloop={for (i in 1:nsimu) {
     rho_sqrt*sysv[i] + rho_sqrtm*rnorm(nassets)}},
   vector_ized={rho_sqrt*sysv + rho_sqrtm*rnorm(nsimu*nassets)},
   times=10))[, c(1, 4, 5)]
@@ -300,11 +300,11 @@ polygon(c(va_r, var_s, min_var), density=20,
   c(-1, densv, -1), col="red", border=NA)
 text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
 # VaR (quantile of the loss distribution)
-var_func <- function(x, def_thresh=qnorm(0.1), rho=0.1, lgd=0.4)
+varfun <- function(x, def_thresh=qnorm(0.1), rho=0.1, lgd=0.4)
   lgd*pnorm((sqrt(rho)*qnorm(x) + def_thresh)/sqrt(1-rho))
-var_func(x=0.99, def_thresh=def_thresh, rho=rho, lgd=lgd)
+varfun(x=0.99, def_thresh=def_thresh, rho=rho, lgd=lgd)
 # Plot VaR
-curve(expr=var_func(x, def_thresh=def_thresh, rho=rho, lgd=lgd),
+curve(expr=varfun(x, def_thresh=def_thresh, rho=rho, lgd=lgd),
 type="l", xlim=c(0, 0.999), xlab="confidence level", ylab="VaR", lwd=3,
 col="orange", main="VaR versus Confidence Level")
 # Add line for expected loss
@@ -392,8 +392,8 @@ abline(v=va_r, col="red", lwd=3)
 text(x=va_r, y=4*y_max/5, labels="VaR", lwd=2, pos=4)
 # Draw shaded polygon for CVaR
 indeks <- (densv$x > va_r)
-x_var <- c(min(densv$x[indeks]), densv$x[indeks], max(densv$x))
-polygon(x_var, c(-1, densv$y[indeks], -1), col="red", border=NA, density=10)
+xvar <- c(min(densv$x[indeks]), densv$x[indeks], max(densv$x))
+polygon(xvar, c(-1, densv$y[indeks], -1), col="red", border=NA, density=10)
 # Add text for CVaR
 text(x=5*va_r/4, y=(y_max/7), labels="CVaR", lwd=2, pos=4)
 # Add text with data
@@ -618,7 +618,7 @@ uiface <- shiny::fluidPage(
   plotOutput("plotobj", height=300, width=500)
 )  # end user interface
 Define the server function
-servfunc <- function(input, output) {
+servfun <- function(input, output) {
   output$plotobj <- shiny::renderPlot({
     # Simulate the data
     datav <- rnorm(input$ndata, sd=input$stdev)
@@ -626,9 +626,9 @@ servfunc <- function(input, output) {
     par(mar=c(2, 4, 4, 0), oma=c(0, 0, 0, 0))
     hist(datav, xlim=c(-4, 4), main="Histogram of Random Data")
   })  # end renderPlot
-}  # end servfunc
+}  # end servfun
 # Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfunc)
+shiny::shinyApp(ui=uiface, server=servfun)
 Create elements of the user interface
 uiface <- shiny::fluidPage(
   titlePanel("VWAP Moving Average"),
@@ -645,7 +645,7 @@ uiface <- shiny::fluidPage(
   mainPanel(dygraphs::dygraphOutput("dyplot"), width=12)
 )  # end fluidPage interface
 Define the server function
-servfunc <- shiny::shinyServer(function(input, output) {
+servfun <- shiny::shinyServer(function(input, output) {
   # Get the close and volume data in a reactive environment
   closep <- shiny::reactive({
     # Get the data
@@ -682,9 +682,9 @@ dySeries(name=colnames[2], axis="y2", label=colnames[2], strokeWidth=2, col="red
   })  # end output plot
 })  # end server code
 Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfunc)
+shiny::shinyApp(ui=uiface, server=servfun)
 Define the server function
-servfunc <- shiny::shinyServer(function(input, output) {
+servfun <- shiny::shinyServer(function(input, output) {
   # Create an empty list of reactive values.
   value_s <- reactiveValues()
   # Get input parameters from the user interface.
@@ -716,4 +716,4 @@ servfunc <- shiny::shinyServer(function(input, output) {
   })  # end observeEvent
 })  # end server code
 Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfunc)
+shiny::shinyApp(ui=uiface, server=servfun)

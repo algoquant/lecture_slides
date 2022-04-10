@@ -99,13 +99,13 @@ data10 <- read.csv(con_read, nrows=1e3)
 colnames <- colnames(data10)
 # Write to a file
 countv <- 1
-write.csv(data10, paste0("C:/Develop/data/temp/etf_prices_", countv, ".csv"))
+write.csv(data10, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
 # Read remaining rows in a loop 10 rows at a time
 # Can produce error without getting to end of file
 while (isOpen(con_read)) {
   datav <- read.csv(con_read, nrows=1e3)
   colnames(datav) <- colnames
-  write.csv(datav, paste0("C:/Develop/data/temp/etf_prices_", countv, ".csv"))
+  write.csv(datav, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
   countv <- countv + 1
 }  # end while
 # Write matrix to csv file, and then read it back
@@ -615,9 +615,9 @@ class(t_aq); head(t_aq)
 # Get memory size of data table
 format(object.size(t_aq), units="MB")
 # Save data table to .fst file
-fst::write_fst(t_aq, path="C:/Develop/data/taq.fst")
+fst::write_fst(t_aq, path="/Users/jerzy/Develop/data/taq.fst")
 # Create reference to .fst file similar to a data frame
-fs_t <- fst::fst("C:/Develop/data/taq.fst")
+fs_t <- fst::fst("/Users/jerzy/Develop/data/taq.fst")
 class(fs_t)
 # Memory size of reference to .fst is very small
 format(object.size(fs_t), units="MB")
@@ -766,26 +766,26 @@ summary(microbenchmark(
   r_cpp=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
 # Calculate uniformly distributed pseudo-random sequence
-unifunc <- function(seedv, nrows=10) {
+unifun <- function(seedv, nrows=10) {
   output <- numeric(nrows)
   output[1] <- seedv
   for (i in 2:nrows) {
     output[i] <- 4*output[i-1]*(1-output[i-1])
   }  # end for
   acos(1-2*output)/pi
-}  # end unifunc
+}  # end unifun
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifunc.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifun.cpp")
 # Microbenchmark Rcpp code
 library(microbenchmark)
 summary(microbenchmark(
   pure_r=runif(1e5),
-  r_loop=unifunc(0.3, 1e5),
+  rloop=unifun(0.3, 1e5),
   r_cpp=uniform_rcpp(0.3, 1e5),
   times=10))[, c(1, 4, 5)]
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/armadillo_functions.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/armadillofuntions.cpp")
 vec1 <- runif(1e5)
 vec2 <- runif(1e5)
 vec_in(vec1, vec2)
@@ -821,14 +821,14 @@ summary(microbenchmark(
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/armadillo_functions.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/armadillofuntions.cpp")
 matrixv <- matrix(runif(1e5), nc=1e3)
 # De-mean using apply()
-new_mat <- apply(matrixv, 2,
+newmapt <- apply(matrixv, 2,
   function(x) (x-mean(x)))
 # De-mean using demean_mat()
 demean_mat(matrixv)
-all.equal(new_mat, matrixv)
+all.equal(newmapt, matrixv)
 # Microbenchmark RcppArmadillo code
 summary(microbenchmark(
   apply = (apply(matrixv, 2, mean)),
@@ -1496,19 +1496,19 @@ vti2 <- rutils::etfenv$VTI["2014/"]
 dates1 <- index(vti1)
 dates2 <- index(vti2)
 # Join by rows
-vtis <- rbind(vti1, vti2)
-dates <- index(vtis)
+vti <- rbind(vti1, vti2)
+dates <- index(vti)
 sum(duplicated(dates))
-vtis <- vtis[!duplicated(dates), ]
-all.equal(vtis, rutils::etfenv$VTI)
+vti <- vti[!duplicated(dates), ]
+all.equal(vti, rutils::etfenv$VTI)
 # Alternative method - slightly slower
-vtis <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
-all.equal(vtis, rutils::etfenv$VTI)
+vti <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
+all.equal(vti, rutils::etfenv$VTI)
 # Remove duplicates starting from the end
-vtis <- rbind(vti1, vti2)
-vtis <- vtis[!duplicated(dates), ]
-vti_fl <- vtis[!duplicated(dates, fromLast=TRUE), ]
-all.equal(vtis, vti_fl)
+vti <- rbind(vti1, vti2)
+vti <- vti[!duplicated(dates), ]
+vti_fl <- vti[!duplicated(dates, fromLast=TRUE), ]
+all.equal(vti, vti_fl)
 prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 str(prices)  # Display structure of xts

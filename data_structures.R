@@ -1,9 +1,9 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="tiny", fig.width=4, fig.height=4)
-options(digits=3)
-options(width=80, dev="pdf")
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
+
+
+
+
+
+
 
 # Single numbers are vectors of length 1
 1
@@ -102,18 +102,18 @@ c(1:3, "a")  # Implicit coercion to "character"
 # Explicit coercion to "numeric"
 as.numeric(c(1:3, "a"))
 
-## "Hello World!"  # Type some text
-## # hello is a variable name, because it's not in quotes
-## hello  # R interretsp "hello" as a variable name
-## is.vector(1)  # Single number is a vector
-## is.vector("a")  # String is a vector
-## 4:8  # Create a vector
-## # Create vector using c() combine function
-## c(1, 2, 3, 4, 5)
-## # Create vector using c() combine function
-## c("a", "b", "c")
-## # Create vector using c() combine function
-## c(1, "b", "c")
+"Hello World!"  # Type some text
+# hello is a variable name, because it's not in quotes
+hello  # R interretsp "hello" as a variable name
+is.vector(1)  # Single number is a vector
+is.vector("a")  # String is a vector
+4:8  # Create a vector
+# Create vector using c() combine function
+c(1, 2, 3, 4, 5)
+# Create vector using c() combine function
+c("a", "b", "c")
+# Create vector using c() combine function
+c(1, "b", "c")
 
 str_var <- "Some string"
 str_var
@@ -206,7 +206,7 @@ unname(vectorv)  # Remove names attribute
 letters[5:10]  # Vector of letters
 c("a", letters[5:10])  # Combine two vectors of letters
 # Create named vector
-structure(sample(1:5), namesv=paste0("el", 1:5))
+structure(sample(1:5), names=paste0("el", 1:5))
 
 vectorv  # Named vector
 # Extract second element
@@ -311,28 +311,28 @@ summary(microbenchmark(
     cut(x=vectorv, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-## # Calculate VTI percentage returns
-## returns <- na.omit(rutils::etfenv$returns$VTI)
-## # Plot histogram
-## x11(width=6, height=5)
-## par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-## madv <- mad(returns)
-## histo_gram <- hist(returns, breaks=100,
-##   main="", xlim=c(-5*madv, 5*madv),
-##   xlab="", ylab="", freq=FALSE)
+# Calculate VTI percentage returns
+returns <- na.omit(rutils::etfenv$returns$VTI)
+# Plot histogram
+x11(width=6, height=5)
+par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+madv <- mad(returns)
+histp <- hist(returns, breaks=100,
+  main="", xlim=c(-5*madv, 5*madv),
+  xlab="", ylab="", freq=FALSE)
 
-## # Draw kernel density of histogram
-## lines(density(returns), col="red", lwd=2)
-## # Add density of normal distribution
-## curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
-## add=TRUE, type="l", lwd=2, col="blue")
-## title(main="VTI Return Distribution", line=0)
-## # Add legend
-## legend("topright", inset=0.05, cex=0.8, title=NULL,
-##   leg=c("VTI", "Normal"), bty="n",
-##   lwd=6, bg="white", col=c("red", "blue"))
-## # Total area under histogram
-## sum(diff(histo_gram$breaks) * histo_gram$density)
+# Draw kernel density of histogram
+lines(density(returns), col="red", lwd=2)
+# Add density of normal distribution
+curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
+add=TRUE, type="l", lwd=2, col="blue")
+title(main="VTI Return Distribution", line=0)
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+  leg=c("VTI", "Normal"), bty="n",
+  lwd=6, bg="white", col=c("red", "blue"))
+# Total area under histogram
+sum(diff(histp$breaks) * histp$density)
 
 matrixv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
 matrixv  # By default matrices are constructed column-wise
@@ -462,10 +462,10 @@ order(score_s)
 # Sort the vector into ascending order
 score_s[order(score_s)]
 # Calculate the sorted (ordered) vector
-sort_ed <- score_s[order(score_s)]
+sortv <- score_s[order(score_s)]
 # Calculate index to sort into unsorted (original) order
 order(order(score_s))
-sort_ed[order(order(score_s))]
+sortv[order(order(score_s))]
 score_s
 # Examples for sort() with ties
 order(c(2, 1:4))  # There's a tie
@@ -512,7 +512,7 @@ library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
   as_list=as.list(as.data.frame.matrix(matrixv)),
-  l_apply=lapply(seq_along(matrixv[1, ]),
+  applyloop=lapply(seq_along(matrixv[1, ]),
      function(indeks) matrixv[, indeks]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
@@ -540,16 +540,16 @@ head(rownames(mtcars), 3)
 unique(mtcars$cyl)  # Extract list of car cylinders
 sapply(mtcars, mean)  # Calculate means of mtcars columns
 
-## library(MASS)
-## # ?Cars93  # Get information on Cars93
-## dim(Cars93)
-## head(colnames(Cars93))
-## # head(Cars93, 2)
-## unique(Cars93$Type)  # Extract list of car types
-## # sapply(Cars93, mean)  # Calculate means of Cars93 columns
-## # Plot histogram of Highway MPG using the Freedman-Diaconis rule
-## hist(Cars93$MPG.highway, col="lightblue1",
-##      main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+library(MASS)
+# ?Cars93  # Get information on Cars93
+dim(Cars93)
+head(colnames(Cars93))
+# head(Cars93, 2)
+unique(Cars93$Type)  # Extract list of car types
+# sapply(Cars93, mean)  # Calculate means of Cars93 columns
+# Plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1",
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
 
 rm(list=ls())
 as.numeric(c(1:3, "a"))  # NA from coercion

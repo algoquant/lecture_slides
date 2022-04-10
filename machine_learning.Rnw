@@ -1010,15 +1010,15 @@ round(sapply(returns, mean), 6)
 sapply(returns, sd)
 # Alternative (much slower) center (de-mean) and scale the returns
 # returns <- apply(returns, 2, scale)
-# returns <- xts::xts(returns, index(prices))
+# returns <- xts::xts(returns, zoo::index(prices))
 # Alternative (much slower) center (de-mean) and scale the returns
 # returns <- scale(returns, center=TRUE, scale=TRUE)
-# returns <- xts::xts(returns, index(prices))
+# returns <- xts::xts(returns, zoo::index(prices))
 # Alternative (much slower) center (de-mean) and scale the returns
 # returns <- t(returns) - colMeans(returns)
 # returns <- returns/sqrt(rowSums(returns^2)/(NCOL(returns)-1))
 # returns <- t(returns)
-# returns <- xts::xts(returns, index(prices))
+# returns <- xts::xts(returns, zoo::index(prices))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/corr_etf.png}
@@ -1073,12 +1073,12 @@ nweights <- NROW(symbolv)
 weights <- rep(1/sqrt(nweights), nweights)
 names(weights) <- symbolv
 # Objective function equal to minus portfolio variance
-object <- function(weights, returns) {
+objfun <- function(weights, returns) {
   retsp <- returns %*% weights
   -sum(retsp^2) + 1e7*(1 - sum(weights^2))^2
-}  # end object
+}  # end objfun
 # Objective for equal weight portfolio
-object(weights, returns)
+objfun(weights, returns)
 # Compare speed of vector multiplication methods
 summary(microbenchmark(
   transp=(t(returns[, 1]) %*% returns[, 1]),
@@ -1091,14 +1091,14 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Find weights with maximum variance
 optimd <- optim(par=weights,
-  fn=object,
+  fn=objfun,
   returns=returns,
   method="L-BFGS-B",
   upper=rep(10.0, nweights),
   lower=rep(-10.0, nweights))
 # Optimal weights and maximum variance
 weights1 <- optimd$par
--object(weights1, returns)
+-objfun(weights1, returns)
 # Plot first principal component weights
 barplot(weights1, names.arg=names(weights1), xlab="", ylab="",
         main="First Principal Component Weights")
@@ -1123,13 +1123,13 @@ barplot(weights1, names.arg=names(weights1), xlab="", ylab="",
 # PC1 returns
 pc1 <- drop(returns %*% weights1)
 # Redefine objective function
-object <- function(weights, returns) {
+objfun <- function(weights, returns) {
   retsp <- returns %*% weights
   -sum(retsp^2) + 1e7*(1 - sum(weights^2))^2 +
     1e7*(sum(weights1*weights))^2
-}  # end object
+}  # end objfun
 # Find second PC weights using parallel DEoptim
-optimd <- DEoptim::DEoptim(fn=object,
+optimd <- DEoptim::DEoptim(fn=objfun,
   upper=rep(10, NCOL(returns)),
   lower=rep(-10, NCOL(returns)),
   returns=returns, control=list(parVar="weights1",
@@ -1259,12 +1259,12 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
       So the highest order \emph{principal component} is equal to the \emph{Minimum Variance Portfolio}.
       <<echo=TRUE,eval=FALSE>>=
 # Redefine objective function to minimize variance
-object <- function(weights, returns) {
+objfun <- function(weights, returns) {
   retsp <- returns %*% weights
   sum(retsp^2) + 1e7*(1 - sum(weights^2))^2
-}  # end object
+}  # end objfun
 # Find highest order PC weights using parallel DEoptim
-optimd <- DEoptim::DEoptim(fn=object,
+optimd <- DEoptim::DEoptim(fn=objfun,
   upper=rep(10, NCOL(returns)),
   lower=rep(-10, NCOL(returns)),
   returns=returns, control=list(trace=FALSE,
@@ -1278,8 +1278,8 @@ sum(weights1*weights_6)
 weights_6
 eigend$vectors[, 6]
 # Calculate objective function
-object(weights_6, returns)
-object(eigend$vectors[, 6], returns)
+objfun(weights_6, returns)
+objfun(eigend$vectors[, 6], returns)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1775,11 +1775,11 @@ abline(h=0, lwd=3, col="red")
 # Degrees of freedom of residuals
 deg_free <- model$df.residual
 # Standard deviation of residuals
-resid_stddev <- sqrt(sum(residuals^2)/deg_free)
+resid_std <- sqrt(sum(residuals^2)/deg_free)
 # Standard error of beta
-betastderror <- resid_stddev/sqrt(sum(design_zm^2))
+beta_std <- resid_std/sqrt(sum(design_zm^2))
 # Standard error of alpha
-alpha_stderror <- resid_stddev*
+alpha_std <- resid_std*
   sqrt(1:nrows + mean(design)^2/sum(design_zm^2))
       @
   \end{columns}
@@ -1843,7 +1843,7 @@ attributes(model_sum)$names  # get summary elements
 model_sum$coeff
 # Standard errors
 model_sum$coefficients[2, "Std. Error"]
-all.equal(c(alpha_stderror, betastderror),
+all.equal(c(alpha_std, beta_std),
   model_sum$coefficients[, "Std. Error"], 
   check.attributes=FALSE)
 # R-squared
@@ -3251,9 +3251,9 @@ curve(expr=df(x, df1=deg_free[indeks], df2=3),
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
-lab_els <- paste("df", deg_free, sep="=")
+labelv <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
-       lab_els, cex=0.8, lwd=2, lty=1, col=colors)
+       labelv, cex=0.8, lwd=2, lty=1, col=colors)
       @
   \end{columns}
 \end{block}
@@ -3666,7 +3666,7 @@ all.equal(influ_ence, influence_pcr)
       The function \texttt{plogis()} gives the cumulative probability of the \emph{Logistic} distribution,
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/logistic_func.png}
+      \includegraphics[width=0.4\paperwidth]{figure/logisticfun.png}
         <<echo=TRUE,eval=FALSE>>=
 lambdas <- c(0.5, 1, 1.5)
 colors <- c("red", "blue", "green")
@@ -3775,15 +3775,15 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
       \includegraphics[width=0.45\paperwidth]{figure/logistic_likelihood.png}
         <<echo=TRUE,eval=FALSE>>=
 # Likelihood function of binomial distribution
-likeli_hood <- function(prob, b) {
+likefun <- function(prob, b) {
   b*log(prob) + (1-b)*log(1-prob)
-}  # end likeli_hood
-likeli_hood(prob=0.25, b=1)
+}  # end likefun
+likefun(prob=0.25, b=1)
 # Plot binomial likelihood function
-curve(expr=likeli_hood(x, b=1), xlim=c(0, 1), lwd=3, 
+curve(expr=likefun(x, b=1), xlim=c(0, 1), lwd=3, 
       xlab="prob", ylab="likelihood", col="blue",
       main="Binomial Likelihood Function")
-curve(expr=likeli_hood(x, b=0), lwd=3, col="red", add=TRUE)
+curve(expr=likefun(x, b=0), lwd=3, col="red", add=TRUE)
 legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
        title=NULL, inset=0.3, cex=1.0, lwd=6,
        lty=1, col=c("blue", "red"))
@@ -3818,10 +3818,10 @@ legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
 # Specify design matrix
 design=cbind(intercept=rep(1, NROW(response)), predictor)
 # Likelihood function of the logistic model
-likeli_hood <- function(coeff, response, design) {
+likefun <- function(coeff, response, design) {
   probs <- plogis(drop(design %*% coeff))
   -sum(response*log(probs) + (1-response)*log((1-probs)))
-}  # end likeli_hood
+}  # end likefun
 # Run likelihood function
       @
   \end{columns}
@@ -3857,27 +3857,27 @@ likeli_hood <- function(coeff, response, design) {
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
 # Rastrigin function with vector argument for optimization
-rastri_gin <- function(vectorv, pa_ram=25) {
-  sum(vectorv^2 - pa_ram*cos(vectorv))
-}  # end rastri_gin
+rastrigin <- function(vectorv, param=25) {
+  sum(vectorv^2 - param*cos(vectorv))
+}  # end rastrigin
 vectorv <- c(pi/6, pi/6)
-rastri_gin(vectorv=vectorv)
+rastrigin(vectorv=vectorv)
 # Draw 3d surface plot of Rastrigin function
 options(rgl.useNULL=TRUE); library(rgl)
 rgl::persp3d(
-  x=Vectorize(function(x, y) rastri_gin(vectorv=c(x, y))),
+  x=Vectorize(function(x, y) rastrigin(vectorv=c(x, y))),
   xlim=c(-10, 10), ylim=c(-10, 10),
-  col="green", axes=FALSE, zlab="", main="rastri_gin")
+  col="green", axes=FALSE, zlab="", main="rastrigin")
 # Optimize with respect to vector argument
-optimd <- optim(par=vectorv, fn=rastri_gin,
+optimd <- optim(par=vectorv, fn=rastrigin,
                 method="L-BFGS-B",
                 upper=c(4*pi, 4*pi),
                 lower=c(pi/2, pi/2),
-                pa_ram=1)
+                param=1)
 # Optimal parameters and value
 optimd$par
 optimd$value
-rastri_gin(optimd$par, pa_ram=1)
+rastrigin(optimd$par, param=1)
       @
   \end{columns}
 \end{block}
@@ -3909,10 +3909,10 @@ rastri_gin(optimd$par, pa_ram=1)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Initial parameters
-par_init <- c(1, 1)
+initp <- c(1, 1)
 # Find max likelihood parameters using steepest descent optimizer
-optim_fit <- optim(par=par_init,
-                   fn=likeli_hood, # Log-likelihood function
+optim_fit <- optim(par=initp,
+                   fn=likefun, # Log-likelihood function
                    method="L-BFGS-B", # Quasi-Newton method
                    response=response,
                    design=design, 
@@ -4374,9 +4374,9 @@ table(actual=!test_data$de_fault,
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Calculate confusion matrix out-of-sample
-confu_sion <- table(actual=!test_data$de_fault, 
+confmat <- table(actual=!test_data$de_fault, 
       forecast=(forecasts < threshold))
-confu_sion
+confmat
 # Calculate FALSE positive (type I error)
 sum(!test_data$de_fault & (forecasts > threshold))
 # Calculate FALSE negative (type II error)
@@ -4416,8 +4416,8 @@ sum(test_data$de_fault & (forecasts < threshold))
       \end{tabular}}
       <<echo=TRUE,eval=TRUE>>=
 # Calculate FALSE positive and FALSE negative rates
-confu_sion <- confu_sion / rowSums(confu_sion)
-c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+confmat <- confmat / rowSums(confmat)
+c(typeI=confmat[2, 1], typeII=confmat[1, 2])
 detach(Default)
       @
       <<echo=FALSE,eval=FALSE,results='asis'>>=
@@ -4465,19 +4465,19 @@ print(xtable::xtable(confusion_matrix,
       The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-con_fuse <- function(actu_al, forecasts, threshold) {
-    confu_sion <- table(actu_al, (forecasts < threshold))
-    confu_sion <- confu_sion / rowSums(confu_sion)
-    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-  }  # end con_fuse
-con_fuse(!test_data$de_fault, forecasts, threshold=threshold)
+confun <- function(actu_al, forecasts, threshold) {
+    confmat <- table(actu_al, (forecasts < threshold))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+  }  # end confun
+confun(!test_data$de_fault, forecasts, threshold=threshold)
 # Define vector of discrimination thresholds
-threshold_s <- seq(0.05, 0.95, by=0.05)^2
+threshv <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
-error_rates <- sapply(threshold_s, con_fuse,
+error_rates <- sapply(threshv, confun,
   actu_al=!test_data$de_fault, forecasts=forecasts)  # end sapply
 error_rates <- t(error_rates)
-rownames(error_rates) <- threshold_s
+rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
@@ -4592,7 +4592,7 @@ taq <- cbind(index=dates, taq)
 xtes <- xts::xts(taq[, .(price, volume)], taq$index)
 colnames(xtes) <- paste(symbol, c("Close", "Volume"), sep=".")
 save(xtes, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xtes, file="C:/Develop/data/xlk_tick_trades2020_0316.RData")
+# save(xtes, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
 # Plot dygraph
 dygraphs::dygraph(xtes$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16")
@@ -4793,19 +4793,19 @@ sum(is_jump & !is_bad)
       The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-con_fuse <- function(actu_al, zscores, threshold) {
-    confu_sion <- table(!actu_al, !(abs(zscores) > threshold))
-    confu_sion <- confu_sion / rowSums(confu_sion)
-    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-  }  # end con_fuse
-con_fuse(is_jump, zscores, threshold=threshold)
+confun <- function(actu_al, zscores, threshold) {
+    confmat <- table(!actu_al, !(abs(zscores) > threshold))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+  }  # end confun
+confun(is_jump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
-threshold_s <- seq(from=0.2, to=5.0, by=0.2)
+threshv <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
-error_rates <- sapply(threshold_s, con_fuse,
+error_rates <- sapply(threshv, confun,
   actu_al=is_jump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
-rownames(error_rates) <- threshold_s
+rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
@@ -4850,19 +4850,19 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-con_fuse <- function(actu_al, zscores, threshold) {
-    confu_sion <- table(!actu_al, !(abs(zscores) > threshold))
-    confu_sion <- confu_sion / rowSums(confu_sion)
-    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-  }  # end con_fuse
-con_fuse(is_jump, zscores, threshold=threshold)
+confun <- function(actu_al, zscores, threshold) {
+    confmat <- table(!actu_al, !(abs(zscores) > threshold))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+  }  # end confun
+confun(is_jump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
-threshold_s <- seq(from=0.2, to=5.0, by=0.2)
+threshv <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
-error_rates <- sapply(threshold_s, con_fuse,
+error_rates <- sapply(threshv, confun,
   actu_al=is_jump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
-rownames(error_rates) <- threshold_s
+rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)

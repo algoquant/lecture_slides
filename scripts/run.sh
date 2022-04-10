@@ -1,275 +1,338 @@
-sed -i '' 's/_1/1/g' *.R*
-sed -i '' 's/_2/2/g' *.R*
-sed -i '' 's/_3/3/g' *.R*
-sed -i '' 's/_4/4/g' *.R*
-sed -i '' 's/_5/5/g' *.R*
-sed -i '' 's/_aw/aw/g' *.R*
-sed -i '' 's/_mom/mom/g' *.R*
-sed -i '' 's/n_cols/ncols/g' *.R*
-sed -i '' 's/n_rows/nrows/g' *.R*
-sed -i '' 's/\.ncols/\.n_cols/g' *.R*
-sed -i '' 's/\.nrows/\.n_rows/g' *.R*
-sed -i '' 's/\.numcols/.n_cols/g' *.R*
-sed -i '' 's/\.numrows/.n_rows/g' *.R*
-sed -i '' 's/ac_f/acfd/g' *.R*
-sed -i '' 's/al_pha/alpha/g' *.R*
-sed -i '' 's/ar_fit/arfit/g' *.R*
-sed -i '' 's/ari_ma/arimav/g' *.R*
-sed -i '' 's/asset_s/assets/g' *.R*
-sed -i '' 's/at_tempt/nattempts/g' *.R*
-sed -i '' 's/bar_rier/barp/g' *.R*
-sed -i '' 's/be_ta/betav/g' *.R*
-sed -i '' 's/beta_s/betas/g' *.R*
-sed -i '' 's/capm_stats/capmstats/g' *.R*
-sed -i '' 's/capp_ed/capped/g' *.R*
-sed -i '' 's/ch_ob/chobj/g' *.R*
-sed -i '' 's/choles_ky/cholmat/g' *.R*
-sed -i '' 's/cl_ose/closep/g' *.R*
-sed -i '' 's/clos_e/closep/g' *.R*
-sed -i '' 's/clus_ter/cluster/g' *.R*
-sed -i '' 's/co_eff/coeff/g' *.R*
-sed -i '' 's/co_var/covar/g' *.R*
-sed -i '' 's/coeff_s/coeffs/g' *.R*
-sed -i '' 's/col_name/colname/g' *.R*
-sed -i '' 's/col_names/colnamev/g' *.R*
-sed -i '' 's/col_or/color/g' *.R*
-sed -i '' 's/col_ors/colorv/g' *.R*
-sed -i '' 's/color_s/colorv/g' *.R*
-sed -i '' 's/col_umn/colnum/g' *.R*
-sed -i '' 's/combine_d/combined/g' *.R*
-sed -i '' 's/con_fi/confi/g' *.R*
-sed -i '' 's/conf_level/confl/g' *.R*
-sed -i '' 's/cor_mat/cormat/g' *.R*
-sed -i '' 's/cost_s/costs/g' *.R*
-sed -i '' 's/coun_t/countv/g' *.R*
-sed -i '' 's/cov_inv/covinv/g' *.R*
-sed -i '' 's/cov_mat/covmat/g' *.R*
-sed -i '' 's/cross_ed/didcross/g' *.R*
-sed -i '' 's/cum_sum/cumsumv/g' *.R*
-sed -i '' 's/cut_off/cutoff/g' *.R*
-sed -i '' 's/da_ta/datav/g' *.R*
-sed -i '' 's/date time/date-time/g' *.R*
-sed -i '' 's/date_s/dates/g' *.R*
-sed -i '' 's/de_sign/design/g' *.R*
-sed -i '' 's/den_sity/densityv/g' *.R*
-sed -i '' 's/densi_ty/densv/g' *.R*
-sed -i '' 's/design_p/designp/g' *.R*
-sed -i '' 's/diff_it/diffit/g' *.R*
-sed -i '' 's/diff_ohlc/diffohlc/g' *.R*
-sed -i '' 's/diff_xts/diffxts/g' *.R*
-sed -i '' 's/down_loaded/isdownloaded/g' *.R*
-sed -i '' 's/dri_ft/drift/g' *.R*
-sed -i '' 's/dupli_cate/duplicates/g' *.R*
-sed -i '' 's/dy_graph/dyplot/g' *.R*
-sed -i '' 's/e_cho/echo/g' *.R*
-sed -i '' 's/ei_gen/eigend/g' *.R*
-sed -i '' 's/en_d/endd/g' *.R*
-sed -i '' 's/end_date/endd/g' *.R*
-sed -i '' 's/end_p/endp/g' *.R*
-sed -i '' 's/ES_/ES/g' *.R*
-sed -i '' 's/etf_env/etfenv/g' *.R*
-sed -i '' 's/ex_cess/excess/g' *.R*
-sed -i '' 's/exceed_s/exceeds/g' *.R*
-sed -i '' 's/expected_loss/exploss/g' *.R*
-sed -i '' 's/f_inv/finv/g' *.R*
-sed -i '' 's/f_mat/fmat/g' *.R*
-sed -i '' 's/f_ratio/fratio/g' *.R*
-sed -i '' 's/f_stat/fstat/g' *.R*
-sed -i '' 's/fac_tor/factorv/g' *.R*
-sed -i '' 's/fac_tor/ratio/g' *.R*
-sed -i '' 's/fac_tors/factors/g' *.R*
-sed -i '' 's/factor_s/factors/g' *.R*
-sed -i '' 's/fibo_nacci/fibonacci/g' *.R*
-sed -i '' 's/fil_e/filev/g' *.R*
-sed -i '' 's/filter_ed/filtered/g' *.R*
-sed -i '' 's/fir_st/firstv/g' *.R*
-sed -i '' 's/for_mat/formatv/g' *.R*
-sed -i '' 's/for_mula/formulav/g' *.R*
-sed -i '' 's/fore_cast/forecastv/g' *.R*
-sed -i '' 's/forecast_s/forecasts/g' *.R*
-sed -i '' 's/fu_ture/future/g' *.R*
-sed -i '' 's/func_tion/func/g' *.R*
-sed -i '' 's/future_s/futures/g' *.R*
-sed -i '' 's/g_lm/glmod/g' *.R*
-sed -i '' 's/hi_gh/highp/g' *.R*
-sed -i '' 's/in_dex/indeks/g' *.R*
-sed -i '' 's/in_dic/indic/g' *.R*
-sed -i '' 's/in_nov/innov/g' *.R*
-sed -i '' 's/in_put/input/g' *.R*
-sed -i '' 's/in_verse/inverse/g' *.R*
-sed -i '' 's/inter_face/uiface/g' *.R*
-sed -i '' 's/inter_val/interval/g' *.R*
-sed -i '' 's/joincols/join_cols/g' *.R*
-sed -i '' 's/joinumrows/join_rows/g' *.R*
-sed -i '' 's/l_gd/lgd/g' *.R*
-sed -i '' 's/la_st/lastv/g' *.R*
-sed -i '' 's/lag_it/lagit/g' *.R*
-sed -i '' 's/lag_xts/lagxts/g' *.R*
-sed -i '' 's/lamb_da/lambda/g' *.R*
-sed -i '' 's/lambdav/lambda/g' *.R*
-sed -i '' 's/le_vel/levelv/g' *.R*
-sed -i '' 's/len_gth/nrows/g' *.R*
-sed -i '' 's/level_s/levels/g' *.R*
-sed -i '' 's/li_st/listv/g' *.R*
-sed -i '' 's/lis_t/listv/g' *.R*
-sed -i '' 's/lists/listv/g' *.R*
-sed -i '' 's/lo_w/lowp/g' *.R*
-sed -i '' 's/log_norm/lognormv/g' *.R*
-sed -i '' 's/loss_es/losses/g' *.R*
-sed -i '' 's/ma_d/madv/g' *.R*
-sed -i '' 's/mat_rix/matrixv/g' *.R*
-sed -i '' 's/max_Sharpe/sharpem/g' *.R*
-sed -i '' 's/meth_od/method/g' *.R*
-sed -i '' 's/mo_ment/moment/g' *.R*
-sed -i '' 's/mod_el/model/g' *.R*
-sed -i '' 's/month_codes/codes/g' *.R*
-sed -i '' 's/month_s/months/g' *.R*
-sed -i '' 's/ms_e/mse/g' *.R*
-sed -i '' 's/ms_ft/msft/g' *.R*
-sed -i '' 's/mult_s/lagm/g' *.R*
-sed -i '' 's/my_var/myvar/g' *.R*
-sed -i '' 's/n_agg/nagg/g' *.R*
-sed -i '' 's/n_assets/nassets/g' *.R*
-sed -i '' 's/n_boot/nboot/g' *.R*
-sed -i '' 's/n_cores/ncores/g' *.R*
-sed -i '' 's/n_data/ndata/g' *.R*
-sed -i '' 's/n_points/npoints/g' *.R*
-sed -i '' 's/n_simu/nsimu/g' *.R*
-sed -i '' 's/n_stocks/nstocks/g' *.R*
-sed -i '' 's/n_weights/nweights/g' *.R*
-sed -i '' 's/na_ive/naivemc/g' *.R*
-sed -i '' 's/nam_e/name/g' *.R*
-sed -i '' 's/name_s/namesv/g' *.R*
-sed -i '' 's/nor_mal/normv/g' *.R*
-sed -i '' 's/num_ber/numv/g' *.R*
-sed -i '' 's/num_cols/ncols/g' *.R*
-sed -i '' 's/num_rows/nrows/g' *.R*
-sed -i '' 's/num_var/numv/g' *.R*
-sed -i '' 's/num_weights/nweights/g' *.R*
-sed -i '' 's/numcols/ncols/g' *.R*
-sed -i '' 's/numrows/nrows/g' *.R*
-sed -i '' 's/objec_tive/object/g' *.R*
-sed -i '' 's/oh_lc/ohlc/g' *.R*
-sed -i '' 's/op_en/openp/g' *.R*
-sed -i '' 's/op_tim/optimd/g' *.R*
-sed -i '' 's/or_der/ordern/g' *.R*
-sed -i '' 's/order_s/orders/g' *.R*
-sed -i '' 's/out_put/output/g' *.R*
-sed -i '' 's/p_vals/pvals/g' *.R*
-sed -i '' 's/pas_t/past/g' *.R*
-sed -i '' 's/path_s/paths/g' *.R*
-sed -i '' 's/pay_outs/payouts/g' *.R*
-sed -i '' 's/pc_a/pcad/g' *.R*
-sed -i '' 's/pca_rets/pcarets/g' *.R*
-sed -i '' 's/pca_ts/pcats/g' *.R*
-sed -i '' 's/perform_ance/objfunc/g' *.R*
-sed -i '' 's/plo_t/plotobj/g' *.R*
-sed -i '' 's/pnl_s/pnls/g' *.R*
-sed -i '' 's/portf_rets/prets/g' *.R*
-sed -i '' 's/position_s/position_s/g' *.R*
-sed -i '' 's/pre_dict/predictv/g' *.R*
-sed -i '' 's/predic_tor/predictor/g' *.R*
-sed -i '' 's/prets/retsp/g' *.R*
-sed -i '' 's/price_s/prices/g' *.R*
-sed -i '' 's/prices_100/prices100/g' *.R*
-sed -i '' 's/pro_b/probv/g' *.R*
-sed -i '' 's/pro_duct/product/g' *.R*
-sed -i '' 's/pro_file/profilev/g' *.R*
-sed -i '' 's/prob_s/probs/g' *.R*
-sed -i '' 's/quan_tile/quantilev/g' *.R*
-sed -i '' 's/quantile_s/quantiles/g' *.R*
-sed -i '' 's/r_squared/rsquared/g' *.R*
-sed -i '' 's/ran_ge/rangev/g' *.R*
-sed -i '' 's/rang_e/rangev/g' *.R*
-sed -i '' 's/rank_s/ranks/g' *.R*
-sed -i '' 's/rate_s/rates/g' *.R*
-sed -i '' 's/re_duce/reducit/g' *.R*
-sed -i '' 's/re_turn/return/g' *.R*
-sed -i '' 's/re_turns/returns/g' *.R*
-sed -i '' 's/res_ponse/response/g' *.R*
-sed -i '' 's/resid_uals/residuals/g' *.R*
-sed -i '' 's/residual_s/residuals/g' *.R*
-sed -i '' 's/ret_aw/retsaw/g' *.R*
-sed -i '' 's/ret_mom/retsmom/g' *.R*
-sed -i '' 's/returns_100/returns100/g' *.R*
-sed -i '' 's/rh_o/rho/g' *.R*
-sed -i '' 's/risk_free/riskf/g' *.R*
-sed -i '' 's/risk_return/riskstats/g' *.R*
-sed -i '' 's/s_um/sumv/g' *.R*
-sed -i '' 's/s_vd/svdec/g' *.R*
-sed -i '' 's/sampl_e/samplev/g' *.R*
-sed -i '' 's/scal_e/scalit/g' *.R*
-sed -i '' 's/scale_d/scaled/g' *.R*
-sed -i '' 's/see_d/seedv/g' *.R*
-sed -i '' 's/ser_ver/servfunc/g' *.R*
-sed -i '' 's/set_osa/setosa/g' *.R*
-sed -i '' 's/sharpe_ratios/sharper/g' *.R*
-sed -i '' 's/sheet_s/sheets/g' *.R*
-sed -i '' 's/shif_t/shiftv/g' *.R*
-sed -i '' 's/sig_ma/sigmav/g' *.R*
-sed -i '' 's/sk_ew/skew/g' *.R*
-sed -i '' 's/skew_s/skews/g' *.R*
-sed -i '' 's/slop_e/slopev/g' *.R*
-sed -i '' 's/sol_ved/solved/g' *.R*
-sed -i '' 's/sor_ted/sortv/g' *.R*
-sed -i '' 's/sp500_env/sp500env/g' *.R*
-sed -i '' 's/sp500_table/sp500table/g' *.R*
-sed -i '' 's/star_t/startd/g' *.R*
-sed -i '' 's/start_date/startd/g' *.R*
-sed -i '' 's/start_p/startp/g' *.R*
-sed -i '' 's/stat_s/stats/g' *.R*
-sed -i '' 's/std_dev/stdev/g' *.R*
-sed -i '' 's/std_err/stderr/g' *.R*
-sed -i '' 's/strik_e/strikep/g' *.R*
-sed -i '' 's/sum_two/sumtwo/g' *.R*
-sed -i '' 's/sym_bol/symbol/g' *.R*
-sed -i '' 's/sym_bols/symbolv/g' *.R*
-sed -i '' 's/symbol_s/symbolv/g' *.R*
-sed -i '' 's/system_atic/sysv/g' *.R*
-sed -i '' 's/ta_ble/tablev/g' *.R*
-sed -i '' 's/ta_q/taq/g' *.R*
-sed -i '' 's/tabl_e/tablev/g' *.R*
-sed -i '' 's/tar_get/targetr/g' *.R*
-sed -i '' 's/target_s/targets/g' *.R*
-sed -i '' 's/the_ta/thetav/g' *.R*
-sed -i '' 's/thresh_old/threshold/g' *.R*
-sed -i '' 's/tib_ble/tibblev/g' *.R*
-sed -i '' 's/tick_er/ticker/g' *.R*
-sed -i '' 's/to_day/todayd/g' *.R*
-sed -i '' 's/to_l/precision/g' *.R*
-sed -i '' 's/trans_pose/transp/g' *.R*
-sed -i '' 's/ts_stx/stxts/g' *.R*
-sed -i '' 's/typ_e/typev/g' *.R*
-sed -i '' 's/u_nit/unitv/g' *.R*
-sed -i '' 's/un_if/unifv/g' *.R*
-sed -i '' 's/uni_form/unifunc/g' *.R*
-sed -i '' 's/ur_l/urll/g' *.R*
-sed -i '' 's/url_s/urls/g' *.R*
-sed -i '' 's/v_rets/retsv/g' *.R*
-sed -i '' 's/v_wap/vwapv/g' *.R*
-sed -i '' 's/val_id/validp/g' *.R*
-sed -i '' 's/vali_date/valido/g' *.R*
-sed -i '' 's/vari_ance/variance/g' *.R*
-sed -i '' 's/vec_tor/vectorv/g' *.R*
-sed -i '' 's/versi_color/versi/g' *.R*
-sed -i '' 's/virgin_ica/virgin/g' *.R*
-sed -i '' 's/vol_at/volat/g' *.R*
-sed -i '' 's/vol_ume/volumes/g' *.R*
-sed -i '' 's/vt_i/vtis/g' *.R*
-sed -i '' 's/weal_th/wealth/g' *.R*
-sed -i '' 's/week_s/weeks/g' *.R*
-sed -i '' 's/wei_ghts/weightv/g' *.R*
-sed -i '' 's/weight_ed/weighted/g' *.R*
-sed -i '' 's/weight_s/weightv/g' *.R*
-sed -i '' 's/whi_ch/whichv/g' *.R*
-sed -i '' 's/wil_cox/wilcoxt/g' *.R*
-sed -i '' 's/wilcox_w/wilcoxw/g' *.R*
-sed -i '' 's/x_lim/xlim/g' *.R*
-sed -i '' 's/x_ts/xtes/g' *.R*
-sed -i '' 's/y_lim/ylim/g' *.R*
-sed -i '' 's/yc_/yc/g' *.R*
-sed -i '' 's/_yc/_yc_/g' *.R*
-sed -i '' 's/year_s/years/g' *.R*
-sed -i '' 's/joinrows/join_rows/g' *.R*
-sed -i '' 's/joincols/join_cols/g' *.R*
-sed -i '' 's/z_scores/zscores/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/_aw/aw/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/_mom/mom/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/\.ncols/\.n_cols/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/\.nrows/\.n_rows/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/\.numcols/.n_cols/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/\.numrows/.n_rows/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ac_f/acfd/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/al_pha/alpha/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/agg_regate/aggfun/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/agg_regations/aggs/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ap_ply/applyloop/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/allocation_s/alloc/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ar_fit/arfit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ari_ma/arimav/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/arg_s/argsv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/asset_s/assets/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/at_tempt/nattempts/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ba_se/basep/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/bar_rier/barp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/be_ta/betav/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/beta_s/betas/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/brack_ets/brackets/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/capm_stats/capmstats/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/capp_ed/capped/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cap_tion/captiont/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ch_ob/chobj/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/choles_ky/cholmat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cl_ose/closep/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/clos_e/closep/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/clus_ter/cluster/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/co_eff/coeff/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/co_var/covar/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/coeff_s/coeffs/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/col_name/colnamev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/col_names/colnamev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/col_or/color/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/col_ors/colorv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/color_s/colorv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/col_umn/colnum/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/col_sums/colsumv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/combine_d/combined/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/con_fi/confi/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/conf_level/confl/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/confu_sion/confmat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/con_fuse/confun/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cor_mat/cormat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cost_s/costs/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/coun_t/countv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cov_inv/covinv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cov_mat/covmat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cross_ed/crossi/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cro_ss/crossp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cum_sum/cumsumv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cut_off/cutoff/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cusip_s/cusips/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/day_s/dayv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/da_ta/datav/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/date time/date-time/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/date_s/dates/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/de_sign/design/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/den_sity/densityv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/densi_ty/densv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/design_p/designp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/diff_it/diffit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/diff_ohlc/diffohlc/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/diff_xts/diffxts/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/down_loaded/isdownloaded/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/dri_ft/drift/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/dupli_cate/duplicates/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/dy_graph/dyplot/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/e_cho/echo/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ei_gen/eigend/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/en_d/endd/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/end_date/endd/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/end_p/endp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/en_ter/enter/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ex_it/exit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/expo_nent/exponent/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ES_/ES/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/etf_env/etfenv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ew_ma/ewmap/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ex_cess/excess/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/exceed_s/exceeds/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/expected_loss/exploss/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/f_inv/finv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/f_mat/fmat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/f_ratio/fratio/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/f_stat/fstat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tor/factorv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tor/ratio/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tors/factors/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/factor_s/factors/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fibo_nacci/fibonacci/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fil_e/filev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/filter_ed/filtered/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fir_st/firstv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/for_mat/formatv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/for_mula/formulav/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fore_cast/forecastv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/forecast_s/forecasts/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fu_ture/future/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/func_tion/func/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fun_c/func/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/future_s/futures/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/g_lm/glmod/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/hi_gh/highp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/in_dex/indeks/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/in_dic/indic/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/indica_tor/indic/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/in_nov/innov/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/in_put/input/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/in_verse/inverse/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/inter_face/uiface/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/inter_val/interval/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/iter_ations/iterations/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/joincols/join_cols/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/joinumrows/join_rows/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/l_m/lmod/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/l_gd/lgd/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/la_st/lastv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lag_it/lagit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lag_xts/lagxts/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lamb_da/lambda/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lambdav/lambda/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/le_vel/levelv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/len_gth/nrows/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/level_s/levels/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/li_st/listv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lis_t/listv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lists/listv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/likeli_hood/likefun/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lo_w/lowp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/log_norm/lognormv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/loss_es/losses/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ma_d/madv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/mat_rix/matrixv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/max_Sharpe/sharpem/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/me_ans/means/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/meth_od/method/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/mo_ment/moment/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/mod_el/model/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/month_codes/codes/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/month_s/months/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ms_e/mse/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ms_ft/msft/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/mult_s/lagm/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/my_var/myvar/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/my_func/testfun/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/myfun/testfun/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_cols/ncols/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_rows/nrows/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_agg/nagg/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_assets/nassets/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_boot/nboot/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_coeff/ncoeff/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_cores/ncores/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_data/ndata/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_periods/nperiods/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_points/npoints/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_simu/nsimu/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_stocks/nstocks/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_trades/ntrades/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_weights/nweights/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/n_portf/nportf/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/na_ive/naivemc/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/nam_e/name/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/name_s/namesv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/nor_mal/normv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/num_ber/numv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/num_cols/ncols/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/num_rows/nrows/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/num_var/numv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/num_weights/nweights/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/numcores/ncores/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/numcols/ncols/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/numrows/nrows/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/objec_tive/objfun/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/oh_lc/ohlc/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/op_en/openp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/op_tim/optimd/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/or_der/ordern/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/order_s/orders/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/out_put/output/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pa_ram/param/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pa_r/parv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/paw_s/outv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/parl_apply/papplyloop/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/p_vals/pvals/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/p_max/pmax/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/p_min/pmin/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/l_apply/applyloop/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/par_init/initp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pas_t/past/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/path_s/paths/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pa_th/paths/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pay_outs/payouts/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pc_a/pcad/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pca_rets/pcarets/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pca_ts/pcats/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/percen_tile/percent/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/perform_ance/objfun/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/plo_t/plotobj/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pnl_s/pnls/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/portf_rets/prets/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/position_s/posit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/po_sit/posit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pre_dict/predictv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/predic_tor/predictor/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/prets/retsp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/price_s/prices/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/prices_100/prices100/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pro_b/probv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pro_duct/product/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pro_file/profilev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/prob_s/probs/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/quan_tile/quantilev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/quantile_s/quantiles/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/r_squared/rsquared/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/r_loop/rloop/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ran_ge/rangev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/rang_e/rangev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/rank_s/ranks/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/rate_s/rates/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/re_balance/rfreq/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/re_duce/reducit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/re_turn/return/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/re_turns/returns/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/res_ponse/response/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/resid_uals/residuals/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/residual_s/residuals/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ret_aw/retsaw/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ret_mom/retsmom/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/returns_100/returns100/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/rh_o/rho/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/risk_free/riskf/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/risk_return/riskstats/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/row_sums/rowsumv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/s_um/sumv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/s_vd/svdec/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sampl_e/samplev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sam_ple/samplev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/scal_e/scalit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/scale_d/scaled/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/se_lect/indic/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/see_d/seedv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/se_ries/tseries/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ser_ver/servfunc/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/set_osa/setosa/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sharpe_ratios/sharper/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sharp_e/sharper/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sheet_s/sheets/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/shif_t/shiftv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sig_ma/sigmav/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sig_nal/score/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sp_y/spy/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sk_ew/skew/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/skew_s/skews/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/slop_e/slopev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sol_ved/solved/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sor_ted/sortv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sp500_env/sp500env/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sp500_table/sp500table/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/star_t/startd/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/start_date/startd/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/start_p/startp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/stat_s/stats/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/std_dev/stdev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/std_err/stderr/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/strik_e/strikep/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sum_two/sumtwo/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vx_x/vxx/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sym_bol/symbol/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sym_bols/symbolv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/symbol_s/symbolv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/system_atic/sysv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ta_ble/tablev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ta_q/taq/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/tabl_e/tablev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/tar_get/targetr/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/target_s/targets/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/the_ta/thetav/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/thresh_old/threshold/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/tib_ble/tibblev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/tick_er/ticker/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ticker_s/tickers/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/to_day/todayd/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/to_l/precision/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/to_l/precision/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/top_s/tops/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/bottom_s/bottoms/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/po_s/posit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lo_cation/loc/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/scalit/scalev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/histo_gram/histp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/lab_els/labelv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/threshold_s/threshv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/trans_pose/transp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ts_stx/stxts/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/typ_e/typev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/t_series/tseries/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/u_nit/unitv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/un_if/unifv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/uni_form/unifunc/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/ur_l/urll/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/url_s/urls/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/v_rets/retsv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/v_wap/vwapv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/value_s/values/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/val_id/validp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vali_date/valido/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vari_ance/variance/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vec_tor/vectorv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/versi_color/versi/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/virgin_ica/virgin/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vol_at/volat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vo_l/volat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vol_ume/volumes/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vt_i/vti/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/weal_th/wealth/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/week_s/weeks/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/wei_ghts/weightv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/weight_ed/weighted/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/weight_s/weightv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/whi_ch/whichv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/wil_cox/wilcoxt/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/wilcox_w/wilcoxw/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/win_dow/look_back/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/x_lim/xlim/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/x_ts/xtes/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/x_var/xvar/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/y_var/yvar/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/y_lim/ylim/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/yc_/yc/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/_yc/_yc_/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/year_s/years/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/joinrows/join_rows/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/joincols/join_cols/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/z_scores/zscores/g' *.R*

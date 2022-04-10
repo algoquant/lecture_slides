@@ -79,11 +79,11 @@ abline(h=0, lwd=3, col="red")
 # Degrees of freedom of residuals
 deg_free <- model$df.residual
 # Standard deviation of residuals
-resid_stddev <- sqrt(sum(residuals^2)/deg_free)
+resid_std <- sqrt(sum(residuals^2)/deg_free)
 # Standard error of beta
-betastderror <- resid_stddev/sqrt(sum(design_zm^2))
+beta_std <- resid_std/sqrt(sum(design_zm^2))
 # Standard error of alpha
-alpha_stderror <- resid_stddev*
+alpha_std <- resid_std*
   sqrt(1/nrows + mean(design)^2/sum(design_zm^2))
 model_sum <- summary(model)  # Copy regression summary
 model_sum  # Print the summary to console
@@ -91,7 +91,7 @@ attributes(model_sum)$names  # get summary elements
 model_sum$coeff
 # Standard errors
 model_sum$coefficients[2, "Std. Error"]
-all.equal(c(alpha_stderror, betastderror),
+all.equal(c(alpha_std, beta_std),
   model_sum$coefficients[, "Std. Error"], 
   check.attributes=FALSE)
 # R-squared
@@ -552,9 +552,9 @@ col=colors[indeks], add=as.logical(indeks-1))
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
-lab_els <- paste("df", deg_free, sep="=")
+labelv <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
-       lab_els, cex=0.8, lwd=2, lty=1, col=colors)
+       labelv, cex=0.8, lwd=2, lty=1, col=colors)
 sigma_x <- var(rnorm(nrows))
 sigma_y <- var(rnorm(nrows))
 fratio <- sigma_x/sigma_y
@@ -653,53 +653,53 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
  col=c("orange", "red", "blue"),
  text.col=c("black", "red", "blue"))
 # Likelihood function of binomial distribution
-likeli_hood <- function(prob, b) {
+likefun <- function(prob, b) {
   b*log(prob) + (1-b)*log(1-prob)
-}  # end likeli_hood
-likeli_hood(prob=0.25, b=1)
+}  # end likefun
+likefun(prob=0.25, b=1)
 # Plot binomial likelihood function
-curve(expr=likeli_hood(x, b=1), xlim=c(0, 1), lwd=3,
+curve(expr=likefun(x, b=1), xlim=c(0, 1), lwd=3,
       xlab="prob", ylab="likelihood", col="blue",
       main="Binomial Likelihood Function")
-curve(expr=likeli_hood(x, b=0), lwd=3, col="red", add=TRUE)
+curve(expr=likefun(x, b=0), lwd=3, col="red", add=TRUE)
 legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
        title=NULL, inset=0.3, cex=1.0, lwd=6,
        lty=1, col=c("blue", "red"))
 # Specify design matrix
 design=cbind(intercept=rep(1, NROW(response)), predictor)
 # Likelihood function of the logistic model
-likeli_hood <- function(coeff, response, design) {
+likefun <- function(coeff, response, design) {
   probs <- plogis(drop(design %*% coeff))
   -sum(response*log(probs) + (1-response)*log((1-probs)))
-}  # end likeli_hood
+}  # end likefun
 # Run likelihood function
 # Rastrigin function with vector argument for optimization
-rastri_gin <- function(vectorv, pa_ram=25) {
-  sum(vectorv^2 - pa_ram*cos(vectorv))
-}  # end rastri_gin
+rastrigin <- function(vectorv, param=25) {
+  sum(vectorv^2 - param*cos(vectorv))
+}  # end rastrigin
 vectorv <- c(pi/6, pi/6)
-rastri_gin(vectorv=vectorv)
+rastrigin(vectorv=vectorv)
 # Draw 3d surface plot of Rastrigin function
 options(rgl.useNULL=TRUE); library(rgl)
 rgl::persp3d(
-  x=Vectorize(function(x, y) rastri_gin(vectorv=c(x, y))),
+  x=Vectorize(function(x, y) rastrigin(vectorv=c(x, y))),
   xlim=c(-10, 10), ylim=c(-10, 10),
-  col="green", axes=FALSE, zlab="", main="rastri_gin")
+  col="green", axes=FALSE, zlab="", main="rastrigin")
 # Optimize with respect to vector argument
-optimd <- optim(par=vectorv, fn=rastri_gin,
+optimd <- optim(par=vectorv, fn=rastrigin,
         method="L-BFGS-B",
         upper=c(4*pi, 4*pi),
         lower=c(pi/2, pi/2),
-        pa_ram=1)
+        param=1)
 # Optimal parameters and value
 optimd$par
 optimd$value
-rastri_gin(optimd$par, pa_ram=1)
+rastrigin(optimd$par, param=1)
 # Initial parameters
-par_init <- c(1, 1)
+initp <- c(1, 1)
 # Find max likelihood parameters using steepest descent optimizer
-optim_fit <- optim(par=par_init,
-           fn=likeli_hood, # Log-likelihood function
+optim_fit <- optim(par=initp,
+           fn=likefun, # Log-likelihood function
            method="L-BFGS-B", # Quasi-Newton method
            response=response,
            design=design,
@@ -837,16 +837,16 @@ forecasts <- predict(glmod, newdata=test_data, type="response")
 table(actual=!test_data$de_fault, 
 forecast=(forecasts < threshold))
 # Calculate confusion matrix out-of-sample
-confu_sion <- table(actual=!test_data$de_fault, 
+confmat <- table(actual=!test_data$de_fault, 
 forecast=(forecasts < threshold))
-confu_sion
+confmat
 # Calculate FALSE positive (type I error)
 sum(!test_data$de_fault & (forecasts > threshold))
 # Calculate FALSE negative (type II error)
 sum(test_data$de_fault & (forecasts < threshold))
 # Calculate FALSE positive and FALSE negative rates
-confu_sion <- confu_sion / rowSums(confu_sion)
-c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+confmat <- confmat / rowSums(confmat)
+c(typeI=confmat[2, 1], typeII=confmat[1, 2])
 detach(Default)
 # Below is an unsuccessful attempt to draw confusion matrix using xtable
 confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
@@ -860,19 +860,19 @@ include.rownames=TRUE,
 include.colnames=TRUE)
 # end unsuccessful attempt to draw confusion table using xtable
 # Confusion matrix as function of threshold
-con_fuse <- function(actu_al, forecasts, threshold) {
-    confu_sion <- table(actu_al, (forecasts < threshold))
-    confu_sion <- confu_sion / rowSums(confu_sion)
-    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-  }  # end con_fuse
-con_fuse(!test_data$de_fault, forecasts, threshold=threshold)
+confun <- function(actu_al, forecasts, threshold) {
+    confmat <- table(actu_al, (forecasts < threshold))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+  }  # end confun
+confun(!test_data$de_fault, forecasts, threshold=threshold)
 # Define vector of discrimination thresholds
-threshold_s <- seq(0.05, 0.95, by=0.05)^2
+threshv <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
-error_rates <- sapply(threshold_s, con_fuse,
+error_rates <- sapply(threshv, confun,
   actu_al=!test_data$de_fault, forecasts=forecasts)  # end sapply
 error_rates <- t(error_rates)
-rownames(error_rates) <- threshold_s
+rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)

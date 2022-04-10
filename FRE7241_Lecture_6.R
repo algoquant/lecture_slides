@@ -266,28 +266,28 @@ plot(x=look_backs, y=mse_s,
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")
 # Calculate a vector of daily VTI log returns
-vtis <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vtis)
-vtis <- as.numeric(vtis)
-nrows <- NROW(vtis)
+vti <- na.omit(rutils::etfenv$returns$VTI)
+dates <- index(vti)
+vti <- as.numeric(vti)
+nrows <- NROW(vti)
 # Define predictor matrix for forecasting
 order_max <- 5
-predictor <- sapply(1:order_max, rutils::lagit, input=vtis)
+predictor <- sapply(1:order_max, rutils::lagit, input=vti)
 predictor <- cbind(rep(1, nrows), predictor)
 colnames(predictor) <- paste0("pred_", 1:NCOL(predictor))
-response <- vtis
+response <- vti
 # Calculate forecasts as function of the AR order
 forecasts <- lapply(2:NCOL(predictor), function(ordern) {
   # Calculate fitted coefficients
   inverse <- MASS::ginv(predictor[, 1:ordern])
   coeff <- drop(inverse %*% response)
-  # Calculate in-sample forecasts of vtis
+  # Calculate in-sample forecasts of vti
   drop(predictor[, 1:ordern] %*% coeff)
 })  # end lapply
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vtis - x)^2), cor=cor(vtis, x))
+  c(mse=mean((vti - x)^2), cor=cor(vti, x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- names(forecasts)
@@ -304,13 +304,13 @@ forecasts <- lapply(2:NCOL(predictor), function(ordern) {
   # Calculate fitted coefficients
   inverse <- MASS::ginv(predictor[in_sample, 1:ordern])
   coeff <- drop(inverse %*% response[in_sample])
-  # Calculate out-of-sample forecasts of vtis
+  # Calculate out-of-sample forecasts of vti
   drop(predictor[out_sample, 1:ordern] %*% coeff)
 })  # end lapply
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vtis[out_sample] - x)^2), cor=cor(vtis[out_sample], x))
+  c(mse=mean((vti[out_sample] - x)^2), cor=cor(vti[out_sample], x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- names(forecasts)
@@ -320,7 +320,7 @@ plot(x=2:NCOL(predictor), y=mse[, 1],
   main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vtis[out_sample])
+  cumsum(sign(x)*vti[out_sample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
 pnls <- xts::xts(pnls, dates[out_sample])
@@ -333,8 +333,8 @@ dygraphs::dygraph(pnls[, 1:4],
   dyLegend(width=500)
 # Define predictor as a rolling mean
 nagg <- 5
-predictor <- roll::roll_mean(vtis, width=nagg, min_obs=1)
-response <- vtis
+predictor <- roll::roll_mean(vti, width=nagg, min_obs=1)
+response <- vti
 # Define predictor matrix for forecasting
 predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
                input=predictor)
@@ -348,7 +348,7 @@ forecasts <- lapply(2:NCOL(predictor), function(ordern) {
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vtis[out_sample])
+  cumsum(sign(x)*vti[out_sample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
 pnls <- xts::xts(pnls, dates[out_sample])
@@ -360,7 +360,7 @@ dygraphs::dygraph(pnls[, 1:4],
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
   x <- roll::roll_mean(x, width=nagg, min_obs=1)
-  cumsum(sign(x)*vtis[out_sample])
+  cumsum(sign(x)*vti[out_sample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
 pnls <- xts::xts(pnls, dates[out_sample])
@@ -370,15 +370,15 @@ dygraphs::dygraph(pnls[, 1:4],
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=500)
 # Calculate a vector of daily VTI log returns
-vtis <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vtis)
-vtis <- as.numeric(vtis)
-nrows <- NROW(vtis)
+vti <- na.omit(rutils::etfenv$returns$VTI)
+dates <- index(vti)
+vti <- as.numeric(vti)
+nrows <- NROW(vti)
 # Define predictor as a rolling mean
 nagg <- 5
-predictor <- roll::roll_mean(vtis, width=nagg, min_obs=1)
+predictor <- roll::roll_mean(vti, width=nagg, min_obs=1)
 # Shift the response forward out-of-sample
-response <- vtis
+response <- vti
 # Define predictor matrix for forecasting
 order_max <- 5
 predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
@@ -404,13 +404,13 @@ forecasts <- sapply((look_back+1):nrows, function(endp) {
 # Add warmup period
 forecasts <- c(rep(0, look_back), forecasts)
 # Mean squared error
-mean((vtis - forecasts)^2)
+mean((vti - forecasts)^2)
 # Correlation
-cor(forecasts, vtis)
+cor(forecasts, vti)
 # Plot forecasting series with legend
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
-plot(vtis[(nrows-look_back):nrows], col="blue",
+plot(vti[(nrows-look_back):nrows], col="blue",
      xlab="", ylab="", type="l", lwd=2,
      main="Rolling Forecasting Using AR Model")
 lines(forecasts[(nrows-look_back):nrows], col="red", lwd=2)
@@ -422,7 +422,7 @@ sim_forecasts <- function(response, predictor=response, nagg=5,
                 ordern=5, look_back=100) {
   nrows <- NROW(response)
   # Define predictor as a rolling mean
-  predictor <- roll::roll_mean(vtis, width=nagg, min_obs=1)
+  predictor <- roll::roll_mean(vti, width=nagg, min_obs=1)
   # Define predictor matrix for forecasting
   predictor <- sapply(1+nagg*(0:ordern), rutils::lagit,
                  input=predictor)
@@ -448,8 +448,8 @@ sim_forecasts <- function(response, predictor=response, nagg=5,
   roll::roll_mean(forecasts, width=nagg, min_obs=1)
 }  # end sim_forecasts
 # Simulate the rolling autoregressive forecasts
-forecasts <- sim_forecasts(vtis, ordern=5, look_back=100)
-c(mse=mean((vtis - forecasts)^2), cor=cor(vtis, forecasts))
+forecasts <- sim_forecasts(vti, ordern=5, look_back=100)
+c(mse=mean((vti - forecasts)^2), cor=cor(vti, forecasts))
 look_backs <- seq(20, 600, 40)
 library(parallel)  # Load package parallel
 # Calculate number of available cores
@@ -458,14 +458,14 @@ ncores <- detectCores() - 1
 cluster <- makeCluster(ncores)
 # clusterExport(cluster, c("startd", "barp"))
 # Perform parallel loop under Windows
-forecasts <- parLapply(cluster, look_backs, sim_forecasts, response=vtis,
-                  predictor=vtis, nagg=5, ordern=5)
+forecasts <- parLapply(cluster, look_backs, sim_forecasts, response=vti,
+                  predictor=vti, nagg=5, ordern=5)
 # Perform parallel bootstrap under Mac-OSX or Linux
-forecasts <- mclapply(look_backs, sim_forecasts, response=vtis,
-  predictor=vtis, nagg=5, ordern=5, mc.cores=ncores)
+forecasts <- mclapply(look_backs, sim_forecasts, response=vti,
+  predictor=vti, nagg=5, ordern=5, mc.cores=ncores)
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vtis - x)^2), cor=cor(vtis, x))
+  c(mse=mean((vti - x)^2), cor=cor(vti, x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- look_backs
@@ -483,15 +483,15 @@ ncores <- detectCores() - 1
 cluster <- makeCluster(ncores)
 # clusterExport(cluster, c("startd", "barp"))
 # Perform parallel loop under Windows
-forecasts <- parLapply(cluster, orders, sim_forecasts, response=vtis,
-                  predictor=vtis, nagg=5, look_back=look_back)
+forecasts <- parLapply(cluster, orders, sim_forecasts, response=vti,
+                  predictor=vti, nagg=5, look_back=look_back)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
-forecasts <- mclapply(orders, sim_forecasts, response=vtis,
-  predictor=vtis, nagg=5, look_back=look_back, mc.cores=ncores)
+forecasts <- mclapply(orders, sim_forecasts, response=vti,
+  predictor=vti, nagg=5, look_back=look_back, mc.cores=ncores)
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vtis - x)^2), cor=cor(vtis, x))
+  c(mse=mean((vti - x)^2), cor=cor(vti, x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- orders
@@ -502,10 +502,10 @@ plot(x=orders, y=mse[, 1],
   xlab="ordern", ylab="MSE", type="l", lwd=2,
   main="MSE of Forecasting Model As Function of AR Order")
 # Simulate the rolling autoregressive forecasts
-forecasts <- sim_forecasts(vtis, ordern=ordern, look_back=look_back)
+forecasts <- sim_forecasts(vti, ordern=ordern, look_back=look_back)
 # Calculate strategy PnLs
-pnls <- sign(forecasts)*vtis
-pnls <- cbind(vtis, pnls, (vtis+pnls)/2)
+pnls <- sign(forecasts)*vti
+pnls <- cbind(vti, pnls, (vti+pnls)/2)
 colnames(pnls) <- c("VTI", "AR_Strategy", "Combined")
 cor(pnls)
 # Annualized Sharpe ratios of VTI and AR strategy
@@ -766,10 +766,10 @@ colnames(look_fwds) <- c("start", "end")
 head(cbind(look_backs, look_fwds))
 tail(cbind(look_backs, look_fwds))
 # Define performance function as Sharpe ratio
-objfunc <- function(returns) sum(returns)/sd(returns)
+objfun <- function(returns) sum(returns)/sd(returns)
 # Calculate past performance over look-back intervals
 past <- apply(look_backs, 1, function(ep) {
-  sapply(returns[ep[1]:ep[2]], objfunc)
+  sapply(returns[ep[1]:ep[2]], objfun)
 })  # end sapply
 past <- t(past)
 past[is.na(past)] <- 0
@@ -809,10 +809,10 @@ dygraphs::dygraph(cumsum(wealth), main="Monthly Momentum Strategy vs All-Weather
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Define backtest functional
-backtestmomentum <- function(returns,
-                objfunc=function(returns) (sum(returns)/sd(returns)),
-                look_back=12, re_balance="months", bid_offer=0.001,
-                endp=rutils::calc_endpoints(returns, interval=re_balance)[-1],
+backtestmom <- function(returns,
+                objfun=function(returns) (sum(returns)/sd(returns)),
+                look_back=12, rfreq="months", bid_offer=0.001,
+                endp=rutils::calc_endpoints(returns, interval=rfreq)[-1],
                 with_weights=FALSE, ...) {
   stopifnot("package:rutils" %in% search() || require("rutils", quietly=TRUE))
   # Define look-back and look-forward intervals
@@ -824,7 +824,7 @@ backtestmomentum <- function(returns,
   look_fwds <- cbind(endp + 1, rutils::lagit(endp, -1))
   look_fwds[nrows, ] <- endp[nrows]
   # Calculate past performance over look-back intervals
-  past <- t(apply(look_backs, 1, function(ep) sapply(returns[ep[1]:ep[2]], objfunc)))
+  past <- t(apply(look_backs, 1, function(ep) sapply(returns[ep[1]:ep[2]], objfun)))
   past[is.na(past)] <- 0
   # Calculate future performance
   future <- t(apply(look_fwds, 1, function(ep) sapply(returns[ep[1]:ep[2]], sum)))
@@ -842,13 +842,13 @@ backtestmomentum <- function(returns,
     rutils::lagit(cbind(pnls, weightv))
   else
     rutils::lagit(pnls)
-}  # end backtestmomentum
-source("C:/Develop/lecture_slides/scripts/back_test.R")
+}  # end backtestmom
+source("/Users/jerzy/Develop/lecture_slides/scripts/back_test.R")
 look_backs <- seq(3, 15, by=1)
-objfunc <- function(returns) sum(returns)/sd(returns)
+objfun <- function(returns) sum(returns)/sd(returns)
 profilev <- sapply(look_backs, function(look_back) {
-  pnls <- backtestmomentum(returns=returns, endp=endp,
-    look_back=look_back, objfunc=objfunc)
+  pnls <- backtestmom(returns=returns, endp=endp,
+    look_back=look_back, objfun=objfun)
   sum(pnls)
 })  # end sapply
 # Plot momemntum PnLs
@@ -858,9 +858,9 @@ plot(x=look_backs, y=profilev, t="l",
   xlab="look_back (months)", ylab="pnl")
 # Optimal look_back
 look_back <- look_backs[which.max(profilev)]
-pnls <- backtestmomentum(returns=returns,
+pnls <- backtestmom(returns=returns,
   look_back=look_back, endp=endp,
-  objfunc=objfunc, with_weights=TRUE)
+  objfun=objfun, with_weights=TRUE)
 tail(pnls)
 # Calculate the wealth of momentum returns
 retmom <- pnls[, 1]
@@ -881,9 +881,9 @@ legend("topleft", legend=colnames(wealth),
   col=plot_theme$col$line.col, bty="n")
 # Plot the momentum portfolio weights
 weightv <- pnls[, -1]
-vtis <- log(quantmod::Cl(rutils::etfenv$VTI[dates]))
-colnames(vtis) <- "VTI"
-datav <- cbind(vtis, weightv)
+vti <- log(quantmod::Cl(rutils::etfenv$VTI[dates]))
+colnames(vti) <- "VTI"
+datav <- cbind(vti, weightv)
 datav <- na.omit(datav)
 colnames(datav)[2:NCOL(pnls)] <- paste0(colnames(weightv), "_weight")
 zoo::plot.zoo(datav, xlab=NULL, main="Momentum Weights")
@@ -894,7 +894,7 @@ betas_etf <- sapply(returns, function(x)
 betas <- weightv %*% betas_etf
 betas <- xts::xts(betas, order.by=dates)
 colnames(betas) <- "momentum_beta"
-datav <- cbind(betas, vtis)
+datav <- cbind(betas, vti)
 zoo::plot.zoo(datav,
   oma = c(3, 1, 3, 0), mar = c(0, 4, 0, 1),
   main="Momentum Beta & VTI Price", xlab="")
@@ -902,24 +902,24 @@ zoo::plot.zoo(datav,
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 # Merton-Henriksson test
-vtis <- rutils::diffit(vtis)
-design <- cbind(VTI=vtis, 0.5*(vtis+abs(vtis)), vtis^2)
+vti <- rutils::diffit(vti)
+design <- cbind(VTI=vti, 0.5*(vti+abs(vti)), vti^2)
 colnames(design)[2:3] <- c("merton", "treynor")
 model <- lm(retmom ~ VTI + merton, data=design); summary(model)
 # Treynor-Mazuy test
 model <- lm(retmom ~ VTI + treynor, data=design); summary(model)
 # Plot residual scatterplot
-plot.default(x=vtis, y=retmom, xlab="VTI", ylab="momentum")
+plot.default(x=vti, y=retmom, xlab="VTI", ylab="momentum")
 title(main="Treynor-Mazuy market timing test\n for Momentum vs VTI", line=0.5)
 # Plot fitted (predicted) response values
-points.default(x=vtis, y=model$fitted.values, pch=16, col="red")
+points.default(x=vti, y=model$fitted.values, pch=16, col="red")
 residuals <- model$residuals
 text(x=0.0, y=max(residuals), paste("Treynor test t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
 # Standardize the returns
 retmom_std <- (retmom-mean(retmom))/sd(retmom)
-vtis <- (vtis-mean(vtis))/sd(vtis)
+vti <- (vti-mean(vti))/sd(vti)
 # Calculate skewness and kurtosis
-apply(cbind(retmom_std, vtis), 2, function(x)
+apply(cbind(retmom_std, vti), 2, function(x)
   sapply(c(skew=3, kurt=4),
     function(e) sum(x^e)))/nrows
 # Plot histogram
@@ -929,7 +929,7 @@ hist(retmom_std, breaks=30,
   xlab="", ylab="", freq=FALSE)
 # Draw kernel density of histogram
 lines(density(retmom_std), col='red', lwd=2)
-lines(density(vtis), col='blue', lwd=2)
+lines(density(vti), col='blue', lwd=2)
 # Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
  leg=c("Momentum", "VTI"),
@@ -1005,7 +1005,7 @@ momentum_daily <- function(returns, look_back=252, bid_offer=0.001, trend=1, ...
   (pnls - costs)
 }  # end momentum_daily
 # Simulate a daily ETF momentum strategy
-source("C:/Develop/lecture_slides/scripts/back_test.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/back_test.R")
 wealth <- momentum_daily(returns=returns, look_back=252,
   bid_offer=bid_offer)
 # Perform sapply loop over look_backs
@@ -1013,7 +1013,7 @@ look_backs <- seq(50, 300, by=50)
 wealth <- sapply(look_backs, momentum_daily,
   returns=returns, bid_offer=bid_offer)
 colnames(wealth) <- paste0("look_back=", look_backs)
-wealth <- xts::xts(wealth, index(returns))
+wealth <- xts::xts(wealth, zoo::index(returns))
 tail(wealth)
 # Plot EWMA strategies with custom line colors
 plot_theme <- chart_theme()
@@ -1036,7 +1036,7 @@ look_backs <- seq(50, 300, by=50)
 wealth <- sapply(look_backs, momentum_daily,
   returns=returns100, bid_offer=0)
 colnames(wealth) <- paste0("look_back=", look_backs)
-wealth <- xts::xts(wealth, index(returns100))
+wealth <- xts::xts(wealth, zoo::index(returns100))
 # Plot daily S&P500 momentum strategies with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorRampPalette(c("blue", "red"))(NCOL(wealth))
@@ -1050,7 +1050,7 @@ look_backs <- seq(5, 50, by=5)
 wealth <- sapply(look_backs, momentum_daily,
   returns=returns100, bid_offer=0, trend=(-1))
 colnames(wealth) <- paste0("look_back=", look_backs)
-wealth <- xts::xts(wealth, index(returns100))
+wealth <- xts::xts(wealth, zoo::index(returns100))
 # Plot EWMA strategies with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorRampPalette(c("blue", "red"))(NCOL(wealth))
@@ -1083,8 +1083,8 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 barplot(sort(weightv), main="Maximum Sharpe Weights", cex.names=0.7)
 # Calculate portfolio returns
 rets_is <- returns["/2014"]
-portf_is <- xts::xts(rets_is %*% weightv, index(rets_is))
-indeks <- xts::xts(rowSums(rets_is)/sqrt(nassets), index(rets_is))
+portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
+indeks <- xts::xts(rowSums(rets_is)/sqrt(nassets), zoo::index(rets_is))
 portf_is <- portf_is*sd(indeks)/sd(portf_is)
 # Plot cumulative portfolio returns
 wealth <- cumsum(cbind(portf_is, indeks))
@@ -1094,8 +1094,8 @@ dygraphs::dygraph(wealth, main="In-sample Optimal Portfolio Returns") %>%
   dyLegend(width=500)
 # Out-of-sample portfolio returns
 rets_os <- returns["2015/"]
-portf_os <- xts::xts(rets_os %*% weightv, index(rets_os))
-indeks <- xts::xts(rowSums(rets_os)/sqrt(nassets), index(rets_os))
+portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+indeks <- xts::xts(rowSums(rets_os)/sqrt(nassets), zoo::index(rets_os))
 portf_os <- portf_os*sd(indeks)/sd(portf_os)
 # Plot cumulative portfolio returns
 wealth <- cumsum(cbind(portf_os, indeks))
@@ -1103,7 +1103,7 @@ colnames(wealth) <- c("Optimal Portfolio", "Equal Weight Portfolio")
 dygraphs::dygraph(wealth, main="Out-of-sample Optimal Portfolio Returns") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyLegend(width=500)
-load("C:/Develop/lecture_slides/data/sp500_returns.RData")
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns
 returns <- returns["2000/"]
 nassets <- NCOL(returns)
@@ -1120,9 +1120,9 @@ weightv <- inverse %*% colMeans(excess["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(returns)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, index(rets_os))
-indeks <- xts::xts(rowSums(returns)/sqrt(nassets), index(returns))
+portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
+portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
 # Plot cumulative portfolio returns
 wealth <- rbind(portf_is, portf_os)
 wealth <- wealth*sd(indeks)/sd(wealth)
@@ -1168,9 +1168,9 @@ weightv <- inverse %*% colMeans(excess["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(returns)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, index(rets_os))
-indeks <- xts::xts(rowSums(returns)/sqrt(nassets), index(returns))
+portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
+portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
 # Plot cumulative portfolio returns
 wealth <- rbind(portf_is, portf_os)
 wealth <- wealth*sd(indeks)/sd(wealth)
@@ -1188,8 +1188,8 @@ rets_mean <- (1 - alpha)*rets_mean + alpha*mean(rets_mean)
 weightv <- inverse %*% rets_mean
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, index(rets_os))
+portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
+portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
 # Plot cumulative portfolio returns
 wealth <- rbind(portf_is, portf_os)
 wealth <- wealth*sd(indeks)/sd(wealth)
@@ -1201,7 +1201,7 @@ dygraphs::dygraph(wealth, main="Out-of-sample Returns for Stocks With Regulariza
   dyLegend(width=500)
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp("C:/Develop/lecture_slides/scripts/calc_weights.cpp")
+Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/calc_weights.cpp")
 # Create random matrix of returns
 matrixv <- matrix(rnorm(300), nc=5)
 # Regularized inverse of covariance matrix
@@ -1239,17 +1239,17 @@ rets_portf <- lapply(2:nrows, function(i) {
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
     # Calculate the out-of-sample portfolio returns
     returns <- returns[(endp[i-1]+1):endp[i], ]
-    xts::xts(returns %*% weightv, index(returns))
+    xts::xts(returns %*% weightv, zoo::index(returns))
 })  # end lapply
 rets_portf <- rutils::do_call(rbind, rets_portf)
 # Plot cumulative strategy returns
-indeks <- xts::xts(rowSums(returns)/sqrt(nassets), index(returns))
+indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
 wealth <- cumsum(na.omit(cbind(rets_portf, indeks*sd(rets_portf)/sd(indeks))))
 colnames(wealth) <- c("Rolling Portfolio Strategy", "Equal Weight Portfolio")
 dygraphs::dygraph(wealth, main="Rolling Portfolio Optimization Strategy") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-load("C:/Develop/lecture_slides/data/sp500_returns.RData")
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns
 returns100[1, is.na(returns100[1, ])] <- 0
 returns100 <- zoo::na.locf(returns100, na.rm=FALSE)
@@ -1269,7 +1269,7 @@ pnls <- HighFreq::back_test(typev="max_sharpe",
   startp=startp, endp=endp,
   alpha=alpha, max_eigen=max_eigen)
 # Calculate returns on equal weight portfolio
-indeks <- xts::xts(rowMeans(returns100), index(returns100))
+indeks <- xts::xts(rowMeans(returns100), zoo::index(returns100))
 # Plot cumulative strategy returns
 wealth <- cbind(pnls, indeks, (pnls+indeks)/2)
 wealth <- cumsum(na.omit(wealth))

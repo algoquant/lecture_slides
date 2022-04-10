@@ -1,20 +1,20 @@
 # Functions for back-testing momentum strategies
 
-# Function backtestmomentum() performs a back-test of a momentum strategy over the end-points
-backtestmomentum <- function(returns, 
+# Function backtestmom() performs a back-test of a momentum strategy over the end-points
+backtestmom <- function(returns, 
                                objfunc=function(returns) (sum(returns)/sd(returns)), 
                                look_back=12, re_balance="months", bid_offer=0.001,
                                endp=rutils::calc_endpoints(returns, interval=re_balance), 
                                with_weights=FALSE, ...) {
   stopifnot("package:rutils" %in% search() || require("rutils", quietly=TRUE))
   # Define look-back and look-forward intervals
- .n_rows <- NROW(endp)
-  startp <- c(rep_len(1, look_back-1), endp[1:.n_rows-look_back+1)])
+  nrows <- NROW(endp)
+  startp <- c(rep_len(1, look_back-1), endp[1:(nrows-look_back+1)])
   # Calculate look-back intervals
   look_backs <- cbind(startp, endp)
   # Calculate look-forward intervals
   look_fwds <- cbind(endp + 1, rutils::lagit(endp, -1))
-  look_fwds.n_rows, 1] <- endp.n_rows]
+  look_fwds[nrows, 1] <- endp[nrows]
   # Calculate past performance over look-back intervals
   past <- t(apply(look_backs, 1, function(ep) sapply(returns[ep[1]:ep[2]], objfunc)))
   past[is.na(past)] <- 0
@@ -34,7 +34,7 @@ backtestmomentum <- function(returns,
     rutils::lagit(cbind(pnls, weights))
   else
     rutils::lagit(pnls)
-}  # end backtestmomentum
+}  # end backtestmom
 
 
 # Function momentum_daily() performs a back-test of a daily momentum strategy

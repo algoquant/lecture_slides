@@ -22,17 +22,17 @@ dygraphs::dygraph(prices["2009"], main="VTI Price Z-Scores") %>%
   dySeries(name=colnames[1], axis="y", label=colnames[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnames[2], axis="y2", label=colnames[2], strokeWidth=2, col="red")
 # Calculate thresholds for labeling tops and bottoms
-threshold_s <- quantile(pricescores, c(0.1, 0.9))
+threshv <- quantile(pricescores, c(0.1, 0.9))
 # Calculate the vectors of tops and bottoms
-top_s <- zoo::coredata(pricescores > threshold_s[2])
-colnames(top_s) <- "tops"
-bottom_s <- zoo::coredata(pricescores < threshold_s[1])
-colnames(bottom_s) <- "bottoms"
+tops <- zoo::coredata(pricescores > threshv[2])
+colnames(tops) <- "tops"
+bottoms <- zoo::coredata(pricescores < threshv[1])
+colnames(bottoms) <- "bottoms"
 # Simulate in-sample VTI strategy
 position_s <- rep(NA_integer_, NROW(returns))
 position_s[1] <- 0
-position_s[top_s] <- (-1)
-position_s[bottom_s] <- 1
+position_s[tops] <- (-1)
+position_s[bottoms] <- 1
 position_s <- zoo::na.locf(position_s)
 position_s <- rutils::lagit(position_s)
 pnls <- cumsum(returns*position_s)
@@ -60,7 +60,7 @@ volume_sd[1] <- 0
 volume_scores <- ifelse(volume_sd > 0, (volumes - volume_mean)/volume_sd, 0)
 colnames(volume_scores) <- "volume"
 # Define design matrix for tops including intercept column
-design <- cbind(top_s, intercept=rep(1, NROW(top_s)),
+design <- cbind(tops, intercept=rep(1, NROW(tops)),
            volat_scores, volume_scores)
 # Define regression formula
 colnames <- colnames(design)
@@ -77,7 +77,7 @@ forecasts <- 1/(1+exp(-predictv))
 all.equal(glmod$fitted.values, forecasts, check.attributes=FALSE)
 hist(forecasts)
 x11(width=6, height=5)
-plot(x=predictv[ordern], y=top_s[ordern],
+plot(x=predictv[ordern], y=tops[ordern],
      main="Logistic Regression of Stock Tops",
      col="orange", xlab="predictor", ylab="top")
 lines(x=predictv[ordern], y=glmod$fitted.values[ordern], col="blue", lwd=3)
@@ -87,15 +87,15 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6,
 # Define discrimination threshold value
 threshold <- quantile(forecasts, 0.95)
 # Calculate confusion matrix in-sample
-confu_sion <- table(actual=!top_s, forecast=(forecasts < threshold))
-confu_sion
+confmat <- table(actual=!tops, forecast=(forecasts < threshold))
+confmat
 # Calculate FALSE positive (type I error)
-sum(!top_s & (forecasts > threshold))
+sum(!tops & (forecasts > threshold))
 # Calculate FALSE negative (type II error)
-sum(top_s & (forecasts < threshold))
+sum(tops & (forecasts < threshold))
 # Calculate FALSE positive and FALSE negative rates
-confu_sion <- confu_sion / rowSums(confu_sion)
-c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+confmat <- confmat / rowSums(confmat)
+c(typeI=confmat[2, 1], typeII=confmat[1, 2])
 # Below is an unsuccessful attempt to draw confusion matrix using xtable
 confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
 dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
@@ -108,24 +108,24 @@ include.rownames=TRUE,
 include.colnames=TRUE)
 # end unsuccessful attempt to draw confusion table using xtable
 # Confusion matrix as function of threshold
-con_fuse <- function(actual, forecasts, threshold) {
+confun <- function(actual, forecasts, threshold) {
     conf <- table(actual, (forecasts < threshold))
     conf <- conf / rowSums(conf)
     c(typeI=conf[2, 1], typeII=conf[1, 2])
-  }  # end con_fuse
-con_fuse(!top_s, forecasts, threshold=threshold)
+  }  # end confun
+confun(!tops, forecasts, threshold=threshold)
 # Define vector of discrimination thresholds
-threshold_s <- quantile(forecasts, seq(0.1, 0.99, by=0.01))
+threshv <- quantile(forecasts, seq(0.1, 0.99, by=0.01))
 # Calculate error rates
-error_rates <- sapply(threshold_s, con_fuse,
-  actual=!top_s, forecasts=forecasts)  # end sapply
+error_rates <- sapply(threshv, confun,
+  actual=!tops, forecasts=forecasts)  # end sapply
 error_rates <- t(error_rates)
-rownames(error_rates) <- threshold_s
+rownames(error_rates) <- threshv
 # Calculate the informedness
 inform_ed <- 2 - rowSums(error_rates[, c("typeI", "typeII")])
-plot(threshold_s, inform_ed, t="l", main="Informedness")
+plot(threshv, inform_ed, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
-threshold_top <- threshold_s[which.max(inform_ed)]
+threshold_top <- threshv[which.max(inform_ed)]
 tops_forecast <- (forecasts > threshold_top)
 # Calculate area under ROC curve (AUC)
 error_rates <- rbind(c(1, 0), error_rates)
@@ -141,7 +141,7 @@ plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      main="ROC Curve for Stock Tops", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
 # Define design matrix for tops including intercept column
-design <- cbind(bottom_s, intercept=rep(1, NROW(bottom_s)),
+design <- cbind(bottoms, intercept=rep(1, NROW(bottoms)),
            volat_scores, volume_scores)
 # Define regression formula
 colnames <- colnames(design)
@@ -154,15 +154,15 @@ summary(glmod)
 predictv <- drop(design[, -1] %*% glmod$coefficients)
 forecasts <- 1/(1+exp(-predictv))
 # Calculate error rates
-error_rates <- sapply(threshold_s, con_fuse,
-  actual=!bottom_s, forecasts=forecasts)  # end sapply
+error_rates <- sapply(threshv, confun,
+  actual=!bottoms, forecasts=forecasts)  # end sapply
 error_rates <- t(error_rates)
-rownames(error_rates) <- threshold_s
+rownames(error_rates) <- threshv
 # Calculate the informedness
 inform_ed <- 2 - rowSums(error_rates[, c("typeI", "typeII")])
-plot(threshold_s, inform_ed, t="l", main="Informedness")
+plot(threshv, inform_ed, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
-threshold_bottom <- threshold_s[which.max(inform_ed)]
+threshold_bottom <- threshv[which.max(inform_ed)]
 bottoms_forecast <- (forecasts > threshold_bottom)
 # Calculate area under ROC curve (AUC)
 error_rates <- rbind(c(1, 0), error_rates)
@@ -195,7 +195,7 @@ dygraphs::dygraph(prices, main="Logistic Strategy Using Top and Bottom Labels") 
   dySeries(name=colnames[1], axis="y", label=colnames[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnames[2], axis="y2", label=colnames[2], strokeWidth=2, col="red")
 # Determine trade dates right after EWMA has crossed prices
-indic <- sign(closep - ew_ma)
+indic <- sign(closep - ewmap)
 trade_dates <- (rutils::diffit(indic) != 0)
 trade_dates <- which(trade_dates) + 1
 trade_dates <- trade_dates[trade_dates < nrows]
@@ -206,7 +206,7 @@ position_s[trade_dates] <- indic[trade_dates-1]
 position_s <- zoo::na.locf(position_s, na.rm=FALSE)
 position_s <- xts::xts(position_s, order.by=index(ohlc))
 # Plot EWMA prices with position shading
-datav <- cbind(closep, ew_ma)
+datav <- cbind(closep, ewmap)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue", "red")
 quantmod::chart_Series(datav["2007/2010"], theme=plot_theme,
@@ -215,7 +215,7 @@ add_TA(position_s > 0, on=-1,
  col="lightgreen", border="lightgreen")
 add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
-legend("bottomleft", legend=colnames(ew_ma),
+legend("bottomleft", legend=colnames(ewmap),
  inset=0.1, bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
 openp <- quantmod::Op(ohlc)
@@ -272,10 +272,10 @@ simu_ewma <- function(ohlc, lambda=0.01, wid_th=351, bid_offer=0.001, tre_nd=1) 
   weightv <- exp(-lambda*1:wid_th)
   weightv <- weightv/sum(weightv)
   closep <- quantmod::Cl(ohlc)
-  ew_ma <- .Call(stats:::C_cfilter, closep, filter=weightv, sides=1, circular=FALSE)
-  ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
+  ewmap <- .Call(stats:::C_cfilter, closep, filter=weightv, sides=1, circular=FALSE)
+  ewmap[1:(wid_th-1)] <- ewmap[wid_th]
   # Determine trade dates right after EWMA has crossed prices
-  indic <- tre_nd*sign(closep - ew_ma)
+  indic <- tre_nd*sign(closep - ewmap)
   trade_dates <- (rutils::diffit(indic) != 0)
   trade_dates <- which(trade_dates) + 1
   trade_dates <- trade_dates[trade_dates < nrows]
@@ -302,7 +302,7 @@ simu_ewma <- function(ohlc, lambda=0.01, wid_th=351, bid_offer=0.001, tre_nd=1) 
   colnames(pnls) <- c("positions", "pnls")
   pnls
 }  # end simu_ewma
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lambdas <- seq(from=1e-5, to=0.05, by=0.01)
 # Perform lapply() loop over lambdas
 pnls <- lapply(lambdas, function(lambda) {
@@ -372,7 +372,7 @@ add_TA(position_s < 0, on=-1,
 legend("top", legend=colnames(pnls),
   inset=0.05, bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lambdas <- seq(0.05, 1.0, 0.05)
 # Perform lapply() loop over lambdas
 pnls <- lapply(lambdas, function(lambda) {

@@ -111,9 +111,9 @@ colnames(prices) <- rutils::get_name(colnames(prices))
 returns <- xts::diff.xts(prices)/
   rutils::lagit(prices, pad_zeros=FALSE)
 set.seed(1121)
-sam_ple <- sample(NCOL(returns), s=100, replace=FALSE)
-prices100 <- prices[, sam_ple]
-returns100 <- returns[, sam_ple]
+samplev <- sample(NCOL(returns), s=100, replace=FALSE)
+prices100 <- prices[, samplev]
+returns100 <- returns[, samplev]
 save(prices, prices100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 save(returns, returns100,
@@ -126,8 +126,7 @@ save(returns, returns100,
 datav <- rowSums(is.na(prices))
 datav <- xts::xts(datav, order.by=index(prices))
 dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
-  dyOptions(colors="blue", strokeWidth=2) %>%
-  dyAxis("y", valueRange=c(0, 300))
+  dyOptions(colors="blue", strokeWidth=2)
       @
   \end{columns}
 \end{block}
@@ -147,7 +146,7 @@ dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>
 # Calculate price weighted index of constituent
 ncols <- NCOL(prices)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
-indeks <- xts(rowSums(prices)/ncols, index(prices))
+indeks <- xts(rowSums(prices)/ncols, zoo::index(prices))
 colnames(indeks) <- "index"
 # Combine index with VTI
 datav <- cbind(indeks[index(etfenv$VTI)], etfenv$VTI[, 4])
@@ -531,12 +530,12 @@ nweights <- NROW(symbolv)
 weights <- rep(1/sqrt(nweights), nweights)
 names(weights) <- symbolv
 # Objective function equal to minus portfolio variance
-object <- function(weights, returns) {
+objfun <- function(weights, returns) {
   retsp <- returns %*% weights
   -1e7*var(retsp) + 1e7*(1 - sum(weights*weights))^2
-}  # end object
+}  # end objfun
 # Objective function for equal weight portfolio
-object(weights, returns)
+objfun(weights, returns)
 # Compare speed of vector multiplication methods
 library(microbenchmark)
 summary(microbenchmark(
@@ -549,14 +548,14 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Find weights with maximum variance
 optimd <- optim(par=weights,
-  fn=object,
+  fn=objfun,
   returns=returns,
   method="L-BFGS-B",
   upper=rep(5.0, nweights),
   lower=rep(-5.0, nweights))
 # Optimal weights and maximum variance
 weights1 <- optimd$par
-object(weights1, returns)
+objfun(weights1, returns)
 # Plot first principal component loadings
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -585,14 +584,14 @@ barplot(weights1, names.arg=names(weights1),
 # pc1 weights and returns
 pc1 <- drop(returns %*% weights1)
 # Redefine objective function
-object <- function(weights, returns) {
+objfun <- function(weights, returns) {
   retsp <- returns %*% weights
   -1e7*var(retsp) + 1e7*(1 - sum(weights^2))^2 +
     1e7*sum(weights1*weights)^2
-}  # end object
+}  # end objfun
 # Find second principal component weights
 optimd <- optim(par=weights,
-                   fn=object,
+                   fn=objfun,
                    returns=returns,
                    method="L-BFGS-B",
                    upper=rep(5.0, nweights),
@@ -1667,7 +1666,7 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
       \vskip1ex
       \emph{WRDS} provides time series of security prices and fundamental company data, and other financial, econometric, and social datasets.
       \vskip1ex
-      \emph{WRDS} provides stock prices, options and implied volatilities, stock fundamentals, financial ratios, indexes, earnings estimates, analyst ratings, etc.
+      \emph{WRDS} provides stock prices, options and implied volatilities, stock fundamentals, financial ratios, zoo::indexes, earnings estimates, analyst ratings, etc.
       \vskip1ex
       \emph{WRDS} redistributes fundamental company data from \href{http://www.compustat.com}{\emph{Compustat}}, \href{http://www.capitaliq.com}{\emph{S\&P Capital IQ}}, \href{https://www.thomsonreuters.com/en.html}{\emph{Thomson Reuters}}, \href{http://www.factset.com/}{\emph{FactSet}}, \emph{Hedge Fund Research}, \href{https://ihsmarkit.com/index.html}{\emph{Markit}}, etc.
       \vskip1ex
@@ -1884,7 +1883,7 @@ cat(etf_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/etf_gvkeys.txt", 
       The \emph{GVKEYs} and \emph{CUSIPs} can be saved into text files for use in \emph{WRDS} data queries.
       <<echo=TRUE,eval=FALSE>>=
 # Read .csv file with S&P500 constituents
-sp500table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents2020.csv")
+sp500table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
 class(sp500table)
 dim(sp500table)
 head(sp500table)
@@ -2020,13 +2019,13 @@ library(rutils)  # Load package rutils
 # Read .csv file with TAP OHLC prices
 ohlc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/TAP.csv")
 # ohlc contains cusips not in sp500_cusips
-cusip_s <- unique(ohlc$cusip)
-cusip_s %in% sp500_cusips
+cusips <- unique(ohlc$cusip)
+cusips %in% sp500_cusips
 # Select data only for sp500_cusips
 ohlc <- ohlc[ohlc$cusip %in% sp500_cusips, ]
 # ohlc contains tickers not in sp500_tickers
-ticker_s <- unique(ohlc$tic)
-ticker_s %in% sp500_tickers
+tickers <- unique(ohlc$tic)
+tickers %in% sp500_tickers
 # Select data only for sp500_tickers
 ohlc <- ohlc[ohlc$tic %in% sp500_tickers, ]
 # Select ticker from sp500table
@@ -2119,13 +2118,13 @@ format_ohlc <- function(ohlc, environ_ment) {
 # Load OHLC prices from .csv file downloaded from WRDS by cusip
 sp500_prices <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices_bycusip.csv")
 # sp500_prices contains cusips not in sp500_cusips
-cusip_s <- unique(sp500_prices$cusip)
-NROW(sp500_cusips); NROW(cusip_s)
+cusips <- unique(sp500_prices$cusip)
+NROW(sp500_cusips); NROW(cusips)
 # Select data only for sp500_cusips
 sp500_prices <- sp500_prices[sp500_prices$cusip %in% sp500_cusips, ]
 # sp500_prices contains tickers not in sp500_tickers
-ticker_s <- unique(sp500_prices$tic)
-NROW(sp500_tickers); NROW(ticker_s)
+tickers <- unique(sp500_prices$tic)
+NROW(sp500_tickers); NROW(tickers)
 # Select data only for sp500_tickers
 sp500_prices <- sp500_prices[sp500_prices$tic %in% sp500_tickers, ]
 # Create new data environment
@@ -2233,7 +2232,7 @@ plot(quantmod::Cl(sp500env$MSFT))
       \emph{WRDS} provides online help and a guide to its datasets:\\
       \hskip1em\url{https://wrds-www.wharton.upenn.edu}\\
       \vskip1ex
-      \emph{WRDS} provides stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
+      \emph{WRDS} provides stock prices, stock fundamentals, financial ratios, zoo::indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
       \hskip1em\url{https://www.WRDS.com/blog/api-for-stock-data}
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2727,11 +2726,11 @@ quantmod::chart_Series(x=xtes$XLK.Close,
       The function \texttt{as.POSIXct()} coerces objects to class \texttt{POSIXct}.
       <<echo=TRUE,eval=FALSE>>=
 # Round time index to seconds
-good_ticks[, index := as.POSIXct(round.POSIXt(index, "secs"))]
+good_ticks[, zoo::index := as.POSIXct(round.POSIXt(index, "secs"))]
 # Aggregate to OHLC by seconds
 ohlc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
 # Round time index to minutes
-good_ticks[, index := as.POSIXct(round.POSIXt(index, "mins"))]
+good_ticks[, zoo::index := as.POSIXct(round.POSIXt(index, "mins"))]
 # Aggregate to OHLC by minutes
 ohlc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
       @
@@ -3025,8 +3024,8 @@ sapply(c(var=2, skew=3, kurt=4), function(x) sum(returns^x)/nrows)
 tseries::jarque.bera.test(returns)
 # Fit SPY returns using MASS::fitdistr()
 optim_fit <- MASS::fitdistr(returns, densfun="t", df=2)
-lo_cation <- optim_fit$estimate[1]
-scalit <- optim_fit$estimate[2]
+loc <- optim_fit$estimate[1]
+scalev <- optim_fit$estimate[2]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3035,12 +3034,12 @@ scalit <- optim_fit$estimate[2]
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot histogram of SPY returns
-histo_gram <- hist(returns, col="lightgrey", mgp=c(2, 1, 0),
+histp <- hist(returns, col="lightgrey", mgp=c(2, 1, 0),
   xlab="returns (standardized)", ylab="frequency", xlim=c(-3, 3),
   breaks=1e3, freq=FALSE, main="Distribution of High Frequency SPY Returns")
 # lines(density(returns, bw=0.2), lwd=3, col="blue")
 # Plot t-distribution function
-curve(expr=dt((x-lo_cation)/scalit, df=2)/scalit,
+curve(expr=dt((x-loc)/scalev, df=2)/scalev,
       type="l", lwd=3, col="red", add=TRUE)
 # Plot the Normal probability distribution
 curve(expr=dnorm(x, mean=mean(returns),
@@ -3128,7 +3127,7 @@ startp <- c(rep_len(1, look_back-1),
 endp[endp < look_back] <- look_back
 vol_rolling <- sapply(seq_along(endp),
   function(it) sd(ret2013[startp[it]:endp[it]]))
-vol_rolling <- xts::xts(vol_rolling, index(ret2013))
+vol_rolling <- xts::xts(vol_rolling, zoo::index(ret2013))
 # Extract time intervals of SPY returns
 indeks <- c(60, diff(xts::.index(ret2013)))
 head(indeks)
@@ -3623,7 +3622,7 @@ season_var <- season_ality(vol_ohlc(ohlc=SPY))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/intraday_season_hurst_volat.png}
+      \includegraphics[width=0.45\paperwidth]{figure/intradayveason_hurst_volat.png}
   \end{columns}
 \end{block}
 

@@ -79,10 +79,10 @@ order(score_s)
 # Sort the vector into ascending order
 score_s[order(score_s)]
 # Calculate the sorted (ordered) vector
-sort_ed <- score_s[order(score_s)]
+sortv <- score_s[order(score_s)]
 # Calculate index to sort into unsorted (original) order
 order(order(score_s))
-sort_ed[order(order(score_s))]
+sortv[order(order(score_s))]
 score_s
 # Examples for sort() with ties
 order(c(2, 1:4))  # There's a tie
@@ -123,7 +123,7 @@ library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
   as_list=as.list(as.data.frame.matrix(matrixv)),
-  l_apply=lapply(seq_along(matrixv[1, ]),
+  applyloop=lapply(seq_along(matrixv[1, ]),
      function(indeks) matrixv[, indeks]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # ?iris  # Get information on iris

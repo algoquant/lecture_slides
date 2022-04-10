@@ -67,7 +67,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{March 13, 2022}
+\date{April 4, 2022}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -82,46 +82,42 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Random Numbers and Estimators}
+\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Pseudo-Random Numbers}
+\subsection{Benchmarking the Speed of \texttt{R} Code}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Pseudo-random numbers are deterministic sequences of numbers which have some of the properties of random numbers, but they are not truly random numbers.
+      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression.
       \vskip1ex
-      Pseudo-random number generators depend on a \emph{seed} value, and produce the same sequence of numbers for a given \emph{seed} value.
+      \texttt{system.time()} returns the \emph{"user time"} (execution time of user instructions), the \emph{"system time"} (execution time of operating system calls), and \emph{"elapsed time"} (total execution time, including system latency waiting).
       \vskip1ex
-      The function \texttt{set.seed()} initializes the random number generator by specifying the \emph{seed} value.
+      The function \texttt{microbenchmark()} from package \texttt{microbenchmark} calculates and compares the execution time of \texttt{R} expressions (in milliseconds), and is more accurate than \texttt{system.time()}.
       \vskip1ex
-      The choice of \emph{seed} value isn't important, and a given value is just good as any other one.
+      The time it takes to execute an expression is not always the same, since it depends on the state of the processor, caching, etc.
       \vskip1ex
-      The function \texttt{runif()} produces random numbers from the \emph{uniform} distribution.
-      \vskip1ex
-      The function \texttt{rnorm()} produces random numbers from the \emph{normal} distribution.
-      \vskip1ex
-      The function \texttt{rt()} produces random numbers from the \emph{t-distribution} with $df$ degrees of freedom.
+      \texttt{microbenchmark()} executes the expression many times, and returns the distribution of total execution times in a \emph{data frame}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-runif(3)  # three numbers from uniform distribution
-runif(3)  # Simulate another three numbers
-set.seed(1121)  # Reset random number generator
-runif(3)  # Simulate another three numbers
-# Simulate random number from standard normal distribution
-rnorm(1)
-# Simulate five standard normal random numbers
-rnorm(5)
-# Simulate five non-standard normal random numbers
-rnorm(n=5, mean=1, sd=2)  # Match arguments by name
-# Simulate t-distribution with 2 degrees of freedom
-rt(n=5, df=2)
+library(microbenchmark)
+vectorv <- runif(1e6)
+# sqrt() and "^0.5" are the same
+all.equal(sqrt(vectorv), vectorv^0.5)
+# sqrt() is much faster than "^0.5"
+system.time(vectorv^0.5)
+microbenchmark(
+  power = vectorv^0.5, 
+  sqrt = sqrt(vectorv), 
+  times=10)
       @
+      The "\texttt{times}" parameter is the number of times the expression is evaluated.
+      \vskip1ex
+      The choice of the "\texttt{times}" parameter is a tradeoff between the time it takes to run \texttt{microbenchmark()}, and the desired accuracy,
   \end{columns}
 \end{block}
 
@@ -129,80 +125,48 @@ rt(n=5, df=2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Logistic Map}
+\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} \texttt{C++} Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{logistic map} is a recurrence relation which produces a deterministic sequence of numbers:
-      \begin{displaymath}
-        x_n = r x_{n-1} (1 - x_{n-1})
-      \end{displaymath}
-      If the \emph{seed} value $x_0$ is in the interval $(0, 1)$ and if $r=4$, then the sequence $x_n$ is also contained in the interval $(0, 1)$.
+      \emph{Compiled} \texttt{C++} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R}.
       \vskip1ex
-      The function \texttt{curve()} plots a function defined by its name.
-      <<echo=TRUE,eval=FALSE>>=
-# Define logistic map function
-log_map <- function(x, r=4) r*x*(1-x)
-log_map(0.25, 4)
-# Plot logistic map
-x11(width=6, height=5)
-curve(expr=log_map, type="l", xlim=c(0, 1),
-      xlab="x[n-1]", ylab="x[n]", lwd=2, col="blue",
-      main="logistic map")
-lines(x=c(0, 0.25), y=c(0.75, 0.75), lwd=2, col="orange")
-lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="orange")
-      @
+      This makes \emph{compiled} \texttt{C++} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R}.
+      \vskip1ex
+      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function.
+      \vskip1ex
+      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function.
+      \vskip1ex
+      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
+      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0}.
+      \vskip1ex
+      The function \texttt{all.equal()} tests the equality of two objects to within the square root of the \emph{machine precision}.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/logistic_map.png}\\
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Generating Pseudo-Random Numbers Using Logistic Map}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{logistic map} can be used to calculate sequences of pseudo-random numbers.
-      \vskip1ex
-      For most \emph{seed} values $x_0$ and $r=4$, the \emph{logistic map} produces a pseudo-random sequence, but it's not uniformly distributed.
-      \vskip1ex
-      The inverse cosine function \texttt{acos()} transforms a \emph{logistic map} sequence into a uniformly distributed sequence,
-      \begin{displaymath}
-        u_n = \arccos(1 - 2 x_n) / \pi
-      \end{displaymath}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate uniformly distributed pseudo-random
-# Sequence using logistic map function
-unifunc <- function(seedv, nrows=10) {
-  # Pre-allocate vector instead of "growing" it
-  output <- numeric(nrows)
-  # initialize
-  output[1] <- seedv
-  # Perform loop
-  for (i in 2:nrows) {
-    output[i] <- 4*output[i-1]*(1-output[i-1])
-  }  # end for
-  acos(1-2*output)/pi
-}  # end unifunc
+library(microbenchmark)
+# sum() is a compiled primitive function
+sum
+# mean() is a generic function
+mean
+vectorv <- runif(1e6)
+# sum() is much faster than mean()
+all.equal(mean(vectorv), sum(vectorv)/NROW(vectorv))
+summary(microbenchmark(
+  mean_fun = mean(vectorv), 
+  sum_fun = sum(vectorv)/NROW(vectorv), 
+  times=10))[, c(1, 4, 5)]
+# any() is a compiled primitive function
+any
+# any() is much faster than %in% wrapper for match()
+all.equal(1 %in% vectorv, any(vectorv == 1))
+summary(microbenchmark(
+  in_fun = {1 %in% vectorv}, 
+  any_fun = any(vectorv == 1), 
+  times=10))[, c(1, 4, 5)]
       @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/logistic_map_density.png}\\
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-unifunc(seedv=0.1, nrows=15)
-plot(
-  density(unifunc(seedv=runif(1), nrows=1e5)),
-  xlab="", ylab="", lwd=2, col="blue",
-  main="uniform pseudo-random number density")
-@
   \end{columns}
 \end{block}
 
@@ -210,42 +174,142 @@ plot(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Generating Binomial Random Numbers}
+\subsection{Writing Fast \texttt{R} Code Without Method Dispatch}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      A \emph{binomial} trial is a coin flip, that results in either a success or failure.
+    \column{0.5\textwidth}
+      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch.
       \vskip1ex
-      The \emph{binomial} distribution specifies the probability of obtaining a certain number of successes in a sequence of independent \emph{binomial} trials.
+      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames.
       \vskip1ex
-      Let $p$ be the probability of obtaining a success in a \emph{binomial} trial, and let $(1-p)$ be the probability of failure.
+      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames.
       \vskip1ex
-      $p = 0.5$ corresponds to flipping an unbiased coin.
+      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch.
       \vskip1ex
-      The probability of obtaining $k$ successes in $n$ independent \emph{binomial} trials is equal to:
-      \begin{displaymath}
-        {n \choose k} p^k (1-p)^{(n-k)}
-      \end{displaymath}
-      The function \texttt{rbinom()} produces random numbers from the \emph{binomial} distribution.
-    \column{0.6\textwidth}
+      Users can create even faster functions of their own by extracting only the essential \texttt{R} code into their own specialized functions, ignoring \texttt{R} code needed to handle different types of data.
+      \vskip1ex
+      Such specialized functions are faster but less flexible, so they may fail with different types of data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+matrixv <- matrix(1:9, ncol=3, # Create matrix
+  dimnames=list(paste0("row", 1:3),
+                paste0("col", 1:3)))
+# Create specialized function
+matrix_to_dframe <- function(matrixv) {
+  ncols <- ncol(matrixv)
+  dframe <- vector("list", ncols)  # empty vector
+  for (indeks in 1:ncols)  # Populate vector
+    dframe <- matrixv[, indeks]
+  attr(dframe, "row.names") <-  # Add attributes
+    .set_row_names(NROW(matrixv))
+  attr(dframe, "class") <- "data.frame"
+  dframe  # Return data frame
+}  # end matrix_to_dframe
+# Compare speed of three methods
+summary(microbenchmark(
+  matrix_to_dframe(matrixv),
+  as.data.frame.matrix(matrixv),
+  as.data.frame(matrixv),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using \texttt{apply()} Instead of \texttt{for()} and \texttt{while()} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest.
+      \vskip1ex
+      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so it's preferred over \texttt{for()} loops.
+      \vskip1ex
+      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and therefore can be faster than other \texttt{apply()} functions.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate matrix of random data with 5,000 rows
+matrixv <- matrix(rnorm(10000), ncol=2)
+# Allocate memory for row sums
+rowsumv <- numeric(NROW(matrixv))
+summary(microbenchmark(
+  rowsums = rowSums(matrixv),  # end rowsumv
+  apply = apply(matrixv, 1, sum),  # end apply
+  lapply = lapply(1:NROW(matrixv), function(indeks)
+    sum(matrixv[indeks, ])),  # end lapply
+  vapply = vapply(1:NROW(matrixv), function(indeks)
+    sum(matrixv[indeks, ]),
+    FUN.VALUE = c(sum=0)),  # end vapply
+  sapply = sapply(1:NROW(matrixv), function(indeks)
+    sum(matrixv[indeks, ])),  # end sapply
+  forloop = for (i in 1:NROW(matrixv)) {
+    rowsumv[i] <- sum(matrixv[i,])
+  },  # end for
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Increasing Speed of Loops by Pre-allocating Memory}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} performs automatic memory management as users assign values to objects.
+      \vskip1ex
+      \texttt{R} doesn't require allocating the full memory for vectors or listv, and allows appending new data to existing objects ("growing" them).
+      \vskip1ex
+      For example, \texttt{R} allows assigning a value to a vector element that doesn't exist yet.
+      \vskip1ex
+      This forces \texttt{R} to allocate additional memory for that element, which carries a small speed penalty.
+      \vskip1ex
+      But when data is appended to an object using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, or \texttt{rbind()}, then \texttt{R} allocates memory for the whole new object and copies all the existing values, which is very memory intensive and slow.
+      \vskip1ex
+      It is therefore preferable to pre-allocate memory for large objects before performing loops.
+      \vskip1ex
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k}, while \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object).
+    \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-# Flip unbiased coin once, 20 times
-rbinom(n=20, size=1, 0.5)
-# Number of heads after flipping twice, 20 times
-rbinom(n=20, size=2, 0.5)
-# Number of heads after flipping thrice, 20 times
-rbinom(n=20, size=3, 0.5)
-# Number of heads after flipping biased coin thrice, 20 times
-rbinom(n=20, size=3, 0.8)
-# Number of heads after flipping biased coin thrice, 20 times
-rbinom(n=20, size=3, 0.2)
-# Flip unbiased coin once, 20 times
-sample(x=0:1, size=20, replace=TRUE)  # Fast
-as.numeric(runif(20) < 0.5)  # Slower
+vectorv <- rnorm(5000)
+summary(microbenchmark(
+# Compiled C++ function
+  cpp = cumsum(vectorv),  # end for
+# Allocate full memory for cumulative sum
+  forloop = {cumsumv <- numeric(NROW(vectorv))
+    cumsumv[1] <- vectorv[1]
+    for (i in 2:NROW(vectorv)) {
+      cumsumv[i] <- cumsumv[i-1] + vectorv[i]
+    }},  # end for
+# Allocate zero memory for cumulative sum
+  grow_vec = {cumsumv <- numeric(0)
+    cumsumv[1] <- vectorv[1]
+    for (i in 2:NROW(vectorv)) {
+# Add new element to "cumsumv" ("grow" it)
+      cumsumv[i] <- cumsumv[i-1] + vectorv[i]
+    }},  # end for
+# Allocate zero memory for cumulative sum
+  com_bine = {cumsumv <- numeric(0)
+    cumsumv[1] <- vectorv[1]
+    for (i in 2:NROW(vectorv)) {
+# Add new element to "cumsumv" ("grow" it)
+      cumsumv <- c(cumsumv, vectorv[i])
+    }},  # end for
+  times=10))[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}
@@ -254,242 +318,55 @@ as.numeric(runif(20) < 0.5)  # Slower
 
 
 %%%%%%%%%%%%%%%
-\subsection{Generating Random Samples and Permutations}
+\subsection{It's \protect\emph{Always} Important to Write Fast \texttt{R} Code}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A \emph{sample} is a subset of elements taken from a set of data elements.
-      \vskip1ex
-      The function \texttt{sample()} selects a random sample from a vector of data elements.
-      \vskip1ex
-      By default the \emph{size} of the sample (the \texttt{size} argument) is equal to the number of elements in the data vector.
-      \vskip1ex
-      So the call \texttt{sample(da\_ta)} produces a random permutation of all the elements of \texttt{da\_ta}.
-      \vskip1ex
-      The function \texttt{sample()} with \texttt{replace=TRUE} selects samples with replacement (the default is \texttt{replace=FALSE}).
-      \vskip1ex
-      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution.
-      \vskip1ex
-      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals.
+      How to write fast \texttt{R} code:
+      \begin{itemize}
+        \item Avoid using \texttt{apply()} and \texttt{for()} loops for large datasets.
+        \item Use \texttt{R} functions which are \emph{compiled} \texttt{C++} code, instead of using interpreted \texttt{R} code.
+        \item Avoid using too many \texttt{R} function calls (every command in \texttt{R} is a function).
+        \item Pre-allocate memory for new objects, instead of appending to them ("growing" them).
+        \item Write \texttt{C++} functions in \emph{Rcpp} and \emph{RcppArmadillo}.
+        \item Use \emph{function methods} directly instead of using \emph{generic functions}.
+        \item Create specialized functions by extracting only the essential \texttt{R} code from \emph{function methods}.
+        \item \emph{Byte-compile} \texttt{R} functions using the \emph{byte compiler} in package \emph{compiler}.
+      \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Permutation of five numbers
-sample(x=5)
-# Permutation of four strings
-sample(x=c("apple", "grape", "orange", "peach"))
-# Sample of size three
-sample(x=5, size=3)
-# Sample with replacement
-sample(x=5, replace=TRUE)
-sample(  # Sample of strings
-  x=c("apple", "grape", "orange", "peach"),
-  size=12,
-  replace=TRUE)
-# Binomial sample: flip coin once, 20 times
-sample(x=0:1, size=20, replace=TRUE)
-# Flip unbiased coin once, 20 times
-as.numeric(runif(20) > 0.5)  # Slower
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Statistical Estimators}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A data \emph{sample} is a set of observations $\{x1, \ldots, x_n\}$ of a \emph{random variable} $x$.
-      \vskip1ex
-      Let $x$ follow a probability distribution with population \emph{mean} equal to $\mu$ and population \emph{standard deviation} equal to $\sigma$.
-      \vskip1ex
-      A \emph{statistic} is a function of the data \emph{sample}:  $f( x1, \ldots, x_n )$, so it is itself a \emph{random variable}.
-      \vskip1ex
-      A statistical \emph{estimator} is a \emph{statistic} that provides an estimate of a distribution \emph{parameter}.
-      \vskip1ex
-      For example:
-      \begin{displaymath}
-        \bar{x} = \frac{1}{n}{\sum_{i=1}^n x_i}
-      \end{displaymath}
-      Is an \emph{estimator} of the \emph{population mean} of the \emph{distribution}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2))>>=
-rm(list=ls())
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-datav <- rnorm(1000)
-
-mean(datav)  # Sample mean
-
-median(datav)  # Sample median
-
-sd(datav)  # Sample standard deviation
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimators of Higher Moments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The estimators of the moments of a probability distribution, based on a \emph{sample} of data $x_i$, are given by:
-      \vskip1ex
-      Sample mean: $\bar{x} = \frac{1}{n} \sum_{i = 1}^n x_i$
-      \vskip1ex
-      Sample variance: $\hat\sigma^2 = \frac{1}{n-1} \sum_{i = 1}^n (x_i-\bar{x})^2$
-      \vskip1ex
-      Their expected values are equal to the population mean and standard deviation:\\
-      $\mathbb{E}[\bar{x}] = \mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma$
-      \vskip1ex
-      The third and fourth moments are equal to:
-      \begin{flalign*}
-        \mu3 = \frac{n}{(n-1)(n-2)} \sum_{i=1}^n (x_i-\bar{x})^3 \\
-        \mu4 = \frac{n}{(n-1)^2} \sum_{i=1}^n (x_i-\bar{x})^4
-      \end{flalign*}
-      The skewness and kurtosis are equal to the moments scaled by the standard deviation:
-      \begin{displaymath}
-        \varsigma = \frac{\mu3}{\sigma^3}, \quad \kappa = \frac{\mu4}{\sigma^4}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=FALSE>>=
-rm(list=ls())
-# VTI returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
-# Number of observations
-nrows <- NROW(returns)
-# Mean of VTI returns
-mea_n <- mean(returns)
-# Standard deviation of VTI returns
-s_d <- sd(returns)
-# Standardize returns
-returns <- (returns - mea_n)/s_d
-# Skewness of VTI returns
-nrows/((nrows-1)*(nrows-2))*sum(returns^3)
-# Kurtosis of VTI returns
-nrows/(nrows-1)^2*sum(returns^4)
-# Random normal returns
-returns <- rnorm(nrows)
-# Mean and standard deviation of random normal returns
-mean(returns); sd(returns)
-# Skewness and kurtosis of random normal returns
-nrows/((nrows-1)*(nrows-2))*sum(returns^3)
-nrows/(nrows-1)^2*sum(returns^4)
-      @
-      The normal distribution has skewness equal to zero $\varsigma = 0$, and kurtosis equal to three $\kappa = 3$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimators of Quantiles}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{quantile} corresponding to a given \emph{probability} $p$, is the value of the \emph{random variable} $x$, such that the probability of obtaining values less than $x$ is equal to the \emph{probability} $p$.
-      \vskip1ex
-      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} $p$.
-      \vskip1ex
-	  The function \texttt{quantile()} calculates the sample quantiles.  It uses interpolation to improve the accuracy.  Information about the different interpolation methods can be found by typing \texttt{?quantile}.
-      \vskip1ex
-      The function \texttt{sort()} returns a vector sorted into ascending order.
-      \vskip1ex
-      The function \texttt{pnorm()} calculates the cumulative \emph{normal} distribution, i.e. the cumulative probability for a given quantile value.
-      \vskip1ex
-      The function \texttt{qnorm()} calculates the inverse cumulative \emph{normal} distribution, i.e. the quantile for a given probability value.
-      \vskip1ex
-      The function \texttt{dnorm()} calculates the normal probability \emph{density}.
-    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{image/Jeremy_Clarkson_Linus_Torvalds.jpg}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate cumulative standard normal distribution
-c(pnorm(-2), pnorm(2))
-# Calculate inverse cumulative standard normal distribution
-c(qnorm(0.75), qnorm(0.25))
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-nrows <- 1000
-datav <- rnorm(nrows)
-# Sample mean - MC estimate
-mean(datav)
-# Sample standard deviation - MC estimate
-sd(datav)
-# Monte Carlo estimate of cumulative probability
-c(pnorm(1), sum(datav < 1)/nrows)
-# Monte Carlo estimate of quantile
-confl <- 0.99
-qnorm(confl)
-cutoff <- confl/nrows
-datav <- sort(datav)
-c(datav[cutoff], quantile(datav, probs=confl))
-# Read the source code of quantile()
-stats:::quantile.default
-# microbenchmark quantile
+# Calculate cumulative sum of a vector
+vectorv <- runif(1e5)
+# Use compiled function
+cumsumv <- cumsum(vectorv)
+# Use for loop
+cumsumv2 <- vectorv
+for (i in 2:NROW(vectorv))
+  cumsumv2[i] <- (vectorv[i] + cumsumv2[i-1])
+# Compare the two methods
+all.equal(cumsumv, cumsumv2)
+# Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
-  monte_carlo=datav[cutoff],
-  quantilev=quantile(datav, probs=confl),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of Estimators}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Statistical estimators are functions of samples (which are random variables), and therefore are themselves \emph{random variables}.
-      \vskip1ex
-      The \emph{standard error} (SE) of an estimator is defined as its \emph{standard deviation} (not to be confused with the \emph{population standard deviation} of the underlying random variable).
-      \vskip1ex
-      For example, the \emph{standard error} of the estimator of the mean is equal to:
-      \begin{displaymath}
-        \sigma_\mu = \frac{\sigma}{\sqrt{n}}
-      \end{displaymath}
-      Where $\sigma$ is the \emph{population standard deviation} (which is usually unkown).
-      \vskip1ex
-      The \emph{estimator} of this \emph{standard error} is equal to:
-      \begin{displaymath}
-        SE_{\mu} = \frac{\hat\sigma}{\sqrt{n}}
-      \end{displaymath}
-      where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample standard deviation (the estimator of the population standard deviation).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-nrows <- 1000
-datav <- rnorm(nrows)
-# Sample mean
-mean(datav)
-# Sample standard deviation
-sd(datav)
-# Standard error of sample mean
-sd(datav)/sqrt(nrows)
+  cumsum=cumsum(vectorv),
+  loop_alloc={
+    cumsumv2 <- vectorv
+    for (i in 2:NROW(vectorv))
+      cumsumv2[i] <- (vectorv[i] + cumsumv2[i-1])
+  },
+  loop_nalloc={
+    # Doesn't allocate memory to cumsumv3
+    cumsumv3 <- vectorv[1]
+    for (i in 2:NROW(vectorv))
+      # This command adds an extra element to cumsumv3
+      cumsumv3[i] <- (vectorv[i] + cumsumv3[i-1])
+  },
+  times=10))[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}
@@ -559,19 +436,19 @@ microbenchmark(
 # Calculate matrix of random data with 5,000 rows
 matrixv <- matrix(rnorm(10000), ncol=2)
 # Allocate memory for row sums
-row_sums <- numeric(NROW(matrixv))
+rowsumv <- numeric(NROW(matrixv))
 summary(microbenchmark(
-  row_sums = rowSums(matrixv),  # end row_sums
-  ap_ply = apply(matrixv, 1, sum),  # end apply
-  l_apply = lapply(1:NROW(matrixv), function(indeks)
+  rowsumv = rowSums(matrixv),  # end rowsumv
+  applyloop = apply(matrixv, 1, sum),  # end apply
+  applyloop = lapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ])),  # end lapply
   v_apply = vapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ]),
     FUN.VALUE = c(sum=0)),  # end vapply
   s_apply = sapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ])),  # end sapply
-  for_loop = for (i in 1:NROW(matrixv)) {
-    row_sums[i] <- sum(matrixv[i,])
+  forloop = for (i in 1:NROW(matrixv)) {
+    rowsumv[i] <- sum(matrixv[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -607,7 +484,7 @@ summary(microbenchmark(
 vectorv <- rnorm(5000)
 summary(microbenchmark(
 # Allocate full memory for cumulative sum
-  for_loop = {cumsumv <- numeric(NROW(vectorv))
+  forloop = {cumsumv <- numeric(NROW(vectorv))
     cumsumv[1] <- vectorv[1]
     for (i in 2:NROW(vectorv)) {
       cumsumv[i] <- cumsumv[i-1] + vectorv[i]
@@ -666,7 +543,7 @@ big_vector <- numeric(1000000)
 # Sum two vectors in two different ways
 summary(microbenchmark(
   # Sum vectors using "for" loop
-  r_loop = (for (i in 1:NROW(vector1)) {
+  rloop = (for (i in 1:NROW(vector1)) {
     big_vector[i] <- vector1[i] + vector2[i]
   }),
   # Sum vectors using vectorized "+"
@@ -678,7 +555,7 @@ cumsumv[1] <- big_vector[1]
 # Calculate cumulative sum in two different ways
 summary(microbenchmark(
 # Cumulative sum using "for" loop
-  r_loop = (for (i in 2:NROW(big_vector)) {
+  rloop = (for (i in 2:NROW(big_vector)) {
     cumsumv[i] <- cumsumv[i-1] + big_vector[i]
   }),
 # Cumulative sum using "cumsum"
@@ -717,8 +594,8 @@ matrixv <- matrix(rnorm(10000), ncol=2)
 all.equal(rowSums(matrixv),
   apply(matrixv, 1, sum))
 summary(microbenchmark(
-  row_sums = rowSums(matrixv),
-  ap_ply = apply(matrixv, 1, sum),
+  rowsumv = rowSums(matrixv),
+  applyloop = apply(matrixv, 1, sum),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -750,10 +627,10 @@ library(microbenchmark)
 str(pmax)
 # Calculate row maximums two different ways
 summary(microbenchmark(
-  p_max=do.call(pmax.int,
+  pmax=do.call(pmax.int,
       lapply(seq_along(matrixv[1, ]),
         function(indeks) matrixv[, indeks])),
-  l_apply=unlist(lapply(seq_along(matrixv[, 1]),
+  applyloop=unlist(lapply(seq_along(matrixv[, 1]),
         function(indeks) max(matrixv[indeks, ]))),
   times=10))[, c(1, 4, 5)]
       @
@@ -790,8 +667,8 @@ install.packages("matrixStats")  # Install package matrixStats
 library(matrixStats)  # Load package matrixStats
 # Calculate row min values three different ways
 summary(microbenchmark(
-  row_mins = rowMins(matrixv),
-  p_min =
+  rowmins = rowMins(matrixv),
+  pmin =
     do.call(pmin.int,
             lapply(seq_along(matrixv[1, ]),
                    function(indeks)
@@ -873,19 +750,19 @@ summary(microbenchmark(
         <<echo=TRUE,eval=FALSE>>=
 summary(microbenchmark(  # Assign values to vector three different ways
 # Fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets = {vectorv <- numeric(10)
+  brackets = {vectorv <- numeric(10)
     vectorv[] <- 2},
 # Slow because loop is performed in R
-  for_loop = {vectorv <- numeric(10)
+  forloop = {vectorv <- numeric(10)
     for (indeks in seq_along(vectorv))
       vectorv[indeks] <- 2},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 summary(microbenchmark(  # Assign values to vector two different ways
 # Fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets = {vectorv <- numeric(10)
+  brackets = {vectorv <- numeric(10)
     vectorv[4:7] <- rnorm(4)},
 # Slow because loop is performed in R
-  for_loop = {vectorv <- numeric(10)
+  forloop = {vectorv <- numeric(10)
     for (indeks in 4:7)
       vectorv[indeks] <- rnorm(1)},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -914,20 +791,20 @@ summary(microbenchmark(  # Assign values to vector two different ways
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define function vectorized automatically
-my_fun <- function(input, pa_ram) {
-  pa_ram*input
+my_fun <- function(input, param) {
+  param*input
 }  # end my_fun
 # "input" is vectorized
-my_fun(input=1:3, pa_ram=2)
-# "pa_ram" is vectorized
-my_fun(input=10, pa_ram=2:4)
+my_fun(input=1:3, param=2)
+# "param" is vectorized
+my_fun(input=10, param=2:4)
 # Define vectors of parameters of rnorm()
-stdevs <- structure(1:3, namesv=paste0("sd=", 1:3))
-me_ans <- structure(-1:1, namesv=paste0("mean=", -1:1))
+stdevs <- structure(1:3, names=paste0("sd=", 1:3))
+means <- structure(-1:1, names=paste0("mean=", -1:1))
 # "sd" argument of rnorm() isn't vectorized
 rnorm(1, sd=stdevs)
 # "mean" argument of rnorm() isn't vectorized
-rnorm(1, mean=me_ans)
+rnorm(1, mean=means)
       @
   \end{columns}
 \end{block}
@@ -954,12 +831,12 @@ sapply(stdevs, function(stdev) rnorm(n=2, sd=stdev))
 # Same
 set.seed(1121)
 sapply(stdevs, rnorm, n=2, mean=0)
-# Loop over me_ans
+# Loop over means
 set.seed(1121)
-sapply(me_ans, function(me_an) rnorm(n=2, mean=me_an))
+sapply(means, function(me_an) rnorm(n=2, mean=me_an))
 # Same
 set.seed(1121)
-sapply(me_ans, rnorm, n=2)
+sapply(means, rnorm, n=2)
       @
   \end{columns}
 \end{block}
@@ -1002,7 +879,7 @@ vec_rnorm <- Vectorize(FUN=rnorm,
 set.seed(1121)
 vec_rnorm(n=2, sd=stdevs)
 set.seed(1121)
-vec_rnorm(n=2, mean=me_ans)
+vec_rnorm(n=2, mean=means)
       @
   \end{columns}
 \end{block}
@@ -1038,7 +915,7 @@ str(sum)
 mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
 str(rnorm)
 # mapply vectorizes both arguments "mean" and "sd"
-mapply(rnorm, n=5, mean=me_ans, sd=stdevs)
+mapply(rnorm, n=5, mean=means, sd=stdevs)
 mapply(function(input, e_xp) input^e_xp,
        1:5, seq(from=1, by=0.2, length.out=5))
       @
@@ -1072,7 +949,7 @@ vec_rnorm <- function(n, mean=0, sd=1) {
 # Call vec_rnorm() on vector of "sd"
 vec_rnorm(n=2, sd=stdevs)
 # Call vec_rnorm() on vector of "mean"
-vec_rnorm(n=2, mean=me_ans)
+vec_rnorm(n=2, mean=means)
       @
   \end{columns}
 \end{block}
@@ -1110,63 +987,6 @@ zoo::plot.zoo(vector3, lwd=2, ylim=c(-1, 1),
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/ifelse_example.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{It's \protect\emph{Always} Important to Write Fast \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      How to write fast \texttt{R} code:
-      \begin{itemize}
-        \item Avoid using \texttt{apply()} and \texttt{for()} loops for large datasets.
-        \item Use \texttt{R} functions which are \emph{compiled} \texttt{C++} code, instead of using interpreted \texttt{R} code.
-        \item Avoid using too many \texttt{R} function calls (every command in \texttt{R} is a function).
-        \item Pre-allocate memory for new objects, instead of appending to them ("growing" them).
-        \item Write \texttt{C++} functions in \emph{Rcpp} and \emph{RcppArmadillo}.
-        \item Use \emph{function methods} directly instead of using \emph{generic functions}.
-        \item Create specialized functions by extracting only the essential \texttt{R} code from \emph{function methods}.
-        \item \emph{Byte-compile} \texttt{R} functions using the \emph{byte compiler} in package \emph{compiler}.
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{image/Jeremy_Clarkson_Linus_Torvalds.jpg}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate cumulative sum of a vector
-vectorv <- runif(1e5)
-# Use compiled function
-cumsumv <- cumsum(vectorv)
-# Use for loop
-cumsumv2 <- vectorv
-for (i in 2:NROW(cumsumv2))
-  cumsumv2[i] <- (cumsumv2[i] + cumsumv2[i-1])
-# Compare the two methods
-all.equal(cumsumv, cumsumv2)
-# Microbenchmark the two methods
-library(microbenchmark)
-summary(microbenchmark(
-  cumsum=cumsum(vectorv),
-  loop_alloc={
-    cumsumv2 <- vectorv
-    for (i in 2:NROW(cumsumv2))
-      cumsumv2[i] <- (cumsumv2[i] + cumsumv2[i-1])
-  },
-  loop_nalloc={
-    # Doesn't allocate memory to cumsumv3
-    cumsumv3 <- vectorv[1]
-    for (i in 2:NROW(vectorv))
-      # This command adds an extra element to cumsumv3
-      cumsumv3[i] <- (vectorv[i] + cumsumv3[i-1])
-  },
-  times=10))[, c(1, 4, 5)]
-      @
   \end{columns}
 \end{block}
 
@@ -1231,7 +1051,7 @@ library(parallel)  # Load package parallel
 packageDescription("parallel")
 # Load help page
 help(package="parallel")
-# list all objects in "parallel"
+# List all objects in "parallel"
 ls("package:parallel")
       @
   \end{columns}
@@ -1268,13 +1088,13 @@ paws <- function(x, sleep_time=0.01) {
 }  # end paws
 library(parallel)  # Load package parallel
 # Calculate number of available cores
-numcores <- detectCores() - 1
+ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
-cluster <- makeCluster(numcores)
+cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
-paw_s <- parLapply(cluster, 1:10, paws)
+outv <- parLapply(cluster, 1:10, paws)
 # Perform parallel loop under Mac-OSX or Linux
-paw_s <- mclapply(1:10, paws, mc.cores=numcores)
+outv <- mclapply(1:10, paws, mc.cores=ncores)
 library(microbenchmark)  # Load package microbenchmark
 # Compare speed of lapply versus parallel computing
 summary(microbenchmark(
@@ -1307,8 +1127,8 @@ summary(microbenchmark(
       The function \texttt{legend()} adds a legend to a plot.
       <<echo=TRUE,eval=FALSE>>=
 # Compare speed of lapply with parallel computing
-iter_ations <- 3:10
-compute_times <- sapply(iter_ations,
+iterations <- 3:10
+compute_times <- sapply(iterations,
   function(max_iterations) {
     summary(microbenchmark(
       standard = lapply(1:max_iterations, paws),
@@ -1317,7 +1137,7 @@ compute_times <- sapply(iter_ations,
     })  # end sapply
 compute_times <- t(compute_times)
 colnames(compute_times) <- c("standard", "parallel")
-rownames(compute_times) <- iter_ations
+rownames(compute_times) <- iterations
 # Stop R processes over cluster under Windows
 stopCluster(cluster)
       @
@@ -1360,24 +1180,24 @@ legend(x="topleft", legend=colnames(compute_times),
       <<echo=(-(1:5)),eval=FALSE>>=
 library(parallel)  # Load package parallel
 # Calculate number of available cores
-numcores <- detectCores() - 1
+ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
-cluster <- makeCluster(numcores)
+cluster <- makeCluster(ncores)
 # Calculate matrix of random data
 matrixv <- matrix(rnorm(1e5), ncol=100)
 # Define aggregation function over column of matrix
-agg_regate <- function(colnum) {
+aggfun <- function(column) {
   output <- 0
-  for (indeks in 1:NROW(colnum))
-    output <- output + colnum[indeks]
+  for (indeks in 1:NROW(column))
+    output <- output + column[indeks]
   output
-}  # end agg_regate
+}  # end aggfun
 # Perform parallel aggregations over columns of matrix
-agg_regations <- parCapply(cluster, matrixv, agg_regate)
+aggs <- parCapply(cluster, matrixv, aggfun)
 # Compare speed of apply with parallel computing
 summary(microbenchmark(
-  ap_ply=apply(matrixv, MARGIN=2, agg_regate),
-  parl_apply=parCapply(cluster, matrixv, agg_regate),
+  applyloop=apply(matrixv, MARGIN=2, aggfun),
+  parapplyloop=parCapply(cluster, matrixv, aggfun),
   times=10)
 )[, c(1, 4, 5)]
 # Stop R processes over cluster under Windows
@@ -1406,21 +1226,21 @@ stopCluster(cluster)
       <<echo=(-(1:5)),eval=FALSE>>=
 library(parallel)  # Load package parallel
 # Calculate number of available cores
-numcores <- detectCores() - 1
+ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
-cluster <- makeCluster(numcores)
-ba_se <- 2
-# Fails because child processes don't know ba_se:
+cluster <- makeCluster(ncores)
+basep <- 2
+# Fails because child processes don't know basep:
 parLapply(cluster, 2:4,
-          function(exponent) ba_se^exponent)
-# ba_se passed to child via dots ... argument:
+          function(exponent) basep^exponent)
+# basep passed to child via dots ... argument:
 parLapply(cluster, 2:4,
-          function(exponent, ba_se) ba_se^exponent,
-          ba_se=ba_se)
-# ba_se passed to child via clusterExport:
-clusterExport(cluster, "ba_se")
+          function(exponent, basep) basep^exponent,
+          basep=basep)
+# basep passed to child via clusterExport:
+clusterExport(cluster, "basep")
 parLapply(cluster, 2:4,
-          function(exponent) ba_se^exponent)
+          function(exponent) basep^exponent)
 # Fails because child processes don't know zoo::index():
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
@@ -1465,9 +1285,9 @@ stopCluster(cluster)
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # Load package parallel
 # Calculate number of available cores
-numcores <- detectCores() - 1
+ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
-cluster <- makeCluster(numcores)
+cluster <- makeCluster(ncores)
 # Set seed for cluster under Windows
 # Doesn't work: set.seed(1121)
 clusterSetRNGStream(cluster, 1121)
@@ -1477,7 +1297,226 @@ sum(unlist(output))
 # Stop R processes over cluster under Windows
 stopCluster(cluster)
 # Perform parallel loop under Mac-OSX or Linux
-output <- mclapply(1:10, rnorm, mc.cores=numcores, n=100)
+output <- mclapply(1:10, rnorm, mc.cores=ncores, n=100)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Random Numbers and Estimators}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Pseudo-Random Numbers}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Pseudo-random numbers are deterministic sequences of numbers which have some of the properties of random numbers, but they are not truly random numbers.
+      \vskip1ex
+      Pseudo-random number generators depend on a \emph{seed} value, and produce the same sequence of numbers for a given \emph{seed} value.
+      \vskip1ex
+      The function \texttt{set.seed()} initializes the random number generator by specifying the \emph{seed} value.
+      \vskip1ex
+      The choice of \emph{seed} value isn't important, and a given value is just good as any other one.
+      \vskip1ex
+      The function \texttt{runif()} produces random numbers from the \emph{uniform} distribution.
+      \vskip1ex
+      The function \texttt{rnorm()} produces random numbers from the \emph{normal} distribution.
+      \vskip1ex
+      The function \texttt{rt()} produces random numbers from the \emph{t-distribution} with $df$ degrees of freedom.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+runif(3)  # three numbers from uniform distribution
+runif(3)  # Simulate another three numbers
+set.seed(1121)  # Reset random number generator
+runif(3)  # Simulate another three numbers
+# Simulate random number from standard normal distribution
+rnorm(1)
+# Simulate five standard normal random numbers
+rnorm(5)
+# Simulate five non-standard normal random numbers
+rnorm(n=5, mean=1, sd=2)  # Match arguments by name
+# Simulate t-distribution with 2 degrees of freedom
+rt(n=5, df=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Logistic Map}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{logistic map} is a recurrence relation which produces a deterministic sequence of numbers:
+      \begin{displaymath}
+        x_n = r x_{n-1} (1 - x_{n-1})
+      \end{displaymath}
+      If the \emph{seed} value $x_0$ is in the interval $(0, 1)$ and if $r=4$, then the sequence $x_n$ is also contained in the interval $(0, 1)$.
+      \vskip1ex
+      The function \texttt{curve()} plots a function defined by its name.
+      <<echo=TRUE,eval=FALSE>>=
+# Define logistic map function
+log_map <- function(x, r=4) r*x*(1-x)
+log_map(0.25, 4)
+# Plot logistic map
+x11(width=6, height=5)
+curve(expr=log_map, type="l", xlim=c(0, 1),
+      xlab="x[n-1]", ylab="x[n]", lwd=2, col="blue",
+      main="logistic map")
+lines(x=c(0, 0.25), y=c(0.75, 0.75), lwd=2, col="orange")
+lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="orange")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_map.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generating Pseudo-Random Numbers Using Logistic Map}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{logistic map} can be used to calculate sequences of pseudo-random numbers.
+      \vskip1ex
+      For most \emph{seed} values $x_0$ and $r=4$, the \emph{logistic map} produces a pseudo-random sequence, but it's not uniformly distributed.
+      \vskip1ex
+      The inverse cosine function \texttt{acos()} transforms a \emph{logistic map} sequence into a uniformly distributed sequence,
+      \begin{displaymath}
+        u_n = \arccos(1 - 2 x_n) / \pi
+      \end{displaymath}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate uniformly distributed pseudo-random sequence 
+# using logistic map function.
+unifun <- function(seedv, n=10) {
+  # Pre-allocate vector instead of "growing" it
+  output <- numeric(n)
+  # initialize
+  output[1] <- seedv
+  # Perform loop
+  for (i in 2:n) {
+    output[i] <- 4*output[i-1]*(1-output[i-1])
+  }  # end for
+  acos(1-2*output)/pi
+}  # end unifun
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_map_density.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+unifun(seedv=0.1, n=15)
+plot(
+  density(unifun(seedv=runif(1), n=1e5)),
+  xlab="", ylab="", lwd=2, col="blue",
+  main="uniform pseudo-random number density")
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generating Binomial Random Numbers}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{binomial} trial is a coin flip, that results in either a success or failure.
+      \vskip1ex
+      The \emph{binomial} distribution specifies the probability of obtaining a certain number of successes in a sequence of independent \emph{binomial} trials.
+      \vskip1ex
+      Let $p$ be the probability of obtaining a success in a \emph{binomial} trial, and let $(1-p)$ be the probability of failure.
+      \vskip1ex
+      $p = 0.5$ corresponds to flipping an unbiased coin.
+      \vskip1ex
+      The probability of obtaining $k$ successes in $n$ independent \emph{binomial} trials is equal to:
+      \begin{displaymath}
+        {n \choose k} p^k (1-p)^{(n-k)}
+      \end{displaymath}
+      The function \texttt{rbinom()} produces random numbers from the \emph{binomial} distribution.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+# Flip unbiased coin once, 20 times
+rbinom(n=20, size=1, 0.5)
+# Number of heads after flipping twice, 20 times
+rbinom(n=20, size=2, 0.5)
+# Number of heads after flipping thrice, 20 times
+rbinom(n=20, size=3, 0.5)
+# Number of heads after flipping biased coin thrice, 20 times
+rbinom(n=20, size=3, 0.8)
+# Number of heads after flipping biased coin thrice, 20 times
+rbinom(n=20, size=3, 0.2)
+# Flip unbiased coin once, 20 times
+sample(x=0:1, size=20, replace=TRUE)  # Fast
+as.numeric(runif(20) < 0.5)  # Slower
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generating Random Samples and Permutations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{sample} is a subset of elements taken from a set of data elements.
+      \vskip1ex
+      The function \texttt{sample()} selects a random sample from a vector of data elements.
+      \vskip1ex
+      By default the \emph{size} of the sample (the \texttt{size} argument) is equal to the number of elements in the data vector.
+      \vskip1ex
+      So the call \texttt{sample(da\_ta)} produces a random permutation of all the elements of \texttt{da\_ta}.
+      \vskip1ex
+      The function \texttt{sample()} with \texttt{replace=TRUE} selects samples with replacement (the default is \texttt{replace=FALSE}).
+      \vskip1ex
+      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution.
+      \vskip1ex
+      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Permutation of five numbers
+sample(x=5)
+# Permutation of four strings
+sample(x=c("apple", "grape", "orange", "peach"))
+# Sample of size three
+sample(x=5, size=3)
+# Sample with replacement
+sample(x=5, replace=TRUE)
+sample(  # Sample of strings
+  x=c("apple", "grape", "orange", "peach"),
+  size=12,
+  replace=TRUE)
+# Binomial sample: flip coin once, 20 times
+sample(x=0:1, size=20, replace=TRUE)
+# Flip unbiased coin once, 20 times
+as.numeric(runif(20) > 0.5)  # Slower
       @
   \end{columns}
 \end{block}
@@ -1488,146 +1527,6 @@ output <- mclapply(1:10, rnorm, mc.cores=numcores, n=100)
 
 %%%%%%%%%%%%%%%
 \section{Simulation}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Brownian Motion Using \texttt{while()} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance.
-      \vskip1ex
-      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level.
-        <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-barp <- 20  # Barrier level
-nrows <- 1000  # Number of simulation steps
-pa_th <- numeric(nrows)  # Allocate path vector
-pa_th[1] <- 0  # Initialize path
-indeks <- 2  # Initialize simulation index
-while ((indeks <= nrows) && (pa_th[indeks - 1] < barp)) {
-# Simulate next step
-  pa_th[indeks] <- pa_th[indeks - 1] + rnorm(1)
-  indeks <- indeks + 1  # Advance indeks
-}  # end while
-# Fill remaining pa_th after it crosses barp
-if (indeks <= nrows)
-  pa_th[indeks*nrows] <- pa_th[indeks - 1]
-# Plot the Brownian motion
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(pa_th, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=barp, lwd=3, col="red")
-title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Brownian Motion Using Vectorized Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop.
-      \vskip1ex
-      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops.
-        <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-barp <- 20  # Barrier level
-nrows <- 1000  # Number of simulation steps
-# Simulate path of Brownian motion
-pa_th <- cumsum(rnorm(nrows))
-# Find index when pa_th crosses barp
-cro_ss <- which(pa_th > barp)
-# Fill remaining pa_th after it crosses barp
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1)/nrows] <- pa_th[cro_ss[1]]
-}  # end if
-# Plot the Brownian motion
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(pa_th, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=barp, lwd=3, col="red")
-title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-      The tradeoff between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up.
-      \vskip1ex
-      But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating the Statistics of Brownian Motion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The statistics of Brownian motion can be estimated by simulating multiple paths.
-      \vskip1ex
-      An example of a statistic is the expected value of Brownian motion at a fixed time horizon,  which is the option payout for the strike price $k$: $\mathbb{E}[(p_t - k)_{+}]$.
-      \vskip1ex
-      Another statistic is the probability of Brownian motion crossing a boundary (barrier) $b$: $\mathbb{E}[\mathbbm{1}(p_t - b)]$.
-      <<echo=TRUE,eval=FALSE>>=
-# Define Brownian motion parameters
-sigmav <- 1.0  # Volatility
-drift <- 0.0  # Drift
-nrows <- 1000  # Number of simulation steps
-nsimu <- 100  # Number of simulations
-# Simulate multiple paths of Brownian motion
-set.seed(1121)
-paths <- rnorm(nsimu*nrows, mean=drift, sd=sigmav)
-paths <- matrix(paths, nc=nsimu)
-paths <- matrixStats::colCumsums(paths)
-# Final distribution of paths
-mean(paths[nrows, ]) ; sd(paths[nrows, ])
-# Calculate option payout
-strikep <- 50  # Strike price
-payouts <- (paths[nrows, ] - strikep)
-sum(payouts[payouts > 0])/nsimu
-# Calculate probability of crossing a barrier
-barp <- 50
-didcross <- (colSums(paths > barp) > 0)
-sum(didcross)/nsimu
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_multiple.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot in window
-x11(width=6, height=5)
-par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
-# Select and plot full range of paths
-ordern <- order(paths[nrows, ])
-indeks <- ordern[seq(1, 100, 9)]
-zoo::plot.zoo(paths[, indeks], main="Paths of Brownian Motion",
-  xlab="time steps", ylab=NA, plot.type="single")
-abline(h=strikep, col="red", lwd=3)
-text(x=(nrows-60), y=strikep, labels="strike price", pos=3, cex=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -1660,12 +1559,12 @@ mean(datav)
 # Sample standard deviation - MC estimate
 sd(datav)
 # Monte Carlo estimate of cumulative probability
-pnorm(1)
-sum(datav < 1)/nrows
+pnorm(-2)
+sum(datav < (-2))/nrows
 # Monte Carlo estimate of quantile
-confl <- 0.98
+confl <- 0.02
 qnorm(confl)  # Exact value
-cutoff <- confl/nrows
+cutoff <- confl*nrows
 datav <- sort(datav)
 datav[cutoff]  # Naive Monte Carlo value
 quantile(datav, probs=confl)
@@ -1832,8 +1731,8 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # Load package parallel
-numcores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(numcores)  # Initialize compute cluster under Windows
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 nrows <- 1000
@@ -1849,7 +1748,7 @@ boot_data <- mclapply(1:nboot,
   function(x) {
   samplev <- rnorm(nrows)
   c(mean=mean(samplev), median=median(samplev))
-  }, mc.cores=numcores)  # end mclapply
+  }, mc.cores=ncores)  # end mclapply
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
@@ -1907,8 +1806,8 @@ apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
-numcores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(numcores)  # Initialize compute cluster
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster
 boot_data <- parLapply(cluster, 1:nboot,
   function(x, datav) {
     samplev <- rnorm(nrows)
@@ -1918,7 +1817,7 @@ boot_data <- parLapply(cluster, 1:nboot,
 boot_data <- mclapply(1:nboot, function(x) {
   samplev <- rnorm(nrows)
   c(sd=sd(samplev), mad=mad(samplev))
-}, mc.cores=numcores)  # end mclapply
+}, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
@@ -2005,8 +1904,8 @@ returns <- na.omit(returns)
 nrows <- NROW(returns)
 # Bootstrap sd and MAD under Windows
 library(parallel)  # Load package parallel
-numcores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(numcores)  # Initialize compute cluster under Windows
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 nboot <- 10000
 boot_data <- parLapply(cluster, 1:nboot,
@@ -2018,7 +1917,7 @@ boot_data <- parLapply(cluster, 1:nboot,
 boot_data <- mclapply(1:nboot, function(x) {
     samplev <- returns[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
-  }, mc.cores=numcores)  # end mclapply
+  }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 boot_data <- rutils::do_call(rbind, boot_data)
 # Standard error assuming normal distribution of returns
@@ -2029,148 +1928,6 @@ stderrors <- apply(boot_data, MARGIN=2,
 stderrors
 # Relative standard errors
 stderrors[2, ]/stderrors[1, ]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Time Series of Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrapping from a time series of prices requires first converting the prices to \emph{percentage} returns, then bootstrapping the returns, and finally converting them back to prices.
-      \vskip1ex
-      Bootstrapping from \emph{percentage} returns ensures that the bootstrapped prices are not negative.
-      \vskip1ex
-      Below is a simulation of the frequency of bootstrapped prices crossing a barrier level.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate percentage returns from VTI prices
-library(rutils)
-prices <- quantmod::Cl(rutils::etfenv$VTI)
-startd <- as.numeric(prices[1, ])
-returns <- rutils::diffit(log(prices))
-class(returns); head(returns)
-sum(is.na(returns))
-nrows <- NROW(returns)
-# Define barrier level with respect to prices
-barp <- 1.5*max(prices)
-# Calculate single bootstrap sample
-samplev <- returns[sample.int(nrows, replace=TRUE)]
-# Calculate prices from percentage returns
-samplev <- startd*exp(cumsum(samplev))
-# Calculate if prices crossed barrier
-sum(samplev > barp) > 0
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-numcores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(numcores)  # Initialize compute cluster under Windows
-# Perform parallel bootstrap under Windows
-clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
-clusterExport(cluster, c("startd", "barp"))
-nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
-  function(x, returns, nrows) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
-    # Calculate prices from percentage returns
-    samplev <- startd*exp(cumsum(samplev))
-    # Calculate if prices crossed barrier
-    sum(samplev > barp) > 0
-  }, returns=returns, nrows*nrows)  # end parLapply
-# Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
-    # Calculate prices from percentage returns
-    samplev <- startd*exp(cumsum(samplev))
-    # Calculate if prices crossed barrier
-    sum(samplev > barp) > 0
-  }, mc.cores=numcores)  # end mclapply
-stopCluster(cluster)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
-# Calculate frequency of crossing barrier
-sum(boot_data)/nboot
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From \protect\emph{OHLC} Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrapping from \emph{OHLC} prices requires updating all the price columns, not just the \emph{Close} prices.
-      \vskip1ex
-      The \emph{Close} prices are bootstrapped first, and then the other columns are updated using the differences of the \emph{OHLC} price columns.
-      \vskip1ex
-      Below is a simulation of the frequency of the \emph{High} prices crossing a barrier level.
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate percentage returns from VTI prices
-library(rutils)
-ohlc <- rutils::etfenv$VTI
-prices <- as.numeric(ohlc[, 4])
-startd <- prices[1]
-returns <- rutils::diffit(log(prices))
-nrows <- NROW(returns)
-# Calculate difference of OHLC price columns
-ohlc_diff <- ohlc[, 1:3] - prices
-class(returns); head(returns)
-# Calculate bootstrap prices from percentage returns
-datav <- sample.int(nrows, replace=TRUE)
-boot_prices <- startd*exp(cumsum(returns[datav]))
-boot_ohlc <- ohlc_diff + boot_prices
-boot_ohlc <- cbind(boot_ohlc, boot_prices)
-# Define barrier level with respect to prices
-barp <- 1.5*max(prices)
-# Calculate if High bootstrapped prices crossed barrier level
-sum(boot_ohlc[, 2] > barp) > 0
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-numcores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(numcores)  # Initialize compute cluster under Windows
-# Perform parallel bootstrap under Windows
-clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
-clusterExport(cluster, c("startd", "barp", "ohlc_diff"))
-nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
-  function(x, returns, nrows) {
-    # Calculate OHLC prices from percentage returns
-    datav <- sample.int(nrows, replace=TRUE)
-    boot_prices <- startd*exp(cumsum(returns[datav]))
-    boot_ohlc <- ohlc_diff + boot_prices
-    boot_ohlc <- cbind(boot_ohlc, boot_prices)
-    # Calculate statistic
-    sum(boot_ohlc[, 2] > barp) > 0
-  }, returns=returns, nrows*nrows)  # end parLapply
-# Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
-    # Calculate OHLC prices from percentage returns
-    datav <- sample.int(nrows, replace=TRUE)
-    boot_prices <- startd*exp(cumsum(returns[datav]))
-    boot_ohlc <- ohlc_diff + boot_prices
-    boot_ohlc <- cbind(boot_ohlc, boot_prices)
-    # Calculate statistic
-    sum(boot_ohlc[, 2] > barp) > 0
-  }, mc.cores=numcores)  # end mclapply
-stopCluster(cluster)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
-# Calculate frequency of crossing barrier
-sum(boot_data)/nboot
       @
   \end{columns}
 \end{block}
@@ -2282,8 +2039,8 @@ text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # Load package parallel
-numcores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(numcores)  # Initialize compute cluster under Windows
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 # Bootstrap of regression under Windows
 boot_data <- parLapply(cluster, 1:1000,
   function(x, design) {
@@ -2297,7 +2054,7 @@ boot_data <- mclapply(1:1000,
     samplev <- sample.int(NROW(design), replace=TRUE)
     design <- design[samplev, ]
     cov(design[, 1], design[, 2])/var(design[, 2])
-  }, mc.cores=numcores)  # end mclapply
+  }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
       @
   \end{columns}
@@ -2332,6 +2089,213 @@ plot(density(boot_data),
 abline(v=mean(boot_data), lwd=2, col="red")
 text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Brownian Motion Using \texttt{while()} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance.
+      \vskip1ex
+      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level.
+        <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+barl <- 20  # Barrier level
+nrows <- 1000  # Number of simulation steps
+paths <- numeric(nrows)  # Allocate path vector
+paths[1] <- 0  # Initialize path
+indeks <- 2  # Initialize simulation index
+while ((indeks <= nrows) && (paths[indeks - 1] < barl)) {
+# Simulate next step
+  paths[indeks] <- paths[indeks - 1] + rnorm(1)
+  indeks <- indeks + 1  # Advance indeks
+}  # end while
+# Fill remaining paths after it crosses barl
+if (indeks <= nrows)
+  paths[indeks:nrows] <- paths[indeks - 1]
+# Plot the Brownian motion
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(paths, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=barl, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Brownian Motion Using Vectorized Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop.
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops.
+        <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+barl <- 20  # Barrier level
+nrows <- 1000  # Number of simulation steps
+# Simulate path of Brownian motion
+pathv <- cumsum(rnorm(nrows))
+# Find index when pathv crosses barl
+crossp <- which(pathv > barl)
+# Fill remaining pathv after it crosses barl
+if (NROW(crossp)>0) {
+  pathv[(crossp[1]+1):nrows] <- pathv[crossp[1]]
+}  # end if
+# Plot the Brownian motion
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pathv, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=barl, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+      The tradeoff between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up.
+      \vskip1ex
+      But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating the Statistics of Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The statistics of Brownian motion can be estimated by simulating multiple paths.
+      \vskip1ex
+      An example of a statistic is the expected value of Brownian motion at a fixed time horizon,  which is the option payout for the strike price $k$: $\mathbb{E}[(p_t - k)_{+}]$.
+      \vskip1ex
+      Another statistic is the probability of Brownian motion crossing a boundary (barrier) $b$: $\mathbb{E}[\mathbbm{1}(p_t - b)]$.
+      <<echo=TRUE,eval=FALSE>>=
+# Define Brownian motion parameters
+sigmav <- 1.0  # Volatility
+drift <- 0.0  # Drift
+nrows <- 1000  # Number of simulation steps
+nsimu <- 100  # Number of simulations
+# Simulate multiple paths of Brownian motion
+set.seed(1121)
+paths <- rnorm(nsimu*nrows, mean=drift, sd=sigmav)
+paths <- matrix(paths, nc=nsimu)
+paths <- matrixStats::colCumsums(paths)
+# Final distribution of paths
+mean(paths[nrows, ]) ; sd(paths[nrows, ])
+# Calculate option payout at maturity
+strikep <- 50  # Strike price
+payouts <- (paths[nrows, ] - strikep)
+sum(payouts[payouts > 0])/nsimu
+# Calculate probability of crossing the barrier at any point
+barl <- 50
+crossi <- (colSums(paths > barl) > 0)
+sum(crossi)/nsimu
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_multiple.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot in window
+x11(width=6, height=5)
+par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
+# Select and plot full range of paths
+ordern <- order(paths[nrows, ])
+indeks <- ordern[seq(1, 100, 9)]
+zoo::plot.zoo(paths[, indeks], main="Paths of Brownian Motion",
+  xlab="time steps", ylab=NA, plot.type="single")
+abline(h=strikep, col="red", lwd=3)
+text(x=(nrows-60), y=strikep, labels="strike price", pos=3, cex=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrapping From Time Series of Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Bootstrapping from a time series of prices requires first converting the prices to \emph{percentage} returns, then bootstrapping the returns, and finally converting them back to prices.
+      \vskip1ex
+      Bootstrapping from \emph{percentage} returns ensures that the bootstrapped prices are not negative.
+      \vskip1ex
+      Below is a simulation of the frequency of bootstrapped prices crossing a barrier level.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate percentage returns from VTI prices
+library(rutils)
+prices <- quantmod::Cl(rutils::etfenv$VTI)
+startd <- as.numeric(prices[1, ])
+returns <- rutils::diffit(log(prices))
+class(returns); head(returns)
+sum(is.na(returns))
+nrows <- NROW(returns)
+# Define barrier level with respect to prices
+barl <- 1.5*max(prices)
+# Calculate single bootstrap sample
+samplev <- returns[sample.int(nrows, replace=TRUE)]
+# Calculate prices from percentage returns
+samplev <- startd*exp(cumsum(samplev))
+# Calculate if prices crossed barrier
+sum(samplev > barl) > 0
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
+# Perform parallel bootstrap under Windows
+clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
+clusterExport(cluster, c("startd", "barl"))
+nboot <- 10000
+boot_data <- parLapply(cluster, 1:nboot,
+  function(x, returns, nrows) {
+    samplev <- returns[sample.int(nrows, replace=TRUE)]
+    # Calculate prices from percentage returns
+    samplev <- startd*exp(cumsum(samplev))
+    # Calculate if prices crossed barrier
+    sum(samplev > barl) > 0
+  }, returns=returns, nrows*nrows)  # end parLapply
+# Perform parallel bootstrap under Mac-OSX or Linux
+boot_data <- mclapply(1:nboot, function(x) {
+    samplev <- returns[sample.int(nrows, replace=TRUE)]
+    # Calculate prices from percentage returns
+    samplev <- startd*exp(cumsum(samplev))
+    # Calculate if prices crossed barrier
+    sum(samplev > barl) > 0
+  }, mc.cores=ncores)  # end mclapply
+stopCluster(cluster)  # Stop R processes over cluster under Windows
+boot_data <- rutils::do_call(rbind, boot_data)
+# Calculate frequency of crossing barrier
+sum(boot_data)/nboot
       @
   \end{columns}
 \end{block}
@@ -2569,25 +2533,25 @@ apply(boot_data, MARGIN=1,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# CVaR from Naive Monte Carlo
-va_r <- datav[cutoff]
-sum((datav < va_r)*datav)/sum((datav < va_r))
+# VaR and CVaR from Naive Monte Carlo
+varisk <- datav[cutoff]
+sum((datav < varisk)*datav)/sum((datav < varisk))
 # CVaR from importance sample
-va_r <- data_tilt[findInterval(confl, cumprob)]
-sum((data_tilt < va_r)*data_tilt*weights)/sum((data_tilt < va_r)*weights)
+varisk <- data_tilt[findInterval(confl, cumprob)]
+sum((data_tilt < varisk)*data_tilt*weights)/sum((data_tilt < varisk)*weights)
 # CVaR from integration
-integrate(function(x) x*dnorm(x), low=-Inf, up=va_r)$value/pnorm(va_r)
+integrate(function(x) x*dnorm(x), low=-Inf, up=varisk)$value/pnorm(varisk)
 # Bootstrap of standard errors of expected value
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
-  va_r <- datav[cutoff]
-  naivemc <- sum((datav < va_r)*datav)/sum((datav < va_r))
+  varisk <- datav[cutoff]
+  naivemc <- sum((datav < varisk)*datav)/sum((datav < varisk))
   data_tilt <- datav + lambda
   weights <- exp(-lambda*data_tilt + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
-  va_r <- data_tilt[findInterval(confl, cumprob)]
-  isample <- sum((data_tilt < va_r)*data_tilt*weights)/sum((data_tilt < va_r)*weights)
+  varisk <- data_tilt[findInterval(confl, cumprob)]
+  isample <- sum((data_tilt < varisk)*data_tilt*weights)/sum((data_tilt < varisk)*weights)
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -2622,7 +2586,7 @@ nrows <- 1000; nboot <- 100
 datav <- matrix(rnorm(nboot*nrows), ncol=nboot)
 datav <- Rfast::sort_mat(datav)  # Sort the columns
 # Calculate vector of quantiles for tilt parameter
-confl <- 0.02; cutoff <- confl/nrows
+confl <- 0.02; cutoff <- confl*nrows
 calc_quant <- function(lambda) {
   data_tilt <- datav + lambda  # Tilt the random numbers
   weights <- exp(-lambda*data_tilt + lambda^2/2)
@@ -2755,17 +2719,18 @@ sum(payouts[payouts > 0])/nsimu
 payouts <- (paths_tilt[nrows, ] - strikep)
 sum((path_weights*payouts)[payouts > 0])/nsimu
 # Calculate crossing probability using standard MC
-barp <- 10
-didcross <- (colSums(paths > barp) > 0)
-sum(didcross)/nsimu
+barl <- 10
+crossi <- (colSums(paths > barl) > 0)
+sum(crossi)/nsimu
 # Calculate crossing probability using importance sampling
-didcross <- colSums(paths_tilt > barp) > 0
-sum(path_weights*didcross)/nsimu
+crossi <- colSums(paths_tilt > barl) > 0
+sum(path_weights*crossi)/nsimu
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
 
 
 
@@ -2779,7 +2744,7 @@ sum(path_weights*didcross)/nsimu
 \vspace{-1em}
 \begin{block}{Required}
   \begin{itemize}[]
-    \item Study all the lecture slides in \emph{FRE6871\_Lecture\2.pdf}, and run all the code in \emph{FRE6871\_Lecture\2.R},
+    \item Study all the lecture slides in \emph{FRE6871\_Lecture\-2.pdf}, and run all the code in \emph{FRE6871\_Lecture\-2.R},
     \item Study \emph{bootstrap simulation} from the files \emph{bootstrap\_technique.pdf} and \emph{doBootstrap\_primer.pdf},
     \item Study the \emph{Vasicek} single factor model from \emph{Vasicek Portfolio Default Distribution.pdf},
     \item Study credit portfolio risk models from \texttt{BOE Credit Risk Models.pdf} and \texttt{BIS Bank Capital Model.pdf},

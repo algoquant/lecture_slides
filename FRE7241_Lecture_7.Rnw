@@ -196,10 +196,10 @@ tail(cbind(look_backs, look_fwds))
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define performance function as Sharpe ratio
-objfunc <- function(returns) sum(returns)/sd(returns)
+objfun <- function(returns) sum(returns)/sd(returns)
 # Calculate past performance over look-back intervals
 past <- apply(look_backs, 1, function(ep) {
-  sapply(returns[ep[1]:ep[2]], objfunc)
+  sapply(returns[ep[1]:ep[2]], objfun)
 })  # end sapply
 past <- t(past)
 past[is.na(past)] <- 0
@@ -284,10 +284,10 @@ dygraphs::dygraph(cumsum(wealth), main="Monthly Momentum Strategy vs All-Weather
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # Define backtest functional
-backtestmomentum <- function(returns,
-                      objfunc=function(returns) (sum(returns)/sd(returns)),
-                      look_back=12, re_balance="months", bid_offer=0.001,
-                      endp=rutils::calc_endpoints(returns, interval=re_balance)[-1],
+backtestmom <- function(returns,
+                      objfun=function(returns) (sum(returns)/sd(returns)),
+                      look_back=12, rfreq="months", bid_offer=0.001,
+                      endp=rutils::calc_endpoints(returns, interval=rfreq)[-1],
                       with_weights=FALSE, ...) {
   stopifnot("package:rutils" %in% search() || require("rutils", quietly=TRUE))
   # Define look-back and look-forward intervals
@@ -299,7 +299,7 @@ backtestmomentum <- function(returns,
   look_fwds <- cbind(endp + 1, rutils::lagit(endp, -1))
   look_fwds[nrows, ] <- endp[nrows]
   # Calculate past performance over look-back intervals
-  past <- t(apply(look_backs, 1, function(ep) sapply(returns[ep[1]:ep[2]], objfunc)))
+  past <- t(apply(look_backs, 1, function(ep) sapply(returns[ep[1]:ep[2]], objfun)))
   past[is.na(past)] <- 0
   # Calculate future performance
   future <- t(apply(look_fwds, 1, function(ep) sapply(returns[ep[1]:ep[2]], sum)))
@@ -317,7 +317,7 @@ backtestmomentum <- function(returns,
     rutils::lagit(cbind(pnls, weights))
   else
     rutils::lagit(pnls)
-}  # end backtestmomentum
+}  # end backtestmom
       @
 \end{block}
 
@@ -348,10 +348,10 @@ backtestmomentum <- function(returns,
       <<echo=TRUE,eval=FALSE>>=
 source("/Users/jerzy/Develop/lecture_slides/scripts/back_test.R")
 look_backs <- seq(3, 15, by=1)
-objfunc <- function(returns) sum(returns)/sd(returns)
+objfun <- function(returns) sum(returns)/sd(returns)
 profilev <- sapply(look_backs, function(look_back) {
-  pnls <- backtestmomentum(returns=returns, endp=endp,
-    look_back=look_back, objfunc=objfunc)
+  pnls <- backtestmom(returns=returns, endp=endp,
+    look_back=look_back, objfun=objfun)
   sum(pnls)
 })  # end sapply
 # Plot momemntum PnLs
@@ -379,9 +379,9 @@ plot(x=look_backs, y=profilev, t="l",
       <<echo=TRUE,eval=FALSE>>=
 # Optimal look_back
 look_back <- look_backs[which.max(profilev)]
-pnls <- backtestmomentum(returns=returns,
+pnls <- backtestmom(returns=returns,
   look_back=look_back, endp=endp,
-  objfunc=objfunc, with_weights=TRUE)
+  objfun=objfun, with_weights=TRUE)
 tail(pnls)
 # Calculate the wealth of momentum returns
 retsmom <- pnls[, 1]
@@ -427,9 +427,9 @@ legend("topleft", legend=colnames(wealth),
       <<echo=TRUE,eval=FALSE>>=
 # Plot the momentum portfolio weights
 weights <- pnls[, -1]
-vtis <- log(quantmod::Cl(rutils::etfenv$VTI[dates]))
-colnames(vtis) <- "VTI"
-datav <- cbind(vtis, weights)
+vti <- log(quantmod::Cl(rutils::etfenv$VTI[dates]))
+colnames(vti) <- "VTI"
+datav <- cbind(vti, weights)
 datav <- na.omit(datav)
 colnames(datav)[2:NCOL(pnls)] <- paste0(colnames(weights), "_weight")
 zoo::plot.zoo(datav, xlab=NULL, main="Momentum Weights")
@@ -459,7 +459,7 @@ betas_etf <- sapply(returns, function(x)
 betas <- weights %*% betas_etf
 betas <- xts::xts(betas, order.by=dates)
 colnames(betas) <- "momentum_beta"
-datav <- cbind(betas, vtis)
+datav <- cbind(betas, vti)
 zoo::plot.zoo(datav,
   oma = c(3, 1, 3, 0), mar = c(0, 4, 0, 1),
   main="Momentum Beta & VTI Price", xlab="")
@@ -488,17 +488,17 @@ zoo::plot.zoo(datav,
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 # Merton-Henriksson test
-vtis <- rutils::diffit(vtis)
-design <- cbind(VTI=vtis, 0.5*(vtis+abs(vtis)), vtis^2)
+vti <- rutils::diffit(vti)
+design <- cbind(VTI=vti, 0.5*(vti+abs(vti)), vti^2)
 colnames(design)[2:3] <- c("merton", "treynor")
 model <- lm(retsmom ~ VTI + merton, data=design); summary(model)
 # Treynor-Mazuy test
 model <- lm(retsmom ~ VTI + treynor, data=design); summary(model)
 # Plot residual scatterplot
-plot.default(x=vtis, y=retsmom, xlab="VTI", ylab="momentum")
+plot.default(x=vti, y=retsmom, xlab="VTI", ylab="momentum")
 title(main="Treynor-Mazuy market timing test\n for Momentum vs VTI", line=0.5)
 # Plot fitted (predicted) response values
-points.default(x=vtis, y=model$fitted.values, pch=16, col="red")
+points.default(x=vti, y=model$fitted.values, pch=16, col="red")
 residuals <- model$residuals
 text(x=0.0, y=max(residuals), paste("Treynor test t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
       @
@@ -526,9 +526,9 @@ text(x=0.0, y=max(residuals), paste("Treynor test t-value =", round(summary(mode
       <<echo=TRUE,eval=FALSE>>=
 # Standardize the returns
 retsmom_std <- (retsmom-mean(retsmom))/sd(retsmom)
-vtis <- (vtis-mean(vtis))/sd(vtis)
+vti <- (vti-mean(vti))/sd(vti)
 # Calculate skewness and kurtosis
-apply(cbind(retsmom_std, vtis), 2, function(x)
+apply(cbind(retsmom_std, vti), 2, function(x)
   sapply(c(skew=3, kurt=4),
     function(e) sum(x^e)))/nrows
       @
@@ -543,7 +543,7 @@ hist(retsmom_std, breaks=30,
   xlab="", ylab="", freq=FALSE)
 # Draw kernel density of histogram
 lines(density(retsmom_std), col='red', lwd=2)
-lines(density(vtis), col='blue', lwd=2)
+lines(density(vti), col='blue', lwd=2)
 # Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
        leg=c("Momentum", "VTI"),
@@ -708,7 +708,7 @@ look_backs <- seq(50, 300, by=50)
 pnls <- sapply(look_backs, momentum_daily,
   returns=returns, bid_offer=bid_offer)
 colnames(pnls) <- paste0("look_back=", look_backs)
-pnls <- xts::xts(pnls, index(returns))
+pnls <- xts::xts(pnls, zoo::index(returns))
 tail(pnls)
       @
     \column{0.5\textwidth}
@@ -745,7 +745,7 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=(-(1:1)),eval=FALSE>>=
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
-momentum_daily <- function(returns, look_back=252, hold_period=5, bid_offer=0.001, trend=1, ...) {
+momentum_daily <- function(returns, look_back=252, holdperiod=5, bid_offer=0.001, trend=1, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate rolling variance
   variance <- roll::roll_var(returns, width=look_back, min_obs=1)
@@ -757,7 +757,7 @@ momentum_daily <- function(returns, look_back=252, hold_period=5, bid_offer=0.00
   weights <- weights/sqrt(rowSums(weights^2))
   weights <- rutils::lagit(weights)
   # Average the weights over holding period
-  weights <- roll::roll_mean(weights, width=hold_period, min_obs=1)
+  weights <- roll::roll_mean(weights, width=holdperiod, min_obs=1)
   # Calculate momentum profits and losses
   pnls <- trend*rowMeans(weights*returns)
   # Calculate transaction costs
@@ -783,11 +783,11 @@ momentum_daily <- function(returns, look_back=252, hold_period=5, bid_offer=0.00
       The daily \emph{momentum} strategies with a holding period perform perform much better.
       <<echo=TRUE,eval=FALSE>>=
 # Perform sapply loop over holding periods
-hold_periods <- seq(2, 11, by=2)
-pnls <- sapply(hold_periods, momentum_daily, look_back=120,
+holdperiods <- seq(2, 11, by=2)
+pnls <- sapply(holdperiods, momentum_daily, look_back=120,
                   returns=returns, bid_offer=bid_offer)
-colnames(pnls) <- paste0("holding=", hold_periods)
-pnls <- xts::xts(pnls, index(returns))
+colnames(pnls) <- paste0("holding=", holdperiods)
+pnls <- xts::xts(pnls, zoo::index(returns))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -835,9 +835,9 @@ returns100 <- zoo::na.locf(returns100, na.rm=FALSE)
 # Perform sapply loop over look_backs
 look_backs <- seq(100, 300, by=20)
 pnls <- sapply(look_backs, momentum_daily,
-  hold_period=5, returns=returns100, bid_offer=0)
+  holdperiod=5, returns=returns100, bid_offer=0)
 colnames(pnls) <- paste0("look_back=", look_backs)
-pnls <- xts::xts(pnls, index(returns100))
+pnls <- xts::xts(pnls, zoo::index(returns100))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -879,9 +879,9 @@ legend("bottomleft", legend=colnames(pnls),
 # Perform sapply loop over look_backs
 look_backs <- seq(3, 20, by=2)
 pnls <- sapply(look_backs, momentum_daily,
-  hold_period=5, returns=returns100, bid_offer=0, trend=(-1))
+  holdperiod=5, returns=returns100, bid_offer=0, trend=(-1))
 colnames(pnls) <- paste0("look_back=", look_backs)
-pnls <- xts::xts(pnls, index(returns100))
+pnls <- xts::xts(pnls, zoo::index(returns100))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1229,22 +1229,22 @@ NumericVector sim_ou_rcpp(double eq_price,
       The \emph{logistic map} in \emph{Rcpp} is about seven times faster than the loop in \texttt{R}, and even slightly faster than the standard \texttt{runif()} function in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # Calculate uniformly distributed pseudo-random sequence
-unifunc <- function(seedv, nrows=10) {
+unifun <- function(seedv, nrows=10) {
   output <- numeric(nrows)
   output[1] <- seedv
   for (i in 2:nrows) {
     output[i] <- 4*output[i-1]*(1-output[i-1])
   }  # end for
   acos(1-2*output)/pi
-}  # end unifunc
+}  # end unifun
 
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifunc.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifun.cpp")
 # Microbenchmark Rcpp code
 library(microbenchmark)
 summary(microbenchmark(
   pure_r=runif(1e5),
-  r_loop=unifunc(0.3, 1e5),
+  rloop=unifun(0.3, 1e5),
   r_cpp=uniform_rcpp(0.3, 1e5),
   times=10))[, c(1, 4, 5)]
       @
@@ -1265,7 +1265,7 @@ using namespace Rcpp; // use Rcpp C++ namesvpace
 //   http://adv-r.had.co.nz/Rcpp.html
 //   http://gallery.rcpp.org/
 
-// function unifunc() produces a vector of
+// function unifun() produces a vector of
 // uniformly distributed pseudo-random numbers
 // [[Rcpp::export]]
 NumericVector uniform_rcpp(double seedv, int(nrows) {
@@ -1311,7 +1311,7 @@ static const double pi = 3.14159265;
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillofuntions.cpp")
 vec1 <- runif(1e5)
 vec2 <- runif(1e5)
 inner_vec(vec1, vec2)
@@ -1443,13 +1443,13 @@ arma::vec sim_arima(const arma::vec& innov, const arma::vec& coeff) {
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillofuntions.cpp")
 matrixv <- matrix(runif(1e5), nc=1e3)
 # De-mean using apply()
-new_mat <- apply(matrixv, 2, function(x) (x-mean(x)))
+newmapt <- apply(matrixv, 2, function(x) (x-mean(x)))
 # De-mean using demean_mat()
 demean_mat(matrixv)
-all.equal(new_mat, matrixv)
+all.equal(newmapt, matrixv)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
@@ -1872,8 +1872,8 @@ barplot(sort(weights), main="Maximum Sharpe Weights", cex.names=0.7)
       The in-sample performance of the optimal portfolio is much better than the equal weight portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weights, index(rets_is))
-indeks <- xts::xts(rowSums(rets_is)/sqrt(nassets), index(rets_is))
+portf_is <- xts::xts(rets_is %*% weights, zoo::index(rets_is))
+indeks <- xts::xts(rowSums(rets_is)/sqrt(nassets), zoo::index(rets_is))
 portf_is <- portf_is*sd(indeks)/sd(portf_is)
       @
     \column{0.5\textwidth}
@@ -1906,8 +1906,8 @@ dygraphs::dygraph(pnls, main="In-sample Optimal Portfolio Returns") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Out-of-sample portfolio returns
 rets_os <- returns["2015/"]
-portf_os <- xts::xts(rets_os %*% weights, index(rets_os))
-indeks <- xts::xts(rowSums(rets_os)/sqrt(nassets), index(rets_os))
+portf_os <- xts::xts(rets_os %*% weights, zoo::index(rets_os))
+indeks <- xts::xts(rowSums(rets_os)/sqrt(nassets), zoo::index(rets_os))
 portf_os <- portf_os*sd(indeks)/sd(portf_os)
 pnls <- cbind(portf_os, indeks, (portf_os + indeks)/2)
 colnames(pnls) <- c("Optimal", "Equal Weight", "Combined")
@@ -1956,9 +1956,9 @@ weights <- inverse %*% colMeans(excess["/2010"])
 weights <- drop(weights/sqrt(sum(weights^2)))
 names(weights) <- colnames(returns)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weights, index(rets_is))
-portf_os <- xts::xts(rets_os %*% weights, index(rets_os))
-indeks <- xts::xts(rowSums(returns)/sqrt(nassets), index(returns))
+portf_is <- xts::xts(rets_is %*% weights, zoo::index(rets_is))
+portf_os <- xts::xts(rets_os %*% weights, zoo::index(rets_os))
+indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2083,9 +2083,9 @@ weights <- inverse %*% colMeans(excess["/2010"])
 weights <- drop(weights/sqrt(sum(weights^2)))
 names(weights) <- colnames(returns)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weights, index(rets_is))
-portf_os <- xts::xts(rets_os %*% weights, index(rets_os))
-indeks <- xts::xts(rowSums(returns)/sqrt(nassets), index(returns))
+portf_is <- xts::xts(rets_is %*% weights, zoo::index(rets_is))
+portf_os <- xts::xts(rets_os %*% weights, zoo::index(rets_os))
+indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2137,8 +2137,8 @@ rets_mean <- (1 - alpha)*rets_mean + alpha*mean(rets_mean)
 weights <- inverse %*% rets_mean
 weights <- drop(weights/sqrt(sum(weights^2)))
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weights, index(rets_is))
-portf_os <- xts::xts(rets_os %*% weights, index(rets_os))
+portf_is <- xts::xts(rets_is %*% weights, zoo::index(rets_is))
+portf_os <- xts::xts(rets_os %*% weights, zoo::index(rets_os))
 # Plot cumulative portfolio returns
 pnls <- rbind(portf_is, portf_os)
 pnls <- pnls*sd(indeks)/sd(pnls)
@@ -2242,7 +2242,7 @@ arma::vec calc_weights(const arma::mat& returns,
                        int eigen_max = 1,
                        const double& probv = 0.1,
                        const double& alpha = 0.0,
-                       const bool scalit = true) {
+                       const bool scalev = true) {
   // Initialize
   arma::vec weights(returns[ncols);
   if (eigen_max == 1)  eigen_max = returns[ncols;
@@ -2303,7 +2303,7 @@ arma::vec calc_weights(const arma::mat& returns,
     return arma::ones(returns[ncols);
   }  // end if
 
-  if (scalit == TRUE) {
+  if (scalev == TRUE) {
     return weights*arma::stddev(arma::mean(returns, 1))/arma::stddev(returns*weights);
   }  // end if
 
@@ -2341,7 +2341,7 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
                     const arma::uword& eigen_max = 1,
                     const double& probv = 0.1,
                     const double& alpha = 0,
-                    const bool& scalit = true,
+                    const bool& scalev = true,
                     const double& coeff = 1.0,
                     const double& bid_offer = 0.0) {
   arma::vec pnls = zeros(returns*nrows);
@@ -2352,7 +2352,7 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
   for (arma::uword it=1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typev, eigen_max, probv, alpha, scalit);
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typev, eigen_max, probv, alpha, scalev);
     // Calculate out-of-sample returns
     pnls.subvec(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
     // Add transaction costs
@@ -2408,11 +2408,11 @@ rets_portf <- lapply(2:nrows, function(i) {
     weights <- drop(weights/sqrt(sum(weights^2)))
     # Calculate the out-of-sample portfolio returns
     returns <- returns[(endp[i-1]+1):endp[i], ]
-    xts::xts(returns %*% weights, index(returns))
+    xts::xts(returns %*% weights, zoo::index(returns))
 })  # end lapply
 rets_portf <- rutils::do_call(rbind, rets_portf)
 # Plot cumulative strategy returns
-indeks <- xts::xts(rowSums(returns)/sqrt(nassets), index(returns))
+indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
 pnls <- cumsum(na.omit(cbind(rets_portf, indeks*sd(rets_portf)/sd(indeks))))
 colnames(pnls) <- c("Rolling Portfolio Strategy", "Equal Weight Portfolio")
 dygraphs::dygraph(pnls, main="Rolling Portfolio Optimization Strategy") %>%
@@ -2461,7 +2461,7 @@ alpha <- 0.7 ; eigen_max <- 21
 pnls <- HighFreq::back_test(excess=returns100, returns=returns100,
   startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
 # Calculate returns on equal weight portfolio
-indeks <- xts::xts(rowMeans(returns100), index(returns100))
+indeks <- xts::xts(rowMeans(returns100), zoo::index(returns100))
 # Plot cumulative strategy returns
 pnls <- cbind(pnls, indeks, (pnls+indeks)/2)
 pnls <- cumsum(na.omit(pnls))
@@ -2713,7 +2713,7 @@ uiface <- shiny::fluidPage(
 )  # end user interface
 
 ## Define the server function
-servfunc <- function(input, output) {
+servfun <- function(input, output) {
   output$plotobj <- shiny::renderPlot({
     # Simulate the data
     datav <- rnorm(input$ndata, sd=input$stdev)
@@ -2721,10 +2721,10 @@ servfunc <- function(input, output) {
     par(mar=c(2, 4, 4, 0), oma=c(0, 0, 0, 0))
     hist(datav, xlim=c(-4, 4), main="Histogram of Random Data")
   })  # end renderPlot
-}  # end servfunc
+}  # end servfun
 
 # Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfunc)
+shiny::shinyApp(ui=uiface, server=servfun)
       @
       \vspace{-1em}
       The function \texttt{shiny::shinyApp()} creates a \texttt{shiny app} from a \emph{shiny interface} and a \emph{shiny server}.
@@ -2811,7 +2811,7 @@ uiface <- shiny::fluidPage(
       % \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 ## Define the server function
-servfunc <- shiny::shinyServer(function(input, output) {
+servfun <- shiny::shinyServer(function(input, output) {
   # Get the close and volume data in a reactive environment
   closep <- shiny::reactive({
     # Get the data
@@ -2851,7 +2851,7 @@ servfunc <- shiny::shinyServer(function(input, output) {
 })  # end server code
 
 ## Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfunc)
+shiny::shinyApp(ui=uiface, server=servfun)
       @
   \end{columns}
 \end{block}
@@ -2879,7 +2879,7 @@ shiny::shinyApp(ui=uiface, server=servfunc)
       % \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 ## Define the server function
-servfunc <- shiny::shinyServer(function(input, output) {
+servfun <- shiny::shinyServer(function(input, output) {
 
   # Create an empty list of reactive values.
   value_s <- reactiveValues()
@@ -2918,7 +2918,7 @@ servfunc <- shiny::shinyServer(function(input, output) {
 })  # end server code
 
 ## Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfunc)
+shiny::shinyApp(ui=uiface, server=servfun)
       @
   \end{columns}
 \end{block}
@@ -2957,7 +2957,7 @@ options(width=200)
 # Load package HighFreq
 library(HighFreq)
 # Or load the high frequency data file directly:
-symbolv <- load("C:/Develop/R/HighFreq/data/hf_data.RData")
+symbolv <- load("/Users/jerzy/Develop/R/HighFreq/data/hf_data.RData")
 head(SPY_TAQ)
 head(SPY)
 tail(SPY)
@@ -3013,7 +3013,7 @@ tail(SPY)
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)
 # Read TAQ trade data from csv file
-taq <- data.table::fread(file="C:/Develop/data/xlk_tick_trades2020_0316.csv")
+taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.csv")
 # Inspect the TAQ data
 taq
 class(taq)
@@ -3075,7 +3075,7 @@ taq <- cbind(index=dates, taq)
 # Coerce trade ticks to xts series
 xtes <- xts::xts(taq[, .(price, volume)], taq$index)
 colnames(xtes) <- paste(symbol, c("Close", "Volume"), sep=".")
-save(xtes, file="C:/Develop/data/xlk_tick_trades2020_0316.RData")
+save(xtes, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
 # Plot dygraph
 dygraphs::dygraph(xtes$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16")
@@ -3110,7 +3110,7 @@ dim(big_ticks)
 # Number of large lot ticks per second
 NROW(big_ticks)/(6.5*3600)
 # Save trade ticks with large lots
-data.table::fwrite(big_ticks, file="C:/Develop/data/xlk_tick_trades2020_0316_biglots.csv")
+data.table::fwrite(big_ticks, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316_biglots.csv")
 # Coerce trade prices to xts
 xtes <- xts::xts(big_ticks[, .(price, volume)], big_ticks$index)
 colnames(xtes) <- c("XLK.Close", "XLK.Volume")
@@ -3208,11 +3208,11 @@ quantmod::chart_Series(x=xtes$XLK.Close,
       The function \texttt{as.POSIXct()} coerces objects to class \texttt{POSIXct}.
       <<echo=TRUE,eval=FALSE>>=
 # Round time index to seconds
-good_ticks[, index := as.POSIXct(round.POSIXt(index, "secs"))]
+good_ticks[, zoo::index := as.POSIXct(round.POSIXt(index, "secs"))]
 # Aggregate to OHLC by seconds
 ohlc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
 # Round time index to minutes
-good_ticks[, index := as.POSIXct(round.POSIXt(index, "mins"))]
+good_ticks[, zoo::index := as.POSIXct(round.POSIXt(index, "mins"))]
 # Aggregate to OHLC by minutes
 ohlc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
       @
@@ -3282,7 +3282,7 @@ library(HighFreq)
 # Define symbol
 symbol <- "SPY"
 # Load OHLC data
-output_dir <- "C:/Develop/data/hfreq/scrub/"
+output_dir <- "/Users/jerzy/Develop/data/hfreq/scrub/"
 symbol <- load(
   file.path(output_dir,
             paste0(symbol, ".RData")))
@@ -3417,8 +3417,8 @@ sapply(c(var=2, skew=3, kurt=4),
 tseries::jarque.bera.test(returns)
 # Fit SPY returns using MASS::fitdistr()
 optim_fit <- MASS::fitdistr(returns, densfun="t", df=2)
-lo_cation <- optim_fit$estimate[1]
-scalit <- optim_fit$estimate[2]
+loc <- optim_fit$estimate[1]
+scalev <- optim_fit$estimate[2]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3427,12 +3427,12 @@ scalit <- optim_fit$estimate[2]
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot histogram of SPY returns
-histo_gram <- hist(returns, col="lightgrey", mgp=c(2, 1, 0),
+histp <- hist(returns, col="lightgrey", mgp=c(2, 1, 0),
   xlab="returns (standardized)", ylab="frequency", xlim=c(-3, 3),
   breaks=1e3, freq=FALSE, main="Distribution of High Frequency SPY Returns")
 # lines(density(returns, bw=0.2), lwd=3, col="blue")
 # Plot t-distribution function
-curve(expr=dt((x-lo_cation)/scalit, df=2)/scalit,
+curve(expr=dt((x-loc)/scalev, df=2)/scalev,
       type="l", lwd=3, col="red", add=TRUE)
 # Plot the Normal probability distribution
 curve(expr=dnorm(x, mean=mean(returns),
@@ -3521,7 +3521,7 @@ startp <- c(rep_len(1, look_back-1),
 endp[endp < look_back] <- look_back
 vol_rolling <- sapply(seq_along(endp),
   function(it) sd(ret2013[startp[it]:endp[it]]))
-vol_rolling <- xts::xts(vol_rolling, index(ret2013))
+vol_rolling <- xts::xts(vol_rolling, zoo::index(ret2013))
 # Extract time intervals of SPY returns
 indeks <- c(60, diff(xts::.index(ret2013)))
 head(indeks)
@@ -3571,7 +3571,7 @@ legend("topright", legend=colnames(vol_rolling),
       \vskip1ex
       The \emph{bid-ask bounce} produces very high realized volatility and the appearance of mean reversion (negative autocorrelation), that isn't tradeable for most traders.
       <<echo=TRUE,eval=FALSE>>=
-prices <- read.zoo(file="C:/Develop/lecture_slides/data/bid_ask_bounce.csv",
+prices <- read.zoo(file="/Users/jerzy/Develop/lecture_slides/data/bid_ask_bounce.csv",
   header=TRUE, sep=",")
 prices <- as.xts(prices)
 x11(width=6, height=4)
@@ -4084,7 +4084,7 @@ print(xtable::xtable(futures), comment=FALSE, size="scriptsize", include.rowname
       The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
       <<echo=TRUE,eval=FALSE>>=
 # Load data for S&P Emini futures June 2019 contract
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 file_name <- file.path(dir_name, "ESohlc.csv")
 # Read a data table from CSV file
 prices <- data.table::fread(file_name)
@@ -4132,7 +4132,7 @@ dygraphs::dygraph(prices[, 1:4], main="OHLC prices") %>%
       The contract with the highest trading volume is usually considered the most liquid contract.
       <<echo=TRUE,eval=FALSE>>=
 # Load ESU8 data
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 file_name <- file.path(dir_name, "ESU8.csv")
 ESU8 <- data.table::fread(file_name)
 # Coerce ESU8 into xts series
@@ -4247,11 +4247,11 @@ vix_index <- xts(vix_index[, -1],
   order.by=as.Date(vix_index$Date, format="%m/%d/%Y"))
 colnames(vix_index) <- c("Open", "High", "Low", "Close")
 # Save the VIX data to binary file
-load(file="C:/Develop/data/ib_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/ib_data/vix_cboe.RData")
 ls(vix_env)
 vix_env$vix_index <- vix_index
 ls(vix_env)
-save(vix_env, file="C:/Develop/data/ib_data/vix_cboe.RData")
+save(vix_env, file="/Users/jerzy/Develop/data/ib_data/vix_cboe.RData")
 # Plot OHLC data in x11 window
 chart_Series(x=vix_index["2018"], name="VIX Index")
 # Plot dygraph
@@ -4296,7 +4296,7 @@ dygraphs::dygraph(vix_index, main="VIX Index") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Read CBOE monthly futures expiration dates
 dates <- read.csv(
-  file="C:/Develop/data/vix_data/vix_dates.csv")
+  file="/Users/jerzy/Develop/data/vix_data/vix_dates.csv")
 dates <- as.Date(dates[, 1])
 years <- format(dates, format="%Y")
 years <- substring(years, 4)
@@ -4310,9 +4310,9 @@ colnames(dates) <- "exp_dates"
 rownames(dates) <- symbolv
 # Write dates to CSV file, with row names
 write.csv(dates, row.names=TRUE,
-  file="C:/Develop/data/vix_data/vix_futures.csv")
+  file="/Users/jerzy/Develop/data/vix_data/vix_futures.csv")
 # Read back CBOE futures expiration dates
-dates <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
+dates <- read.csv(file="/Users/jerzy/Develop/data/vix_data/vix_futures.csv",
   row.names=1)
 dates[, 1] <- as.Date(dates[, 1])
       @
@@ -4344,7 +4344,7 @@ dates[, 1] <- as.Date(dates[, 1])
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
 # Get all VIX futures for 2018 except January
 symbolv <- ls(vix_env)
 symbolv <- symbolv[grep("*8", symbolv)]
@@ -4415,9 +4415,9 @@ legend(x="topright", legend=colnames(curve_s),
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
 # Read CBOE futures expiration dates
-dates <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
+dates <- read.csv(file="/Users/jerzy/Develop/data/vix_data/vix_futures.csv",
   row.names=1)
 symbolv <- rownames(dates)
 dates <- as.Date(dates[, 1])
@@ -4468,7 +4468,7 @@ pric_e <- (ra_tio*back_price + (1-ra_tio)*front_price)
       <<echo=(-(1:3)),eval=FALSE>>=
 x11(width=5, height=3)  # Open x11 for plotting
 # Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
 # Plot VIX and SVXY data in x11 window
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"

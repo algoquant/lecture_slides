@@ -9,10 +9,10 @@ lambda <- 0.004
 weightv <- exp(-lambda*(1:look_back))
 weightv <- weightv/sum(weightv)
 # Calculate EWMA prices
-ew_ma <- HighFreq::roll_wsum(closep, weights=weightv)
+ewmap <- HighFreq::roll_wsum(closep, weights=weightv)
 # Copy over NA values
-ew_ma <- zoo::na.locf(ew_ma, fromLast=TRUE)
-prices <- cbind(closep, ew_ma)
+ewmap <- zoo::na.locf(ewmap, fromLast=TRUE)
+prices <- cbind(closep, ewmap)
 colnames(prices) <- c("VTI", "VTI EWMA")
 # Dygraphs plot with custom line colors
 colnames <- colnames(prices)
@@ -31,7 +31,7 @@ legend("topleft", legend=colnames(prices),
  inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
  col=plot_theme$col$line.col, bty="n")
 # Calculate positions, either: -1, 0, or 1
-position_s <- sign(closep - ew_ma)
+position_s <- sign(closep - ewmap)
 position_s <- xts::xts(position_s, order.by=index(closep))
 position_s <- rutils::lagit(position_s, lagg=1)
 # Create colors for background shading
@@ -52,7 +52,7 @@ for (i in 1:NROW(shad_e)) {
 dyplot
 # Equivalent code to the above
 # Determine trade dates right after EWMA has crossed prices
-indic <- sign(closep - ew_ma)
+indic <- sign(closep - ewmap)
 trade_dates <- (rutils::diffit(indic) != 0)
 trade_dates <- which(trade_dates) + 1
 trade_dates <- trade_dates[trade_dates < nrows]
@@ -77,11 +77,11 @@ legend("topleft", legend=colnames(prices),
  inset=0.1, bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
 # Calculate daily profits and losses of EWMA strategy
-vtis <- rutils::diffit(closep)
-colnames(vtis) <- "VTI"
-pnls <- vtis*position_s
+vti <- rutils::diffit(closep)
+colnames(vti) <- "VTI"
+pnls <- vti*position_s
 colnames(pnls) <- "EWMA"
-wealth <- cbind(vtis, pnls)
+wealth <- cbind(vti, pnls)
 colnames(wealth) <- c("VTI", "EWMA PnL")
 # Annualized Sharpe ratio of EWMA strategy
 sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
@@ -112,7 +112,7 @@ legend("top", legend=colnames(wealth),
  inset=0.05, bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
 # Test EWMA crossover market timing of VTI using Treynor-Mazuy test
-design <- cbind(pnls, vtis, vtis^2)
+design <- cbind(pnls, vti, vti^2)
 design <- na.omit(design)
 colnames(design) <- c("EWMA","VTI","treynor")
 model <- lm(EWMA ~ VTI + treynor, data=design)
@@ -125,11 +125,11 @@ plot.default(x=design$VTI, y=residuals, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for EWMA Crossover vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 fit_ted <- (model$coeff["(Intercept)"] +
-        model$coeff["treynor"]*vtis^2)
+        model$coeff["treynor"]*vti^2)
 points.default(x=design$VTI, y=fit_ted, pch=16, col="red")
 text(x=0.05, y=0.8*max(residuals), paste("EWMA crossover t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
 # Determine trade dates right after EWMA has crossed prices
-indic <- sign(closep - ew_ma)
+indic <- sign(closep - ewmap)
 # Calculate positions from lagged indicator
 lagg <- 2
 indic <- roll::roll_sum(indic, width=lagg, min_obs=1)
@@ -143,7 +143,7 @@ position_s <- xts::xts(position_s, order.by=index(closep))
 # Lag the positions to trade in next period
 position_s <- rutils::lagit(position_s, lagg=1)
 # Calculate PnLs of lagged strategy
-pnls <- vtis*position_s
+pnls <- vti*position_s
 colnames(pnls) <- "Lagged Strategy"
 wealth <- cbind(wealth[, 2], pnls)
 colnames(wealth) <- c("EWMA Strategy", "Lagged Strategy")
@@ -154,7 +154,7 @@ dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Crossover Strategy, 
   dyOptions(colors=c("blue", "red"), strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Calculate daily profits and losses
-pnls <- vtis*position_s
+pnls <- vti*position_s
 # Calculate realized pnl for days with trade
 openp <- log(quantmod::Op(ohlc))
 close_lag <- rutils::lagit(closep)
@@ -165,7 +165,7 @@ pnls[trade_dates] <- pos_lagged[trade_dates]*
 pnls[trade_dates] <- pnls[trade_dates] +
   position_s[trade_dates]*
   (closep[trade_dates] - openp[trade_dates])
-wealth <- cbind(vtis, pnls)
+wealth <- cbind(vti, pnls)
 colnames(wealth) <- c("VTI", "EWMA PnL")
 # Annualized Sharpe ratio of EWMA strategy
 sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
@@ -225,7 +225,7 @@ simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001,
   colnames(pnls) <- c("positions", "pnls")
   pnls
 }  # end simu_ewma
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lambdas <- seq(from=0.001, to=0.008, by=0.001)
 # Perform lapply() loop over lambdas
 pnls <- lapply(lambdas, function(lambda) {
@@ -291,7 +291,7 @@ trend_sharpe <- sharper
 ewma_trend <- simu_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bid_offer=0, lagg=2)
 position_s <- ewma_trend[, "positions"]
 pnls <- ewma_trend[, "pnls"]
-wealth <- cbind(vtis, pnls)
+wealth <- cbind(vti, pnls)
 colnames(wealth) <- c("VTI", "EWMA PnL")
 # Create colors for background shading
 dates <- (rutils::diffit(position_s) != 0)
@@ -323,7 +323,7 @@ add_TA(position_s < 0, on=-1, col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(wealth),
  inset=0.05, bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lambdas <- seq(0.05, 1.0, 0.05)
 # Perform lapply() loop over lambdas
 pnls <- lapply(lambdas, function(lambda) {
@@ -364,7 +364,7 @@ ewma_revert <- simu_ewma(ohlc=ohlc, bid_offer=0.0,
   lambda=lambda, look_back=look_back, trend=(-1))
 position_s <- ewma_revert[, "positions"]
 pnls <- ewma_revert[, "pnls"]
-wealth <- cbind(vtis, pnls)
+wealth <- cbind(vti, pnls)
 colnames(wealth) <- c("VTI", "EWMA PnL")
 # Plot dygraph of EWMA strategy wealth
 colors <- c("blue", "red")
@@ -388,12 +388,12 @@ trend_ing <- ewma_trend[, "pnls"]
 colnames(trend_ing) <- "trend"
 revert_ing <- ewma_revert[, "pnls"]
 colnames(revert_ing) <- "revert"
-cor(cbind(vtis, trend_ing, revert_ing))
+cor(cbind(vti, trend_ing, revert_ing))
 # Calculate combined strategy
-com_bined <- (vtis + trend_ing + revert_ing)/3
+com_bined <- (vti + trend_ing + revert_ing)/3
 colnames(com_bined) <- "combined"
 # Calculate annualized Sharpe ratio of strategy returns
-returns <- cbind(vtis, trend_ing, revert_ing, com_bined)
+returns <- cbind(vti, trend_ing, revert_ing, com_bined)
 colnames(returns) <- c("VTI", "Trending", "Reverting", "EWMA combined")
 sqrt(252)*sapply(returns, function(xtes) mean(xtes)/sd(xtes))
 # Plot dygraph of EWMA strategy wealth
@@ -414,8 +414,8 @@ weightv[weightv<0] <- 0
 weightv <- weightv/sum(weightv)
 returns <- cbind(trend_returns, revert_returns)
 returns <- returns %*% weightv
-returns <- xts::xts(returns, order.by=index(vtis))
-returns <- cbind(vtis, returns)
+returns <- xts::xts(returns, order.by=index(vti))
+returns <- cbind(vti, returns)
 colnames(returns) <- c("VTI", "EWMA PnL")
 # Plot dygraph of EWMA strategy wealth
 colors <- c("blue", "red")
@@ -471,9 +471,9 @@ for (i in 1:NROW(shad_e)) {
 }  # end for
 dyplot
 # Calculate daily profits and losses of strategy
-pnls <- vtis*position_s
+pnls <- vti*position_s
 colnames(pnls) <- "Strategy"
-wealth <- cbind(vtis, pnls)
+wealth <- cbind(vti, pnls)
 # Annualized Sharpe ratio of Dual EWMA strategy
 sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
@@ -522,7 +522,7 @@ simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
   colnames(pnls) <- c("positions", "pnls")
   pnls
 }  # end simu_ewma2
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lambdas1 <- seq(from=0.05, to=0.15, by=0.01)
 lambdas2 <- seq(from=0.03, to=0.1, by=0.01)
 # Perform sapply() loops over lambdas
@@ -544,7 +544,7 @@ lambda1 <- lambdas1[whichv[2]]
 lambda2 <- lambdas2[whichv[1]]
 pnls <- simu_ewma2(ohlc=ohlc, lambda1=lambda1, lambda2=lambda2,
               look_back=look_back, bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
-wealth <- cbind(vtis, pnls)
+wealth <- cbind(vti, pnls)
 # Annualized Sharpe ratio of Dual EWMA strategy
 sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
@@ -602,9 +602,9 @@ position_s <- xts::xts(position_s, order.by=index(closep))
 # Lag the positions to trade in next period
 position_s <- rutils::lagit(position_s, lagg=1)
 # Calculate PnLs of VWAP strategy
-pnls <- vtis*position_s
+pnls <- vti*position_s
 colnames(pnls) <- "VWAP Strategy"
-wealth <- cbind(vtis, pnls)
+wealth <- cbind(vti, pnls)
 colnames(wealth) <- c("VTI", "VWAP Strategy")
 colnames <- colnames(wealth)
 # Annualized Sharpe ratios of VTI and VWAP strategy
@@ -626,9 +626,9 @@ for (i in 1:NROW(shad_e)) {
 # Plot the dygraph object
 dyplot
 # Calculate correlation of VWAP strategy with VTI
-cor(vtis, pnls)
+cor(vti, pnls)
 # Combine VWAP strategy with VTI
-wealth <- cbind(vtis, pnls, 0.5*(vtis+pnls))
+wealth <- cbind(vti, pnls, 0.5*(vti+pnls))
 colnames(wealth) <- c("VTI", "VWAP", "Combined")
 sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # Plot dygraph of VWAP strategy combined with VTI
@@ -637,7 +637,7 @@ dygraphs::dygraph(cumsum(wealth),
   dyOptions(colors=c("blue", "red", "purple"), strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Test VWAP crossover market timing of VTI using Treynor-Mazuy test
-design <- cbind(pnls, vtis, vtis^2)
+design <- cbind(pnls, vti, vti^2)
 design <- na.omit(design)
 colnames(design) <- c("VWAP","VTI","treynor")
 model <- lm(VWAP ~ VTI + treynor, data=design)
@@ -649,7 +649,7 @@ x11(width=6, height=6)
 plot.default(x=design$VTI, y=residuals, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for VWAP Crossover vs VTI", line=0.5)
 # Plot fitted (predicted) response values
-fit_ted <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*vtis^2)
+fit_ted <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*vti^2)
 points.default(x=design$VTI, y=fit_ted, pch=16, col="red")
 text(x=0.05, y=0.8*max(residuals), paste("VWAP crossover t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
 simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
@@ -685,7 +685,7 @@ simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
   colnames(pnls) <- c("positions", "pnls")
   pnls
 }  # end simu_vwap
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 look_backs <- seq(70, 200, 10)
 # Perform lapply() loop over lambdas
 pnls <- lapply(look_backs, function(look_back) {
@@ -737,21 +737,21 @@ summary(microbenchmark(
 set.seed(1121)  # Reset random number generator
 barp <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
-pa_th <- numeric(nrows)  # Allocate path vector
-pa_th[1] <- 0  # Initialize path
+paths <- numeric(nrows)  # Allocate path vector
+paths[1] <- 0  # Initialize path
 indeks <- 2  # Initialize simulation index
-while ((indeks <= nrows) && (pa_th[indeks - 1] < barp)) {
+while ((indeks <= nrows) && (paths[indeks - 1] < barp)) {
 # Simulate next step
-  pa_th[indeks] <- pa_th[indeks - 1] + rnorm(1)
+  paths[indeks] <- paths[indeks - 1] + rnorm(1)
   indeks <- indeks + 1  # Advance indeks
 }  # end while
-# Fill remaining pa_th after it crosses barp
+# Fill remaining paths after it crosses barp
 if (indeks <= nrows)
-  pa_th[indeks:nrows] <- pa_th[indeks - 1]
+  paths[indeks:nrows] <- paths[indeks - 1]
 # Plot the Brownian motion
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(pa_th, type="l", col="black",
+plot(paths, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barp, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
@@ -759,17 +759,17 @@ set.seed(1121)  # Reset random number generator
 barp <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
 # Simulate path of Brownian motion
-pa_th <- cumsum(rnorm(nrows))
-# Find index when pa_th crosses barp
-cro_ss <- which(pa_th > barp)
-# Fill remaining pa_th after it crosses barp
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):nrows] <- pa_th[cro_ss[1]]
+paths <- cumsum(rnorm(nrows))
+# Find index when paths crosses barp
+crossp <- which(paths > barp)
+# Fill remaining paths after it crosses barp
+if (NROW(crossp)>0) {
+  paths[(crossp[1]+1):nrows] <- paths[crossp[1]]
 }  # end if
 # Plot the Brownian motion
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(pa_th, type="l", col="black",
+plot(paths, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barp, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
@@ -869,7 +869,7 @@ par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
 plot.zoo(per_centage, main="Percentage of GBM paths below mean",
    xlab=NA, ylab=NA, col="blue")
 # Load S&P500 stock prices
-load("C:/Develop/lecture_slides/data/sp500.RData")
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 ls(sp500env)
 # Extract closing prices
 prices <- eapply(sp500env, quantmod::Cl)
@@ -1591,28 +1591,28 @@ plot(x=look_backs, y=back_tests[, 1],
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")
 # Calculate a vector of daily VTI log returns
-vtis <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vtis)
-vtis <- as.numeric(vtis)
-nrows <- NROW(vtis)
+vti <- na.omit(rutils::etfenv$returns$VTI)
+dates <- index(vti)
+vti <- as.numeric(vti)
+nrows <- NROW(vti)
 # Define predictor matrix for forecasting
 order_max <- 5
-predictor <- sapply(1:order_max, rutils::lagit, input=vtis)
+predictor <- sapply(1:order_max, rutils::lagit, input=vti)
 predictor <- cbind(rep(1, nrows), predictor)
 colnames(predictor) <- paste0("pred_", 1:NCOL(predictor))
-response <- vtis
+response <- vti
 # Calculate forecasts as function of the AR order
 forecasts <- lapply(2:NCOL(predictor), function(ordern) {
   # Calculate fitted coefficients
   inverse <- MASS::ginv(predictor[, 1:ordern])
   coeff_fit <- drop(inverse %*% response)
-  # Calculate in-sample forecasts of vtis
+  # Calculate in-sample forecasts of vti
   drop(predictor[, 1:ordern] %*% coeff_fit)
 })  # end lapply
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vtis - x)^2), cor=cor(vtis, x))
+  c(mse=mean((vti - x)^2), cor=cor(vti, x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- names(forecasts)
@@ -1629,13 +1629,13 @@ forecasts <- lapply(2:NCOL(predictor), function(ordern) {
   # Calculate fitted coefficients
   inverse <- MASS::ginv(predictor[in_sample, 1:ordern])
   coeff_fit <- drop(inverse %*% response[in_sample])
-  # Calculate out-of-sample forecasts of vtis
+  # Calculate out-of-sample forecasts of vti
   drop(predictor[out_sample, 1:ordern] %*% coeff_fit)
 })  # end lapply
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vtis[out_sample] - x)^2), cor=cor(vtis[out_sample], x))
+  c(mse=mean((vti[out_sample] - x)^2), cor=cor(vti[out_sample], x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- names(forecasts)
@@ -1645,7 +1645,7 @@ plot(x=2:NCOL(predictor), y=mse[, 1],
   main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vtis[out_sample])
+  cumsum(sign(x)*vti[out_sample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
 pnls <- xts::xts(pnls, dates[out_sample])
@@ -1658,7 +1658,7 @@ dygraphs::dygraph(pnls[, 1:4],
   dyLegend(width=500)
 # Define predictor as a rolling mean
 nagg <- 5
-predictor <- roll::roll_mean(vtis, width=nagg, min_obs=1)
+predictor <- roll::roll_mean(vti, width=nagg, min_obs=1)
 # Shift the response forward out-of-sample
 response <- rutils::lagit(predictor, lagg=(-nagg))
 # Define predictor matrix for forecasting
@@ -1674,7 +1674,7 @@ forecasts <- lapply(2:NCOL(predictor), function(ordern) {
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vtis[out_sample])
+  cumsum(sign(x)*vti[out_sample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
 pnls <- xts::xts(pnls, dates[out_sample])
@@ -1686,7 +1686,7 @@ dygraphs::dygraph(pnls[, 1:4],
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
   x <- roll::roll_mean(x, width=nagg, min_obs=1)
-  cumsum(sign(x)*vtis[out_sample])
+  cumsum(sign(x)*vti[out_sample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
 pnls <- xts::xts(pnls, dates[out_sample])
@@ -1696,13 +1696,13 @@ dygraphs::dygraph(pnls[, 1:4],
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=500)
 # Calculate a vector of daily VTI log returns
-vtis <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vtis)
-vtis <- as.numeric(vtis)
-nrows <- NROW(vtis)
+vti <- na.omit(rutils::etfenv$returns$VTI)
+dates <- index(vti)
+vti <- as.numeric(vti)
+nrows <- NROW(vti)
 # Define predictor as a rolling mean
 nagg <- 5
-predictor <- roll::roll_mean(vtis, width=nagg, min_obs=1)
+predictor <- roll::roll_mean(vti, width=nagg, min_obs=1)
 # Shift the response forward out-of-sample
 response <- rutils::lagit(predictor, lagg=(-nagg))
 # Define predictor matrix for forecasting
@@ -1730,16 +1730,16 @@ forecasts <- sapply((look_back+1):nrows, function(endp) {
 # Add warmup period
 forecasts <- c(rep(0, look_back), forecasts)
 # Mean squared error
-mean((vtis - forecasts)^2)
+mean((vti - forecasts)^2)
 # Correlation
-cor(forecasts, vtis)
+cor(forecasts, vti)
 # Plot forecasting series with legend
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 plot(forecasts[(nrows-look_back):nrows], col="red",
      xlab="", ylab="", type="l", lwd=2,
      main="Rolling Forecasting Using AR Model")
-lines(vtis[(nrows-look_back):nrows], col="blue", lwd=2)
+lines(vti[(nrows-look_back):nrows], col="blue", lwd=2)
 legend(x="top", legend=c("VTI returns", "forecasts"),
  col=c("blue", "red"), lty=1, lwd=6,
  cex=0.9, bg="white", bty="n")
@@ -1748,7 +1748,7 @@ sim_forecasts <- function(response, predictor=response, nagg=5,
                 ordern=5, look_back=100) {
   nrows <- NROW(response)
   # Define predictor as a rolling mean
-  predictor <- roll::roll_mean(vtis, width=nagg, min_obs=1)
+  predictor <- roll::roll_mean(vti, width=nagg, min_obs=1)
   # Shift the response forward out-of-sample
   response <- rutils::lagit(predictor, lagg=(-nagg))
   # Define predictor matrix for forecasting
@@ -1776,8 +1776,8 @@ sim_forecasts <- function(response, predictor=response, nagg=5,
   roll::roll_mean(forecasts, width=nagg, min_obs=1)
 }  # end sim_forecasts
 # Simulate the rolling autoregressive forecasts
-forecasts <- sim_forecasts(vtis, ordern=5, look_back=100)
-c(mse=mean((vtis - forecasts)^2), cor=cor(vtis, forecasts))
+forecasts <- sim_forecasts(vti, ordern=5, look_back=100)
+c(mse=mean((vti - forecasts)^2), cor=cor(vti, forecasts))
 look_backs <- seq(20, 600, 40)
 library(parallel)  # Load package parallel
 # Calculate number of available cores
@@ -1786,14 +1786,14 @@ ncores <- detectCores() - 1
 cluster <- makeCluster(ncores)
 # clusterExport(cluster, c("startd", "barp"))
 # Perform parallel loop under Windows
-forecasts <- parLapply(cluster, look_backs, sim_forecasts, response=vtis,
-                  predictor=vtis, nagg=5, ordern=5)
+forecasts <- parLapply(cluster, look_backs, sim_forecasts, response=vti,
+                  predictor=vti, nagg=5, ordern=5)
 # Perform parallel bootstrap under Mac-OSX or Linux
-forecasts <- mclapply(look_backs, sim_forecasts, response=vtis,
-  predictor=vtis, nagg=5, ordern=5, mc.cores=ncores)
+forecasts <- mclapply(look_backs, sim_forecasts, response=vti,
+  predictor=vti, nagg=5, ordern=5, mc.cores=ncores)
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vtis - x)^2), cor=cor(vtis, x))
+  c(mse=mean((vti - x)^2), cor=cor(vti, x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- look_backs
@@ -1811,16 +1811,16 @@ ncores <- detectCores() - 1
 cluster <- makeCluster(ncores)
 # clusterExport(cluster, c("startd", "barp"))
 # Perform parallel loop under Windows
-forecasts <- parLapply(cluster, orders, sim_forecasts, response=vtis,
-                  predictor=vtis, nagg=5, look_back=look_back)
+forecasts <- parLapply(cluster, orders, sim_forecasts, response=vti,
+                  predictor=vti, nagg=5, look_back=look_back)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
-forecasts <- mclapply(orders, sim_forecasts, response=vtis,
-  predictor=vtis, nagg=5, look_back=look_back, mc.cores=ncores)
+forecasts <- mclapply(orders, sim_forecasts, response=vti,
+  predictor=vti, nagg=5, look_back=look_back, mc.cores=ncores)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vtis - x)^2), cor=cor(vtis, x))
+  c(mse=mean((vti - x)^2), cor=cor(vti, x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- orders
@@ -1831,10 +1831,10 @@ plot(x=orders, y=mse[, 1],
   xlab="ordern", ylab="MSE", type="l", lwd=2,
   main="MSE of Forecasting Model As Function of AR Order")
 # Simulate the rolling autoregressive forecasts
-forecasts <- sim_forecasts(vtis, ordern=ordern, look_back=look_back)
+forecasts <- sim_forecasts(vti, ordern=ordern, look_back=look_back)
 # Calculate strategy PnLs
-pnls <- sign(forecasts)*vtis
-pnls <- cbind(vtis, pnls, (vtis+pnls)/2)
+pnls <- sign(forecasts)*vti
+pnls <- cbind(vti, pnls, (vti+pnls)/2)
 colnames(pnls) <- c("VTI", "AR_Strategy", "Combined")
 cor(pnls)
 # Annualized Sharpe ratios of VTI and AR strategy
@@ -1846,11 +1846,11 @@ dygraphs::dygraph(pnls, main="Rolling Autoregressive Strategy") %>%
   dyOptions(colors=c("blue","red","green"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Calculate PnLs for ordern=5
-forecasts <- sim_forecasts(vtis, ordern=5, look_back=look_back)
-pnls5 <- cumsum(sign(forecasts)*vtis)
+forecasts <- sim_forecasts(vti, ordern=5, look_back=look_back)
+pnls5 <- cumsum(sign(forecasts)*vti)
 # Calculate PnLs for ordern=3
-forecasts <- sim_forecasts(vtis, ordern=3, look_back=look_back)
-pnls3 <- cumsum(sign(forecasts)*vtis)
+forecasts <- sim_forecasts(vti, ordern=3, look_back=look_back)
+pnls3 <- cumsum(sign(forecasts)*vti)
 # Plot the cumulative strategy returns
 wealth <- cbind(pnls5, pnls3)
 wealth <- xts::xts(wealth, dates)

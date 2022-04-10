@@ -99,9 +99,9 @@ knit_theme$set(thm)
       \vskip1ex
       The smoothing kernel $K(x)$ is a symmetric function which decreases with the distance $x$.
       \vskip1ex
-      The kernel density $d_i$ of a data sample $r_i$ is equal to the sum over the kernel function $K(x)$:
+      The kernel density $d_r$ at a point $r$ is equal to the sum over the kernel function $K(x)$:
       \begin{displaymath}
-        d_i = \sum_{j=1}^n {K(r_i - r_j)}
+        d_r = \sum_{j=1}^n {K(r - r_j)}
       \end{displaymath}
       The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
       \vskip1ex
@@ -124,8 +124,8 @@ c(mean(returns), sd(returns))
 returns <- sort(returns)
 bwidth <- 10*mad(rutils::diffit(returns, lagg=10))
 # Calculate the kernel density
-densityv <- sapply(1:nrows, function(i_d) {
-  sum(dnorm(returns-returns[i_d], sd=bwidth))
+densityv <- sapply(1:nrows, function(it) {
+  sum(dnorm(returns-returns[it], sd=bwidth))
 })  # end sapply
 madv <- mad(returns)
 plot(returns, densityv, xlim=c(-5*madv, 5*madv),
@@ -173,7 +173,7 @@ plot(densityv, xlim=c(-5*madv, 5*madv),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
-histo_gram <- hist(returns, breaks=100, freq=FALSE,
+histp <- hist(returns, breaks=100, freq=FALSE,
   xlim=c(-5*madv, 5*madv), xlab="", ylab="",
   main="VTI Return Distribution")
 # Draw kernel density of histogram
@@ -224,7 +224,7 @@ c(mean(returns), sd(returns))
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
 madv <- mad(returns)
-histo_gram <- hist(returns, breaks=100,
+histp <- hist(returns, breaks=100,
   main="", xlim=c(-5*madv, 5*madv),
   xlab="", ylab="", freq=FALSE)
 # Draw kernel density of histogram
@@ -259,6 +259,8 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
       \vskip1ex
       The \emph{p}-value of the \emph{Shapiro-Wilk} test is very close to zero, which shows that the \emph{VTI} returns are very unlikely to be normal.
       \vskip1ex
+      The function \texttt{shapiro.test()} performs the \emph{Shapiro-Wilk} test of normality.
+      \vskip1ex
       The function \texttt{qqnorm()} produces a normal \emph{Q-Q} plot.
       \vskip1ex
       The function \texttt{qqline()} fits a line to the normal quantiles.
@@ -269,7 +271,7 @@ qqnorm(returns, ylim=c(-0.1, 0.1), main="VTI Q-Q Plot",
 # Fit a line to the normal quantiles
 qqline(returns, col="red", lwd=2)
 # Perform Shapiro-Wilk test
-shapiro.test(as.numeric(returns))
+shapiro.test(returns)
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/qq_plot.png}
@@ -476,15 +478,15 @@ sd(datav)/sqrt(nrows)
       \vskip1ex
       The function \texttt{dnorm()} calculates the \emph{Normal} probability density.
       <<echo=TRUE,eval=FALSE>>=
-x_var <- seq(-5, 7, length=100)
-y_var <- dnorm(x_var, mean=1.0, sd=2.0)
-plot(x_var, y_var, type="l", lty="solid", xlab="", ylab="")
+xvar <- seq(-5, 7, length=100)
+yvar <- dnorm(xvar, mean=1.0, sd=2.0)
+plot(xvar, yvar, type="l", lty="solid", xlab="", ylab="")
 title(main="Normal Density Function", line=0.5)
-startd <- 3; fin_ish <- 5  # Set lower and upper bounds
-# Plot polygon area
-are_a <- ((x_var >= startd) & (x_var <= fin_ish))
-polygon(c(startd, x_var[are_a], fin_ish),
-        c(-1, y_var[are_a], -1), col="red")
+startp <- 3; endp <- 5  # Set lower and upper bounds
+# Set polygon base
+subv <- ((xvar >= startp) & (xvar <= endp))
+polygon(c(startp, xvar[subv], endp),  # Draw polygon
+        c(-1, yvar[subv], -1), col="red")
       @
     \column{0.5\textwidth}
     \includegraphics[width=0.45\paperwidth]{figure/norm_dist}
@@ -508,7 +510,7 @@ sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
 # Create plot colors
 colors <- c("red", "black", "blue", "green")
 # Create legend labels
-lab_els <- paste("sigma", sigmavs, sep="=")
+labelv <- paste("sigma", sigmavs, sep="=")
 for (indeks in 1:4) {  # Plot four curves
   curve(expr=dnorm(x, sd=sigmavs[indeks]),
         xlim=c(-4, 4), xlab="", ylab="", lwd=2,
@@ -518,7 +520,7 @@ for (indeks in 1:4) {  # Plot four curves
 title(main="Normal Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, title="Sigmas",
-       lab_els, cex=0.8, lwd=2, lty=1, bty="n", col=colors)
+       labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colors)
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/norm_dist_mult_curves-1}
@@ -551,7 +553,7 @@ x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 deg_free <- c(3, 6, 9)  # Df values
 colors <- c("black", "red", "blue", "green")
-lab_els <- c("normal", paste("df", deg_free, sep="="))
+labelv <- c("normal", paste("df", deg_free, sep="="))
 # Plot a Normal probability distribution
 curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
 for (indeks in 1:3) {  # Plot three t-distributions
@@ -568,7 +570,7 @@ for (indeks in 1:3) {  # Plot three t-distributions
 title(main="t-distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n",
-       title="Degrees\n of freedom", lab_els,
+       title="Degrees\n of freedom", labelv,
        cex=0.8, lwd=6, lty=1, col=colors)
       @
   \end{columns}
@@ -632,6 +634,293 @@ legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
 
 
 %%%%%%%%%%%%%%%
+\subsection{Non-standard Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The non-standard Student's \emph{t-distribution} has the probability density function:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{t - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+       It has non-zero mean equal to the location parameter $\mu$, and a standard deviation proportional to the scale parameter $\sigma$.
+        <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# x11(width=6, height=5)
+# Define density of non-standard t-distribution
+tdistr <- function(x, dfree, loc=0, scalev=1) {
+  dt((x-loc)/scalev, df=dfree)/scalev
+}  # end tdistr
+# Or
+tdistr <- function(x, dfree, loc=0, scalev=1) {
+  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scalev)*
+    (1+((x-loc)/scalev)^2/dfree)^(-(dfree+1)/2)
+}  # end tdistr
+# Calculate vector of scale values
+scalev <- c(0.5, 1.0, 2.0)
+colors <- c("blue", "black", "red")
+labelv <- paste("scale", format(scalev, digits=2), sep="=")
+# Plot three t-distributions
+for (indeks in 1:3) {
+  curve(expr=tdistr(x, dfree=3, scalev=scalev[indeks]), xlim=c(-3, 3),
+        xlab="", ylab="", lwd=2, col=colors[indeks], add=(indeks>1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_scale.png}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="t-distributions with Different Scale Parameters", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n", title="Scale Parameters", labelv,
+       cex=0.8, lwd=6, lty=1, col=colors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Shapiro-Wilk} Test of Normality}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Shapiro-Wilk} test is designed to test the \emph{null hypothesis} that a sample: $\{x1, \ldots, x_n\}$ is from a normally distributed population.
+      \vskip1ex
+      The test statistic is equal to:
+      \begin{displaymath}
+        W = \frac {(\sum_{i=1}^n a_i x_{(i)})^2} {\sum_{i=1}^n (x_i-\bar{x})^2}
+      \end{displaymath}
+      Where the: $\{a1, \ldots, a_n\}$ are proportional to the \emph{order statistics} of random variables from the normal distribution.
+      \vskip1ex
+      $x_{(k)}$ is the \emph{k}-th \emph{order statistic}, and is equal to the \emph{k}-th smallest value in the sample: $\{x1, \ldots, x_n\}$.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} statistic follows its own distribution, and is less than or equal to $1$.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} statistic is close to $1$ for samples from normal distributions.
+      \vskip1ex
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} test is not reliable for large sample sizes, so it's limited to less than \texttt{5000} sample size.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Calculate VTI percentage returns
+library(rutils)
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))[1:4999]
+# Reduce number of output digits
+ndigits <- options(digits=5)
+# Shapiro-Wilk test for normal distribution
+nrows <- NROW(returns)
+shapiro.test(rnorm(nrows))
+# Shapiro-Wilk test for VTI returns
+shapiro.test(returns)
+# Shapiro-Wilk test for uniform distribution
+shapiro.test(runif(nrows))
+# Restore output digits
+options(digits=ndigits$digits)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Jarque-Bera} Test of Normality}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Jarque-Bera} test is designed to test the \emph{null hypothesis} that a sample: $\{x1, \ldots, x_n\}$ is from a normally distributed population.
+      \vskip1ex
+      The test statistic is equal to:
+      \begin{displaymath}
+        JB = \frac{n}{6} (\varsigma^2 + \frac{1}{4} (\kappa - 3)^2)
+      \end{displaymath}
+      Where the \emph{skewness} and \emph{kurtosis} are defined as:
+      \begin{align*}
+        \varsigma = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
+      &&
+        \kappa = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+      \end{align*}
+      The \emph{Jarque-Bera} statistic asymptotically follows the \emph{chi-squared} distribution with  \texttt{2} degrees of freedom.
+      \vskip1ex
+      The \emph{Jarque-Bera} statistic is small for samples from normal distributions.
+      \vskip1ex
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+library(tseries)  # Load package tseries
+# Jarque-Bera test for normal distribution
+jarque.bera.test(rnorm(nrows))
+# Jarque-Bera test for VTI returns
+jarque.bera.test(returns)
+# Jarque-Bera test for uniform distribution
+jarque.bera.test(runif(NROW(returns)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kolmogorov-Smirnov} test \emph{null hypothesis} is that two samples: $\{x1, \ldots , x_n\}$ and $\{y1, \ldots , y_n\}$ were obtained from the same probability distribution.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} statistic depends on the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
+      \begin{displaymath}
+        D = \sup_i | P(x_i) - P(y_i) |
+      \end{displaymath}
+      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The second argument to \texttt{ks.test()} can be either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# KS test for normal distribution
+ks_test <- ks.test(rnorm(100), pnorm)
+ks_test$p.value
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two shifted normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, sd=2.0))
+# KS test for VTI returns vs normal distribution
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
+returns <- (returns - mean(returns))/sd(returns)
+ks.test(returns, pnorm)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Chi-squared} Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
+      \vskip1ex
+      Then the random variable $X = \sum_{i=1}^k z^2_i$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      \begin{displaymath}
+        f(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
+      \end{displaymath}
+      \vskip1ex
+      The \emph{Chi-squared} distribution with $k$ degrees of freedom has mean equal to $k$ and variance equal to $2k$.
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Degrees of freedom
+deg_free <- c(2, 5, 8, 11)
+# Plot four curves in loop
+colors <- c("red", "black", "blue", "green")
+for (indeks in 1:4) {
+  curve(expr=dchisq(x, df=deg_free[indeks]),
+        xlim=c(0, 20), ylim=c(0, 0.3),
+        xlab="", ylab="", col=colors[indeks],
+        lwd=2, add=as.logical(indeks-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chisq_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="Chi-squared Distributions", line=0.5)
+# Add legend
+labelv <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, bty="n",
+       title="Degrees of freedom", labelv,
+       cex=0.8, lwd=6, lty=1, col=colors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Chi-squared} Test for the Goodness of Fit}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Goodness of Fit} tests are designed to test if a set of observations fits an assumed theoretical probability distribution.
+      \vskip1ex
+      The \emph{Chi-squared} test tests if a frequency of counts fits the specified distribution.
+      \vskip1ex
+      The \emph{Chi-squared} statistic is the sum of squared differences between the observed frequencies $o_i$ and the theoretical frequencies $p_i$:
+      \begin{displaymath}
+        \chi^2 = N \sum_{i=1}^{n} {\frac{(o_i - p_i )^2}{p_i}}
+      \end{displaymath}
+      Where $N$ is the total number of observations.
+      \vskip1ex
+      The \emph{null hypothesis} is that the observed frequencies are consistent with the theoretical distribution.
+      \vskip1ex
+      The function \texttt{chisq.test()} performs the \emph{Chi-squared} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} in the function \texttt{hist()} should be chosen large enough to capture the shape of the frequency distribution.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Observed frequencies from random normal data
+histp <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
+countsn <- histp$counts
+# Theoretical frequencies
+countst <- rutils::diffit(pnorm(histp$breaks))
+# Perform Chi-squared test for normal data
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+# Return p-value
+chisq_test <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+chisq_test$p.value
+# Observed frequencies from shifted normal data
+histp <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
+countsn <- histp$counts/sum(histp$counts)
+# Theoretical frequencies
+countst <- rutils::diffit(pnorm(histp$breaks))
+# Perform Chi-squared test for shifted normal data
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+# Calculate histogram of VTI returns
+histp <- hist(returns, breaks=100, plot=FALSE)
+countsn <- histp$counts
+# Calculate cumulative probabilities and then difference them
+countst <- pt((histp$breaks-loc)/scalev, df=2)
+countst <- rutils::diffit(countst)
+# Perform Chi-squared test for VTI returns
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{The Likelihood Function of Student's \protect\emph{t-distribution}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -656,18 +945,18 @@ legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
+# Objective function from function dt()
+likefun <- function(par, dfree, data) {
+  -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
+}  # end likefun
+# Demonstrate equivalence with log(dt())
+likefun(c(1, 0.5), 2, 2:5)
+-sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
 # Objective function is negative log-likelihood
-likeli_hood <- function(par, dfree, data) {
+likefun <- function(par, dfree, data) {
   sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
     log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
-}  # end likeli_hood
-# Demonstrate equivalence with log(dt())
-likeli_hood(c(1, 0.5), 2, 2:5)
--sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
-# Simpler objective function
-likeli_hood <- function(par, dfree, data) {
-  -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
-}  # end likeli_hood
+}  # end likefun
       @
       The \emph{likelihood} function measures how \emph{likely} are the parameters, given the observed values $\bar{x}$.
       \vskip1ex
@@ -696,31 +985,32 @@ likeli_hood <- function(par, dfree, data) {
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
-# Initial parameters
-par_init <- c(mean=0, scale=0.01)
-# Fit distribution using optim()
-optim_fit <- optim(par=par_init,
-  fn=likeli_hood, # Log-likelihood function
-  data=returns,
-  dfree=2, # Degrees of freedom
-  method="L-BFGS-B", # Quasi-Newton method
-  upper=c(1, 0.1), # Upper constraint
-  lower=c(-1, 1e-7)) # Lower constraint
-# Optimal parameters
-lo_cation <- optim_fit$par["mean"]
-scalit <- optim_fit$par["scale"]
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
 # Fit VTI returns using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(returns, densfun="t", df=2)
+optim_fit <- MASS::fitdistr(returns, densfun="t", df=3)
 summary(optim_fit)
 # Fitted parameters
 optim_fit$estimate
-lo_cation <- optim_fit$estimate[1]
-scalit <- optim_fit$estimate[2]
+loc <- optim_fit$estimate[1]
+scalev <- optim_fit$estimate[2]
+loc; scalev
 # Standard errors of parameters
 optim_fit$sd
 # Log-likelihood value
 optim_fit$value
+# Fit distribution using optim()
+initp <- c(mean=0, scale=0.01)  # Initial parameters
+optim_fit <- optim(par=initp,
+  fn=likefun, # Log-likelihood function
+  data=returns,
+  dfree=3, # Degrees of freedom
+  method="L-BFGS-B", # Quasi-Newton method
+  upper=c(1, 0.1), # Upper constraint
+  lower=c(-1, 1e-7)) # Lower constraint
+# Optimal parameters
+loc <- optim_fit$par["mean"]
+scalev <- optim_fit$par["scale"]
+loc; scalev
       @
   \end{columns}
 \end{block}
@@ -737,23 +1027,29 @@ optim_fit$value
     \column{0.5\textwidth}
       Asset returns typically exhibit \emph{negative skewness} and \emph{large kurtosis} (leptokurtosis), or fat tails.
       \vskip1ex
+      Stock returns fit the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom quite well.
+      \vskip1ex
       The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
       \vskip1ex
       The parameter \texttt{breaks} is the number of cells of the histogram.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+        <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# x11(width=6, height=5)
 # Plot histogram of VTI returns
-histo_gram <- hist(returns, col="lightgrey",
-  xlab="returns", breaks=100, xlim=c(-0.05, 0.05),
-  ylab="frequency", freq=FALSE, main="VTI Returns Histogram")
+madv <- mad(returns)
+histp <- hist(returns, col="lightgrey",
+  xlab="returns", breaks=100, xlim=c(-5*madv, 5*madv),
+  ylab="frequency", freq=FALSE, main="Histogram of VTI Returns")
 lines(density(returns, adjust=1.5), lwd=3, col="blue")
 # Plot the Normal probability distribution
 curve(expr=dnorm(x, mean=mean(returns),
   sd=sd(returns)), add=TRUE, lwd=3, col="green")
+# Define non-standard t-distribution
+tdistr <- function(x, dfree, loc=0, scalev=1) {
+  dt((x-loc)/scalev, df=dfree)/scalev
+}  # end tdistr
 # Plot t-distribution function
-curve(expr=dt((x-lo_cation)/scalit, df=2)/scalit,
-      type="l", lwd=3, col="red", add=TRUE)
+curve(expr=tdistr(x, dfree=3, loc=loc, scalev=scalev), col="red", lwd=3, add=TRUE)
 # Add legend
 legend("topright", inset=0.05, bty="n",
   leg=c("density", "t-distr", "normal"),
@@ -761,6 +1057,56 @@ legend("topright", inset=0.05, bty="n",
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/t_dist_rets.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%
+\subsection{Goodness of Fit of Student's \protect\emph{t-distribution} Fitted to Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Q-Q} plot illustrates the relative distributions of two samples of data.
+      \vskip1ex
+      The \emph{Q-Q} plot shows that stock returns fit the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom quite well.
+      \vskip1ex
+      The function \texttt{qqplot()} produces a \emph{Q-Q} plot for two samples of data.
+      \vskip1ex
+      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test for the similarity of two distributions.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{Kolmogorov-Smirnov} test is that the two samples were obtained from the same probability distribution.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test rejects the \emph{null hypothesis} that stock returns follow closely the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate sample from non-standard t-distribution with df=3
+tdata <- scalev*rt(NROW(returns), df=3) + loc
+# Q-Q plot of VTI Returns vs non-standard t-distribution
+qqplot(tdata, returns, xlab="t-Dist Quantiles", ylab="VTI Quantiles", 
+       main="Q-Q plot of VTI Returns vs Student's t-distribution")
+# Calculate quartiles of the distributions
+probs <- c(0.25, 0.75)
+qrets <- quantile(returns, probs)
+qtdata <- quantile(tdata, probs)
+# Calculate slope and plot line connecting quartiles
+slope <- diff(qrets)/diff(qtdata)
+intercept <- qrets[1]-slope*qtdata[1]
+abline(intercept, slope, lwd=2, col="red")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_qq.png}
+        <<echo=TRUE,eval=FALSE>>=
+# KS test for VTI returns vs t-distribution data
+ks.test(returns, tdata)
+# Define cumulative distribution of non-standard t-distribution
+ptdistr <- function(x, dfree, loc=0, scalev=1) {
+  pt((x-loc)/scalev, df=dfree)
+}  # end ptdistr
+# KS test for VTI returns vs cumulative t-distribution
+ks.test(sample(returns, replace=TRUE), ptdistr, dfree=3, loc=loc, scalev=scalev)
+      @
   \end{columns}
 \end{block}
 
@@ -796,14 +1142,14 @@ legend("topright", inset=0.05, bty="n",
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot histogram of VTI returns
-histo_gram <- hist(returns, breaks=100, plot=FALSE)
-plot(histo_gram, xlab="returns", ylab="frequency",
+histp <- hist(returns, breaks=100, plot=FALSE)
+plot(histp, xlab="returns", ylab="frequency",
      col="lightgrey", freq=FALSE, main="VTI Left Tail Returns Histogram",
      xlim=c(min(returns), -0.02),
-     ylim=c(0.0, histo_gram$density[findInterval(-0.02, histo_gram$breaks)]))
+     ylim=c(0.0, histp$density[findInterval(-0.02, histp$breaks)]))
 lines(density(returns, adjust=1.5), lwd=4, col="blue")
 # Plot t-distribution function
-curve(expr=dt((x-lo_cation)/scalit, df=2)/scalit, type="l", lwd=4, col="red", add=TRUE)
+curve(expr=dt((x-loc)/scalev, df=2)/scalev, type="l", lwd=4, col="red", add=TRUE)
 # Plot the Normal probability distribution
 curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)), add=TRUE, lwd=4, col="green")
 # Add legend
@@ -842,7 +1188,7 @@ variance[1:look_back, ] <- variance[look_back+1, ]
 # Calculate rolling average volume
 volume_roll <- HighFreq::roll_vec(volumes, look_back=look_back)/look_back
 # dygraph plot of VTI variance and trading volumes
-datav <- xts::xts(cbind(variance, volume_roll), index(ohlc))
+datav <- xts::xts(cbind(variance, volume_roll), zoo::index(ohlc))
 colnamev <- c("variance", "volume")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav, main="VTI Variance and Trading Volumes") %>%
@@ -876,7 +1222,8 @@ dygraphs::dygraph(datav, main="VTI Variance and Trading Volumes") %>%
       The scaled returns have a more positive \emph{skewness} and a smaller \emph{kurtosis} than unscaled returns.
       <<echo=TRUE,eval=FALSE>>=
 # Scale returns using volume (volume clock)
-rets_scaled <- ifelse(volumes > 0, sqrt(volume_roll)*returns/sqrt(volumes), 0)
+rets_scaled <- ifelse(volumes > 0, 
+  sqrt(volume_roll)*returns/sqrt(volumes), 0)
 rets_scaled <- sd(returns)*rets_scaled/sd(rets_scaled)
 # rets_scaled <- ifelse(volumes > 1e4, returns/volumes, 0)
 # Calculate moments of scaled returns
@@ -940,271 +1287,6 @@ quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
         f(x) \propto {\left| x \right|}^{-(\nu+1)} \qquad (with \; \nu > 1)
       \end{displaymath}
       Tend to the \emph{standard normal} distribution $\phi(0, 1)$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Shapiro-Wilk} Test of Normality}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Shapiro-Wilk} test is designed to test the \emph{null hypothesis} that a sample: $\{x1, \ldots, x_n\}$ is from a normally distributed population.
-      \vskip1ex
-      The test statistic is equal to:
-      \begin{displaymath}
-        W = \frac {(\sum_{i=1}^n a_i x_{(i)})^2} {\sum_{i=1}^n (x_i-\bar{x})^2}
-      \end{displaymath}
-      Where the: $\{a1, \ldots, a_n\}$ are proportional to the \emph{order statistics} of random variables from the normal distribution.
-      \vskip1ex
-      $x_{(k)}$ is the \emph{k}-th \emph{order statistic}, and is equal to the \emph{k}-th smallest value in the sample: $\{x1, \ldots, x_n\}$.
-      \vskip1ex
-      The \emph{Shapiro-Wilk} statistic follows its own distribution, and is less than or equal to $1$.
-      \vskip1ex
-      The \emph{Shapiro-Wilk} statistic is close to $1$ for samples from normal distributions.
-      \vskip1ex
-      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# Calculate VTI percentage returns
-library(rutils)
-returns <- na.omit(rutils::etfenv$returns$VTI)
-# Reset output digits
-dig_its <- options(digits=5)
-# Shapiro-Wilk test for normal distribution
-shapiro.test(rnorm(NROW(returns)))
-# Shapiro-Wilk test for VTI returns
-shapiro.test(as.numeric(returns))
-# Shapiro-Wilk test for uniform distribution
-shapiro.test(runif(NROW(returns)))
-# Restore output digits
-options(digits=dig_its$digits)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Jarque-Bera} Test of Normality}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Jarque-Bera} test is designed to test the \emph{null hypothesis} that a sample: $\{x1, \ldots, x_n\}$ is from a normally distributed population.
-      \vskip1ex
-      The test statistic is equal to:
-      \begin{displaymath}
-        JB = \frac{n}{6} (\varsigma^2 + \frac{1}{4} (\kappa - 3)^2)
-      \end{displaymath}
-      Where the \emph{skewness} and \emph{kurtosis} are defined as:
-      \begin{align*}
-        \varsigma = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
-      &&
-        \kappa = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
-      \end{align*}
-      The \emph{Jarque-Bera} statistic asymptotically follows the \emph{chi-squared} distribution with two degrees of freedom.
-      \vskip1ex
-      The \emph{Jarque-Bera} statistic is small for samples from normal distributions.
-      \vskip1ex
-      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-library(tseries)  # Load package tseries
-# Jarque-Bera test for normal distribution
-jarque.bera.test(rnorm(NROW(returns)))
-# Jarque-Bera test for VTI returns
-jarque.bera.test(returns)
-# Jarque-Bera test for uniform distribution
-jarque.bera.test(runif(NROW(returns)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Needs more work: KS test for VTI returns vs t-distribution
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x1, \ldots , x_n\}$ and $\{y1, \ldots , y_n\}$ were obtained from the same probability distribution.
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
-      \begin{displaymath}
-        D = \sup_i | P(x_i) - P(y_i) |
-      \end{displaymath}
-      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
-      \vskip1ex
-      The second argument is either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# KS test for normal distribution
-ks_test <- ks.test(rnorm(100), pnorm)
-ks_test$p.value
-# KS test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, sd=2.0))
-# KS test for VTI returns vs normal distribution
-returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
-returns <- (returns - mean(returns))/sd(returns)
-ks.test(returns, rnorm)
-# Fit t-dist into VTI returns
-optim_fit <- MASS::fitdistr(returns, densfun="t", df=2)
-lo_cation <- optim_fit$estimate[1]
-scalit <- optim_fit$estimate[2]
-# KS test for VTI returns vs t-distribution
-# define non-standard Student’s t-distribution
-tdistr <- function(x, dfree, loc, scale) {
-  dt((x-loc)/scale, df=dfree)/scale
-}  # end likeli_hood
-# tdistr(x=returns[1], dfree=2, loc=lo_cation, scale=scalit)
-# Plot shows that tdistr() fits returns very well
-densityv <- density(returns)
-madv <- mad(returns)
-plot(densityv, xlim=c(-5*madv, 5*madv),
-     xlab="returns", ylab="density",
-     col="blue", lwd=2, main="Density of VTI Returns")
-curve(expr=tdistr(x, dfree=2, loc=lo_cation, scale=scalit), col="red", lwd=2, add=TRUE)
-# Or
-tdistr <- function(x, dfree, loc, scale) {
-  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scale)*
-    (1+((x-loc)/scale)^2/dfree)^(-(dfree+1)/2)
-}  # end likeli_hood
-# tdistr(x=returns[1], dfree=2, loc=lo_cation, scale=scalit)
-
-# Not the same as the below - gives p-value << 0.01 - rejects NULL
-ks.test(returns, tdistr, dfree=2, loc=lo_cation, scale=scalit)
-
-# Not the same as the above - gives p-value > 0.02 most of the time - doesn't reject NULL
-# KS test for VTI returns vs t-distribution
-datav <- lo_cation + scalit*rt(NROW(returns), df=2)
-ks.test(returns, datav)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Chi-squared} Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $z1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
-      \vskip1ex
-      Then the random variable $X = \sum_{i=1}^k z^2_i$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
-      \begin{displaymath}
-        f(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
-      \end{displaymath}
-      \vskip1ex
-      The \emph{Chi-squared} distribution with $k$ degrees of freedom has mean equal to $k$ and variance equal to $2k$.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Degrees of freedom
-deg_free <- c(2, 5, 8, 11)
-# Plot four curves in loop
-colors <- c("red", "black", "blue", "green")
-for (indeks in 1:4) {
-  curve(expr=dchisq(x, df=deg_free[indeks]),
-        xlim=c(0, 20), ylim=c(0, 0.3),
-        xlab="", ylab="", col=colors[indeks],
-        lwd=2, add=as.logical(indeks-1))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/chisq_dist_mult.png}\\
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Add title
-title(main="Chi-squared Distributions", line=0.5)
-# Add legend
-lab_els <- paste("df", deg_free, sep="=")
-legend("topright", inset=0.05, bty="n",
-       title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=1, col=colors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Chi-squared} Test for the Goodness of Fit}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Goodness of Fit} tests are designed to test if a set of observations fits an assumed theoretical probability distribution.
-      \vskip1ex
-      The \emph{Chi-squared} test tests if a frequency of counts fits the specified distribution.
-      \vskip1ex
-      The \emph{Chi-squared} statistic is the sum of squared differences between the observed frequencies $o_i$ and the theoretical frequencies $p_i$:
-      \begin{displaymath}
-        \chi^2 = N \sum_{i=1}^{n} {\frac{(o_i - p_i )^2}{p_i}}
-      \end{displaymath}
-      Where $N$ is the total number of observations.
-      \vskip1ex
-      The \emph{null hypothesis} is that the observed frequencies are consistent with the theoretical distribution.
-      \vskip1ex
-      The function \texttt{chisq.test()} performs the \emph{Chi-squared} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
-      \vskip1ex
-      The parameter \texttt{breaks} in the function \texttt{hist()} should be chosen large enough to capture the shape of the frequency distribution.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Observed frequencies from random normal data
-histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
-freq_o <- histo_gram$counts
-# Theoretical frequencies
-freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
-# Perform Chi-squared test for normal data
-chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
-# Return p-value
-chisq_test <- chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
-chisq_test$p.value
-# Observed frequencies from shifted normal data
-histo_gram <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
-freq_o <- histo_gram$counts/sum(histo_gram$counts)
-# Theoretical frequencies
-freq_t <- rutils::diffit(pnorm(histo_gram$breaks))
-# Perform Chi-squared test for shifted normal data
-chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
-# Calculate histogram of VTI returns
-histo_gram <- hist(returns, breaks=100, plot=FALSE)
-freq_o <- histo_gram$counts
-# Calculate cumulative probabilities and then difference them
-freq_t <- pt((histo_gram$breaks-lo_cation)/scalit, df=2)
-freq_t <- rutils::diffit(freq_t)
-# Perform Chi-squared test for VTI returns
-chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
-      @
   \end{columns}
 \end{block}
 
@@ -1340,7 +1422,7 @@ legend("topright", inset=0.05, bty="n",
 returns <- rutils::etfenv$returns[,
   c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")]
 x11(width=6, height=5)
-chart.Boxplot(namesv=FALSE, returns)
+chart.Boxplot(names=FALSE, returns)
 par(cex.lab=0.8, cex.axis=0.8)
 axis(side=2, at=(1:NCOL(returns))/7.5-0.05,labels=colnames(returns))
       @
@@ -1395,8 +1477,8 @@ apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
-numcores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(numcores)  # Initialize compute cluster
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster
 boot_data <- parLapply(cluster, 1:10000,
   function(x, datav) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
@@ -1406,7 +1488,7 @@ boot_data <- parLapply(cluster, 1:10000,
 boot_data <- mclapply(1:10000, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
-  }, mc.cores=numcores)  # end mclapply
+  }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
@@ -1463,8 +1545,8 @@ boot_data <- t(boot_data)
   c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
-numcores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(numcores)  # Initialize compute cluster
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster
 clusterExport(cluster, c("nrows", "returns"))
 boot_data <- parLapply(cluster, 1:10000,
   function(x) {
@@ -1475,7 +1557,7 @@ boot_data <- parLapply(cluster, 1:10000,
 boot_data <- mclapply(1:10000, function(x) {
     samplev <- returns[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
-  }, mc.cores=numcores)  # end mclapply
+  }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
@@ -1521,7 +1603,7 @@ returns_sub <- returns_sub[returns_sub < 0]
 nrows <- NROW(returns_sub)
 # Calculate the downside deviation
 all.equal(sqrt(sum(returns_sub^2)/nrows),
-  DownsideDeviation(returns, MAR=targetr, method="subset"))
+  drop(DownsideDeviation(returns, MAR=targetr, method="subset")))
       @
   \end{columns}
 \end{block}
@@ -1550,8 +1632,8 @@ index_min <- which.min(draw_downs)
 date_min <- dates[index_min]
 max_drawdown <- draw_downs[date_min]
 # Calculate the drawdown start and end dates
-datestart <- max(dates[(dates < date_min) & (draw_downs == 0)])
-date_end <- min(dates[(dates > date_min) & (draw_downs == 0)])
+startd <- max(dates[(dates < date_min) & (draw_downs == 0)])
+endd <- min(dates[(dates > date_min) & (draw_downs == 0)])
 # dygraph plot of VTI drawdowns
 datav <- cbind(closep, draw_downs)
 colnamev <- c("VTI", "Drawdowns")
@@ -1562,9 +1644,9 @@ dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
          valueRange=(1.2*range(draw_downs)+0.1), independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red") %>%
-  dyEvent(datestart, "start drawdown", col="blue") %>%
+  dyEvent(startd, "start drawdown", col="blue") %>%
   dyEvent(date_min, "max drawdown", col="red") %>%
-  dyEvent(date_end, "end drawdown", col="green")
+  dyEvent(endd, "end drawdown", col="green")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1575,14 +1657,14 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue")
 x11(width=6, height=5)
 quantmod::chart_Series(x=closep, name="VTI Drawdowns", theme=plot_theme)
-xval <- match(datestart, dates)
+xval <- match(startd, dates)
 yval <- max(closep)
 abline(v=xval, col="blue")
 text(x=xval, y=0.95*yval, "start drawdown", col="blue", cex=0.9)
 xval <- match(date_min, dates)
 abline(v=xval, col="red")
 text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
-xval <- match(date_end, dates)
+xval <- match(endd, dates)
 abline(v=xval, col="green")
 text(x=xval, y=0.85*yval, "end drawdown", col="green", cex=0.9)
       @
@@ -1679,7 +1761,7 @@ cvar <- mean(returns[returns < varisk])
 # Plot histogram of VTI returns
 x11(width=6, height=5)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
-histo_gram <- hist(returns, col="lightgrey",
+histp <- hist(returns, col="lightgrey",
   xlab="returns", ylab="frequency", breaks=100,
   xlim=c(-0.05, 0.01), freq=FALSE, main="VTI Returns Histogram")
 # Calculate density
@@ -1907,7 +1989,7 @@ text(x=risk_ret$Skewness, y=risk_ret$Kurtosis,
           labels=risk_ret$Name, pos=1, cex=0.8)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/etf_skewsharp.png}
+      \includegraphics[width=0.45\paperwidth]{figure/etf_skew_sharp.png}
       % \includegraphics[width=0.45\paperwidth]{figure/etf_skew_kurtosis.png}
   \end{columns}
 \end{block}
@@ -1944,7 +2026,7 @@ sum(is.na(returns))
 high_skew <- rowMeans(returns[, high_skew])
 low_skew <- rowMeans(returns[, low_skew])
 wealth <- cbind(high_skew, low_skew)
-wealth <- xts::xts(wealth, index(returns))
+wealth <- xts::xts(wealth, zoo::index(returns))
 wealth <- cumsum(wealth)
 # dygraph plot of high skew and low skew ETFs
 colnamev <- colnames(wealth)
@@ -1978,7 +2060,7 @@ nrows <- NROW(namesv)
 # Select high skew and low skew ETFs
 cutoff <- NROW(risk_ret %/% 2)
 low_skew <- namesv[1:cutoff]
-high_skew <- namesv[(cutoff+1)/nrows]
+high_skew <- namesv[(cutoff+1):nrows]
 
 # low_skew <- namesv[1:50]
 # Calculate returns and log prices
@@ -1987,7 +2069,7 @@ low_skew[1] <- 0
 high_skew <- rowMeans(returns[, high_skew], na.rm=TRUE)
 high_skew[1] <- 0
 wealth <- cbind(high_skew, low_skew)
-wealth <- xts::xts(wealth, index(returns))
+wealth <- xts::xts(wealth, zoo::index(returns))
 wealth <- cumsum(wealth)
 # dygraph plot of high skew and low skew ETFs
 colnamev <- colnames(wealth)
@@ -2083,9 +2165,9 @@ returns <- na.omit(rutils::etfenv$returns$VTI)
 returns <- drop(zoo::coredata(returns))
 nrows <- NROW(returns)
 # Calculate compounded VTI returns
-hold_p <- 252
-cumrets <- sqrt(hold_p)*sapply(1:nrows, function(x) {
-    mean(returns[sample.int(nrows, size=hold_p, replace=TRUE)])
+holdp <- 252
+cumrets <- sqrt(holdp)*sapply(1:nrows, function(x) {
+    mean(returns[sample.int(nrows, size=holdp, replace=TRUE)])
 })  # end sapply
 # Calculate mean, standard deviation, skewness, and kurtosis
 datav <- cbind(returns, cumrets)
@@ -2102,7 +2184,7 @@ sapply(colnames(datav), function(name) {
   varisk <- unname(quantile(x, probs=confl))
   cvar <- mean(x[x < varisk])
   ratio <- 1
-  if (name == colnames(datav)[2]) {ratio <- hold_p}
+  if (name == colnames(datav)[2]) {ratio <- holdp}
   sqrt(252/ratio)*mean(x)/c(Sharpe=stddev, Dowd=-varisk, DowdC=-cvar)
 })  # end sapply
       @
@@ -2225,7 +2307,7 @@ data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
       \vskip1ex
       The function \texttt{filter()} with the argument \texttt{method="convolution"} calculates the \emph{convolution} of the vector $r_i$ with the filter $\varphi_i$:
       \begin{displaymath}
-        f_i = \varphi1 r_{i-1} + \varphi2 r_{i-2} + \ldots + \varphi_p r_{i-p}
+        f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p}
       \end{displaymath}
       Where $f_i$ is the filtered output vector, and $\varphi_i$ are the filter coefficients.
       \vskip1ex
@@ -2285,7 +2367,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The function \texttt{filter()} with \texttt{method="recursive"} calls the function \texttt{stats:::C\_rfilter()} to calculate the \emph{recursive filter} as follows:
       \begin{displaymath}
-        r_i = \varphi1 r_{i-1} + \varphi2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
       \end{displaymath}
       Where $r_i$ is the filtered output vector, $\varphi_i$ are the filter coefficients, and $\xi_i$ are standard normal \emph{innovations}.
       \vskip1ex
@@ -2300,23 +2382,23 @@ summary(microbenchmark(
 nrows <- NROW(closep)
 # Calculate ARIMA coefficients and innovations
 coeff <- weights/4
-n_coeff <- NROW(coeff)
+ncoeff <- NROW(coeff)
 innov <- rnorm(nrows)
 arimav <- filter(x=innov, filter=coeff, method="recursive")
 # Get information about C_rfilter()
 getAnywhere(C_rfilter)
 # Filter using C_rfilter() compiled C++ function directly
 arima_fast <- .Call(stats:::C_rfilter, innov, coeff,
-                    double(n_coeff + nrows))
-all.equal(as.numeric(arimav), arima_fast[-(1:n_coeff)], 
+                    double(ncoeff + nrows))
+all.equal(as.numeric(arimav), arima_fast[-(1:ncoeff)], 
           check.attributes=FALSE)
 # Filter using C++ code
 arima_fastest <- HighFreq::sim_arima(innov, rev(coeff))
-all.equal(arima_fast[-(1:n_coeff)], drop(arima_fastest))
+all.equal(arima_fast[-(1:ncoeff)], drop(arima_fastest))
 # Benchmark speed of the three methods
 summary(microbenchmark(
   filter=filter(x=innov, filter=coeff, method="recursive"),
-  filter_fast=.Call(stats:::C_rfilter, innov, coeff, double(n_coeff + nrows)),
+  filter_fast=.Call(stats:::C_rfilter, innov, coeff, double(ncoeff + nrows)),
   Rcpp=HighFreq::sim_arima(innov, rev(coeff))
   ), times=10)[, c(1, 4, 5)]
       @
@@ -2537,8 +2619,8 @@ lambda <- 0.9
 weights <- lambda^(1:look_back)
 weights <- weights/sum(weights)
 # Calculate EWMA prices as the convolution
-ew_ma <- HighFreq::roll_wsum(closep, weights=weights)
-prices <- cbind(closep, ew_ma)
+ewmap <- HighFreq::roll_wsum(closep, weights=weights)
+prices <- cbind(closep, ewmap)
 colnames(prices) <- c("VTI", "VTI EWMA")
       @
     \column{0.5\textwidth}
@@ -2593,8 +2675,8 @@ ewma_rfilter <- .Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])
 # ewma_rfilter <- filter(closep, filter=lambda, init=as.numeric(closep[1, 1])/(1-lambda), method="recursive")
 ewma_rfilter <- (1-lambda)*ewma_rfilter
 # Calculate EWMA prices recursively using RcppArmadillo
-ew_ma <- HighFreq::run_mean(closep, lambda=lambda)
-all.equal(drop(ew_ma), ewma_rfilter)
+ewmap <- HighFreq::run_mean(closep, lambda=lambda)
+all.equal(drop(ewmap), ewma_rfilter)
 # Compare the speed of C++ code with RcppArmadillo
 library(microbenchmark)
 summary(microbenchmark(
@@ -2607,7 +2689,7 @@ summary(microbenchmark(
       \includegraphics[width=0.4\paperwidth]{figure/ewma_recursive.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
-prices <- cbind(closep, ew_ma)
+prices <- cbind(closep, ewmap)
 colnames(prices) <- c("VTI", "VTI EWMA")
 colnamev <- colnames(prices)
 dygraphs::dygraph(prices["2009"], main="Recursive VTI EWMA Prices") %>%
@@ -3079,17 +3161,17 @@ dygraphs::dygraph(prices["2009"], main="VTI Price Z-Scores") %>%
       But it's not feasible to classify the prices out-of-sample exactly according to their in-sample labels.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate thresholds for labeling tops and bottoms
-threshold_s <- quantile(pricescores, c(0.1, 0.9))
+threshv <- quantile(pricescores, c(0.1, 0.9))
 # Calculate the vectors of tops and bottoms
-top_s <- (pricescores > threshold_s[2])
-colnames(top_s) <- "tops"
-bottom_s <- (pricescores < threshold_s[1])
-colnames(bottom_s) <- "bottoms"
+tops <- (pricescores > threshv[2])
+colnames(tops) <- "tops"
+bottoms <- (pricescores < threshv[1])
+colnames(bottoms) <- "bottoms"
 # Backtest in-sample VTI strategy
 position_s <- rep(NA_integer_, NROW(returns))
 position_s[1] <- 0
-position_s[top_s] <- (-1)
-position_s[bottom_s] <- 1
+position_s[tops] <- (-1)
+position_s[bottoms] <- 1
 position_s <- zoo::na.locf(position_s)
 position_s <- rutils::lagit(position_s)
 pnls <- cumsum(returns*position_s)
@@ -3204,7 +3286,7 @@ x11(width=6, height=5)
 dygraphs::dygraph(cbind(closep, medi_an), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Plot histogram of z-scores
-histo_gram <- hist(zscores, col="lightgrey",
+histp <- hist(zscores, col="lightgrey",
   xlab="z-scores", breaks=50, xlim=c(-4, 4),
   ylab="frequency", freq=FALSE, main="Hampel Z-scores histogram")
 lines(density(zscores, adjust=1.5), lwd=3, col="blue")
@@ -3604,18 +3686,18 @@ returns[1] <- 0
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 library(HighFreq)  # Load HighFreq
-sp_y <- HighFreq::SPY["2009"]
+spy <- HighFreq::SPY["2009"]
 # Calculate daily SPY volatility using package HighFreq
-sqrt(6.5*60*HighFreq::calc_var_ohlc(log(sp_y), 
+sqrt(6.5*60*HighFreq::calc_var_ohlc(log(spy), 
   method="yang_zhang"))
 # Calculate daily SPY volatility from minutely prices using package TTR
 sqrt((6.5*60)*mean(na.omit(
-  TTR::volatility(sp_y, N=1, calc="yang.zhang"))^2))
+  TTR::volatility(spy, N=1, calc="yang.zhang"))^2))
 # Calculate rolling SPY variance using package HighFreq
-variance <- HighFreq::roll_var_ohlc(log(sp_y), method="yang_zhang", 
+variance <- HighFreq::roll_var_ohlc(log(spy), method="yang_zhang", 
   look_back=look_back)
 # Plot range volatility
-variance <- xts:::xts(sqrt(variance), order.by=index(sp_y))
+variance <- xts:::xts(sqrt(variance), order.by=index(spy))
 dygraphs::dygraph(variance["2009-02"], 
   main="SPY Rolling Range Volatility") %>%
   dyOptions(colors="blue")
@@ -3646,14 +3728,14 @@ summary(microbenchmark(
       But \emph{VXX} prices exhibit a very strong downward trend which makes them hard to compare with the rolling volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VXX log prices
-vx_x <- na.omit(rutils::etfenv$prices$VXX)
-dates <- zoo::index(vx_x)
+vxx <- na.omit(rutils::etfenv$prices$VXX)
+dates <- zoo::index(vxx)
 look_back <- 41
-vx_x <- log(vx_x)
+vxx <- log(vxx)
 # Calculate rolling VTI volatility
 closep <- get("VTI", rutils::etfenv)[dates]
 closep <- log(closep)
-volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalit=FALSE))
+volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalev=FALSE))
 volat[1:look_back] <- volat[look_back+1]
       @
     \column{0.5\textwidth}
@@ -3662,7 +3744,7 @@ volat[1:look_back] <- volat[look_back+1]
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of VXX and VTI volatility
-datav <- cbind(vx_x, volat)
+datav <- cbind(vxx, volat)
 colnames(datav)[2] <- "VTI Volatility"
 colnamev <- colnames(datav)
 cap_tion <- "VXX and VTI Volatility"
@@ -3692,23 +3774,23 @@ dygraphs::dygraph(datav[, 1:2], main=cap_tion) %>%
       Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing larger variance spikes and higher kurtosis.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VXX log prices
-vx_x <- na.omit(rutils::etfenv$prices$VXX)
-dates <- zoo::index(vx_x)
+vxx <- na.omit(rutils::etfenv$prices$VXX)
+dates <- zoo::index(vxx)
 look_back <- 41
-vx_x <- log(vx_x)
-vx_x <- (vx_x - roll::roll_mean(vx_x, width=look_back))
-vx_x[1:look_back] <- vx_x[look_back+1]
+vxx <- log(vxx)
+vxx <- (vxx - roll::roll_mean(vxx, width=look_back))
+vxx[1:look_back] <- vxx[look_back+1]
 # Calculate rolling VTI volatility
 closep <- get("VTI", rutils::etfenv)[dates]
 closep <- log(closep)
-volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalit=FALSE))
+volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalev=FALSE))
 volat[1:look_back] <- volat[look_back+1]
 # Calculate regression coefficients of XLB ~ XLE
-betav <- drop(cov(vx_x, volat)/var(volat))
-alpha <- drop(mean(vx_x) - betav*mean(volat))
+betav <- drop(cov(vxx, volat)/var(volat))
+alpha <- drop(mean(vxx) - betav*mean(volat))
 # Calculate regression residuals
 fittedv <- (alpha + betav*volat)
-residuals <- (vx_x - fittedv)
+residuals <- (vxx - fittedv)
 # Perform ADF test on residuals
 tseries::adf.test(residuals, k=1)
       @
@@ -3718,7 +3800,7 @@ tseries::adf.test(residuals, k=1)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of VXX and VTI volatility
-datav <- cbind(vx_x, volat)
+datav <- cbind(vxx, volat)
 colnamev <- colnames(datav)
 cap_tion <- "VXX and VTI Volatility"
 dygraphs::dygraph(datav[, 1:2], main=cap_tion) %>%
@@ -3938,7 +4020,7 @@ quartz.save("figure/garch_volat.png", type="png",
       \vskip1ex
       Student's \emph{t-distribution} has fat tails, so it fits asset returns much better than the normal distribution.
       \vskip1ex
-      Student's \emph{t-distribution} with two degrees of freedom is often used to represent asset returns.
+      Student's \emph{t-distribution} with \texttt{3} degrees of freedom is often used to represent asset returns.
       \vskip1ex
       The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution into a sample of data, by performing \emph{maximum likelihood} optimization.
       \vskip1ex
@@ -3950,19 +4032,19 @@ mean(((returns-mean(returns))/sd(returns))^4)
 tseries::jarque.bera.test(returns)
 # Fit t-distribution into GARCH returns
 optim_fit <- MASS::fitdistr(returns, densfun="t", df=2)
-lo_cation <- optim_fit$estimate[1]
-scalit <- optim_fit$estimate[2]
+loc <- optim_fit$estimate[1]
+scalev <- optim_fit$estimate[2]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/garch_hist.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram of GARCH returns
-histo_gram <- hist(returns, col="lightgrey",
+histp <- hist(returns, col="lightgrey",
   xlab="returns", breaks=200, xlim=c(-0.03, 0.03),
   ylab="frequency", freq=FALSE, main="GARCH Returns Histogram")
 lines(density(returns, adjust=1.5), lwd=2, col="blue")
-curve(expr=dt((x-lo_cation)/scalit, df=2)/scalit,
+curve(expr=dt((x-loc)/scalev, df=2)/scalev,
   type="l", xlab="", ylab="", lwd=2,
   col="red", add=TRUE)
 legend("topright", inset=-0, bty="n",
@@ -4003,7 +4085,7 @@ moments::moment(returns, order=4) /
 # Perform Jarque-Bera test of normality
 tseries::jarque.bera.test(returns)
 # Plot histogram of GARCH returns
-histo_gram <- hist(returns, col="lightgrey",
+histp <- hist(returns, col="lightgrey",
   xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
   ylab="frequency", freq=FALSE,
   main="GARCH Returns Histogram")
@@ -4016,9 +4098,9 @@ lines(density(returns, adjust=1.5), lwd=3, col="blue")
 # Fit t-distribution into GARCH returns
 optim_fit <- MASS::fitdistr(returns,
   densfun="t", df=2, lower=c(-1, 1e-7))
-lo_cation <- optim_fit$estimate[1]
-scalit <- optim_fit$estimate[2]
-curve(expr=dt((x-lo_cation)/scalit, df=2)/scalit,
+loc <- optim_fit$estimate[1]
+scalev <- optim_fit$estimate[2]
+curve(expr=dt((x-loc)/scalev, df=2)/scalev,
   type="l", xlab="", ylab="", lwd=3,
   col="red", add=TRUE)
 legend("topright", inset=0.05, bty="n",
@@ -4075,7 +4157,7 @@ apply(kurt, 2, mean)
 # Plot the distribution of GARCH kurtosis
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 par(mar=c(2, 2, 3, 1), oma=c(0, 0, 0, 0))
-histo_gram <- hist(kurt[, 2], breaks=500, col="lightgrey",
+histp <- hist(kurt[, 2], breaks=500, col="lightgrey",
   xlim=c(2, 8), xlab="returns", ylab="frequency", freq=FALSE,
   main="Distribution of GARCH Kurtosis")
 lines(density(kurt[, 2], adjust=1.5), lwd=3, col="blue")
@@ -4193,7 +4275,7 @@ quartz.save("figure/garch_fGarch_fitted.png",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define likelihood function
-likeli_hood <- function(om_ega, alpha, betav) {
+likefun <- function(om_ega, alpha, betav) {
   # Estimate the rolling variance from the returns
   variance <- numeric(nrows)
   variance[1] <- om_ega/(1-alpha-betav)
@@ -4205,16 +4287,16 @@ likeli_hood <- function(om_ega, alpha, betav) {
   variance <- rutils::lagit(variance, pad_zeros=FALSE)
   # Calculate the likelihood
   -sum(returns^2/variance + log(variance))
-}  # end likeli_hood
+}  # end likefun
 # Calculate the likelihood in R
-likeli_hood(om_ega, alpha, betav)
+likefun(om_ega, alpha, betav)
 # Calculate the likelihood in Rcpp
 HighFreq::lik_garch(omega=om_ega, alpha=alpha,
   beta=betav, returns=matrix(returns))
 # Benchmark speed of likelihood calculations
 library(microbenchmark)
 summary(microbenchmark(
-  Rcode=likeli_hood(om_ega, alpha, betav),
+  Rcode=likefun(om_ega, alpha, betav),
   Rcpp=HighFreq::lik_garch(omega=om_ega, alpha=alpha, beta=betav, returns=matrix(returns))
   ), times=10)[, c(1, 4, 5)]
       @
@@ -4248,15 +4330,15 @@ returns <- garch_data[, 1, drop=FALSE]
 variance <- var(returns)
 returns <- (returns - mean(returns))
 # Calculate likelihood as function of alpha and betav parameters
-likeli_hood <- function(alpha, betav) {
+likefun <- function(alpha, betav) {
   om_ega <- variance*(1 - alpha - betav)
   -HighFreq::lik_garch(omega=om_ega, alpha=alpha, beta=betav, returns=returns)
-}  # end likeli_hood
+}  # end likefun
 # Calculate matrix of likelihood values
 alphas <- seq(from=0.15, to=0.35, len=50)
 betas <- seq(from=0.35, to=0.5, len=50)
 lik_mat <- sapply(alphas, function(alpha) sapply(betas,
-  function(betav) likeli_hood(alpha, betav)))
+  function(betav) likefun(alpha, betav)))
       @
   \end{columns}
 \end{block}
@@ -4290,7 +4372,7 @@ rgl::rglwidget(elementId="plot3drgl", width=700, height=700)
 coord <- which(lik_mat == min(lik_mat), arr.ind=TRUE)
 c(alphas[coord[2]], betas[coord[1]])
 lik_mat[coord]
-likeli_hood(alphas[coord[2]], betas[coord[1]])
+likefun(alphas[coord[2]], betas[coord[1]])
 # Optimal and actual parameters
 options(scipen=2)  # Use fixed not scientific notation
 cbind(actual=c(alpha=alpha, beta=betav, omega=om_ega),
@@ -4330,15 +4412,15 @@ cbind(actual=c(alpha=alpha, beta=betav, omega=om_ega),
       \vspace{-1em}
       <<eval=FALSE,echo=TRUE>>=
 # Define vectorized likelihood function
-likeli_hood <- function(x, returns) {
+likefun <- function(x, returns) {
   alpha <- x[1]; betav <- x[2]; om_ega <- x[3]
   -HighFreq::lik_garch(omega=om_ega, alpha=alpha, beta=betav, returns=returns)
-}  # end likeli_hood
+}  # end likefun
 # Initial parameters
-par_init <- c(alpha=0.2, beta=0.4, omega=variance/0.2)
+initp <- c(alpha=0.2, beta=0.4, omega=variance/0.2)
 # Find max likelihood parameters using steepest descent optimizer
-optim_fit <- optim(par=par_init,
-  fn=likeli_hood, # Log-likelihood function
+optim_fit <- optim(par=initp,
+  fn=likefun, # Log-likelihood function
   method="L-BFGS-B", # Quasi-Newton method
   returns=returns, 
   upper=c(0.35, 0.55, variance), # Upper constraint
@@ -4347,7 +4429,7 @@ optim_fit <- optim(par=par_init,
 cbind(actual=c(alpha=alpha, beta=betav, omega=om_ega),
       optimal=c(optim_fit$par["alpha"], optim_fit$par["beta"], optim_fit$par["omega"]))
 # Find max likelihood parameters using DEoptim
-optimd <- DEoptim::DEoptim(fn=likeli_hood,
+optimd <- DEoptim::DEoptim(fn=likefun,
   upper=c(0.35, 0.55, variance), # Upper constraint
   lower=c(0.15, 0.35, variance/100), # Lower constraint
   returns=returns, 
@@ -4380,7 +4462,7 @@ cbind(actual=c(alpha=alpha, beta=betav, omega=om_ega),
 # Calculate VTI returns
 returns <- rutils::diffit(log(quantmod::Cl(rutils::etfenv$VTI)))
 # Find max likelihood parameters using DEoptim
-optimd <- DEoptim::DEoptim(fn=likeli_hood,
+optimd <- DEoptim::DEoptim(fn=likefun,
   upper=c(0.4, 0.9, variance), # Upper constraint
   lower=c(0.1, 0.5, variance/100), # Lower constraint
   returns=returns, 
@@ -4409,7 +4491,7 @@ garch_data <- HighFreq::sim_garch(omega=om_ega, alpha=alpha,
   beta=betav, innov=returns, is_random=FALSE)
 all.equal(garch_data[, 2], variance, check.attributes=FALSE)
 # Plot dygraph of the estimated GARCH volatility
-dygraphs::dygraph(xts::xts(sqrt(variance), index(returns)), 
+dygraphs::dygraph(xts::xts(sqrt(variance), zoo::index(returns)), 
   main="Estimated GARCH Volatility of VTI") %>%
   dyOptions(colors="blue")
       @
@@ -4920,7 +5002,7 @@ boot_data <- sapply(1:1e2, function(x) {
   # Calculate variance estimate
   c(var=var(ohlc[, 4]),
     yang_zhang=HighFreq::calc_variance(
-      ohlc, method="yang_zhang", scalit=FALSE))
+      ohlc, method="yang_zhang", scalev=FALSE))
 })  # end sapply
 # Analyze bootstrapped variance
 boot_data <- t(boot_data)
@@ -5075,13 +5157,13 @@ endp <- xts::endpoints(closep, on="months")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/intervals_endpoints.png}
+      \includegraphics[width=0.45\paperwidth]{figure/intervals_end_points.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot data and endpoints as vertical lines
 plot.xts(closep, col="blue", lwd=2, xlab="", ylab="",
          main="Prices with Endpoints as Vertical Lines")
-addEventLines(xts(rep("endpoint", NROW(endp)-1), index(closep)[endp]),
+addEventLines(xts(rep("endpoint", NROW(endp)-1), zoo::index(closep)[endp]),
               col="red", lwd=2, pos=4)
 # Or
 plot_theme <- chart_theme()
@@ -5207,10 +5289,10 @@ look_backs <- lapply(2:nrows, function(indeks) {
     startp[indeks]:endp[indeks]
 })  # end lapply
 # Define aggregation function
-agg_regate <- function(xtes) c(max=max(xtes), min=min(xtes))
+aggfun <- function(xtes) c(max=max(xtes), min=min(xtes))
 # Perform aggregations over look_backs list
 agg_s <- sapply(look_backs,
-    function(look_back) agg_regate(closep[look_back])
+    function(look_back) aggfun(closep[look_back])
 )  # end sapply
 # Coerce agg_s into matrix and transpose it
 if (is.vector(agg_s))
@@ -5251,7 +5333,7 @@ agg_s <- xts(agg_s, order.by=index(closep[endp]))
 library(rutils)  # Load package rutils
 # Perform aggregations over look_backs list
 agg_s <- lapply(look_backs,
-    function(look_back) agg_regate(closep[look_back])
+    function(look_back) aggfun(closep[look_back])
 )  # end lapply
 # rbind list into single xts or matrix
 agg_s <- rutils::do_call(rbind, agg_s)
@@ -5320,10 +5402,10 @@ roll_agg <- function(xtes, look_back, FUN, ...) {
   agg_s
 }  # end roll_agg
 # Define aggregation function
-agg_regate <- function(xtes)
+aggfun <- function(xtes)
   c(max=max(xtes), min=min(xtes))
 # Perform aggregations over rolling interval
-agg_s <- roll_agg(closep, look_back=look_back, FUN=agg_regate)
+agg_s <- roll_agg(closep, look_back=look_back, FUN=aggfun)
 class(agg_s)
 dim(agg_s)
       @
@@ -5393,13 +5475,13 @@ summary(microbenchmark(
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(rutils)  # Load package rutils
 # Define aggregation function that returns a single value
-agg_regate <- function(xtes)  max(xtes)
+aggfun <- function(xtes)  max(xtes)
 # Perform aggregations over a rolling interval
 agg_s <- xts:::rollapply.xts(closep, width=look_back,
-                    FUN=agg_regate, align="right")
+                    FUN=aggfun, align="right")
 # Perform aggregations over a rolling interval
 library(PerformanceAnalytics)  # Load package PerformanceAnalytics
-agg_s <- apply.rolling(closep, width=look_back, FUN=agg_regate)
+agg_s <- apply.rolling(closep, width=look_back, FUN=aggfun)
 # Benchmark the speed of the functionals
 library(microbenchmark)
 summary(microbenchmark(
@@ -5475,13 +5557,13 @@ summary(microbenchmark(
       \vskip1ex
       The function \texttt{filter()} with the argument \texttt{method="convolution"} calculates the \emph{convolution} of the vector $r_i$ with the filter $\varphi_i$:
       \begin{displaymath}
-        f_i = \varphi1 r_{i-1} + \varphi2 r_{i-2} + \ldots + \varphi_p r_{i-p}
+        f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p}
       \end{displaymath}
       Where $f_i$ is the filtered output vector, and $\varphi_i$ are the filter coefficients.
       \vskip1ex
       \texttt{filter()} with \texttt{method="recursive"} calculates a \emph{recursive} filter over the vector of random \emph{innovations} $\xi_i$ as follows:
       \begin{displaymath}
-        r_i = \varphi1 r_{i-1} + \varphi2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
       \end{displaymath}
       Where $r_i$ is the filtered output vector, and $\varphi_i$ are the filter coefficients.
       \vskip1ex
@@ -5563,7 +5645,7 @@ roll_maxminr <- function(vectorv, look_back) {
   return(max_min)
 }  # end roll_maxminr
 max_minr <- roll_maxminr(closep, look_back)
-max_minr <- xts::xts(max_minr, index(closep))
+max_minr <- xts::xts(max_minr, zoo::index(closep))
 library(TTR)  # Load package TTR
 max_min <- cbind(TTR::runMax(x=closep, n=look_back),
                  TTR::runMin(x=closep, n=look_back))
@@ -5792,7 +5874,7 @@ arma::mat roll_maxmin(const arma::vec& vectorv,
 # Compile Rcpp functions
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/roll_maxmin.cpp")
 max_minarma <- roll_maxmin(closep, look_back)
-max_minarma <- xts::xts(max_minr, index(closep))
+max_minarma <- xts::xts(max_minr, zoo::index(closep))
 max_min <- cbind(TTR::runMax(x=closep, n=look_back),
                  TTR::runMin(x=closep, n=look_back))
 all.equal(max_min[-(1:look_back), ], max_minarma[-(1:look_back), ], check.attributes=FALSE)

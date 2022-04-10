@@ -1,58 +1,89 @@
 // This file must first be compiled:
-//  Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_arima.cpp")
+//  Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_arima.cpp")
 
 // Rcpp header with information for C++ compiler
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 using namespace arma;
 
-// The function sim_arima() simulates an AR proccess using RcppArmadillo.
+
+////////////////////////////////////////////////////////////
+//' Simulate \emph{autoregressive} returns by recursively filtering a
+//' \emph{matrix} of innovations through a \emph{matrix} of
+//' \emph{autoregressive} coefficients.
 //' 
-//' @param innov A numeric \emph{vector} of innovations (random numbers).
-//' @param coeff A numeric \emph{vector} of \emph{ARIMA} coefficients.
+//' @param \code{innov} A single-column \emph{matrix} of innovations.
+//' 
+//' @param \code{coeff} A single-column \emph{matrix} of \emph{autoregressive}
+//'   coefficients.
 //'
-//' @return A numeric \emph{vector} of the same length as the argument
-//'   \code{innov}.
+//' @return A single-column \emph{matrix} of simulated returns, with the same
+//'   number of rows as the argument \code{innov}.
 //'
-//' @details The function \code{sim_arima()} calculates the recursive filter of
-//'   \emph{ARIMA} coefficients over a vector of innovations, using 
-//'   \emph{RcppArmadillo}. It performs the same calculation as the standard 
-//'   \emph{R} function \code{filter(x=innov, filter=coeff, 
-//'   method="recursive")}, but it's about six times faster.
+//' @details
+//'   The function \code{sim_ar()} recursively filters the \emph{matrix} of
+//'   innovations \code{innov} through the \emph{matrix} of
+//'   \emph{autoregressive} coefficients \code{coeff}, using fast
+//'   \code{RcppArmadillo} \code{C++} code.
+//'
+//'   The function \code{sim_ar()} simulates an \emph{autoregressive} process
+//'   \eqn{AR(n)} of order \eqn{n}:
+//'   \deqn{
+//'     r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i
+//'   }
+//'   Where \eqn{r_i} is the simulated output time series, \eqn{\varphi_i} are
+//'   the \emph{autoregressive} coefficients, and \eqn{\xi_i} are the standard
+//'   normal \emph{innovations}.
+//'
+//'   The order \eqn{n} of the \emph{autoregressive} process \eqn{AR(n)}, is
+//'   equal to the number of rows of the \emph{autoregressive} coefficients
+//'   \code{coeff}.
+//'
+//'   The function \code{sim_ar()} performs the same calculation as the standard
+//'   \code{R} function \cr\code{filter(x=innov, filter=coeff,
+//'   method="recursive")}, but it's several times faster.
 //'   
 //' @examples
 //' \dontrun{
-//' # Create vector of innovations
-//' innov <- rnorm(100)
-//' # Create ARIMA coefficients
-//' coeff <- c(-0.8, 0.2)
+//' # Define AR coefficients
+//' coeff <- matrix(c(0.1, 0.3, 0.5))
+//' # Calculate matrix of innovations
+//' innov <- matrix(rnorm(1e4, sd=0.01))
 //' # Calculate recursive filter using filter()
-//' filter_ed <- filter(innov, filter=coeff, method="recursive")
-//' # Calculate recursive filter using sim_arima()
-//' arimav <- sim_arima(innov, rev(coeff))
-//' # compare the two methods
-//' all.equal(as.numeric(arimav), as.numeric(filter_ed))
+//' filtered <- filter(innov, filter=coeff, method="recursive")
+//' # Calculate recursive filter using RcppArmadillo
+//' returns <- HighFreq::sim_ar(coeff, innov)
+//' # Compare the two methods
+//' all.equal(as.numeric(returns), as.numeric(filtered))
+//' # Compare the speed of RcppArmadillo with R code
+//' library(microbenchmark)
+//' summary(microbenchmark(
+//'   Rcpp=HighFreq::sim_ar(coeff, innov),
+//'   Rcode=filter(innov, filter=coeff, method="recursive"),
+//'   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 //' }
+//' 
 //' @export
 // [[Rcpp::export]]
-arma::vec sim_arima(const arma::vec& innov, const arma::vec& coeff) {
-  uword numrows = innov.n_elem;
-  uword look_back = coeff.n_elem;
-  arma::vec arimav(numrows);
-
-  // Startup period
-  arimav(0) = innov(0);
-  arimav(1) = innov(1) + coeff(look_back-1) * arimav(0);
-  for (uword it = 2; it < look_back-1; it++) {
-    arimav(it) = innov(it) + arma::dot(coeff.subvec(look_back-it, look_back-1), arimav.subvec(0, it-1));
+arma::mat sim_ar(arma::mat& coeff, const arma::mat& innov) {
+  
+  arma::uword nrows = innov.n_rows;
+  arma::uword ncoeff = coeff.n_rows;
+  arma::mat coeffr = arma::reverse(coeff);
+  arma::mat returns = arma::zeros<mat>(nrows, 1);
+  
+  // Warmup period
+  returns.row(0) = innov.row(0);
+  returns.row(1) = innov.row(1) + coeffr.row(ncoeff-1) * returns.row(0);
+  for (arma::uword it = 2; it < ncoeff; it++) {
+    returns.row(it) = innov.row(it) + arma::dot(coeffr.rows(ncoeff-it, ncoeff-1), returns.rows(0, it-1));
   }  // end for
   
   // Remaining periods
-  for (uword it = look_back; it < numrows; it++) {
-    arimav(it) = innov(it) + arma::dot(coeff, arimav.subvec(it-look_back, it-1));
+  for (arma::uword it = ncoeff; it < nrows; it++) {
+    returns.row(it) = innov.row(it) + arma::dot(coeffr, returns.rows(it-ncoeff, it-1));
   }  // end for
   
-  return arimav;
-}  // end sim_arima
-
-
+  return returns;
+  
+}  // end sim_ar

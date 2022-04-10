@@ -70,7 +70,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{March 14, 2022}
+\date{April 5, 2022}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -86,7 +86,2040 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
+\section{Market Databases}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{S\&P500} Stock Index Constituent Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The file \texttt{sp500.RData} contains the \emph{environment} \texttt{sp500\_env} with \emph{OHLC} prices and trading volumes of \emph{S\&P500} stock index constituents.
+      \vskip1ex
+      The \emph{S\&P500} stock index constituent data is of poor quality before \texttt{2000}, so we'll mostly use the data after the year \texttt{2000}.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 constituent stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+prices <- eapply(sp500env, quantmod::Cl)
+prices <- rutils::do_call(cbind, prices)
+# Carry forward non-NA prices
+prices <- zoo::na.locf(prices, na.rm=FALSE)
+# Drop ".Close" from column names
+colnames(prices[, 1:4])
+colnames(prices) <- rutils::get_name(colnames(prices))
+# Or
+# colnames(prices) <- do.call(rbind,
+#   strsplit(colnames(prices), split="[.]"))[, 1]
+# Calculate percentage returns of the S&P500 constituent stocks
+# returns <- xts::diff.xts(log(prices))
+returns <- xts::diff.xts(prices)/
+  rutils::lagit(prices, pad_zeros=FALSE)
+set.seed(1121)
+samplev <- sample(NCOL(returns), s=100, replace=FALSE)
+prices100 <- prices[, samplev]
+returns100 <- returns[, samplev]
+save(prices, prices100,
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+save(returns, returns100,
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_without_prices.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate number of constituents without prices
+datav <- rowSums(is.na(prices))
+datav <- xts::xts(datav, order.by=index(prices))
+dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{S\&P500} Stock Portfolio Index}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The price-weighted index of \emph{S\&P500} constituents closely follows the VTI \emph{ETF}.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate price weighted index of constituent
+ncols <- NCOL(prices)
+prices <- zoo::na.locf(prices, fromLast=TRUE)
+indeks <- xts(rowSums(prices)/ncols, zoo::index(prices))
+colnames(indeks) <- "index"
+# Combine index with VTI
+datav <- cbind(indeks[index(etfenv$VTI)], etfenv$VTI[, 4])
+colnamev <- c("index", "VTI")
+colnames(datav) <- colnamev
+# Plot index with VTI
+dygraphs::dygraph(datav,
+  main="S&P 500 Price-weighted Index and VTI") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="red") %>%
+  dySeries(name=colnamev[2], axis="y2", col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_portfolio_index.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{ETF} Database}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Exchange-traded Funds (\emph{ETFs}) are funds which invest in portfolios of assets, such as stocks, commodities, or bonds.
+      \vskip1ex
+      \emph{ETFs} are shares in portfolios of assets, and they are traded just like stocks.
+      \vskip1ex
+      \emph{ETFs} provide investors with convenient, low cost, and liquid instruments to invest in various portfolios of assets.
+      \vskip1ex
+      The file \texttt{etf\_list.csv} contains a database of exchange-traded funds (\emph{ETFs}) and exchange traded notes (\emph{ETNs}).
+      \vskip1ex
+      We will select a portfolio of \emph{ETFs} for illustrating various investment strategies.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=TRUE,size="tiny">>=
+# Select ETF symbols for asset allocation
+symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
+  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
+# Read etf database into data frame
+etf_list <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etf_list.csv")
+rownames(etf_list) <- etf_list$Symbol
+# Select from etf_list only those ETF's in symbolv
+etf_list <- etf_list[symbolv, ]
+# Shorten names
+etf_names <- sapply(etf_list$Name, function(name) {
+  namesvplit <- strsplit(name, split=" ")[[1]]
+  namesvplit <- namesvplit[c(-1, -NROW(namesvplit))]
+  name_match <- match("Select", namesvplit)
+  if (!is.na(name_match))
+    namesvplit <- namesvplit[-name_match]
+  paste(namesvplit, collapse=" ")
+})  # end sapply
+etf_list$Name <- etf_names
+etf_list["IEF", "Name"] <- "10 year Treasury Bond Fund"
+etf_list["TLT", "Name"] <- "20 plus year Treasury Bond Fund"
+etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
+etf_list["EEM", "Name"] <- "Emerging Market Stock Fund"
+etf_list["MTUM", "Name"] <- "Momentum Factor Fund"
+etf_list["SVXY", "Name"] <- "Short VIX Futures"
+etf_list["VXX", "Name"] <- "Long VIX Futures"
+etf_list["DBC", "Name"] <- "Commodity Futures Fund"
+etf_list["USO", "Name"] <- "WTI Oil Futures Fund"
+etf_list["GLD", "Name"] <- "Physical Gold Fund"
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{ETF} Portfolio for Investment Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The portfolio contains \emph{ETFs} representing different \emph{industry sectors} and \emph{investment styles}.
+      \vskip1ex
+      The \emph{ETFs} with names \emph{X*} represent industry \emph{sector funds} (energy, financial, etc.)
+      \vskip1ex
+      The \emph{ETFs} with names \emph{I*} represent \emph{style funds} (value, growth, size).
+      \vskip1ex
+      \emph{IWB} is the Russell 1000 small-cap fund.
+      \vskip1ex
+      \emph{MTUM} is an \emph{ETF} which owns a stock portfolio representing the \emph{momentum factor}.
+      \vskip1ex
+      \emph{DBC} is an \emph{ETF} providing the total return on a portfolio of commodity futures.
+      \vskip1ex
+      \emph{VXX} is an \emph{ETN} providing the total return of \emph{long VIX} futures contracts (specifically the \emph{S\&P} VIX Short-Term Futures Index).
+      \vskip1ex
+      \emph{VXX} is \emph{bearish} because it's \emph{long} VIX futures, and the VIX \emph{rises} when stock prices \emph{drop}.
+      \vskip1ex
+      \emph{SVXY} is an \emph{ETF} providing the total return of \emph{short VIX} futures contracts.
+      \vskip1ex
+      \emph{SVXY} is \emph{bullish} because it's \emph{short} VIX futures, and the VIX \emph{drops} when stock prices \emph{rise}.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=FALSE,eval=TRUE,results='asis'>>=
+print(xtable::xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exchange Traded Notes (\protect\emph{ETNs})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{ETNs} are similar to \emph{ETFs}, with the difference that \emph{ETFs} are shares in a fund which owns the underlying assets, while \emph{ETNs} are notes from issuers which promise payouts according to a formula tied to the underlying asset.
+      \vskip1ex
+      \emph{ETFs} are similar to mutual funds, while \emph{ETNs} are similar to corporate bonds.
+      \vskip1ex
+      \emph{ETNs} are technically unsecured corporate debt, but instead of fixed coupons, they promise to provide returns on a market index or futures contract.
+      \vskip1ex
+      The \emph{ETN} issuer promises the payout and is responsible for tracking the index.
+      \vskip1ex
+      The \emph{ETN} investor has counterparty credit risk to the \emph{ETN} issuer.
+    \column{0.5\textwidth}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Modeling and Fitting Asset Returns}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Kernel Density of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The kernel density is proportional to the number of data points close to a given point.
+      \vskip1ex
+      The kernel density is analogous to a histogram, but it provides more detailed information about the distribution of the data.
+      \vskip1ex
+      The smoothing kernel $K(x)$ is a symmetric function which decreases with the distance $x$.
+      \vskip1ex
+      The kernel density $d_r$ at a point $r$ is equal to the sum over the kernel function $K(x)$:
+      \begin{displaymath}
+        d_r = \sum_{j=1}^n {K(r - r_j)}
+      \end{displaymath}
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
+      \vskip1ex
+      The parameter \emph{smoothing bandwidth} is the standard deviation of the smoothing kernel $K(x)$. 
+      \vskip1ex
+      The function \texttt{density()} returns a vector of densities at equally spaced points, not for the original data points.
+      \vskip1ex
+      The function \texttt{approx()} interpolates a vector of data into another vector.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Calculate VTI percentage returns
+returns <- rutils::etfenv$returns$VTI
+returns <- drop(coredata(na.omit(returns)))
+nrows <- NROW(returns)
+# Mean and standard deviation of returns
+c(mean(returns), sd(returns))
+# Calculate the smoothing bandwidth as the MAD of returns 10 points apart
+returns <- sort(returns)
+bwidth <- 10*mad(rutils::diffit(returns, lagg=10))
+# Calculate the kernel density
+densityv <- sapply(1:nrows, function(i_d) {
+  sum(dnorm(returns-returns[i_d], sd=bwidth))
+})  # end sapply
+madv <- mad(returns)
+plot(returns, densityv, xlim=c(-5*madv, 5*madv),
+     t="l", col="blue", lwd=3,
+     xlab="returns", ylab="density",
+     main="Density of VTI Returns")
+# Calculate the kernel density using density()
+densityv <- density(returns, bw=bwidth)
+NROW(densityv$y)
+x11(width=6, height=5)
+plot(densityv, xlim=c(-5*madv, 5*madv),
+     xlab="returns", ylab="density",
+     col="blue", lwd=3, main="Density of VTI Returns")
+# Interpolate the densityv vector into returns
+densityv <- approx(densityv$x, densityv$y, xout=returns)
+all.equal(densityv$x, returns)
+plot(densityv, xlim=c(-5*madv, 5*madv),
+     xlab="returns", ylab="density",
+     t="l", col="blue", lwd=3,
+     main="Density of VTI Returns")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset returns are usually not normally distributed and they exhibit \emph{leptokurtosis} (large kurtosis, or fat tails).
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram.
+      \vskip1ex
+      The function \texttt{lines()} draws a line through specified points.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hist_vti_dens.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot histogram
+histp <- hist(returns, breaks=100, freq=FALSE,
+  xlim=c(-5*madv, 5*madv), xlab="", ylab="",
+  main="VTI Return Distribution")
+# Draw kernel density of histogram
+lines(densityv, col="red", lwd=2)
+# Add density of normal distribution
+curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
+      add=TRUE, lwd=2, col="blue")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+       leg=c("VTI", "Normal"), bty="n",
+       lwd=6, bg="white", col=c("red", "blue"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Quantile-Quantile Plot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{Quantile-Quantile} (\emph{Q-Q}) plot is a plot of points with the same \emph{quantiles}, from two probability distributions.
+      \vskip1ex
+      If the two distributions are similar then all the points in the \emph{Q-Q} plot lie along the diagonal.
+      \vskip1ex
+      The \emph{VTI} \emph{Q-Q} plot shows that the \emph{VTI} return distribution has fat tails.
+      \vskip1ex
+      The \emph{p}-value of the \emph{Shapiro-Wilk} test is very close to zero, which shows that the \emph{VTI} returns are very unlikely to be normal.
+      \vskip1ex
+      The function \texttt{shapiro.test()} performs the \emph{Shapiro-Wilk} test of normality.
+      \vskip1ex
+      The function \texttt{qqnorm()} produces a normal \emph{Q-Q} plot.
+      \vskip1ex
+      The function \texttt{qqline()} fits a line to the normal quantiles.
+      <<echo=TRUE,eval=FALSE>>=
+# Create normal Q-Q plot
+qqnorm(returns, ylim=c(-0.1, 0.1), main="VTI Q-Q Plot",
+       xlab="Normal Quantiles")
+# Fit a line to the normal quantiles
+qqline(returns, col="red", lwd=2)
+# Perform Shapiro-Wilk test
+shapiro.test(returns)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/qq_plot.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Boxplots of Distributions of Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Box-and-whisker plots (\emph{boxplots}) are graphical representations of a distribution of values.
+      \vskip1ex
+      The bottom and top box edges (\emph{hinges}) are equal to the first and third quartiles, and the \emph{box} width is equal to the interquartile range (\emph{IQR}).
+      \vskip1ex
+      The nominal range is equal to 1.5 times the \emph{IQR} above and below the box \emph{hinges}.
+      \vskip1ex
+      The \emph{whiskers} are dashed vertical lines representing values beyond the first and third quartiles, but within the nominal range.
+      \vskip1ex
+      The \emph{whiskers} end at the last values within the nominal range, while the open circles represent outlier values beyond the nominal range.
+      \vskip1ex
+      The function \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (for categorical variables), and another for \texttt{data frames}.
+      <<box_plots,eval=FALSE>>=
+# Boxplot method for formula
+boxplot(formula=mpg ~ cyl, data=mtcars,
+        main="Mileage by number of cylinders",
+        xlab="Cylinders", ylab="Miles per gallon")
+# Boxplot method for data frame of EuStockMarkets percentage returns
+boxplot(x=diff(log(EuStockMarkets)))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/box_plots-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Higher Moments of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The estimators of moments of a probability distribution are given by:
+      \vskip1ex
+      Sample mean: $\bar{x} = \frac{1}{n} \sum_{i=1}^n x_i$
+      \vskip1ex
+      Sample variance: $\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$
+      \vskip1ex
+      With their expected values equal to the population mean and standard deviation:\\
+      $\mathbb{E}[\bar{x}] = \mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma] = \sigma$
+      \vskip1ex
+      The sample skewness (third moment):
+      \begin{displaymath}
+        \varsigma = \frac{n}{(n-1)(n-2)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
+      \end{displaymath}
+      The sample kurtosis (fourth moment):
+      \begin{displaymath}
+        \kappa = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+      \end{displaymath}
+      The normal distribution has skewness equal to $0$ and kurtosis equal to $3$.
+      \vskip1ex
+      Stock returns typically have negative skewness and kurtosis much greater than $3$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+returns <- na.omit(rutils::etfenv$returns$VTI)
+# Number of observations
+nrows <- NROW(returns)
+# Mean of VTI returns
+mean_rets <- mean(returns)
+# Standard deviation of VTI returns
+sd_rets <- sd(returns)
+# Skewness of VTI returns
+nrows/((nrows-1)*(nrows-2))*
+  sum(((returns - mean_rets)/sd_rets)^3)
+# Kurtosis of VTI returns
+nrows*(nrows+1)/((nrows-1)^3)*
+  sum(((returns - mean_rets)/sd_rets)^4)
+# Random normal returns
+returns <- rnorm(nrows, sd=sd_rets)
+# Mean and standard deviation of random normal returns
+mean_rets <- mean(returns)
+sd_rets <- sd(returns)
+# Skewness of random normal returns
+nrows/((nrows-1)*(nrows-2))*
+  sum(((returns - mean_rets)/sd_rets)^3)
+# Kurtosis of random normal returns
+nrows*(nrows+1)/((nrows-1)^3)*
+  sum(((returns - mean_rets)/sd_rets)^4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functions for Calculating Skew and Kurtosis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} provides an easy way for users to write functions.
+      \vskip1ex
+      The function \texttt{calc\_skew()} calculates the skew of returns, and \texttt{calc\_kurt()} calculates the kurtosis.
+      \vskip1ex
+      Functions return the value of the last expression that is evaluated.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# calc_skew() calculates skew of returns
+calc_skew <- function(returns) {
+  returns <- na.omit(returns)
+  sum(((returns - mean(returns))/sd(returns))^3)/NROW(returns)
+}  # end calc_skew
+# calc_kurt() calculates kurtosis of returns
+calc_kurt <- function(returns) {
+  returns <- na.omit(returns)
+  sum(((returns - mean(returns))/sd(returns))^4)/NROW(returns)
+}  # end calc_kurt
+# Calculate skew and kurtosis of VTI returns
+calc_skew(returns)
+calc_kurt(returns)
+# calcmom() calculates the moments of returns
+calcmom <- function(returns, moment=3) {
+  returns <- na.omit(returns)
+  sum(((returns - mean(returns))/sd(returns))^moment)/NROW(returns)
+}  # end calcmom
+# Calculate skew and kurtosis of VTI returns
+calcmom(returns, moment=3)
+calcmom(returns, moment=4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Statistical estimators are functions of samples (which are random variables), and therefore are themselves \emph{random variables}.
+      \vskip1ex
+      The \emph{standard error} (SE) of an estimator is defined as its \emph{standard deviation} (not to be confused with the \emph{population standard deviation} of the underlying random variable).
+      \vskip1ex
+      For example, the \emph{standard error} of the estimator of the mean is equal to:
+      \begin{displaymath}
+        \sigma_{\mu} = \frac{\sigma}{\sqrt{n}}
+      \end{displaymath}
+      Where $\sigma$ is the \emph{population standard deviation} (which is usually unkown).
+      \vskip1ex
+      The \emph{estimator} of this \emph{standard error} is equal to:
+      \begin{displaymath}
+        SE_{\mu} = \frac{\hat\sigma}{\sqrt{n}}
+      \end{displaymath}
+      where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample standard deviation (the estimator of the population standard deviation).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+nrows <- 1000
+datav <- rnorm(nrows)
+# Sample mean
+mean(datav)
+# Sample standard deviation
+sd(datav)
+# Standard error of sample mean
+sd(datav)/sqrt(nrows)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Normal (Gaussian)} probability density function is given by:
+      \begin{displaymath}
+        \phi(x, \mu, \sigma) = \frac{e^{-(x-\mu)^2/2\sigma^2}}{\sigma\sqrt{2 \pi}}
+      \end{displaymath}
+      The \emph{Standard Normal} distribution $\phi(0, 1)$ is a special case of the \emph{Normal} $\phi(\mu, \sigma)$ with $\mu=0$ and $\sigma=1$.
+      \vskip1ex
+      The function \texttt{dnorm()} calculates the \emph{Normal} probability density.
+      <<echo=TRUE,eval=FALSE>>=
+xvar <- seq(-5, 7, length=100)
+yvar <- dnorm(xvar, mean=1.0, sd=2.0)
+plot(xvar, yvar, type="l", lty="solid", xlab="", ylab="")
+title(main="Normal Density Function", line=0.5)
+startp <- 3; endp <- 5  # Set lower and upper bounds
+# Set polygon base
+subv <- ((xvar >= startp) & (xvar <= endp))
+polygon(c(startp, xvar[subv], endp),  # Draw polygon
+        c(-1, yvar[subv], -1), col="red")
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.45\paperwidth]{figure/norm_dist}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Plots of several \emph{Normal} distributions with different values of $\sigma$, using the function \texttt{curve()} for plotting functions given by their name.
+      <<norm_dist_mult_curves,eval=FALSE,echo=(-(1:1)),fig.show="hide">>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
+# Create plot colors
+colors <- c("red", "black", "blue", "green")
+# Create legend labels
+labelv <- paste("sigma", sigmavs, sep="=")
+for (indeks in 1:4) {  # Plot four curves
+  curve(expr=dnorm(x, sd=sigmavs[indeks]),
+        xlim=c(-4, 4), xlab="", ylab="", lwd=2,
+        col=colors[indeks], add=as.logical(indeks-1))
+}  # end for
+# Add title
+title(main="Normal Distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, title="Sigmas",
+       labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/norm_dist_mult_curves-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_{1},\ldots , z_{\nu}$ be independent standard normal random variables, with sample mean: $\bar{z}=\frac{1}{\nu} \sum_{i=1}^{\nu} z_i$ ($\mathbb{E}[\bar{z}]=\mu$) and sample variance: $\hat\sigma^2=\frac{1}{\nu-1} \sum_{i=1}^{\nu} (z_i-\bar{z})^2$
+      \vskip1ex
+      Then the random variable (\emph{t-ratio}):
+      \begin{displaymath}
+        t = \frac{\bar{z} - \mu}{\hat\sigma / \sqrt{\nu}}
+      \end{displaymath}
+      Follows the \emph{t-distribution} with $\nu$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu}\,\Gamma(\nu/2)}\, (1 + t^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+deg_free <- c(3, 6, 9)  # Df values
+colors <- c("black", "red", "blue", "green")
+labelv <- c("normal", paste("df", deg_free, sep="="))
+# Plot a Normal probability distribution
+curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
+for (indeks in 1:3) {  # Plot three t-distributions
+  curve(expr=dt(x, df=deg_free[indeks]), xlab="", ylab="",
+        lwd=2, col=colors[indeks+1], add=TRUE)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="t-distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n",
+       title="Degrees\n of freedom", labelv,
+       cex=0.8, lwd=6, lty=1, col=colors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mixture Models of Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Mixture models} are produced by randomly sampling data from different distributions.
+      \vskip1ex
+      The mixture of two normal distributions with different variances produces a distribution with \emph{leptokurtosis} (large kurtosis, or fat tails).
+      \vskip1ex
+      Student's \emph{t-distribution} has fat tails because the sample variance in the denominator of the \emph{t-ratio} is variable.
+      \vskip1ex
+      The time-dependent volatility of asset returns is referred to as \emph{heteroskedasticity}.
+      \vskip1ex
+      Random processes with \emph{heteroskedasticity} can be considered a type of mixture model.
+      \vskip1ex
+      The \emph{heteroskedasticity} produces \emph{leptokurtosis} (large kurtosis, or fat tails).
+      <<echo=TRUE,eval=FALSE>>=
+# Mixture of two normal distributions with sd=1 and sd=2
+nrows <- 1e5
+returns <- c(rnorm(nrows/2), 2*rnorm(nrows/2))
+returns <- (returns-mean(returns))/sd(returns)
+# Kurtosis of normal
+calc_kurt(rnorm(nrows))
+# Kurtosis of mixture
+calc_kurt(returns)
+# Or
+nrows*sum(returns^4)/(nrows-1)^2
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/mix_normal.png}
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot the distributions
+plot(density(returns), xlab="", ylab="",
+  main="Mixture of Normal Returns",
+  xlim=c(-3, 3), type="l", lwd=3, col="red")
+curve(expr=dnorm, lwd=2, col="blue", add=TRUE)
+curve(expr=dt(x, df=3), lwd=2, col="green", add=TRUE)
+# Add legend
+legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
+  legend=c("Mixture", "Normal", "t-distribution"),
+  col=c("red", "blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Non-standard Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The non-standard Student's \emph{t-distribution} has the probability density function:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{t - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+       It has non-zero mean equal to the location parameter $\mu$, and a standard deviation proportional to the scale parameter $\sigma$.
+        <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# x11(width=6, height=5)
+# Define density of non-standard t-distribution
+tdistr <- function(x, dfree, loc=0, scalev=1) {
+  dt((x-loc)/scalev, df=dfree)/scalev
+}  # end tdistr
+# Or
+tdistr <- function(x, dfree, loc=0, scalev=1) {
+  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scalev)*
+    (1+((x-loc)/scalev)^2/dfree)^(-(dfree+1)/2)
+}  # end tdistr
+# Calculate vector of scale values
+scalev <- c(0.5, 1.0, 2.0)
+colors <- c("blue", "black", "red")
+labelv <- paste("scale", format(scalev, digits=2), sep="=")
+# Plot three t-distributions
+for (indeks in 1:3) {
+  curve(expr=tdistr(x, dfree=3, scalev=scalev[indeks]), xlim=c(-3, 3),
+        xlab="", ylab="", lwd=2, col=colors[indeks], add=(indeks>1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_scale.png}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="t-distributions with Different Scale Parameters", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n", title="Scale Parameters", labelv,
+       cex=0.8, lwd=6, lty=1, col=colors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Shapiro-Wilk} Test of Normality}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Shapiro-Wilk} test is designed to test the \emph{null hypothesis} that a sample: $\{x1, \ldots, x_n\}$ is from a normally distributed population.
+      \vskip1ex
+      The test statistic is equal to:
+      \begin{displaymath}
+        W = \frac {(\sum_{i=1}^n a_i x_{(i)})^2} {\sum_{i=1}^n (x_i-\bar{x})^2}
+      \end{displaymath}
+      Where the: $\{a1, \ldots, a_n\}$ are proportional to the \emph{order statistics} of random variables from the normal distribution.
+      \vskip1ex
+      $x_{(k)}$ is the \emph{k}-th \emph{order statistic}, and is equal to the \emph{k}-th smallest value in the sample: $\{x1, \ldots, x_n\}$.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} statistic follows its own distribution, and is less than or equal to $1$.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} statistic is close to $1$ for samples from normal distributions.
+      \vskip1ex
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} test is not reliable for large sample sizes, so it's limited to less than \texttt{5000} sample size.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Calculate VTI percentage returns
+library(rutils)
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))[1:4999]
+# Reduce number of output digits
+ndigits <- options(digits=5)
+# Shapiro-Wilk test for normal distribution
+nrows <- NROW(returns)
+shapiro.test(rnorm(nrows))
+# Shapiro-Wilk test for VTI returns
+shapiro.test(returns)
+# Shapiro-Wilk test for uniform distribution
+shapiro.test(runif(nrows))
+# Restore output digits
+options(digits=ndigits$digits)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Jarque-Bera} Test of Normality}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Jarque-Bera} test is designed to test the \emph{null hypothesis} that a sample: $\{x1, \ldots, x_n\}$ is from a normally distributed population.
+      \vskip1ex
+      The test statistic is equal to:
+      \begin{displaymath}
+        JB = \frac{n}{6} (\varsigma^2 + \frac{1}{4} (\kappa - 3)^2)
+      \end{displaymath}
+      Where the \emph{skewness} and \emph{kurtosis} are defined as:
+      \begin{align*}
+        \varsigma = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
+      &&
+        \kappa = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+      \end{align*}
+      The \emph{Jarque-Bera} statistic asymptotically follows the \emph{chi-squared} distribution with  \texttt{2} degrees of freedom.
+      \vskip1ex
+      The \emph{Jarque-Bera} statistic is small for samples from normal distributions.
+      \vskip1ex
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+library(tseries)  # Load package tseries
+# Jarque-Bera test for normal distribution
+jarque.bera.test(rnorm(nrows))
+# Jarque-Bera test for VTI returns
+jarque.bera.test(returns)
+# Jarque-Bera test for uniform distribution
+jarque.bera.test(runif(NROW(returns)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kolmogorov-Smirnov} test \emph{null hypothesis} is that two samples: $\{x1, \ldots , x_n\}$ and $\{y1, \ldots , y_n\}$ were obtained from the same probability distribution.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} statistic depends on the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
+      \begin{displaymath}
+        D = \sup_i | P(x_i) - P(y_i) |
+      \end{displaymath}
+      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The second argument to \texttt{ks.test()} can be either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# KS test for normal distribution
+ks_test <- ks.test(rnorm(100), pnorm)
+ks_test$p.value
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two shifted normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, sd=2.0))
+# KS test for VTI returns vs normal distribution
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
+returns <- (returns - mean(returns))/sd(returns)
+ks.test(returns, pnorm)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Chi-squared} Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
+      \vskip1ex
+      Then the random variable $X = \sum_{i=1}^k z^2_i$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      \begin{displaymath}
+        f(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
+      \end{displaymath}
+      \vskip1ex
+      The \emph{Chi-squared} distribution with $k$ degrees of freedom has mean equal to $k$ and variance equal to $2k$.
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Degrees of freedom
+deg_free <- c(2, 5, 8, 11)
+# Plot four curves in loop
+colors <- c("red", "black", "blue", "green")
+for (indeks in 1:4) {
+  curve(expr=dchisq(x, df=deg_free[indeks]),
+        xlim=c(0, 20), ylim=c(0, 0.3),
+        xlab="", ylab="", col=colors[indeks],
+        lwd=2, add=as.logical(indeks-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chisq_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="Chi-squared Distributions", line=0.5)
+# Add legend
+labelv <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, bty="n",
+       title="Degrees of freedom", labelv,
+       cex=0.8, lwd=6, lty=1, col=colors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Chi-squared} Test for the Goodness of Fit}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Goodness of Fit} tests are designed to test if a set of observations fits an assumed theoretical probability distribution.
+      \vskip1ex
+      The \emph{Chi-squared} test tests if a frequency of counts fits the specified distribution.
+      \vskip1ex
+      The \emph{Chi-squared} statistic is the sum of squared differences between the observed frequencies $o_i$ and the theoretical frequencies $p_i$:
+      \begin{displaymath}
+        \chi^2 = N \sum_{i=1}^{n} {\frac{(o_i - p_i )^2}{p_i}}
+      \end{displaymath}
+      Where $N$ is the total number of observations.
+      \vskip1ex
+      The \emph{null hypothesis} is that the observed frequencies are consistent with the theoretical distribution.
+      \vskip1ex
+      The function \texttt{chisq.test()} performs the \emph{Chi-squared} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} in the function \texttt{hist()} should be chosen large enough to capture the shape of the frequency distribution.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Observed frequencies from random normal data
+histp <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
+countsn <- histp$counts
+# Theoretical frequencies
+countst <- rutils::diffit(pnorm(histp$breaks))
+# Perform Chi-squared test for normal data
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+# Return p-value
+chisq_test <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+chisq_test$p.value
+# Observed frequencies from shifted normal data
+histp <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
+countsn <- histp$counts/sum(histp$counts)
+# Theoretical frequencies
+countst <- rutils::diffit(pnorm(histp$breaks))
+# Perform Chi-squared test for shifted normal data
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+# Calculate histogram of VTI returns
+histp <- hist(returns, breaks=100, plot=FALSE)
+countsn <- histp$counts
+# Calculate cumulative probabilities and then difference them
+countst <- pt((histp$breaks-loc)/scalev, df=2)
+countst <- rutils::diffit(countst)
+# Perform Chi-squared test for VTI returns
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Likelihood Function of Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The non-standard Student's \emph{t-distribution} is:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{t - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+       It has non-zero mean equal to the location parameter $\mu$, and a standard deviation proportional to the scale parameter $\sigma$.
+      \vskip1ex
+      The negative logarithm of the probability density is equal to:
+      \begin{multline*}
+        -\log(f(t)) = -\log(\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)}) + \log(\sigma) + \\
+        \frac{\nu+1}{2} \, \log(1 + (\frac{t - \mu}{\sigma})^2/\nu)
+      \end{multline*}
+      The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the model parameters $\theta$, given the observed values $\bar{x}$, under the model's probability distribution $f(x|\theta)$:
+      \begin{displaymath}
+        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} f(x_i|\theta)
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Objective function from function dt()
+likefun <- function(par, dfree, data) {
+  -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
+}  # end likefun
+# Demonstrate equivalence with log(dt())
+likefun(c(1, 0.5), 2, 2:5)
+-sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
+# Objective function is negative log-likelihood
+likefun <- function(par, dfree, data) {
+  sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
+    log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
+}  # end likefun
+      @
+      The \emph{likelihood} function measures how \emph{likely} are the parameters, given the observed values $\bar{x}$.
+      \vskip1ex
+      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the parameters are those that maximize the \emph{likelihood} function:
+      \begin{displaymath}
+        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
+      \end{displaymath}
+      In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Asset Returns into Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization.
+      \vskip1ex
+      The function \texttt{fitdistr()} performs a \emph{maximum likelihood} optimization to find the non-standardized Student's \emph{t-distribution} location and scale parameters.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
+# Fit VTI returns using MASS::fitdistr()
+optim_fit <- MASS::fitdistr(returns, densfun="t", df=3)
+summary(optim_fit)
+# Fitted parameters
+optim_fit$estimate
+loc <- optim_fit$estimate[1]
+scalev <- optim_fit$estimate[2]
+loc; scalev
+# Standard errors of parameters
+optim_fit$sd
+# Log-likelihood value
+optim_fit$value
+# Fit distribution using optim()
+initp <- c(mean=0, scale=0.01)  # Initial parameters
+optim_fit <- optim(par=initp,
+  fn=likefun, # Log-likelihood function
+  data=returns,
+  dfree=3, # Degrees of freedom
+  method="L-BFGS-B", # Quasi-Newton method
+  upper=c(1, 0.1), # Upper constraint
+  lower=c(-1, 1e-7)) # Lower constraint
+# Optimal parameters
+loc <- optim_fit$par["mean"]
+scalev <- optim_fit$par["scale"]
+loc; scalev
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Student's \protect\emph{t-distribution} Fitted to Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset returns typically exhibit \emph{negative skewness} and \emph{large kurtosis} (leptokurtosis), or fat tails.
+      \vskip1ex
+      Stock returns fit the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom quite well.
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram.
+        <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# x11(width=6, height=5)
+# Plot histogram of VTI returns
+madv <- mad(returns)
+histp <- hist(returns, col="lightgrey",
+  xlab="returns", breaks=100, xlim=c(-5*madv, 5*madv),
+  ylab="frequency", freq=FALSE, main="Histogram of VTI Returns")
+lines(density(returns, adjust=1.5), lwd=3, col="blue")
+# Plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(returns),
+  sd=sd(returns)), add=TRUE, lwd=3, col="green")
+# Define non-standard t-distribution
+tdistr <- function(x, dfree, loc=0, scalev=1) {
+  dt((x-loc)/scalev, df=dfree)/scalev
+}  # end tdistr
+# Plot t-distribution function
+curve(expr=tdistr(x, dfree=3, loc=loc, scalev=scalev), col="red", lwd=3, add=TRUE)
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("density", "t-distr", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_rets.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%
+\subsection{Goodness of Fit of Student's \protect\emph{t-distribution} Fitted to Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Q-Q} plot illustrates the relative distributions of two samples of data.
+      \vskip1ex
+      The \emph{Q-Q} plot shows that stock returns fit the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom quite well.
+      \vskip1ex
+      The function \texttt{qqplot()} produces a \emph{Q-Q} plot for two samples of data.
+      \vskip1ex
+      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test for the similarity of two distributions.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{Kolmogorov-Smirnov} test is that the two samples were obtained from the same probability distribution.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test rejects the \emph{null hypothesis} that stock returns follow closely the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate sample from non-standard t-distribution with df=3
+tdata <- scalev*rt(NROW(returns), df=3) + loc
+# Q-Q plot of VTI Returns vs non-standard t-distribution
+qqplot(tdata, returns, xlab="t-Dist Quantiles", ylab="VTI Quantiles", 
+       main="Q-Q plot of VTI Returns vs Student's t-distribution")
+# Calculate quartiles of the distributions
+probs <- c(0.25, 0.75)
+qrets <- quantile(returns, probs)
+qtdata <- quantile(tdata, probs)
+# Calculate slope and plot line connecting quartiles
+slope <- diff(qrets)/diff(qtdata)
+intercept <- qrets[1]-slope*qtdata[1]
+abline(intercept, slope, lwd=2, col="red")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_qq.png}
+        <<echo=TRUE,eval=FALSE>>=
+# KS test for VTI returns vs t-distribution data
+ks.test(returns, tdata)
+# Define cumulative distribution of non-standard t-distribution
+ptdistr <- function(x, dfree, loc=0, scalev=1) {
+  pt((x-loc)/scalev, df=dfree)
+}  # end ptdistr
+# KS test for VTI returns vs cumulative t-distribution
+ks.test(sample(returns, replace=TRUE), ptdistr, dfree=3, loc=loc, scalev=scalev)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Leptokurtosis Fat Tails of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The probability under the \emph{normal} distribution decreases exponentially for large values of $x$:
+      \begin{displaymath}
+        \phi(x) \propto e^{-{x^2/2\sigma^2}} \qquad (as \, {\left| x \right|} \to \infty)
+      \end{displaymath}
+      This is because a normal variable can be thought of as the sum of a large number of independent binomial variables of equal size.
+      \vskip1ex
+      So large values are produced only when all the contributing binomial variables are of the same sign, which is very improbable, so it produces extremely low tail probabilities (thin tails),
+      \vskip1ex
+      But in reality, the probability of large negative asset returns decreases much slower, as the negative power of the returns (fat tails).
+      \vskip1ex
+      The probability under Student's \emph{t-distribution} decreases as a power for large values of $x$:
+      \begin{displaymath}
+        f(x) \propto {\left| x \right|}^{-(\nu+1)} \qquad (as \, {\left| x \right|} \to \infty)
+      \end{displaymath}
+      This is because a \emph{t-variable} can be thought of as the sum of normal variables with different volatilities (different sizes).
+    \column{0.5\textwidth}
+      \includegraphics[width=0.4\paperwidth]{figure/t_dist_tail_rets.png}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot histogram of VTI returns
+histp <- hist(returns, breaks=100, plot=FALSE)
+plot(histp, xlab="returns", ylab="frequency",
+     col="lightgrey", freq=FALSE, main="VTI Left Tail Returns Histogram",
+     xlim=c(min(returns), -0.02),
+     ylim=c(0.0, histp$density[findInterval(-0.02, histp$breaks)]))
+lines(density(returns, adjust=1.5), lwd=4, col="blue")
+# Plot t-distribution function
+curve(expr=dt((x-loc)/scalev, df=2)/scalev, type="l", lwd=4, col="red", add=TRUE)
+# Plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)), add=TRUE, lwd=4, col="green")
+# Add legend
+legend("topleft", inset=0.05, bty="n",
+  leg=c("density", "t-distr", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trading Volumes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The rolling average trading volumes have increased significantly since the 2008 crisis, mostly because of high frequency trading (HFT).
+      \vskip1ex
+      Higher levels of volatility coincide with higher \emph{trading volumes}.
+      \vskip1ex
+      The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI returns and trading volumes
+ohlc <- rutils::etfenv$VTI
+closep <- drop(coredata(quantmod::Cl(ohlc)))
+returns <- rutils::diffit(log(closep))
+volumes <- coredata(quantmod::Vo(ohlc))
+# Calculate rolling variance
+look_back <- 121
+variance <- HighFreq::roll_var_ohlc(log(ohlc), method="close", look_back=look_back, scale=FALSE)
+variance[1:look_back, ] <- variance[look_back+1, ]
+# Calculate rolling average volume
+volume_roll <- HighFreq::roll_vec(volumes, look_back=look_back)/look_back
+# dygraph plot of VTI variance and trading volumes
+datav <- xts::xts(cbind(variance, volume_roll), zoo::index(ohlc))
+colnamev <- c("variance", "volume")
+colnames(datav) <- colnamev
+dygraphs::dygraph(datav, main="VTI Variance and Trading Volumes") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], strokeWidth=2, axis="y", col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, axis="y2", col="red")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/volume_volat_dyg.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Returns in Trading Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
+      \vskip1ex
+      If asset returns were measured at fixed intervals of \emph{trading volumes} (\emph{trading time} instead of clock time), then the volatility would be lower and less time-dependent.
+      \vskip1ex
+      The asset returns can be adjusted to \emph{trading time} by dividing them by the \emph{square root of the trading volumes}, to obtain scaled returns over equal trading volumes.
+      \vskip1ex
+      The scaled returns have a more positive \emph{skewness} and a smaller \emph{kurtosis} than unscaled returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Scale returns using volume (volume clock)
+rets_scaled <- ifelse(volumes > 0, sqrt(volume_roll)*returns/sqrt(volumes), 0)
+rets_scaled <- sd(returns)*rets_scaled/sd(rets_scaled)
+# rets_scaled <- ifelse(volumes > 1e4, returns/volumes, 0)
+# Calculate moments of scaled returns
+nrows <- NROW(returns)
+sapply(list(returns=returns, rets_scaled=rets_scaled),
+  function(rets) {sapply(c(skew=3, kurt=4),
+           function(x) sum((rets/sd(rets))^x)/nrows)
+})  # end sapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/vti_scaled.png}
+      <<echo=TRUE,eval=FALSE>>=
+# x11(width=6, height=5)
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot densities of SPY returns
+madv <- mad(returns)
+# bwidth <- mad(rutils::diffit(returns))
+plot(density(returns, bw=madv/10), xlim=c(-5*madv, 5*madv),
+     lwd=3, mgp=c(2, 1, 0), col="blue",
+     xlab="returns (standardized)", ylab="frequency",
+     main="Density of Volume-scaled VTI Returns")
+lines(density(rets_scaled, bw=madv/10), lwd=3, col="red")
+curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
+      add=TRUE, lwd=3, col="green")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("unscaled", "scaled", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
 \section{Risk and Performance Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{PerformanceAnalytics} for Risk and Performance Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package 
+      \href{https://cran.r-project.org/web/packages/PerformanceAnalytics/index.html}{\emph{PerformanceAnalytics}} 
+      contains functions for calculating risk and performance statistics, such as the variance, skewness, kurtosis, beta, alpha, etc.
+      \vskip1ex
+      The function \texttt{data()} loads external data or listv data sets in a package.
+      \vskip1ex
+      \texttt{managers} is an \emph{xts} time series containing monthly percentage returns of six asset managers (HAM1 through HAM6), the EDHEC Long-Short Equity hedge fund index, the \texttt{S\&P 500}, and US Treasury 10-year bond and 3-month bill total returns.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load package PerformanceAnalytics
+library(PerformanceAnalytics)
+# Get documentation for package PerformanceAnalytics
+# Get short description
+packageDescription("PerformanceAnalytics")
+# Load help page
+help(package="PerformanceAnalytics")
+# List all objects in PerformanceAnalytics
+ls("package:PerformanceAnalytics")
+# List all datasets in PerformanceAnalytics
+data(package="PerformanceAnalytics")
+# Remove PerformanceAnalytics from search path
+detach("package:PerformanceAnalytics")
+      @
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+perf_data <- unclass(data(
+    package="PerformanceAnalytics"))$results[, -(1:2)]
+apply(perf_data, 1, paste, collapse=" - ")
+# Load "managers" data set
+data(managers)
+class(managers)
+dim(managers)
+head(managers, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plots of Cumulative Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chart.CumReturns()} from package \emph{PerformanceAnalytics} plots the cumulative returns of a time series of returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+# Calculate ETF returns
+returns <- rutils::etfenv$returns[, c("VTI", "DBC", "IEF")]
+returns <- na.omit(returns)
+# Plot cumulative ETF returns
+x11(width=6, height=5)
+chart.CumReturns(returns, lwd=2, ylab="",
+  legend.loc="topleft", main="ETF Cumulative Returns")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/perf_analytics_cum_returns.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Distribution of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chart.Histogram()} from package \emph{PerformanceAnalytics} plots the histogram (frequency distribution) and the density of returns.
+      <<echo=TRUE,eval=FALSE>>=
+returns <- rutils::etfenv$returns$VTI
+returns <- na.omit(returns)
+x11(width=6, height=5)
+chart.Histogram(returns, xlim=c(-0.04, 0.04),
+  colorset = c("lightgray", "red", "blue"), lwd=3,
+  main=paste("Distribution of", colnames(returns), "Returns"),
+  methods = c("add.density", "add.normal"))
+legend("topright", inset=0.05, bty="n",
+       leg=c("VTI Density", "Normal"),
+       lwd=6, lty=1, col=c("red", "blue"))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/returns_histogram.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Boxplots of Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chart.Boxplot()} from package \emph{PerformanceAnalytics} plots a box-and-whisker plot for a distribution of returns.
+      \vskip1ex
+      The function \texttt{chart.Boxplot()} is a wrapper and calls the function \texttt{graphics::boxplot()} to plot the box plots.
+      \vskip1ex
+      A \emph{box plot} (box-and-whisker plot) is a graphical display of a distribution of data: \\
+      The \emph{box} represents the upper and lower quartiles, \\
+      The vertical lines (whiskers) represent values beyond the quartiles, \\
+      Open circles represent values beyond the nominal range (outliers).
+      <<echo=TRUE,eval=FALSE>>=
+returns <- rutils::etfenv$returns[,
+  c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")]
+x11(width=6, height=5)
+chart.Boxplot(names=FALSE, returns)
+par(cex.lab=0.8, cex.axis=0.8)
+axis(side=2, at=(1:NCOL(returns))/7.5-0.05,labels=colnames(returns))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/perf_analytics_box_plot.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Median Absolute Deviation Estimator of Dispersion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability), defined using the median instead of the mean:
+      \begin{displaymath}
+        \operatorname{MAD} = \operatorname{median}(\operatorname{abs}(x_i - \operatorname{median}(\mathbf{x})))
+      \end{displaymath}
+      The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance.
+      \vskip1ex
+      The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$.
+      \vskip1ex
+      The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation.
+      \vskip1ex
+      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate normally distributed data
+nrows <- 1000
+datav <- rnorm(nrows)
+sd(datav)
+mad(datav)
+median(abs(datav - median(datav)))
+median(abs(datav - median(datav)))/qnorm(0.75)
+# Bootstrap of sd and mad estimators
+boot_data <- sapply(1:10000, function(x) {
+  samplev <- datav[sample.int(nrows, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
+})  # end sapply
+boot_data <- t(boot_data)
+# Analyze bootstrapped variance
+head(boot_data)
+sum(is.na(boot_data))
+# Means and standard errors from bootstrap
+apply(boot_data, MARGIN=2, function(x)
+  c(mean=mean(x), stderror=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster
+boot_data <- parLapply(cluster, 1:10000,
+  function(x, datav) {
+    samplev <- datav[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, datav=datav)  # end parLapply
+# Parallel bootstrap under Mac-OSX or Linux
+boot_data <- mclapply(1:10000, function(x) {
+    samplev <- datav[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, mc.cores=ncores)  # end mclapply
+stopCluster(cluster)  # Stop R processes over cluster
+boot_data <- rutils::do_call(rbind, boot_data)
+# Means and standard errors from bootstrap
+apply(boot_data, MARGIN=2, function(x)
+  c(mean=mean(x), stderror=sd(x)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Median Absolute Deviation of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
+      \vskip1ex
+      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}.
+      \vskip1ex
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing.
+      \vskip1ex
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows}.
+      \vskip1ex
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs loops under \emph{Windows} using parallel computing on several CPU cores.
+      \vskip1ex
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process.
+      \vskip1ex
+      Therefore the required data must be either passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, or by calling the function \texttt{clusterExport()}.
+      \vskip1ex
+      The function \texttt{mclapply()} performs loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}.
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI returns
+returns <- rutils::etfenv$returns$VTI
+returns <- na.omit(returns)
+nrows <- NROW(returns)
+sd(returns)
+mad(returns)
+# Bootstrap of sd and mad estimators
+boot_data <- sapply(1:10000, function(x) {
+  samplev <- returns[sample.int(nrows, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
+})  # end sapply
+boot_data <- t(boot_data)
+# Means and standard errors from bootstrap
+100*apply(boot_data, MARGIN=2, function(x)
+  c(mean=mean(x), stderror=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(ncores)  # Initialize compute cluster
+clusterExport(cluster, c("nrows", "returns"))
+boot_data <- parLapply(cluster, 1:10000,
+  function(x) {
+    samplev <- returns[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  })  # end parLapply
+# Parallel bootstrap under Mac-OSX or Linux
+boot_data <- mclapply(1:10000, function(x) {
+    samplev <- returns[sample.int(nrows, replace=TRUE)]
+    c(sd=sd(samplev), mad=mad(samplev))
+  }, mc.cores=ncores)  # end mclapply
+stopCluster(cluster)  # Stop R processes over cluster
+boot_data <- rutils::do_call(rbind, boot_data)
+# Means and standard errors from bootstrap
+apply(boot_data, MARGIN=2, function(x)
+  c(mean=mean(x), stderror=sd(x)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Downside Deviation of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Some investors argue that positive returns don't represent risk, only those returns less than the target rate of return $r_t$.
+      \vskip1ex
+      The \emph{Downside Deviation} (semi-deviation) $\sigma_{d}$ is equal to the standard deviation of returns less than the target rate of return $r_t$:
+      \begin{displaymath}
+        \sigma_{d} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} ([r_i-r_t]_{-})^2}
+      \end{displaymath}
+      The function \texttt{DownsideDeviation()} from package \emph{PerformanceAnalytics} calculates the downside deviation, for either the full time series (\texttt{method="full"}) or only for the subseries less than the target rate of return $r_t$ (\texttt{method="subset"}).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(PerformanceAnalytics)
+# Define target rate of return of 50 bps
+targetr <- 0.005
+# Calculate the full downside returns
+returns_sub <- (returns - targetr)
+returns_sub <- ifelse(returns_sub < 0, returns_sub, 0)
+nrows <- NROW(returns_sub)
+# Calculate the downside deviation
+all.equal(sqrt(sum(returns_sub^2)/nrows),
+  drop(DownsideDeviation(returns, MAR=targetr, method="full")))
+# Calculate the subset downside returns
+returns_sub <- (returns - targetr)
+returns_sub <- returns_sub[returns_sub < 0]
+nrows <- NROW(returns_sub)
+# Calculate the downside deviation
+all.equal(sqrt(sum(returns_sub^2)/nrows),
+  DownsideDeviation(returns, MAR=targetr, method="subset"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Drawdown Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{drawdown} is the drop in prices from their historical peak, and is equal to the difference between the prices minus the cumulative maximum of the prices.
+      \vskip1ex
+      \emph{Drawdown risk} determines the risk of liquidation due to stop loss limits.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate time series of VTI drawdowns
+closep <- log(quantmod::Cl(rutils::etfenv$VTI))
+draw_downs <- (closep - cummax(closep))
+# Extract the date index from the time series closep 
+dates <- zoo::index(closep)
+# Calculate the maximum drawdown date and depth
+index_min <- which.min(draw_downs)
+date_min <- dates[index_min]
+max_drawdown <- draw_downs[date_min]
+# Calculate the drawdown start and end dates
+startd <- max(dates[(dates < date_min) & (draw_downs == 0)])
+endd <- min(dates[(dates > date_min) & (draw_downs == 0)])
+# dygraph plot of VTI drawdowns
+datav <- cbind(closep, draw_downs)
+colnamev <- c("VTI", "Drawdowns")
+colnames(datav) <- colnamev
+dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], 
+         valueRange=(1.2*range(draw_downs)+0.1), independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", col="red") %>%
+  dyEvent(startd, "start drawdown", col="blue") %>%
+  dyEvent(date_min, "max drawdown", col="red") %>%
+  dyEvent(endd, "end drawdown", col="green")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/drawdown_plot.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot VTI drawdowns using package quantmod
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue")
+x11(width=6, height=5)
+quantmod::chart_Series(x=closep, name="VTI Drawdowns", theme=plot_theme)
+xval <- match(startd, dates)
+yval <- max(closep)
+abline(v=xval, col="blue")
+text(x=xval, y=0.95*yval, "start drawdown", col="blue", cex=0.9)
+xval <- match(date_min, dates)
+abline(v=xval, col="red")
+text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
+xval <- match(endd, dates)
+abline(v=xval, col="green")
+text(x=xval, y=0.85*yval, "end drawdown", col="green", cex=0.9)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Drawdown Risk Using \texttt{PerformanceAnalytics::table.Drawdowns()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{table.Drawdowns()} from package \emph{PerformanceAnalytics} calculates a data frame of drawdowns.
+      <<echo=TRUE,eval=FALSE>>=
+library(xtable)
+library(PerformanceAnalytics)
+closep <- log(quantmod::Cl(rutils::etfenv$VTI))
+returns <- rutils::diffit(closep)
+# Calculate table of VTI drawdowns
+tablev <- PerformanceAnalytics::table.Drawdowns(returns, geometric=FALSE)
+# Convert dates to strings
+tablev <- cbind(sapply(tablev[, 1:3], as.character), tablev[, 4:7])
+# Print table of VTI drawdowns
+print(xtable(tablev), comment=FALSE, size="tiny", include.rownames=FALSE)
+      @
+      <<echo=FALSE,eval=TRUE,size="tiny",results='asis'>>=
+library(xtable)
+library(PerformanceAnalytics)
+closep <- log(quantmod::Cl(rutils::etfenv$VTI))
+returns <- rutils::diffit(closep)
+# Calculate table of VTI drawdowns
+tablev <- PerformanceAnalytics::table.Drawdowns(returns, geometric=FALSE)
+# Convert dates to strings
+tablev <- cbind(sapply(tablev[, 1:3], as.character), tablev[, 4:7])
+# Print table of VTI drawdowns
+print(xtable(tablev), comment=FALSE, size="tiny", include.rownames=FALSE)
+      @
+    \column{0.5\textwidth}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{PerformanceSummary} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{charts.PerformanceSummary()} from package \emph{PerformanceAnalytics} plots three charts: cumulative returns, return bars, and drawdowns, for time series of returns.
+      <<echo=(-(1:1)),eval=FALSE>>=
+# Load "managers" data set
+data(managers)
+charts.PerformanceSummary(ham1,
+  main="", lwd=2, ylog=TRUE)
+      @
+    \column{0.5\textwidth}
+    \vspace{-3em}
+      \includegraphics[width=0.45\paperwidth]{figure/performance_summary-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Loss Distribution of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The distribution of returns has a long left tail of negative returns representing the risk of loss.
+      \vskip1ex
+      The \emph{Value at Risk} ($\mathrm{VaR}$) is equal to the quantile of returns corresponding to a given confidence level $\alpha$.
+      \vskip1ex
+      The \emph{Conditional Value at Risk} ($\mathrm{CVaR}$) is equal to the average of negative returns less than the $\mathrm{VaR}$.
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+returns <- na.omit(rutils::etfenv$returns$VTI)
+confl <- 0.1
+varisk <- quantile(returns, confl)
+cvar <- mean(returns[returns < varisk])
+# Plot histogram of VTI returns
+x11(width=6, height=5)
+par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
+histp <- hist(returns, col="lightgrey",
+  xlab="returns", ylab="frequency", breaks=100,
+  xlim=c(-0.05, 0.01), freq=FALSE, main="VTI Returns Histogram")
+# Calculate density
+densv <- density(returns, adjust=1.5)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_var.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot density
+lines(densv, lwd=3, col="blue")
+# Plot line for VaR
+abline(v=varisk, col="red", lwd=3)
+text(x=varisk, y=25, labels="VaR", lwd=2, pos=2)
+# Plot polygon shading for CVaR
+text(x=1.5*varisk, y=10, labels="CVaR", lwd=2, pos=2)
+var_max <- -0.06
+rangev <- (densv$x < varisk) &  (densv$x > var_max)
+polygon(c(var_max, densv$x[rangev], varisk),
+  c(0, densv$y[rangev], 0), col=rgb(1, 0, 0,0.5), border=NA)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Value at Risk (\protect\emph{VaR})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Value at Risk} ($\mathrm{VaR}$) is equal to the quantile of returns corresponding to a given confidence level $\alpha$:
+      \begin{displaymath}
+        \alpha = \int_{-\infty}^{\mathrm{VaR}(\alpha)} \operatorname{f}(r) \, \mathrm{d}r
+      \end{displaymath}
+      Where $\operatorname{f}(r)$ is the probability density (distribution) of returns.
+      \vskip1ex
+      At a high confidence level, the value of $\mathrm{VaR}$ is subject to estimation error, and various numerical methods are used to approximate it.
+      \vskip1ex
+      The function \texttt{quantile()} calculates the sample quantiles.  It uses interpolation to improve the accuracy.  Information about the different interpolation methods can be found by typing \texttt{?quantile}.
+      \vskip1ex
+      The function \texttt{VaR()} from package \emph{PerformanceAnalytics} calculates the \emph{Value at Risk} using several different methods.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+returns <- na.omit(rutils::etfenv$returns$VTI)
+confl <- 0.05
+# Calculate VaR as quantile
+varisk <- quantile(returns, probs=confl)
+# Or by sorting
+sortv <- sort(as.numeric(returns))
+indeks <- round(confl*NROW(returns))
+varisk <- sortv[indeks]
+# PerformanceAnalytics VaR
+PerformanceAnalytics::VaR(returns,
+  p=(1-confl), method="historical")
+all.equal(unname(varisk),
+  as.numeric(PerformanceAnalytics::VaR(returns,
+  p=(1-confl), method="historical")))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk (\protect\emph{CVaR})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Conditional Value at Risk} ($\mathrm{CVaR}$) is equal to the average of negative returns less than the $\mathrm{VaR}$:
+      \begin{displaymath}
+        \mathrm{CVaR} = \frac{1}{\alpha} \int_{0}^\alpha \mathrm{VaR}(p) \, \mathrm{d}p
+      \end{displaymath}
+      The \emph{Conditional Value at Risk} is also called the \emph{Expected Shortfall} (\emph{ES}), or the Expected Tail Loss (\emph{ETL}).
+      \vskip1ex
+      The function \texttt{ETL()} from package \emph{PerformanceAnalytics} calculates the \emph{Conditional Value at Risk} using several different methods.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
+# Calculate VaR as quantile
+varisk <- quantile(returns, confl)
+# Calculate CVaR as expected loss
+cvar <- mean(returns[returns < varisk])
+# Or by sorting
+sortv <- sort(as.numeric(returns))
+indeks <- round(confl*NROW(returns))
+varisk <- sortv[indeks]
+cvar <- mean(sortv[1:indeks])
+# PerformanceAnalytics VaR
+PerformanceAnalytics::ETL(returns,
+  p=(1-confl), method="historical")
+all.equal(cvar,
+  as.numeric(PerformanceAnalytics::ETL(returns,
+  p=(1-confl), method="historical")))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk and Return Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{table.Stats()} from package \emph{PerformanceAnalytics} calculates a data frame of risk and return statistics of the return distributions.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the risk-return statistics
+risk_ret <-
+  PerformanceAnalytics::table.Stats(rutils::etfenv$returns)
+class(risk_ret)
+# Transpose the data frame
+risk_ret <- as.data.frame(t(risk_ret))
+# Add Name column
+risk_ret$Name <- rownames(risk_ret)
+# Add Sharpe ratio column
+risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
+# Sort on Sharpe ratio
+risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
+      @
+    \column{0.5\textwidth}
+      <<echo=FALSE,eval=TRUE,size="tiny">>=
+# Copy from rutils to save time
+risk_ret <- rutils::etfenv$riskstats
+# Add Sharpe ratio column
+risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
+# Sort on Sharpe ratio
+risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
+# Print data frame
+knitr::kable(risk_ret[, c("Sharpe", "Skewness", "Kurtosis")])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Investor Risk and Return Preferences}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Investors typically prefer larger \emph{odd moments} of the return distribution (mean, skewness), and smaller \emph{even moments} (variance, kurtosis).
+      \vskip1ex
+      But positive skewness is often associated with lower returns, which can be observed in the \emph{VIX} volatility ETFs, \emph{VXX} and \emph{SVXY}.
+      \vskip1ex
+      The \emph{VXX} ETF is long the \emph{VIX} index (effectively long an option), so it has positive skewness and small kurtosis, but negative returns (it's short market risk).
+      \vskip1ex
+      Since the \emph{VXX} is effectively long an option, it pays option premiums so it has negative returns most of the time, with isolated periods of positive returns when markets drop.
+      \vskip1ex
+      The \emph{SVXY} ETF is short the \emph{VIX} index, so it has negative skewness and large kurtosis, but positive returns (it's long market risk).
+      \vskip1ex
+      Since the \emph{SVXY} is effectively short an option, it earns option premiums so it has positive returns most of the time, but it suffers sharp losses when markets drop.
+    \column{0.5\textwidth}
+    \vspace{1em}
+      <<echo=FALSE,eval=TRUE,size="tiny">>=
+# Print data frame
+knitr::kable(risk_ret[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
+      @
+      \includegraphics[width=0.45\paperwidth]{figure/vix_vxx_svxy.png}
+      <<echo=TRUE,eval=FALSE>>=
+# dygraph plot of VXX versus SVXY
+prices <- na.omit(rutils::etfenv$prices[, c("VXX", "SVXY")])
+prices <- prices["2017/"]
+colnamev <- c("VXX", "SVXY")
+colnames(prices) <- colnamev
+dygraphs::dygraph(prices, main="Prices of VXX and SVXY") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="green") %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Skewness and Return Tradeoff}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Similarly to the \emph{VXX} and \emph{SVXY}, for most other ETFs positive skewness is often associated with lower returns.
+      \vskip1ex
+      Some of the exceptions are bond ETFs (like \emph{IEF}), which have both non-negative skewness and positive returns.
+      \vskip1ex
+      Another exception are commodity ETFs (like \emph{USO} oil), which have both negative skewness and negative returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Remove VIX volatility ETF data
+risk_ret <- risk_ret[-match(c("VXX", "SVXY"), risk_ret$Name), ]
+# Plot scatterplot of Sharpe vs Skewness
+plot(Sharpe ~ Skewness, data=risk_ret,
+     ylim=1.1*range(risk_ret$Sharpe),
+     main="Sharpe vs Skewness")
+# Add labels
+text(x=risk_ret$Skewness, y=risk_ret$Sharpe,
+          labels=risk_ret$Name, pos=3, cex=0.8)
+# Plot scatterplot of Kurtosis vs Skewness
+x11(width=6, height=5)
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+plot(Kurtosis ~ Skewness, data=risk_ret,
+     ylim=c(1, max(risk_ret$Kurtosis)),
+     main="Kurtosis vs Skewness")
+# Add labels
+text(x=risk_ret$Skewness, y=risk_ret$Kurtosis,
+          labels=risk_ret$Name, pos=1, cex=0.8)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/etf_skew_sharp.png}
+      % \includegraphics[width=0.45\paperwidth]{figure/etf_skew_kurtosis.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -134,16 +2167,16 @@ PerformanceAnalytics::CalmarRatio(returns)
 PerformanceAnalytics::SharpeRatio(returns, FUN="VaR", 
   p=(1-confl), method="historical")
 # Calculate the Dowd ratio from scratch
-va_r <- sapply(returns, quantile, probs=confl)
--sapply(returns, mean)/va_r
+varisk <- sapply(returns, quantile, probs=confl)
+-sapply(returns, mean)/varisk
 # Calculate the Conditional Dowd ratio
 PerformanceAnalytics::SharpeRatio(returns, FUN="ES", 
   p=(1-confl), method="historical")
 # Calculate the Conditional Dowd ratio from scratch
-c_var <- sapply(returns, function(x) {
+cvar <- sapply(returns, function(x) {
   mean(x[x < quantile(x, confl)])
 })
--sapply(returns, mean)/c_var
+-sapply(returns, mean)/cvar
       @
   \end{columns}
 \end{block}
@@ -167,9 +2200,9 @@ returns <- na.omit(rutils::etfenv$returns$VTI)
 returns <- drop(zoo::coredata(returns))
 nrows <- NROW(returns)
 # Calculate compounded VTI returns
-hold_p <- 252
-cumrets <- sqrt(hold_p)*sapply(1:nrows, function(x) {
-    mean(returns[sample.int(nrows, size=hold_p, replace=TRUE)])
+holdp <- 252
+cumrets <- sqrt(holdp)*sapply(1:nrows, function(x) {
+    mean(returns[sample.int(nrows, size=holdp, replace=TRUE)])
 })  # end sapply
 # Calculate mean, standard deviation, skewness, and kurtosis
 datav <- cbind(returns, cumrets)
@@ -183,11 +2216,11 @@ apply(datav, MARGIN=2, function(x) {
 confl <- 0.05
 sapply(colnames(datav), function(name) {
   x <- datav[, name]; stddev <- sd(x)
-  va_r <- unname(quantile(x, probs=confl))
-  c_var <- mean(x[x < va_r])
+  varisk <- unname(quantile(x, probs=confl))
+  cvar <- mean(x[x < varisk])
   ratio <- 1
-  if (name == colnames(datav)[2]) {ratio <- hold_p}
-  sqrt(252/ratio)*mean(x)/c(Sharpe=stddev, Dowd=-va_r, DowdC=-c_var)
+  if (name == colnames(datav)[2]) {ratio <- holdp}
+  sqrt(252/ratio)*mean(x)/c(Sharpe=stddev, Dowd=-varisk, DowdC=-cvar)
 })  # end sapply
       @
     \column{0.5\textwidth}
@@ -204,306 +2237,6 @@ lines(density(cumrets), t="l", col="red", lwd=3)
 curve(expr=dnorm(x, mean=mean(cumrets), sd=sd(cumrets)), col="green", lwd=3, add=TRUE)
 legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
        inset=-0.1, bg="white", lty=1, lwd=6, col=c("blue", "red", "green"), bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Asset Pricing Models}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Alpha} and \protect\emph{Beta} of Stock Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
-      \end{displaymath}
-      The returns of \emph{XLP} and \emph{VTI} are highly correlated because they are driven by common market factors of returns.
-      \vskip1ex
-      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error.
-      \vskip1ex
-      The \emph{p}-value is the probability of obtaining values exceeding the \emph{t}-statistic, assuming the \emph{null hypothesis} is true.
-      \vskip1ex
-      A small \emph{p}-value means that the regression coefficients are very unlikely to be zero (given the data).
-      <<echo=TRUE,eval=TRUE>>=
-# Perform regression using formula
-model <- lm(XLP ~ VTI, data=rutils::etfenv$returns)
-# Get regression coefficients
-coef(summary(model))
-# Get alpha and beta
-coef(summary(model))[, 1]
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.4\paperwidth]{figure/reg_rets.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot scatterplot of returns with aspect ratio 1
-plot(formulav, data=rutils::etfenv$returns,
-     xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
-     asp=1, main="Regression XLP ~ VTI")
-# Add regression line and perpendicular line
-abline(model, lwd=2, col="red")
-abline(a=0, b=-1/coef(summary(model))[2, 1], 
-       lwd=2, col="blue")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Statistical Significance of \protect\emph{Alpha} and \protect\emph{Beta}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{beta} $\beta$ values of stock returns are very statistically significant, but the \emph{alpha} $\alpha$ values are mostly not significant.
-      \vskip1ex
-      In addition, the \emph{Durbin-Watson} test shows that the regression residuals are autocorrelated which means that the regression \emph{p}-values may be smaller than the reported values.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# Get regression coefficients
-coef(summary(model))
-# Calculate regression coefficients from scratch
-design <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
-betav <- drop(cov(design$XLP, design$VTI)/var(design$VTI))
-alpha <- drop(mean(design$XLP) - betav*mean(design$VTI))
-c(alpha, betav)
-# Calculate the residuals
-residuals <- (design$XLP - (alpha + betav*design$VTI))
-# Calculate the standard deviation of residuals
-nrows <- NROW(residuals)
-resid_stddev <- sqrt(sum(residuals^2)/(nrows - 2))
-# Calculate the standard errors of beta and alpha
-sum2 <- sum((design$VTI - mean(design$VTI))^2)
-betastderror <- resid_stddev/sqrt(sum2)
-alpha_stderror <- resid_stddev*sqrt(1:nrows + mean(design$VTI)^2/sum2)
-c(alpha_stderror, betastderror)
-# Perform the Durbin-Watson test of autocorrelation of residuals
-lmtest::dwtest(model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Alpha} and \protect\emph{Beta} of ETF Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.55\textwidth}
-      The \emph{beta} $\beta$ values of ETF returns are very statistically significant, but the \emph{alpha} $\alpha$ values are mostly not significant.
-      \vskip1ex
-      Some of the ETFs with significant \emph{alpha} $\alpha$ values are the bond ETFs \emph{IEF} and \emph{TLT} (which have performed very well), and the natural resource ETFs \emph{USO} and \emph{DBC} (which have performed very poorly).
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(rutils)  # Load rutils
-returns <- rutils::etfenv$returns
-symbolv <- colnames(returns)
-symbolv <- symbolv[symbolv != "VTI"]
-# Perform regressions and collect statistics
-etf_betas <- sapply(symbolv, function(symbol) {
-# Specify regression formula
-  formulav <- as.formula(paste(symbol, "~ VTI"))
-# Perform regression
-  model <- lm(formulav, data=returns)
-# Get regression summary
-  model_sum <- summary(model)
-# Collect regression statistics
-  with(model_sum, 
-    c(beta=coefficients[2, 1], 
-      pbeta=coefficients[2, 4],
-      alpha=coefficients[1, 1], 
-      palpha=coefficients[1, 4], 
-      pdw=lmtest::dwtest(model)$p.value))
-})  # end sapply
-etf_betas <- t(etf_betas)
-# Sort by palpha
-etf_betas <- etf_betas[order(etf_betas[, "palpha"]), ]
-      @
-    \column{0.45\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-etf_betas
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Capital Asset Pricing Model (\protect\emph{CAPM})}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
-      \end{displaymath}
-      Where $R_m$ are the market returns, and $R_f$ are the risk-free returns.
-      \vskip1ex
-      The \emph{systematic} returns are proportional to $\beta$.
-      \vskip1ex
-      The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$.
-      \vskip1ex
-      The \emph{alpha} $\alpha$ are the returns in excess of \emph{systematic} returns, that may be attributed to portfolio selection or active manager performance.
-      \vskip1ex
-      The \emph{idiosyncratic} risk (equal to $\varepsilon$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
-      \vskip1ex
-      The $\beta$ is proportional to the correlation of returns between the asset and the market:
-      \begin{displaymath}
-        \beta = \frac{\sum_{i=1}^n (R_i-\bar{R}) (R_{i,m}-\bar{R_m})}{\sum_{i=1}^n (R_{i,m}-\bar{R_m})^2} = \rho \frac{\sigma}{\sigma_m}
-      \end{displaymath}
-      The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it earns higher \emph{systematic} returns.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-library(PerformanceAnalytics)
-# Calculate XLP beta
-CAPM.beta(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
-# Calculate XLP bull beta
-CAPM.beta.bull(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
-# Calculate XLP bear beta
-CAPM.beta.bear(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
-# Calculate XLP alpha
-CAPM.alpha(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Security Market Line for ETFs}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      According to the \emph{CAPM} model, assets should earn a \emph{systematic} return proportional to their \emph{systematic} risk $\beta$.
-      \vskip1ex
-      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk $\beta$ and return, for different stocks.
-      <<echo=(-1),eval=FALSE>>=
-library(PerformanceAnalytics)
-etf_betas <- sapply(returns[, colnames(returns)!="VXX"], 
-  CAPM.beta, Rb=returns[, "VTI"])
-etf_annrets <- sapply(returns[, colnames(returns)!="VXX"], 
-  Return.annualized)
-# Plot scatterplot
-plot(etf_annrets ~ etf_betas, xlab="betas", 
-            ylab="ann. rets", xlim=c(-0.25, 1.6))
-points(x=1, y=etf_annrets["VTI"], col="red", lwd=3, pch=21)
-abline(a=0, b=etf_annrets["VTI"])
-label_names <- rownames(etf_betas)[1:13]
-# Add labels
-text(x=1, y=etf_annrets["VTI"], labels="VTI", pos=2)
-text(x=etf_betas[label_names], y=etf_annrets[label_names], 
-     labels=label_names, pos=2, cex=0.8)
-      @
-    \column{0.5\textwidth}
-    \vspace{-4em}
-      \includegraphics[width=0.5\paperwidth]{figure/capm_scatter-1}\\
-    \vspace{-1em}
-      A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't.
-      \vskip1ex
-      If an asset lies on the \emph{SML}, then its returns are mostly \emph{systematic}, and its $\alpha$ is equal to zero.
-      \vskip1ex
-      Assets above the \emph{SML} have a positive $\alpha$, and those below have a negative $\alpha$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Beta-adjusted Performance Measurement}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Treynor} ratio measures the excess returns per unit of the \emph{systematic} risk \emph{beta} $\beta$, and is equal to the excess returns (over a risk-free return) divided by the $\beta$:
-      \begin{displaymath}
-        T_r=\frac{E[R-R_f]}{\beta}
-      \end{displaymath}
-      The \emph{Treynor} ratio is similar to the \emph{Sharpe} ratio, with the difference that its denominator represents only \emph{systematic} risk, not total risk.
-      \vskip1ex
-      The \emph{Information} ratio is equal to the excess returns (over a benchmark) divided by the \emph{tracking error} (standard deviation of excess returns):
-      \begin{displaymath}
-        I_r = \frac{E[R-R_b]} {\sqrt{\sum_{i=1}^n (R_i-R_{i,b})^2}}
-      \end{displaymath}
-      The \emph{Information} ratio measures the amount of outperformance versus the benchmark, and the consistency of outperformance.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-library(PerformanceAnalytics)
-# Calculate XLP Treynor ratio
-TreynorRatio(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
-# Calculate XLP Information ratio
-InformationRatio(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{CAPM} Summary Statistics}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.55\textwidth}
-      \texttt{PerformanceAnalytics::table.CAPM()} calculates the \emph{beta} $\beta$ and \emph{alpha} $\alpha$ values, the \emph{Treynor} ratio, and other performance statistics.
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-PerformanceAnalytics::table.CAPM(Ra=returns[, c("XLP", "XLF")], 
-                                 Rb=returns[, "VTI"], scale=252)
-      @
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-capmstats <- table.CAPM(Ra=returns[, symbolv], 
-              Rb=returns[, "VTI"], scale=252)
-colnamev <- strsplit(colnames(capmstats), split=" ")
-colnamev <- do.call(cbind, colnamev)[1, ]
-colnames(capmstats) <- colnamev
-capmstats <- t(capmstats)
-capmstats <- capmstats[, -1]
-colnamev <- colnames(capmstats)
-whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnamev)
-colnamev[whichv] <- c("Alpha", "Information", "Treynor")
-colnames(capmstats) <- colnamev
-capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
-# Copy capmstats into etfenv and save to .RData file
-etfenv <- rutils::etfenv
-etfenv$capmstats <- capmstats
-save(etfenv, file="C:/Develop/lecture_slides/data/etf_data.RData")
-      @
-    \column{0.45\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
       @
   \end{columns}
 \end{block}
@@ -544,13 +2277,13 @@ rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
       <<echo=TRUE,eval=FALSE>>=
 # Test if IEF can time VTI
 returns <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
-vtis <- returns$VTI
-design <- cbind(returns, 0.5*(vtis+abs(vtis)), vtis^2)
+vti <- returns$VTI
+design <- cbind(returns, 0.5*(vti+abs(vti)), vti^2)
 colnames(design)[3:4] <- c("merton", "treynor")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/timing_skill_ief_vti.png}
+      \includegraphics[width=0.4\paperwidth]{figure/timing_skill_ief_vti.png}
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
 model <- lm(IEF ~ VTI + merton, data=design); summary(model)
@@ -563,9 +2296,9 @@ plot.default(x=design$VTI, y=residuals, xlab="VTI", ylab="IEF")
 title(main="Treynor-Mazuy Market Timing Test\n for IEF vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 fittedv <- (model$coeff["(Intercept)"] + 
-              model$coeff["treynor"]*vtis^2)
+              model$coeff["treynor"]*vti^2)
 points.default(x=design$VTI, y=fittedv, pch=16, col="red")
-text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
+text(x=0.05, y=0.8*max(residuals), paste("Treynor test t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
       @
   \end{columns}
 \end{block}
@@ -589,25 +2322,27 @@ text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(model)$coeff[
       \begin{displaymath}
         r^s_i = p_i - p_{i-1} \quad r^p_i = \frac{p_i - p_{i-1}}{p_{i-1}} \quad r^l_i = \log(\frac{p_i}{p_{i-1}})
       \end{displaymath}
+      The initial returns are all equal to zero.
+      \vskip1ex
       If the log returns are small $r^l \ll 1$, then they are approximately equal to the percentage returns: $r^l \approx r^p$.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 library(rutils)
 # Extract ETF prices from rutils::etfenv$prices
 prices <- rutils::etfenv$prices
 prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
+dates <- index(prices)
 # Calculate simple dollar returns
-rets_dollar <- rutils::diffit(prices)
+retsd <- rutils::diffit(prices)
 # Or
-# rets_dollar <- lapply(prices, rutils::diffit)
-# rets_dollar <- rutils::do_call(cbind, rets_dollar)
-# Calculate log returns
-rets_log <- rutils::diffit(log(prices))
+# retsd <- lapply(prices, rutils::diffit)
+# retsd <- rutils::do_call(cbind, retsd)
 # Calculate percentage returns
-rets_percent <- rets_dollar/
-  rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
+retsp <- retsd/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
+# Calculate log returns
+retsl <- rutils::diffit(log(prices))
       @
   \end{columns}
 \end{block}
@@ -624,15 +2359,15 @@ rets_percent <- rets_dollar/
     \column{0.5\textwidth}
       The sum of the simple (dollar) returns:
       $\sum_{i=1}^n r^s_i$
-      represents the wealth from owning a \emph{fixed number of shares}.
+      represents the wealth path from owning a \emph{fixed number of shares}.
       \vskip1ex
       The compounded percentage returns:
-      $\prod_{i=1}^n r^p_i$
-      also represent the wealth from owning a \emph{fixed number of shares}.
+      $\prod_{i=1}^n (1 + r^p_i$)
+      also represent the wealth path from owning a \emph{fixed number of shares}, initially equal to \texttt{\$1} dollar.
       \vskip1ex
       The sum of the percentage returns (without compounding):
       $\sum_{i=1}^n r^p_i$
-      represents the wealth from owning a \emph{fixed dollar amount} of stock.
+      represents the wealth path from owning a \emph{fixed dollar amount} of stock.
       \vskip1ex
       Maintaining a \emph{fixed dollar amount} of stock requires periodic \emph{rebalancing} - selling shares when their price goes up, and vice versa.
       \vskip1ex
@@ -643,26 +2378,23 @@ rets_percent <- rets_dollar/
       The logarithm of the wealth of a \emph{fixed number of shares} is often used to compare investments, and it's approximately equal to the sum of the percentage returns.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_log_wealth.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_log_wealth.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate prices from simple dollar returns
-rets_dollar[1, ] <- prices[1, ]
-new_prices <- cumsum(rets_dollar)
-all.equal(new_prices, prices)
+# Set the initial dollar returns
+retsd[1, ] <- prices[1, ]
+# Calculate prices from dollar returns
+pricesn <- cumsum(retsd)
+all.equal(pricesn, prices)
 # Compound the percentage returns
-new_prices <- cumprod(1+ rets_percent)
-new_prices <- lapply(1:NCOL(new_prices), function (i)
-    init_prices[i]*new_prices[, i])
-new_prices <- rutils::do_call(cbind, new_prices)
-all.equal(new_prices, prices)
-# Sum the percentage returns
-new_prices <- cumsum(rets_percent)
-methods(cumsum)
-new_prices <- lapply(1:NCOL(new_prices), function (i)
-    new_prices[, i] + log(init_prices[i]))
-new_prices <- rutils::do_call(cbind, new_prices)
-# Only approximately equal
-all.equal(new_prices, log(prices))
+pricesn <- cumprod(1+retsp)
+# Set the initial prices
+pricesi <- as.numeric(prices[1, ])
+pricesn <- lapply(1:NCOL(pricesn), function (i)
+    pricesi[i]*pricesn[, i])
+pricesn <- rutils::do_call(cbind, pricesn)
+# Or
+# pricesn <- t(t(pricesn)*pricesi)
+all.equal(pricesn, prices, check.attributes=FALSE)
 # Plot log VTI prices
 dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)),
   main="Logarithm of VTI Prices") %>%
@@ -700,18 +2432,18 @@ returns <- rutils::diffit(prices)/
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_margin.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_margin.png}
       <<echo=TRUE,eval=FALSE>>=
 # Funding rate per day
-f_rate <- 0.01/252
+frate <- 0.01/252
 # Margin account
-mar_gin <- cumsum(returns)
+margin <- cumsum(returns)
 # Cumulative funding costs
-f_costs <- cumsum(f_rate*mar_gin)
+fcosts <- cumsum(frate*margin)
 # Add funding costs to margin account
-mar_gin <- (mar_gin + f_costs)
+margin <- (margin + fcosts)
 # dygraph plot of margin and funding costs
-datav <- cbind(mar_gin, f_costs)
+datav <- cbind(margin, fcosts)
 colnamev <- c("Margin", "Cumulative Funding")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav, main="VTI Margin Funding Costs") %>%
@@ -775,17 +2507,17 @@ dygraphs::dygraph(datav, main="VTI Margin Funding Costs") %>%
       The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_i$ must be subtracted from the \emph{margin account} $m_t$: $m_t - \sum_{i=1}^t c^r_i$.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_single_transaction_costs.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_single_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
 # Cumulative transaction costs
 costs <- bid_offer*cumsum(abs(returns))/2
 # Subtract transaction costs from margin account
-mar_gin <- cumsum(returns)
-mar_gin <- (mar_gin - costs)
+margin <- cumsum(returns)
+margin <- (margin - costs)
 # dygraph plot of margin and transaction costs
-datav <- cbind(mar_gin, costs)
+datav <- cbind(margin, costs)
 colnamev <- c("Margin", "Cumulative Transaction Costs")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav, main="VTI Transaction Costs") %>%
@@ -808,39 +2540,48 @@ dygraphs::dygraph(datav, main="VTI Transaction Costs") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      There are several ways of combining the returns of multiple assets.
+      There are several ways of combining (adding) the returns of multiple assets.
       \vskip1ex
-      Adding the weighted simple (dollar) returns is equivalent to buying a \emph{fixed number of shares} proportional to the weights.
+      Adding the weighted simple (dollar) returns is equivalent to buying a \emph{fixed number of shares} (aka \emph{Fixed Share Allocation} or FSA) proportional to the weights.
       \vskip1ex
-      Adding the weighted percentage returns is equivalent to investing in \emph{fixed dollar amounts of stock} proportional to the weights.
+      Adding the weighted percentage returns is equivalent to investing in \emph{fixed dollar amounts of stock} (aka \emph{Fixed Dollar Amount} or FDA) proportional to the weights.
       \vskip1ex
       The portfolio allocations must be periodically rebalanced to keep the dollar amounts of the stocks proportional to the weights.
       \vskip1ex
       This \emph{rebalancing} acts as a mean reverting strategy - selling shares when their price goes up, and vice versa.
+      \vskip1ex
+      The portfolio with a fixed number of shares has higher absolute returns but a lower Sharpe ratio than the portfolio with fixed dollar amounts of stock.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI and IEF dollar returns
 prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
-dates <- index(prices)
-rets_dollar <- rutils::diffit(prices)
+retsd <- rutils::diffit(prices)
 # Calculate VTI and IEF percentage returns
-rets_percent <- rets_dollar/
-  rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
+retsp <- retsd/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
+# Set the initial dollar returns
+retsd[1, ] <- prices[1, ]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_weighted_log_wealth.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_weighted_wealth.png}
       <<echo=TRUE,eval=FALSE>>=
-# Wealth of fixed shares (without rebalancing)
-weights <- c(0.5, 0.5)
-rets_dollar[1, ] <- prices[1, ]
-wealth_fixed_shares <- cumsum(rets_dollar %*% weights)
+# Wealth of fixed shares equal to $0.5 each (without rebalancing)
+weights <- c(0.5, 0.5)  # dollar weights
+# Scale the dollar returns using the dollar weights
+pricesi <- as.numeric(prices[1, ])
+wealth_fsa <- cumsum(retsd %*% (weights/pricesi))
+# Or using percentage returns
+wealth_fsa2 <- drop(cumprod(1+retsp) %*% weights)
+all.equal(wealth_fsa, wealth_fsa2)
 # Wealth of fixed dollars (with rebalancing)
-wealth_fixed_dollars <- cumsum(rets_percent %*% weights)
-# Plot log wealth
-wealth <- cbind(wealth_fixed_dollars, log(wealth_fixed_shares))
-wealth <- xts::xts(wealth, index(prices))
-colnames(wealth) <- c("Fixed dollars", "Fixed shares (log)")
+wealth_fda <- cumsum(retsp %*% weights)
+# Calculate the Sharpe and Sortino ratios
+wealth <- cbind(wealth_fda, wealth_fsa)
+wealth <- xts::xts(wealth, zoo::index(prices))
+colnames(wealth) <- c("Fixed dollars", "Fixed shares")
+sqrt(252)*sapply(rutils::diffit(wealth), 
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the log wealth
 colnamev <- colnames(wealth)
 dygraphs::dygraph(wealth, main="Wealth of Weighted Portfolios") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
@@ -873,17 +2614,17 @@ dygraphs::dygraph(wealth, main="Wealth of Weighted Portfolios") %>%
       The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_i$ must be subtracted from the \emph{margin account} $m_t$: $m_t - \sum_{i=1}^t c^r_i$.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_transaction_costs.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
 # Margin account for fixed dollars (with rebalancing)
-mar_gin <- cumsum(rets_percent %*% weights)
+margin <- cumsum(retsp %*% weights)
 # Cumulative transaction costs
-costs <- bid_offer*cumsum(abs(rets_percent) %*% weights)/2
+costs <- bid_offer*cumsum(abs(retsp) %*% weights)/2
 # Subtract transaction costs from margin account
-mar_gin <- (mar_gin - costs)
+margin <- (margin - costs)
 # dygraph plot of margin and transaction costs
-datav <- cbind(mar_gin, costs)
-datav <- xts::xts(datav, index(prices))
+datav <- cbind(margin, costs)
+datav <- xts::xts(datav, zoo::index(prices))
 colnamev <- c("Margin", "Cumulative Transaction Costs")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav, main="Fixed Dollar Portfolio Transaction Costs") %>%
@@ -900,15 +2641,17 @@ dygraphs::dygraph(datav, main="Fixed Dollar Portfolio Transaction Costs") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Portfolio With Fixed Ratios of Dollar Amounts}
+\subsection{Portfolio With Proportional Dollar Allocations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Consider a portfolio with \emph{fixed ratios of dollar amounts}, not fixed dollar amounts.
+      In the \emph{proportional dollar allocation} strategy (\emph{PDA}), the total wealth $w_t$ is allocated to the assets $w_i$ proportional to the portfolio weights $\omega_i$: $w_i = \omega_i w_t$.
       \vskip1ex
-      The total wealth is equal to the portfolio market value, so there's no margin account.
+      The total wealth $w_t$ is not fixed and is equal to the portfolio market value $w_t = \sum w_i$, so there's no margin account.
+      \vskip1ex
+      The portfolio is rebalanced daily to maintain the dollar allocations $w_i$ equal to the total wealth $w_t = \sum w_i$ times the portfolio weights: $\omega_i$: $w_i = \omega_i w_t$.
       \vskip1ex
       Let $r_i$ be the percentage returns, $\omega_i$ be the portfolio weights, and $\bar{r}_t = \sum_{i=1}^n \omega_i r_i$ be the weighted percentage returns at time $t$.
       \vskip1ex
@@ -918,27 +2661,27 @@ dygraphs::dygraph(datav, main="Fixed Dollar Portfolio Transaction Costs") %>%
       \vskip1ex
       The dollar amount of stock $i$ needed to trade to rebalance back to the target weight is equal to:
       \begin{flalign*}
-        \varepsilon_i &= \left| \omega_i w_{t-1} (1 + \bar{r}_t) - \omega_i w_{t-1} (1 + r_i)  \right|\\
+        \varepsilon_i &= \left| \omega_i w_{t-1} (1 + \bar{r}_t) - \omega_i w_{t-1} (1 + r_i) \right|\\
         &= \omega_i w_{t-1} \left| \bar{r}_t - r_i \right|
       \end{flalign*}
       If $\bar{r}_t > r_i$ then an amount $\varepsilon_i$ of the stock $i$ needs to be bought, and if $\bar{r}_t < r_i$ then it needs to be sold.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_weighted_fixed_ratio.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_proportional_allocations.png}
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of fixed shares (without rebalancing)
-wealth_fixed_shares <- cumsum(rets_dollar %*% weights)
-# Calculate weighted percentage returns
-rets_weighted <- rets_percent %*% weights
-# Wealth of fixed ratio of dollar amounts (with rebalancing)
-wealth_fixed_ratio <- cumprod(1 + rets_weighted)
-wealth_fixed_ratio <- wealth_fixed_shares[1]*wealth_fixed_ratio
+wealth_fsa <- cumsum(retsd %*% (weights/pricesi))
+# Or compound the percentage returns
+wealth_fsa <- drop(apply(retsp, 2, 
+  function(x) cumprod(1+x)) %*% weights)-1
+# Wealth of proportional allocations (with rebalancing)
+wealth_pda <- cumprod(1 + retsp %*% weights) - 1
 # Plot log wealth
-wealth <- log(cbind(wealth_fixed_shares, wealth_fixed_ratio))
-wealth <- xts::xts(wealth, index(prices))
-colnames(wealth) <- c("Fixed Shares", "Fixed Ratio")
-dygraphs::dygraph(wealth, main="Log Wealth of Fixed Dollar Ratios") %>%
-  dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
+wealth <- cbind(wealth_fsa, wealth_pda)
+wealth <- xts::xts(wealth, zoo::index(prices))
+colnames(wealth) <- c("Fixed Shares", "Proportional Allocations")
+dygraphs::dygraph(wealth, main="Wealth of Proportional Allocations") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -948,13 +2691,13 @@ dygraphs::dygraph(wealth, main="Log Wealth of Fixed Dollar Ratios") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Transaction Costs With Fixed Dollar Ratios}
+\subsection{Transaction Costs With Proportional Dollar Allocations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In each period the stocks must be rebalanced to maintain the fixed ratio of dollar amounts.
+      In each period the stocks must be rebalanced to maintain the proportional dollar allocations.
       \vskip1ex
       The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = w_{t-1} \sum_{i=1}^n \omega_i \left| \bar{r}_t - r_i \right|$
       \vskip1ex
@@ -963,28 +2706,29 @@ dygraphs::dygraph(wealth, main="Log Wealth of Fixed Dollar Ratios") %>%
       The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_i$ must be subtracted from the \emph{wealth} $w_t$: $w_t - \sum_{i=1}^t c^r_i$.
       <<echo=TRUE,eval=FALSE>>=
 # Returns in excess of weighted returns
-excess <- lapply(rets_percent, function(x) (rets_weighted - x))
+rets_weighted <- retsp %*% weights
+excess <- lapply(retsp, function(x) (rets_weighted - x))
 excess <- do.call(cbind, excess)
 sum(excess %*% weights)
 # Calculate weighted sum of absolute excess returns
 excess <- abs(excess) %*% weights
 # Total dollar amount of stocks that need to be traded
-excess <- excess*rutils::lagit(wealth_fixed_ratio)
+excess <- excess*rutils::lagit(wealth_pda)
 # Cumulative transaction costs
 costs <- bid_offer*cumsum(excess)/2
 # Subtract transaction costs from wealth
-wealth_fixed_ratio <- (wealth_fixed_ratio - costs)
+wealth_pda <- (wealth_pda - costs)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_transaction_costs_fixed_ratio.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_proportional_allocations_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of wealth and transaction costs
-wealth <- cbind(wealth_fixed_ratio, costs)
-wealth <- xts::xts(wealth, index(prices))
+wealth <- cbind(wealth_pda, costs)
+wealth <- xts::xts(wealth, zoo::index(prices))
 colnamev <- c("Wealth", "Cumulative Transaction Costs")
 colnames(wealth) <- colnamev
-dygraphs::dygraph(wealth, main="Transaction Costs With Fixed Dollar Ratios") %>%
+dygraphs::dygraph(wealth, main="Transaction Costs With Proportional Allocations") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
@@ -998,7 +2742,63 @@ dygraphs::dygraph(wealth, main="Transaction Costs With Fixed Dollar Ratios") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Stock and Bond Portfolio With Fixed Dollar Ratio}
+\subsection{Proportional Target Allocation Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{fixed share strategy} (\emph{FSA}), the number of shares is fixed, with their initial dollar value equal to the portfolio weights.
+      \vskip1ex
+      In the \emph{proportional dollar allocation} strategy (\emph{PDA}), the portfolio is rebalanced daily to maintain the dollar allocations $w_i$ equal to the total wealth $w_t = \sum w_i$ times the portfolio weights: $\omega_i$: $w_i = \omega_i w_t$.
+      \vskip1ex
+      In the \emph{proportional target allocation} strategy (\emph{PTA}), the portfolio is rebalanced only if the dollar allocations $w_i$ differ from their targets $\omega_i w_t$ more than the threshold value $\tau$: $\tau > \frac{\sum \left| w_i - \omega_i w_t \right|}{w_t}$.
+      \vskip1ex
+      The \emph{PTA} strategy is path-dependent so it must be simulated using an explicit loop. 
+      \vskip1ex
+      The \emph{PTA} strategy is contrarian, since it sells assets that have outperformed, and it buys assets that have underperformed.
+      \vskip1ex
+      If the threshold level is very small then the \emph{PTA} strategy rebalances daily and it's the same as the \emph{PDA}.
+      \vskip1ex
+      If the threshold level is very large then the \emph{PTA} strategy does not rebalance and it's the same as the \emph{FSA}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Wealth of fixed shares (without rebalancing)
+wealth_fsa <- drop(apply(retsp, 2, function(x) cumprod(1+x)) %*% weights)-1
+# Wealth of proportional dollar allocations (with rebalancing)
+wealth_pda <- cumprod(1 + retsp %*% weights) - 1
+# Wealth of proportional target allocation (with rebalancing)
+retsp <- zoo::coredata(retsp)
+threshold <- 0.05
+wealth <- matrix(nrow=NROW(retsp), ncol=2)
+colnames(wealth) <- colnames(retsp)
+wealth[1, ] <- weights
+for (it in 2:NROW(retsp)) {
+  # Accrue wealth without rebalancing
+  wealth[it, ] <- wealth[it-1, ]*(1 + retsp[it, ])
+  # Rebalance if wealth allocations differ from weights
+  if (sum(abs(wealth[it, ] - sum(wealth[it, ])*weights))/sum(wealth[it, ]) > threshold) {
+    # cat("Rebalance at:", it, "\n")
+    wealth[it, ] <- sum(wealth[it, ])*weights
+  } # end if
+} # end for
+wealth <- rowSums(wealth) - 1
+wealth <- cbind(wealth_pda, wealth)
+wealth <- xts::xts(wealth, zoo::index(prices))
+colnames(wealth) <- c("Proportional Allocations", "Proportional Target")
+dygraphs::dygraph(wealth, main="Wealth of Proportional Target Allocations") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stock and Bond Portfolio With Proportional Dollar Allocations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1032,13 +2832,13 @@ sapply(returns, function(x) {
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_stocks_bonds.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_proportional_stocks_bonds.png}
       <<echo=TRUE,eval=FALSE>>=
-# Wealth of fixed ratio of dollar amounts
+# Wealth of proportional allocations
 wealth <- cumprod(1 + returns)
 # Plot cumulative wealth
-dygraphs::dygraph(log(wealth), main="Stock and Bond Portfolio") %>%
-  dyOptions(colors=c("blue","green","blue","red")) %>%
+dygraphs::dygraph(log(wealth), main="Stocks and Bonds With Proportional Allocations") %>%
+  dyOptions(colors=c("blue", "green", "blue", "red")) %>%
   dySeries("Combined", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
@@ -1055,7 +2855,9 @@ dygraphs::dygraph(log(wealth), main="Stock and Bond Portfolio") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{All-Weather} portfolio is a static portfolio of stocks (30\%), bonds (55\%), and commodities and precious metals (15\%) (approximately), and was designed by Bridgewater Associates, the largest hedge fund in the world:\\
+      The \emph{All-Weather} portfolio is a portfolio with proportional allocations of stocks ($30\%$), bonds ($55\%$), and commodities and precious metals ($15\%$) (approximately).
+      \vskip1ex
+      The \emph{All-Weather} portfolio was designed by Bridgewater Associates, the largest hedge fund in the world:\\
       {\tiny
       \url{https://www.bridgewater.com/research-library/the-all-weather-strategy/} \\
       \url{http://www.nasdaq.com/article/remember-the-allweather-portfolio-its-having-a-killer-year-cm685511} \\
@@ -1071,13 +2873,15 @@ returns <- na.omit(rutils::etfenv$returns[, symbolv])
 weightsaw <- c(0.30, 0.55, 0.15)
 returns <- cbind(returns, returns %*% weightsaw)
 colnames(returns)[4] <- "All Weather"
+# Calculate Sharpe ratios
+sqrt(252)*sapply(returns, function(x) mean(x)/sd(x))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_all_weather.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_all_weather.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative wealth from returns
-wealth <- cumsum(returns)
+wealth <- cumprod(1+returns)
 # dygraph all-weather wealth
 dygraphs::dygraph(wealth, main="All-Weather Portfolio") %>%
   dyOptions(colors=c("blue", "green", "orange", "red")) %>%
@@ -1099,13 +2903,98 @@ legend("topleft", legend=colnames(wealth),
 
 
 %%%%%%%%%%%%%%%
+\subsection{Constant Proportion Portfolio Insurance Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{Constant Proportion Portfolio Insurance} (CPPI) strategy the portfolio is rebalanced between stocks and zero-coupon bonds, to protect against the loss of principal.
+      \vskip1ex
+      A zero-coupon bond pays no coupon, but it's bought at a discount to par ($100\%$), and pays par at maturity.  The investor receives capital appreciation instead of coupons.
+      \vskip1ex
+      Let $P$ be the investor principal amount (total initial invested dollar amount), and let $F$ be the zero-coupon \emph{bond floor}.  
+      The zero-coupon bond floor $F$ is set so that its value at maturity is equal to the principal $P$.  
+      This guarantees that the investor is paid back at least the full principal $P$.
+      \vskip1ex
+      The stock investment is levered by the \emph{multiplier} $C$.  
+      The initial dollar amount invested in stocks is equal to the \emph{cushion} $(P - F)$ times the \emph{multiplier} $C$: $C * (P - F)$.
+      The remaining amount of the principal is invested in zero-coupon bonds and is equal to: $P - C * (P - F)$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI returns
+returns <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
+dates <- index(returns)
+nrows <- NROW(returns)
+returns <- drop(zoo::coredata(returns))
+bfloor <- 60  # bond floor
+coeff <- 2  # multiplier
+portf_value <- numeric(nrows)
+portf_value[1] <- 100  # principal
+stock_value <- numeric(nrows)
+stock_value[1] <- coeff*(portf_value[1] - bfloor)
+bond_value <- numeric(nrows)
+bond_value[1] <- (portf_value[1] - stock_value[1])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{CPPI Strategy Dynamics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the stock price changes and the portfolio value becomes $P_t$, then the dollar amount invested in stocks must be adjusted to: $C * (P_t - F)$.  
+      The amount invested in stocks changes both because the stock price changes and because of rebalancing with the zero-coupon bonds. 
+      \vskip1ex
+      The amount invested in zero-coupon bonds is then equal to: $P_t - C * (P_t - F)$.
+      If the portfolio value drops to the \emph{bond floor} $P_t = F$, then all the stocks must be sold, with only the zero-coupon bonds remaining.
+      But if the stock price rises, more stocks must be purchased, and vice versa.
+      \vskip1ex
+      Therefore the \emph{CPPI} strategy is a \emph{trend following} strategy, buying stocks when their prices are rising, and selling when their prices are dropping.
+      \vskip1ex
+      The \emph{CPPI} strategy can be considered a dynamic replication of a portfolio with a zero-coupon bond and a stock call option.
+      \vskip1ex
+      The \emph{CPPI} strategy is exposed to \emph{gap risk}, if stock prices drop suddenly by a large amount.  
+      The \emph{gap risk} is exacerbated by high leverage, when the \emph{multiplier} $C$ is large, say greater than $5$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_cppi.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate CPPI strategy
+for (t in 2:nrows) {
+  portf_value[t] <- portf_value[t-1] + stock_value[t-1]*returns[t]
+  stock_value[t] <- min(coeff*(portf_value[t] - bfloor), portf_value[t])
+  bond_value[t] <- (portf_value[t] - stock_value[t])
+}  # end for
+# dygraph plot of CPPI strategy
+vti <- 100*cumprod(1+returns)
+datav <- xts::xts(cbind(stock_value, bond_value, portf_value, vti), dates)
+colnames(datav) <- c("stocks", "bonds", "CPPI", "VTI")
+dygraphs::dygraph(datav, main="CPPI strategy") %>%
+  dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Risk Parity Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In a risk parity strategy the dollar portfolio allocations are rebalanced daily so that their dollar volatilities remain the same.
+      In the \emph{Risk Parity} strategy the dollar portfolio allocations are rebalanced daily so that their dollar volatilities remain the same.
       \vskip1ex
       This means that the allocations $a_i$ are proportional to the \emph{standardized prices} ($\frac{p_i}{\sigma^d_i}$ - the dollar amounts of stocks with unit dollar volatilities):
       $a_i \propto \frac{p_i}{\sigma^d_i}$, 
@@ -1126,27 +3015,27 @@ legend("topleft", legend=colnames(wealth),
 # Calculate dollar and percentage returns for VTI and IEF.
 prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
-rets_dollar <- rutils::diffit(prices)
-rets_percent <- rets_dollar/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
-# Calculate wealth of fixed ratio of dollar amounts.
+retsd <- rutils::diffit(prices)
+retsp <- retsd/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
+# Calculate wealth of proportional allocations.
 weights <- c(0.5, 0.5)
-rets_weighted <- rets_percent %*% weights
-wealth_fixed_ratio <- cumprod(1 + rets_weighted)
+rets_weighted <- retsp %*% weights
+wealth_pda <- cumprod(1 + rets_weighted)
 # Calculate rolling percentage volatility.
 look_back <- 21
-vo_l <- roll::roll_sd(rets_percent, width=look_back)
-vo_l <- zoo::na.locf(vo_l, na.rm=FALSE)
-vo_l <- zoo::na.locf(vo_l, fromLast=TRUE)
+volat <- roll::roll_sd(retsp, width=look_back)
+volat <- zoo::na.locf(volat, na.rm=FALSE)
+volat <- zoo::na.locf(volat, fromLast=TRUE)
 # Calculate the risk parity portfolio allocations.
-allocation_s <- lapply(1:NCOL(prices), 
-  function(x) weights[x]/vo_l[, x])
-allocation_s <- do.call(cbind, allocation_s)
+alloc <- lapply(1:NCOL(prices), 
+  function(x) weights[x]/volat[, x])
+alloc <- do.call(cbind, alloc)
 # Scale allocations to 1 dollar total.
-allocation_s <- allocation_s/rowSums(allocation_s)
+alloc <- alloc/rowSums(alloc)
 # Lag the allocations
-allocation_s <- rutils::lagit(allocation_s)
+alloc <- rutils::lagit(alloc)
 # Calculate wealth of risk parity.
-rets_weighted <- rowSums(rets_percent*allocation_s)
+rets_weighted <- rowSums(retsp*alloc)
 wealth_risk_parity <- cumprod(1 + rets_weighted)
       @
   \end{columns}
@@ -1165,19 +3054,21 @@ wealth_risk_parity <- cumprod(1 + rets_weighted)
       The risk parity strategy for \emph{VTI} and \emph{IEF} has a higher \emph{Sharpe ratio} than the fixed ratio strategy because it's more overweight bonds, which is also why it has lower absolute returns. 
       \vskip1ex
       Risk parity works better for assets with low correlations and very different volatilities, like stocks and bonds.
+      \vskip1ex
+      The shiny app \texttt{app\_risk\_parity\_strat.R} allows users to study the performance of the risk parity strategy as a function of its weight parameters.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_risk_parity.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the log wealths.
-wealth <- log(cbind(wealth_fixed_ratio, wealth_risk_parity))
-wealth <- xts::xts(wealth, index(prices))
+wealth <- log(cbind(wealth_pda, wealth_risk_parity))
+wealth <- xts::xts(wealth, zoo::index(prices))
 colnames(wealth) <- c("Fixed Ratio", "Risk Parity")
 # Calculate the Sharpe ratios.
 sqrt(252)*sapply(rutils::diffit(wealth), function (x) mean(x)/sd(x))
 # Plot a dygraph of the log wealths.
-dygraphs::dygraph(wealth, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios") %>%
-  dyOptions(colors=c("blue","red"), strokeWidth=2) %>%
+dygraphs::dygraph(wealth, main="Log Wealth of Risk Parity vs Proportional Allocations") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -1201,10 +3092,10 @@ dygraphs::dygraph(wealth, main="Log Wealth of Risk Parity vs Fixed Dollar Ratios
       <<echo=TRUE,eval=FALSE>>=
 # Test risk parity market timing of VTI using Treynor-Mazuy test
 returns <- rutils::diffit(wealth)
-vtis <- rets_percent$VTI
-design <- cbind(returns, vtis, vtis^2)
+vti <- retsp$VTI
+design <- cbind(returns, vti, vti^2)
 design <- na.omit(design)
-colnames(design)[1:2] <- c("fixed","risk_parity")
+colnames(design)[1:2] <- c("fixed", "risk_parity")
 colnames(design)[4] <- "treynor"
 model <- lm(risk_parity ~ VTI + treynor, data=design)
 summary(model)
@@ -1215,22 +3106,21 @@ x11(width=6, height=5)
 plot.default(x=design$VTI, y=residuals, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for Risk Parity vs VTI", line=0.5)
 # Plot fitted (predicted) response values
-fittedv <- (model$coeff["(Intercept)"] + 
-              model$coeff["treynor"]*vtis^2)
+fittedv <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*vti^2)
 points.default(x=design$VTI, y=fittedv, pch=16, col="red")
-text(x=0.05, y=0.025, paste("Risk Parity t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
+text(x=0.05, y=0.8*max(residuals), paste("Risk Parity t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_timing_skill.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_risk_parity_timing_skill.png}
       <<echo=TRUE,eval=FALSE>>=
 # Test for fixed ratio market timing of VTI using Treynor-Mazuy test
 model <- lm(fixed ~ VTI + treynor, data=design)
 summary(model)
 # Plot fitted (predicted) response values
-fittedv <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*vtis^2)
+fittedv <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*vti^2)
 points.default(x=design$VTI, y=fittedv, pch=16, col="blue")
-text(x=0.05, y=0.02, paste("Fixed Ratio t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
+text(x=0.05, y=0.8*max(residuals), paste("Fixed Ratio t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
       @
   \end{columns}
 \end{block}
@@ -1253,20 +3143,20 @@ text(x=0.05, y=0.02, paste("Fixed Ratio t-value =", round(summary(model)$coeff["
       \href{https://en.wikipedia.org/wiki/Sell_in_May}{\emph{Sell in May}} is a \emph{market timing} \emph{calendar strategy}, in which stocks are sold at the beginning of May, and then bought back at the beginning of November.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate positions
-vtis <- na.omit(rutils::etfenv$returns$VTI)
-position_s <- rep(NA_integer_, NROW(vtis))
-dates <- index(vtis)
+vti <- na.omit(rutils::etfenv$returns$VTI)
+posit <- rep(NA_integer_, NROW(vti))
+dates <- index(vti)
 dates <- format(dates, "%m-%d")
-position_s[dates == "05-01"] <- 0
-position_s[dates == "05-03"] <- 0
-position_s[dates == "11-01"] <- 1
-position_s[dates == "11-03"] <- 1
-# Carry forward and backward non-NA position_s
-position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- zoo::na.locf(position_s, fromLast=TRUE)
+posit[dates == "05-01"] <- 0
+posit[dates == "05-03"] <- 0
+posit[dates == "11-01"] <- 1
+posit[dates == "11-03"] <- 1
+# Carry forward and backward non-NA posit
+posit <- zoo::na.locf(posit, na.rm=FALSE)
+posit <- zoo::na.locf(posit, fromLast=TRUE)
 # Calculate strategy returns
-sell_inmay <- position_s*vtis
-wealth <- cbind(vtis, sell_inmay)
+sell_inmay <- posit*vti
+wealth <- cbind(vti, sell_inmay)
 colnames(wealth) <- c("VTI", "sell_in_may")
 # Calculate Sharpe and Sortino ratios
 sqrt(252)*sapply(wealth, 
@@ -1274,7 +3164,7 @@ sqrt(252)*sapply(wealth,
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_sell_inmay.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_sell_inmay.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot wealth of Sell in May strategy
 dygraphs::dygraph(cumsum(wealth), main="Sell in May Strategy") %>%
@@ -1306,7 +3196,7 @@ legend("topleft", legend=colnames(wealth),
       The \emph{Sell in May} strategy doesn't demonstrate any ability of \emph{timing} the \emph{VTI} ETF.
       <<echo=TRUE,eval=FALSE>>=
 # Test if Sell in May strategy can time VTI
-design <- cbind(vtis, 0.5*(vtis+abs(vtis)), vtis^2)
+design <- cbind(vti, 0.5*(vti+abs(vti)), vti^2)
 colnames(design) <- c("VTI", "merton", "treynor")
 # Perform Merton-Henriksson test
 model <- lm(sell_inmay ~ VTI + merton, data=design)
@@ -1315,14 +3205,14 @@ summary(model)
 model <- lm(sell_inmay ~ VTI + treynor, data=design)
 summary(model)
 # Plot Treynor-Mazuy residual scatterplot
-residuals <- (sell_inmay - model$coeff[2]*vtis)
-plot.default(x=vtis, y=residuals, xlab="VTI", ylab="residuals")
+residuals <- (sell_inmay - model$coeff[2]*vti)
+plot.default(x=vti, y=residuals, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for Sell in May vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 fittedv <- (model$coeff["(Intercept)"] + 
-              model$coeff["treynor"]*vtis^2)
-points.default(x=vtis, y=fittedv, pch=16, col="red")
-text(x=0.05, y=0.05, paste("Treynor test t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
+              model$coeff["treynor"]*vti^2)
+points.default(x=vti, y=fittedv, pch=16, col="red")
+text(x=0.05, y=0.8*max(residuals), paste("Treynor test t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1369,7 +3259,7 @@ colnames(close_open) <- "close_open"
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_overnight.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_overnight.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate Sharpe and Sortino ratios
 wealth <- cbind(close_close, close_open, open_close)
@@ -1407,11 +3297,11 @@ dygraphs::dygraph(cumsum(wealth),
       This would explain why the \emph{TOM} effect has been more pronounced for less liquid small-cap stocks.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI returns
-vtis <- na.omit(rutils::etfenv$returns$VTI)
-dates <- zoo::index(vtis)
+vti <- na.omit(rutils::etfenv$returns$VTI)
+dates <- zoo::index(vti)
 # Calculate first business day of every month
-day_s <- as.numeric(format(dates, "%d"))
-indeks <- which(rutils::diffit(day_s) < 0)
+dayv <- as.numeric(format(dates, "%d"))
+indeks <- which(rutils::diffit(dayv) < 0)
 dates[head(indeks)]
 # Calculate Turn of the Month dates
 indeks <- lapply((-1):2, function(x) indeks + x)
@@ -1420,15 +3310,15 @@ sum(indeks > NROW(dates))
 indeks <- sort(indeks)
 dates[head(indeks, 11)]
 # Calculate Turn of the Month pnls
-pnls <- numeric(NROW(vtis))
-pnls[indeks] <- vtis[indeks, ]
+pnls <- numeric(NROW(vti))
+pnls[indeks] <- vti[indeks, ]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_tom.png}
+      \includegraphics[width=0.4\paperwidth]{figure/strat_tom.png}
       <<echo=TRUE,eval=FALSE>>=
 # Combine data
-wealth <- cbind(vtis, pnls)
+wealth <- cbind(vti, pnls)
 colnamev <- c("VTI", "Strategy")
 colnames(wealth) <- colnamev
 # Calculate Sharpe and Sortino ratios
@@ -1464,18 +3354,18 @@ dygraphs::dygraph(cumsum(wealth), main="Turn of the Month Strategy") %>%
       For example, a simple stop-loss rule is to sell the stock if its price drops by $5\%$ below the recent maximum price, and buy it back when the price recovers.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI returns
-vtis <- na.omit(rutils::etfenv$returns$VTI)
-dates <- zoo::index(vtis)
-vtis <- drop(coredata(vtis))
-nrows <- NROW(vtis)
+vti <- na.omit(rutils::etfenv$returns$VTI)
+dates <- zoo::index(vti)
+vti <- drop(coredata(vti))
+nrows <- NROW(vti)
 # Simulate stop-loss strategy
 stopl <- 0.05
 maxp <- 0.0
 cumrets <- 0.0
-pnls <- vtis
+pnls <- vti
 for (i in 1:nrows) {
 # Calculate drawdown
-  cumrets <- cumrets + vtis[i]
+  cumrets <- cumrets + vti[i]
   maxp <- max(maxp, cumrets)
   dd <- (cumrets - maxp)
 # Check for stop-loss
@@ -1483,20 +3373,20 @@ for (i in 1:nrows) {
     pnls[i+1] <- 0
 }  # end for
 # Same but without using explicit loops
-cumsumv <- cumsum(vtis)
-cum_max <- cummax(cumsum(vtis))
-dd <- (cumsumv - cum_max)
-pnls2 <- vtis
-is_dd <- rutils::lagit(dd < -stopl*cum_max)
-pnls2 <- ifelse(is_dd, 0, pnls2)
+cumsumv <- cumsum(vti)
+cummaxv <- cummax(cumsum(vti))
+dd <- (cumsumv - cummaxv)
+pnls2 <- vti
+isdd <- rutils::lagit(dd < -stopl*cummaxv)
+pnls2 <- ifelse(isdd, 0, pnls2)
 all.equal(pnls, pnls2)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/stop_loss.png}
+      \includegraphics[width=0.4\paperwidth]{figure/stop_loss.png}
       <<echo=TRUE,eval=FALSE>>=
 # Combine data
-wealth <- xts::xts(cbind(vtis, pnls), dates)
+wealth <- xts::xts(cbind(vti, pnls), dates)
 colnamev <- c("VTI", "Strategy")
 colnames(wealth) <- colnamev
 # Calculate Sharpe and Sortino ratios
@@ -1522,28 +3412,945 @@ dygraphs::dygraph(cumsum(wealth), main="VTI Stop-loss Strategy") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Stop-loss rules can reduce the largest losses but they also tend to reduce cumulative returns.
+      Stop-loss rules can reduce the largest drawdowns but they also tend to reduce cumulative returns.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate multiple stop-loss strategies
-cumsumv <- cumsum(vtis)
-cum_max <- cummax(cumsum(vtis))
-dd <- (cumsumv - cum_max)
+cumsumv <- cumsum(vti)
+cummaxv <- cummax(cumsum(vti))
+dd <- (cumsumv - cummaxv)
 cum_pnls <- sapply(0.01*(1:20), function(stopl) {
-  pnls <- vtis
-  is_dd <- rutils::lagit(dd < -stopl*cum_max)
-  pnls <- ifelse(is_dd, 0, pnls)
+  pnls <- vti
+  isdd <- rutils::lagit(dd < -stopl*cummaxv)
+  pnls <- ifelse(isdd, 0, pnls)
   sum(pnls)
 })  # end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/stop_loss_cum.png}
+      \includegraphics[width=0.4\paperwidth]{figure/stop_loss_cum.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative pnls for stop-loss strategies
 plot(x=0.01*(1:20), y=cum_pnls, 
      main="Cumulative PnLs for Stop-loss Strategies",
      xlab="stop-loss level", ylab="cumulative pnl", 
      t="l", lwd=3, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Publishing Interactive Documents}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{shiny} for Creating Interactive Applications}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{shiny} creates interactive applications running in \texttt{R}, with their outputs presented as live visualizations.
+      \vskip1ex
+      \emph{Shiny} allows changing the model parameters, recalculating the model, and displaying the resulting outputs as plots and charts.
+      \vskip1ex
+      A \emph{shiny app} is a file with \emph{shiny} commands and \texttt{R} code. 
+      \vskip1ex
+      The \emph{shiny} code consists of a \emph{shiny interface} and a \emph{shiny server}.
+      \vskip1ex
+      The \emph{shiny interface} contains widgets for data input and an area for plotting.
+      \vskip1ex
+      The \emph{shiny server} contains the \texttt{R} model code and the plotting code.
+      \vskip1ex
+      The function \texttt{shiny::fluidPage()} creates a GUI layout for the user inputs of model parameters and an area for plots and charts.
+      \vskip1ex
+      The function \texttt{shiny::renderPlot()} renders a plot from the outputs of a live model.
+      \vskip1ex
+      The function \texttt{shiny::shinyApp()} creates a \texttt{shiny app} from a \emph{shiny interface} and a \emph{shiny server}.
+      <<echo=TRUE,eval=FALSE>>=
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      % \includegraphics[width=0.3\paperwidth]{figure/shiny_simple.png}
+      % \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+## App setup code that runs only once at startup. 
+ndata <- 1e4
+stdev <- 1.0
+
+## Define the user interface
+uiface <- shiny::fluidPage(
+  # Create numeric input for the number of data points.
+  numericInput("ndata", "Number of data points:", value=ndata),
+  # Create slider input for the standard deviation parameter.
+  sliderInput("stdev", label="Standard deviation:",
+              min=0.1, max=3.0, value=stdev, step=0.1),
+  # Render plot in a panel.
+  plotOutput("plotobj", height=300, width=500)
+)  # end user interface
+
+## Define the server function
+servfun <- function(input, output) {
+  output$plotobj <- shiny::renderPlot({
+    # Simulate the data
+    datav <- rnorm(input$ndata, sd=input$stdev)
+    # Plot the data
+    par(mar=c(2, 4, 4, 0), oma=c(0, 0, 0, 0))
+    hist(datav, xlim=c(-4, 4), main="Histogram of Random Data")
+  })  # end renderPlot
+}  # end servfun
+
+# Return a Shiny app object
+shiny::shinyApp(ui=uiface, server=servfun)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Running Shiny Apps in \protect\emph{RStudio}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{shiny app} can be run by pressing the "Run App" button in \emph{RStudio}.
+      \vskip1ex
+      When the \emph{shiny app} is run, the \emph{shiny} commands are translated into 
+      \href{https://en.wikipedia.org/wiki/JavaScript}{\emph{JavaScript}} 
+      code, which creates a graphical user interface (GUI) with buttons, sliders, and boxes for data input, and also with the output plots and charts.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/shiny_simple.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Positioning and Sizing Widgets Within the Shiny GUI}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{shiny::fluidRow()} and \texttt{shiny::column()} allow positioning and sizing widgets within the \emph{shiny} GUI.
+      <<echo=TRUE,eval=FALSE>>=
+## Create elements of the user interface
+uiface <- shiny::fluidPage(
+  titlePanel("VWAP Moving Average"),
+  # Create single row of widgets with two slider inputs
+  fluidRow(
+    # Input stock symbol
+    column(width=3, selectInput("symbol", label="Symbol",
+                                choices=symbolv, selected=symbol)),
+    # Input look-back interval
+    column(width=3, sliderInput("look_back", label="Lookback interval",
+                                min=1, max=150, value=11, step=1))
+  ),  # end fluidRow
+  # Create output plot panel
+  mainPanel(dygraphs::dygraphOutput("dyplot"), width=12)
+)  # end fluidPage interface
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/shiny_vwap.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Shiny Apps With Reactive Expressions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{shiny} allows specifying reactive expressions which are evaluated only when their input data is updated.  
+      \vskip1ex
+      Reactive expressions avoid performing unnecessary calculations.
+      \vskip1ex
+      If the reactive expression is invalidated (recalculated), then other expressions that depend on its output are also recalculated. 
+      \vskip1ex
+      This way calculations cascade through the expressions that depend on each other.
+      \vskip1ex
+      The function \texttt{shiny::reactive()} transforms an expression into a reactive expression.
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      % \includegraphics[width=0.4\paperwidth]{figure/shiny_vwap.png}
+      % \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+## Define the server function
+servfun <- shiny::shinyServer(function(input, output) {
+  # Get the close and volume data in a reactive environment
+  closep <- shiny::reactive({
+    # Get the data
+    ohlc <- get(input$symbol, data_env)
+    closep <- log(quantmod::Cl(ohlc))
+    volumes <- quantmod::Vo(ohlc)
+    # Return the data
+    cbind(closep, volumes)
+  })  # end reactive code
+  
+  # Calculate the VWAP indicator in a reactive environment
+  vwapv <- shiny::reactive({
+    # Get model parameters from input argument
+    look_back <- input$look_back
+    # Calculate the VWAP indicator
+    closep <- closep()[, 1]
+    volumes <- closep()[, 2]
+    vwapv <- HighFreq::roll_sum(se_ries=closep*volumes, look_back=look_back)
+    volume_rolling <- HighFreq::roll_sum(se_ries=volumes, look_back=look_back)
+    vwapv <- vwapv/volume_rolling
+    vwapv[is.na(vwapv)] <- 0
+    # Return the plot data
+    datav <- cbind(closep, vwapv)
+    colnames(datav) <- c(input$symbol, "VWAP")
+    datav
+  })  # end reactive code
+  
+  # Return the dygraph plot to output argument
+  output$dyplot <- dygraphs::renderDygraph({
+    colnamev <- colnames(vwapv())
+    dygraphs::dygraph(vwapv(), main=paste(colnamev[1], "VWAP")) %>%
+      dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+      dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+      dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
+      dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red")
+  })  # end output plot
+})  # end server code
+
+## Return a Shiny app object
+shiny::shinyApp(ui=uiface, server=servfun)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series of Asset Prices}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Monte Carlo Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution.
+      \vskip1ex
+      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals.
+      \vskip1ex
+      The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} $p$.
+      \vskip1ex
+      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} $p$.
+      \vskip1ex
+	  The function \texttt{quantile()} calculates the sample quantiles.  It uses interpolation to improve the accuracy.  Information about the different interpolation methods can be found by typing \texttt{?quantile}.
+     \vskip1ex
+      The function \texttt{sort()} returns a vector sorted into ascending order.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+nrows <- 1000
+datav <- rnorm(nrows)
+# Sample mean - MC estimate
+mean(datav)
+# Sample standard deviation - MC estimate
+sd(datav)
+# Monte Carlo estimate of cumulative probability
+pnorm(1)
+sum(datav < 1)/nrows
+# Monte Carlo estimate of quantile
+confl <- 0.98
+qnorm(confl)  # Exact value
+cutoff <- confl/nrows
+datav <- sort(datav)
+datav[cutoff]  # Naive Monte Carlo value
+quantile(datav, probs=confl)
+# Analyze the source code of quantile()
+stats:::quantile.default
+# Microbenchmark quantile
+library(microbenchmark)
+summary(microbenchmark(
+  monte_carlo = datav[cutoff],
+  quantilev = quantile(datav, probs=confl),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the percentage asset returns $r_t \mathrm{d} t = \mathrm{d} \log{p_t}$ follow \emph{Brownian motion}:
+      \begin{displaymath}
+        r_t \mathrm{d} t = \mathrm{d} \log{p_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} W_t
+      \end{displaymath}
+      Then asset prices $p_t$ follow \emph{Geometric Brownian motion} (GBM):
+      \begin{displaymath}
+        \mathrm{d} p_t = \mu p_t \mathrm{d}t + \sigma \, p_t \mathrm{d} W_t
+      \end{displaymath}
+      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian Motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      \vskip1ex
+      The solution of \emph{Geometric Brownian motion} is equal to:
+      \begin{displaymath}
+        p_t = p_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, W_t]
+      \end{displaymath}
+      The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (according to Ito's lemma).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/brown_geom.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigmav <- 0.01; drift <- 0.0; nrows <- 1000
+# Simulate geometric Brownian motion
+returns <- sigmav*rnorm(nrows) + drift - sigmav^2/2
+prices <- exp(cumsum(returns))
+plot(prices, type="l", xlab="time", ylab="prices",
+     main="geometric Brownian motion")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Random \protect\emph{OHLC} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Random \emph{OHLC} prices are useful for testing financial models.
+      \vskip1ex
+      The function \texttt{sample()} selects a random sample from a vector of data elements.
+      \vskip1ex
+      The function \texttt{sample()} with \texttt{replace=TRUE} selects samples with replacement (the default is \texttt{replace=FALSE}).
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate geometric Brownian motion
+sigmav <- 0.01/sqrt(48)
+drift <- 0.0
+nrows <- 1e4
+dates <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+  length.out=nrows, by="30 min")
+prices <- exp(cumsum(sigmav*rnorm(nrows) + drift - sigmav^2/2))
+prices <- xts(prices, order.by=dates)
+prices <- cbind(prices,
+  volume=sample(x=10*(2:18), size=nrows, replace=TRUE))
+# Aggregate to daily OHLC data
+ohlc <- xts::to.daily(prices)
+quantmod::chart_Series(ohlc, name="random prices")
+# dygraphs candlestick plot using pipes syntax
+library(dygraphs)
+dygraphs::dygraph(ohlc[, 1:4]) %>% dyCandlestick()
+# dygraphs candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(ohlc[, 1:4]))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.4\paperwidth]{figure/random_ohlc.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Log-normal} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If \texttt{x} follows the \emph{Normal} distribution $\phi(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution $\log\phi()$:
+      \begin{displaymath}
+        \log\phi(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \, \sqrt{2 \pi}}
+      \end{displaymath}
+      With mean equal to: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$, and median equal to: $\tilde{y} = \exp(\mu)$
+      <<echo=TRUE,eval=FALSE>>=
+# Standard deviations of log-normal distribution
+sigmavs <- c(0.5, 1, 1.5)
+# Create plot colors
+colors <- c("black", "red", "blue")
+# Plot all curves
+for (indeks in 1:NROW(sigmavs)) {
+  curve(expr=dlnorm(x, sdlog=sigmavs[indeks]),
+        type="l", lwd=2, xlim=c(0, 3),
+        xlab="", ylab="", col=colors[indeks],
+        add=as.logical(indeks-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/log_norm_dist.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+       paste("sigma", sigmavs, sep="="),
+       cex=0.8, lwd=2, lty=rep(1, NROW(sigmavs)),
+       col=colors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Standard Deviation of \protect\emph{Log-normal} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vskip1ex
+      If percentage asset returns are \emph{normally} distributed and follow \emph{Brownian motion}, then asset prices follow \emph{Geometric Brownian motion}, and they are \emph{Log-normally} distributed at every point in time.
+      \vskip1ex
+      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
+      \vskip1ex
+      The \emph{Log-normal} distribution has a strong positive skewness (third moment) equal to: $\varsigma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
+      \vskip1ex
+      For large standard deviation, the skewness increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1))
+# Return volatility of VTI etf
+sigmav <- sd(rutils::diffit(log(rutils::etfenv$VTI[, 4])))
+sigma2 <- sigmav^2
+nrows <- NROW(rutils::etfenv$VTI)
+# Standard deviation of log-normal prices
+sqrt(nrows)*sigmav
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/log_norm_skew.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Skewness of log-normal prices
+skew_ness <- function(t) {
+  ex_p <- exp(t*sigma2)
+  (ex_p + 2)*sqrt(ex_p - 1)
+}  # end skew_ness
+curve(expr=skew_ness, xlim=c(1, nrows), lwd=3,
+      xlab="Number of days", ylab="Skewness", col="blue",
+      main="Skewness of Log-normal Prices
+      as a Function of Time")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Mean and Median of \protect\emph{Log-normal} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The mean of the \emph{Log-normal} distribution: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$ is greater than its median, which is equal to: $\tilde{y} = \exp(\mu)$.
+      \vskip1ex
+      So if stock prices follow \emph{Geometric Brownian motion} and are distributed \emph{log-normally}, then a stock selected at random will have a high probability of havng a lower price than the mean expected price.
+      \vskip1ex
+      The cumulative \emph{Log-normal} probability distribution is equal to $\operatorname{F}(x) = \Phi(\frac{\log{y}-\mu}{\sigma})$, where $\Phi()$ is the cumulative standard normal distribution.
+      \vskip1ex
+      So the probability that the price of a randomly selected stock will be lower than the mean price is equal to $\operatorname{F}(\bar{y}) = \Phi(\sigma/2)$.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/log_norm_prob.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Probability that random log-normal price will be lower than the mean price
+curve(expr=pnorm(sigmav*sqrt(x)/2),
+      xlim=c(1, nrows), lwd=3,
+      xlab="Number of days", ylab="Probability", col="blue",
+      main="Probability That Random Log-normal Price
+      Will be Lower Than the Mean Price")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard deviation of \emph{log-normal} prices $\sigma$ is equal to the volatility of returns $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
+      \vskip1ex
+      For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigmav <- 0.01; drift <- 0.0; nrows <- 5000
+paths <- 10
+# Simulate multiple paths of geometric Brownian motion
+prices <- matrix(rnorm(paths*nrows, sd=sigmav) +
+    drift - sigmav^2/2, nc=paths)
+prices <- exp(matrixStats::colCumsums(prices))
+# Create xts time series
+prices <- xts(prices, order.by=seq.Date(Sys.Date()-NROW(prices)+1, Sys.Date(), by=1))
+# Plot xts time series
+colors <- colorRampPalette(c("red", "blue"))(NCOL(prices))
+colors <- colors[order(order(prices[NROW(prices), ]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(prices, main="Multiple paths of geometric Brownian motion",
+         xlab=NA, ylab=NA, plot.type="single", col=colors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.4\paperwidth]{figure/brown_geom_paths.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value.
+      \vskip1ex
+      For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigmav <- 0.01; drift <- 0.0; nrows <- 10000
+paths <- 100
+# Simulate multiple paths of geometric Brownian motion
+prices <- matrix(rnorm(paths*nrows, sd=sigmav) +
+    drift - sigmav^2/2, nc=paths)
+prices <- exp(matrixStats::colCumsums(prices))
+# Calculate fraction of paths below the expected value
+fractv <- rowSums(prices < 1.0) / paths
+# Create xts time series of percentage of paths below the expected value
+fractv <- xts(fractv, order.by=seq.Date(Sys.Date()-NROW(fractv)+1, Sys.Date(), by=1))
+# Plot xts time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(fractv, main="Percentage of GBM paths below mean",
+         xlab=NA, ylab=NA, col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.4\paperwidth]{figure/brown_geom_percent.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Evolution of Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stock prices evolve over time similar to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+ls(sp500env)
+# Extract closing prices
+prices <- eapply(sp500env, quantmod::Cl)
+# Flatten prices into a single xts series
+prices <- rutils::do_call(cbind, prices)
+# Carry forward and backward non-NA prices
+prices <- zoo::na.locf(prices, na.rm=FALSE)
+prices <- zoo::na.locf(prices, fromLast=TRUE)
+sum(is.na(prices))
+# Drop ".Close" from column names
+colnames(prices[, 1:4])
+colnames(prices) <- rutils::get_name(colnames(prices))
+# Or
+# colnames(prices) <- do.call(rbind,
+#   strsplit(colnames(prices), split="[.]"))[, 1]
+# Normalize the columns so that prices start at 1
+pricesn <- lapply(prices, function(x) x/as.numeric(x[1]))
+pricesn <- rutils::do_call(cbind, pricesn)
+# Calculate permutation index for sorting on the final prices
+nrows <- NROW(pricesn)
+ordern <- order(pricesn[nrows, ])
+# Sort the symbols according to the final prices
+symbolv <- colnames(pricesn)[ordern]
+# Select 20 symbols
+symbolv <- symbolv[seq.int(from=1, to=NROW(symbolv), length.out=20)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/stock_index_paths.png}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot xts time series of prices
+colors <- colorRampPalette(c("red", "blue"))(NROW(symbolv))
+colors <- colors[order(order(pricesn[nrows, symbolv]))]
+plot.zoo(pricesn["2000/", symbolv], main="20 S&P500 Stock Prices (normalized)",
+         xlab=NA, ylab=NA, plot.type="single", col=colors)
+legend(x="topleft", inset=0.02, cex=0.6,
+       legend=rev(symbolv), col=rev(colors), lwd=6, lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Usually, a small number of stocks in an index reach very high prices, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
+      \vskip1ex
+      For example, the current prices of almost \texttt{80\%} of the S\&P500 constituent stocks from \texttt{1990} are now below the average price of that portfolio.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate average of valid stock prices
+validp <- (pricesn != 1)  # Valid stocks
+nstocks <- rowSums(validp)
+nstocks[1] <- NCOL(pricesn)
+indeks <- rowSums(pricesn*validp)/nstocks
+# Calculate fraction of stock prices below the average price
+fractv <- rowSums((pricesn < indeks) & validp)/nstocks
+# Create xts time series of average stock prices
+indeks <- xts(indeks, order.by=zoo::index(pricesn))
+      @
+    \column{0.5\textwidth}
+    % \vspace{-1em}
+    %   \includegraphics[width=0.4\paperwidth]{figure/stock_index_prices.png}
+    % \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/stock_index_prices_percent.png}
+      <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# x11(width=6, height=4)
+# Plot xts time series of average stock prices
+plot.zoo(indeks, main="Average S&P500 Stock Prices (normalized from 1990)",
+         xlab=NA, ylab=NA, col="blue")
+# Create xts time series of percentage of stock prices below the average price
+fractv <- xts(fractv, order.by=zoo::index(pricesn))
+# Plot percentage of stock prices below the average price
+plot.zoo(fractv[-(1:2),],
+         main="Percentage of S&P500 Stock Prices 
+         Below the Average Price",
+         xlab=NA, ylab=NA, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Stock Selection Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Stock Selection}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The proper benchmark for a stock picker is the median of random portfolios, not the stock index, which is the mean.
+      <<echo=TRUE,eval=FALSE>>=
+# Load the S&P500 stock prices
+library(rutils)
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+# Subset (select) the prices after the start date of VTI
+vti <- quantmod::Cl(rutils::etfenv$VTI)
+vti <- rutils::diffit(vti)/rutils::lagit(vti, lagg=1, pad_zeros=FALSE)
+colnames(vti) <- "VTI"
+startd <- start(vti)
+prices <- prices[startd <= zoo::index(prices)]
+# Copy over NA prices using the function zoo::na.locf().
+sum(is.na(prices))
+prices <- zoo::na.locf(prices, na.rm=FALSE)
+prices <- prices[, !is.na(prices[1, ])]
+sum(is.na(prices))
+dates <- zoo::index(prices)
+vti <- vti[dates]
+nrows <- NROW(prices)
+ncols <- NCOL(prices)
+# Calculate percentage returns
+retsp <- rutils::diffit(prices)/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
+# Normalize the prices so that they start at 1
+pricesn <- lapply(prices, function(x) x/as.numeric(x[1]))
+pricesn <- rutils::do_call(cbind, pricesn)
+head(pricesn[, 1:5])
+# Calculate the equal dollar-weighted average of all stock prices
+indeks <- rowMeans(pricesn)
+indeks <- xts::xts(indeks, order.by=dates)
+colnames(indeks) <- "Index"
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_random.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Select a random, equal dollar-weighted portfolio of 5 stocks
+nstocks <- 5
+set.seed(1121)
+samplev <- sample.int(n=ncols, size=nstocks, replace=FALSE)
+portf <- pricesn[, samplev]
+portf <- rowMeans(portf)
+portf <- xts::xts(portf, order.by=dates)
+colnames(portf) <- "Random"
+# Plot dygraph of stock index and random portfolio
+wealth <- cbind(indeks, portf)
+colors <- c("blue", "red")
+dygraphs::dygraph(wealth, main="Stock Index and Random Portfolio") %>%
+  dyOptions(colors=colors, strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Stock Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Most random portfolios underperform the index, so picking a portfolio which outperforms the stock index requires great skill.
+      \vskip1ex
+      An investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+      <<echo=TRUE,eval=FALSE>>=
+# Select 10 random equal dollar-weighted sub-portfolios
+set.seed(1121)
+nportf <- 10
+portfs <- sapply(1:nportf, function(x) {
+  prices <- pricesn[, sample.int(n=ncols, size=nstocks, replace=FALSE)]
+  rowMeans(prices)
+})  # end sapply
+portfs <- xts::xts(portfs, order.by=dates)
+colnames(portfs) <- paste0("portf", 1:nportf)
+round(head(portfs[, 1:4]), 3)
+round(tail(portfs[, 1:4]), 3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_randomm.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of stock index and random portfolios
+colors <- colorRampPalette(c("red", "blue"))(nportf)
+colors <- colors[order(order(portfs[NROW(portfs), ]))]
+combined <- cbind(indeks, portfs)
+colnames(combined)[1] <- "Index"
+colors <- c("green", colors)
+dygraphs::dygraph(combined, main="Stock Index and Random Portfolios") %>%
+  dyOptions(colors=colors, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Momentum Strategies}
+
+%%%%%%%%%%%%%%%
+\subsection{Stock Portfolio Selection Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The strategy selects the \texttt{10} best performing stocks from the in-sample interval, and invests equal dollar amounts in the out-of-sample interval.
+      \vskip1ex
+      The strategy out-of-sample performance is only slightly better than the index.
+      <<echo=TRUE,eval=FALSE>>=
+# Define in-sample and out-of-sample intervals
+cutoff <- nrows %/% 2
+dates[cutoff]
+# Calculate the 10 best performing stocks in-sample
+perfstat <- sort(drop(coredata(pricesn[cutoff, ])), decreasing=TRUE)
+symbolv <- names(head(perfstat, 10))
+# Calculate the in-sample portfolio
+pricis <- pricesn[1:cutoff, symbolv]
+wealth <- sum(pricis[cutoff, ])
+# Normalize the prices so that they are 1 at cutoff+1
+pricesn <- lapply(prices, function(x) x/as.numeric(x[cutoff+1]))
+pricesn <- rutils::do_call(cbind, pricesn)
+# Calculate the out-of-sample portfolio
+pricos <- pricesn[(cutoff+1):nrows, symbolv]
+pricos <- wealth*pricos/sum(pricos[1, ])
+wealth <- rbind(pricis, pricos)
+wealth <- xts::xts(rowMeans(wealth), dates)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_stocks_out_sample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot out-of-sample stock portfolio returns
+wealth <- cbind(indeks, wealth)
+colnames(wealth)[2] <- "Portfolio"
+dygraphs::dygraph(log(wealth), main="Out-of-sample Log Prices of Stock Portfolio") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyEvent(dates[cutoff], label="in-sample", strokePattern="solid", color="green") %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Momentum Strategy for Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Momentum} strategies can be \emph{backtested} by specifying the portfolio rebalancing frequency, the formation period, and the holding period:
+      \setlength{\leftmargini}{1.0em}
+      \begin{itemize}
+        \item Specify a portfolio of stocks and their time series of returns,
+        \item Specify \emph{end points} for the portfolio rebalancing frequency,
+        \item Specify \emph{look-back} intervals for portfolio formation, and \emph{look-forward} intervals for portfolio holding, 
+        \item Specify a performance function to calculate the past performance of the assets,
+        \item Calculate the past performance over the \emph{look-back} formation intervals,
+        \item Calculate the portfolio weights from the past performance,
+        \item Calculate the future returns over the \emph{look-forward} holding intervals,
+        \item Calculate the out-of-sample momentum strategy returns by applying the portfolio weights to the future returns,
+        \item Calculate the transaction costs and subtract them from the strategy returns.
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+backtestmom <- function(returns,
+                             objfun=function(returns) (prod(1+returns)/sd(returns)),
+                             look_back=12, rfreq="months", nstocks=10, bid_offer=0.001,
+                             endp=rutils::calc_endpoints(returns, interval=rfreq), ...) {
+  # Define look-back and look-forward intervals
+  npts <- NROW(endp)
+  # Perform loop over end points
+  pnls <- lapply(2:(npts-1), function(it) {
+    # Select look-back returns
+    startp <- endp[max(1, it-look_back)]
+    retslb <- returns[startp:endp[it], ]
+    # Calculate the best performing stocks in-sample
+    perfstat <- sapply(retslb, objfun)
+    # perfstat <- sapply(1+retslb, prod)
+    perfstat <- na.omit(perfstat)
+    perfstat <- perfstat[is.finite(perfstat)]
+    perfstat <- sort(perfstat, decreasing=TRUE)
+    symbolv <- names(head(perfstat, nstocks))
+    # Calculate the in-sample portfolio volatility and beta
+    retst <- rowMeans(cumprod(1+retslb))
+    retst <- rutils::diffit(retst)/rutils::lagit(retst, lagg=1, pad_zeros=FALSE)
+    retsportf <- retslb[, symbolv]
+    retsportf <- rowMeans(cumprod(1+retsportf))
+    retsportf <- rutils::diffit(retsportf)/rutils::lagit(retsportf, lagg=1, pad_zeros=FALSE)
+    scalef <- sd(retst)/sd(retsportf)
+    # Calculate the out-of-sample portfolio returns
+    retsos <- returns[(endp[it]+1):endp[it+1], symbolv]
+    retsos <- rowMeans(cumprod(1+retsos))
+    retsos <- rutils::diffit(retsos)/rutils::lagit(retsos, lagg=1, pad_zeros=FALSE)
+    # Scale the out-of-sample portfolio returns
+    scalef*retsos
+  })  # end lapply
+  pnls <- rutils::do_call(c, pnls)
+  pnls
+}  # end backtestmom
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performance of Momentum Strategy for Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The momentum strategy for stocks produces a slightly lower absolute return than the index, but it has a slightly higher Sharpe ratio.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate a vector of monthly end points
+endp <- rutils::calc_endpoints(prices, interval="months")
+endp[2] <- 11
+dates[endp]
+npts <- NROW(endp)
+look_back <- 8
+# Select 10 stocks for equal dollar-weighted portfolio
+nstocks <- 10
+# weights <- rep(1/nstocks, nstocks)
+pnls <- backtestmom(retsp, look_back=look_back, endp=endp, 
+  nstocks=nstocks, objfun=function(returns) (prod(1+returns)))
+# Add initial startup interval
+retsu <- retsp[endp[1]:endp[2], ]
+retsu <- rowMeans(cumprod(1+retsu))
+retsu <- rutils::diffit(retsu)/
+  rutils::lagit(retsu, lagg=1, pad_zeros=FALSE)
+pnls <- c(retsu, pnls)
+pnls <- cumprod(1+pnls)
+pnls <- xts::xts(pnls, order.by=dates)
+colnames(pnls) <- "Strategy"
+# Calculate the Sharpe and Sortino ratios
+wealth <- cbind(indeks, pnls)
+sqrt(252)*sapply(rutils::diffit(wealth), 
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_moment_monthly.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of stock index and momentum strategy
+colors <- c("blue", "red")
+dygraphs::dygraph(log(wealth), main="Log Stock Index and Momentum Strategy") %>%
+  dyOptions(colors=colors, strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}
@@ -1562,7 +4369,7 @@ plot(x=0.01*(1:20), y=cum_pnls,
 \vspace{-1em}
 \begin{block}{Required}
   \begin{itemize}[]
-    \item Study all the lecture slides in \texttt{FRE7241\_Lecture\2.pdf}, and run all the code in \texttt{FRE7241\_Lecture\2.R},
+    \item Study all the lecture slides in \texttt{FRE7241\_Lecture\_2.pdf}, and run all the code in \texttt{FRE7241\_Lecture\_2.R},
     \item Study \emph{bootstrap simulation} from the files \emph{bootstrap\_technique.pdf} and \emph{doBootstrap\_primer.pdf},
     \item Study the following sections in the file \texttt{numerical\_analysis.pdf}: 
     \begin{itemize}[]
