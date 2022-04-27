@@ -123,7 +123,7 @@ options(max.print=30)
 # Warning levels options
 # Negative - warnings are ignored
 options(warn=-1)
-# zero - warnings are stored and printed after top-level function has completed
+# zero - warnings are stored and printed after top-confl function has completed
 options(warn=0)
 # One - warnings are printed as they occur
 options(warn=1)

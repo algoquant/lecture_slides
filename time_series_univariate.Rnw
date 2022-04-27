@@ -218,8 +218,8 @@ library(tseries)  # Load package tseries
 # Calculate maximum drawdown
 maxdrawdown(msft_adj[, "AdjClose"])
 max_drawd <- maxdrawdown(msft_adj[, "AdjClose"])
-index(msft_adj)[max_drawd$from]
-index(msft_adj)[max_drawd$to]
+zoo::index(msft_adj)[max_drawd$from]
+zoo::index(msft_adj)[max_drawd$to]
 # Calculate Sharpe ratio
 sharpe(msft_adj[, "AdjClose"])
 # Calculate Sterling ratio
@@ -772,7 +772,7 @@ par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
 zoo::plot.zoo(prices[, 1], lwd=2, col="orange",
               xlab=NA, ylab=NA, xaxt="n")
 # Create X-axis date labels and add X-axis
-dates <- pretty(index(prices))
+dates <- pretty(zoo::index(prices))
 axis(side=1, at=dates, labels=format(dates, "%b-%d-%y"))
 # Plot second time series without y-axis
 par(new=TRUE)  # Allow new line on same plot
@@ -858,7 +858,7 @@ dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(datav),
 indic <- (Cl(datav) > datav[, "VWAP"])
 whichv <- which(rutils::diffit(indic) != 0)
 indic <- rbind(first(indic), indic[whichv, ], last(indic))
-dates <- index(indic)
+dates <- zoo::index(indic)
 indic <- ifelse(drop(coredata(indic)), "lightgreen", "antiquewhite")
 # Create dygraph object without rendering it
 dyplot <- dygraphs::dygraph(datav) %>% dyCandlestick() %>% 
@@ -1033,21 +1033,21 @@ summary(microbenchmark(
 set.seed(1121)  # Reset random number generator
 barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
-paths <- numeric(nrows)  # Allocate path vector
-paths[1] <- 0  # Initialize path
-indeks <- 2  # Initialize simulation index
-while ((indeks <= nrows) && (paths[indeks - 1] < barl)) {
+pathv <- numeric(nrows)  # Allocate path vector
+pathv[1] <- 0  # Initialize path
+it <- 2  # Initialize simulation index
+while ((it <= nrows) && (pathv[it - 1] < barl)) {
 # Simulate next step
-  paths[indeks] <- paths[indeks - 1] + rnorm(1)
-  indeks <- indeks + 1  # Advance indeks
+  pathv[it] <- pathv[it - 1] + rnorm(1)
+  it <- it + 1  # Advance index
 }  # end while
-# Fill remaining paths after it crosses barl
-if (indeks <= nrows)
-  paths[indeks:nrows] <- paths[indeks - 1]
+# Fill remaining path after it crosses barl
+if (it <= nrows)
+  pathv[it:nrows] <- pathv[it - 1]
 # Plot the Brownian motion
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(paths, type="l", col="black",
+plot(pathv, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barl, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
@@ -1077,9 +1077,9 @@ barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
 # Simulate path of Brownian motion
 pathv <- cumsum(rnorm(nrows))
-# Find index when pathv crosses barl
+# Find index when path crosses barl
 crossp <- which(pathv > barl)
-# Fill remaining pathv after it crosses barl
+# Fill remaining path after it crosses barl
 if (NROW(crossp)>0) {
   pathv[(crossp[1]+1):nrows] <- pathv[crossp[1]]
 }  # end if
@@ -1255,14 +1255,13 @@ sqrt(nrows)*sigmav
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/log_norm_skew.png}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Skewness of log-normal prices
-skew_ness <- function(t) {
-  ex_p <- exp(t*sigma2)
-  (ex_p + 2)*sqrt(ex_p - 1)
-}  # end skew_ness
-curve(expr=skew_ness, xlim=c(1, nrows), lwd=3,
+calcskew <- function(t) {
+  expv <- exp(t*sigma2)
+  (expv + 2)*sqrt(expv - 1)
+}  # end calcskew
+curve(expr=calcskew, xlim=c(1, nrows), lwd=3,
       xlab="Number of days", ylab="Skewness", col="blue",
       main="Skewness of Log-normal Prices
       as a Function of Time")
@@ -1294,7 +1293,6 @@ curve(expr=skew_ness, xlim=c(1, nrows), lwd=3,
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/log_norm_prob.png}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Probability that random log-normal price will be lower than the mean price
 curve(expr=pnorm(sigmav*sqrt(x)/2),
@@ -1322,10 +1320,10 @@ curve(expr=pnorm(sigmav*sqrt(x)/2),
       <<echo=TRUE,eval=FALSE>>=
 # Define daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 5000
-paths <- 10
+npaths <- 10
 # Simulate multiple paths of geometric Brownian motion
-prices <- matrix(rnorm(paths*nrows, sd=sigmav) +
-    drift - sigmav^2/2, nc=paths)
+prices <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+prices <- matrix(prices, nc=npaths)
 prices <- exp(matrixStats::colCumsums(prices))
 # Create xts time series
 prices <- xts(prices, order.by=seq.Date(Sys.Date()-NROW(prices)+1, Sys.Date(), by=1))
@@ -1357,13 +1355,13 @@ plot.zoo(prices, main="Multiple paths of geometric Brownian motion",
       <<echo=TRUE,eval=FALSE>>=
 # Define daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 10000
-paths <- 100
+npaths <- 100
 # Simulate multiple paths of geometric Brownian motion
-prices <- matrix(rnorm(paths*nrows, sd=sigmav) +
-    drift - sigmav^2/2, nc=paths)
+prices <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+prices <- matrix(prices, nc=npaths)
 prices <- exp(matrixStats::colCumsums(prices))
 # Calculate fraction of paths below the expected value
-fractv <- rowSums(prices < 1.0) / paths
+fractv <- rowSums(prices < 1.0) / npaths
 # Create xts time series of percentage of paths below the expected value
 fractv <- xts(fractv, order.by=seq.Date(Sys.Date()-NROW(fractv)+1, Sys.Date(), by=1))
 # Plot xts time series of percentage of paths below the expected value
@@ -1418,8 +1416,7 @@ symbolv <- symbolv[seq.int(from=1, to=NROW(symbolv), length.out=20)]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/stock_index_paths.png}
-    \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/sp500_price_paths.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot xts time series of prices
 colors <- colorRampPalette(c("red", "blue"))(NROW(symbolv))
@@ -1436,7 +1433,42 @@ legend(x="topleft", inset=0.02, cex=0.6,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Distribution of Stock Prices}
+\subsection{Distribution of Final Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The distribution of final stock prices is extremely skewed, with over \texttt{80\%} of the \emph{S\&P500} constituent stocks from \texttt{1990} now below the average price of that portfolio.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the final stock prices at present
+pricesf <- drop(zoo::coredata(pricesn[NROW(pricesn), ]))
+# Calculate the mean and median stock prices
+max(pricesf); min(pricesf)
+which.max(pricesf)
+which.min(pricesf)
+mean(pricesf)
+median(pricesf)
+# Calculate the percentage of stock prices below the mean
+sum(pricesf < mean(pricesf))/NROW(pricesf)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/sp500_price_hist.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot a histogram of final stock prices
+hist(pricesf, breaks=1e3, xlim=c(0, 500), 
+     xlab="Stock price", ylab="Count", 
+     main="Histogram of Final Stock Prices")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Stock Prices Over Time}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1444,7 +1476,7 @@ legend(x="topleft", inset=0.02, cex=0.6,
     \column{0.5\textwidth}
       Usually, a small number of stocks in an index reach very high prices, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
       \vskip1ex
-      For example, the current prices of almost \texttt{80\%} of the S\&P500 constituent stocks from \texttt{1990} are now below the average price of that portfolio.
+      For example, the current prices of over \texttt{80\%} of the \emph{S\&P500} constituent stocks from \texttt{1990} are now below the average price of that portfolio.
       \vskip1ex
       Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
       \vskip1ex
@@ -1464,7 +1496,7 @@ indeks <- xts(indeks, order.by=zoo::index(pricesn))
     % \vspace{-1em}
     %   \includegraphics[width=0.4\paperwidth]{figure/stock_index_prices.png}
     % \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/stock_index_prices_percent.png}
+      \includegraphics[width=0.4\paperwidth]{figure/sp500_price_percent.png}
       <<echo=TRUE,eval=FALSE>>=
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 # x11(width=6, height=4)
@@ -2942,14 +2974,14 @@ all.equal(arima_fit$coef, coeff, check.attributes=FALSE)
 fittedv <- drop(design %*% coeff)
 residuals <- drop(arimav - fittedv)
 # Variance of residuals
-var_resid <- sum(residuals^2)/(nrows-NROW(coeff))
+residvar <- sum(residuals^2)/(nrows-NROW(coeff))
 # Design matrix squared
 design2 <- crossprod(design)
 # Calculate covariance matrix of AR coefficients
-covar <- var_resid*MASS::ginv(design2)
-coeffd <- sqrt(diag(covar))
+covar <- residvar*MASS::ginv(design2)
+coeffsd <- sqrt(diag(covar))
 # Calculate t-values of AR coefficients
-coeff_tvals <- drop(coeff)/coeffd
+coefftv <- drop(coeff)/coeffsd
       @
   \end{columns}
 \end{block}
@@ -2984,10 +3016,10 @@ design_inv <- MASS::ginv(design)
 coeff <- drop(design_inv %*% arimav)
 # Calculate t-values of AR(5) coefficients
 residuals <- drop(arimav - drop(design %*% coeff))
-var_resid <- sum(residuals^2)/(nrows-NROW(coeff))
-covar <- var_resid*MASS::ginv(crossprod(design))
-coeffd <- sqrt(diag(covar))
-coeff_tvals <- drop(coeff)/coeffd
+residvar <- sum(residuals^2)/(nrows-NROW(coeff))
+covar <- residvar*MASS::ginv(crossprod(design))
+coeffsd <- sqrt(diag(covar))
+coefftv <- drop(coeff)/coeffsd
 # Fit AR(5) model using arima()
 arima_fit <- arima(arimav, order=c(5, 0, 0), include.mean=FALSE)
 arima_fit$coef
@@ -3001,10 +3033,10 @@ design_inv <- MASS::ginv(design)
 coeff <- drop(design_inv %*% returns)
 # Calculate t-values of AR(5) coefficients
 residuals <- drop(returns - drop(design %*% coeff))
-var_resid <- sum(residuals^2)/(nrows-NROW(coeff))
-covar <- var_resid*MASS::ginv(crossprod(design))
-coeffd <- sqrt(diag(covar))
-coeff_tvals <- drop(coeff)/coeffd
+residvar <- sum(residuals^2)/(nrows-NROW(coeff))
+covar <- residvar*MASS::ginv(crossprod(design))
+coeffsd <- sqrt(diag(covar))
+coefftv <- drop(coeff)/coeffsd
       @
   \end{columns}
 \end{block}
@@ -3491,7 +3523,7 @@ drop(design[nrows, -1] %*% coeff)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
 returns <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(returns)
+dates <- zoo::index(returns)
 returns <- as.numeric(returns)
 nrows <- NROW(returns)
 # Define response equal to returns

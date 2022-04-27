@@ -32,12 +32,12 @@ legend("topleft", legend=colnames(prices),
  col=plot_theme$col$line.col, bty="n")
 # Calculate positions, either: -1, 0, or 1
 position_s <- sign(closep - ewmap)
-position_s <- xts::xts(position_s, order.by=index(closep))
+position_s <- xts::xts(position_s, order.by=zoo::index(closep))
 position_s <- rutils::lagit(position_s, lagg=1)
 # Create colors for background shading
 dates <- (rutils::diffit(position_s) != 0)
 shad_e <- position_s[dates]
-dates <- c(index(shad_e), end(position_s))
+dates <- c(zoo::index(shad_e), end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(prices["2007/"], main="VTI EWMA Prices") %>%
@@ -61,10 +61,10 @@ position_s <- rep(NA_integer_, nrows)
 position_s[1] <- 0
 position_s[trade_dates] <- indic[trade_dates-1]
 position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- xts::xts(position_s, order.by=index(closep))
+position_s <- xts::xts(position_s, order.by=zoo::index(closep))
 # Create indicator for background shading
 shad_e <- position_s[trade_dates]
-dates <- index(shad_e)
+dates <- zoo::index(shad_e)
 dates <- c(dates, end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 # Standard plot of EWMA prices with position shading
@@ -139,7 +139,7 @@ position_s[1] <- 0
 position_s <- ifelse(indic == lagg, 1, position_s)
 position_s <- ifelse(indic == (-lagg), -1, position_s)
 position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- xts::xts(position_s, order.by=index(closep))
+position_s <- xts::xts(position_s, order.by=zoo::index(closep))
 # Lag the positions to trade in next period
 position_s <- rutils::lagit(position_s, lagg=1)
 # Calculate PnLs of lagged strategy
@@ -148,9 +148,9 @@ colnames(pnls) <- "Lagged Strategy"
 wealth <- cbind(wealth[, 2], pnls)
 colnames(wealth) <- c("EWMA Strategy", "Lagged Strategy")
 # Annualized Sharpe ratios of EWMA strategies
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # Plot both strategies
-dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Calculate daily profits and losses
@@ -213,7 +213,7 @@ simu_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001,
   pos <- ifelse(indic == lagg, 1, pos)
   pos <- ifelse(indic == (-lagg), -1, pos)
   pos <- zoo::na.locf(pos, na.rm=FALSE)
-  pos <- xts::xts(pos, order.by=index(close))
+  pos <- xts::xts(pos, order.by=zoo::index(close))
   # Lag the positions to trade on next day
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
@@ -296,7 +296,7 @@ colnames(wealth) <- c("VTI", "EWMA PnL")
 # Create colors for background shading
 dates <- (rutils::diffit(position_s) != 0)
 shad_e <- position_s[dates]
-dates <- c(index(shad_e), end(position_s))
+dates <- c(zoo::index(shad_e), end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 colors <- c("blue", "red")
 # Plot dygraph of EWMA strategy wealth
@@ -414,7 +414,7 @@ weightv[weightv<0] <- 0
 weightv <- weightv/sum(weightv)
 returns <- cbind(trend_returns, revert_returns)
 returns <- returns %*% weightv
-returns <- xts::xts(returns, order.by=index(vti))
+returns <- xts::xts(returns, order.by=zoo::index(vti))
 returns <- cbind(vti, returns)
 colnames(returns) <- c("VTI", "EWMA PnL")
 # Plot dygraph of EWMA strategy wealth
@@ -452,12 +452,12 @@ position_s[1] <- 0
 position_s <- ifelse(indic == lagg, 1, position_s)
 position_s <- ifelse(indic == (-lagg), -1, position_s)
 position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- xts::xts(position_s, order.by=index(closep))
+position_s <- xts::xts(position_s, order.by=zoo::index(closep))
 position_s <- rutils::lagit(position_s, lagg=1)
 # Create colors for background shading
 dates <- (rutils::diffit(position_s) != 0)
 shad_e <- position_s[dates]
-dates <- c(index(shad_e), end(position_s))
+dates <- c(zoo::index(shad_e), end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 # Plot dygraph
 colnames <- colnames(prices)
@@ -475,11 +475,11 @@ pnls <- vti*position_s
 colnames(pnls) <- "Strategy"
 wealth <- cbind(vti, pnls)
 # Annualized Sharpe ratio of Dual EWMA strategy
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
 cor(wealth)
 # Plot Dual EWMA strategy
-dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=1)
 # Add shading to dygraph object
 for (i in 1:NROW(shad_e)) {
@@ -510,7 +510,7 @@ simu_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
   pos <- ifelse(indic == lagg, 1, pos)
   pos <- ifelse(indic == (-lagg), -1, pos)
   pos <- zoo::na.locf(pos, na.rm=FALSE)
-  pos <- xts::xts(pos, order.by=index(close))
+  pos <- xts::xts(pos, order.by=zoo::index(close))
   # Lag the positions to trade on next day
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
@@ -546,11 +546,11 @@ pnls <- simu_ewma2(ohlc=ohlc, lambda1=lambda1, lambda2=lambda2,
               look_back=look_back, bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
 wealth <- cbind(vti, pnls)
 # Annualized Sharpe ratio of Dual EWMA strategy
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
 cor(wealth)
 # Plot Optimal Dual EWMA strategy
-dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("Optimal EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("Optimal EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=1)
 # Add shading to dygraph object
 for (i in 1:NROW(shad_e)) {
@@ -598,7 +598,7 @@ position_s[1] <- 0
 position_s <- ifelse(indic == lagg, 1, position_s)
 position_s <- ifelse(indic == (-lagg), -1, position_s)
 position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- xts::xts(position_s, order.by=index(closep))
+position_s <- xts::xts(position_s, order.by=zoo::index(closep))
 # Lag the positions to trade in next period
 position_s <- rutils::lagit(position_s, lagg=1)
 # Calculate PnLs of VWAP strategy
@@ -608,15 +608,15 @@ wealth <- cbind(vti, pnls)
 colnames(wealth) <- c("VTI", "VWAP Strategy")
 colnames <- colnames(wealth)
 # Annualized Sharpe ratios of VTI and VWAP strategy
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # Create colors for background shading
 dates <- (rutils::diffit(position_s) != 0)
 shad_e <- position_s[dates]
-dates <- c(index(shad_e), end(position_s))
+dates <- c(zoo::index(shad_e), end(position_s))
 shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
 # Plot dygraph of VWAP strategy
 # Create dygraph object without plotting it
-dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Add shading to dygraph object
@@ -630,10 +630,10 @@ cor(vti, pnls)
 # Combine VWAP strategy with VTI
 wealth <- cbind(vti, pnls, 0.5*(vti+pnls))
 colnames(wealth) <- c("VTI", "VWAP", "Combined")
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # Plot dygraph of VWAP strategy combined with VTI
 dygraphs::dygraph(cumsum(wealth),
-  main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+  main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red", "purple"), strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Test VWAP crossover market timing of VTI using Treynor-Mazuy test
@@ -673,7 +673,7 @@ simu_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
   pos <- ifelse(indic == lagg, 1, pos)
   pos <- ifelse(indic == (-lagg), -1, pos)
   pos <- zoo::na.locf(pos, na.rm=FALSE)
-  pos <- xts::xts(pos, order.by=index(close))
+  pos <- xts::xts(pos, order.by=zoo::index(close))
   # Lag the positions to trade on next day
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
@@ -887,7 +887,7 @@ colnames(prices) <- rutils::get_name(colnames(prices))
 #   strsplit(colnames(prices), split="[.]"))[, 1]
 # Normalize columns
 prices <- xts(t(t(prices) / as.numeric(prices[1, ])),
-         order.by=index(prices))
+         order.by=zoo::index(prices))
 # Calculate permution index for sorting the lowest to highest final prices
 ordern <- order(prices[NROW(prices), ])
 # Select a few symbols
@@ -909,14 +909,14 @@ indeks <- rowSums(prices * validp) / nstocks
 # Calculate percentage of stock prices below the average price
 per_centage <- rowSums((prices < indeks) & validp) / nstocks
 # Create xts time series of average stock prices
-indeks <- xts(indeks, order.by=index(prices))
+indeks <- xts(indeks, order.by=zoo::index(prices))
 x11(width=6, height=4)
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
 # Plot xts time series of average stock prices
 plot.zoo(indeks, main="Average S&P500 stock prices (normalized from 1990)",
    xlab=NA, ylab=NA, col="blue")
 # Create xts time series of percentage of stock prices below the average price
-per_centage <- xts(per_centage, order.by=index(prices))
+per_centage <- xts(per_centage, order.by=zoo::index(prices))
 # Plot percentage of stock prices below the average price
 plot.zoo(per_centage[-(1:2),],
    main="Percentage of S&P500 stock prices below the average price",
@@ -1501,7 +1501,7 @@ coeff_fit <- drop(design_inv %*% design[rangev, 1])
 drop(design[nrows, -1] %*% coeff_fit)
 # Calculate a vector of daily VTI log returns
 returns <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(returns)
+dates <- zoo::index(returns)
 returns <- as.numeric(returns)
 nrows <- NROW(returns)
 # Define predictor as a rolling sum
@@ -1592,7 +1592,7 @@ plot(x=look_backs, y=back_tests[, 1],
   main="MSE of AR(5) Forecasting Model")
 # Calculate a vector of daily VTI log returns
 vti <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vti)
+dates <- zoo::index(vti)
 vti <- as.numeric(vti)
 nrows <- NROW(vti)
 # Define predictor matrix for forecasting
@@ -1622,20 +1622,20 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(x=2:NCOL(predictor), y=mse[, 1],
   xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
   main="MSE of In-sample AR(n) Forecasting Model for VTI")
-in_sample <- 1:(nrows %/% 2)
-out_sample <- (nrows %/% 2 + 1):nrows
+insample <- 1:(nrows %/% 2)
+outsample <- (nrows %/% 2 + 1):nrows
 # Calculate forecasts as function of the AR order
 forecasts <- lapply(2:NCOL(predictor), function(ordern) {
   # Calculate fitted coefficients
-  inverse <- MASS::ginv(predictor[in_sample, 1:ordern])
-  coeff_fit <- drop(inverse %*% response[in_sample])
+  inverse <- MASS::ginv(predictor[insample, 1:ordern])
+  coeff_fit <- drop(inverse %*% response[insample])
   # Calculate out-of-sample forecasts of vti
-  drop(predictor[out_sample, 1:ordern] %*% coeff_fit)
+  drop(predictor[outsample, 1:ordern] %*% coeff_fit)
 })  # end lapply
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vti[out_sample] - x)^2), cor=cor(vti[out_sample], x))
+  c(mse=mean((vti[outsample] - x)^2), cor=cor(vti[outsample], x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- names(forecasts)
@@ -1645,10 +1645,10 @@ plot(x=2:NCOL(predictor), y=mse[, 1],
   main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
 # Plot dygraph of out-of-sample PnLs
 colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls[, 1:4]))
 colnames <- colnames(pnls[, 1:4])
@@ -1667,17 +1667,17 @@ predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
 predictor <- cbind(rep(1, nrows), predictor)
 # Calculate forecasts as function of the AR order
 forecasts <- lapply(2:NCOL(predictor), function(ordern) {
-  inverse <- MASS::ginv(predictor[in_sample, 1:ordern])
-  coeff_fit <- drop(inverse %*% response[in_sample])
-  drop(predictor[out_sample, 1:ordern] %*% coeff_fit)
+  inverse <- MASS::ginv(predictor[insample, 1:ordern])
+  coeff_fit <- drop(inverse %*% response[insample])
+  drop(predictor[outsample, 1:ordern] %*% coeff_fit)
 })  # end lapply
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Predictor") %>%
@@ -1686,10 +1686,10 @@ dygraphs::dygraph(pnls[, 1:4],
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
   x <- roll::roll_mean(x, width=nagg, min_obs=1)
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Forecasts") %>%
@@ -1697,7 +1697,7 @@ dygraphs::dygraph(pnls[, 1:4],
   dyLegend(width=500)
 # Calculate a vector of daily VTI log returns
 vti <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vti)
+dates <- zoo::index(vti)
 vti <- as.numeric(vti)
 nrows <- NROW(vti)
 # Define predictor as a rolling mean

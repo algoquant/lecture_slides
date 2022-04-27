@@ -158,11 +158,11 @@ x11(width=5, height=4)
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
 # Define logarithmic utility
-utili_ty <- function(frac, p=0.3, a=20, b=1) {
+utilfun <- function(frac, p=0.3, a=20, b=1) {
   p*log(1+frac*a) + (1-p)*log(1-frac*b)
-}  # end utili_ty
+}  # end utilfun
 # Plot utility
-curve(expr=utili_ty, xlim=c(0, 1),
+curve(expr=utilfun, xlim=c(0, 1),
       ylim=c(-0.5, 0.4), xlab="betting fraction",
       ylab="utility", main="", lwd=2)
 title(main="Logarithmic Utility", line=0.5)
@@ -555,14 +555,13 @@ x11(width=5, height=4)
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
 # Define vectorized logarithmic utility function
-utili_ty <- function(kell_y, returns) {
-  sapply(kell_y, function(x)
-    sum(log(1 + x*returns)))
-}  # end utili_ty
-utili_ty(1, vti)
-utili_ty(c(1, 4), vti)
+utilfun <- function(kellyfrac, returns) {
+  sapply(kellyfrac, function(x) sum(log(1 + x*returns)))
+}  # end utilfun
+utilfun(1, vti)
+utilfun(c(1, 4), vti)
 # Plot the logarithmic utility
-curve(expr=utili_ty(x, returns=vti),
+curve(expr=utilfun(x, returns=vti),
       xlim=c(0.1, 5), xlab="leverage", ylab="utility",
       main="Utility of Asset Returns", lwd=2)
       @
@@ -609,7 +608,7 @@ mean(vti)/var(vti)
 PerformanceAnalytics::KellyRatio(R=vti, method="full")
 # Kelly leverage
 unlist(optimize(
-  f=function(x) -utili_ty(x, vti),
+  f=function(x) -utilfun(x, vti),
   interval=c(1, 4)))
       @
     \vspace{-1em}
@@ -1104,14 +1103,14 @@ c(mean=sum(spy),
       <<echo=TRUE,eval=FALSE>>=
 returns <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 # Logarithmic utility of stock and bond portfolio
-utili_ty <- function(w_s, w_b) {
+utilfun <- function(w_s, w_b) {
   -sum(log(1 + w_s*returns$VTI + w_b*returns$IEF))
-}  # end utili_ty
+}  # end utilfun
 # Create matrix of utility values
 w_s <- seq(from=3, to=7, by=0.2)
 w_b <- seq(from=12, to=20, by=0.2)
 utility_mat <- sapply(w_b, function(y) sapply(w_s,
-  function(x) utili_ty(x, y)))
+  function(x) utilfun(x, y)))
 # Set rgl options and load package rgl
 options(rgl.useNULL=TRUE)
 library(rgl)
@@ -1142,30 +1141,30 @@ rgl::rgl.snapshot("utility_surface.png")
       The Kelly optimal stock and bond portfolio weights $w_s, w_b$ can be calculated by maximizing the utility $u$.
       <<echo=TRUE,eval=FALSE>>=
 # Approximate Kelly weights
-weights <- sapply(returns, function(x) mean(x)/var(x))
+weightv <- sapply(returns, function(x) mean(x)/var(x))
 # Kelly weight for stocks
-unlist(optimize(f=function(x) utili_ty(x, w_b=0), interval=c(1, 4)))
+unlist(optimize(f=function(x) utilfun(x, w_b=0), interval=c(1, 4)))
 # Kelly weight for bonds
-unlist(optimize(f=function(x) utili_ty(x, w_s=0), interval=c(1, 14)))
+unlist(optimize(f=function(x) utilfun(x, w_s=0), interval=c(1, 14)))
 # Vectorized utility of stock and bond portfolio
-utility_vec <- function(weights) {
-  utili_ty(weights[1], weights[2])
+utility_vec <- function(weightv) {
+  utilfun(weightv[1], weightv[2])
 }  # end utility_vec
 # Optimize with respect to vector argument
-optimd <- optim(fn=utility_vec, par=c(3, 10),
+optiml <- optim(fn=utility_vec, par=c(3, 10),
                 method="L-BFGS-B",
                 upper=c(8, 20), lower=c(2, 5))
 # Exact Kelly weights
-optimd$par
+optiml$par
       @
     \column{0.5\textwidth}
       The Kelly optimal weights can be calculated approximately by first calculating the individual stock and bond weights, and then multiplying them by the Kelly weight of the combined portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Approximate Kelly weights
-p_rets <- (returns %*% weights)
-drop(mean(p_rets)/var(p_rets))*weights
+retsport <- (returns %*% weightv)
+drop(mean(retsport)/var(retsport))*weightv
 # Exact Kelly weights
-optimd$par
+optiml$par
       @
   \end{columns}
 \end{block}
@@ -1183,10 +1182,10 @@ optimd$par
       In practice, the Kelly optimal weights under logarithmic utility are too aggressive and they require very active trading, so half-Kelly or even quarter-Kelly weights are used instead.
       <<echo=TRUE,eval=FALSE>>=
 # Quarter-Kelly sub-optimal weights
-weights <- optimd$par/4
+weightv <- optiml$par/4
 # Plot Kelly optimal portfolio
 returns <- cbind(returns,
-  weights[1]*returns$VTI + weights[2]*returns$IEF)
+  weightv[1]*returns$VTI + weightv[2]*returns$IEF)
 colnames(returns)[3] <- "Kelly_sub_optimal"
 # Calculate compounded wealth from returns
 wealth <- cumprod(1 + returns)
@@ -1223,12 +1222,12 @@ returns <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 # Calculate rolling returns and variance
 look_back <- 200
 var_rolling <- roll::roll_var(returns, width=look_back)
-weights <- roll::roll_sum(returns, width=look_back)/look_back
-weights <- weights/var_rolling
-weights[1, ] <- 1/NCOL(weights)
-weights <- zoo::na.locf(weights)
-sum(is.na(weights))
-range(weights)
+weightv <- roll::roll_sum(returns, width=look_back)/look_back
+weightv <- weightv/var_rolling
+weightv[1, ] <- 1/NCOL(weightv)
+weightv <- zoo::na.locf(weightv)
+sum(is.na(weightv))
+range(weightv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1264,12 +1263,12 @@ legend("topright", legend=c("VTI", "IEF"),
       The leverage is equal to the updated weight from the previous period.
       <<echo=TRUE,eval=FALSE>>=
 # Scale and lag the Kelly weights
-weights <- lapply(weights,
+weightv <- lapply(weightv,
   function(x) 10*x/sum(abs(range(x))))
-weights <- do.call(cbind, weights)
-weights <- rutils::lagit(weights)
+weightv <- do.call(cbind, weightv)
+weightv <- rutils::lagit(weightv)
 # Calculate the compounded Kelly wealth and VTI
-wealth <- cbind(cumprod(1 + weights$VTI*returns$VTI),
+wealth <- cbind(cumprod(1 + weightv$VTI*returns$VTI),
                  cumprod(1 + returns$VTI))
 colnames(wealth) <- c("Kelly Strategy", "VTI")
 dygraphs::dygraph(wealth, main="VTI Strategy Using Rolling Kelly Weight") %>%
@@ -1320,7 +1319,7 @@ dygraphs::dygraph(wealth, main="VTI Strategy Using Rolling Kelly Weight") %>%
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
 # Calculate the compounded Kelly wealth and margin
-wealth <- cumprod(1 + weights$VTI*returns$VTI)
+wealth <- cumprod(1 + weightv$VTI*returns$VTI)
 margin <- (returns$VTI - 1)*wealth + 1
 # Calculate the transaction costs
 costs <- bid_offer*drop(rutils::diffit(margin))/2
@@ -1357,7 +1356,7 @@ dygraphs::dygraph(wealth, main="Kelly Strategy With Transaction Costs") %>%
       The leverage is equal to the updated weight from the previous period.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate compounded wealth from returns
-wealth <- cumprod(1 + rowSums(weights*returns))
+wealth <- cumprod(1 + rowSums(weightv*returns))
 wealth <- xts::xts(wealth, zoo::index(returns))
 quantmod::chart_Series(wealth, name="Rolling Kelly Strategy For VTI and IEF")
 # Calculate the compounded Kelly wealth and VTI
@@ -1509,7 +1508,7 @@ library(rutils)
 prices <- rutils::etfenv$prices
 prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
-dates <- index(prices)
+dates <- zoo::index(prices)
 # Calculate simple dollar returns
 retsd <- rutils::diffit(prices)
 # Or
@@ -1742,15 +1741,15 @@ retsd[1, ] <- prices[1, ]
       \includegraphics[width=0.4\paperwidth]{figure/portf_weighted_wealth.png}
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of fixed shares equal to $0.5 each (without rebalancing)
-weights <- c(0.5, 0.5)  # dollar weights
+weightv <- c(0.5, 0.5)  # dollar weights
 # Scale the dollar returns using the dollar weights
 pricesi <- as.numeric(prices[1, ])
-wealth_fsa <- cumsum(retsd %*% (weights/pricesi))
+wealth_fsa <- cumsum(retsd %*% (weightv/pricesi))
 # Or using percentage returns
-wealth_fsa2 <- cumprod(1+retsp) %*% weights
+wealth_fsa2 <- cumprod(1+retsp) %*% weightv
 all.equal(wealth_fsa, drop(wealth_fsa2))
 # Wealth of fixed dollars (with rebalancing)
-wealth_fda <- cumsum(retsp %*% weights)
+wealth_fda <- cumsum(retsp %*% weightv)
 # Calculate the Sharpe and Sortino ratios
 wealth <- cbind(log(wealth_fsa), wealth_fda)
 wealth <- xts::xts(wealth, zoo::index(prices))
@@ -1793,9 +1792,9 @@ dygraphs::dygraph(wealth, main="Wealth of Weighted Portfolios") %>%
       \includegraphics[width=0.4\paperwidth]{figure/portf_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
 # Margin account for fixed dollars (with rebalancing)
-margin <- cumsum(retsp %*% weights)
+margin <- cumsum(retsp %*% weightv)
 # Cumulative transaction costs
-costs <- bid_offer*cumsum(abs(retsp) %*% weights)/2
+costs <- bid_offer*cumsum(abs(retsp) %*% weightv)/2
 # Subtract transaction costs from margin account
 margin <- (margin - costs)
 # dygraph plot of margin and transaction costs
@@ -1846,11 +1845,11 @@ dygraphs::dygraph(datav, main="Fixed Dollar Portfolio Transaction Costs") %>%
       \includegraphics[width=0.4\paperwidth]{figure/portf_proportional_allocations.png}
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of fixed shares (without rebalancing)
-wealth_fsa <- cumsum(retsd %*% (weights/pricesi))
+wealth_fsa <- cumsum(retsd %*% (weightv/pricesi))
 # Or compound the percentage returns
-wealth_fsa <- cumprod(1+retsp) %*% weights
+wealth_fsa <- cumprod(1+retsp) %*% weightv
 # Wealth of proportional allocations (with rebalancing)
-wealth_pda <- cumprod(1 + retsp %*% weights)
+wealth_pda <- cumprod(1 + retsp %*% weightv)
 wealth <- cbind(wealth_fsa, wealth_pda)
 wealth <- xts::xts(wealth, zoo::index(prices))
 colnames(wealth) <- c("Fixed shares", "Prop dollars")
@@ -1885,16 +1884,16 @@ dygraphs::dygraph(wealth, main="Wealth of Proportional Dollar Allocations") %>%
       The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_i$ must be subtracted from the \emph{wealth} $w_t$: $w_t - \sum_{i=1}^t c^r_i$.
       <<echo=TRUE,eval=FALSE>>=
 # Returns in excess of weighted returns
-rets_weighted <- retsp %*% weights
-excess <- lapply(retsp, function(x) (rets_weighted - x))
-excess <- do.call(cbind, excess)
-sum(excess %*% weights)
+rets_weighted <- retsp %*% weightv
+retsx <- lapply(retsp, function(x) (rets_weighted - x))
+retsx <- do.call(cbind, retsx)
+sum(retsx %*% weightv)
 # Calculate weighted sum of absolute excess returns
-excess <- abs(excess) %*% weights
+retsx <- abs(retsx) %*% weightv
 # Total dollar amount of stocks that need to be traded
-excess <- excess*rutils::lagit(wealth_pda)
+retsx <- retsx*rutils::lagit(wealth_pda)
 # Cumulative transaction costs
-costs <- bid_offer*cumsum(excess)/2
+costs <- bid_offer*cumsum(retsx)/2
 # Subtract transaction costs from wealth
 wealth_pda <- (wealth_pda - costs)
       @
@@ -1944,22 +1943,22 @@ dygraphs::dygraph(wealth, main="Transaction Costs With Proportional Allocations"
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of fixed shares (without rebalancing)
-wealth_fsa <- drop(apply(retsp, 2, function(x) cumprod(1+x)) %*% weights)-1
+wealth_fsa <- drop(apply(retsp, 2, function(x) cumprod(1+x)) %*% weightv)-1
 # Wealth of proportional dollar allocations (with rebalancing)
-wealth_pda <- cumprod(1 + retsp %*% weights) - 1
+wealth_pda <- cumprod(1 + retsp %*% weightv) - 1
 # Wealth of proportional target allocation (with rebalancing)
 retsp <- zoo::coredata(retsp)
 threshold <- 0.05
 wealth <- matrix(nrow=NROW(retsp), ncol=2)
 colnames(wealth) <- colnames(retsp)
-wealth[1, ] <- weights
+wealth[1, ] <- weightv
 for (it in 2:NROW(retsp)) {
   # Accrue wealth without rebalancing
   wealth[it, ] <- wealth[it-1, ]*(1 + retsp[it, ])
   # Rebalance if wealth allocations differ from weights
-  if (sum(abs(wealth[it, ] - sum(wealth[it, ])*weights))/sum(wealth[it, ]) > threshold) {
+  if (sum(abs(wealth[it, ] - sum(wealth[it, ])*weightv))/sum(wealth[it, ]) > threshold) {
     # cat("Rebalance at:", it, "\n")
-    wealth[it, ] <- sum(wealth[it, ])*weights
+    wealth[it, ] <- sum(wealth[it, ])*weightv
   } # end if
 } # end for
 wealth <- rowSums(wealth) - 1
@@ -2042,8 +2041,8 @@ quantmod::chart_Series(x=etfenv$SP500["2016/"],
       <<echo=TRUE,eval=FALSE>>=
 # Calculate stock and bond returns
 returns <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
-weights <- c(0.4, 0.6)
-returns <- cbind(returns, returns %*% weights)
+weightv <- c(0.4, 0.6)
+returns <- cbind(returns, returns %*% weightv)
 colnames(returns)[3] <- "Combined"
 # Calculate correlations
 cor(returns)
@@ -2203,14 +2202,14 @@ retsd_std <- lapply(retsd, function(x) x/sd(x))
 retsd_std <- do.call(cbind, retsd_std)
 sapply(retsd_std, sd)
 # Wealth of fixed number of shares (without rebalancing)
-weights <- c(0.5, 0.5)
-wealth_fsa <- cumsum(retsd %*% (weights/pricesi))
+weightv <- c(0.5, 0.5)
+wealth_fsa <- cumsum(retsd %*% (weightv/pricesi))
 # Calculate standardized percentage returns
 retsp_std <- lapply(retsp, function(x) x/sd(x))
 retsp_std <- do.call(cbind, retsp_std)
 sapply(retsp_std, sd)
 # Wealth of fixed dollar amount of shares (with rebalancing)
-wealth_fda <- cumsum(retsp_std %*% weights)
+wealth_fda <- cumsum(retsp_std %*% weightv)
 # Plot log wealth
 wealth <- cbind(wealth_fda, log(wealth_fsa))
 # wealth <- xts::xts(wealth, zoo::index(prices))
@@ -2240,7 +2239,7 @@ dygraphs::dygraph(wealth, main="Wealth of Equal Dollar Amount of Shares") %>%
       The zero-coupon bond floor $F$ is set so that its value at maturity is equal to the principal $P$.  
       This guarantees that the investor is paid back at least the full principal $P$.
       \vskip1ex
-      The stock investment is levered by the \emph{multiplier} $C$.  
+      The stock investment is levered by the \emph{CPPI multiplier} $C$.  
       The initial dollar amount invested in stocks is equal to the \emph{cushion} $(P - F)$ times the \emph{multiplier} $C$: $C * (P - F)$.
       The remaining amount of the principal is invested in zero-coupon bonds and is equal to: $P - C * (P - F)$.
     \column{0.5\textwidth}
@@ -2248,17 +2247,23 @@ dygraphs::dygraph(wealth, main="Wealth of Equal Dollar Amount of Shares") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns
 returns <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
-dates <- index(returns)
+dates <- zoo::index(returns)
 nrows <- NROW(returns)
 returns <- drop(zoo::coredata(returns))
-bfloor <- 60  # bond floor
-coeff <- 2  # multiplier
-portf_value <- numeric(nrows)
-portf_value[1] <- 100  # principal
-stock_value <- numeric(nrows)
-stock_value[1] <- coeff*(portf_value[1] - bfloor)
-bond_value <- numeric(nrows)
-bond_value[1] <- (portf_value[1] - stock_value[1])
+# Bond floor
+bfloor <- 60
+# CPPI multiplier
+coeff <- 2
+# Portfolio market values
+portfv <- numeric(nrows)
+# Initial principal
+portfv[1] <- 100
+# Stock allocation
+stockv <- numeric(nrows)
+stockv[1] <- min(coeff*(portfv[1] - bfloor), portfv[1])
+# Bond allocation
+bondv <- numeric(nrows)
+bondv[1] <- (portfv[1] - stockv[1])
       @
   \end{columns}
 \end{block}
@@ -2292,13 +2297,13 @@ bond_value[1] <- (portf_value[1] - stock_value[1])
       <<echo=TRUE,eval=FALSE>>=
 # Simulate CPPI strategy
 for (t in 2:nrows) {
-  portf_value[t] <- portf_value[t-1] + stock_value[t-1]*returns[t]
-  stock_value[t] <- min(coeff*(portf_value[t] - bfloor), portf_value[t])
-  bond_value[t] <- (portf_value[t] - stock_value[t])
+  portfv[t] <- portfv[t-1] + stockv[t-1]*returns[t]
+  stockv[t] <- min(coeff*(portfv[t] - bfloor), portfv[t])
+  bondv[t] <- (portfv[t] - stockv[t])
 }  # end for
 # dygraph plot of CPPI strategy
 vti <- 100*cumprod(1+returns)
-datav <- xts::xts(cbind(stock_value, bond_value, portf_value, vti), dates)
+datav <- xts::xts(cbind(stockv, bondv, portfv, vti), dates)
 colnames(datav) <- c("stocks", "bonds", "CPPI", "VTI")
 dygraphs::dygraph(datav, main="CPPI strategy") %>%
   dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
@@ -2341,8 +2346,8 @@ prices <- na.omit(prices)
 retsd <- rutils::diffit(prices)
 retsp <- retsd/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
 # Calculate wealth of proportional allocations.
-weights <- c(0.5, 0.5)
-rets_weighted <- retsp %*% weights
+weightv <- c(0.5, 0.5)
+rets_weighted <- retsp %*% weightv
 wealth_pda <- cumprod(1 + rets_weighted)
 # Calculate rolling percentage volatility.
 look_back <- 21
@@ -2351,7 +2356,7 @@ volat <- zoo::na.locf(volat, na.rm=FALSE)
 volat <- zoo::na.locf(volat, fromLast=TRUE)
 # Calculate the risk parity portfolio allocations.
 alloc <- lapply(1:NCOL(prices), 
-  function(x) weights[x]/volat[, x])
+  function(x) weightv[x]/volat[, x])
 alloc <- do.call(cbind, alloc)
 # Scale allocations to 1 dollar total.
 alloc <- alloc/rowSums(alloc)
@@ -2443,7 +2448,7 @@ summary(model)
 # Plot fitted (predicted) response values
 fittedv <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*vti^2)
 points.default(x=design$VTI, y=fittedv, pch=16, col="blue")
-text(x=0.05, y=0.8*max(residuals), paste("Fixed Ratio t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
+text(x=0.05, y=0.6*max(residuals), paste("Fixed Ratio t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
       @
   \end{columns}
 \end{block}
@@ -2467,15 +2472,15 @@ text(x=0.05, y=0.8*max(residuals), paste("Fixed Ratio t-value =", round(summary(
       The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_i$ must be subtracted from the \emph{wealth} $w_t$: $w_t - \sum_{i=1}^t c^r_i$.
       <<echo=TRUE,eval=FALSE>>=
 # Returns in excess of weighted returns
-excess <- lapply(retsp, function(x) (rets_weighted - x))
-excess <- do.call(cbind, excess)
-sum(excess %*% weights)
+retsx <- lapply(retsp, function(x) (rets_weighted - x))
+retsx <- do.call(cbind, retsx)
+sum(retsx %*% weightv)
 # Calculate weighted sum of absolute excess returns
-excess <- abs(excess) %*% weights
+retsx <- abs(retsx) %*% weightv
 # Total dollar amount of stocks that need to be traded
-excess <- excess*rutils::lagit(wealth_pda)
+retsx <- retsx*rutils::lagit(wealth_pda)
 # Cumulative transaction costs
-costs <- bid_offer*cumsum(excess)/2
+costs <- bid_offer*cumsum(retsx)/2
 # Subtract transaction costs from wealth
 wealth_pda <- (wealth_pda - costs)
       @
@@ -2518,7 +2523,7 @@ dygraphs::dygraph(wealth, main="Transaction Costs With Proportional Allocations"
 # Calculate positions
 vti <- na.omit(rutils::etfenv$returns$VTI)
 posit <- rep(NA_integer_, NROW(vti))
-dates <- index(vti)
+dates <- zoo::index(vti)
 dates <- format(dates, "%m-%d")
 posit[dates == "05-01"] <- 0
 posit[dates == "05-03"] <- 0
@@ -2736,7 +2741,7 @@ stopl <- 0.05
 maxp <- 0.0
 cumrets <- 0.0
 pnls <- vti
-for (i in 1:nrows) {
+for (i in 1:(nrows-1)) {
 # Calculate drawdown
   cumrets <- cumrets + vti[i]
   maxp <- max(maxp, cumrets)
@@ -2747,7 +2752,7 @@ for (i in 1:nrows) {
 }  # end for
 # Same but without using explicit loops
 cumsumv <- cumsum(vti)
-cummaxv <- cummax(cumsum(vti))
+cummaxv <- cummax(cumsumv)
 dd <- (cumsumv - cummaxv)
 pnls2 <- vti
 isdd <- rutils::lagit(dd < -stopl*cummaxv)
@@ -2789,7 +2794,7 @@ dygraphs::dygraph(cumsum(wealth), main="VTI Stop-loss Strategy") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Simulate multiple stop-loss strategies
 cumsumv <- cumsum(vti)
-cummaxv <- cummax(cumsum(vti))
+cummaxv <- cummax(cumsumv)
 dd <- (cumsumv - cummaxv)
 cum_pnls <- sapply(0.01*(1:20), function(stopl) {
   pnls <- vti
@@ -3366,10 +3371,10 @@ samplev <- sample.int(n=nrows, size=nrows/2)
 traindata <- Default[samplev, ]
 glmod <- glm(formulav, data=traindata, family=binomial(logit))
 # Forecast over test data out-of-sample
-test_data <- Default[-samplev, ]
-forecasts <- predict(glmod, newdata=test_data, type="response")
+testdata <- Default[-samplev, ]
+forecasts <- predict(glmod, newdata=testdata, type="response")
 # Calculate confusion matrix out-of-sample
-table(actual=!test_data$de_fault, 
+table(actual=!testdata$default, 
       forecast=(forecasts < threshold))
       @
   \end{columns}
@@ -3492,7 +3497,6 @@ legend("topleft", title="Leverage parameters",
 
 
 
-
 %%%%%%%%%%%%%%%
 \section{Moving Average Crossover Strategies}
 
@@ -3520,10 +3524,10 @@ nrows <- NROW(closep)
 # Calculate EWMA weights
 look_back <- 333
 lambda <- 0.9
-weights <- lambda^(1:look_back)
-weights <- weights/sum(weights)
+weightv <- lambda^(1:look_back)
+weightv <- weightv/sum(weightv)
 # Calculate EWMA prices as the convolution
-ewmap <- HighFreq::roll_wsum(closep, weights=weights)
+ewmap <- HighFreq::roll_wsum(closep, weights=weightv)
 prices <- cbind(closep, ewmap)
 colnames(prices) <- c("VTI", "VTI EWMA")
       @
@@ -3637,17 +3641,17 @@ indic <- sign(closep - ewmap)
 posit <- rutils::lagit(indic, lagg=1)
 # Create colors for background shading
 dates <- (rutils::diffit(posit) != 0)
-shad_e <- posit[dates]
-dates <- c(index(shad_e), end(posit))
-shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
+shadev <- posit[dates]
+dates <- c(zoo::index(shadev), end(posit))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(prices["2007/"], main="VTI EWMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=4, col="red") %>%
   dyLegend(show="always", width=500)
 # Add shading to dygraph object
-for (i in 1:NROW(shad_e)) {
-    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shad_e[i])
+for (i in 1:NROW(shadev)) {
+    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -3658,18 +3662,18 @@ dyplot
 indic <- sign(closep - ewmap)
 dates <- (rutils::diffit(indic) != 0)
 dates <- which(dates) + 1
-dates <- dates[dates <.n_rows]
+dates <- dates[dates < nrows]
 # Calculate positions, either: -1, 0, or 1
 posit <- rep(NA_integer_, nrows)
 posit[1] <- 0
 posit[dates] <- indic[dates-1]
 posit <- zoo::na.locf(posit, na.rm=FALSE)
-posit <- xts::xts(posit, order.by=index(closep))
+posit <- xts::xts(posit, order.by=zoo::index(closep))
 # Create indicator for background shading
-shad_e <- posit[dates]
-dates <- index(shad_e)
+shadev <- posit[dates]
+dates <- zoo::index(shadev)
 dates <- c(dates, end(posit))
-shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3719,9 +3723,9 @@ dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main="Performance of EWMA S
   dyOptions(colors=colors, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Add shading to dygraph object
-for (i in 1:NROW(shad_e)) {
+for (i in 1:NROW(shadev)) {
     dyplot <- dyplot %>% 
-      dyShading(from=dates[i], to=dates[i+1], color=shad_e[i])
+      dyShading(from=dates[i], to=dates[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -3810,7 +3814,7 @@ posit[1] <- 0
 posit <- ifelse(indic == lagg, 1, posit)
 posit <- ifelse(indic == (-lagg), -1, posit)
 posit <- zoo::na.locf(posit, na.rm=FALSE)
-posit <- xts::xts(posit, order.by=index(closep))
+posit <- xts::xts(posit, order.by=zoo::index(closep))
 # Lag the positions to trade in next period
 posit <- rutils::lagit(posit, lagg=1)
 # Calculate PnLs of lagged strategy
@@ -3824,9 +3828,9 @@ colnames(pnls_lag) <- "Lagged Strategy"
 wealth <- cbind(pnls, pnls_lag)
 colnames(wealth) <- c("EWMA Strategy", "Lagged Strategy")
 # Annualized Sharpe ratios of EWMA strategies
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # Plot both strategies
-dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>% 
+dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>% 
   dyOptions(colors=c("blue", "red"), strokeWidth=1) %>%
   dyLegend(show="always", width=500)
       @
@@ -3953,9 +3957,9 @@ sim_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001,
   returns <- rutils::diffit(close)
   nrows <- NROW(ohlc)
   # Calculate EWMA prices
-  weights <- exp(-lambda*(1:look_back))
-  weights <- weights/sum(weights)
-  ewma <- HighFreq::roll_wsum(close, weights=weights)
+  weightv <- exp(-lambda*(1:look_back))
+  weightv <- weightv/sum(weightv)
+  ewma <- HighFreq::roll_wsum(close, weights=weightv)
   # Calculate the indicator
   indic <- trend*sign(close - ewma)
   if (lagg > 1) {
@@ -3968,7 +3972,7 @@ sim_ewma <- function(ohlc, lambda=0.01, look_back=333, bid_offer=0.001,
   pos <- ifelse(indic == lagg, 1, pos)
   pos <- ifelse(indic == (-lagg), -1, pos)
   pos <- zoo::na.locf(pos, na.rm=FALSE)
-  pos <- xts::xts(pos, order.by=index(close))
+  pos <- xts::xts(pos, order.by=zoo::index(close))
   # Lag the positions to trade on next day
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
@@ -4112,9 +4116,9 @@ lambda <- lambdas[which.max(sharper)]
       \includegraphics[width=0.4\paperwidth]{figure/ewma_trend_performance.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot optimal weights
-weights <- exp(-lambda*(1:look_back))
-weights <- weights/sum(weights)
-plot(weights, t="l", xlab="days", ylab="weights",
+weightv <- exp(-lambda*(1:look_back))
+weightv <- weightv/sum(weightv)
+plot(weightv, t="l", xlab="days", ylab="weights",
      main="Optimal Weights of EWMA Trend Following Strategy")
 trend_returns <- pnls
 trend_sharpe <- sharper
@@ -4142,9 +4146,9 @@ wealth <- cbind(vti, pnls)
 colnames(wealth) <- c("VTI", "EWMA PnL")
 # Create colors for background shading
 dates <- (rutils::diffit(posit) != 0)
-shad_e <- posit[dates]
-dates <- c(index(shad_e), end(posit))
-shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
+shadev <- posit[dates]
+dates <- c(zoo::index(shadev), end(posit))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 colors <- c("blue", "red")
 # Plot dygraph of EWMA strategy wealth
 # Create dygraph object without plotting it
@@ -4152,9 +4156,9 @@ dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main="Performance of Optima
   dyOptions(colors=colors, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Add shading to dygraph object
-for (i in 1:NROW(shad_e)) {
+for (i in 1:NROW(shadev)) {
     dyplot <- dyplot %>% 
-      dyShading(from=dates[i], to=dates[i+1], color=shad_e[i])
+      dyShading(from=dates[i], to=dates[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -4376,12 +4380,12 @@ legend("topleft", legend=colnames(pnls),
       \vskip1ex
       The weights can be chosen to be proportional to the Sharpe ratios of the \emph{EWMA} strategies.
       <<echo=TRUE,eval=FALSE>>=
-weights <- c(trend_sharpe, revert_sharpe)
-weights[weights<0] <- 0
-weights <- weights/sum(weights)
+weightv <- c(trend_sharpe, revert_sharpe)
+weightv[weightv<0] <- 0
+weightv <- weightv/sum(weightv)
 returns <- cbind(trend_returns, revert_returns)
-returns <- returns %*% weights
-returns <- xts::xts(returns, order.by=index(vti))
+returns <- returns %*% weightv
+returns <- xts::xts(returns, order.by=zoo::index(vti))
 returns <- cbind(vti, returns)
 colnames(returns) <- c("VTI", "EWMA PnL")
 # Plot dygraph of EWMA strategy wealth
@@ -4422,12 +4426,12 @@ legend("topleft", legend=colnames(pnls),
 look_back <- 333
 lambda1 <- 0.04
 lambda2 <- 0.004
-weights <- exp(-lambda1*(1:look_back))
-weights <- weights/sum(weights)
-ewma1 <- HighFreq::roll_wsum(closep, weights=weights)
-weights <- exp(-lambda2*(1:look_back))
-weights <- weights/sum(weights)
-ewma2 <- HighFreq::roll_wsum(closep, weights=weights)
+weightv <- exp(-lambda1*(1:look_back))
+weightv <- weightv/sum(weightv)
+ewma1 <- HighFreq::roll_wsum(closep, weights=weightv)
+weightv <- exp(-lambda2*(1:look_back))
+weightv <- weightv/sum(weightv)
+ewma2 <- HighFreq::roll_wsum(closep, weights=weightv)
 # Calculate EWMA prices
 prices <- cbind(closep, ewma1, ewma2)
 colnames(prices) <- c("VTI", "EWMA fast", "EWMA slow")
@@ -4440,7 +4444,7 @@ posit[1] <- 0
 posit <- ifelse(indic == lagg, 1, posit)
 posit <- ifelse(indic == (-lagg), -1, posit)
 posit <- zoo::na.locf(posit, na.rm=FALSE)
-posit <- xts::xts(posit, order.by=index(closep))
+posit <- xts::xts(posit, order.by=zoo::index(closep))
 posit <- rutils::lagit(posit, lagg=1)
       @
     \column{0.5\textwidth}
@@ -4449,9 +4453,9 @@ posit <- rutils::lagit(posit, lagg=1)
       <<echo=TRUE,eval=FALSE>>=
 # Create colors for background shading
 dates <- (rutils::diffit(posit) != 0)
-shad_e <- posit[dates]
-dates <- c(index(shad_e), end(posit))
-shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
+shadev <- posit[dates]
+dates <- c(zoo::index(shadev), end(posit))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Plot dygraph
 colnamev <- colnames(prices)
 dyplot <- dygraphs::dygraph(prices["2007/"], main="VTI Dual EWMA Prices") %>%
@@ -4459,8 +4463,8 @@ dyplot <- dygraphs::dygraph(prices["2007/"], main="VTI Dual EWMA Prices") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=4, col="red") %>%
   dySeries(name=colnamev[3], label=colnamev[3], strokeWidth=4, col="purple") %>%
   dyLegend(show="always", width=500)
-for (i in 1:NROW(shad_e)) {
-    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shad_e[i])
+for (i in 1:NROW(shadev)) {
+    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shadev[i])
 }  # end for
 dyplot
       @
@@ -4486,7 +4490,7 @@ pnls <- vti*posit
 colnames(pnls) <- "Strategy"
 wealth <- cbind(vti, pnls)
 # Annualized Sharpe ratio of Dual EWMA strategy
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
 cor(wealth)
       @
@@ -4495,11 +4499,11 @@ cor(wealth)
       \includegraphics[width=0.4\paperwidth]{figure/ewma_dual_strat_pnl.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot Dual EWMA strategy
-dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>% 
+dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>% 
   dyOptions(colors=c("blue", "red"), strokeWidth=1)
 # Add shading to dygraph object
-for (i in 1:NROW(shad_e)) {
-    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shad_e[i])
+for (i in 1:NROW(shadev)) {
+    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -4519,7 +4523,7 @@ dyplot
     \column{0.5\textwidth}
       The \emph{Dual EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{sim\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of prices, and two decay parameters $\lambda_1$ and $\lambda2$.
+      The function \texttt{sim\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of prices, and two decay parameters $\lambda_1$ and $\lambda_2$.
       \vskip1ex
       The function \texttt{sim\_ewma2()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
@@ -4531,12 +4535,12 @@ sim_ewma2 <- function(ohlc, lambda_1=0.1, lambda2=0.01, look_back=333,
   returns <- rutils::diffit(close)
   nrows <- NROW(ohlc)
   # Calculate EWMA prices
-  weights <- exp(-lambda1*(1:look_back))
-  weights <- weights/sum(weights)
-  ewma1 <- HighFreq::roll_wsum(closep, weights=weights)
-  weights <- exp(-lambda2*(1:look_back))
-  weights <- weights/sum(weights)
-  ewma2 <- HighFreq::roll_wsum(closep, weights=weights)
+  weightv <- exp(-lambda1*(1:look_back))
+  weightv <- weightv/sum(weightv)
+  ewma1 <- HighFreq::roll_wsum(closep, weights=weightv)
+  weightv <- exp(-lambda2*(1:look_back))
+  weightv <- weightv/sum(weightv)
+  ewma2 <- HighFreq::roll_wsum(closep, weights=weightv)
   # Calculate positions, either: -1, 0, or 1
   indic <- sign(ewma1 - ewma2)
   if (lagg > 1) {
@@ -4548,7 +4552,7 @@ sim_ewma2 <- function(ohlc, lambda_1=0.1, lambda2=0.01, look_back=333,
   pos <- ifelse(indic == lagg, 1, pos)
   pos <- ifelse(indic == (-lagg), -1, pos)
   pos <- zoo::na.locf(pos, na.rm=FALSE)
-  pos <- xts::xts(pos, order.by=index(close))
+  pos <- xts::xts(pos, order.by=zoo::index(close))
   # Lag the positions to trade on next day
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
@@ -4607,15 +4611,15 @@ wealth <- cbind(vti, pnls)
       \includegraphics[width=0.4\paperwidth]{figure/ewma_dual_strat_opt_pnl.png}
       <<echo=TRUE,eval=FALSE>>=
 # Annualized Sharpe ratio of Dual EWMA strategy
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
 cor(wealth)
 # Plot Optimal Dual EWMA strategy
-dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("Optimal EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>% 
+dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("Optimal EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>% 
   dyOptions(colors=c("blue", "red"), strokeWidth=1)
 # Add shading to dygraph object
-for (i in 1:NROW(shad_e)) {
-    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shad_e[i])
+for (i in 1:NROW(shadev)) {
+    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -4752,7 +4756,7 @@ posit[1] <- 0
 posit <- ifelse(indic == lagg, 1, posit)
 posit <- ifelse(indic == (-lagg), -1, posit)
 posit <- zoo::na.locf(posit, na.rm=FALSE)
-posit <- xts::xts(posit, order.by=index(closep))
+posit <- xts::xts(posit, order.by=zoo::index(closep))
 # Lag the positions to trade in next period
 posit <- rutils::lagit(posit, lagg=1)
 # Calculate PnLs of VWAP strategy
@@ -4763,7 +4767,7 @@ wealth <- cbind(vti, pnls)
 colnames(wealth) <- c("VTI", "VWAP Strategy")
 colnamev <- colnames(wealth)
 # Annualized Sharpe ratios of VTI and VWAP strategy
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4771,17 +4775,17 @@ sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
       <<echo=TRUE,eval=FALSE>>=
 # Create colors for background shading
 dates <- (rutils::diffit(posit) != 0)
-shad_e <- posit[dates]
-dates <- c(index(shad_e), end(posit))
-shad_e <- ifelse(drop(zoo::coredata(shad_e)) == 1, "lightgreen", "antiquewhite")
+shadev <- posit[dates]
+dates <- c(zoo::index(shadev), end(posit))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Plot dygraph of VWAP strategy
 # Create dygraph object without plotting it
-dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+dyplot <- dygraphs::dygraph(cumsum(wealth["2007/"]), main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Add shading to dygraph object
-for (i in 1:NROW(shad_e)) {
-    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shad_e[i])
+for (i in 1:NROW(shadev)) {
+    dyplot <- dyplot %>% dyShading(from=dates[i], to=dates[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -4812,7 +4816,7 @@ cor(vti, pnls)
 # Combine VWAP strategy with VTI
 wealth <- cbind(vti, pnls, 0.5*(vti+pnls))
 colnames(wealth) <- c("VTI", "VWAP", "Combined")
-sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
+sharper <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4821,14 +4825,14 @@ sharp_e <- sqrt(252)*sapply(wealth, function (x) mean(x)/sd(x))
 # Plot dygraph of VWAP strategy combined with VTI
 # wippp
 colnamev <- colnames(wealth)
-dygraphs::dygraph(cumsum(wealth), paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+dygraphs::dygraph(cumsum(wealth), paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dySeries(name=colnamev[1], label=colnamev[1], col="blue", strokeWidth=1) %>%
   dySeries(name=colnamev[2], label=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], label=colnamev[3], col="purple", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Or
 dygraphs::dygraph(cumsum(wealth), 
-  main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharp_e), round(sharp_e, 3), sep="="), collapse=", "))) %>%
+  main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red", "purple"), strokeWidth=1) %>%
   dyLegend(show="always", width=500)
       @
@@ -4911,7 +4915,7 @@ sim_vwap <- function(ohlc, look_back=333, bid_offer=0.001, trend=1, lagg=1) {
   pos <- ifelse(indic == lagg, 1, pos)
   pos <- ifelse(indic == (-lagg), -1, pos)
   pos <- zoo::na.locf(pos, na.rm=FALSE)
-  pos <- xts::xts(pos, order.by=index(close))
+  pos <- xts::xts(pos, order.by=zoo::index(close))
   # Lag the positions to trade on next day
   pos <- rutils::lagit(pos, lagg=1)
   # Calculate PnLs of strategy
@@ -5000,7 +5004,7 @@ legend("topleft", legend=colnames(pnls), inset=0.1,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
 vti <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vti)
+dates <- zoo::index(vti)
 vti <- as.numeric(vti)
 nrows <- NROW(vti)
 # Define predictor matrix for forecasting
@@ -5057,15 +5061,15 @@ plot(x=2:NCOL(predictor), y=mse[, 1],
       \vskip1ex
       The reason for the increasing out-of-sample MSE is \emph{overfitting} of the coefficients to the training data.
       <<echo=TRUE,eval=FALSE>>=
-in_sample <- 1:(nrows %/% 2)
-out_sample <- (nrows %/% 2 + 1):nrows
+insample <- 1:(nrows %/% 2)
+outsample <- (nrows %/% 2 + 1):nrows
 # Calculate forecasts as function of the AR order
 forecasts <- lapply(2:NCOL(predictor), function(ordern) {
   # Calculate fitted coefficients
-  inverse <- MASS::ginv(predictor[in_sample, 1:ordern])
-  coeff <- drop(inverse %*% response[in_sample])
+  inverse <- MASS::ginv(predictor[insample, 1:ordern])
+  coeff <- drop(inverse %*% response[insample])
   # Calculate out-of-sample forecasts of vti
-  drop(predictor[out_sample, 1:ordern] %*% coeff)
+  drop(predictor[outsample, 1:ordern] %*% coeff)
 })  # end lapply
 names(forecasts) <- paste0("n=", 2:NCOL(predictor))
       @
@@ -5075,7 +5079,7 @@ names(forecasts) <- paste0("n=", 2:NCOL(predictor))
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vti[out_sample] - x)^2), cor=cor(vti[out_sample], x))
+  c(mse=mean((vti[outsample] - x)^2), cor=cor(vti[outsample], x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- names(forecasts)
@@ -5105,10 +5109,10 @@ plot(x=2:NCOL(predictor), y=mse[, 1],
       <<echo=TRUE,eval=FALSE>>=
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -5153,9 +5157,9 @@ predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
 predictor <- cbind(rep(1, nrows), predictor)
 # Calculate forecasts as function of the AR order
 forecasts <- lapply(2:NCOL(predictor), function(ordern) {
-  inverse <- MASS::ginv(predictor[in_sample, 1:ordern])
-  coeff <- drop(inverse %*% response[in_sample])
-  drop(predictor[out_sample, 1:ordern] %*% coeff)
+  inverse <- MASS::ginv(predictor[insample, 1:ordern])
+  coeff <- drop(inverse %*% response[insample])
+  drop(predictor[outsample, 1:ordern] %*% coeff)
 })  # end lapply
 names(forecasts) <- paste0("n=", 2:NCOL(predictor))
       @
@@ -5165,10 +5169,10 @@ names(forecasts) <- paste0("n=", 2:NCOL(predictor))
       <<echo=TRUE,eval=FALSE>>=
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Predictor") %>%
@@ -5200,10 +5204,10 @@ dygraphs::dygraph(pnls[, 1:4],
 nagg <- 5
 pnls <- sapply(forecasts, function(x) {
   x <- roll::roll_mean(x, width=nagg, min_obs=1)
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -5256,7 +5260,7 @@ rangev <- (nrows-look_back):(nrows-1)
 design_inv <- MASS::ginv(design[rangev, -1])
 # Calculate fitted coefficients
 coeff <- drop(design_inv %*% design[rangev, 1])
-# Calculate forecast of vti for.n_rows
+# Calculate forecast of vti for nrows
 drop(design[nrows, -1] %*% coeff)
 # Compare with actual value
 design[nrows, 1]
@@ -5288,7 +5292,7 @@ design[nrows, 1]
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
 vti <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vti)
+dates <- zoo::index(vti)
 vti <- as.numeric(vti)
 nrows <- NROW(vti)
 # Define response equal to vti

@@ -263,9 +263,9 @@ levels(factorv)[as.numeric(factorv)]
 # Get contingency (frequency) table
 table(factorv)
 # Get contingency table using sapply
-sapply(levels(factorv),
- function(levelv) {
-   sum(levelv == factorv)
+sapply(confls(factorv),
+ function(confl)v) {
+   sum(confl)v == factorv)
  })  # end sapply
 
 # Display the formal arguments of findInterval

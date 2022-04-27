@@ -229,7 +229,7 @@ rm(list=ls())
 globv <- 1  # Define a global variable
 ls(environment())  # Get all variables in environment
 func_env <- function() {  # Explore function environments
-  loc_var <- 1  # Define a local variable
+  locvar <- 1  # Define a local variable
   cat('objects in evaluation environment:\t',
       ls(environment()), '\n')
   cat('objects in enclosing environment:\t',
@@ -245,11 +245,11 @@ environment(print)  # Package namespace is the enclosure
 rm(list=ls())
 globv <- 1  # Define a global variable
 probe_scope <- function() {  # Explore function scope
-  loc_var <- 2*globv  # Define a local variable
+  locvar <- 2*globv  # Define a local variable
   new_globvar <<- 11  # Define a global variable
   cat('objects in evaluation environment:\t',
       ls(environment()), '\n')
-  cat('this is a local loc_var:\t', loc_var, '\n')
+  cat('this is a local locvar:\t', locvar, '\n')
   cat('objects in enclosing environment:\n',
       ls(parent.env(environment())), '\n')
   cat('this is globv:\t', globv, '\n')
@@ -259,7 +259,7 @@ probe_scope <- function() {  # Explore function scope
 probe_scope()
 globv  # Global variable is unaffected
 new_globvar  # new_globvar is preserved
-loc_var  # Local variable is gone!
+locvar  # Local variable is gone!
 
 a <- 1  # Define a variable
 # New variable "b" points to value of "a"

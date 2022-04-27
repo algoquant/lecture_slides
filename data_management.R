@@ -1111,7 +1111,7 @@ finally=print(paste("symbol=", symbol))
   Sys.sleep(2)  # Wait 2 seconds until next attempt
 }  # end while
 class(sp500env$AAPL)
-class(index(sp500env$AAPL))
+class(zoo::index(sp500env$AAPL))
 tail(sp500env$AAPL)
 
 # "LOW.Low" is a bad column name
@@ -1152,14 +1152,14 @@ dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices"
 
 class(sp500env$AAPL)
 # The date-time index is class POSIXct not Date
-class(index(sp500env$AAPL))
+class(zoo::index(sp500env$AAPL))
 # Coerce time indices from class POSIXct to class Date
 for (symbol in ls(sp500env)) {
   xtes <- get(symbol, envir=sp500env)
-  index(xtes) <- as.Date(index(xtes))
+  zoo::index(xtes) <- as.Date(zoo::index(xtes))
   assign(symbol, xtes, envir=sp500env)
 }  # end for
-class(index(sp500env$AAPL))
+class(zoo::index(sp500env$AAPL))
 # Save the environment to compressed .RData file
 dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
 save(sp500env, file=paste0(dir_name, "sp500.RData"))

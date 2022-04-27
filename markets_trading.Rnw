@@ -124,7 +124,7 @@ save(returns, returns100,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate number of constituents without prices
 datav <- rowSums(is.na(prices))
-datav <- xts::xts(datav, order.by=index(prices))
+datav <- xts::xts(datav, order.by=zoo::index(prices))
 dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
   dyOptions(colors="blue", strokeWidth=2)
       @
@@ -149,7 +149,7 @@ prices <- zoo::na.locf(prices, fromLast=TRUE)
 indeks <- xts(rowSums(prices)/ncols, zoo::index(prices))
 colnames(indeks) <- "index"
 # Combine index with VTI
-datav <- cbind(indeks[index(etfenv$VTI)], etfenv$VTI[, 4])
+datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
 colnamev <- c("index", "VTI")
 colnames(datav) <- colnamev
 # Plot index with VTI
@@ -547,14 +547,14 @@ summary(microbenchmark(
       \includegraphics[width=0.35\paperwidth]{figure/pca_rates_load1.png}
       <<echo=TRUE,eval=FALSE>>=
 # Find weights with maximum variance
-optimd <- optim(par=weights,
+optiml <- optim(par=weights,
   fn=objfun,
   returns=returns,
   method="L-BFGS-B",
   upper=rep(5.0, nweights),
   lower=rep(-5.0, nweights))
 # Optimal weights and maximum variance
-weights1 <- optimd$par
+weights1 <- optiml$par
 objfun(weights1, returns)
 # Plot first principal component loadings
 x11(width=6, height=5)
@@ -590,7 +590,7 @@ objfun <- function(weights, returns) {
     1e7*sum(weights1*weights)^2
 }  # end objfun
 # Find second principal component weights
-optimd <- optim(par=weights,
+optiml <- optim(par=weights,
                    fn=objfun,
                    returns=returns,
                    method="L-BFGS-B",
@@ -602,7 +602,7 @@ optimd <- optim(par=weights,
       \includegraphics[width=0.35\paperwidth]{figure/pca_rates_load2.png}
       <<echo=TRUE,eval=FALSE>>=
 # pc2 weights and returns
-weights2 <- optimd$par
+weights2 <- optiml$par
 pc2 <- drop(returns %*% weights2)
 sum(pc1*pc2)
 # Plot second principal component loadings
@@ -802,7 +802,7 @@ all.equal(pcad$x, pcats, check.attributes=FALSE)
 # Calculate products of principal component time series
 round(t(pcats) %*% pcats, 2)
 # Coerce to xts time series
-pcats <- xts(pcats, order.by=index(returns))
+pcats <- xts(pcats, order.by=zoo::index(returns))
 pcats <- cumsum(pcats)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
@@ -1185,12 +1185,12 @@ exceeds <- (volumes[, "ESU8"] > volumes[, "ESM8"])
 indeks <- match(TRUE, exceeds)
 # indeks <- min(which(exceeds))
 # Scale the ESM8 prices
-indeks <- index(exceeds[indeks])
+indeks <- zoo::index(exceeds[indeks])
 ratio <- as.numeric(Cl(ESU8[indeks])/Cl(ESM8[indeks]))
 ESM8[, 1:4] <- ratio*ESM8[, 1:4]
 # Calculate continuous contract prices
-chain_ed <- rbind(ESM8[index(ESM8) < indeks],
-                  ESU8[index(ESU8) >= indeks])
+chain_ed <- rbind(ESM8[zoo::index(ESM8) < indeks],
+                  ESU8[zoo::index(ESU8) >= indeks])
 # Or
 # Chain_ed <- rbind(ESM8[paste0("/", indeks-1)],
 #                   ESU8[paste0(indeks, "/")])
@@ -3206,9 +3206,9 @@ chart_Series(x=prices, name="S&P500 Futures Bid-Ask Bounce")
       The function \texttt{calc\_var\_ohlc()} from package \texttt{HighFreq} calculates the variance of an \emph{OHLC} time series using range estimators.
       <<echo=TRUE,eval=FALSE>>=
 # Volatility of SPY
-sqrt(HighFreq::calc_var_ohlc(ohlc))
+sqrt(HighFreq::calcvar_ohlc(ohlc))
 # Daily SPY volatility and volume
-vol_daily <- sqrt(xts::apply.daily(ohlc, FUN=calc_var_ohlc))
+vol_daily <- sqrt(xts::apply.daily(ohlc, FUN=calcvar_ohlc))
 colnames(vol_daily) <- ("SPY_volatility")
 volumes <- quantmod::Vo(ohlc)
 volume_daily <- xts::apply.daily(volumes, FUN=sum)
@@ -3622,7 +3622,7 @@ season_var <- season_ality(vol_ohlc(ohlc=SPY))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/intradayveason_hurst_volat.png}
+      \includegraphics[width=0.45\paperwidth]{figure/intraday_season_hurst_volat.png}
   \end{columns}
 \end{block}
 

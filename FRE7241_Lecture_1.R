@@ -116,7 +116,7 @@ options(max.print=30)
 # Warning levels options
 # Negative - warnings are ignored
 options(warn=-1)
-# zero - warnings are stored and printed after top-level function has completed
+# zero - warnings are stored and printed after top-confl function has completed
 options(warn=0)
 # One - warnings are printed as they occur
 options(warn=1)
@@ -709,7 +709,7 @@ parLapply(cluster, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(cluster, c("VTI", "IEF", "DBC"),
     function(symbol)
-      NROW(index(get(symbol, envir=rutils::etfenv))))
+      NROW(zoo::index(get(symbol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
     function(symbol)
@@ -718,7 +718,7 @@ parSapply(cluster, c("VTI", "IEF", "DBC"),
 parSapply(cluster, c("VTI", "IEF", "DBC"),
     function(symbol) {
       stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-      NROW(index(get(symbol, envir=rutils::etfenv)))
+      NROW(zoo::index(get(symbol, envir=rutils::etfenv)))
     })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(cluster)
@@ -1209,15 +1209,15 @@ rgl::persp3d(
   xlim=c(-10, 10), ylim=c(-10, 10),
   col="green", axes=FALSE, zlab="", main="rastrigin")
 # Optimize with respect to vector argument
-optimd <- optim(par=vectorv, fn=rastrigin,
+optiml <- optim(par=vectorv, fn=rastrigin,
         method="L-BFGS-B",
         upper=c(4*pi, 4*pi),
         lower=c(pi/2, pi/2),
         param=1)
 # Optimal parameters and value
-optimd$par
-optimd$value
-rastrigin(optimd$par, param=1)
+optiml$par
+optiml$value
+rastrigin(optiml$par, param=1)
 
 # Sample of normal variables
 datav <- rnorm(1000, mean=4, sd=2)
@@ -1360,14 +1360,14 @@ vectorv <- c(pi/6, pi/6)
 rastrigin(vectorv=vectorv)
 library(DEoptim)
 # Optimize rastrigin using DEoptim
-optimd <-  DEoptim(rastrigin,
+optiml <-  DEoptim(rastrigin,
   upper=c(6, 6), lower=c(-6, -6),
   DEoptim.control(trace=FALSE, itermax=50))
 # Optimal parameters and value
-optimd$optim$bestmem
-rastrigin(optimd$optim$bestmem)
-summary(optimd)
-plot(optimd)
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
 
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
@@ -1396,7 +1396,7 @@ save(returns, returns100,
 
 # Calculate number of constituents without prices
 datav <- rowSums(is.na(prices))
-datav <- xts::xts(datav, order.by=index(prices))
+datav <- xts::xts(datav, order.by=zoo::index(prices))
 dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
   dyOptions(colors="blue", strokeWidth=2)
 
@@ -1406,7 +1406,7 @@ prices <- zoo::na.locf(prices, fromLast=TRUE)
 indeks <- xts(rowSums(prices)/ncols, zoo::index(prices))
 colnames(indeks) <- "index"
 # Combine index with VTI
-datav <- cbind(indeks[index(etfenv$VTI)], etfenv$VTI[, 4])
+datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
 colnamev <- c("index", "VTI")
 colnames(datav) <- colnamev
 # Plot index with VTI
@@ -1601,13 +1601,13 @@ legend("topright", inset=0.05, title="Sigmas",
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 6, 9)  # Df values
+degf <- c(3, 6, 9)  # Df values
 colors <- c("black", "red", "blue", "green")
-labelv <- c("normal", paste("df", deg_free, sep="="))
+labelv <- c("normal", paste("df", degf, sep="="))
 # Plot a Normal probability distribution
 curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
 for (indeks in 1:3) {  # Plot three t-distributions
-  curve(expr=dt(x, df=deg_free[indeks]), xlab="", ylab="",
+  curve(expr=dt(x, df=degf[indeks]), xlab="", ylab="",
 lwd=2, col=colors[indeks+1], add=TRUE)
 }  # end for
 
@@ -1710,11 +1710,11 @@ ks.test(returns, pnorm)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
-deg_free <- c(2, 5, 8, 11)
+degf <- c(2, 5, 8, 11)
 # Plot four curves in loop
 colors <- c("red", "black", "blue", "green")
 for (indeks in 1:4) {
-  curve(expr=dchisq(x, df=deg_free[indeks]),
+  curve(expr=dchisq(x, df=degf[indeks]),
   xlim=c(0, 20), ylim=c(0, 0.3),
   xlab="", ylab="", col=colors[indeks],
   lwd=2, add=as.logical(indeks-1))
@@ -1723,7 +1723,7 @@ for (indeks in 1:4) {
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
-labelv <- paste("df", deg_free, sep="=")
+labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", labelv,
        cex=0.8, lwd=6, lty=1, col=colors)

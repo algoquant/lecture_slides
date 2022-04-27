@@ -292,7 +292,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 
 # Disable JIT
-jit_level <- compiler::enableJIT(0)
+jit_confl <- compiler::enableJIT(0)
 # Create inefficient function
 my_mean <- function(x) {
   output <- 0; n_elem <- NROW(x)
@@ -329,7 +329,7 @@ summary(microbenchmark(
   sapply2(vectorv, sqrt),
   times=10))[, c(1, 4, 5)]
 # enable JIT
-compiler::enableJIT(jit_level)
+compiler::enableJIT(jit_confl)
 
 # Define functions for profiling
 out_er <- function() {fa_st(); sl_ow()}
@@ -768,7 +768,7 @@ parLapply(cluster, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(cluster, c("VTI", "IEF", "DBC"),
     function(symbol)
-      NROW(index(get(symbol, envir=rutils::etfenv))))
+      NROW(zoo::index(get(symbol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
     function(symbol)
@@ -777,7 +777,7 @@ parSapply(cluster, c("VTI", "IEF", "DBC"),
 parSapply(cluster, c("VTI", "IEF", "DBC"),
     function(symbol) {
       stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-      NROW(index(get(symbol, envir=rutils::etfenv)))
+      NROW(zoo::index(get(symbol, envir=rutils::etfenv)))
     })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(cluster)
@@ -1475,15 +1475,15 @@ rgl::persp3d(
   xlim=c(-10, 10), ylim=c(-10, 10),
   col="green", axes=FALSE, zlab="", main="rastrigin")
 # Optimize with respect to vector argument
-optimd <- optim(par=vectorv, fn=rastrigin,
+optiml <- optim(par=vectorv, fn=rastrigin,
         method="L-BFGS-B",
         upper=c(4*pi, 4*pi),
         lower=c(pi/2, pi/2),
         param=1)
 # Optimal parameters and value
-optimd$par
-optimd$value
-rastrigin(optimd$par, param=1)
+optiml$par
+optiml$value
+rastrigin(optiml$par, param=1)
 
 # Sample of normal variables
 datav <- rnorm(1000, mean=4, sd=2)
@@ -1626,14 +1626,14 @@ vectorv <- c(pi/6, pi/6)
 rastrigin(vectorv=vectorv)
 library(DEoptim)
 # Optimize rastrigin using DEoptim
-optimd <-  DEoptim(rastrigin,
+optiml <-  DEoptim(rastrigin,
   upper=c(6, 6), lower=c(-6, -6),
   DEoptim.control(trace=FALSE, itermax=50))
 # Optimal parameters and value
-optimd$optim$bestmem
-rastrigin(optimd$optim$bestmem)
-summary(optimd)
-plot(optimd)
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
 
 # Rastrigin function with vector argument for optimization
 rastrigin <- function(vectorv, param=25) {
@@ -1643,14 +1643,14 @@ vectorv <- c(pi/6, pi/6)
 rastrigin(vectorv=vectorv)
 library(DEoptim)
 # Optimize rastrigin using DEoptim
-optimd <-  DEoptim(rastrigin,
+optiml <-  DEoptim(rastrigin,
   upper=c(6, 6), lower=c(-6, -6),
   DEoptim.control(trace=FALSE, itermax=50))
 # Optimal parameters and value
-optimd$optim$bestmem
-rastrigin(optimd$optim$bestmem)
-summary(optimd)
-plot(optimd)
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
 
 # Verify that rtools are working properly:
 devtools::find_rtools()

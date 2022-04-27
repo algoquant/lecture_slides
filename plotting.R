@@ -83,7 +83,7 @@ zoo_series <- window(zoo_stx[, "AdjClose"],
    start=as.Date("2013-01-01"),
    end=as.Date("2013-12-31"))
 # extract time index and monthly dates
-dates <- index(zoo_series)
+dates <- zoo::index(zoo_series)
 # Coerce index to monthly dates
 month_ly <- as.yearmon(dates)
 # tick locations at beginning of month
@@ -107,7 +107,7 @@ abline(v=a_t, col="grey", lwd=0.5)
 library(zoo)  # Load zoo
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 # extract time index and monthly dates
-dates <- index(zoo_stx)
+dates <- zoo::index(zoo_stx)
 # Coerce index to monthly dates
 month_ly <- as.yearmon(dates)
 # benchmark two methods of calculating tick locations
@@ -246,11 +246,11 @@ legend("topright", inset=0.05, title="Sigmas",
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
-deg_free <- c(2, 5, 8, 11)
+degf <- c(2, 5, 8, 11)
 # Plot four curves in loop
 colors <- c("red", "black", "blue", "green")
 for (indeks in 1:4) {
-  curve(expr=dchisq(x, df=deg_free[indeks]),
+  curve(expr=dchisq(x, df=degf[indeks]),
   xlim=c(0, 20), ylim=c(0, 0.3),
   xlab="", ylab="", col=colors[indeks],
   lwd=2, add=as.logical(indeks-1))
@@ -259,7 +259,7 @@ for (indeks in 1:4) {
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
-labelv <- paste("df", deg_free, sep="=")
+labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", labelv,
        cex=0.8, lwd=6, lty=1,
@@ -267,18 +267,18 @@ legend("topright", inset=0.05, bty="n",
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(2, 5, 8, 11)  # df values
+degf <- c(2, 5, 8, 11)  # df values
 # Create plot colors
 colors <- c("red", "black", "blue", "green")
 # Create legend labels
-labelv <- paste("df", deg_free, sep="=")
+labelv <- paste("df", degf, sep="=")
 # Plot an empty chart
 xvar <- seq(0, 20, length=100)
-plot(xvar, dchisq(xvar, df=deg_free[1]),
+plot(xvar, dchisq(xvar, df=degf[1]),
      type="n", xlab="", ylab="", ylim=c(0, 0.3))
 # Add lines to plot
 for (indeks in 1:4) {
-  lines(xvar, dchisq(xvar, df=deg_free[indeks]),
+  lines(xvar, dchisq(xvar, df=degf[indeks]),
 lwd=2, col=colors[indeks])
 }  # end for
 
@@ -292,10 +292,10 @@ legend("topright", inset=0.05,
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot three curves in loop
-deg_free <- c(3, 5, 9)  # Degrees of freedom
+degf <- c(3, 5, 9)  # Degrees of freedom
 colors <- c("black", "red", "blue", "green")
-for (indeks in 1:NROW(deg_free)) {
-curve(expr=df(x, df1=deg_free[indeks], df2=3),
+for (indeks in 1:NROW(degf)) {
+curve(expr=df(x, df1=degf[indeks], df2=3),
 xlim=c(0, 4), xlab="", ylab="", lwd=2,
 col=colors[indeks], add=as.logical(indeks-1))
 }  # end for
@@ -303,19 +303,19 @@ col=colors[indeks], add=as.logical(indeks-1))
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
-labelv <- paste("df", deg_free, sep="=")
+labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
        labelv, cex=0.8, lwd=2, lty=1, col=colors)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 6, 9)  # df values
+degf <- c(3, 6, 9)  # df values
 colors <- c("black", "red", "blue", "green")
-labelv <- c("normal", paste("df", deg_free, sep="="))
+labelv <- c("normal", paste("df", degf, sep="="))
 # Plot a Normal probability distribution
 curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
 for (indeks in 1:3) {  # Plot three t-distributions
-  curve(expr=dt(x, df=deg_free[indeks]),
+  curve(expr=dt(x, df=degf[indeks]),
 lwd=2, col=colors[indeks+1], add=TRUE)
 }  # end for
 
@@ -329,13 +329,13 @@ legend("topright", inset=0.05, bty="n",
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 xvar <- seq(-4, 4, length=100)
-deg_free <- c(3, 6, 9)  # df values
+degf <- c(3, 6, 9)  # df values
 colors <- c("black", "red", "blue", "green")
-labelv <- c("normal", paste("df", deg_free, sep="="))
+labelv <- c("normal", paste("df", degf, sep="="))
 # Plot chart of normal distribution
 plot(xvar, dnorm(xvar), type="l", lwd=2, xlab="", ylab="")
 for (indeks in 1:3) {  # Add lines for t-distributions
-  lines(xvar, dt(xvar, df=deg_free[indeks]),
+  lines(xvar, dt(xvar, df=degf[indeks]),
 lwd=2, col=colors[indeks+1])
 }  # end for
 
@@ -427,16 +427,16 @@ boxplot(formula=mpg ~ cyl, data=mtcars,
 # Create a plotting expression
 ex_pr <- quote({
   par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-  deg_free <- 2:20
-  rangev <- (1:NROW(deg_free))
+  degf <- 2:20
+  rangev <- (1:NROW(degf))
   indeks <- 4
   # Plot a curve
-  curve(expr=dchisq(x, df=deg_free[indeks]),
+  curve(expr=dchisq(x, df=degf[indeks]),
 xlim=c(0, 30), ylim=c(0, 0.2),
 xlab="", ylab="", lwd=3, col="red")
   # Add grey lines to plot
   for (it in rangev[-indeks]) {
-    curve(expr=dchisq(x, df=deg_free[it]),
+    curve(expr=dchisq(x, df=degf[it]),
   xlim=c(0, 30), ylim=c(0, 0.2),
   xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
   }  # end for
@@ -444,7 +444,7 @@ xlab="", ylab="", lwd=3, col="red")
   title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
   # Add legend
   text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
-      deg_free[indeks]), pos=1, cex=1.3)
+      degf[indeks]), pos=1, cex=1.3)
 })  # end quote
 
 # View the plotting expression
@@ -457,18 +457,18 @@ library(animation)
 # Create an expression for creating multiple plots
 ex_pr <- quote({
   par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-  deg_free <- 2:20
-  rangev <- (1:NROW(deg_free))
+  degf <- 2:20
+  rangev <- (1:NROW(degf))
   # Set image refesh interval
   animation::ani.options(interval=0.5)
   # Create multiple plots with curves
   for (indeks in rangev) {
-    curve(expr=dchisq(x, df=deg_free[indeks]),
+    curve(expr=dchisq(x, df=degf[indeks]),
   xlim=c(0, 30), ylim=c(0, 0.2),
   xlab="", ylab="", lwd=3, col="red")
     # Add grey lines to plot
     for (it in rangev[-indeks]) {
-      curve(expr=dchisq(x, df=deg_free[it]),
+      curve(expr=dchisq(x, df=degf[it]),
     xlim=c(0, 30), ylim=c(0, 0.2),
     xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
     }  # end for
@@ -476,7 +476,7 @@ ex_pr <- quote({
     title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
     # Add legend
     text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
-      deg_free[indeks]), pos=1, cex=1.3)
+      degf[indeks]), pos=1, cex=1.3)
   }  # end for
 })  # end quote
 
@@ -647,7 +647,7 @@ renderPlot({
   weights <- weights/sum(weights)
   ewmap <- .Call(stats:::C_cfilter, closep, filter=weights, sides=1, circular=FALSE)
   ewmap[1:(interval-1)] <- ewmap[interval]
-  ewmap <- xts(cbind(closep , ewmap), order.by=index(closep ))
+  ewmap <- xts(cbind(closep , ewmap), order.by=zoo::index(closep ))
   colnames(ewmap) <- c("VTI", "VTI EWMA")
   # Plot EWMA prices
   chobj <- chart_Series(ewmap, theme=plot_theme, name="EWMA prices")

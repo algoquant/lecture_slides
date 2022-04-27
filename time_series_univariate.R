@@ -53,8 +53,8 @@ library(tseries)  # Load package tseries
 # Calculate maximum drawdown
 maxdrawdown(msft_adj[, "AdjClose"])
 max_drawd <- maxdrawdown(msft_adj[, "AdjClose"])
-index(msft_adj)[max_drawd$from]
-index(msft_adj)[max_drawd$to]
+zoo::index(msft_adj)[max_drawd$from]
+zoo::index(msft_adj)[max_drawd$to]
 # Calculate Sharpe ratio
 sharpe(msft_adj[, "AdjClose"])
 # Calculate Sterling ratio
@@ -276,7 +276,7 @@ par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
 zoo::plot.zoo(prices[, 1], lwd=2, col="orange",
         xlab=NA, ylab=NA, xaxt="n")
 # Create X-axis date labels and add X-axis
-dates <- pretty(index(prices))
+dates <- pretty(zoo::index(prices))
 axis(side=1, at=dates, labels=format(dates, "%b-%d-%y"))
 # Plot second time series without y-axis
 par(new=TRUE)  # Allow new line on same plot
@@ -319,7 +319,7 @@ dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(datav),
 indic <- (Cl(datav) > datav[, "VWAP"])
 whichv <- which(rutils::diffit(indic) != 0)
 indic <- rbind(first(indic), indic[whichv, ], last(indic))
-dates <- index(indic)
+dates <- zoo::index(indic)
 indic <- ifelse(drop(coredata(indic)), "lightgreen", "antiquewhite")
 # Create dygraph object without rendering it
 dyplot <- dygraphs::dygraph(datav) %>% dyCandlestick() %>%
@@ -551,7 +551,7 @@ colnames(prices) <- rutils::get_name(colnames(prices))
 #   strsplit(colnames(prices), split="[.]"))[, 1]
 # Normalize columns
 prices <- xts(t(t(prices) / as.numeric(prices[1, ])),
-         order.by=index(prices))
+         order.by=zoo::index(prices))
 # Calculate permution index for sorting the lowest to highest final prices
 ordern <- order(prices[NROW(prices), ])
 # Select a few symbols
@@ -575,7 +575,7 @@ indeks <- rowSums(prices * validp) / nums
 # Calculate fraction of stock prices below the average price
 fractv <- rowSums((prices < indeks) & validp) / nums
 # Create xts time series of average stock prices
-indeks <- xts(indeks, order.by=index(prices))
+indeks <- xts(indeks, order.by=zoo::index(prices))
 
 x11(width=6, height=4)
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
@@ -583,7 +583,7 @@ par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
 plot.zoo(indeks, main="Average S&P500 stock prices (normalized from 1990)",
    xlab=NA, ylab=NA, col="blue")
 # Create xts time series of percentage of stock prices below the average price
-fractv <- xts(fractv, order.by=index(prices))
+fractv <- xts(fractv, order.by=zoo::index(prices))
 # Plot percentage of stock prices below the average price
 plot.zoo(fractv[-(1:2),],
    main="Percentage of S&P500 stock prices below the average price",
@@ -1383,7 +1383,7 @@ drop(design[nrows, -1] %*% coeff)
 
 # Calculate a vector of daily VTI log returns
 returns <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(returns)
+dates <- zoo::index(returns)
 returns <- as.numeric(returns)
 nrows <- NROW(returns)
 # Define response equal to returns

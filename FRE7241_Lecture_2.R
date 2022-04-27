@@ -24,7 +24,7 @@ library(rutils)
 prices <- rutils::etfenv$prices
 prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
-dates <- index(prices)
+dates <- zoo::index(prices)
 # Calculate simple dollar returns
 retsd <- rutils::diffit(prices)
 # Or
@@ -234,7 +234,7 @@ sapply(returns, function(x) {
   stddev <- sd(x)
   # Standardize the returns
   x <- (x - mean(x))/stddev
-  c(stddev=stddev, skew=mean(x^3), kurt=mean(x^4))
+  c(mean=mean(x), stddev=stddev, skew=mean(x^3), kurt=mean(x^4))
 })  # end sapply
 
 # Wealth of proportional allocations
@@ -273,7 +273,7 @@ legend("topleft", legend=colnames(wealth),
 
 # Calculate VTI returns
 returns <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
-dates <- index(returns)
+dates <- zoo::index(returns)
 nrows <- NROW(returns)
 returns <- drop(zoo::coredata(returns))
 bfloor <- 60  # bond floor
@@ -362,12 +362,12 @@ summary(model)
 # Plot fitted (predicted) response values
 fittedv <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*vti^2)
 points.default(x=design$VTI, y=fittedv, pch=16, col="blue")
-text(x=0.05, y=0.8*max(residuals), paste("Fixed Ratio t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
+text(x=0.05, y=0.6*max(residuals), paste("Fixed Ratio t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
 
 # Calculate positions
 vti <- na.omit(rutils::etfenv$returns$VTI)
 posit <- rep(NA_integer_, NROW(vti))
-dates <- index(vti)
+dates <- zoo::index(vti)
 dates <- format(dates, "%m-%d")
 posit[dates == "05-01"] <- 0
 posit[dates == "05-03"] <- 0
@@ -485,7 +485,7 @@ stopl <- 0.05
 maxp <- 0.0
 cumrets <- 0.0
 pnls <- vti
-for (i in 1:nrows) {
+for (i in 1:(nrows-1)) {
 # Calculate drawdown
   cumrets <- cumrets + vti[i]
   maxp <- max(maxp, cumrets)

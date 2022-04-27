@@ -130,7 +130,7 @@ save(returns, returns100,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate number of constituents without prices
 datav <- rowSums(is.na(prices))
-datav <- xts::xts(datav, order.by=index(prices))
+datav <- xts::xts(datav, order.by=zoo::index(prices))
 dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
   dyOptions(colors="blue", strokeWidth=2)
       @
@@ -155,7 +155,7 @@ prices <- zoo::na.locf(prices, fromLast=TRUE)
 indeks <- xts(rowSums(prices)/ncols, zoo::index(prices))
 colnames(indeks) <- "index"
 # Combine index with VTI
-datav <- cbind(indeks[index(etfenv$VTI)], etfenv$VTI[, 4])
+datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
 colnamev <- c("index", "VTI")
 colnames(datav) <- colnamev
 # Plot index with VTI
@@ -708,13 +708,13 @@ legend("topright", inset=0.05, title="Sigmas",
         <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 6, 9)  # Df values
+degf <- c(3, 6, 9)  # Df values
 colors <- c("black", "red", "blue", "green")
-labelv <- c("normal", paste("df", deg_free, sep="="))
+labelv <- c("normal", paste("df", degf, sep="="))
 # Plot a Normal probability distribution
 curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
 for (indeks in 1:3) {  # Plot three t-distributions
-  curve(expr=dt(x, df=deg_free[indeks]), xlab="", ylab="",
+  curve(expr=dt(x, df=degf[indeks]), xlab="", ylab="",
         lwd=2, col=colors[indeks+1], add=TRUE)
 }  # end for
       @
@@ -991,11 +991,11 @@ ks.test(returns, pnorm)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
-deg_free <- c(2, 5, 8, 11)
+degf <- c(2, 5, 8, 11)
 # Plot four curves in loop
 colors <- c("red", "black", "blue", "green")
 for (indeks in 1:4) {
-  curve(expr=dchisq(x, df=deg_free[indeks]),
+  curve(expr=dchisq(x, df=degf[indeks]),
         xlim=c(0, 20), ylim=c(0, 0.3),
         xlab="", ylab="", col=colors[indeks],
         lwd=2, add=as.logical(indeks-1))
@@ -1009,7 +1009,7 @@ for (indeks in 1:4) {
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
-labelv <- paste("df", deg_free, sep="=")
+labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", labelv,
        cex=0.8, lwd=6, lty=1, col=colors)
@@ -2333,7 +2333,7 @@ library(rutils)
 prices <- rutils::etfenv$prices
 prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
-dates <- index(prices)
+dates <- zoo::index(prices)
 # Calculate simple dollar returns
 retsd <- rutils::diffit(prices)
 # Or
@@ -2925,17 +2925,17 @@ legend("topleft", legend=colnames(wealth),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns
 returns <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
-dates <- index(returns)
+dates <- zoo::index(returns)
 nrows <- NROW(returns)
 returns <- drop(zoo::coredata(returns))
 bfloor <- 60  # bond floor
 coeff <- 2  # multiplier
-portf_value <- numeric(nrows)
-portf_value[1] <- 100  # principal
-stock_value <- numeric(nrows)
-stock_value[1] <- coeff*(portf_value[1] - bfloor)
-bond_value <- numeric(nrows)
-bond_value[1] <- (portf_value[1] - stock_value[1])
+portfv <- numeric(nrows)
+portfv[1] <- 100  # principal
+stockv <- numeric(nrows)
+stockv[1] <- coeff*(portfv[1] - bfloor)
+bondv <- numeric(nrows)
+bondv[1] <- (portfv[1] - stockv[1])
       @
   \end{columns}
 \end{block}
@@ -2969,13 +2969,13 @@ bond_value[1] <- (portf_value[1] - stock_value[1])
       <<echo=TRUE,eval=FALSE>>=
 # Simulate CPPI strategy
 for (t in 2:nrows) {
-  portf_value[t] <- portf_value[t-1] + stock_value[t-1]*returns[t]
-  stock_value[t] <- min(coeff*(portf_value[t] - bfloor), portf_value[t])
-  bond_value[t] <- (portf_value[t] - stock_value[t])
+  portfv[t] <- portfv[t-1] + stockv[t-1]*returns[t]
+  stockv[t] <- min(coeff*(portfv[t] - bfloor), portfv[t])
+  bondv[t] <- (portfv[t] - stockv[t])
 }  # end for
 # dygraph plot of CPPI strategy
 vti <- 100*cumprod(1+returns)
-datav <- xts::xts(cbind(stock_value, bond_value, portf_value, vti), dates)
+datav <- xts::xts(cbind(stockv, bondv, portfv, vti), dates)
 colnames(datav) <- c("stocks", "bonds", "CPPI", "VTI")
 dygraphs::dygraph(datav, main="CPPI strategy") %>%
   dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
@@ -3145,7 +3145,7 @@ text(x=0.05, y=0.8*max(residuals), paste("Fixed Ratio t-value =", round(summary(
 # Calculate positions
 vti <- na.omit(rutils::etfenv$returns$VTI)
 posit <- rep(NA_integer_, NROW(vti))
-dates <- index(vti)
+dates <- zoo::index(vti)
 dates <- format(dates, "%m-%d")
 posit[dates == "05-01"] <- 0
 posit[dates == "05-03"] <- 0
@@ -3849,7 +3849,6 @@ sqrt(nrows)*sigmav
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/log_norm_skew.png}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Skewness of log-normal prices
 skew_ness <- function(t) {
@@ -3888,7 +3887,6 @@ curve(expr=skew_ness, xlim=c(1, nrows), lwd=3,
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/log_norm_prob.png}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Probability that random log-normal price will be lower than the mean price
 curve(expr=pnorm(sigmav*sqrt(x)/2),
@@ -3916,10 +3914,10 @@ curve(expr=pnorm(sigmav*sqrt(x)/2),
       <<echo=TRUE,eval=FALSE>>=
 # Define daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 5000
-paths <- 10
+npaths <- 10
 # Simulate multiple paths of geometric Brownian motion
-prices <- matrix(rnorm(paths*nrows, sd=sigmav) +
-    drift - sigmav^2/2, nc=paths)
+prices <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+prices <- matrix(prices, nc=npaths)
 prices <- exp(matrixStats::colCumsums(prices))
 # Create xts time series
 prices <- xts(prices, order.by=seq.Date(Sys.Date()-NROW(prices)+1, Sys.Date(), by=1))
@@ -3951,13 +3949,13 @@ plot.zoo(prices, main="Multiple paths of geometric Brownian motion",
       <<echo=TRUE,eval=FALSE>>=
 # Define daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 10000
-paths <- 100
+npaths <- 100
 # Simulate multiple paths of geometric Brownian motion
-prices <- matrix(rnorm(paths*nrows, sd=sigmav) +
-    drift - sigmav^2/2, nc=paths)
+prices <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+prices <- matrix(prices, nc=npaths)
 prices <- exp(matrixStats::colCumsums(prices))
 # Calculate fraction of paths below the expected value
-fractv <- rowSums(prices < 1.0) / paths
+fractv <- rowSums(prices < 1.0) / npaths
 # Create xts time series of percentage of paths below the expected value
 fractv <- xts(fractv, order.by=seq.Date(Sys.Date()-NROW(fractv)+1, Sys.Date(), by=1))
 # Plot xts time series of percentage of paths below the expected value
@@ -4072,285 +4070,6 @@ plot.zoo(fractv[-(1:2),],
          main="Percentage of S&P500 Stock Prices 
          Below the Average Price",
          xlab=NA, ylab=NA, col="blue")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Stock Selection Strategies}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Random Stock Selection}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The proper benchmark for a stock picker is the median of random portfolios, not the stock index, which is the mean.
-      <<echo=TRUE,eval=FALSE>>=
-# Load the S&P500 stock prices
-library(rutils)
-load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
-# Subset (select) the prices after the start date of VTI
-vti <- quantmod::Cl(rutils::etfenv$VTI)
-vti <- rutils::diffit(vti)/rutils::lagit(vti, lagg=1, pad_zeros=FALSE)
-colnames(vti) <- "VTI"
-startd <- start(vti)
-prices <- prices[startd <= zoo::index(prices)]
-# Copy over NA prices using the function zoo::na.locf().
-sum(is.na(prices))
-prices <- zoo::na.locf(prices, na.rm=FALSE)
-prices <- prices[, !is.na(prices[1, ])]
-sum(is.na(prices))
-dates <- zoo::index(prices)
-vti <- vti[dates]
-nrows <- NROW(prices)
-ncols <- NCOL(prices)
-# Calculate percentage returns
-retsp <- rutils::diffit(prices)/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
-# Normalize the prices so that they start at 1
-pricesn <- lapply(prices, function(x) x/as.numeric(x[1]))
-pricesn <- rutils::do_call(cbind, pricesn)
-head(pricesn[, 1:5])
-# Calculate the equal dollar-weighted average of all stock prices
-indeks <- rowMeans(pricesn)
-indeks <- xts::xts(indeks, order.by=dates)
-colnames(indeks) <- "Index"
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_random.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Select a random, equal dollar-weighted portfolio of 5 stocks
-nstocks <- 5
-set.seed(1121)
-samplev <- sample.int(n=ncols, size=nstocks, replace=FALSE)
-portf <- pricesn[, samplev]
-portf <- rowMeans(portf)
-portf <- xts::xts(portf, order.by=dates)
-colnames(portf) <- "Random"
-# Plot dygraph of stock index and random portfolio
-wealth <- cbind(indeks, portf)
-colors <- c("blue", "red")
-dygraphs::dygraph(wealth, main="Stock Index and Random Portfolio") %>%
-  dyOptions(colors=colors, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Random Stock Portfolios}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Most random portfolios underperform the index, so picking a portfolio which outperforms the stock index requires great skill.
-      \vskip1ex
-      An investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
-      \vskip1ex
-      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
-      <<echo=TRUE,eval=FALSE>>=
-# Select 10 random equal dollar-weighted sub-portfolios
-set.seed(1121)
-nportf <- 10
-portfs <- sapply(1:nportf, function(x) {
-  prices <- pricesn[, sample.int(n=ncols, size=nstocks, replace=FALSE)]
-  rowMeans(prices)
-})  # end sapply
-portfs <- xts::xts(portfs, order.by=dates)
-colnames(portfs) <- paste0("portf", 1:nportf)
-round(head(portfs[, 1:4]), 3)
-round(tail(portfs[, 1:4]), 3)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_randomm.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of stock index and random portfolios
-colors <- colorRampPalette(c("red", "blue"))(nportf)
-colors <- colors[order(order(portfs[NROW(portfs), ]))]
-combined <- cbind(indeks, portfs)
-colnames(combined)[1] <- "Index"
-colors <- c("green", colors)
-dygraphs::dygraph(combined, main="Stock Index and Random Portfolios") %>%
-  dyOptions(colors=colors, strokeWidth=1) %>%
-  dyLegend(show="always", width=500)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Momentum Strategies}
-
-%%%%%%%%%%%%%%%
-\subsection{Stock Portfolio Selection Out-of-Sample}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The strategy selects the \texttt{10} best performing stocks from the in-sample interval, and invests equal dollar amounts in the out-of-sample interval.
-      \vskip1ex
-      The strategy out-of-sample performance is only slightly better than the index.
-      <<echo=TRUE,eval=FALSE>>=
-# Define in-sample and out-of-sample intervals
-cutoff <- nrows %/% 2
-dates[cutoff]
-# Calculate the 10 best performing stocks in-sample
-perfstat <- sort(drop(coredata(pricesn[cutoff, ])), decreasing=TRUE)
-symbolv <- names(head(perfstat, 10))
-# Calculate the in-sample portfolio
-pricis <- pricesn[1:cutoff, symbolv]
-wealth <- sum(pricis[cutoff, ])
-# Normalize the prices so that they are 1 at cutoff+1
-pricesn <- lapply(prices, function(x) x/as.numeric(x[cutoff+1]))
-pricesn <- rutils::do_call(cbind, pricesn)
-# Calculate the out-of-sample portfolio
-pricos <- pricesn[(cutoff+1):nrows, symbolv]
-pricos <- wealth*pricos/sum(pricos[1, ])
-wealth <- rbind(pricis, pricos)
-wealth <- xts::xts(rowMeans(wealth), dates)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_stocks_out_sample.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot out-of-sample stock portfolio returns
-wealth <- cbind(indeks, wealth)
-colnames(wealth)[2] <- "Portfolio"
-dygraphs::dygraph(log(wealth), main="Out-of-sample Log Prices of Stock Portfolio") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(dates[cutoff], label="in-sample", strokePattern="solid", color="green") %>%
-  dyLegend(width=500)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Momentum Strategy for Stocks}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Momentum} strategies can be \emph{backtested} by specifying the portfolio rebalancing frequency, the formation period, and the holding period:
-      \setlength{\leftmargini}{1.0em}
-      \begin{itemize}
-        \item Specify a portfolio of stocks and their time series of returns,
-        \item Specify \emph{end points} for the portfolio rebalancing frequency,
-        \item Specify \emph{look-back} intervals for portfolio formation, and \emph{look-forward} intervals for portfolio holding, 
-        \item Specify a performance function to calculate the past performance of the assets,
-        \item Calculate the past performance over the \emph{look-back} formation intervals,
-        \item Calculate the portfolio weights from the past performance,
-        \item Calculate the future returns over the \emph{look-forward} holding intervals,
-        \item Calculate the out-of-sample momentum strategy returns by applying the portfolio weights to the future returns,
-        \item Calculate the transaction costs and subtract them from the strategy returns.
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-backtestmom <- function(returns,
-                             objfun=function(returns) (prod(1+returns)/sd(returns)),
-                             look_back=12, rfreq="months", nstocks=10, bid_offer=0.001,
-                             endp=rutils::calc_endpoints(returns, interval=rfreq), ...) {
-  # Define look-back and look-forward intervals
-  npts <- NROW(endp)
-  # Perform loop over end points
-  pnls <- lapply(2:(npts-1), function(it) {
-    # Select look-back returns
-    startp <- endp[max(1, it-look_back)]
-    retslb <- returns[startp:endp[it], ]
-    # Calculate the best performing stocks in-sample
-    perfstat <- sapply(retslb, objfun)
-    # perfstat <- sapply(1+retslb, prod)
-    perfstat <- na.omit(perfstat)
-    perfstat <- perfstat[is.finite(perfstat)]
-    perfstat <- sort(perfstat, decreasing=TRUE)
-    symbolv <- names(head(perfstat, nstocks))
-    # Calculate the in-sample portfolio volatility and beta
-    retst <- rowMeans(cumprod(1+retslb))
-    retst <- rutils::diffit(retst)/rutils::lagit(retst, lagg=1, pad_zeros=FALSE)
-    retsportf <- retslb[, symbolv]
-    retsportf <- rowMeans(cumprod(1+retsportf))
-    retsportf <- rutils::diffit(retsportf)/rutils::lagit(retsportf, lagg=1, pad_zeros=FALSE)
-    scalef <- sd(retst)/sd(retsportf)
-    # Calculate the out-of-sample portfolio returns
-    retsos <- returns[(endp[it]+1):endp[it+1], symbolv]
-    retsos <- rowMeans(cumprod(1+retsos))
-    retsos <- rutils::diffit(retsos)/rutils::lagit(retsos, lagg=1, pad_zeros=FALSE)
-    # Scale the out-of-sample portfolio returns
-    scalef*retsos
-  })  # end lapply
-  pnls <- rutils::do_call(c, pnls)
-  pnls
-}  # end backtestmom
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performance of Momentum Strategy for Stocks}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The momentum strategy for stocks produces a slightly lower absolute return than the index, but it has a slightly higher Sharpe ratio.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate a vector of monthly end points
-endp <- rutils::calc_endpoints(prices, interval="months")
-endp[2] <- 11
-dates[endp]
-npts <- NROW(endp)
-look_back <- 8
-# Select 10 stocks for equal dollar-weighted portfolio
-nstocks <- 10
-# weights <- rep(1/nstocks, nstocks)
-pnls <- backtestmom(retsp, look_back=look_back, endp=endp, 
-  nstocks=nstocks, objfun=function(returns) (prod(1+returns)))
-# Add initial startup interval
-retsu <- retsp[endp[1]:endp[2], ]
-retsu <- rowMeans(cumprod(1+retsu))
-retsu <- rutils::diffit(retsu)/
-  rutils::lagit(retsu, lagg=1, pad_zeros=FALSE)
-pnls <- c(retsu, pnls)
-pnls <- cumprod(1+pnls)
-pnls <- xts::xts(pnls, order.by=dates)
-colnames(pnls) <- "Strategy"
-# Calculate the Sharpe and Sortino ratios
-wealth <- cbind(indeks, pnls)
-sqrt(252)*sapply(rutils::diffit(wealth), 
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_moment_monthly.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of stock index and momentum strategy
-colors <- c("blue", "red")
-dygraphs::dygraph(log(wealth), main="Log Stock Index and Momentum Strategy") %>%
-  dyOptions(colors=colors, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}

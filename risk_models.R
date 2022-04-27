@@ -180,13 +180,13 @@ legend("topright", inset=0.05, title="Sigmas",
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 6, 9)  # Df values
+degf <- c(3, 6, 9)  # Df values
 colors <- c("black", "red", "blue", "green")
-labelv <- c("normal", paste("df", deg_free, sep="="))
+labelv <- c("normal", paste("df", degf, sep="="))
 # Plot a Normal probability distribution
 curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
 for (indeks in 1:3) {  # Plot three t-distributions
-  curve(expr=dt(x, df=deg_free[indeks]), xlab="", ylab="",
+  curve(expr=dt(x, df=degf[indeks]), xlab="", ylab="",
 lwd=2, col=colors[indeks+1], add=TRUE)
 }  # end for
 
@@ -418,11 +418,11 @@ ks.test(returns, datav)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
-deg_free <- c(2, 5, 8, 11)
+degf <- c(2, 5, 8, 11)
 # Plot four curves in loop
 colors <- c("red", "black", "blue", "green")
 for (indeks in 1:4) {
-  curve(expr=dchisq(x, df=deg_free[indeks]),
+  curve(expr=dchisq(x, df=degf[indeks]),
   xlim=c(0, 20), ylim=c(0, 0.3),
   xlab="", ylab="", col=colors[indeks],
   lwd=2, add=as.logical(indeks-1))
@@ -431,7 +431,7 @@ for (indeks in 1:4) {
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
-labelv <- paste("df", deg_free, sep="=")
+labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", labelv,
        cex=0.8, lwd=6, lty=1, col=colors)
@@ -1456,7 +1456,7 @@ variance <- .Call(stats:::C_cfilter, returns^2,
   filter=weights, sides=1, circular=FALSE)
 variance[1:(look_back-1)] <- variance[look_back]
 # Plot EWMA volatility
-variance <- xts:::xts(sqrt(variance), order.by=index(returns))
+variance <- xts:::xts(sqrt(variance), order.by=zoo::index(returns))
 dygraphs::dygraph(variance, main="VTI EWMA Volatility")
 quantmod::chart_Series(xtes, name="VTI EWMA Volatility")
 
@@ -1489,7 +1489,7 @@ variance2 <- (cumrets2 - cumrets^2/look_back)/(look_back-1)
 # Coerce variance into xts
 tail(variance)
 class(variance)
-variance <- xts(variance, order.by=index(returns))
+variance <- xts(variance, order.by=zoo::index(returns))
 colnames(variance) <- "VTI.variance"
 head(variance)
 
@@ -1518,7 +1518,7 @@ variance <- .Call(stats:::C_cfilter, returns^2,
   filter=weights, sides=1, circular=FALSE)
 variance[1:(look_back-1)] <- variance[look_back]
 # Plot EWMA volatility
-variance <- xts:::xts(sqrt(variance), order.by=index(returns))
+variance <- xts:::xts(sqrt(variance), order.by=zoo::index(returns))
 dygraphs::dygraph(variance, main="VTI EWMA Volatility") %>%
   dyOptions(colors="blue")
 quantmod::chart_Series(xtes, name="VTI EWMA Volatility")
@@ -1542,7 +1542,7 @@ sd(returns)
 returns <- rutils::diffit(log(SPY[, 4]))
 sd(returns)
 # Table of time intervals - 60 second is most frequent
-indeks <- rutils::diffit(.index(SPY))
+indeks <- rutils::diffit(.zoo::index(SPY))
 table(indeks)
 # SPY returns divided by the overnight time intervals (unit per second)
 returns <- returns / indeks
@@ -1553,7 +1553,7 @@ returns[1] <- 0
 library(HighFreq)  # Load HighFreq
 spy <- HighFreq::SPY["2009"]
 # Calculate daily SPY volatility using package HighFreq
-sqrt(6.5*60*HighFreq::calc_var_ohlc(log(spy),
+sqrt(6.5*60*HighFreq::calcvar_ohlc(log(spy),
   method="yang_zhang"))
 # Calculate daily SPY volatility from minutely prices using package TTR
 sqrt((6.5*60)*mean(na.omit(
@@ -1562,7 +1562,7 @@ sqrt((6.5*60)*mean(na.omit(
 variance <- HighFreq::roll_var_ohlc(log(spy), method="yang_zhang",
   look_back=look_back)
 # Plot range volatility
-variance <- xts:::xts(sqrt(variance), order.by=index(spy))
+variance <- xts:::xts(sqrt(variance), order.by=zoo::index(spy))
 dygraphs::dygraph(variance["2009-02"],
   main="SPY Rolling Range Volatility") %>%
   dyOptions(colors="blue")
@@ -1570,7 +1570,7 @@ dygraphs::dygraph(variance["2009-02"],
 library(microbenchmark)
 summary(microbenchmark(
   ttr=TTR::volatility(rutils::etfenv$VTI, N=1, calc="yang.zhang"),
-  highfreq=HighFreq::calc_var_ohlc(log(rutils::etfenv$VTI), method="yang_zhang"),
+  highfreq=HighFreq::calcvar_ohlc(log(rutils::etfenv$VTI), method="yang_zhang"),
   times=2))[, c(1, 4, 5)]
 
 # Calculate VXX log prices
@@ -1896,25 +1896,25 @@ optim_fit <- optim(par=initp,
 cbind(actual=c(alpha=alpha, beta=betav, omega=om_ega),
 optimal=c(optim_fit$par["alpha"], optim_fit$par["beta"], optim_fit$par["omega"]))
 # Find max likelihood parameters using DEoptim
-optimd <- DEoptim::DEoptim(fn=likefun,
+optiml <- DEoptim::DEoptim(fn=likefun,
   upper=c(0.35, 0.55, variance), # Upper constraint
   lower=c(0.15, 0.35, variance/100), # Lower constraint
   returns=returns,
   control=list(trace=FALSE, itermax=1000, parallelType=1))
 # Optimal and actual parameters
 cbind(actual=c(alpha=alpha, beta=betav, omega=om_ega),
-optimal=c(optimd$optim$bestmem[1], optimd$optim$bestmem[2], optimd$optim$bestmem[3]))
+optimal=c(optiml$optim$bestmem[1], optiml$optim$bestmem[2], optiml$optim$bestmem[3]))
 
 # Calculate VTI returns
 returns <- rutils::diffit(log(quantmod::Cl(rutils::etfenv$VTI)))
 # Find max likelihood parameters using DEoptim
-optimd <- DEoptim::DEoptim(fn=likefun,
+optiml <- DEoptim::DEoptim(fn=likefun,
   upper=c(0.4, 0.9, variance), # Upper constraint
   lower=c(0.1, 0.5, variance/100), # Lower constraint
   returns=returns,
   control=list(trace=FALSE, itermax=1000, parallelType=1))
 # Optimal parameters
-par_am <- unname(optimd$optim$bestmem)
+par_am <- unname(optiml$optim$bestmem)
 alpha <- par_am[1]; betav <- par_am[2]; om_ega <- par_am[3]
 c(alpha, betav, om_ega)
 # Equilibrium GARCH variance
@@ -1972,7 +1972,7 @@ returns <- rutils::diffit(log(SPY["2012-02-13", 4]))
 # Minutely SPY volatility (unit per minute)
 sd(returns)
 # Divide minutely SPY returns by time intervals (unit per second)
-returns <- returns / rutils::diffit(.index(SPY["2012-02-13"]))
+returns <- returns / rutils::diffit(.zoo::index(SPY["2012-02-13"]))
 returns[1] <- 0
 # Minutely SPY volatility scaled to unit per minute
 60*sd(returns)
@@ -1981,7 +1981,7 @@ returns <- rutils::diffit(log(SPY[, 4]))
 # Minutely SPY volatility (includes overnight jumps)
 sd(returns)
 # Table of intervals - 60 second is most frequent
-indeks <- rutils::diffit(.index(SPY))
+indeks <- rutils::diffit(.zoo::index(SPY))
 table(indeks)
 # hist(indeks)
 # SPY returns with overnight scaling (unit per second)
@@ -2001,7 +2001,7 @@ returns <- rutils::diffit(log(SPY[, 4]))
 sqrt(6.5*60)*sd(returns)
 # Minutely SPY returns with overnight scaling (unit per second)
 returns <- rutils::diffit(log(SPY[, 4]))
-indeks <- rutils::diffit(.index(SPY))
+indeks <- rutils::diffit(.zoo::index(SPY))
 returns <- returns / indeks
 returns[1] <- 0
 # Daily SPY volatility from minutely returns
@@ -2009,12 +2009,12 @@ sqrt(6.5*60)*60*sd(returns)
 # Daily SPY volatility
 # Scale by extra time over weekends and holidays
 24*60*60*sd(rutils::diffit(log(SPY_daily[, 4]))[-1] /
-    rutils::diffit(.index(SPY_daily))[-1])
+    rutils::diffit(.zoo::index(SPY_daily))[-1])
 
 # Calculate SPY returns adjusted for overnight jumps
 closep <- log(as.numeric(Cl(HighFreq::SPY[, 4])))
 returns <- rutils::diffit(closep) /
-  rutils::diffit(.index(HighFreq::SPY))
+  rutils::diffit(.zoo::index(HighFreq::SPY))
 returns[1] <- 0
 closep <- cumsum(returns)
 nrows <- NROW(closep)
@@ -2176,7 +2176,7 @@ boot_data <- sapply(1:1e2, function(x) {
   ohlc <- HighFreq::random_ohlc()
   # Calculate variance estimate
   c(var=var(ohlc[, 4]),
-    yang_zhang=HighFreq::calc_variance(
+    yang_zhang=HighFreq::calcvariance(
 ohlc, method="yang_zhang", scalev=FALSE))
 })  # end sapply
 # Analyze bootstrapped variance
@@ -2298,7 +2298,7 @@ if (is.vector(agg_s))
   agg_s <- t(agg_s)
 agg_s <- t(agg_s)
 # Coerce agg_s into xts series
-agg_s <- xts(agg_s, order.by=index(closep[endp]))
+agg_s <- xts(agg_s, order.by=zoo::index(closep[endp]))
 
 library(rutils)  # Load package rutils
 # Perform aggregations over look_backs list
@@ -2308,7 +2308,7 @@ agg_s <- lapply(look_backs,
 # rbind list into single xts or matrix
 agg_s <- rutils::do_call(rbind, agg_s)
 # Convert into xts
-agg_s <- xts::xts(agg_s, order.by=index(closep))
+agg_s <- xts::xts(agg_s, order.by=zoo::index(closep))
 agg_s <- cbind(agg_s, closep)
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
@@ -2337,7 +2337,7 @@ roll_agg <- function(xtes, look_back, FUN, ...) {
   agg_s <- rutils::do_call(rbind, agg_s)
 # Coerce agg_s into xts series
   if (!is.xts(agg_s))
-    agg_s <- xts(agg_s, order.by=index(xtes))
+    agg_s <- xts(agg_s, order.by=zoo::index(xtes))
   agg_s
 }  # end roll_agg
 # Define aggregation function
@@ -2603,7 +2603,7 @@ if (is.vector(agg_s))
   agg_s <- t(agg_s)
 agg_s <- t(agg_s)
 # Coerce agg_s into xts series
-agg_s <- xts(agg_s, order.by=index(closep[endp]))
+agg_s <- xts(agg_s, order.by=zoo::index(closep[endp]))
 head(agg_s)
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
@@ -2623,7 +2623,7 @@ agg_s <- lapply(look_backs, function(look_back) {
 # rbind list into single xts or matrix
 agg_s <- rutils::do_call(rbind, agg_s)
 # Coerce agg_s into xts series
-agg_s <- xts(agg_s, order.by=index(closep[endp]))
+agg_s <- xts(agg_s, order.by=zoo::index(closep[endp]))
 head(agg_s)
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
@@ -2646,7 +2646,7 @@ roll_agg <- function(xtes, endp, FUN, ...) {
   agg_s <- rutils::do_call(rbind, agg_s)
   if (!is.xts(agg_s))
     agg_s <-  # Coerce agg_s into xts series
-    xts(agg_s, order.by=index(xtes[endp]))
+    xts(agg_s, order.by=zoo::index(xtes[endp]))
   agg_s
 }  # end roll_agg
 # Apply sum() over endp
@@ -2687,7 +2687,7 @@ c(max=max(xtes), min=min(xtes))
 # rbind list into single xts or matrix
 agg_s <- rutils::do_call(rbind, agg_s)
 # Coerce agg_s into xts series
-agg_s <- xts(agg_s, order.by=index(closep[endp]))
+agg_s <- xts(agg_s, order.by=zoo::index(closep[endp]))
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
@@ -2715,7 +2715,7 @@ library(zoo)  # Load package zoo
 dates <- Sys.Date() + 0:365
 zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
 # Create monthly dates
-dates_agg <- as.Date(as.yearmon(index(zoo_series)))
+dates_agg <- as.Date(as.yearmon(zoo::index(zoo_series)))
 # Perform monthly mean aggregation
 zoo_agg <- aggregate(zoo_series, by=dates_agg, FUN=mean)
 # Merge with original zoo - union of dates
@@ -2723,7 +2723,7 @@ zoo_agg <- cbind(zoo_series, zoo_agg)
 # Replace NA's using locf
 zoo_agg <- na.locf(zoo_agg, na.rm=FALSE)
 # Extract aggregated zoo
-zoo_agg <- zoo_agg[index(zoo_series), 2]
+zoo_agg <- zoo_agg[zoo::index(zoo_series), 2]
 
 # library(rutils)  # Load package rutils
 # Plot original and aggregated cumulative returns
@@ -2743,7 +2743,7 @@ zoo_agg <- cbind(zoo_series, zoo_agg)
 # Replace NA's using linear interpolation
 zoo_agg <- na.approx(zoo_agg)
 # Extract interpolated zoo
-zoo_agg <- zoo_agg[index(zoo_series), 2]
+zoo_agg <- zoo_agg[zoo::index(zoo_series), 2]
 # Plot original and interpolated zoo
 plot(cumsum(zoo_series), xlab="", ylab="")
 lines(cumsum(zoo_agg), lwd=2, col="red")
@@ -2761,7 +2761,7 @@ zoo_mean <- cbind(zoo_series, zoo_mean)
 # Replace NA's using na.locf
 zoo_mean <- na.locf(zoo_mean, na.rm=FALSE, fromLast=TRUE)
 # Extract mean zoo
-zoo_mean <- zoo_mean[index(zoo_series), 2]
+zoo_mean <- zoo_mean[zoo::index(zoo_series), 2]
 # Plot original and interpolated zoo
 plot(cumsum(zoo_series), xlab="", ylab="")
 lines(cumsum(zoo_mean), lwd=2, col="red")

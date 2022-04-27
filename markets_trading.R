@@ -32,7 +32,7 @@ save(returns, returns100,
 
 # Calculate number of constituents without prices
 datav <- rowSums(is.na(prices))
-datav <- xts::xts(datav, order.by=index(prices))
+datav <- xts::xts(datav, order.by=zoo::index(prices))
 dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
   dyOptions(colors="blue", strokeWidth=2) %>%
   dyAxis("y", valueRange=c(0, 300))
@@ -43,7 +43,7 @@ prices <- zoo::na.locf(prices, fromLast=TRUE)
 indeks <- xts(rowSums(prices)/ncols, zoo::index(prices))
 colnames(indeks) <- "index"
 # Combine index with VTI
-datav <- cbind(indeks[index(etfenv$VTI)], etfenv$VTI[, 4])
+datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
 colnamev <- c("index", "VTI")
 colnames(datav) <- colnamev
 # Plot index with VTI
@@ -235,14 +235,14 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 
 # Find weights with maximum variance
-optimd <- optim(par=weights,
+optiml <- optim(par=weights,
   fn=object,
   returns=returns,
   method="L-BFGS-B",
   upper=rep(5.0, nweights),
   lower=rep(-5.0, nweights))
 # Optimal weights and maximum variance
-weights1 <- optimd$par
+weights1 <- optiml$par
 object(weights1, returns)
 # Plot first principal component loadings
 x11(width=6, height=5)
@@ -259,7 +259,7 @@ object <- function(weights, returns) {
     1e7*sum(weights1*weights)^2
 }  # end object
 # Find second principal component weights
-optimd <- optim(par=weights,
+optiml <- optim(par=weights,
              fn=object,
              returns=returns,
              method="L-BFGS-B",
@@ -267,7 +267,7 @@ optimd <- optim(par=weights,
              lower=rep(-5.0, nweights))
 
 # pc2 weights and returns
-weights2 <- optimd$par
+weights2 <- optiml$par
 pc2 <- drop(returns %*% weights2)
 sum(pc1*pc2)
 # Plot second principal component loadings
@@ -336,7 +336,7 @@ all.equal(pcad$x, pcats, check.attributes=FALSE)
 # Calculate products of principal component time series
 round(t(pcats) %*% pcats, 2)
 # Coerce to xts time series
-pcats <- xts(pcats, order.by=index(returns))
+pcats <- xts(pcats, order.by=zoo::index(returns))
 pcats <- cumsum(pcats)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
@@ -492,12 +492,12 @@ exceeds <- (volumes[, "ESU8"] > volumes[, "ESM8"])
 indeks <- match(TRUE, exceeds)
 # indeks <- min(which(exceeds))
 # Scale the ESM8 prices
-indeks <- index(exceeds[indeks])
+indeks <- zoo::index(exceeds[indeks])
 ratio <- as.numeric(Cl(ESU8[indeks])/Cl(ESM8[indeks]))
 ESM8[, 1:4] <- ratio*ESM8[, 1:4]
 # Calculate continuous contract prices
-chain_ed <- rbind(ESM8[index(ESM8) < indeks],
-            ESU8[index(ESU8) >= indeks])
+chain_ed <- rbind(ESM8[zoo::index(ESM8) < indeks],
+            ESU8[zoo::index(ESU8) >= indeks])
 # Or
 # Chain_ed <- rbind(ESM8[paste0("/", indeks-1)],
 #                   ESU8[paste0(indeks, "/")])
@@ -1184,7 +1184,7 @@ vol_rolling <- sapply(seq_along(endp),
   function(it) sd(ret2013[startp[it]:endp[it]]))
 vol_rolling <- xts::xts(vol_rolling, zoo::index(ret2013))
 # Extract time intervals of SPY returns
-indeks <- c(60, diff(xts::.index(ret2013)))
+indeks <- c(60, diff(xts::.zoo::index(ret2013)))
 head(indeks)
 table(indeks)
 # Scale SPY returns by time intervals
@@ -1215,9 +1215,9 @@ par(mar=c(2, 2, 0, 0), oma=c(1, 1, 0, 0))
 chart_Series(x=prices, name="S&P500 Futures Bid-Ask Bounce")
 
 # Volatility of SPY
-sqrt(HighFreq::calc_var_ohlc(ohlc))
+sqrt(HighFreq::calcvar_ohlc(ohlc))
 # Daily SPY volatility and volume
-vol_daily <- sqrt(xts::apply.daily(ohlc, FUN=calc_var_ohlc))
+vol_daily <- sqrt(xts::apply.daily(ohlc, FUN=calcvar_ohlc))
 colnames(vol_daily) <- ("SPY_volatility")
 volumes <- quantmod::Vo(ohlc)
 volume_daily <- xts::apply.daily(volumes, FUN=sum)

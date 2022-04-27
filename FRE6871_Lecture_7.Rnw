@@ -1951,7 +1951,7 @@ static const double pi = 3.14159265;
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{RcppArmadillo} allows calling the high-level \emph{Armadillo} \texttt{C++} linear algebra library.
+      The package \emph{RcppArmadillo} allows calling the high-confl \emph{Armadillo} \texttt{C++} linear algebra library.
       \vskip1ex
       \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab}.
       \vskip1ex
@@ -2198,14 +2198,14 @@ using namespace arma;
 //' @export
 // [[Rcpp::export]]
 arma::mat calc_inv(const arma::mat& matrixv, const arma::uword& eigen_max) {
-  arma::mat eigen_vec;
-  arma::vec eigen_val;
+  arma::mat eigenvec;
+  arma::vec eigenval;
 
-  arma::eig_sym(eigen_val, eigen_vec, cov(matrixv));
-  eigen_vec = eigen_vec.cols(eigen_vec.n_cols-eigen_max, eigen_vec.n_cols-1);
-  eigen_val = 1/eigen_val.subvec(eigen_val.n_elem-eigen_max, eigen_val.n_elem-1);
+  arma::eig_sym(eigenval, eigenvec, cov(matrixv));
+  eigenvec = eigenvec.cols(eigenvec.n_cols-eigen_max, eigenvec.n_cols-1);
+  eigenval = 1/eigenval.subvec(eigenval.n_elem-eigen_max, eigenval.n_elem-1);
 
-  return eigen_vec*diagmat(eigen_val)*eigen_vec.t();
+  return eigenvec*diagmat(eigenval)*eigenvec.t();
 
 }  // end calc_inv
     \end{lstlisting}
@@ -2291,10 +2291,10 @@ arma::vec calc_weights(const arma::mat& returns,
     weights = calc_inv(returns, eigen_max)*arma::ones(returns[ncols);
   } else if (typev == "min_varpca") {
     // Calculate highest order principal component
-    arma::vec eigen_val;
-    arma::mat eigen_vec;
-    arma::eig_sym(eigen_val, eigen_vec, cov(returns));
-    weights = eigen_vec.col(0);
+    arma::vec eigenval;
+    arma::mat eigenvec;
+    arma::eig_sym(eigenval, eigenvec, cov(returns));
+    weights = eigenvec.col(0);
   } else if (typev == "rank") {
     // Mean returns by columns
     arma::vec meancols = arma::trans(arma::mean(returns, 0));
@@ -2303,7 +2303,7 @@ arma::vec calc_weights(const arma::mat& returns,
     sd_cols.replace(0, 1);
     meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(meancols)));
+    weights = conv_to< vec >::from(arma::sort_zoo::index(arma::sort_zoo::index(meancols)));
     weights = (weights - arma::mean(weights));
   } else if (typev == "rankrob") {
     // Median returns by columns
@@ -2313,14 +2313,14 @@ arma::vec calc_weights(const arma::mat& returns,
     sd_cols.replace(0, 1);
     meancols = meancols/sd_cols;
     // Apply regularized inverse
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(meancols)));
+    weights = conv_to< vec >::from(arma::sort_zoo::index(arma::sort_zoo::index(meancols)));
     weights = (weights - arma::mean(weights));
   } else if (typev == "quantilev") {
     // Sum of quantiles for columns
     arma::vec probs = {probv, 1-probv};
     weights = conv_to< vec >::from(arma::sum(arma::quantile(returns, probs, 0), 0));
     // Weights equal to ranks
-    weights = conv_to< vec >::from(arma::sort_index(arma::sort_index(weights)));
+    weights = conv_to< vec >::from(arma::sort_zoo::index(arma::sort_zoo::index(weights)));
     weights = (weights - arma::mean(weights));
   } else {
     cout << "Warning: Incorrect typev argument: " << typev << endl;
@@ -3192,7 +3192,7 @@ tail(zoo_series, 3)  # Get last few elements
       \vskip1ex
       The function \texttt{zoo::index()} extracts the time index of a \emph{zoo} object.
       \vskip1ex
-      The function \texttt{xts::.index()} extracts the time index expressed in the number of seconds.
+      The function \texttt{xts::.zoo::index()} extracts the time index expressed in the number of seconds.
       \vskip1ex
       The functions \texttt{start()} and \texttt{end()} return the time index values of the first and last elements of a \emph{zoo} object.
       \vskip1ex
@@ -4076,16 +4076,16 @@ options(xts_check_tz=FALSE)
 # Create time series with overlapping time indices
 vti1 <- rutils::etfenv$VTI["/2015"]
 vti2 <- rutils::etfenv$VTI["2014/"]
-dates1 <- index(vti1)
-dates2 <- index(vti2)
+dates1 <- zoo::index(vti1)
+dates2 <- zoo::index(vti2)
 # Join by rows
 vti <- rbind(vti1, vti2)
-dates <- index(vti)
+dates <- zoo::index(vti)
 sum(duplicated(dates))
 vti <- vti[!duplicated(dates), ]
 all.equal(vti, rutils::etfenv$VTI)
 # Alternative method - slightly slower
-vti <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
+vti <- rbind(vti1, vti2[!(zoo::index(vti2) %in% zoo::index(vti1))])
 all.equal(vti, rutils::etfenv$VTI)
 # Remove duplicates starting from the end
 vti <- rbind(vti1, vti2)

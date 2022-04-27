@@ -666,16 +666,16 @@ options(xts_check_tz=FALSE)
 # Create time series with overlapping time indices
 vti1 <- rutils::etfenv$VTI["/2015"]
 vti2 <- rutils::etfenv$VTI["2014/"]
-dates1 <- index(vti1)
-dates2 <- index(vti2)
+dates1 <- zoo::index(vti1)
+dates2 <- zoo::index(vti2)
 # Join by rows
 vti <- rbind(vti1, vti2)
-dates <- index(vti)
+dates <- zoo::index(vti)
 sum(duplicated(dates))
 vti <- vti[!duplicated(dates), ]
 all.equal(vti, rutils::etfenv$VTI)
 # Alternative method - slightly slower
-vti <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
+vti <- rbind(vti1, vti2[!(zoo::index(vti2) %in% zoo::index(vti1))])
 all.equal(vti, rutils::etfenv$VTI)
 # Remove duplicates starting from the end
 vti <- rbind(vti1, vti2)

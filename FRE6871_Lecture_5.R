@@ -77,9 +77,9 @@ plot(datav)
 title(main="Residuals of the Linear Regression", line=-1)
 abline(h=0, lwd=3, col="red")
 # Degrees of freedom of residuals
-deg_free <- model$df.residual
+degf <- model$df.residual
 # Standard deviation of residuals
-resid_std <- sqrt(sum(residuals^2)/deg_free)
+resid_std <- sqrt(sum(residuals^2)/degf)
 # Standard error of beta
 beta_std <- resid_std/sqrt(sum(design_zm^2))
 # Standard error of alpha
@@ -196,8 +196,8 @@ all.equal(influ_ence, influ_ence %*% influ_ence)
 betas <- design_inv %*% response
 fit_ted <- drop(design %*% betas)
 residuals <- drop(response - fit_ted)
-deg_free <- (NROW(design) - NCOL(design))
-var_resid <- sqrt(sum(residuals^2)/deg_free)
+degf <- (NROW(design) - NCOL(design))
+var_resid <- sqrt(sum(residuals^2)/degf)
 fit_covar <- var_resid*influ_ence
 fit_sd <- sqrt(diag(fit_covar))
 # Plot the standard deviations
@@ -258,7 +258,7 @@ x_data <- c(design[,2], new_data)
 xlim <- range(x_data)
 y_data <- c(fit_ted, predic_tions[, 1])
 # Calculate t-quantile
-t_quant <- qt(pnorm(2), df=deg_free)
+t_quant <- qt(pnorm(2), df=degf)
 predict_low <- predic_tions[, 1]-t_quant*predic_tions[, 2]
 predict_high <- predic_tions[, 1]+t_quant*predic_tions[, 2]
 ylim <- range(c(response, y_data, predict_low, predict_high))
@@ -281,7 +281,7 @@ model <- lm(response ~ predictor)
 # Perform prediction from regression
 new_data <- data.frame(predictor=new_data)
 predict_lm <- predict(object=model,
-  newdata=new_data, level=1-2*(1-pnorm(2)),
+  newdata=new_data, confl=1-2*(1-pnorm(2)),
   interval="confidence")
 predict_lm <- as.data.frame(predict_lm)
 all.equal(predict_lm$fit, predic_tions[, 1])
@@ -427,15 +427,15 @@ model_sum <- summary(model)
 # Degrees of freedom of residuals
 nrows <- NROW(design)
 ncols <- NCOL(design)
-deg_free <- (nrows - ncols)
-all.equal(deg_free, model_sum$df[2])
+degf <- (nrows - ncols)
+all.equal(degf, model_sum$df[2])
 # Variance of residuals
-var_resid <- sum(residuals^2)/deg_free
+var_resid <- sum(residuals^2)/degf
 # Inverse of design matrix squared
 design2 <- MASS::ginv(crossprod(design))
 # design2 <- t(design) %*% design
 # Variance of residuals
-var_resid <- sum(residuals^2)/deg_free
+var_resid <- sum(residuals^2)/degf
 # Calculate covariance matrix of betas
 beta_covar <- var_resid*design2
 # Round(beta_covar, 3)
@@ -445,7 +445,7 @@ all.equal(betasd, model_sum$coeff[, 2], check.attributes=FALSE)
 beta_tvals <- drop(betas)/betasd
 all.equal(beta_tvals, model_sum$coeff[, 3], check.attributes=FALSE)
 # Calculate two-sided p-values of betas
-beta_pvals <- 2*pt(-abs(beta_tvals), df=deg_free)
+beta_pvals <- 2*pt(-abs(beta_tvals), df=degf)
 all.equal(beta_pvals, model_sum$coeff[, 4], check.attributes=FALSE)
 # The square of the generalized inverse is equal
 # to the inverse of the square
@@ -506,9 +506,9 @@ model <- lm(formulav, data=data.frame(cbind(response, design)))
 model_sum <- summary(model)
 # Predict from lm object
 predict_lm <- predict.lm(object=model, newdata=new_data,
-   interval="confidence", level=1-2*(1-pnorm(2)))
+   interval="confidence", confl=1-2*(1-pnorm(2)))
 # Calculate t-quantile
-t_quant <- qt(pnorm(2), df=deg_free)
+t_quant <- qt(pnorm(2), df=degf)
 predict_high <- (predic_tion + t_quant*stdev)
 predict_low <- (predic_tion - t_quant*stdev)
 # Compare with matrix calculations
@@ -534,25 +534,25 @@ all.equal(cor_fitted^2, rsquared)
 nrows <- NROW(design)
 ncols <- NCOL(design)
 # Degrees of freedom of residuals
-deg_free <- (nrows - ncols)
+degf <- (nrows - ncols)
 # Adjusted R-squared
-rsquared_adj <- (1-sum(residuals^2)/deg_free/var(response))
+rsquared_adj <- (1-sum(residuals^2)/degf/var(response))
 # Compare adjusted R-squared from lm()
 all.equal(drop(rsquared_adj), model_sum$adj.r.squared)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot three curves in loop
-deg_free <- c(3, 5, 9)  # Degrees of freedom
+degf <- c(3, 5, 9)  # Degrees of freedom
 colors <- c("black", "red", "blue", "green")
-for (indeks in 1:NROW(deg_free)) {
-curve(expr=df(x, df1=deg_free[indeks], df2=3),
+for (indeks in 1:NROW(degf)) {
+curve(expr=df(x, df1=degf[indeks], df2=3),
 xlim=c(0, 4), xlab="", ylab="", lwd=2,
 col=colors[indeks], add=as.logical(indeks-1))
 }  # end for
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
-labelv <- paste("df", deg_free, sep="=")
+labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
        labelv, cex=0.8, lwd=2, lty=1, col=colors)
 sigma_x <- var(rnorm(nrows))
@@ -565,9 +565,9 @@ pf(fratio, nrows-1, nrows-1)
 # F-statistic from lm()
 model_sum$fstatistic
 # Degrees of freedom of residuals
-deg_free <- (nrows - ncols)
+degf <- (nrows - ncols)
 # F-statistic from ESS and RSS
-fstat <- (e_ss/(ncols-1))/(r_ss/deg_free)
+fstat <- (e_ss/(ncols-1))/(r_ss/degf)
 all.equal(fstat, model_sum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=fstat, df1=ncols-1, df2=nrows-ncols)
@@ -584,18 +584,18 @@ inverse <- svdec$v %*% (t(svdec$u) / svdec$d)
 all.equal(zoo::coredata(returns), returns %*% inverse %*% returns)
 # Calculate regularized inverse from SVD
 eigen_max <- 1:3
-inv_reg <- svdec$v[, eigen_max] %*%
+invreg <- svdec$v[, eigen_max] %*%
   (t(svdec$u[, eigen_max]) / svdec$d[eigen_max])
 # Calculate regularized inverse using RcppArmadillo
-rcpp_inverse <- HighFreq::calc_inv(returns, eigen_max=3)
-all.equal(inv_reg, rcpp_inverse, check.attributes=FALSE)
+invcpp <- HighFreq::calc_inv(returns, eigen_max=3)
+all.equal(invreg, invcpp, check.attributes=FALSE)
 # Calculate regularized inverse from Moore-Penrose pseudo-inverse
 square_d <- t(returns) %*% returns
 eigend <- eigen(square_d)
 squared_inv <- eigend$vectors[, eigen_max] %*%
   (t(eigend$vectors[, eigen_max]) / eigend$values[eigen_max])
-mp_inverse <- squared_inv %*% t(returns)
-all.equal(inv_reg, mp_inverse, check.attributes=FALSE)
+invmp <- squared_inv %*% t(returns)
+all.equal(invreg, invmp, check.attributes=FALSE)
 # Define transformation matrix
 trans_mat <- matrix(runif(ncols^2, min=(-1), max=1), ncol=ncols)
 # Calculate linear combinations of design columns
@@ -686,15 +686,15 @@ rgl::persp3d(
   xlim=c(-10, 10), ylim=c(-10, 10),
   col="green", axes=FALSE, zlab="", main="rastrigin")
 # Optimize with respect to vector argument
-optimd <- optim(par=vectorv, fn=rastrigin,
+optiml <- optim(par=vectorv, fn=rastrigin,
         method="L-BFGS-B",
         upper=c(4*pi, 4*pi),
         lower=c(pi/2, pi/2),
         param=1)
 # Optimal parameters and value
-optimd$par
-optimd$value
-rastrigin(optimd$par, param=1)
+optiml$par
+optiml$value
+rastrigin(optiml$par, param=1)
 # Initial parameters
 initp <- c(1, 1)
 # Find max likelihood parameters using steepest descent optimizer

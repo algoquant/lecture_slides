@@ -175,7 +175,7 @@ coeff_fit <- drop(design_inv %*% design[rangev, 1])
 drop(design[nrows, -1] %*% coeff_fit)
 # Calculate a vector of daily VTI log returns
 returns <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(returns)
+dates <- zoo::index(returns)
 returns <- as.numeric(returns)
 nrows <- NROW(returns)
 # Define predictor as a rolling sum
@@ -267,7 +267,7 @@ plot(x=look_backs, y=mse_s,
   main="MSE of AR(5) Forecasting Model")
 # Calculate a vector of daily VTI log returns
 vti <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vti)
+dates <- zoo::index(vti)
 vti <- as.numeric(vti)
 nrows <- NROW(vti)
 # Define predictor matrix for forecasting
@@ -297,20 +297,20 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(x=2:NCOL(predictor), y=mse[, 1],
   xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
   main="MSE of In-sample AR(n) Forecasting Model for VTI")
-in_sample <- 1:(nrows %/% 2)
-out_sample <- (nrows %/% 2 + 1):nrows
+insample <- 1:(nrows %/% 2)
+outsample <- (nrows %/% 2 + 1):nrows
 # Calculate forecasts as function of the AR order
 forecasts <- lapply(2:NCOL(predictor), function(ordern) {
   # Calculate fitted coefficients
-  inverse <- MASS::ginv(predictor[in_sample, 1:ordern])
-  coeff <- drop(inverse %*% response[in_sample])
+  inverse <- MASS::ginv(predictor[insample, 1:ordern])
+  coeff <- drop(inverse %*% response[insample])
   # Calculate out-of-sample forecasts of vti
-  drop(predictor[out_sample, 1:ordern] %*% coeff)
+  drop(predictor[outsample, 1:ordern] %*% coeff)
 })  # end lapply
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate mean squared errors
 mse <- sapply(forecasts, function(x) {
-  c(mse=mean((vti[out_sample] - x)^2), cor=cor(vti[out_sample], x))
+  c(mse=mean((vti[outsample] - x)^2), cor=cor(vti[outsample], x))
 })  # end sapply
 mse <- t(mse)
 rownames(mse) <- names(forecasts)
@@ -320,10 +320,10 @@ plot(x=2:NCOL(predictor), y=mse[, 1],
   main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
 # Plot dygraph of out-of-sample PnLs
 colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls[, 1:4]))
 colnames <- colnames(pnls[, 1:4])
@@ -341,17 +341,17 @@ predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
 predictor <- cbind(rep(1, nrows), predictor)
 # Calculate forecasts as function of the AR order
 forecasts <- lapply(2:NCOL(predictor), function(ordern) {
-  inverse <- MASS::ginv(predictor[in_sample, 1:ordern])
-  coeff <- drop(inverse %*% response[in_sample])
-  drop(predictor[out_sample, 1:ordern] %*% coeff)
+  inverse <- MASS::ginv(predictor[insample, 1:ordern])
+  coeff <- drop(inverse %*% response[insample])
+  drop(predictor[outsample, 1:ordern] %*% coeff)
 })  # end lapply
 names(forecasts) <- paste0("p=", 2:NCOL(predictor))
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Predictor") %>%
@@ -360,10 +360,10 @@ dygraphs::dygraph(pnls[, 1:4],
 # Calculate out-of-sample PnLs
 pnls <- sapply(forecasts, function(x) {
   x <- roll::roll_mean(x, width=nagg, min_obs=1)
-  cumsum(sign(x)*vti[out_sample])
+  cumsum(sign(x)*vti[outsample])
 })  # end sapply
 colnames(pnls) <- names(forecasts)
-pnls <- xts::xts(pnls, dates[out_sample])
+pnls <- xts::xts(pnls, dates[outsample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[, 1:4],
   main="Autoregressive Strategies Performance Using Rolling Average Forecasts") %>%
@@ -371,7 +371,7 @@ dygraphs::dygraph(pnls[, 1:4],
   dyLegend(width=500)
 # Calculate a vector of daily VTI log returns
 vti <- na.omit(rutils::etfenv$returns$VTI)
-dates <- index(vti)
+dates <- zoo::index(vti)
 vti <- as.numeric(vti)
 nrows <- NROW(vti)
 # Define predictor as a rolling mean
@@ -586,17 +586,17 @@ dygraphs::dygraph(cumsum(wealth), main="Yield Curve Strategy In-sample") %>%
   dySeries(name=colnames[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Define in-sample and out-of-sample intervals
-in_sample <- (dates < as.Date("2020-01-01"))
-out_sample <- (dates >= as.Date("2020-01-01"))
+insample <- (dates < as.Date("2020-01-01"))
+outsample <- (dates >= as.Date("2020-01-01"))
 # Calculate inverse of predictor in-sample
-inverse <- MASS::ginv(predictor[in_sample, ])
+inverse <- MASS::ginv(predictor[insample, ])
 # Calculate coefficients in-sample
-coeff <- drop(inverse %*% response[in_sample, ])
+coeff <- drop(inverse %*% response[insample, ])
 # Calculate forecasts and pnls out-of-sample
-forecasts <- (predictor[out_sample, ] %*% coeff)
-pnls <- forecasts*returns[out_sample, ]
+forecasts <- (predictor[outsample, ] %*% coeff)
+pnls <- forecasts*returns[outsample, ]
 # Plot dygraph of out-of-sample IR PCA strategy
-wealth <- cbind(returns[out_sample, ], pnls)
+wealth <- cbind(returns[outsample, ], pnls)
 colnames(wealth) <- c("VTI", "Strategy")
 colnames <- colnames(wealth)
 dygraphs::dygraph(cumsum(wealth), main="Yield Curve Strategy Out-of-Sample") %>%
@@ -640,15 +640,15 @@ dygraphs::dygraph(cumsum(wealth), main="Aggregated YC Strategy In-sample") %>%
   dySeries(name=colnames[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Define in-sample and out-of-sample intervals
-in_sample <- (dates < as.Date("2020-01-01"))
-out_sample <- (dates >= as.Date("2020-01-01"))
+insample <- (dates < as.Date("2020-01-01"))
+outsample <- (dates >= as.Date("2020-01-01"))
 # Calculate forecasts and pnls out-of-sample
-inverse <- MASS::ginv(predictor[in_sample, ])
-coeff <- drop(inverse %*% response[in_sample, ])
-forecasts <- (predictor[out_sample, ] %*% coeff)
-pnls <- forecasts*returns[out_sample, ]
+inverse <- MASS::ginv(predictor[insample, ])
+coeff <- drop(inverse %*% response[insample, ])
+forecasts <- (predictor[outsample, ] %*% coeff)
+pnls <- forecasts*returns[outsample, ]
 # Plot dygraph of out-of-sample YC strategy
-wealth <- cbind(returns[out_sample, ], pnls)
+wealth <- cbind(returns[outsample, ], pnls)
 colnames(wealth) <- c("VTI", "Strategy")
 colnames <- colnames(wealth)
 dygraphs::dygraph(cumsum(wealth), main="Aggregated YC Strategy Out-of-Sample") %>%
@@ -664,15 +664,15 @@ years <- as.Date(years)
 # Perform loop over yearly dates
 pnls <- lapply(3:(NROW(years)-1), function(i) {
   # Define in-sample and out-of-sample intervals
-  in_sample <- (dates > years[i-2]) & (dates < years[i])
-  out_sample <- (dates >= years[i]) & (dates < years[i+1])
+  insample <- (dates > years[i-2]) & (dates < years[i])
+  outsample <- (dates >= years[i]) & (dates < years[i+1])
   # Calculate coefficients in-sample
-  inverse <- MASS::ginv(predictor[in_sample, ])
-  # inverse <- HighFreq::calc_inv(predictor[in_sample, ], eigen_max=3)
-  coeff <- drop(inverse %*% response[in_sample, ])
+  inverse <- MASS::ginv(predictor[insample, ])
+  # inverse <- HighFreq::calc_inv(predictor[insample, ], eigen_max=3)
+  coeff <- drop(inverse %*% response[insample, ])
   # Calculate forecasts and pnls out-of-sample
-  forecasts <- (predictor[out_sample, ] %*% coeff)
-  forecasts*returns[out_sample, ]
+  forecasts <- (predictor[outsample, ] %*% coeff)
+  forecasts*returns[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
 # Plot dygraph of rolling yearly IR strategy
@@ -692,14 +692,14 @@ months <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="mon
 # Perform loop over monthly dates
 pnls <- lapply(12:(NROW(months)-1), function(i) {
   # Define in-sample and out-of-sample intervals
-  in_sample <- (dates > months[i-11]) & (dates < months[i])
-  out_sample <- (dates > months[i]) & (dates < months[i+1])
+  insample <- (dates > months[i-11]) & (dates < months[i])
+  outsample <- (dates > months[i]) & (dates < months[i+1])
   # Calculate forecasts and pnls out-of-sample
-  inverse <- MASS::ginv(predictor[in_sample, ])
-  # inverse <- HighFreq::calc_inv(predictor[in_sample, ], eigen_max=3)
-  coeff <- drop(inverse %*% response[in_sample, ])
-  forecasts <- (predictor[out_sample, ] %*% coeff)
-  forecasts*returns[out_sample, ]
+  inverse <- MASS::ginv(predictor[insample, ])
+  # inverse <- HighFreq::calc_inv(predictor[insample, ], eigen_max=3)
+  coeff <- drop(inverse %*% response[insample, ])
+  forecasts <- (predictor[outsample, ] %*% coeff)
+  forecasts*returns[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
 # Plot dygraph of rolling monthly IR strategy
@@ -717,14 +717,14 @@ weeks <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="week
 # Perform loop over weekly dates
 pnls <- lapply(51:(NROW(weeks)-1), function(i) {
   # Define in-sample and out-of-sample intervals
-  in_sample <- (dates > weeks[i-50]) & (dates < weeks[i])
-  out_sample <- (dates > weeks[i]) & (dates < weeks[i+1])
+  insample <- (dates > weeks[i-50]) & (dates < weeks[i])
+  outsample <- (dates > weeks[i]) & (dates < weeks[i+1])
   # Calculate forecasts and pnls out-of-sample
-  inverse <- MASS::ginv(predictor[in_sample, ])
-  # inverse <- HighFreq::calc_inv(predictor[in_sample, ], eigen_max=3)
-  coeff <- drop(inverse %*% response[in_sample, ])
-  forecasts <- (predictor[out_sample, ] %*% coeff)
-  forecasts*returns[out_sample, ]
+  inverse <- MASS::ginv(predictor[insample, ])
+  # inverse <- HighFreq::calc_inv(predictor[insample, ], eigen_max=3)
+  coeff <- drop(inverse %*% response[insample, ])
+  forecasts <- (predictor[outsample, ] %*% coeff)
+  forecasts*returns[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
 # Plot dygraph of rolling weekly IR strategy
@@ -742,7 +742,7 @@ symbols <- c("VTI", "IEF", "DBC")
 returns <- rutils::etfenv$returns[, symbols]
 returns <- na.omit(returns)
 # Or, select rows with IEF data
-# returns <- returns[index(rutils::etfenv$IEF)]
+# returns <- returns[zoo::index(rutils::etfenv$IEF)]
 # Copy over NA values
 # returns[1, is.na(returns[1, ])] <- 0
 # returns <- zoo::na.locf(returns, na.rm=FALSE)
@@ -978,7 +978,7 @@ pnls <- (pnls - costs)
 weightsaw <- c(0.30, 0.55, 0.15)
 all_weather <- returns %*% weightsaw
 # Calculate the wealth of momentum returns
-wealth <- xts::xts(cbind(all_weather, pnls), order.by=index(returns))
+wealth <- xts::xts(cbind(all_weather, pnls), order.by=zoo::index(returns))
 colnames(wealth) <- c("All-Weather", "Momentum")
 cor(wealth)
 # Plot dygraph of the momentum strategy returns
@@ -1082,9 +1082,9 @@ x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 barplot(sort(weightv), main="Maximum Sharpe Weights", cex.names=0.7)
 # Calculate portfolio returns
-rets_is <- returns["/2014"]
-portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
-indeks <- xts::xts(rowSums(rets_is)/sqrt(nassets), zoo::index(rets_is))
+retsis <- returns["/2014"]
+portf_is <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+indeks <- xts::xts(rowSums(retsis)/sqrt(nassets), zoo::index(retsis))
 portf_is <- portf_is*sd(indeks)/sd(portf_is)
 # Plot cumulative portfolio returns
 wealth <- cumsum(cbind(portf_is, indeks))
@@ -1093,9 +1093,9 @@ dygraphs::dygraph(wealth, main="In-sample Optimal Portfolio Returns") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyLegend(width=500)
 # Out-of-sample portfolio returns
-rets_os <- returns["2015/"]
-portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
-indeks <- xts::xts(rowSums(rets_os)/sqrt(nassets), zoo::index(rets_os))
+retsos <- returns["2015/"]
+portf_os <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+indeks <- xts::xts(rowSums(retsos)/sqrt(nassets), zoo::index(retsos))
 portf_os <- portf_os*sd(indeks)/sd(portf_os)
 # Plot cumulative portfolio returns
 wealth <- cumsum(cbind(portf_os, indeks))
@@ -1111,17 +1111,17 @@ returns[1, is.na(returns[1, ])] <- 0
 returns <- zoo::na.locf(returns, na.rm=FALSE)
 riskf <- 0.03/252
 excess <- (returns - riskf)
-rets_is <- returns["/2010"]
-rets_os <- returns["2011/"]
+retsis <- returns["/2010"]
+retsos <- returns["2011/"]
 # Maximum Sharpe weights in-sample interval
-covmat <- cov(rets_is)
+covmat <- cov(retsis)
 inverse <- MASS::ginv(covmat)
 weightv <- inverse %*% colMeans(excess["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(returns)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+portf_is <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+portf_os <- xts::xts(retsos %*% weightv, zoo::index(retsos))
 indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
 # Plot cumulative portfolio returns
 wealth <- rbind(portf_is, portf_os)
@@ -1130,12 +1130,12 @@ wealth <- cumsum(cbind(wealth, indeks))
 colnames(wealth) <- c("Optimal Portfolio", "Equal Weight Portfolio")
 dygraphs::dygraph(wealth, main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
-  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
 # Create rectangular matrix with collinear columns
-ran_dom <- matrix(rnorm(10*8), nc=10)
+matrixv <- matrix(rnorm(10*8), nc=10)
 # Calculate covariance matrix
-covmat <- cov(ran_dom)
+covmat <- cov(matrixv)
 # Calculate inverse of covmat - error
 inverse <- solve(covmat)
 # Calculate regularized inverse of covmat
@@ -1144,32 +1144,32 @@ inverse <- MASS::ginv(covmat)
 all.equal(covmat, covmat %*% inverse %*% covmat)
 # Perform eigen decomposition
 eigend <- eigen(covmat)
-eigen_vec <- eigend$vectors
-eigen_val <- eigend$values
+eigenvec <- eigend$vectors
+eigenval <- eigend$values
 # Set tolerance for determining zero singular values
 precision <- sqrt(.Machine$double.eps)
 # Calculate regularized inverse matrix
-not_zero <- (eigen_val > (precision * eigen_val[1]))
-reg_inverse <- eigen_vec[, not_zero] %*%
-  (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
+not_zero <- (eigenval > (precision * eigenval[1]))
+reg_inverse <- eigenvec[, not_zero] %*%
+  (t(eigenvec[, not_zero]) / eigenval[not_zero])
 # Verify inverse property of matrixv
 all.equal(inverse, reg_inverse)
 # Calculate in-sample covariance matrix
-covmat <- cov(rets_is)
+covmat <- cov(retsis)
 eigend <- eigen(covmat)
-eigen_vec <- eigend$vectors
-eigen_val <- eigend$values
+eigenvec <- eigend$vectors
+eigenval <- eigend$values
 # Calculate regularized inverse of covariance matrix
 max_eigen <- 21
-inverse <- eigen_vec[, 1:max_eigen] %*%
-  (t(eigen_vec[, 1:max_eigen]) / eigend$values[1:max_eigen])
+inverse <- eigenvec[, 1:max_eigen] %*%
+  (t(eigenvec[, 1:max_eigen]) / eigend$values[1:max_eigen])
 # Calculate portfolio weights
 weightv <- inverse %*% colMeans(excess["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(returns)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+portf_is <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+portf_os <- xts::xts(retsos %*% weightv, zoo::index(retsos))
 indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
 # Plot cumulative portfolio returns
 wealth <- rbind(portf_is, portf_os)
@@ -1178,18 +1178,18 @@ wealth <- cumsum(cbind(wealth, indeks))
 colnames(wealth) <- c("Optimal Portfolio", "Equal Weight Portfolio")
 dygraphs::dygraph(wealth, main="Regularized Out-of-sample Optimal Portfolio Returns for Stocks") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
-  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
 # Shrink the in-sample returns to their mean
-rets_mean <- colMeans(rets_is) - riskf
+rets_mean <- colMeans(retsis) - riskf
 alpha <- 0.7
 rets_mean <- (1 - alpha)*rets_mean + alpha*mean(rets_mean)
 # Calculate portfolio weights
 weightv <- inverse %*% rets_mean
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+portf_is <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+portf_os <- xts::xts(retsos %*% weightv, zoo::index(retsos))
 # Plot cumulative portfolio returns
 wealth <- rbind(portf_is, portf_os)
 wealth <- wealth*sd(indeks)/sd(wealth)
@@ -1197,7 +1197,7 @@ wealth <- cumsum(cbind(wealth, indeks))
 colnames(wealth) <- c("Optimal Portfolio", "Equal Weight Portfolio")
 dygraphs::dygraph(wealth, main="Out-of-sample Returns for Stocks With Regularization and Shrinkage") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
-  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
 library(RcppArmadillo)
 # Source Rcpp functions from file
@@ -1253,7 +1253,7 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns
 returns100[1, is.na(returns100[1, ])] <- 0
 returns100 <- zoo::na.locf(returns100, na.rm=FALSE)
-ncols <- NCOL(returns100) ; dates <- index(returns100)
+ncols <- NCOL(returns100) ; dates <- zoo::index(returns100)
 # Define monthly end points
 endp <- rutils::calc_endpoints(returns100, interval="months")
 endp <- endp[endp > (ncols+1)]

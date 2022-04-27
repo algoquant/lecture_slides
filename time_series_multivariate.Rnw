@@ -148,12 +148,12 @@ c(alpha, betav)
 residuals <- (design$XLP - (alpha + betav*design$VTI))
 # Calculate the standard deviation of residuals
 nrows <- NROW(residuals)
-resid_std <- sqrt(sum(residuals^2)/(nrows - 2))
+residsd <- sqrt(sum(residuals^2)/(nrows - 2))
 # Calculate the standard errors of beta and alpha
 sum2 <- sum((design$VTI - mean(design$VTI))^2)
-beta_std <- resid_std/sqrt(sum2)
-alpha_std <- resid_std*sqrt(1/nrows + mean(design$VTI)^2/sum2)
-c(alpha_std, beta_std)
+betasd <- residsd/sqrt(sum2)
+alphasd <- residsd*sqrt(1/nrows + mean(design$VTI)^2/sum2)
+c(alphasd, betasd)
 # Perform the Durbin-Watson test of autocorrelation of residuals
 lmtest::dwtest(model)
       @
@@ -239,14 +239,19 @@ etf_betas
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 library(PerformanceAnalytics)
+returns <- na.omit(returns[, c("XLP", "XLF", "VTI")])
 # Calculate XLP beta
-CAPM.beta(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
+PerformanceAnalytics::CAPM.beta(Ra=returns$XLP, Rb=returns$VTI)
+# Or
+betav <- cov(returns)[1, 2]/var(returns$VTI)[1]
 # Calculate XLP bull beta
-CAPM.beta.bull(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
+PerformanceAnalytics::CAPM.beta.bull(Ra=returns$XLP, Rb=returns$VTI)
 # Calculate XLP bear beta
-CAPM.beta.bear(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
+PerformanceAnalytics::CAPM.beta.bear(Ra=returns$XLP, Rb=returns$VTI)
 # Calculate XLP alpha
-CAPM.alpha(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
+PerformanceAnalytics::CAPM.alpha(Ra=returns$XLP, Rb=returns$VTI)
+# Or
+mean(returns$XLP - betav*returns$VTI)
       @
   \end{columns}
 \end{block}
@@ -267,7 +272,7 @@ CAPM.alpha(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
       <<echo=(-1),eval=FALSE>>=
 library(PerformanceAnalytics)
 etf_betas <- sapply(returns[, colnames(returns)!="VXX"], 
-  CAPM.beta, Rb=returns[, "VTI"])
+  CAPM.beta, Rb=returns$VTI)
 etf_annrets <- sapply(returns[, colnames(returns)!="VXX"], 
   Return.annualized)
 # Plot scatterplot
@@ -310,7 +315,7 @@ text(x=etf_betas[label_names], y=etf_annrets[label_names],
 library(PerformanceAnalytics)
 etf_betas <- sapply(
   returns[, colnames(returns)!="VXX"], 
-  CAPM.beta, Rb=returns[, "VTI"])
+  CAPM.beta, Rb=returns$VTI)
 etf_annrets <- sapply(
   returns[, colnames(returns)!="VXX"], 
   Return.annualized)
@@ -367,9 +372,9 @@ text(x=etf_betas[label_names],
       <<echo=TRUE,eval=TRUE>>=
 library(PerformanceAnalytics)
 # Calculate XLP Treynor ratio
-TreynorRatio(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
+TreynorRatio(Ra=returns$XLP, Rb=returns$VTI)
 # Calculate XLP Information ratio
-InformationRatio(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
+InformationRatio(Ra=returns$XLP, Rb=returns$VTI)
       @
   \end{columns}
 \end{block}
@@ -388,12 +393,12 @@ InformationRatio(Ra=returns[, "XLP"], Rb=returns[, "VTI"])
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 PerformanceAnalytics::table.CAPM(Ra=returns[, c("XLP", "XLF")], 
-                                 Rb=returns[, "VTI"], scale=252)
+                                 Rb=returns$VTI, scale=252)
       @
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 capmstats <- table.CAPM(Ra=returns[, symbolv], 
-              Rb=returns[, "VTI"], scale=252)
+              Rb=returns$VTI, scale=252)
 colnamev <- strsplit(colnames(capmstats), split=" ")
 colnamev <- do.call(cbind, colnamev)[1, ]
 colnames(capmstats) <- colnamev
@@ -838,7 +843,7 @@ class(pcad$x)
 head(pcad$x[, 1:3], 3)
 # Convert PC matrix to xts and rescale to decimals
 pcarets <- xts(pcad$x/100, 
-    order.by=index(returns))
+    order.by=zoo::index(returns))
       @
 \vspace{-1em}
       <<pca_cumrets,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
@@ -873,8 +878,7 @@ cormat <- cor(pcarets)
 colnames(cormat) <- colnames(pcarets)
 rownames(cormat) <- colnames(pcarets)
 cormat[1:3, 1:3]
-table.CAPM(Ra=pcarets[, 1:3], 
-    Rb=returns[, "VTI"], scale=252)
+table.CAPM(Ra=pcarets[, 1:3], Rb=returns$VTI, scale=252)
       @
     \column{0.5\textwidth}
   \end{columns}

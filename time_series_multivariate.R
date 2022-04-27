@@ -336,7 +336,7 @@ class(pcad$x)
 head(pcad$x[, 1:3], 3)
 # Convert PC matrix to xts and rescale to decimals
 pcarets <- xts(pcad$x/100,
-    order.by=index(returns))
+    order.by=zoo::index(returns))
 
 library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"
 chart.CumReturns(

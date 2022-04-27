@@ -293,7 +293,7 @@ dim(setosa)
 head(setosa, 2)
 # Split iris into list based on Species
 split_iris <- split(iris, iris$Species)
-str(split_iris, max.level=1)
+str(split_iris, max.confl=1)
 names(split_iris)
 dim(split_iris$setosa)
 head(split_iris$setosa, 2)
@@ -303,7 +303,7 @@ unique(mtcars$cyl)  # cyl has three unique values
 split(mtcars$mpg, mtcars$cyl)
 # Split mtcars data frame based on number of cylinders
 split_cars <- split(mtcars, mtcars$cyl)
-str(split_cars, max.level=1)
+str(split_cars, max.confl=1)
 names(split_cars)
 # Aggregate the mean mpg over split mtcars data frame
 sapply(split_cars, function(x) mean(x$mpg))
@@ -366,7 +366,7 @@ aggregate(formula=(Sector ~ Industry), data=panel_data,
 with(panel_data, aggregate(x=Sector, by=list(Industry),
                      FUN=unique))
 # Or
-with(panel_data, sapply(levels(Industry),
+with(panel_data, sapply(confls(Industry),
   function(x) {
     Sector[match(x, Industry)]
   }))  # end sapply

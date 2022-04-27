@@ -3,7 +3,7 @@ symbols <- c("VTI", "IEF", "DBC")
 returns <- rutils::etfenv$returns[, symbols]
 returns <- na.omit(returns)
 # Or, select rows with IEF data
-# returns <- returns[index(rutils::etfenv$IEF)]
+# returns <- returns[zoo::index(rutils::etfenv$IEF)]
 # Copy over NA values
 # returns[1, is.na(returns[1, ])] <- 0
 # returns <- zoo::na.locf(returns, na.rm=FALSE)
@@ -239,7 +239,7 @@ pnls <- (pnls - costs)
 weightsaw <- c(0.30, 0.55, 0.15)
 all_weather <- returns %*% weightsaw
 # Calculate the wealth of momentum returns
-wealth <- xts::xts(cbind(all_weather, pnls), order.by=index(returns))
+wealth <- xts::xts(cbind(all_weather, pnls), order.by=zoo::index(returns))
 colnames(wealth) <- c("All-Weather", "Momentum")
 cor(wealth)
 # Plot dygraph of the momentum strategy returns
@@ -636,8 +636,8 @@ returns <- zoo::na.locf(returns, na.rm=FALSE)
 riskf <- 0.03/252
 excess <- (returns - riskf)
 # Maximum Sharpe weights in-sample interval
-rets_is <- returns["/2014"]
-inverse <- MASS::ginv(cov(rets_is))
+retsis <- returns["/2014"]
+inverse <- MASS::ginv(cov(retsis))
 weightv <- inverse %*% colMeans(excess["/2014"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(returns)
@@ -646,8 +646,8 @@ x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 barplot(sort(weightv), main="Maximum Sharpe Weights", cex.names=0.7)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
-indeks <- xts::xts(rowSums(rets_is)/sqrt(nassets), zoo::index(rets_is))
+portf_is <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+indeks <- xts::xts(rowSums(retsis)/sqrt(nassets), zoo::index(retsis))
 portf_is <- portf_is*sd(indeks)/sd(portf_is)
 # Plot cumulative portfolio returns
 pnls <- cumsum(cbind(portf_is, indeks))
@@ -656,9 +656,9 @@ dygraphs::dygraph(pnls, main="In-sample Optimal Portfolio Returns") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyLegend(width=500)
 # Out-of-sample portfolio returns
-rets_os <- returns["2015/"]
-portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
-indeks <- xts::xts(rowSums(rets_os)/sqrt(nassets), zoo::index(rets_os))
+retsos <- returns["2015/"]
+portf_os <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+indeks <- xts::xts(rowSums(retsos)/sqrt(nassets), zoo::index(retsos))
 portf_os <- portf_os*sd(indeks)/sd(portf_os)
 pnls <- cbind(portf_os, indeks, (portf_os + indeks)/2)
 colnames(pnls) <- c("Optimal", "Equal Weight", "Combined")
@@ -675,17 +675,17 @@ returns[1, is.na(returns[1, ])] <- 0
 returns <- zoo::na.locf(returns, na.rm=FALSE)
 riskf <- 0.03/252
 excess <- (returns - riskf)
-rets_is <- returns["/2010"]
-rets_os <- returns["2011/"]
+retsis <- returns["/2010"]
+retsos <- returns["2011/"]
 # Maximum Sharpe weights in-sample interval
-covmat <- cov(rets_is)
+covmat <- cov(retsis)
 inverse <- MASS::ginv(covmat)
 weightv <- inverse %*% colMeans(excess["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(returns)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+portf_is <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+portf_os <- xts::xts(retsos %*% weightv, zoo::index(retsos))
 indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
 # Plot cumulative portfolio returns
 pnls <- rbind(portf_is, portf_os)
@@ -694,46 +694,46 @@ pnls <- cumsum(cbind(pnls, indeks))
 colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
 dygraphs::dygraph(pnls, main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
-  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
 # Create rectangular matrix with collinear columns
-ran_dom <- matrix(rnorm(10*8), nc=10)
+matrixv <- matrix(rnorm(10*8), nc=10)
 # Calculate covariance matrix
-covmat <- cov(ran_dom)
+covmat <- cov(matrixv)
 # Calculate inverse of covmat - error
 inverse <- solve(covmat)
 # Perform eigen decomposition
 eigend <- eigen(covmat)
-eigen_vec <- eigend$vectors
-eigen_val <- eigend$values
+eigenvec <- eigend$vectors
+eigenval <- eigend$values
 # Set tolerance for determining zero singular values
 precision <- sqrt(.Machine$double.eps)
 # Calculate regularized inverse matrix
-not_zero <- (eigen_val > (precision * eigen_val[1]))
-inv_reg <- eigen_vec[, not_zero] %*%
-  (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
-# Verify inverse property of inv_reg
-all.equal(covmat, covmat %*% inv_reg %*% covmat)
+not_zero <- (eigenval > (precision * eigenval[1]))
+invreg <- eigenvec[, not_zero] %*%
+  (t(eigenvec[, not_zero]) / eigenval[not_zero])
+# Verify inverse property of invreg
+all.equal(covmat, covmat %*% invreg %*% covmat)
 # Calculate regularized inverse of covmat
 inverse <- MASS::ginv(covmat)
 # Verify inverse property of matrixv
-all.equal(inverse, inv_reg)
+all.equal(inverse, invreg)
 # Calculate in-sample covariance matrix
-covmat <- cov(rets_is)
+covmat <- cov(retsis)
 eigend <- eigen(covmat)
-eigen_vec <- eigend$vectors
-eigen_val <- eigend$values
+eigenvec <- eigend$vectors
+eigenval <- eigend$values
 # Calculate shrinkage inverse of covariance matrix
 eigen_max <- 21
-inverse <- eigen_vec[, 1:eigen_max] %*%
-  (t(eigen_vec[, 1:eigen_max]) / eigend$values[1:eigen_max])
+inverse <- eigenvec[, 1:eigen_max] %*%
+  (t(eigenvec[, 1:eigen_max]) / eigend$values[1:eigen_max])
 # Calculate portfolio weights
 weightv <- inverse %*% colMeans(excess["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(returns)
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+portf_is <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+portf_os <- xts::xts(retsos %*% weightv, zoo::index(retsos))
 indeks <- xts::xts(rowSums(returns)/sqrt(nassets), zoo::index(returns))
 # Plot cumulative portfolio returns
 pnls <- rbind(portf_is, portf_os)
@@ -742,18 +742,18 @@ pnls <- cumsum(cbind(pnls, indeks))
 colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
 dygraphs::dygraph(pnls, main="Regularized Out-of-sample Optimal Portfolio Returns for Stocks") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
-  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
 # Shrink the in-sample returns to their mean
-rets_mean <- colMeans(rets_is) - riskf
+rets_mean <- colMeans(retsis) - riskf
 alpha <- 0.7
 rets_mean <- (1 - alpha)*rets_mean + alpha*mean(rets_mean)
 # Calculate portfolio weights
 weightv <- inverse %*% rets_mean
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
-portf_is <- xts::xts(rets_is %*% weightv, zoo::index(rets_is))
-portf_os <- xts::xts(rets_os %*% weightv, zoo::index(rets_os))
+portf_is <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+portf_os <- xts::xts(retsos %*% weightv, zoo::index(retsos))
 # Plot cumulative portfolio returns
 pnls <- rbind(portf_is, portf_os)
 pnls <- pnls*sd(indeks)/sd(pnls)
@@ -761,7 +761,7 @@ pnls <- cumsum(cbind(pnls, indeks))
 colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
 dygraphs::dygraph(pnls, main="Out-of-sample Returns for Stocks With Regularization and Shrinkage") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
-  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
 library(RcppArmadillo)
 # Source Rcpp functions from file
@@ -817,7 +817,7 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns
 returns100[1, is.na(returns100[1, ])] <- 0
 returns100 <- zoo::na.locf(returns100, na.rm=FALSE)
-ncols <- NCOL(returns100) ; dates <- index(returns100)
+ncols <- NCOL(returns100) ; dates <- zoo::index(returns100)
 # Define monthly end points
 endp <- rutils::calc_endpoints(returns100, interval="months")
 endp <- endp[endp > (ncols+1)]
@@ -1253,7 +1253,7 @@ vol_rolling <- sapply(seq_along(endp),
   function(it) sd(ret2013[startp[it]:endp[it]]))
 vol_rolling <- xts::xts(vol_rolling, zoo::index(ret2013))
 # Extract time intervals of SPY returns
-indeks <- c(60, diff(xts::.index(ret2013)))
+indeks <- c(60, diff(xts::.zoo::index(ret2013)))
 head(indeks)
 table(indeks)
 # Scale SPY returns by time intervals
@@ -1281,9 +1281,9 @@ x11(width=6, height=4)
 par(mar=c(2, 2, 0, 0), oma=c(1, 1, 0, 0))
 chart_Series(x=prices, name="S&P500 Futures Bid-Ask Bounce")
 # Volatility of SPY
-sqrt(HighFreq::calc_var_ohlc(ohlc))
+sqrt(HighFreq::calcvar_ohlc(ohlc))
 # Daily SPY volatility and volume
-vol_daily <- sqrt(xts::apply.daily(ohlc, FUN=calc_var_ohlc))
+vol_daily <- sqrt(xts::apply.daily(ohlc, FUN=calcvar_ohlc))
 colnames(vol_daily) <- ("SPY_volatility")
 volumes <- quantmod::Vo(ohlc)
 volume_daily <- xts::apply.daily(volumes, FUN=sum)
@@ -1520,12 +1520,12 @@ exceeds <- (volumes[, "ESU8"] > volumes[, "ESM8"])
 indeks <- match(TRUE, exceeds)
 # indeks <- min(which(exceeds))
 # Scale the ESM8 prices
-indeks <- index(exceeds[indeks])
+indeks <- zoo::index(exceeds[indeks])
 factorv <- as.numeric(Cl(ESU8[indeks])/Cl(ESM8[indeks]))
 ESM8[, 1:4] <- factorv*ESM8[, 1:4]
 # Calculate continuous contract prices
-chain_ed <- rbind(ESM8[index(ESM8) < indeks],
-            ESU8[index(ESU8) >= indeks])
+chain_ed <- rbind(ESM8[zoo::index(ESM8) < indeks],
+            ESU8[zoo::index(ESU8) >= indeks])
 # Or
 # Chain_ed <- rbind(ESM8[paste0("/", indeks-1)],
 #                   ESU8[paste0(indeks, "/")])

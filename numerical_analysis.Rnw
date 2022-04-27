@@ -340,10 +340,10 @@ nrows <- NROW(returns)
 c(mean(returns), sd(returns))
 # Calculate the MAD of returns 10 points apart
 returns <- sort(returns)
-b_w <- 10*mad(rutils::diffit(returns, lagg=10))
+bwidth <- 10*mad(rutils::diffit(returns, lagg=10))
 # Calculate the kernel density
 densityv <- sapply(1:nrows, function(it) {
-  sum(dnorm(returns-returns[it], sd=b_w))
+  sum(dnorm(returns-returns[it], sd=bwidth))
 })  # end sapply
 madv <- mad(returns)
 plot(returns, densityv, xlim=c(-5*madv, 5*madv), 
@@ -351,7 +351,7 @@ plot(returns, densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      main="Density of VTI Returns")
 # Calculate the kernel density using density()
-densityv <- density(returns, bw=b_w)
+densityv <- density(returns, bw=bwidth)
 NROW(densityv$y)
 x11(width=6, height=5)
 plot(densityv, xlim=c(-5*madv, 5*madv), 
@@ -807,7 +807,7 @@ summary(microbenchmark(
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Disable JIT
-jit_level <- compiler::enableJIT(0)
+jit_confl <- compiler::enableJIT(0)
 # Create inefficient function
 my_mean <- function(x) {
   output <- 0; n_elem <- NROW(x)
@@ -844,7 +844,7 @@ summary(microbenchmark(
   sapply2(vectorv, sqrt),
   times=10))[, c(1, 4, 5)]
 # enable JIT
-compiler::enableJIT(jit_level)
+compiler::enableJIT(jit_confl)
       @
   \end{columns}
 \end{block}
@@ -1664,7 +1664,7 @@ zoo::plot.zoo(vector3, lwd=2, ylim=c(-1, 1),
   main="ifelse() Calculates The Max of Two Data Sets")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ifelse_example.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ifelse_example.png}
   \end{columns}
 \end{block}
 
@@ -1878,7 +1878,7 @@ stopCluster(cluster)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/parallel_plot.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/parallel_plot.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 x11(width=6, height=5)
@@ -1979,7 +1979,7 @@ parLapply(cluster, 2:4,
 # Fails because child processes don't know zoo::index():
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
-            NROW(index(get(symbol, envir=rutils::etfenv))))
+            NROW(zoo::index(get(symbol, envir=rutils::etfenv))))
 # zoo function referenced using "::" in child process:
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol)
@@ -1988,7 +1988,7 @@ parSapply(cluster, c("VTI", "IEF", "DBC"),
 parSapply(cluster, c("VTI", "IEF", "DBC"),
           function(symbol) {
             stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-            NROW(index(get(symbol, envir=rutils::etfenv)))
+            NROW(zoo::index(get(symbol, envir=rutils::etfenv)))
           })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(cluster)
@@ -2469,8 +2469,9 @@ stderrors[2, ]/stderrors[1, ]
 # Initialize random number generator
 set.seed(1121)
 # Define explanatory and response variables
-predictor <- rnorm(100, mean=2)
-noise <- rnorm(100)
+nrows <- 100
+predictor <- rnorm(nrows, mean=2)
+noise <- rnorm(nrows)
 response <- (-3 + predictor + noise)
 design <- cbind(response, predictor)
 # Calculate alpha and beta regression coefficients
@@ -2482,7 +2483,7 @@ abline(a=alpha, b=betav, lwd=3, col="blue")
 # Bootstrap of beta regression coefficient
 nboot <- 100
 boot_data <- sapply(1:nboot, function(x) {
-  samplev <- sample.int(NROW(design), replace=TRUE)
+  samplev <- sample.int(nrows, replace=TRUE)
   design <- design[samplev, ]
   cov(design[, 1], design[, 2])/var(design[, 2])
 })  # end sapply
@@ -2522,7 +2523,7 @@ text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
       @
     \column{0.5\textwidth}
       \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/boot_reg.png}
+      \includegraphics[width=0.45\paperwidth]{figure/boot_reg.png}
   \end{columns}
 \end{block}
 
@@ -2560,14 +2561,14 @@ cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 # Bootstrap of regression under Windows
 boot_data <- parLapply(cluster, 1:1000,
   function(x, design) {
-    samplev <- sample.int(NROW(design), replace=TRUE)
+    samplev <- sample.int(nrows, replace=TRUE)
     design <- design[samplev, ]
     cov(design[, 1], design[, 2])/var(design[, 2])
   }, design=design)  # end parLapply
 # Bootstrap of regression under Mac-OSX or Linux
 boot_data <- mclapply(1:1000,
   function(x) {
-    samplev <- sample.int(NROW(design), replace=TRUE)
+    samplev <- sample.int(nrows, replace=TRUE)
     design <- design[samplev, ]
     cov(design[, 1], design[, 2])/var(design[, 2])
   }, mc.cores=ncores)  # end mclapply
@@ -2626,28 +2627,28 @@ text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
 set.seed(1121)  # Reset random number generator
 barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
-paths <- numeric(nrows)  # Allocate path vector
-paths[1] <- 0  # Initialize path
-indeks <- 2  # Initialize simulation index
-while ((indeks <= nrows) && (paths[indeks - 1] < barl)) {
+pathv <- numeric(nrows)  # Allocate path vector
+pathv[1] <- 0  # Initialize path
+it <- 2  # Initialize simulation index
+while ((it <= nrows) && (pathv[it - 1] < barl)) {
 # Simulate next step
-  paths[indeks] <- paths[indeks - 1] + rnorm(1)
-  indeks <- indeks + 1  # Advance indeks
+  pathv[it] <- pathv[it - 1] + rnorm(1)
+  it <- it + 1  # Advance index
 }  # end while
-# Fill remaining paths after it crosses barl
-if (indeks <= nrows)
-  paths[indeks:nrows] <- paths[indeks - 1]
+# Fill remaining path after it crosses barl
+if (it <= nrows)
+  pathv[it:nrows] <- pathv[it - 1]
 # Plot the Brownian motion
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(paths, type="l", col="black",
+plot(pathv, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barl, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+      \includegraphics[width=0.45\paperwidth]{figure/simu_brown_barrier.png}
   \end{columns}
 \end{block}
 
@@ -2670,9 +2671,9 @@ barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
 # Simulate path of Brownian motion
 pathv <- cumsum(rnorm(nrows))
-# Find index when pathv crosses barl
+# Find index when path crosses barl
 crossp <- which(pathv > barl)
-# Fill remaining pathv after it crosses barl
+# Fill remaining path after it crosses barl
 if (NROW(crossp)>0) {
   pathv[(crossp[1]+1):nrows] <- pathv[crossp[1]]
 }  # end if
@@ -2686,7 +2687,7 @@ title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+      \includegraphics[width=0.45\paperwidth]{figure/simu_brown_barrier.png}
       The tradeoff between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up.
       \vskip1ex
       But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
@@ -2732,7 +2733,7 @@ sum(crossi)/nsimu
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_multiple.png}
+      \includegraphics[width=0.45\paperwidth]{figure/simu_brown_multiple.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot in window
@@ -3026,11 +3027,11 @@ integrate(dnorm, lower=-Inf, upper=quantilev)
 sum(datav < quantilev)/nrows
 # Generate importance sample
 lambda <- (-1.5)  # Tilt parameter
-data_tilt <- datav + lambda  # Tilt the random numbers
+datat <- datav + lambda  # Tilt the random numbers
 # Cumulative probability from importance sample
-sum(data_tilt < quantilev)/nrows
-weights <- exp(-lambda*data_tilt + lambda^2/2)
-sum((data_tilt < quantilev)*weights)/nrows
+sum(datat < quantilev)/nrows
+weights <- exp(-lambda*datat + lambda^2/2)
+sum((datat < quantilev)*weights)/nrows
 # Bootstrap of standard errors of cumulative probability
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
@@ -3080,21 +3081,21 @@ datav <- sort(datav)
 cutoff <- nrows*confl
 datav[cutoff]  # Naive Monte Carlo value
 # Importance sample weights
-data_tilt <- datav + lambda  # Tilt the random numbers
-weights <- exp(-lambda*data_tilt + lambda^2/2)
+datat <- datav + lambda  # Tilt the random numbers
+weights <- exp(-lambda*datat + lambda^2/2)
 # Cumulative probabilities using importance sample
 cumprob <- cumsum(weights)/nrows
 # Quantile from importance sample
-data_tilt[findInterval(confl, cumprob)]
+datat[findInterval(confl, cumprob)]
 # Bootstrap of standard errors of quantile
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   naivemc <- datav[cutoff]
-  data_tilt <- datav + lambda
-  weights <- exp(-lambda*data_tilt + lambda^2/2)
+  datat <- datav + lambda
+  weights <- exp(-lambda*datat + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
-  isample <- data_tilt[findInterval(confl, cumprob)]
+  isample <- datat[findInterval(confl, cumprob)]
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -3127,8 +3128,8 @@ apply(boot_data, MARGIN=1,
 varisk <- datav[cutoff]
 sum((datav < varisk)*datav)/sum((datav < varisk))
 # CVaR from importance sample
-varisk <- data_tilt[findInterval(confl, cumprob)]
-sum((data_tilt < varisk)*data_tilt*weights)/sum((data_tilt < varisk)*weights)
+varisk <- datat[findInterval(confl, cumprob)]
+sum((datat < varisk)*datat*weights)/sum((datat < varisk)*weights)
 # CVaR from integration
 integrate(function(x) x*dnorm(x), low=-Inf, up=varisk)$value/pnorm(varisk)
 # Bootstrap of standard errors of expected value
@@ -3137,11 +3138,11 @@ boot_data <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   varisk <- datav[cutoff]
   naivemc <- sum((datav < varisk)*datav)/sum((datav < varisk))
-  data_tilt <- datav + lambda
-  weights <- exp(-lambda*data_tilt + lambda^2/2)
+  datat <- datav + lambda
+  weights <- exp(-lambda*datat + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
-  varisk <- data_tilt[findInterval(confl, cumprob)]
-  isample <- sum((data_tilt < varisk)*data_tilt*weights)/sum((data_tilt < varisk)*weights)
+  varisk <- datat[findInterval(confl, cumprob)]
+  isample <- sum((datat < varisk)*datat*weights)/sum((datat < varisk)*weights)
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -3178,12 +3179,12 @@ datav <- Rfast::sort_mat(datav)  # Sort the columns
 # Calculate vector of quantiles for tilt parameter
 confl <- 0.02; cutoff <- confl*nrows
 calc_quant <- function(lambda) {
-  data_tilt <- datav + lambda  # Tilt the random numbers
-  weights <- exp(-lambda*data_tilt + lambda^2/2)
+  datat <- datav + lambda  # Tilt the random numbers
+  weights <- exp(-lambda*datat + lambda^2/2)
   # Calculate quantiles for columns
-  sapply(1:nboot, function(boo_t) {
-    cumprob <- cumsum(weights[, boo_t])/nrows
-    data_tilt[findInterval(confl, cumprob), boo_t]
+  sapply(1:nboot, function(it) {
+    cumprob <- cumsum(weights[, it])/nrows
+    datat[findInterval(confl, cumprob), it]
   })  # end sapply
 }  # end calc_quant
       @
@@ -3193,16 +3194,16 @@ calc_quant <- function(lambda) {
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define vector of tilt parameters
-lambda_s <- seq(-3.0, -1.2, by=0.2)
+lambdas <- seq(-3.0, -1.2, by=0.2)
 # Calculate vector of quantiles for tilt parameters
-quantiles <- sapply(lambda_s, calc_quant)
+quantiles <- sapply(lambdas, calc_quant)
 # Calculate standard deviations of quantiles for tilt parameters
 stdevs <- apply(quantiles, MARGIN=2, sd)
 # Calculate the optimal tilt parameter
-lambda_s[which.min(stdevs)]
+lambdas[which.min(stdevs)]
 # Plot the standard deviations
 x11(width=6, height=5)
-plot(x=lambda_s, y=stdevs, 
+plot(x=lambdas, y=stdevs, 
      main="Standard Deviations of Simulated Quantiles",
      xlab="tilt parameter", ylab="standard deviation",
      type="l", col="blue", lwd=2)
@@ -3323,13 +3324,13 @@ datav <- matrix(datav, nc=nsimu)
 paths <- matrixStats::colCumsums(datav)
 # Tilt the datav
 lambda <- 0.04  # Tilt parameter
-data_tilt <- datav + lambda  # Tilt the random numbers
-paths_tilt <- matrixStats::colCumsums(data_tilt)
+datat <- datav + lambda  # Tilt the random numbers
+paths_tilt <- matrixStats::colCumsums(datat)
 # Calculate path weights
-weights <- exp(-lambda*data_tilt + lambda^2/2)
+weights <- exp(-lambda*datat + lambda^2/2)
 path_weights <- matrixStats::colProds(weights)
 # Or
-path_weights <- exp(-lambda*colSums(data_tilt) + nrows*lambda^2/2)
+path_weights <- exp(-lambda*colSums(datat) + nrows*lambda^2/2)
 # Calculate option payout using standard MC
 strikep <- 10  # Strike price
 payouts <- (paths[nrows, ] - strikep)
@@ -3368,20 +3369,33 @@ sum(path_weights*crossi)/nsimu
       \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval.
       \vskip1ex
       \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
-        <<echo=(-(1:1)),eval=FALSE>>=
-options(width=50, dev="pdf")
+      \vskip1ex
+      The argument \texttt{tol} specifies the numerical accuracy, with smaller values of \texttt{tol} requiring more computations.
+        <<echo=TRUE,eval=FALSE>>=
+# Display the structure of optimize()
 str(optimize)
 # Objective function with multiple minima
 objfun <- function(input, param1=0.01) {
   sin(0.25*pi*input) + param1*(input-1)^2
 }  # end objfun
-unlist(optimize(f=objfun, interval=c(-4, 2)))
+optiml <- optimize(f=objfun, interval=c(-4, 2))
+class(optiml)
+unlist(optiml)
+# Find minimum in different interval
 unlist(optimize(f=objfun, interval=c(0, 8)))
-options(width=80, dev="pdf")
+# Find minimum with less accuracy
+accl <- 1e4*.Machine$double.eps^0.25
+unlist(optimize(f=objfun, interval=c(0, 8), tol=accl))
+# Microbenchmark optimize() with less accuracy
+library(microbenchmark)
+summary(microbenchmark(
+  more_accurate = optimize(f=objfun, interval=c(0, 8)),
+  less_accurate = optimize(f=objfun, interval=c(0, 8), tol=accl),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/optim_one_dim-1}
+      \includegraphics[width=0.45\paperwidth]{figure/optim_one_dim-1}
       \vspace{-4em}
         <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -3427,7 +3441,7 @@ rgl::persp3d(x=rastrigin, xlim=c(-10, 10), ylim=c(-10, 10),
 rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/rgl_rastrigin.png}
+      \includegraphics[width=0.45\paperwidth]{figure/rgl_rastrigin.png}
   \end{columns}
 \end{block}
 
@@ -3464,7 +3478,7 @@ rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
 rastrigin <- function(vectorv, param=25) {
   sum(vectorv^2 - param*cos(vectorv))
 }  # end rastrigin
-vectorv <- c(pi/6, pi/6)
+vectorv <- c(pi, pi/4)
 rastrigin(vectorv=vectorv)
 # Draw 3d surface plot of Rastrigin function
 rgl::persp3d(
@@ -3472,15 +3486,15 @@ rgl::persp3d(
   xlim=c(-10, 10), ylim=c(-10, 10),
   col="green", axes=FALSE, zlab="", main="rastrigin")
 # Optimize with respect to vector argument
-optimd <- optim(par=vectorv, fn=rastrigin,
+optiml <- optim(par=vectorv, fn=rastrigin,
                 method="L-BFGS-B",
-                upper=c(4*pi, 4*pi),
+                upper=c(14*pi, 14*pi),
                 lower=c(pi/2, pi/2),
                 param=1)
 # Optimal parameters and value
-optimd$par
-optimd$value
-rastrigin(optimd$par, param=1)
+optiml$par
+optiml$value
+rastrigin(optiml$par, param=1)
       @
   \end{columns}
 \end{block}
@@ -3581,7 +3595,7 @@ rgl::persp3d(z=-objective_grid, zlab="objective",
         col="green", main="objective function")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/optim_objective-1}
+      \includegraphics[width=0.45\paperwidth]{figure/optim_objective-1}
   \end{columns}
 \end{block}
 
@@ -3624,7 +3638,7 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/optim_basic-1}
+      \includegraphics[width=0.45\paperwidth]{figure/optim_basic-1}
   \end{columns}
 \end{block}
 
@@ -3684,7 +3698,7 @@ persp(par_mean, par_sd, -objective_grid,
       main="objective function")
       @
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/optim_mix_like-1}
+      \includegraphics[width=0.45\paperwidth]{figure/optim_mix_like-1}
   \end{columns}
 \end{block}
 
@@ -3726,7 +3740,7 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/optim_mixture-1}
+      \includegraphics[width=0.45\paperwidth]{figure/optim_mixture-1}
   \end{columns}
 \end{block}
 
@@ -3765,14 +3779,14 @@ vectorv <- c(pi/6, pi/6)
 rastrigin(vectorv=vectorv)
 library(DEoptim)
 # Optimize rastrigin using DEoptim
-optimd <-  DEoptim(rastrigin,
+optiml <-  DEoptim(rastrigin,
   upper=c(6, 6), lower=c(-6, -6),
   DEoptim.control(trace=FALSE, itermax=50))
 # Optimal parameters and value
-optimd$optim$bestmem
-rastrigin(optimd$optim$bestmem)
-summary(optimd)
-plot(optimd)
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
       @
   \end{columns}
 \end{block}
@@ -3809,14 +3823,14 @@ vectorv <- c(pi/6, pi/6)
 rastrigin(vectorv=vectorv)
 library(DEoptim)
 # Optimize rastrigin using DEoptim
-optimd <-  DEoptim(rastrigin,
+optiml <-  DEoptim(rastrigin,
   upper=c(6, 6), lower=c(-6, -6),
   DEoptim.control(trace=FALSE, itermax=50))
 # Optimal parameters and value
-optimd$optim$bestmem
-rastrigin(optimd$optim$bestmem)
-summary(optimd)
-plot(optimd)
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
       @
   \end{columns}
 \end{block}
@@ -4050,7 +4064,7 @@ static const double pi = 3.14159265;
 // initialize output vector
   output[0] = seedv;
 // perform loop
-  for (int i=1; i <.n_rows; ++i) {
+  for (int i=1; i < nrows; ++i) {
     output[i] = 4*output[i-1]*(1-output[i-1]);
   }  // end for
 // rescale output vector and return it
@@ -4103,7 +4117,7 @@ NumericVector sim_ou_rcpp(double eq_price,
   NumericVector prices*nrows);
   NumericVector returns*nrows);
   prices[0] = eq_price;
-  for (int it = 1; it <.n_rows; it++) {
+  for (int it = 1; it < nrows; it++) {
     returns[it] = theta*(eq_price - prices[it-1]) + volat*innov[it-1];
     prices[it] = prices[it-1] + returns[it];
   }  // end for
@@ -4180,7 +4194,7 @@ NumericVector sim_ou_rcpp(double eq_price,
   NumericVector prices*nrows);
   NumericVector returns*nrows);
   prices[0] = eq_price;
-  for (int it = 1; it <.n_rows; it++) {
+  for (int it = 1; it < nrows; it++) {
     returns[it] = thetav*(eq_price - prices[it-1]) + volat*innov[it-1];
     prices[it] = prices[it-1] + returns[it];
   }  // end for
@@ -4250,7 +4264,7 @@ static const double pi = 3.14159265;
 // initialize output vector
   output[0] = seedv;
 // perform loop
-  for (int i=1; i <.n_rows; ++i) {
+  for (int i=1; i < nrows; ++i) {
     output[i] = 4*output[i-1]*(1-output[i-1]);
   }  // end for
 // rescale output vector and return it
@@ -4329,7 +4343,7 @@ static const double pi = 3.14159265;
 // initialize output vector
   output[0] = seedv;
 // perform loop
-  for (int i=1; i <.n_rows; ++i) {
+  for (int i=1; i < nrows; ++i) {
     output[i] = 4*output[i-1]*(1-output[i-1]);
   }  // end for
 // rescale output vector and return it
@@ -4419,7 +4433,7 @@ static const double pi = 3.14159265;
 // initialize output vector
   output[0] = seedv;
 // perform loop
-  for (int i=1; i <.n_rows; ++i) {
+  for (int i=1; i < nrows; ++i) {
     output[i] = 4*output[i-1]*(1-output[i-1]);
   }  // end for
 // rescale output vector and return it
@@ -4439,7 +4453,7 @@ static const double pi = 3.14159265;
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{RcppArmadillo} allows calling the high-level \emph{Armadillo} \texttt{C++} linear algebra library.
+      The package \emph{RcppArmadillo} allows calling the high-confl \emph{Armadillo} \texttt{C++} linear algebra library.
       \vskip1ex
       \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab}.
       \vskip1ex
@@ -4547,7 +4561,7 @@ using namespace arma; // use C++ namesvpace from Armadillo library
 //' @export
 // [[Rcpp::export]]
 arma::vec sim_arima(const arma::vec& innov, const arma::vec& coeff) {
-  uword.n_rows = innov.n_elem;
+  uword nrows = innov.n_elem;
   uword look_back = coeff.n_elem;
   arma::vec arimav[nrows);
 
@@ -4559,7 +4573,7 @@ arma::vec sim_arima(const arma::vec& innov, const arma::vec& coeff) {
   }  // end for
 
   // remaining periods
-  for (uword it = look_back; it <.n_rows; it++) {
+  for (uword it = look_back; it < nrows; it++) {
     arimav(it) = innov(it) + arma::dot(coeff, arimav.subvec(it-look_back, it-1));
   }  // end for
 
@@ -4802,10 +4816,10 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
   }  // end min_var
   case method::min_varpca: {
     // Calculate highest order principal component
-    arma::vec eigen_val;
-    arma::mat eigen_vec;
-    arma::eig_sym(eigen_val, eigen_vec, arma::cov(returns));
-    weights = eigen_vec.col(0);
+    arma::vec eigenval;
+    arma::mat eigenvec;
+    arma::eig_sym(eigenval, eigenvec, arma::cov(returns));
+    weights = eigenvec.col(0);
     break;
   }  // end min_varpca
   case method::rank: {
