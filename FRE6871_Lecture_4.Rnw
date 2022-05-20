@@ -1391,19 +1391,19 @@ returns <- rutils::do_call(cbind, returns)
 sapply(returns, mean)
 sapply(returns, sd)
 # Calculate principal component time series
-pcats <- returns %*% pcad$rotation
-all.equal(pcad$x, pcats, check.attributes=FALSE)
+pcacum <- returns %*% pcad$rotation
+all.equal(pcad$x, pcacum, check.attributes=FALSE)
 # Calculate products of principal component time series
-round(t(pcats) %*% pcats, 2)
+round(t(pcacum) %*% pcacum, 2)
 # Coerce to xts time series
-pcats <- xts(pcats, order.by=zoo::index(returns))
-pcats <- cumsum(pcats)
+pcacum <- xts(pcacum, order.by=zoo::index(returns))
+pcacum <- cumsum(pcacum)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-rangev <- range(pcats)
-for (ordern in 1:NCOL(pcats)) {
-  plot.zoo(pcats[, ordern], ylim=rangev, xlab="", ylab="")
+rangev <- range(pcacum)
+for (ordern in 1:NCOL(pcacum)) {
+  plot.zoo(pcacum[, ordern], ylim=rangev, xlab="", ylab="")
   title(paste0("PC", ordern), line=-1, col.main="red")
 }  # end for
       @
@@ -1456,12 +1456,12 @@ all.equal(coredata(returns), solved)
 solved <- pcarets[, 1:3] %*% solve(pcad$rotation)[1:3, ]
 solved <- xts::xts(solved, zoo::index(returns))
 solved <- cumsum(solved)
-cumrets <- cumsum(returns)
+retscum <- cumsum(returns)
 # Plot the solved returns
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 for (symbol in symbolv) {
-  plot.zoo(cbind(cumrets[, symbol], solved[, symbol]),
+  plot.zoo(cbind(retscum[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n",
          legend=paste0(symbol, c("", " solved")),
@@ -1861,9 +1861,9 @@ alpha_std <- resid_std*
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-model_sum <- summary(model)  # Copy regression summary
-model_sum  # Print the summary to console
-attributes(model_sum)$names  # get summary elements
+modelsum <- summary(model)  # Copy regression summary
+modelsum  # Print the summary to console
+attributes(modelsum)$names  # get summary elements
       @
   \end{columns}
 \end{block}
@@ -1894,17 +1894,17 @@ attributes(model_sum)$names  # get summary elements
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-model_sum$coeff
+modelsum$coeff
 # Standard errors
-model_sum$coefficients[2, "Std. Error"]
+modelsum$coefficients[2, "Std. Error"]
 all.equal(c(alpha_std, beta_std),
-  model_sum$coefficients[, "Std. Error"], 
+  modelsum$coefficients[, "Std. Error"], 
   check.attributes=FALSE)
 # R-squared
-model_sum$r.squared
-model_sum$adj.r.squared
+modelsum$r.squared
+modelsum$adj.r.squared
 # F-statistic and ANOVA
-model_sum$fstatistic
+modelsum$fstatistic
 anova(model)
       @
   \end{columns}
@@ -1958,9 +1958,9 @@ reg_stats <- function(stdev) {  # Noisy regression
 # Specify regression formula
   formulav <- response ~ predictor
 # Perform regression and get summary
-  model_sum <- summary(lm(formulav))
+  modelsum <- summary(lm(formulav))
 # Extract regression statistics
-  with(model_sum, c(pval=coefficients[2, 4],
+  with(modelsum, c(pval=coefficients[2, 4],
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end reg_stats
@@ -1999,9 +1999,9 @@ reg_stats <- function(datav) {  # get regression
 # Perform regression and get summary
   colnamev <- colnames(datav)
   formulav <- paste(colnamev[2], colnamev[1], sep="~")
-  model_sum <- summary(lm(formulav, data=datav))
+  modelsum <- summary(lm(formulav, data=datav))
 # Extract regression statistics
-  with(model_sum, c(pval=coefficients[2, 4],
+  with(modelsum, c(pval=coefficients[2, 4],
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end reg_stats

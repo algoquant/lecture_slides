@@ -122,15 +122,15 @@ dates <- zoo::index(closep)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns and IR changes
-returns <- rutils::diffit(closep)
-rates_diff <- rutils::diffit(log(rates))
+retsp <- rutils::diffit(log(closep))
+retsr <- rutils::diffit(log(rates))
 # Regress VTI returns versus the lagged rate differences
-predictor <- rutils::lagit(rates_diff)
-model <- lm(returns ~ predictor)
+predictor <- rutils::lagit(retsr)
+model <- lm(retsp ~ predictor)
 summary(model)
 # Regress VTI returns before and after 2012
-summary(lm(returns["/2012"] ~ predictor["/2012"]))
-summary(lm(returns["2012/"] ~ predictor["2012/"]))
+summary(lm(retsp["/2012"] ~ predictor["/2012"]))
+summary(lm(retsp["2012/"] ~ predictor["2012/"]))
       @
   \end{columns}
 \end{block}
@@ -150,12 +150,12 @@ summary(lm(returns["2012/"] ~ predictor["2012/"]))
       The second principal component describes the steepening and flattening of the yield curve, and it's an indicator of investor risk appetite.  So it's also related to bullish and bearish market periods.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate PCA of rates correlation matrix
-eigend <- eigen(cor(rates_diff))
-rates_pca <- -rates_diff %*% eigend$vectors
-colnames(rates_pca) <- paste0("PC", 1:6)
+eigend <- eigen(cor(retsr))
+pcar <- -(retsr %*% eigend$vectors)
+colnames(pcar) <- paste0("PC", 1:6)
 # Define predictor as the YC PCAs
-predictor <- rutils::lagit(rates_pca)
-model <- lm(returns ~ predictor)
+predictor <- rutils::lagit(pcar)
+model <- lm(retsp ~ predictor)
 summary(model)
       @
     \column{0.5\textwidth}
@@ -163,7 +163,7 @@ summary(model)
       \includegraphics[width=0.4\paperwidth]{figure/strat_yc_steep.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot YC steepener principal component with VTI
-datav <- cbind(returns, rates_pca[, 2])
+datav <- cbind(retsp, pcar[, 2])
 colnames(datav) <- c("VTI", "Steepener")
 colnamev <- colnames(datav)
 dygraphs::dygraph(cumsum(datav), main="VTI and Yield Curve Steepener") %>%
@@ -195,17 +195,17 @@ dygraphs::dygraph(cumsum(datav), main="VTI and Yield Curve Steepener") %>%
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor with intercept term
-predictor <- rutils::lagit(rates_diff)
+predictor <- rutils::lagit(retsr)
 predictor <- cbind(rep(1, NROW(predictor)), predictor)
 colnames(predictor)[1] <- "intercept"
 # Calculate inverse of predictor
 invmat <- MASS::ginv(predictor)
 # Calculate coefficients from response and inverse of predictor
-response <- returns
+response <- retsp
 coeff <- drop(invmat %*% response)
 # Calculate forecasts and pnls in-sample
-forecasts <- (predictor %*% coeff)
-pnls <- sign(forecasts)*response
+forecastv <- (predictor %*% coeff)
+pnls <- sign(forecastv)*response
 # Calculate in-sample factors
 factors <- (predictor*coeff)
 apply(factors, 2, sd)
@@ -215,7 +215,7 @@ apply(factors, 2, sd)
       \includegraphics[width=0.4\paperwidth]{figure/strat_yc_insample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of in-sample IR strategy
-wealth <- cbind(returns, pnls)
+wealth <- cbind(retsp, pnls)
 colnames(wealth) <- c("VTI", "Strategy")
 colnamev <- colnames(wealth)
 dygraphs::dygraph(cumsum(wealth), main="Yield Curve Strategy In-sample") %>%
@@ -250,15 +250,15 @@ invmat <- MASS::ginv(predictor[insample, ])
 # Calculate coefficients in-sample
 coeff <- drop(invmat %*% response[insample, ])
 # Calculate forecasts and pnls out-of-sample
-forecasts <- (predictor[outsample, ] %*% coeff)
-pnls <- sign(forecasts)*response[outsample, ]
+forecastv <- (predictor[outsample, ] %*% coeff)
+pnls <- sign(forecastv)*response[outsample, ]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/strat_yc_outsample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample IR PCA strategy
-wealth <- cbind(returns[outsample, ], pnls)
+wealth <- cbind(retsp[outsample, ], pnls)
 colnames(wealth) <- c("VTI", "Strategy")
 colnamev <- colnames(wealth)
 dygraphs::dygraph(cumsum(wealth), main="Yield Curve Strategy Out-of-Sample") %>%
@@ -291,16 +291,16 @@ format(dates[1], "%Y")
 years <- paste0(seq(2001, 2022, 1), "-01-01")
 years <- as.Date(years)
 # Perform loop over yearly dates
-pnls <- lapply(3:(NROW(years)-1), function(i) {
+pnls <- lapply(3:(NROW(years)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
-  insample <- (dates > years[i-1]) & (dates < years[i])
-  outsample <- (dates >= years[i]) & (dates < years[i+1])
+  insample <- (dates > years[ep-1]) & (dates < years[ep])
+  outsample <- (dates >= years[ep]) & (dates < years[ep+1])
   # Calculate coefficients in-sample
   invmat <- MASS::ginv(predictor[insample, ])
   coeff <- drop(invmat %*% response[insample, ])
   # Calculate forecasts and pnls out-of-sample
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
       @
@@ -345,15 +345,15 @@ format(dates[1], "%m-%Y")
 format(dates[NROW(dates)], "%m-%Y")
 months <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month")
 # Perform loop over monthly dates
-pnls <- lapply(12:(NROW(months)-1), function(i) {
+pnls <- lapply(12:(NROW(months)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
-  insample <- (dates > months[i-11]) & (dates < months[i])
-  outsample <- (dates > months[i]) & (dates < months[i+1])
+  insample <- (dates > months[ep-11]) & (dates < months[ep])
+  outsample <- (dates > months[ep]) & (dates < months[ep+1])
   # Calculate forecasts and pnls out-of-sample
   invmat <- MASS::ginv(predictor[insample, ])
   coeff <- drop(invmat %*% response[insample, ])
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
       @
@@ -392,15 +392,15 @@ dygraphs::dygraph(cumsum(wealth), main="Rolling Monthly Yield Curve Strategy") %
 # Define weekly dates
 weeks <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks")
 # Perform loop over weekly dates
-pnls <- lapply(51:(NROW(weeks)-1), function(i) {
+pnls <- lapply(51:(NROW(weeks)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
-  insample <- (dates > weeks[i-10]) & (dates < weeks[i])
-  outsample <- (dates > weeks[i]) & (dates < weeks[i+1])
+  insample <- (dates > weeks[ep-10]) & (dates < weeks[ep])
+  outsample <- (dates > weeks[ep]) & (dates < weeks[ep+1])
   # Calculate forecasts and pnls out-of-sample
   invmat <- MASS::ginv(predictor[insample, ])
   coeff <- drop(invmat %*% response[insample, ])
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
       @
@@ -471,13 +471,13 @@ all.equal(zoo::coredata(predictor),
 invmat <- MASS::ginv(predictor)
 all.equal(invmat, invsvd)
 # Set tolerance for determining zero singular values
-precision <- sqrt(.Machine$double.eps)
+precv <- sqrt(.Machine$double.eps)
 # Check for zero singular values
 round(svdec$d, 12)
-not_zero <- (svdec$d > (precision * svdec$d[1]))
+notzero <- (svdec$d > (precv * svdec$d[1]))
 # Calculate regularized inverse from SVD
-invreg <- svdec$v[, not_zero] %*%
-  (t(svdec$u[, not_zero]) / svdec$d[not_zero])
+invreg <- svdec$v[, notzero] %*%
+  (t(svdec$u[, notzero]) / svdec$d[notzero])
 # Verify inverse property of invreg
 all.equal(zoo::coredata(predictor), 
           predictor %*% invreg %*% predictor)
@@ -490,7 +490,7 @@ all.equal(invreg, invmat)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Shrinkage of the Inverse Predictor Matrix}
+\subsection{Shrinkage Inverse of the Predictor Matrix}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -500,7 +500,7 @@ all.equal(invreg, invmat)
       \vskip1ex
       If the higher order singular values are very small then the inverse matrix will amplify the noise in the response matrix.
       \vskip1ex
-      \emph{Shrinkage} is the removal of small singular values, to improve the out-of-sample performance of the inverse matrix.
+      \emph{Eigen shrinkage} is the removal of small singular values, to improve the out-of-sample performance of the inverse matrix.
       \vskip1ex
       The \emph{shrinkage inverse} is obtained by removing the very small \emph{singular values}.
       \begin{displaymath}
@@ -514,14 +514,14 @@ all.equal(invreg, invmat)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate shrinkage inverse from SVD
 eigen_max <- 3
-inv_shrink <- svdec$v[, 1:eigen_max] %*%
+invreg <- svdec$v[, 1:eigen_max] %*%
   (t(svdec$u[, 1:eigen_max]) / svdec$d[1:eigen_max])
-# Inverse property fails for inv_shrink
+# Inverse property fails for invreg
 all.equal(zoo::coredata(predictor), 
-          predictor %*% inv_shrink %*% predictor)
+          predictor %*% invreg %*% predictor)
 # Calculate shrinkage inverse using RcppArmadillo
 inverse_rcpp <- HighFreq::calc_inv(predictor, eigen_max=eigen_max)
-all.equal(inv_shrink, inverse_rcpp, check.attributes=FALSE)
+all.equal(invreg, inverse_rcpp, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -544,15 +544,15 @@ all.equal(inv_shrink, inverse_rcpp, check.attributes=FALSE)
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Calculate in-sample pnls for different eigen_max values
-eigen_maxs <- 2:7
-pnls <- lapply(eigen_maxs, function(eigen_max) {
+eigenvals <- 2:7
+pnls <- lapply(eigenvals, function(eigen_max) {
   invmat <- HighFreq::calc_inv(predictor, eigen_max=eigen_max)
   coeff <- drop(invmat %*% response)
-  forecasts <- (predictor %*% coeff)
-  sign(forecasts)*response
+  forecastv <- (predictor %*% coeff)
+  sign(forecastv)*response
 })
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("eigen", eigen_maxs)
+colnames(pnls) <- paste0("eigen", eigenvals)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -585,15 +585,15 @@ dygraphs::dygraph(cumsum(pnls), main="In-Sample Returns of Shrinkage YC Strategi
 insample <- (dates < as.Date("2020-01-01"))
 outsample <- (dates >= as.Date("2020-01-01"))
 # Calculate in-sample pnls for different eigen_max values
-eigen_maxs <- 2:7
-pnls <- lapply(eigen_maxs, function(x) {
+eigenvals <- 2:7
+pnls <- lapply(eigenvals, function(x) {
   invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=x)
   coeff <- drop(invmat %*% response[insample, ])
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("eigen", eigen_maxs)
+colnames(pnls) <- paste0("eigen", eigenvals)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -612,13 +612,13 @@ dygraphs::dygraph(cumsum(pnls), main="Out-of-Sample Returns of Shrinkage YC Stra
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Monthly Yield Curve Strategy With Shrinkage}
+\subsection{Rolling Monthly Yield Curve Strategy With Eigen Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter look\_back intervals since it suppresses the response noise.
+      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter \texttt{look\_back} intervals since it suppresses the response noise.
       \vskip1ex
       In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{6} months.
       The coefficients are applied to perform out-of-sample forecasts in the following month.
@@ -630,15 +630,15 @@ months <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="mon
 # Perform loop over monthly dates
 look_back <- 6
 eigen_max <- 3
-pnls <- lapply((look_back+1):(NROW(months)-1), function(i) {
+pnls <- lapply((look_back+1):(NROW(months)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
-  insample <- (dates > months[i-look_back]) & (dates < months[i])
-  outsample <- (dates > months[i]) & (dates < months[i+1])
+  insample <- (dates > months[ep-look_back]) & (dates < months[ep])
+  outsample <- (dates > months[ep]) & (dates < months[ep+1])
   # Calculate forecasts and pnls out-of-sample
   invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=eigen_max)
   coeff <- drop(invmat %*% response[insample, ])
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
       @
@@ -679,15 +679,15 @@ weeks <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="week
 # Perform loop over weekly dates
 look_back <- 4
 eigen_max <- 4
-pnls <- lapply((look_back+1):(NROW(weeks)-1), function(i) {
+pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
-  insample <- (dates > weeks[i-look_back]) & (dates < weeks[i])
-  outsample <- (dates > weeks[i]) & (dates < weeks[i+1])
+  insample <- (dates > weeks[ep-look_back]) & (dates < weeks[ep])
+  outsample <- (dates > weeks[ep]) & (dates < weeks[ep+1])
   # Calculate forecasts and pnls out-of-sample
   invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=eigen_max)
   coeff <- drop(invmat %*% response[insample, ])
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
       @
@@ -741,16 +741,16 @@ dates <- zoo::index(closep)
 rates <- na.omit(rates[dates])
 closep <- closep[zoo::index(rates)]
 dates <- zoo::index(closep)
-returns <- rutils::diffit(closep)
-rates_diff <- rutils::diffit(log(rates))
+retsp <- rutils::diffit(log(closep))
+retsr <- rutils::diffit(log(rates))
 # Create a combined predictor matrix
 order_max <- 5
-predictor <- sapply(1:order_max, rutils::lagit, input=as.numeric(returns))
+predictor <- sapply(1:order_max, rutils::lagit, input=as.numeric(retsp))
 colnames(predictor) <- paste0("retslag", 1:NCOL(predictor))
-predictor <- cbind(predictor, rutils::lagit(rates_diff))
+predictor <- cbind(predictor, rutils::lagit(retsr))
 predictor <- cbind(rep(1, NROW(predictor)), predictor)
 colnames(predictor)[1] <- "intercept"
-response <- returns
+response <- retsp
       @
   \end{columns}
 \end{block}
@@ -773,15 +773,15 @@ response <- returns
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Calculate in-sample pnls for different eigen_max values
-eigen_maxs <- 2:11
-pnls <- lapply(eigen_maxs, function(eigen_max) {
+eigenvals <- 2:11
+pnls <- lapply(eigenvals, function(eigen_max) {
   invmat <- HighFreq::calc_inv(predictor, eigen_max=eigen_max)
   coeff <- drop(invmat %*% response)
-  forecasts <- (predictor %*% coeff)
-  sign(forecasts)*response
+  forecastv <- (predictor %*% coeff)
+  sign(forecastv)*response
 })
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("eigen", eigen_maxs)
+colnames(pnls) <- paste0("eigen", eigenvals)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -814,15 +814,15 @@ dygraphs::dygraph(cumsum(pnls), main="In-Sample Returns of Combined Strategies W
 insample <- (dates < as.Date("2020-01-01"))
 outsample <- (dates >= as.Date("2020-01-01"))
 # Calculate in-sample pnls for different eigen_max values
-eigen_maxs <- 2:11
-pnls <- lapply(eigen_maxs, function(x) {
+eigenvals <- 2:11
+pnls <- lapply(eigenvals, function(x) {
   invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=x)
   coeff <- drop(invmat %*% response[insample, ])
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("eigen", eigen_maxs)
+colnames(pnls) <- paste0("eigen", eigenvals)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -841,13 +841,13 @@ dygraphs::dygraph(cumsum(pnls), main="Out-of-Sample Returns of Combined Strategi
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Rolling Monthly Combined Strategy With Shrinkage}
+\subsection{draft: Rolling Monthly Combined Strategy With Eigen Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter look\_back intervals since it suppresses the response noise.
+      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter \texttt{look\_back} intervals since it suppresses the response noise.
       \vskip1ex
       In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{6} months.
       The coefficients are applied to perform out-of-sample forecasts in the following month.
@@ -859,15 +859,15 @@ months <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="mon
 # Perform loop over monthly dates
 look_back <- 6
 eigen_max <- 3
-pnls <- lapply((look_back+1):(NROW(months)-1), function(i) {
+pnls <- lapply((look_back+1):(NROW(months)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
-  insample <- (dates > months[i-look_back]) & (dates < months[i])
-  outsample <- (dates > months[i]) & (dates < months[i+1])
+  insample <- (dates > months[ep-look_back]) & (dates < months[ep])
+  outsample <- (dates > months[ep]) & (dates < months[ep+1])
   # Calculate forecasts and pnls out-of-sample
   invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=eigen_max)
   coeff <- drop(invmat %*% response[insample, ])
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
       @
@@ -908,15 +908,15 @@ weeks <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="week
 # Perform loop over weekly dates
 look_back <- 8
 eigen_max <- 4
-pnls <- lapply((look_back+1):(NROW(weeks)-1), function(i) {
+pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
-  insample <- (dates > weeks[i-look_back]) & (dates < weeks[i])
-  outsample <- (dates > weeks[i]) & (dates < weeks[i+1])
+  insample <- (dates > weeks[ep-look_back]) & (dates < weeks[ep])
+  outsample <- (dates > weeks[ep]) & (dates < weeks[ep+1])
   # Calculate forecasts and pnls out-of-sample
   invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=eigen_max)
   coeff <- drop(invmat %*% response[insample, ])
-  forecasts <- (predictor[outsample, ] %*% coeff)
-  sign(forecasts)*response[outsample, ]
+  forecastv <- (predictor[outsample, ] %*% coeff)
+  sign(forecastv)*response[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
       @
@@ -958,18 +958,18 @@ dygraphs::dygraph(cumsum(wealth), main="Rolling Weekly Shrinkage YC Strategy") %
 # Find optimal nagg for predictor
 naggs <- 5:100
 tvalues <- sapply(naggs, function(nagg) {
-  predictor <- roll::roll_mean(rates_diff, width=nagg, min_obs=1)
+  predictor <- roll::roll_mean(retsr, width=nagg, min_obs=1)
   predictor <- cbind(rep(1, NROW(predictor)), predictor)
   predictor <- rutils::lagit(predictor)
   model <- lm(response ~ predictor - 1)
-  model_sum <- summary(model)
-  max(abs(model_sum$coefficients[, 3][-1]))
+  modelsum <- summary(model)
+  max(abs(modelsum$coefficients[, 3][-1]))
 })  # end sapply
 naggs[which.max(tvalues)]
 plot(naggs, tvalues, t="l", col="blue", lwd=2)
 # Calculate aggregated predictor
 nagg <- 53
-predictor <- roll::roll_mean(rates_diff, width=nagg, min_obs=1)
+predictor <- roll::roll_mean(retsr, width=nagg, min_obs=1)
 predictor <- rutils::lagit(predictor)
 predictor <- cbind(rep(1, NROW(predictor)), predictor)
 model <- lm(response ~ predictor - 1)
@@ -982,10 +982,10 @@ summary(model)
 # Calculate forecasts and pnls in-sample
 invmat <- MASS::ginv(predictor)
 coeff <- drop(invmat %*% response)
-forecasts <- (predictor %*% coeff)
-pnls <- sign(forecasts)*response
+forecastv <- (predictor %*% coeff)
+pnls <- sign(forecastv)*response
 # Plot dygraph of in-sample IR strategy
-wealth <- cbind(returns, pnls)
+wealth <- cbind(retsp, pnls)
 colnames(wealth) <- c("VTI", "Strategy")
 colnamev <- colnames(wealth)
 dygraphs::dygraph(cumsum(wealth), main="Aggregated YC Strategy In-sample") %>%
@@ -1020,15 +1020,15 @@ outsample <- (dates >= as.Date("2020-01-01"))
 # Calculate forecasts and pnls out-of-sample
 invmat <- MASS::ginv(predictor[insample, ])
 coeff <- drop(invmat %*% response[insample, ])
-forecasts <- (predictor[outsample, ] %*% coeff)
-pnls <- sign(forecasts)*response[outsample, ]
+forecastv <- (predictor[outsample, ] %*% coeff)
+pnls <- sign(forecastv)*response[outsample, ]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/strat_yc_outsample_agg.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample YC strategy
-wealth <- cbind(returns[outsample, ], pnls)
+wealth <- cbind(retsp[outsample, ], pnls)
 colnames(wealth) <- c("VTI", "Strategy")
 colnamev <- colnames(wealth)
 dygraphs::dygraph(cumsum(wealth), main="Aggregated YC Strategy Out-of-Sample") %>%
@@ -1079,7 +1079,7 @@ sum(is.na(prices))
 dates <- zoo::index(prices)
 vti <- vti[dates]
 nrows <- NROW(prices)
-ncols <- NCOL(prices)
+nstocks <- NCOL(prices)
 # Normalize the prices so that they start at 1
 pricesn <- lapply(prices, function(x) x/as.numeric(x[1]))
 pricesn <- rutils::do_call(cbind, pricesn)
@@ -1096,7 +1096,7 @@ colnames(indeks) <- "Index"
 # Select a random, equal dollar-weighted portfolio of 5 stocks
 nstocks <- 5
 set.seed(1121)
-samplev <- sample.int(n=ncols, size=nstocks, replace=FALSE)
+samplev <- sample.int(n=nstocks, size=nstocks, replace=FALSE)
 portf <- pricesn[, samplev]
 portf <- rowMeans(portf)
 portf <- xts::xts(portf, order.by=dates)
@@ -1133,7 +1133,7 @@ dygraphs::dygraph(wealth, main="Stock Index and Random Portfolio") %>%
 set.seed(1121)
 nportf <- 10
 portfs <- sapply(1:nportf, function(x) {
-  prices <- pricesn[, sample.int(n=ncols, size=nstocks, replace=FALSE)]
+  prices <- pricesn[, sample.int(n=nstocks, size=nstocks, replace=FALSE)]
   rowMeans(prices)
 })  # end sapply
 portfs <- xts::xts(portfs, order.by=dates)
@@ -1178,7 +1178,7 @@ dygraphs::dygraph(combined, main="Stock Index and Random Portfolios") %>%
       \vskip1ex
       The out-of-sample performance of the best performing stocks in-sample, is not any better than the index.
       <<echo=TRUE,eval=FALSE>>=
-# Define in-sample and out-of-sample intervals
+# Define cutoff between in-sample and out-of-sample intervals
 cutoff <- nrows %/% 2
 dates[cutoff]
 # Calculate the 10 best performing stocks in-sample
@@ -1196,7 +1196,7 @@ pricos <- sum(pricis[cutoff, ])*pricos/sum(pricos[1, ])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_stocks_outsample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_stocks_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Combine indeks with out-of-sample stock portfolio returns
 wealth <- rbind(pricis, pricos)
@@ -1219,13 +1219,13 @@ dygraphs::dygraph(log(wealth), main="Out-of-sample Log Prices of Stock Portfolio
 
 
 %%%%%%%%%%%%%%%
-\subsection{Momentum Strategy}
+\subsection{Rolling Momentum Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In a \emph{momentum strategy}, the stock portfolio is rebalanced periodically and held out-of-sample.
+      In a \emph{rolling momentum strategy}, the portfolio is rebalanced periodically and held out-of-sample.
       \vskip1ex
       \emph{Momentum strategies} can be \emph{backtested} by specifying the portfolio rebalancing frequency, the formation period, and the holding period:
       \setlength{\leftmargini}{1.0em}
@@ -1234,7 +1234,7 @@ dygraphs::dygraph(log(wealth), main="Out-of-sample Log Prices of Stock Portfolio
         \item Calculate the \emph{end points} for portfolio rebalancing,
         \item Define an objective function for calculating the past performance of the stocks,
         \item Calculate the past performance over the \emph{look-back} formation intervals,
-        \item Calculate the portfolio weights from the past performance,
+        \item Calculate the portfolio weights from the past (in-sample) performance,
         \item Calculate the out-of-sample momentum strategy returns by applying the portfolio weights to the future returns,
         \item Apply a volatility scaling factor to the out-of-sample returns,
         \item Calculate the transaction costs and subtract them from the strategy returns.
@@ -1246,32 +1246,32 @@ dygraphs::dygraph(log(wealth), main="Out-of-sample Log Prices of Stock Portfolio
 retsp <- rutils::diffit(prices)/rutils::lagit(prices, lagg=1, pad_zeros=FALSE)
 # Define momentum parameters
 look_back <- 8
-objfun <- function(returns) prod(1+returns)
+objfun <- function(retsp) prod(1+retsp)
 nstocks <- 10
 # Calculate a vector of monthly end points
 endp <- rutils::calc_endpoints(retsp, interval="months")
 endp[2] <- 11
 npts <- NROW(endp)
 # Perform loop over the end points
-pnls <- lapply(2:(npts-1), function(it) {
+pnls <- lapply(2:(npts-1), function(ep) {
   # Select the look-back returns
-  startp <- endp[max(1, it-look_back+1)]
-  retslb <- retsp[startp:endp[it], ]
+  startp <- endp[max(1, ep-look_back)]
+  insample <- retsp[startp:endp[ep], ]
   # Calculate the best performing stocks in-sample
-  perfstat <- sapply(retslb, objfun)
+  perfstat <- sapply(insample, objfun)
   perfstat[!is.finite(perfstat)] <- 0
   perfstat <- sort(perfstat, decreasing=TRUE)
   symbolv <- names(head(perfstat, nstocks))
   # Calculate the in-sample portfolio volatility
-  retst <- rowMeans(cumprod(1+retslb))
+  retst <- rowMeans(cumprod(1+insample))
   retst <- rutils::diffit(retst)/rutils::lagit(retst, lagg=1, pad_zeros=FALSE)
-  retsportf <- retslb[, symbolv]
+  retsportf <- insample[, symbolv]
   retsportf <- rowMeans(cumprod(1+retsportf))
   retsportf <- rutils::diffit(retsportf)/rutils::lagit(retsportf, lagg=1, pad_zeros=FALSE)
   # Calculate the volatility scale factor
   scalef <- sd(retst)/sd(retsportf)
   # Calculate the out-of-sample portfolio returns
-  retsos <- retsp[(endp[it]+1):endp[it+1], symbolv]
+  retsos <- retsp[(endp[ep]+1):endp[ep+1], symbolv]
   retsos <- rowMeans(cumprod(1+retsos))
   retsos <- rutils::diffit(retsos)/rutils::lagit(retsos, lagg=1, pad_zeros=FALSE)
   # Scale the out-of-sample portfolio returns
@@ -1333,36 +1333,36 @@ dygraphs::dygraph(log(wealth[endp]), main="Log Stock Index and Momentum Strategy
     \column{0.5\textwidth}
       Performing a \emph{backtest} allows finding the optimal \emph{momentum} (trading) strategy parameters, such as the \emph{look-back interval}.
       \vskip1ex
-      The function \texttt{backtestmomb()} simulates (backtests) a \emph{momentum strategy} which buys equal dollar amounts of the best performing stocks.
+      The function \texttt{btmomtop()} simulates (backtests) a \emph{momentum strategy} which buys equal dollar amounts of the best performing stocks.
       \vskip1ex
-      The function \texttt{backtestmomb()} can be used to find the best choice of \emph{momentum strategy} parameters.
+      The function \texttt{btmomtop()} can be used to find the best choice of \emph{momentum strategy} parameters.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-backtestmomb <- function(returns,
-  objfun=function(returns) (prod(1+returns)/sd(returns)),
+btmomtop <- function(rets,
+  objfun=function(rets) (prod(1+rets)/sd(rets)),
   look_back=12, rfreq="months", nstocks=10, bid_offer=0.001,
-  endp=rutils::calc_endpoints(returns, interval=rfreq), ...) {
+  endp=rutils::calc_endpoints(rets, interval=rfreq), ...) {
   # Perform loop over end points
   npts <- NROW(endp)
-  pnls <- lapply(2:(npts-1), function(it) {
+  pnls <- lapply(2:(npts-1), function(ep) {
     # Select the look-back returns
-    startp <- endp[max(1, it-look_back+1)]
-    retslb <- returns[startp:endp[it], ]
+    startp <- endp[max(1, ep-look_back)]
+    insample <- rets[startp:endp[ep], ]
     # Calculate the best performing stocks in-sample
-    perfstat <- sapply(retslb, objfun)
+    perfstat <- sapply(insample, objfun)
     perfstat[!is.finite(perfstat)] <- 0
     perfstat <- sort(perfstat, decreasing=TRUE)
     symbolb <- names(head(perfstat, nstocks))
     # Calculate the in-sample portfolio volatility
-    retst <- rowMeans(cumprod(1+retslb))
+    retst <- rowMeans(cumprod(1+insample))
     retst <- rutils::diffit(retst)/rutils::lagit(retst, lagg=1, pad_zeros=FALSE)
-    retsportf <- retslb[, symbolb]
+    retsportf <- insample[, symbolb]
     retsportf <- rowMeans(cumprod(1+retsportf))
     retsportf <- rutils::diffit(retsportf)/rutils::lagit(retsportf, lagg=1, pad_zeros=FALSE)
     scalef <- sd(retst)/sd(retsportf)
     # Calculate the out-of-sample portfolio returns
-    retsos <- returns[(endp[it]+1):endp[it+1], symbolb]
+    retsos <- rets[(endp[ep]+1):endp[ep+1], symbolb]
     retsos <- rowMeans(cumprod(1+retsos))
     retsos <- rutils::diffit(retsos)/rutils::lagit(retsos, lagg=1, pad_zeros=FALSE)
     # Scale the out-of-sample portfolio returns
@@ -1370,7 +1370,7 @@ backtestmomb <- function(returns,
   })  # end lapply
   pnls <- rutils::do_call(c, pnls)
   pnls
-}  # end backtestmomb
+}  # end btmomtop
 @
   \end{columns}
 \end{block}
@@ -1405,17 +1405,18 @@ backtestmomb <- function(returns,
 # Perform backtests for vector of look-back intervals
 source("/Users/jerzy/Develop/R/backtest_functions.R")
 look_backs <- seq(3, 15, by=1)
-objfun <- function(returns) prod(1+returns)
-pnlsl <- lapply(look_backs, backtestmomb, returns=retsp, endp=endp, objfun=objfun)
+objfun <- function(rets) prod(1+rets)
+pnlsl <- lapply(look_backs, btmomtop, rets=retsp, endp=endp, objfun=objfun)
 profilev <- sapply(pnlsl, function(pnl) sum(pnl)/sd(pnl))
-look_backs[which.max(profilev)]
+whichmax <- which.max(profilev)
+look_backs[whichmax]
 # Plot momemntum profile
 plot(x=look_backs, y=profilev, t="l",
   main="Momemntum PnL as Function of Look-back Interval",
   xlab="look-back (months)", ylab="pnl")
 # Calculate best pnls of momentum strategy
-whichlb <- which.max(profilev)
-pnls <- pnlsl[[whichlb]]
+whichmax <- whichmax
+pnls <- pnlsl[[whichmax]]
 pnls <- c(retsu, pnls)
 pnls <- cumprod(1+pnls)
 pnls <- xts::xts(pnls, order.by=dates)
@@ -1493,9 +1494,9 @@ dygraphs::dygraph(wealth[endp], main="VTI vs MTUM ETF") %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define performance function as Sharpe ratio
-objfun <- function(returns) sum(returns)/sd(returns)
+objfun <- function(rets) sum(rets)/sd(rets)
 # Or
-objfun <- function(returns) prod(1+returns)/sd(returns)
+objfun <- function(rets) prod(1+rets)/sd(rets)
 # Calculate performance statistics over look-back intervals
 perfstat <- sapply(retsp[endp[1]:endp[2]], objfun)
 perfstat[!is.finite(perfstat)] <- 0
@@ -1506,7 +1507,7 @@ nstocks <- 10
 symbolb <- names(head(perfstat, nstocks))
 symbolw <- names(tail(perfstat, nstocks))
 # Calculate equal weights for the best and worst performing stocks
-weightv <- numeric(ncols)
+weightv <- numeric(nstocks)
 names(weightv) <- colnames(retsp)
 weightv[symbolb] <- 1
 weightv[symbolw] <- (-1)
@@ -1534,36 +1535,36 @@ retsportf <- retsp %*% weightv
     \column{0.5\textwidth}
       Performing a \emph{backtest} allows finding the optimal \emph{momentum} (trading) strategy parameters, such as the \emph{look-back interval}.
       \vskip1ex
-      The function \texttt{backtestmomw()} simulates (backtests) a \emph{momentum strategy} which buys equal dollar amounts of the best performing stocks.
+      The function \texttt{btmomweight()} simulates (backtests) a \emph{momentum strategy} which buys dollar amounts proportional to the past performance of the stocks.
       \vskip1ex
-      The function \texttt{backtestmomw()} can be used to find the best choice of \emph{momentum strategy} parameters.
+      The function \texttt{btmomweight()} can be used to find the best choice of \emph{momentum strategy} parameters.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-backtestmomw <- function(returns,
-  objfun=function(returns) (prod(1+returns)/sd(returns)),
-  look_back=12, rfreq="months", nstocks=10, bid_offer=0.001,
-  endp=rutils::calc_endpoints(returns, interval=rfreq), ...) {
+btmomweight <- function(rets,
+  objfun=function(rets) (prod(1+rets)/sd(rets)),
+  look_back=12, rfreq="months", bid_offer=0.001,
+  endp=rutils::calc_endpoints(rets, interval=rfreq), ...) {
   # Perform loop over end points
   npts <- NROW(endp)
-  pnls <- lapply(1:(npts-1), function(it) {
+  pnls <- lapply(1:(npts-1), function(ep) {
     # Select the look-back returns
-    startp <- endp[max(1, it-look_back+1)]
-    retslb <- returns[startp:endp[it], ]
+    startp <- endp[max(1, ep-look_back)]
+    insample <- rets[startp:endp[ep], ]
     # Calculate weights proportional to performance
-    perfstat <- sapply(retslb, objfun)
+    perfstat <- sapply(insample, objfun)
     perfstat[!is.finite(perfstat)] <- 0
-    weightv <- drop(perfstat)
+    weightv <- perfstat
     # Scale weights so sum of squares is equal to 1
     weightv <- weightv/sqrt(sum(weightv^2))
     weightv[!is.finite(weightv)] <- 0
     # Calculate the out-of-sample portfolio returns
-    retsos <- returns[(endp[it]+1):endp[it+1], ] %*% weightv
+    retsos <- rets[(endp[ep]+1):endp[ep+1], ] %*% weightv
     retsos
   })  # end lapply
   pnls <- rutils::do_call(c, pnls)
   pnls
-}  # end backtestmomw
+}  # end btmomweight
 @
   \end{columns}
 \end{block}
@@ -1607,7 +1608,7 @@ npts <- NROW(endp)
 # Perform backtests for vector of look-back intervals
 look_backs <- seq(3, 15, by=1)
 objfun <- function(retsp) sum(retsp)/sd(retsp)
-pnlsl <- lapply(look_backs, backtestmomw, returns=retsp, endp=endp, objfun=objfun)
+pnlsl <- lapply(look_backs, btmomweight, rets=retsp, endp=endp, objfun=objfun)
 profilev <- sapply(pnlsl, function(pnl) prod(1+pnl)/sd(pnl))
 # Plot momemntum PnLs
 x11(width=6, height=5)
@@ -1628,15 +1629,16 @@ plot(x=look_backs, y=profilev, t="l",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The momentum strategy for stocks produces a slightly lower absolute return than the index, but it has a slightly higher Sharpe ratio.
+      The momentum strategy for ETFs produces a slightly lower absolute return than the index, but it has a slightly higher Sharpe ratio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate best pnls of momentum strategy
-whichlb <- which.max(profilev)
-pnls <- pnlsl[[whichlb]]
+whichmax <- which.max(profilev)
+look_backs[whichmax]
+pnls <- pnlsl[[whichmax]]
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
 all_weather <- retsp %*% weightsaw
-# Scale the pnls of momentum strategy
+# Scale the momentum volatility to all_weather
 pnls <- sd(all_weather)*pnls/sd(pnls)
 # Calculate the Sharpe and Sortino ratios
 wealth <- cbind(all_weather, pnls)
@@ -1677,13 +1679,13 @@ dygraphs::dygraph(log(wealth)[endp], main="Momentum Strategy and All-weather") %
       The weights are scaled to limit the portfolio \emph{leverage} and its market \emph{beta}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the momentum weights
-look_back <- look_backs[whichlb]
-weightv <- lapply(1:(npts-1), function(it) {
+look_back <- look_backs[whichmax]
+weightv <- lapply(1:(npts-1), function(ep) {
   # Select the look-back returns
-  startp <- endp[max(1, it-look_back+1)]
-  retslb <- retsp[startp:endp[it], ]
+  startp <- endp[max(1, ep-look_back)]
+  insample <- retsp[startp:endp[ep], ]
   # Calculate weights proportional to performance
-  perfstat <- sapply(retslb, objfun)
+  perfstat <- sapply(insample, objfun)
   perfstat[!is.finite(perfstat)] <- 0
   weightv <- drop(perfstat)
   # Scale weights so sum of squares is equal to 1
@@ -1890,23 +1892,28 @@ weightv <- weightv/sqrt(rowSums(weightv^2))
 weightv <- rutils::lagit(weightv)
 sum(is.na(weightv))
 # Calculate momentum profits and losses
-pnls <- rowMeans(weightv*retsp)
+pnls <- rowSums(weightv*retsp)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/momentum_etf_daily.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate transaction costs
-bid_offer <- 0.001
+bid_offer <- 0.0
 costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
 pnls <- (pnls - costs)
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
 all_weather <- retsp %*% weightsaw
+# Scale the momentum volatility to all_weather
+pnls <- sd(all_weather)*pnls/sd(pnls)
 # Calculate the wealth of momentum returns
 wealth <- xts::xts(cbind(all_weather, pnls), order.by=dates)
 colnames(wealth) <- c("All-Weather", "Momentum")
 cor(wealth)
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealth, 
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of the momentum strategy returns
 dygraphs::dygraph(log(cumprod(1+wealth))[endp], main="Daily Momentum Strategy vs All-Weather") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -1925,7 +1932,7 @@ dygraphs::dygraph(log(cumprod(1+wealth))[endp], main="Daily Momentum Strategy vs
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{momentum\_daily()} simulates a momentum strategy with \emph{daily rebalancing}.
+      The function \texttt{btmomdaily()} simulates a momentum strategy with \emph{daily rebalancing}.
       \vskip1ex
       A momentum strategy with \emph{daily rebalancing} requires more computations so compiled \texttt{C++} functions are preferred to \texttt{apply()} loops.
       \vskip1ex
@@ -1935,29 +1942,29 @@ dygraphs::dygraph(log(cumprod(1+wealth))[endp], main="Daily Momentum Strategy vs
       \vskip1ex
       Performing a \emph{backtest} allows finding the optimal \emph{momentum} (trading) strategy parameters, such as the \emph{look-back interval}.
       \vskip1ex
-      The function \texttt{backtestmomw()} can be used to find the best choice of \emph{momentum strategy} parameters.
+      The function \texttt{btmomweight()} can be used to find the best choice of \emph{momentum strategy} parameters.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
-momentum_daily <- function(retsp, look_back=252, bid_offer=0.001, trend=1, ...) {
+btmomdaily <- function(rets, look_back=252, bid_offer=0.001, trend=1, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate rolling variance
-  variance <- roll::roll_var(retsp, width=look_back, min_obs=1)
+  variance <- roll::roll_var(rets, width=look_back, min_obs=1)
   variance[1, ] <- 1
   variance[variance <= 0] <- 1
 # Calculate rolling Sharpe
-  perfstat <- roll::roll_mean(retsp, width=look_back, min_obs=1)
+  perfstat <- roll::roll_mean(rets, width=look_back, min_obs=1)
   weights <- perfstat/sqrt(variance)
   weights <- weights/sqrt(rowSums(weights^2))
   weights <- rutils::lagit(weights)
   # Calculate momentum profits and losses
-  pnls <- trend*rowMeans(weights*retsp)
+  pnls <- trend*rowSums(weights*rets)
   # Calculate transaction costs
   costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
   (pnls - costs)
-}  # end momentum_daily
+}  # end btmomdaily
 @
   \end{columns}
 \end{block}
@@ -1972,18 +1979,23 @@ momentum_daily <- function(retsp, look_back=252, bid_offer=0.001, trend=1, ...) 
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of \emph{look-back} parameters.
+      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{btmomdaily()} in a loop over a vector of \emph{look-back} parameters.
       \vskip1ex
-      The \emph{momentum} strategies do not perform well, especially the ones with a small \emph{look-back} parameter.
+      The best performing daily ETF \emph{momentum} strategies are with \emph{look-back} parameters between \texttt{100} and \texttt{120} days.
+      \vskip1ex
+      The \emph{momentum} strategies do not perform well, especially the ones with a long \emph{look-back} parameter.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate a daily ETF momentum strategy
 source("/Users/jerzy/Develop/lecture_slides/scripts/back_test.R")
-pnls <- momentum_daily(retsp=retsp, look_back=152,
+pnls <- btmomdaily(rets=retsp, look_back=152,
   bid_offer=bid_offer)
 # Perform sapply loop over look_backs
-look_backs <- seq(50, 300, by=20)
-pnls <- sapply(look_backs, momentum_daily,
-  retsp=retsp, bid_offer=bid_offer)
+look_backs <- seq(90, 190, by=10)
+pnls <- sapply(look_backs, btmomdaily,
+  rets=retsp, bid_offer=bid_offer)
+# Scale the momentum volatility to all_weather
+pnls <- apply(pnls, MARGIN=2, 
+  function(pnl) sd(all_weather)*pnl/sd(pnl))
 colnames(pnls) <- paste0("look_back=", look_backs)
 pnls <- xts::xts(pnls, zoo::index(retsp))
 tail(pnls)
@@ -2034,31 +2046,31 @@ legend("bottomleft", legend=colnames(pnls),
       \vskip1ex
       The optimal length of the \emph{holding period} can be determined by cross-validation (backtesting).
       \vskip1ex
-      The function \texttt{momentum\_daily\_hold()} simulates a momentum strategy with \emph{daily rebalancing} with a holding period.
+      The function \texttt{btmomdailyhold()} simulates a momentum strategy with \emph{daily rebalancing} with a holding period.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
-momentum_daily_hold <- function(retsp, look_back=252, holdperiod=5, bid_offer=0.001, trend=1, ...) {
+btmomdailyhold <- function(rets, look_back=252, holdp=5, bid_offer=0.001, trend=1, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate rolling variance
-  variance <- roll::roll_var(retsp, width=look_back, min_obs=1)
+  variance <- roll::roll_var(rets, width=look_back, min_obs=1)
   variance[1, ] <- 1
   variance[variance <= 0] <- 1
   # Calculate rolling Sharpe
-  perfstat <- roll::roll_mean(retsp, width=look_back, min_obs=1)
+  perfstat <- roll::roll_mean(rets, width=look_back, min_obs=1)
   weightv <- perfstat/sqrt(variance)
   weightv <- weightv/sqrt(rowSums(weightv^2))
-  weightv <- rutils::lagit(weightv)
   # Average the weights over holding period
-  weightv <- roll::roll_mean(weightv, width=holdperiod, min_obs=1)
+  weightv <- roll::roll_mean(weightv, width=holdp, min_obs=1)
+  weightv <- rutils::lagit(weightv)
   # Calculate momentum profits and losses
-  pnls <- trend*rowMeans(weightv*retsp)
+  pnls <- trend*rowSums(weightv*rets)
   # Calculate transaction costs
   costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
   (pnls - costs)
-}  # end momentum_daily_hold
+}  # end btmomdailyhold
 @
   \end{columns}
 \end{block}
@@ -2073,15 +2085,18 @@ momentum_daily_hold <- function(retsp, look_back=252, holdperiod=5, bid_offer=0.
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of holding periods.
+      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{btmomdaily()} in a loop over a vector of holding periods.
       \vskip1ex
       The daily \emph{momentum} strategies with a holding period perform much better.
       <<echo=TRUE,eval=FALSE>>=
 # Perform sapply loop over holding periods
-holdperiods <- seq(2, 11, by=2)
-pnls <- sapply(holdperiods, momentum_daily_hold, look_back=120,
-                  retsp=retsp, bid_offer=bid_offer)
-colnames(pnls) <- paste0("holding=", holdperiods)
+holdpv <- seq(2, 11, by=2)
+pnls <- sapply(holdpv, btmomdailyhold, look_back=100,
+                  rets=retsp, bid_offer=bid_offer)
+# Scale the momentum volatility to all_weather
+pnls <- apply(pnls, MARGIN=2, 
+  function(pnl) sd(all_weather)*pnl/sd(pnl))
+colnames(pnls) <- paste0("holding=", holdpv)
 pnls <- xts::xts(pnls, zoo::index(retsp))
       @
     \column{0.5\textwidth}
@@ -2118,20 +2133,20 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=(-(1:1)),eval=FALSE>>=
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
-momentum_daily <- function(retsp, look_back=252, holdperiod=5, bid_offer=0.001, trend=1, ...) {
+btmomdaily <- function(rets, look_back=252, holdp=5, bid_offer=0.001, trend=1, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   
-  position_s <- matrixStats::rowRanks(retsp)
-  position_s <- (position_s - rowMeans(position_s))
-  position_s <- HighFreq::lagit(position_s, lagg=1)
-  trend*rowMeans(position_s*retsp)
+  posit <- matrixStats::rowRanks(rets)
+  posit <- (posit - rowMeans(posit))
+  posit <- HighFreq::lagit(posit, lagg=1)
+  trend*rowMeans(posit*rets)
   
-}  # end momentum_daily
+}  # end btmomdaily
 
 # Load ETF data
 symbolv <- rutils::etfenv$symbolv
 symbolv <- symbolv[!(symbolv %in% c("TLT", "IEF", "MTUM", "QUAL", "VLUE", "USMV"))]
-retsp <- rutils::etfenv$returns[, symbolv]
+retsp <- rutils::etfenv$rets[, symbolv]
 retsp[1, is.na(retsp[1, ])] <- 0
 retsp <- zoo::na.locf(retsp, na.rm=FALSE)
 
@@ -2140,11 +2155,11 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retsp <- retsp["2000/"]
 retsp[1, is.na(retsp[1, ])] <- 0
 retsp <- zoo::na.locf(retsp, na.rm=FALSE)
-ncols <- NCOL(retsp)
-retsp <- retsp[, !(retsp[ncols %/% 10, ] == 0)]
+nstocks <- NCOL(retsp)
+retsp <- retsp[, !(retsp[nstocks %/% 10, ] == 0)]
 
 
-pnls <- momentum_daily(retsp=retsp, trend=(-1))
+pnls <- btmomdaily(rets=retsp, trend=(-1))
 pnls <- xts::xts(pnls, zoo::index(retsp))
 colnames(pnls) <- "PnL"
 dygraphs::dygraph(cumsum(pnls), main="Daily Momentum Strategy") %>%
@@ -2164,21 +2179,21 @@ dygraphs::dygraph(cumsum(pnls), main="Daily Momentum Strategy") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of holding periods.
+      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{btmomdaily()} in a loop over a vector of holding periods.
       \vskip1ex
       The daily \emph{momentum} strategies with a holding period perform much better.
       <<echo=TRUE,eval=FALSE>>=
 # Perform sapply loop over look_backs
 look_backs <- seq(50, 300, by=50)
-pnls <- sapply(look_backs, momentum_daily,
-  retsp=retsp, bid_offer=bid_offer)
+pnls <- sapply(look_backs, btmomdaily,
+  rets=retsp, bid_offer=bid_offer)
 colnames(pnls) <- paste0("look_back=", look_backs)
 pnls <- xts::xts(pnls, zoo::index(retsp))
 
 # Perform sapply loop over holding periods
-holdperiods <- seq(2, 11, by=2)
-pnls <- sapply(holdperiods, momentum_daily, look_back=120, retsp=retsp)
-colnames(pnls) <- paste0("holding=", holdperiods)
+holdpv <- seq(2, 11, by=2)
+pnls <- sapply(holdpv, btmomdaily, look_back=120, rets=retsp)
+colnames(pnls) <- paste0("holding=", holdpv)
 pnls <- xts::xts(pnls, zoo::index(retsp))
       @
     \column{0.5\textwidth}
@@ -2213,30 +2228,32 @@ legend("bottomleft", legend=colnames(pnls),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple \emph{S\&P500} \emph{momentum} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of \emph{look-back} parameters.
+      Multiple \emph{S\&P500} \emph{momentum} strategies can be backtested by calling the function \texttt{btmomdaily()} in a loop over a vector of \emph{look-back} parameters.
       \vskip1ex
-      The \emph{momentum} strategies do not perform well, especially the ones with a small \emph{look-back} parameter.
+      The best performing daily \emph{S\&P500} \emph{momentum} strategies are with \emph{look-back} parameters between \texttt{120} and \texttt{160} days.
+      \vskip1ex
+      The \emph{momentum} strategies do not perform well, especially the ones with a short \emph{look-back} parameter.
       <<echo=TRUE,eval=FALSE>>=
 # Load daily S&P500 percentage stock returns.
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns100
-returns100 <- returns100["2000/"]
-returns100[1, is.na(returns100[1, ])] <- 0
-returns100 <- zoo::na.locf(returns100, na.rm=FALSE)
+retsp <- returns100["2000/"]
+retsp[1, is.na(retsp[1, ])] <- 0
+retsp <- zoo::na.locf(retsp, na.rm=FALSE)
 # Simulate a daily S&P500 momentum strategy.
 # Perform sapply loop over look_backs
-look_backs <- seq(100, 300, by=20)
-pnls <- sapply(look_backs, momentum_daily,
-  holdperiod=5, retsp=returns100, bid_offer=0)
+look_backs <- seq(100, 170, by=10)
+pnls <- sapply(look_backs, btmomdailyhold,
+  holdp=5, rets=retsp, bid_offer=0)
 colnames(pnls) <- paste0("look_back=", look_backs)
-pnls <- xts::xts(pnls, zoo::index(returns100))
+pnls <- xts::xts(pnls, zoo::index(retsp))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/momentum_sp500_mult.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of monthly end points
-endp <- rutils::calc_endpoints(returns100, interval="months")
+endp <- rutils::calc_endpoints(retsp, interval="months")
 # Plot dygraph of daily S&P500 momentum strategies
 colors <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endp], main="Daily S&P500 Momentum Strategies") %>%
@@ -2264,7 +2281,7 @@ legend("bottomleft", legend=colnames(pnls),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple \emph{S\&P500} \emph{mean reverting} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of \emph{look-back} parameters.
+      Multiple \emph{S\&P500} \emph{mean reverting} strategies can be backtested by calling the function \texttt{btmomdaily()} in a loop over a vector of \emph{look-back} parameters.
       \vskip1ex
       The \emph{mean reverting} strategies for the \emph{S\&P500} constituents perform the best for short \emph{look-back} parameters.
       \vskip1ex
@@ -2272,10 +2289,10 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 # Perform sapply loop over look_backs
 look_backs <- seq(3, 20, by=2)
-pnls <- sapply(look_backs, momentum_daily,
-  holdperiod=5, retsp=returns100, bid_offer=0, trend=(-1))
+pnls <- sapply(look_backs, btmomdaily,
+  rets=retsp, bid_offer=0, trend=(-1))
 colnames(pnls) <- paste0("look_back=", look_backs)
-pnls <- xts::xts(pnls, zoo::index(returns100))
+pnls <- xts::xts(pnls, zoo::index(retsp))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2372,7 +2389,7 @@ dygraphs::dygraph(cumsum(wealth), main="Monthly Momentum Strategy vs All-Weather
         \item Specify \emph{look-back} intervals for portfolio formation, and \emph{look-forward} intervals for portfolio holding, 
         \item Specify a performance function to calculate the past performance of the assets,
         \item Calculate the past performance over the \emph{look-back} formation intervals,
-        \item Calculate the portfolio weights from the past performance,
+        \item Calculate the portfolio weights from the past (in-sample) performance,
         \item Calculate the future returns over the \emph{look-forward} holding intervals,
         \item Calculate the out-of-sample momentum strategy returns by applying the portfolio weights to the future returns,
         \item Calculate the transaction costs and subtract them from the strategy returns.
@@ -2424,18 +2441,18 @@ retsp <- na.omit(retsp)
 # Define end of month end points
 endp <- rutils::calc_endpoints(retsp, interval="months")
 endp <- endp[-1]
-nrows <- NROW(endp)
+npts <- NROW(endp)
 dates <- zoo::index(retsp)[endp]
 # Start points equal end points lagged by 12-month look-back interval
 look_back <- 12
-startp <- c(rep_len(1, look_back-1),
-  endp[1:(nrows - look_back + 1)])
+startp <- c(rep_len(1, look_back),
+  endp[1:(npts - look_back + 1)])
 # Calculate matrix of look-back intervals
 look_backs <- cbind(startp, endp)
 colnames(look_backs) <- c("start", "end")
 # Calculate matrix of look-forward intervals
 look_fwds <- cbind(endp + 1, rutils::lagit(endp, -1))
-look_fwds[nrows, ] <- endp[nrows]
+look_fwds[npts, ] <- endp[npts]
 colnames(look_fwds) <- c("start", "end")
 # Inspect the intervals
 head(cbind(look_backs, look_fwds))
@@ -2458,7 +2475,7 @@ tail(cbind(look_backs, look_fwds))
       \vskip1ex
       The \emph{transaction costs} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amounts of the \emph{risky assets}.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate momentum profits and losses (returns)
+# Calculate momentum profits and losses (pnls)
 pnls <- rowSums(weightv*retsos)
 # Lag the momentum returns and weights
 # to correspond with end of future interval
@@ -2505,20 +2522,20 @@ dygraphs::dygraph(wealth, main="Momentum Strategy") %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtest functional
-backtestmomw <- function(retsp,
+btmomweight <- function(retsp,
                       objfun=function(retsp) (sum(retsp)/sd(retsp)),
                       look_back=12, rfreq="months", bid_offer=0.001,
                       endp=rutils::calc_endpoints(retsp, interval=rfreq)[-1],
                       with_weights=FALSE, ...) {
   stopifnot("package:rutils" %in% search() || require("rutils", quietly=TRUE))
   # Define look-back and look-forward intervals
-  nrows <- NROW(endp)
-  startp <- c(rep_len(1, look_back-1), endp[1:(nrows-look_back+1)])
+  npts <- NROW(endp)
+  startp <- c(rep_len(1, look_back), endp[1:(npts-look_back)])
   # Calculate look-back intervals
   look_backs <- cbind(startp, endp)
   # Calculate look-forward intervals
   look_fwds <- cbind(endp + 1, rutils::lagit(endp, -1))
-  look_fwds[nrows, ] <- endp[nrows]
+  look_fwds[npts, ] <- endp[npts]
   # Calculate past performance over look-back intervals
   perfstat <- t(apply(look_backs, 1, function(ep) sapply(retsp[ep[1]:ep[2]], objfun)))
   perfstat[is.na(perfstat)] <- 0
@@ -2538,11 +2555,12 @@ backtestmomw <- function(retsp,
     rutils::lagit(cbind(pnls, weights))
   else
     rutils::lagit(pnls)
-}  # end backtestmomw
+}  # end btmomweight
       @
 \end{block}
 
 \end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -2574,18 +2592,18 @@ symbolv <- colnames(rutils::etfenv$returns)
 symbolv <- symbolv[!(symbolv %in% c("VXX", "SVXY", "MTUM", "QUAL", "VLUE", "USMV"))]
 # Extract columns of rutils::etfenv$returns and overwrite NA values
 retsp <- rutils::etfenv$returns[, symbolv]
-nassets <- NCOL(retsp)
+nstocks <- NCOL(retsp)
 # retsp <- na.omit(retsp)
 retsp[1, is.na(retsp[1, ])] <- 0
 retsp <- zoo::na.locf(retsp, na.rm=FALSE)
 dates <- zoo::index(retsp)
-# retsp in excess of risk-free rate
+# Returns in excess of risk-free rate
 riskf <- 0.03/252
 retsx <- (retsp - riskf)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_weights_insample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_weights_in_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Maximum Sharpe weights in-sample interval
 retsis <- retsp["/2014"]
@@ -2614,19 +2632,20 @@ barplot(sort(weightv), main="Maximum Sharpe Weights", cex.names=0.7)
       The in-sample performance of the optimal portfolio is much better than the equal weight portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate in-sample portfolio returns
-portfis <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-indeks <- xts::xts(rowSums(retsis)/sqrt(nassets), zoo::index(retsis))
-portfis <- portfis*sd(indeks)/sd(portfis)
+insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+indeks <- xts::xts(rowMeans(retsis), zoo::index(retsis))
+insample <- insample*sd(indeks)/sd(insample)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_insample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_in_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-pnls <- cumsum(cbind(portfis, indeks))
-colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(pnls, main="In-sample Optimal Portfolio Returns") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+pnls <- cbind(indeks, insample)
+colnames(pnls) <- c("Equal Weight", "Optimal")
+endp <- rutils::calc_endpoints(pnls, interval="months")
+dygraphs::dygraph(cumsum(pnls)[endp], main="In-sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -2648,20 +2667,21 @@ dygraphs::dygraph(pnls, main="In-sample Optimal Portfolio Returns") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate out-of-sample portfolio returns
 retsos <- retsp["2015/"]
-portfos <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-indeks <- xts::xts(rowSums(retsos)/sqrt(nassets), zoo::index(retsos))
-portfos <- portfos*sd(indeks)/sd(portfos)
-pnls <- cbind(portfos, indeks, (portfos + indeks)/2)
-colnames(pnls) <- c("Optimal", "Equal Weight", "Combined")
-sapply(pnls, function(x) mean(x)/sd(x))
+outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+indeks <- xts::xts(rowMeans(retsos), zoo::index(retsos))
+outsample <- outsample*sd(indeks)/sd(outsample)
+pnls <- cbind(indeks, outsample, (outsample + indeks)/2)
+colnames(pnls) <- c("Equal Weight", "Optimal", "Combined")
+sqrt(252)*sapply(pnls, function(x) mean(x)/sd(x))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_outsample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-dygraphs::dygraph(cumsum(pnls), main="Out-of-sample Optimal Portfolio Returns") %>%
-  dyOptions(colors=c("red", "blue", "green"), strokeWidth=2) %>%
+endp <- rutils::calc_endpoints(pnls, interval="months")
+dygraphs::dygraph(cumsum(pnls)[endp], main="Out-of-sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
       @
   \end{columns}
@@ -2671,7 +2691,7 @@ dygraphs::dygraph(cumsum(pnls), main="Out-of-sample Optimal Portfolio Returns") 
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Portfolio Optimization Strategy for ETFs}
+\subsection{Portfolio Optimization Strategy for ETFs}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2687,23 +2707,24 @@ weightv <- invmat %*% colMeans(retsx["/2014"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(retsp)
 # Calculate in-sample portfolio returns
-portfis <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 # Calculate out-of-sample portfolio returns
 retsos <- retsp["2015/"]
-portfos <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_outsample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-pnls <- rbind(portfis, portfos)
-indeks <- xts::xts(rowSums(retsp)/sqrt(nassets), dates)
+pnls <- rbind(insample, outsample)
+indeks <- xts::xts(rowMeans(retsp), dates)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cumsum(cbind(pnls, indeks))
-colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(pnls, main="Out-of-sample Optimal Portfolio Returns for ETFs") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+pnls <- cbind(indeks, pnls)
+colnames(pnls) <- c("Equal Weight", "Optimal")
+endp <- rutils::calc_endpoints(pnls, interval="months")
+dygraphs::dygraph(cumsum(pnls)[endp], main="Out-of-sample Optimal Portfolio Returns for ETFs") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -2714,17 +2735,19 @@ dygraphs::dygraph(pnls, main="Out-of-sample Optimal Portfolio Returns for ETFs")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Regularized Inverse of Singular Covariance Matrices}
+\subsection{Regularized Inverse of Singular Covariance Matrix}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{regularization} technique allows calculating the inverse of \emph{singular} covariance matrices while reducing the effects of statistical noise.
+      The inverse of the covariance matrix of returns $\mathbb{C}$ can be calculated from its \emph{eigenvalues} $\mathbb{D}$ and its \emph{eigenvectors} $\mathbb{O}$:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \mathbb{O} \, \mathbb{D}^{-1} \, \mathbb{O}^T
+      \end{displaymath}
+      If the number of time periods of returns (rows) is less than the number of stocks (columns), then some of the higher order eigenvalues are zero, and the above covariance matrix inverse is singular.
       \vskip1ex
-      If the number of time periods of returns is less than the number of assets (columns), then the covariance matrix of returns is \emph{singular}, and some of its \emph{eigenvalues} are zero, so it doesn't have an inverse.
-      \vskip1ex
-      The \emph{regularized} inverse $\mathbb{C}_n^{-1}$ is calculated by removing the higher order eigenvalues that are almost zero, and keeping only the first $n$ \emph{eigenvalues}:
+      The \emph{regularized inverse} $\mathbb{C}_n^{-1}$ is calculated by removing the zero eigenvalues, and keeping only the first $n$ \emph{eigenvalues}:
       \begin{displaymath}
         \mathbb{C}_n^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
       \end{displaymath}
@@ -2745,16 +2768,16 @@ eigend <- eigen(covmat)
 eigenvec <- eigend$vectors
 eigenval <- eigend$values
 # Set tolerance for determining zero singular values
-precision <- sqrt(.Machine$double.eps)
+precv <- sqrt(.Machine$double.eps)
 # Calculate regularized inverse matrix
-not_zero <- (eigenval > (precision * eigenval[1]))
-invreg <- eigenvec[, not_zero] %*%
-  (t(eigenvec[, not_zero]) / eigenval[not_zero])
+notzero <- (eigenval > (precv * eigenval[1]))
+invreg <- eigenvec[, notzero] %*%
+  (t(eigenvec[, notzero]) / eigenval[notzero])
 # Verify inverse property of invreg
 all.equal(covmat, covmat %*% invreg %*% covmat)
 # Calculate regularized inverse of covmat
 invmat <- MASS::ginv(covmat)
-# Verify inverse property of matrixv
+# Verify that invmat is same as invreg
 all.equal(invmat, invreg)
       @
   \end{columns}
@@ -2764,23 +2787,25 @@ all.equal(invmat, invreg)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Shrinkage Inverse of the Covariance Matrix}
+\subsection{Eigen Shrinkage of Inverse Covariance Matrix}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      For a portfolio of \emph{S\&P500} stocks, the number return columns is very large, which may make the covariance matrix of returns simgular.
+      If the higher order singular values are very small then the inverse matrix amplifies the statistical noise in the response matrix.
       \vskip1ex
-      Removing the very small higher order eigenvalues also reduces the propagation of statistical noise and improves the signal-to-noise ratio.
+      The technique of \emph{eigen shrinkage} calculates the inverse of a covariance matrix by removing the very small, higher order eigenvalues, to reduce the propagation of statistical noise and improve the signal-to-noise ratio:
+      \begin{displaymath}
+        \mathbb{C}_{shrinkage}^{-1} = \mathbb{O}_{max\_eigen} \, \mathbb{D}_{max\_eigen}^{-1} \, \mathbb{O}_{max\_eigen}^T
+      \end{displaymath}
+      The parameter \texttt{eigen\_max} specifies the number of eigenvalues used for calculating the \emph{shrinkage inverse} of the covariance matrix of returns.
+      \vskip1ex
+      Even though the \emph{shrinkage inverse} $\mathbb{C}_{shrinkage}^{-1}$ does not satisfy the matrix inverse property (so it's biased), its out-of-sample forecasts are usually more accurate than those using the actual inverse matrix.
       \vskip1ex
       But removing a larger number of eigenvalues increases the bias of the covariance matrix, which is an example of the \emph{bias-variance tradeoff}.
       \vskip1ex
-      Even though the \emph{shrinkage inverse} $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
-      \vskip1ex
-      The parameter \texttt{max\_eigen} specifies the number of eigenvalues used for calculating the \emph{regularized} inverse of the covariance matrix of returns.
-      \vskip1ex
-      The optimal value of the parameter \texttt{max\_eigen} can be determined using \emph{backtesting} (\emph{cross-validation}).
+      The optimal value of the parameter \texttt{eigen\_max} can be determined using \emph{backtesting} (\emph{cross-validation}).
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -2792,7 +2817,7 @@ eigenval <- eigend$values
 # Calculate shrinkage inverse of covariance matrix
 eigen_max <- 3
 invmat <- eigenvec[, 1:eigen_max] %*%
-  (t(eigenvec[, 1:eigen_max]) / eigend$values[1:eigen_max])
+  (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
 # Verify inverse property of inverse
 all.equal(covmat, covmat %*% invmat %*% covmat)
       @
@@ -2803,7 +2828,7 @@ all.equal(covmat, covmat %*% invmat %*% covmat)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Portfolio Optimization for ETFs with Shrinkage}
+\subsection{Portfolio Optimization for ETFs with Eigen Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2814,24 +2839,24 @@ all.equal(covmat, covmat %*% invmat %*% covmat)
       The \emph{in-sample} performance is worse because shrinkage reduces \emph{overfitting}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate portfolio weights
-weightv <- invmat %*% colMeans(retsx["/2014"])
+weightv <- invmat %*% colMeans(retsis)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(retsp)
 # Calculate portfolio returns
-portfis <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-portfos <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_outsample_shrink.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_out_sample_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-pnls <- rbind(portfis, portfos)
+pnls <- rbind(insample, outsample)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cumsum(cbind(pnls, indeks))
-colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(pnls, main="Regularized Out-of-sample Optimal Portfolio Returns for ETFs") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+pnls <- cbind(indeks, pnls)
+colnames(pnls) <- c("Equal Weight", "Optimal")
+dygraphs::dygraph(cumsum(pnls)[endp], main="Optimal Portfolio Returns With Eigen Shrinkage") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -2842,7 +2867,7 @@ dygraphs::dygraph(pnls, main="Regularized Out-of-sample Optimal Portfolio Return
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Optimal ETF Portfolio Weights With Return Shrinkage}
+\subsection{Portfolio Optimization With Return Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2850,7 +2875,7 @@ dygraphs::dygraph(pnls, main="Regularized Out-of-sample Optimal Portfolio Return
     \column{0.5\textwidth}
       To further reduce the statistical noise, the individual returns $r_i$ can be \emph{shrunk} to the average portfolio returns $\bar{r}$:
       \begin{displaymath}
-        r_i = (1 - \alpha) \, r_i + \alpha \, \bar{r}
+        r^{\prime}_i = (1 - \alpha) \, r_i + \alpha \, \bar{r}
       \end{displaymath}
       The parameter $\alpha$ is the \emph{shrinkage} intensity, and it determines the strength of the \emph{shrinkage} of individual returns to their mean.
       \vskip1ex
@@ -2861,25 +2886,25 @@ dygraphs::dygraph(pnls, main="Regularized Out-of-sample Optimal Portfolio Return
 # Shrink the in-sample returns to their mean
 alpha <- 0.7
 retsxm <- rowMeans(retsx["/2014"])
-retsxis <- (1 - alpha)*retsx["/2014"] + alpha*retsxm
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_outsample_rets_shrink.png}
-      <<echo=TRUE,eval=FALSE>>=
+retsxis <- (1-alpha)*retsx["/2014"] + alpha*retsxm
 # Calculate portfolio weights
 weightv <- invmat %*% colMeans(retsxis)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
-portfis <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-portfos <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_out_sample_rets_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-pnls <- rbind(portfis, portfos)
+pnls <- rbind(insample, outsample)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cumsum(cbind(pnls, indeks))
-colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(pnls, main="Out-of-sample Returns for ETFs With Regularization and Shrinkage") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+pnls <- cbind(indeks, pnls)
+colnames(pnls) <- c("Equal Weight", "Optimal")
+dygraphs::dygraph(cumsum(pnls)[endp], main="Optimal Portfolio Returns With Eigen and Return Shrinkage") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -2890,58 +2915,163 @@ dygraphs::dygraph(pnls, main="Out-of-sample Returns for ETFs With Regularization
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Monthly ETF Rolling Portfolio Strategy With Shrinkage}
+\subsection{Rolling Portfolio Optimization Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter look\_back intervals since it suppresses the response noise.
-      \vskip1ex
-      In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{6} months.
-      The coefficients are applied to perform out-of-sample forecasts in the following month.
+      In a \emph{rolling portfolio optimization strategy}, the portfolio is optimized periodically and held out-of-sample.
+      \setlength{\leftmargini}{1.0em}
+      \begin{itemize}
+        \item Calculate the \emph{end points} for portfolio rebalancing,
+        \item Define an objective function for optimizing the portfolio weights,
+        \item Calculate the optimal portfolio weights from the past (in-sample) performance,
+        \item Calculate the out-of-sample returns by applying the portfolio weights to the future returns.
+      \end{itemize}
       <<echo=TRUE,eval=FALSE>>=
-# Define monthly dates
-format(dates[1], "%m-%Y")
-format(dates[NROW(dates)], "%m-%Y")
-months <- seq.Date(from=as.Date("2001-01-01"), to=as.Date("2021-04-01"), by="month")
-# Perform loop over monthly dates
-look_back <- 6
-eigen_max <- 3
-pnls <- lapply((look_back+1):(NROW(months)-1), function(i) {
-  # Define in-sample and out-of-sample returns
-  insample <- (dates > months[i-look_back]) & (dates < months[i])
-  outsample <- (dates > months[i]) & (dates < months[i+1])
-  retsis <- retsp[insample]
-  retsos <- retsp[outsample]
-  # Calculate shrinkage inverse of covariance matrix
-  # invmat <- MASS::ginv(cov(retsis))  # if VXX and SVXY are included then no shrinkage is better
-  eigend <- eigen(cov(retsis))
-  eigenvec <- eigend$vectors
-  eigenval <- eigend$values
-  invmat <- eigenvec[, 1:eigen_max] %*%
-    (t(eigenvec[, 1:eigen_max]) / eigend$values[1:eigen_max])
-  weightv <- invmat %*% colMeans(retsis - riskf)
-  weightv <- drop(weightv/sqrt(sum(weightv^2)))
-  # Calculate portfolio pnls out-of-sample
-  xts::xts(retsos %*% weightv, zoo::index(retsos))
+# Define monthly end points
+endp <- rutils::calc_endpoints(retsp, interval="months")
+endp <- endp[endp > (nstocks+1)]
+npts <- NROW(endp)
+look_back <- 3
+startp <- c(rep_len(0, look_back), endp[1:(npts-look_back)])
+# Perform loop over end points
+pnls <- lapply(2:npts, function(ep) {
+    # Calculate the portfolio weights
+    insample <- retsx[startp[ep-1]:endp[ep-1], ]
+    invmat <- MASS::ginv(cov(insample))
+    weightv <- invmat %*% colMeans(insample)
+    weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the out-of-sample portfolio returns
+    outsample <- retsp[(endp[ep-1]+1):endp[ep], ]
+    xts::xts(outsample %*% weightv, zoo::index(outsample))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
-      @
+@
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_shrink.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of rolling ETF portfolio strategy
-vti <- rutils::diffit(cumsum(indeks)[zoo::index(pnls),])
-wealth <- cbind(vti, pnls)
-colnames(wealth) <- c("Index", "Strategy")
-colnamev <- colnames(wealth)
-dygraphs::dygraph(cumsum(wealth), main="Monthly ETF Rolling Portfolio Strategy With Shrinkage") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+pnls <- pnls*sd(indeks)/sd(pnls)
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
+wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
+colnames(wealth) <- c("Index", "Strategy", "Combined")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealth,
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+dygraphs::dygraph(cumsum(wealth)[endp], main="Monthly ETF Rolling Portfolio Strategy") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Strategy With Eigen Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The rolling portfolio optimization strategy with eigen shrinkage performs better than the standard strategy because eigen shrinkage suppresses the data noise.
+      \vskip1ex
+      The strategy performs especially well during sharp market selloffs, like in the years \texttt{2008} and \texttt{2020}.
+      <<echo=TRUE,eval=FALSE>>=
+# Define monthly end points
+look_back <- 3; eigen_max <- 9
+startp <- c(rep_len(0, look_back), endp[1:(npts-look_back)])
+# Perform loop over end points
+pnls <- lapply(2:npts, function(ep) {
+    # Calculate regularized inverse of covariance matrix
+    insample <- retsx[startp[ep-1]:endp[ep-1], ]
+    eigend <- eigen(cov(insample))
+    eigenvec <- eigend$vectors
+    eigenval <- eigend$values
+    invmat <- eigenvec[, 1:eigen_max] %*%
+      (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+    # Calculate the maximum Sharpe ratio portfolio weights
+    weightv <- invmat %*% colMeans(insample)
+    weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the out-of-sample portfolio returns
+    outsample <- retsp[(endp[ep-1]+1):endp[ep], ]
+    xts::xts(outsample %*% weightv, zoo::index(outsample))
+})  # end lapply
+pnls <- do.call(rbind, pnls)
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_shrinkeigen.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling ETF portfolio strategy
+pnls <- pnls*sd(indeks)/sd(pnls)
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
+wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
+colnames(wealth) <- c("Index", "Strategy", "Combined")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealth,
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+dygraphs::dygraph(cumsum(wealth)[endp], main="Rolling Portfolio Strategy With Eigen Shrinkage") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Strategy With Return Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The rolling portfolio optimization strategy with return shrinkage performs better than the standard strategy because return shrinkage suppresses the data noise.
+      \vskip1ex
+      The strategy performs especially well during sharp market selloffs, like in the years \texttt{2008} and \texttt{2020}.
+      <<echo=TRUE,eval=FALSE>>=
+# Define the return shrinkage intensity
+alpha <- 0.7
+# Perform loop over end points
+pnls <- lapply(2:npts, function(ep) {
+    # Calculate regularized inverse of covariance matrix
+    insample <- retsx[startp[ep-1]:endp[ep-1], ]
+    eigend <- eigen(cov(insample))
+    eigenvec <- eigend$vectors
+    eigenval <- eigend$values
+    invmat <- eigenvec[, 1:eigen_max] %*%
+      (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+    # Shrink the in-sample returns to their mean
+    insample <- (1-alpha)*insample + alpha*rowMeans(insample)
+    # Calculate the maximum Sharpe ratio portfolio weights
+    weightv <- invmat %*% colMeans(insample)
+    weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the out-of-sample portfolio returns
+    outsample <- retsp[(endp[ep-1]+1):endp[ep], ]
+    xts::xts(outsample %*% weightv, zoo::index(outsample))
+})  # end lapply
+pnls <- do.call(rbind, pnls)
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_shrinkrets.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of rolling ETF portfolio strategy
+pnls <- pnls*sd(indeks)/sd(pnls)
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
+wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
+colnames(wealth) <- c("Index", "Strategy", "Combined")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealth,
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+dygraphs::dygraph(cumsum(wealth)[endp], main="Rolling Portfolio Strategy With Return Shrinkage") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -2957,7 +3087,7 @@ dygraphs::dygraph(cumsum(wealth), main="Monthly ETF Rolling Portfolio Strategy W
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The shrinkage rolling weekly strategy performs better than the standard strategy because regularization allows using shorter look\_back intervals since it suppresses the response noise.
+      The shrinkage rolling weekly strategy performs better than the standard strategy because eigen shrinkage allows using shorter \texttt{look\_back} intervals since it suppresses the response noise.
       \vskip1ex
       In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{6} months.
       The coefficients are applied to perform out-of-sample forecasts in the following month.
@@ -2967,13 +3097,13 @@ weeks <- seq.Date(from=as.Date("2001-01-01"), to=as.Date("2021-04-01"), by="week
 # Perform loop over monthly dates
 look_back <- 21
 eigen_max <- 3
-pnls <- lapply((look_back+1):(NROW(weeks)-1), function(i) {
+pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   # Define in-sample and out-of-sample returns
-  insample <- (dates > weeks[i-look_back]) & (dates < weeks[i])
-  outsample <- (dates > weeks[i]) & (dates < weeks[i+1])
+  insample <- (dates > weeks[ep-look_back]) & (dates < weeks[ep])
+  outsample <- (dates > weeks[ep]) & (dates < weeks[ep+1])
   retsis <- retsp[insample]
   retsos <- retsp[outsample]
-  # Calculate shrinkage inverse of covariance matrix
+  # Calculate regularized inverse of covariance matrix
   # invmat <- MASS::ginv(cov(retsis))  # if VXX and SVXY are included then no shrinkage is better
   invmat <- HighFreq::calc_inv(cov(retsis), eigen_max=eigen_max)
   weightv <- invmat %*% colMeans(retsis - riskf)
@@ -3006,34 +3136,45 @@ dygraphs::dygraph(cumsum(wealth), main="Weekly ETF Rolling Portfolio Strategy Wi
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Functional ETF Rolling Portfolio Strategy With Shrinkage}
+\subsection{Function for Rolling Portfolio Optimization Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The weekly ETF \emph{momentum} strategy can be improved by introducing a holding period for the portfolio.
-      <<echo=(-(1:1)),eval=FALSE>>=
-# Define backtest functional for daily momentum strategy
-# If trend=(-1) then it backtests a mean reverting strategy
-roll_portf <- function(retsp, look_back=252, eigen_max=3, holdperiod=5, bid_offer=0.0, trend=1, ...) {
-  cat("look_back=", look_back, "\n")
-  pnls <- lapply((look_back+1):(NROW(weeks)-1), function(i) {
-    # Define in-sample and out-of-sample returns
-    insample <- (dates > weeks[i-look_back]) & (dates < weeks[i])
-    outsample <- (dates > weeks[i]) & (dates < weeks[i+1])
-    retsis <- retsp[insample]
-    retsos <- retsp[outsample]
-    # Calculate shrinkage inverse of covariance matrix
-    # invmat <- MASS::ginv(cov(retsis))  # if VXX and SVXY are included then no shrinkage is better
-    # invmat <- HighFreq::calc_inv(cov(retsis), eigen_max=eigen_max)
-    # weightv <- invmat %*% colMeans(retsis - riskf)
-    weightv <- HighFreq::calc_weights(retsis, method="max_sharpe", eigen_max=eigen_max, scale=FALSE)
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define backtest functional for rolling portfolio strategy
+roll_portf <- function(excess, # Excess returns
+                       returns, # Stock returns
+                       endp, # End points
+                       look_back=12, # Look-back interval
+                       eigen_max=3, # Eigen shrinkage intensity
+                       alpha=0.0, # Return shrinkage intensity
+                       bid_offer=0.0, # Bid-offer spread
+                       ...) {
+  npts <- NROW(endp)
+  startp <- c(rep_len(0, look_back), endp[1:(npts-look_back)])
+  pnls <- lapply(2:npts, function(ep) {
+    # Calculate regularized inverse of covariance matrix
+    insample <- excess[startp[ep-1]:endp[ep-1], ]
+    eigend <- eigen(cov(insample))
+    eigenvec <- eigend$vectors
+    eigenval <- eigend$values
+    invmat <- eigenvec[, 1:eigen_max] %*%
+      (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+    # Shrink the in-sample returns to their mean
+    insample <- (1-alpha)*insample + alpha*rowMeans(insample)
+    # Calculate the maximum Sharpe ratio portfolio weights
+    weightv <- invmat %*% colMeans(insample)
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
-    # Calculate portfolio pnls out-of-sample
-    xts::xts(retsos %*% weightv, zoo::index(retsos))
+    # Calculate the out-of-sample portfolio returns
+    outsample <- returns[(endp[ep-1]+1):endp[ep], ]
+    xts::xts(outsample %*% weightv, zoo::index(outsample))
   })  # end lapply
-  do.call(rbind, pnls)
+  pnls <- do.call(rbind, pnls)
+  # Add warmup period to pnls
+  rbind(indeks[paste0("/", start(pnls)-1)], pnls)
 }  # end roll_portf
 @
     \column{0.5\textwidth}
@@ -3044,45 +3185,128 @@ roll_portf <- function(retsp, look_back=252, eigen_max=3, holdperiod=5, bid_offe
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Multiple Weekly ETF Rolling Portfolio Strategy With Shrinkage}
+\subsection{Rolling Portfolio Optimization With Different Look-backs}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{momentum\_daily()} in a loop over a vector of \emph{look-back} parameters.
-      \vskip1ex
-      The \emph{momentum} strategies do not perform well, especially the ones with a small \emph{look-back} parameter.
+      Multiple \emph{rolling portfolio optimization} strategies can be backtested by calling the function \texttt{roll\_portf()} in a loop over a vector of \emph{look-back} parameters.
       <<echo=TRUE,eval=FALSE>>=
-# Simulate a daily ETF momentum strategy
-pnls <- roll_portf(retsp=retsp, look_back=41, eigen_max=eigen_max)
+# Simulate a monthly ETF momentum strategy
+pnls <- roll_portf(excess=retsx, returns=retsp, endp=endp, 
+  look_back=look_back, eigen_max=eigen_max)
 # Perform sapply loop over look_backs
-look_backs <- seq(5, 50, by=2)
+look_backs <- seq(2, 15, by=1)
 pnls <- lapply(look_backs, roll_portf,
-  retsp=retsp, eigen_max=eigen_max)
+  returns=retsp, excess=retsx, endp=endp, eigen_max=eigen_max)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("look_back=", look_backs)
-tail(pnls)
-pnls[1, is.na(pnls[1, ])] <- 0
-pnls <- zoo::na.locf(pnls)
-foo <- sapply(pnls, sum)
-look_backs[which.max(foo)]
+pnlsums <- sapply(pnls, sum)
+look_back <- look_backs[which.max(pnlsums)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/momentum_etf_daily_mult.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_multlb.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of daily ETF momentum strategies
 colors <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
-dygraphs::dygraph(cumsum(pnls), main="Daily ETF Momentum Strategies") %>%
-  dyOptions(colors=colors, strokeWidth=1) %>%
+dygraphs::dygraph(cumsum(pnls)[endp], main="Rolling Portfolio Strategies") %>%
+  dyOptions(colors=colors, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Plot EWMA strategies with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
   colorRampPalette(c("blue", "red"))(NCOL(pnls))
 quantmod::chart_Series(cumsum(pnls),
-  theme=plot_theme, name="Cumulative Returns of Daily ETF Momentum Strategies")
+  theme=plot_theme, name="Rolling Portfolio Strategies")
+legend("bottomleft", legend=colnames(pnls),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Optimization With Different Eigen Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{rolling portfolio optimization} strategies can be backtested by calling the function \texttt{roll\_portf()} in a loop over a vector of the eigen shrinkage parameter.
+      <<echo=TRUE,eval=FALSE>>=
+# Perform backtest for different eigen_max values
+eigenvals <- 2:11
+pnls <- lapply(eigenvals, roll_portf, excess=retsx, 
+  returns=retsp, endp=endp, look_back=look_back)
+pnls <- do.call(cbind, pnls)
+colnames(pnls) <- paste0("eigenval=", eigenvals)
+pnlsums <- sapply(pnls, sum)
+eigen_max <- eigenvals[which.max(pnlsums)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_multeigen.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of daily ETF momentum strategies
+colors <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
+dygraphs::dygraph(cumsum(pnls)[endp], main="Rolling Portfolio Strategies With Eigen Shrinkage") %>%
+  dyOptions(colors=colors, strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+# Plot EWMA strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <-
+  colorRampPalette(c("blue", "red"))(NCOL(pnls))
+quantmod::chart_Series(cumsum(pnls),
+  theme=plot_theme, name="Rolling Portfolio Strategies")
+legend("bottomleft", legend=colnames(pnls),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Optimization With Different Return Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{rolling portfolio optimization} strategies can be backtested by calling the function \texttt{roll\_portf()} in a loop over a vector of return shrinkage parameters.
+      \vskip1ex
+      The best return shrinkage parameter for ETFs is equal to \texttt{0}, which means no return shrinkage.
+      <<echo=TRUE,eval=FALSE>>=
+# Perform backtest over vector of return shrinkage intensities
+alphav <- seq(from=0.0, to=0.9, by=0.1)
+pnls <- lapply(alphav, roll_portf, excess=retsx, 
+  returns=retsp, endp=endp, look_back=look_back, eigen_max=eigen_max)
+pnls <- do.call(cbind, pnls)
+colnames(pnls) <- paste0("alpha=", alphav)
+pnlsums <- sapply(pnls, sum)
+alpha <- alphav[which.max(pnlsums)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_multalpha.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of daily ETF momentum strategies
+colors <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
+dygraphs::dygraph(cumsum(pnls)[endp], main="Rolling Portfolio Strategies With Return Shrinkage") %>%
+  dyOptions(colors=colors, strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+# Plot EWMA strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <-
+  colorRampPalette(c("blue", "red"))(NCOL(pnls))
+quantmod::chart_Series(cumsum(pnls),
+  theme=plot_theme, name="Rolling Portfolio Strategies")
 legend("bottomleft", legend=colnames(pnls),
   inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
   col=plot_theme$col$line.col, bty="n")
@@ -3107,36 +3331,41 @@ legend("bottomleft", legend=colnames(pnls),
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns
 retsp <- returns["2000/"]
-nassets <- NCOL(returns)
-returns[1, is.na(returns[1, ])] <- 0
-returns <- zoo::na.locf(returns, na.rm=FALSE)
-dates <- zoo::index(returns)
+nstocks <- NCOL(retsp)
+retsp[1, is.na(retsp[1, ])] <- 0
+retsp <- zoo::na.locf(retsp, na.rm=FALSE)
+dates <- zoo::index(retsp)
 riskf <- 0.03/252
-retsx <- (returns - riskf)
-retsis <- returns["/2010"]
-retsos <- returns["2011/"]
+retsx <- (retsp - riskf)
+retsis <- retsp["/2010"]
+retsos <- retsp["2011/"]
 # Maximum Sharpe weights in-sample interval
 covmat <- cov(retsis)
 invmat <- MASS::ginv(covmat)
 weightv <- invmat %*% colMeans(retsx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(returns)
+names(weightv) <- colnames(retsp)
 # Calculate portfolio returns
-portfis <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-portfos <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-indeks <- xts::xts(rowSums(returns)/sqrt(nassets), dates)
+insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+indeks <- xts::xts(rowMeans(retsp), dates)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_outsample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative portfolio returns
-pnls <- rbind(portfis, portfos)
+# Combine in-sample and out-of-sample returns
+pnls <- rbind(insample, outsample)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cumsum(cbind(pnls, indeks))
-colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(pnls, main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+pnls <- cbind(indeks, pnls)
+colnames(pnls) <- c("Equal Weight", "Optimal")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(pnls[index(outsample)],
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the cumulative portfolio returns
+endp <- rutils::calc_endpoints(pnls, interval="months")
+dygraphs::dygraph(cumsum(pnls)[endp], main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -3147,7 +3376,7 @@ dygraphs::dygraph(pnls, main="Out-of-sample Optimal Portfolio Returns for Stocks
 
 
 %%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization for Stocks with Shrinkage}
+\subsection{Portfolio Optimization for Stocks with Eigen Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3157,26 +3386,38 @@ dygraphs::dygraph(pnls, main="Out-of-sample Optimal Portfolio Returns for Stocks
       \vskip1ex
       The \emph{in-sample} performance is worse because shrinkage reduces \emph{overfitting}.
       <<echo=TRUE,eval=FALSE>>=
+# Calculate regularized inverse of covariance matrix
+look_back <- 8; eigen_max <- 21
+eigend <- eigen(cov(retsis))
+eigenvec <- eigend$vectors
+eigenval <- eigend$values
+invmat <- eigenvec[, 1:eigen_max] %*%
+  (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
 # Calculate portfolio weights
 weightv <- invmat %*% colMeans(retsx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(returns)
+names(weightv) <- colnames(retsp)
 # Calculate portfolio returns
-portfis <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-portfos <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-indeks <- xts::xts(rowSums(returns)/sqrt(nassets), dates)
+insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+indeks <- xts::xts(rowMeans(retsp), dates)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_outsample_shrink.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_out_sample_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative portfolio returns
-pnls <- rbind(portfis, portfos)
+# Combine in-sample and out-of-sample returns
+pnls <- rbind(insample, outsample)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cumsum(cbind(pnls, indeks))
-colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(pnls, main="Regularized Out-of-sample Optimal Portfolio Returns for Stocks") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+pnls <- cbind(indeks, pnls)
+colnames(pnls) <- c("Equal Weight", "Optimal")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(pnls[index(outsample)],
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the cumulative portfolio returns
+endp <- rutils::calc_endpoints(pnls, interval="months")
+dygraphs::dygraph(cumsum(pnls)[endp], main="Out-of-sample Returns for Stocks with Eigen Shrinkage") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -3195,7 +3436,7 @@ dygraphs::dygraph(pnls, main="Regularized Out-of-sample Optimal Portfolio Return
     \column{0.5\textwidth}
       To further reduce the statistical noise, the individual returns $r_i$ can be \emph{shrunk} to the average portfolio returns $\bar{r}$:
       \begin{displaymath}
-        r_i = (1 - \alpha) \, r_i + \alpha \, \bar{r}
+        r^{\prime}_i = (1 - \alpha) \, r_i + \alpha \, \bar{r}
       \end{displaymath}
       The parameter $\alpha$ is the \emph{shrinkage} intensity, and it determines the strength of the \emph{shrinkage} of individual returns to their mean.
       \vskip1ex
@@ -3206,25 +3447,29 @@ dygraphs::dygraph(pnls, main="Regularized Out-of-sample Optimal Portfolio Return
 # Shrink the in-sample returns to their mean
 alpha <- 0.7
 retsxm <- rowMeans(retsx["/2010"])
-retsxis <- (1 - alpha)*retsx["/2010"] + alpha*retsxm
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_outsample_rets_shrink.png}
-      <<echo=TRUE,eval=FALSE>>=
+retsxis <- (1-alpha)*retsx["/2010"] + alpha*retsxm
 # Calculate portfolio weights
 weightv <- invmat %*% colMeans(retsxis)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
-portfis <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-portfos <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-# Plot cumulative portfolio returns
-pnls <- rbind(portfis, portfos)
+insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_out_sample_rets_shrink.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Combine in-sample and out-of-sample returns
+pnls <- rbind(insample, outsample)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cumsum(cbind(pnls, indeks))
-colnames(pnls) <- c("Optimal Portfolio", "Equal Weight Portfolio")
-dygraphs::dygraph(pnls, main="Out-of-sample Returns for Stocks With Regularization and Shrinkage") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+pnls <- cbind(indeks, pnls)
+colnames(pnls) <- c("Equal Weight", "Optimal")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(pnls[index(outsample)],
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the cumulative portfolio returns
+dygraphs::dygraph(cumsum(pnls)[endp], main="Out-of-sample Returns for Stocks with Return Shrinkage") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
   dyLegend(width=500)
       @
@@ -3259,11 +3504,11 @@ all.equal(covinv, covinv_arma)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r={eigend <- eigen(cov(matrixv))
+  rcode={eigend <- eigen(cov(matrixv))
     eigend$vectors[, 1:eigen_max] %*%
       (t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])
   },
-  r_cpp=calc_inv(matrixv, eigen_max),
+  cppcode=calc_inv(matrixv, eigen_max),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \column{0.5\textwidth}
@@ -3279,21 +3524,21 @@ arma::mat calc_inv(const arma::mat& tseries,
     // Calculate the regularized inverse using SVD decomposition
     
     // Allocate SVD
-    arma::vec svd_val;
-    arma::mat svd_u, svd_v;
+    arma::vec svdval;
+    arma::mat svdu, svdv;
     
     // Calculate the SVD
-    arma::svd(svd_u, svd_val, svd_v, tseries);
+    arma::svd(svdu, svdval, svdv, tseries);
     
     // Subset the SVD
     eigen_max = eigen_max - 1;
     // For no regularization: eigen_max = tseries.n_cols
-    svd_u = svd_u.cols(0, eigen_max);
-    svd_v = svd_v.cols(0, eigen_max);
-    svd_val = svd_val.subvec(0, eigen_max);
+    svdu = svdu.cols(0, eigen_max);
+    svdv = svdv.cols(0, eigen_max);
+    svdval = svdval.subvec(0, eigen_max);
     
     // Calculate the inverse from the SVD
-    return svd_v*arma::diagmat(1/svd_val)*svd_u.t();
+    return svdv*arma::diagmat(1/svdval)*svdu.t();
     
   }  // end if
   
@@ -3517,44 +3762,48 @@ arma::mat back_test(const arma::mat& retsx, // Portfolio excess returns
         \item Calculate the maximum Sharpe ratio portfolio weights at each end point,
         \item Apply the weights in the next interval and calculate the out-of-sample portfolio returns.
       \end{enumerate}
-      The parameters of this strategy are: the rebalancing frequency (annual, monthly, etc.), and the length of look-back interval.
+      The strategy parameters are: the rebalancing frequency (annual, monthly, etc.), and the length of look-back interval.
       <<echo=TRUE,eval=FALSE>>=
 # Overwrite NA values in returns100
-returns100[1, is.na(returns100[1, ])] <- 0
-returns100 <- zoo::na.locf(returns100, na.rm=FALSE)
-retsx <- (returns100 - riskf)
-ncols <- NCOL(returns100) ; dates <- zoo::index(returns100)
-nassets <- NCOL(returns100)
+retsp <- returns100
+retsp[1, is.na(retsp[1, ])] <- 0
+retsp <- zoo::na.locf(retsp, na.rm=FALSE)
+retsx <- (retsp - riskf)
+nstocks <- NCOL(retsp) ; dates <- zoo::index(retsp)
 # Define monthly end points
-endp <- rutils::calc_endpoints(returns100, interval="months")
-endp <- endp[endp > (ncols+1)]
-nrows <- NROW(endp) ; look_back <- 12
-startp <- c(rep_len(0, look_back-1), endp[1:(nrows-look_back+1)])
+endp <- rutils::calc_endpoints(retsp, interval="months")
+endp <- endp[endp > (nstocks+1)]
+npts <- NROW(endp) ; look_back <- 12
+startp <- c(rep_len(0, look_back), endp[1:(npts-look_back)])
+# Perform loop over end points - takes very long !!!
+pnls <- lapply(2:npts, function(ep) {
+    # Subset the excess returns
+    insample <- retsx[startp[ep-1]:endp[ep-1], ]
+    invmat <- MASS::ginv(cov(insample))
+    # Calculate the maximum Sharpe ratio portfolio weights
+    weightv <- invmat %*% colMeans(insample)
+    weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the out-of-sample portfolio returns
+    outsample <- retsp[(endp[ep-1]+1):endp[ep], ]
+    xts::xts(outsample %*% weightv, zoo::index(outsample))
+})  # end lapply
+pnls <- rutils::do_call(rbind, pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500.png}
       <<echo=TRUE,eval=FALSE>>=
-# Perform loop over end points
-pnls <- lapply(2:nrows, function(i) {
-    # Subset the excess returns
-    retsx <- retsx[startp[i-1]:endp[i-1], ]
-    invmat <- MASS::ginv(cov(retsx))
-    # Calculate the maximum Sharpe ratio portfolio weights
-    weightv <- invmat %*% colMeans(retsx)
-    weightv <- drop(weightv/sqrt(sum(weightv^2)))
-    # Calculate the out-of-sample portfolio returns
-    returns <- returns100[(endp[i-1]+1):endp[i], ]
-    xts::xts(returns %*% weightv, zoo::index(returns))
-})  # end lapply
-pnls <- rutils::do_call(rbind, pnls)
 # Calculate returns of equal weight portfolio
-indeks <- xts::xts(rowMeans(returns100), dates)
+indeks <- xts::xts(rowMeans(retsp), dates)
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
+# Calculate the Sharpe and Sortino ratios
+wealth <- cbind(indeks, pnls)
+colnames(wealth) <- c("Equal Weight", "Strategy")
+sqrt(252)*sapply(wealth,
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot cumulative strategy returns
-wealth <- na.omit(cbind(pnls, indeks*sd(rets_portf)/sd(indeks)))
-colnames(wealth) <- c("Rolling Strategy", "Equal Weight")
-dygraphs::dygraph(cumsum(wealth), main="Rolling Portfolio Optimization Strategy for S&P500 Stocks") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+dygraphs::dygraph(cumsum(wealth)[endp], main="Rolling Portfolio Optimization Strategy for S&P500 Stocks") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -3570,39 +3819,34 @@ dygraphs::dygraph(cumsum(wealth), main="Rolling Portfolio Optimization Strategy 
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the rolling portfolio optimization strategy the portfolio weights are adjusted to their optimal values at every end point.
-      \vskip1ex
-      A portfolio optimization is performed using past data, and the optimal portfolio weights are applied out-of-sample in the next interval.
-      \vskip1ex
-      The weights are scaled to match the volatility of the equally weighted portfolio, and are kept constant until the next end point.
+      The \emph{rolling portfolio optimization} strategy can be improved by applying both eigen shrinkage and return shrinkage.
       <<echo=TRUE,eval=FALSE>>=
 # Shift end points to C++ convention
 endp <- (endp - 1)
 endp[endp < 0] <- 0
 startp <- (startp - 1)
 startp[startp < 0] <- 0
-# Specify shrinkage intensity
+# Specify eigen shrinkage and return shrinkage
 alpha <- 0.7
 eigen_max <- 21
 # Perform backtest in Rcpp
-pnls <- HighFreq::back_test(retsx=retsx, returns=returns100,
+pnls <- HighFreq::back_test(excess=retsx, returns=retsp,
   startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
+pnls <- pnls*sd(indeks)/sd(pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative strategy returns
-wealth <- cbind(pnls, indeks, (pnls+indeks)/2)
-wealth <- cumsum(na.omit(wealth))
-colnamev <- c("Strategy", "Index", "Combined")
-colnames(wealth) <- colnamev
-dygraphs::dygraph(wealth[endp], main="Rolling S&P500 Portfolio Optimization Strategy With Shrinkage") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="red", strokeWidth=1) %>%
-  dySeries(name=colnamev[2], axis="y2", col="blue", strokeWidth=1) %>%
-  dySeries(name=colnamev[3], axis="y2", col="green", strokeWidth=2)
+wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
+colnames(wealth) <- c("Index", "Strategy", "Combined")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealth,
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+dygraphs::dygraph(cumsum(wealth)[endp], main="Rolling S&P500 Portfolio Optimization Strategy With Shrinkage") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}
@@ -3611,52 +3855,57 @@ dygraphs::dygraph(wealth[endp], main="Rolling S&P500 Portfolio Optimization Stra
 
 
 %%%%%%%%%%%%%%%
-\subsection{Determining Strategy Parameters Using Backtesting}
+\subsection{Determining Shrinkage Parameters Using Backtesting}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The optimal values of the parameters \texttt{max\_eigen} and $\alpha$ can be determined using \emph{backtesting}.
+      The optimal values of the eigen shrinkage parameter \texttt{eigen\_max} and the return shrinkage intensity parameter $\alpha$ can be determined using \emph{backtesting}.
+      \vskip1ex
+      The best eigen shrinkage parameter for this portfolio of stocks is equal to \texttt{eigen\_max=33}, which means relatively weak eigen shrinkage.
+      \vskip1ex
+      The best return shrinkage parameter for this portfolio of stocks is equal to $\alpha=0.81$, which means strong return shrinkage.
       <<echo=TRUE,eval=FALSE>>=
-# Perform backtest over alphas
-alpha_s <- seq(from=0.01, to=0.91, by=0.1)
-pnls <- lapply(alpha_s, function(alpha) {
-  HighFreq::back_test(retsx=retsx, returns=returns100,
+# Perform backtest over vector of return shrinkage intensities
+alphav <- seq(from=0.01, to=0.91, by=0.1)
+pnls <- lapply(alphav, function(alpha) {
+  HighFreq::back_test(excess=retsx, returns=retsp,
   startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
 })  # end lapply
 profilev <- sapply(pnls, sum)
-plot(x=alpha_s, y=profilev, t="l", main="Strategy PnL as Function of Shrinkage Intensity Alpha",
+plot(x=alphav, y=profilev, t="l", main="Rolling Strategy as Function of Return Shrinkage",
   xlab="Shrinkage Intensity Alpha", ylab="pnl")
-alpha <- alpha_s[which.max(profilev)]
-pnls <- pnls[[which.max(profilev)]]
-# Perform backtest over eigen_maxs
-eigen_maxs <- seq(from=3, to=40, by=2)
-pnls <- lapply(eigen_maxs, function(eigen_max) {
-  HighFreq::back_test(retsx=retsx, returns=returns100,
+whichmax <- which.max(profilev)
+alpha <- alphav[whichmax]
+pnls <- pnls[[whichmax]]
+# Perform backtest over vector of eigen shrinkage eigenvals
+eigenvals <- seq(from=3, to=40, by=2)
+pnls <- lapply(eigenvals, function(eigen_max) {
+  HighFreq::back_test(excess=retsx, returns=retsp,
     startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
 })  # end lapply
 profilev <- sapply(pnls, sum)
-plot(x=eigen_maxs, y=profilev, t="l", main="Strategy PnL as Function of eigen_max",
+plot(x=eigenvals, y=profilev, t="l", main="Strategy PnL as Function of eigen_max",
   xlab="eigen_max", ylab="pnl")
-eigen_max <- eigen_maxs[which.max(profilev)]
-pnls <- pnls[[which.max(profilev)]]
+whichmax <- which.max(profilev)
+eigen_max <- eigenvals[whichmax]
+pnls <- pnls[[whichmax]]
+pnls <- pnls*sd(indeks)/sd(pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink_optim.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative strategy returns
-wealth <- cbind(pnls, indeks, (pnls+indeks)/2)
-wealth <- cumsum(na.omit(wealth))
-colnamev <- c("Strategy", "Index", "Combined")
-colnames(wealth) <- colnamev
-dygraphs::dygraph(wealth[endp], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="red", strokeWidth=1) %>%
-  dySeries(name=colnamev[2], axis="y2", col="blue", strokeWidth=1) %>%
-  dySeries(name=colnamev[3], axis="y2", col="green", strokeWidth=2)
+wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
+colnames(wealth) <- c("Index", "Strategy", "Combined")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealth,
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+dygraphs::dygraph(cumsum(wealth)[endp], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}
@@ -3672,37 +3921,39 @@ dygraphs::dygraph(wealth[endp], main="Optimal Rolling S&P500 Portfolio Strategy"
   \begin{columns}[T]
     \column{0.5\textwidth}
       The optimal value of the look-back interval can be determined using \emph{backtesting}.
+      \vskip1ex
+      The optimal value of the look-back interval for this portfolio of stocks is equal to \texttt{look\_back=9} months, which roughly agrees with the research literature on momentum strategies.
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest over look-backs
-look_backs <- seq(from=3, to=24, by=1)
+look_backs <- seq(from=3, to=12, by=1)
 pnls <- lapply(look_backs, function(look_back) {
-  startp <- c(rep_len(0, look_back-1), endp[1:(nrows-look_back+1)])
+  startp <- c(rep_len(0, look_back), endp[1:(npts-look_back)])
   startp <- (startp - 1)
   startp[startp < 0] <- 0
-  HighFreq::back_test(retsx=retsx, returns=returns100,
+  HighFreq::back_test(excess=retsx, returns=retsp,
     startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
 })  # end lapply
 profilev <- sapply(pnls, sum)
 plot(x=look_backs, y=profilev, t="l", main="Strategy PnL as Function of Look-back Interval",
   xlab="Look-back Interval", ylab="pnl")
-look_back <- look_backs[which.max(profilev)]
-pnls <- pnls[[which.max(profilev)]]
+whichmax <- which.max(profilev)
+look_back <- look_backs[whichmax]
+pnls <- pnls[[whichmax]]
+pnls <- pnls*sd(indeks)/sd(pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink_optim_lookback.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative strategy returns
-wealth <- cbind(pnls, indeks, (pnls+indeks)/2)
-wealth <- cumsum(na.omit(wealth))
-colnamev <- c("Strategy", "Index", "Combined")
-colnames(wealth) <- colnamev
-dygraphs::dygraph(wealth[endp], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="red", strokeWidth=1) %>%
-  dySeries(name=colnamev[2], axis="y2", col="blue", strokeWidth=1) %>%
-  dySeries(name=colnamev[3], axis="y2", col="green", strokeWidth=2)
+wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
+colnames(wealth) <- c("Index", "Strategy", "Combined")
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealth,
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+dygraphs::dygraph(cumsum(wealth)[endp], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
   \end{columns}
 \end{block}

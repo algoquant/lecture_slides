@@ -1265,13 +1265,13 @@ returns <- rutils::diffit(closep)
 # Define look-back window
 look_back <- 11
 # Calculate time series of medians
-medi_an <- roll::roll_median(closep, width=look_back)
-# medi_an <- TTR::runMedian(closep, n=look_back)
+medianv <- roll::roll_median(closep, width=look_back)
+# medianv <- TTR::runMedian(closep, n=look_back)
 # Calculate time series of MAD
 madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(closep, n=look_back)
 # Calculate time series of z-scores
-zscores <- (closep - medi_an)/madv
+zscores <- (closep - medianv)/madv
 zscores[1:look_back, ] <- 0
 tail(zscores, look_back)
 range(zscores)
@@ -1702,18 +1702,18 @@ pnls <- lapply(lambdas, function(lambda) {
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdas)
 # Plot dygraph of mean reverting EWMA strategies
-column_s <- seq(1, NCOL(pnls), by=4)
-colors <- colorRampPalette(c("blue", "red"))(NROW(column_s))
-dygraphs::dygraph(cumsum(pnls["2007/", column_s]), main="Cumulative Returns of Mean Reverting EWMA Strategies") %>%
+columnv <- seq(1, NCOL(pnls), by=4)
+colors <- colorRampPalette(c("blue", "red"))(NROW(columnv))
+dygraphs::dygraph(cumsum(pnls["2007/", columnv]), main="Cumulative Returns of Mean Reverting EWMA Strategies") %>%
   dyOptions(colors=colors, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Plot EWMA strategies with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colors
-quantmod::chart_Series(pnls[, column_s],
+quantmod::chart_Series(pnls[, columnv],
   theme=plot_theme, name="Cumulative Returns of Mean Reverting EWMA Strategies")
-legend("topleft", legend=colnames(pnls[, column_s]),
+legend("topleft", legend=colnames(pnls[, columnv]),
   inset=0.1, bg="white", cex=0.8, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 
@@ -2252,9 +2252,9 @@ colnames(design)[1] <- "response"
 look_back <- 100
 # Invert the predictor matrix
 rangev <- (nrows-look_back):(nrows-1)
-design_inv <- MASS::ginv(design[rangev, -1])
+designinv <- MASS::ginv(design[rangev, -1])
 # Calculate fitted coefficients
-coeff <- drop(design_inv %*% design[rangev, 1])
+coeff <- drop(designinv %*% design[rangev, 1])
 # Calculate forecast of vti for.n_rows
 drop(design[nrows, -1] %*% coeff)
 # Compare with actual value
@@ -2284,9 +2284,9 @@ forecasts <- sapply((look_back+1)/nrows, function(endp) {
   # startp <- 1
   rangev <- startp:(endp-1)
   # Invert the predictor matrix
-  design_inv <- MASS::ginv(predictor[rangev, ])
+  designinv <- MASS::ginv(predictor[rangev, ])
   # Calculate fitted coefficients
-  coeff <- drop(design_inv %*% response[rangev])
+  coeff <- drop(designinv %*% response[rangev])
   # Calculate forecast
   drop(predictor[endp, ] %*% coeff)
 })  # end sapply
@@ -2327,9 +2327,9 @@ sim_forecasts <- function(response, nagg=5,
     # startp <- 1
     rangev <- startp:(endp-1)
     # Invert the predictor matrix
-    design_inv <- MASS::ginv(predictor[rangev, ])
+    designinv <- MASS::ginv(predictor[rangev, ])
     # Calculate fitted coefficients
-    coeff <- drop(design_inv %*% response[rangev])
+    coeff <- drop(designinv %*% response[rangev])
     # Calculate forecast
     drop(predictor[endp, ] %*% coeff)
   })  # end sapply

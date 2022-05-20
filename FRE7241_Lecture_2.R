@@ -766,7 +766,7 @@ prices <- rutils::do_call(cbind, prices)
 prices <- zoo::na.locf(prices, na.rm=FALSE)
 prices <- zoo::na.locf(prices, fromLast=TRUE)
 sum(is.na(prices))
-# Drop ".Close" from column names
+# Remove the suffix ".Close" from the column names of pricets
 colnames(prices[, 1:4])
 colnames(prices) <- rutils::get_name(colnames(prices))
 # Or

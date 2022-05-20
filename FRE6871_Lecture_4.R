@@ -628,13 +628,14 @@ set.seed(1121)  # Initialize random number generator
 predictor <- runif(nrows)
 noise <- rnorm(nrows)
 # Response equals linear form plus random noise
-response <- (1 + predictor + noise)
+response <- (1 + 2*predictor + noise)
 
 # Calculate de-meaned explanatory (predictor) and response vectors
 predictor_zm <- predictor - mean(predictor)
 response_zm <- response - mean(response)
 # Calculate the regression beta
 betav <- sum(predictor_zm*response_zm)/sum(predictor_zm^2)
+cov(predictor, response)/var(predictor)
 # Calculate the regression alpha
 alpha <- mean(response) - betav*mean(predictor)
 

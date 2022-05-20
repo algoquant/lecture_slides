@@ -372,25 +372,25 @@ sd(datav)  # Sample standard deviation
         <<echo=(-(1:1)),eval=FALSE>>=
 rm(list=ls())
 # VTI returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
+retsp <- na.omit(rutils::etfenv$returns$VTI)
 # Number of observations
-nrows <- NROW(returns)
+nrows <- NROW(retsp)
 # Mean of VTI returns
-mea_n <- mean(returns)
+meanv <- mean(retsp)
 # Standard deviation of VTI returns
-s_d <- sd(returns)
+stdev <- sd(retsp)
 # Standardize returns
-returns <- (returns - mea_n)/s_d
+retsp <- (retsp - meanv)/stdev
 # Skewness and kurtosis of VTI returns
-nrows/((nrows-1)*(nrows-2))*sum(returns^3)
-nrows/(nrows-1)^2*sum(returns^4)
+nrows/((nrows-1)*(nrows-2))*sum(retsp^3)
+nrows/(nrows-1)^2*sum(retsp^4)
 # Random normal returns
-returns <- rnorm(nrows)
+retsp <- rnorm(nrows)
 # Mean and standard deviation of random normal returns
-mean(returns); sd(returns)
+mean(retsp); sd(retsp)
 # Skewness and kurtosis of random normal returns
-nrows/((nrows-1)*(nrows-2))*sum(returns^3)
-nrows/(nrows-1)^2*sum(returns^4)
+nrows/((nrows-1)*(nrows-2))*sum(retsp^3)
+nrows/(nrows-1)^2*sum(retsp^4)
       @
       The normal distribution has skewness equal to zero $\varsigma = 0$, and kurtosis equal to three $\kappa = 3$.
   \end{columns}
@@ -704,7 +704,7 @@ integrate(function(x, n, m)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-    \includegraphics[width=0.45\paperwidth]{figure/hermitefun.png}
+    \includegraphics[width=0.45\paperwidth]{figure/hermite_fun.png}
       \vspace{-2em}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)  # Plot in window
@@ -1267,14 +1267,14 @@ legend("topright", inset=0.05, bty="n",
       <<echo=TRUE,eval=TRUE>>=
 # Calculate VTI percentage returns
 library(rutils)
-returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))[1:4999]
+retsp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))[1:4999]
 # Reduce number of output digits
 ndigits <- options(digits=5)
 # Shapiro-Wilk test for normal distribution
-nrows <- NROW(returns)
+nrows <- NROW(retsp)
 shapiro.test(rnorm(nrows))
 # Shapiro-Wilk test for VTI returns
-shapiro.test(returns)
+shapiro.test(retsp)
 # Shapiro-Wilk test for uniform distribution
 shapiro.test(runif(nrows))
 # Restore output digits
@@ -1317,7 +1317,7 @@ library(tseries)  # Load package tseries
 # Jarque-Bera test for normal distribution
 jarque.bera.test(rnorm(nrows))
 # Jarque-Bera test for VTI returns
-jarque.bera.test(returns)
+jarque.bera.test(retsp)
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(nrows))
       @
@@ -1359,9 +1359,9 @@ ks.test(rnorm(100), rnorm(100, mean=1.0))
 # KS test for two different normal distributions
 ks.test(rnorm(100), rnorm(100, sd=2.0))
 # KS test for VTI returns vs normal distribution
-returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
-returns <- (returns - mean(returns))/sd(returns)
-ks.test(returns, pnorm)
+retsp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
+retsp <- (retsp - mean(retsp))/sd(retsp)
+ks.test(retsp, pnorm)
       @
   \end{columns}
 \end{block}
@@ -1460,7 +1460,7 @@ countst <- rutils::diffit(pnorm(histp$breaks))
 # Perform Chi-squared test for shifted normal data
 chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
 # Calculate histogram of VTI returns
-histp <- hist(returns, breaks=100, plot=FALSE)
+histp <- hist(retsp, breaks=100, plot=FALSE)
 countsn <- histp$counts
 # Calculate cumulative probabilities and then difference them
 countst <- pt((histp$breaks-loc)/scalev, df=2)
@@ -1549,20 +1549,20 @@ all.equal(rank(datav), indeks)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # VTI returns
-returns <- as.numeric(na.omit(rutils::etfenv$returns[, "VTI"]))
-nrows <- NROW(returns)
-returns <- 100*(returns-mean(returns))/sd(returns)
+retsp <- as.numeric(na.omit(rutils::etfenv$returns[, "VTI"]))
+nrows <- NROW(retsp)
+retsp <- 100*(retsp-mean(retsp))/sd(retsp)
 # Simulate normal random data
 ndata <- rnorm(nrows, sd=100)
 # Bootstrap the mean and median estimators
 boot_data <- sapply(1:1e3, function(x) {
   # Simulate data
   ndata <- rnorm(nrows, sd=100)
-  returns <- returns[sample.int(nrows, replace=TRUE)]
+  retsp <- retsp[sample.int(nrows, replace=TRUE)]
   c(n_mean=mean(ndata), 
     n_median=median(ndata), 
-    vti_mean=mean(returns), 
-    vti_median=median(returns))
+    vti_mean=mean(retsp), 
+    vti_median=median(retsp))
 })  # end sapply
 boot_data <- t(boot_data)
 # Analyze bootstrapped data
@@ -1576,15 +1576,15 @@ library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # initialize compute cluster
 boot_data <- parLapply(cluster, 1:1e4,
-  function(x, nrows, returns) {
+  function(x, nrows, retsp) {
     # Simulate data
     ndata <- rnorm(nrows, sd=100)
-    returns <- returns[sample.int(nrows, replace=TRUE)]
+    retsp <- retsp[sample.int(nrows, replace=TRUE)]
     c(n_mean=mean(ndata), 
       n_median=median(ndata), 
-      vti_mean=mean(returns), 
-      vti_median=median(returns))
-  }, nrows, returns)  # end parLapply
+      vti_mean=mean(retsp), 
+      vti_median=median(retsp))
+  }, nrows, retsp)  # end parLapply
 stopCluster(cluster)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:1e4, function(x) {
@@ -1688,9 +1688,9 @@ bias_var[1, 4]^2 + bias_var[2, 4]
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-returns <- as.numeric(na.omit(rutils::etfenv$returns[, "VTI"]))
-nrows <- NROW(returns)
-returns <- 100*(returns-mean(returns))/sd(returns)
+retsp <- as.numeric(na.omit(rutils::etfenv$returns[, "VTI"]))
+nrows <- NROW(retsp)
+retsp <- 100*(retsp-mean(retsp))/sd(retsp)
 # Simulate normal random data
 ndata <- rnorm(nrows, sd=100)
 
@@ -1701,11 +1701,11 @@ ndata <- rnorm(nrows, sd=100)
 boot_data <- sapply(1:1e3, function(x) {
   # Simulate data
   ndata <- rnorm(nrows, sd=100)
-  returns <- returns[sample.int(nrows, replace=TRUE)]
+  retsp <- retsp[sample.int(nrows, replace=TRUE)]
   c(n_mean=mean(ndata), 
     n_median=median(ndata), 
-    vti_mean=mean(returns), 
-    vti_median=median(returns))
+    vti_mean=mean(retsp), 
+    vti_median=median(retsp))
 })  # end sapply
 boot_data <- t(boot_data)
 # Analyze bootstrapped data
@@ -2232,8 +2232,8 @@ sample2 <- datav[-indeks]
 
 # Or
 indeks <- sample(1:nrows, size=nrows/2)
-sample1 <- returns[indeks]
-sample2 <- (-returns[-indeks])
+sample1 <- retsp[indeks]
+sample2 <- (-retsp[-indeks])
 
 sample1 <- (sample1- median(sample1))
 sample2 <- (sample2- median(sample2))
@@ -2254,18 +2254,15 @@ hist(sample1)
 datav <- rnorm(nrows, sd=100)
 wilcox.test(datav, paired=FALSE)
 # Skewed distribution with mean=0
-mean(returns); median(returns)
-wilcox.test(returns-mean(returns), 
-            paired=FALSE)
+mean(retsp); median(retsp)
+wilcox.test(retsp-mean(retsp), paired=FALSE)
 # Skewed distribution with median=0
-wilcox.test(returns-median(returns), 
-            paired=FALSE)
+wilcox.test(retsp-median(retsp), paired=FALSE)
 # Skewed distribution with median=0
-wilcox.test(returns-median(returns), 
-            datav, paired=FALSE)
+wilcox.test(retsp-median(retsp), datav, paired=FALSE)
 
 
-sample1 <- sample(returns, size=nrows)
+sample1 <- sample(retsp, size=nrows)
 sample2 <- (-sample1)
 sample1 <- (sample1-median(sample1))
 sample2 <- (sample2-median(sample2))
@@ -2274,24 +2271,20 @@ wilcox.test(sample1, sample2,
             paired=FALSE)$p.value
 
 
-datav <- (-returns)
+datav <- (-retsp)
 datav <- (datav-median(datav))
-wilcox.test(returns-median(returns), 
-            datav, paired=FALSE)
-wilcox.test(returns-median(returns), 
-            datav, paired=TRUE)
+wilcox.test(retsp-median(retsp), datav, paired=FALSE)
+wilcox.test(retsp-median(retsp), datav, paired=TRUE)
 
-datav <- (-returns)
+datav <- (-retsp)
 datav <- (datav-mean(datav))
-wilcox.test(returns-mean(returns), 
-            datav, paired=FALSE)
-wilcox.test(returns-mean(returns), 
-            datav, paired=TRUE)
+wilcox.test(retsp-mean(retsp), datav, paired=FALSE)
+wilcox.test(retsp-mean(retsp), datav, paired=TRUE)
 
 foo <- sapply(1:100, function(x) {
   # Data samples
-  sample1 <- sample(returns, size=nrows/2)
-  sample2 <- sample(-returns, size=nrows/2)
+  sample1 <- sample(retsp, size=nrows/2)
+  sample2 <- sample(-retsp, size=nrows/2)
   sample1 <- (sample1-median(sample1))
   sample2 <- (sample2-median(sample2))
   # Mann-Whitney-Wilcoxon rank sum test
@@ -2300,14 +2293,12 @@ foo <- sapply(1:100, function(x) {
 hist(foo)
 
 # Skewed distribution with mean=0
-mean(returns); median(returns)
-wilcox.test(returns-mean(returns))
+mean(retsp); median(retsp)
+wilcox.test(retsp-mean(retsp))
 # Same as
-wilcox.test(returns-mean(returns), 
-            rep(0, nrows), 
-            paired=TRUE)
+wilcox.test(retsp-mean(retsp), rep(0, nrows), paired=TRUE)
 # Skewed distribution with median=0
-wilcox.test(returns-median(returns))
+wilcox.test(retsp-median(retsp))
 
       @
   \end{columns}
@@ -2490,10 +2481,10 @@ lines(density(sample2), col="red", lwd=3)
 ktest <- kruskal.test(Sepal.Length ~ Species, data=iris)
 # Calculate Kruskal-Wallis test Statistic
 nrows <- NROW(iris)
-iris_data <- data.frame(ranks=rank(iris$Sepal.Length),
-                        spe_cies=iris$Species)
+irisdf <- data.frame(ranks=rank(iris$Sepal.Length),
+                        species=iris$Species)
 kruskal_stat <- (12/nrows/(nrows+1))*sum(
-  aggregate(ranks ~ spe_cies, data=iris_data,
+  aggregate(ranks ~ species, data=irisdf,
             FUN=function(x) {NROW(x)*((nrows+1)/2 - mean(x))^2})[, 2])
 c(ktest=unname(ktest$statistic), k_stat=kruskal_stat)
       @
@@ -2777,13 +2768,13 @@ sqrt((1-rho^2)/(nrows-2))
 
 
 # Correlation
-co_r <- cor(xvar, yxvar)
+corv <- cor(xvar, yxvar)
 # Standard error of correlation
-stderror <- sqrt((1-co_r^2)/(nrows-2))
+stderror <- sqrt((1-corv^2)/(nrows-2))
 # t-value of correlation
-co_r/stderror
+corv/stderror
 # 95% confidence intervals
-co_r*c(1-qnorm(0.975)*stderror, 1+qnorm(0.975)*stderror)
+corv*c(1-qnorm(0.975)*stderror, 1+qnorm(0.975)*stderror)
 
 
 # Test statistical significance of correlation

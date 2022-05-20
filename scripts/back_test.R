@@ -1,4 +1,45 @@
-# Functions for back-testing momentum strategies
+### Functions for back-testing strategies
+
+# library(HighFreq)  # load package HighFreq
+
+# Simulate a rolling portfolio optimization strategy
+# using the regularized inverse of the covariance matrix.
+
+# Function for back-testing rolling portfolio optimization strategy in R
+roll_portf <- function(excess, # Excess returns
+                       returns, # Stock returns
+                       endp, # End points
+                       look_back=12, # Look-back interval
+                       eigen_max=3, # Eigen shrinkage intensity
+                       alpha=0.0, # Return shrinkage intensity
+                       bid_offer=0.0, # Bid-offer spread
+                       ...) {
+  npts <- NROW(endp)
+  startp <- c(rep_len(0, look_back), endp[1:(npts-look_back)])
+  pnls <- lapply(2:npts, function(ep) {
+    # Calculate regularized inverse of covariance matrix
+    insample <- excess[startp[ep-1]:endp[ep-1], ]
+    eigend <- eigen(cov(insample))
+    eigenvec <- eigend$vectors
+    eigenval <- eigend$values
+    invmat <- eigenvec[, 1:eigen_max] %*%
+      (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+    # Shrink the in-sample returns to their mean
+    insample <- (1-alpha)*insample + alpha*rowMeans(insample)
+    # Calculate the maximum Sharpe ratio portfolio weights
+    weightv <- invmat %*% colMeans(insample)
+    weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the out-of-sample portfolio returns
+    outsample <- returns[(endp[ep-1]+1):endp[ep], ]
+    xts::xts(outsample %*% weightv, zoo::index(outsample))
+  })  # end lapply
+  pnls <- do.call(rbind, pnls)
+  # Add warmup period to pnls
+  # rbind(indeks[paste0("/", start(pnls)-1)], pnls)
+  pnls
+}  # end roll_portf
+
+
 
 # Function backtestmom() performs a back-test of a momentum strategy over the end-points
 backtestmom <- function(returns, 

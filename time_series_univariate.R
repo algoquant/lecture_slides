@@ -1094,8 +1094,8 @@ drop(arfit$ar); drop(coeff)
 # Define design matrix without intercept column
 design <- sapply(1:n_coeff, rutils::lagit, input=arimav)
 # Fit AR model using regression
-design_inv <- MASS::ginv(design)
-coeff <- drop(design_inv %*% arimav)
+designinv <- MASS::ginv(design)
+coeff <- drop(designinv %*% arimav)
 all.equal(drop(arfit$ar), coeff, check.attributes=FALSE)
 
 # Specify AR process parameters
@@ -1114,9 +1114,9 @@ arimav <- (arimav - mean(arimav))
 design <- sapply(1:3, rutils::lagit, input=arimav)
 # Calculate de-meaned returns matrix
 design <- t(t(design) - colMeans(design))
-design_inv <- MASS::ginv(design)
+designinv <- MASS::ginv(design)
 # Regression coefficients with response equal to arimav
-coeff <- drop(design_inv %*% arimav)
+coeff <- drop(designinv %*% arimav)
 
 all.equal(arima_fit$coef, coeff, check.attributes=FALSE)
 
@@ -1135,8 +1135,8 @@ coeff_tvals <- drop(coeff)/coeffd
 
 # Fit AR(5) model into AR(3) process
 design <- sapply(1:5, rutils::lagit, input=arimav)
-design_inv <- MASS::ginv(design)
-coeff <- drop(design_inv %*% arimav)
+designinv <- MASS::ginv(design)
+coeff <- drop(designinv %*% arimav)
 # Calculate t-values of AR(5) coefficients
 residuals <- drop(arimav - drop(design %*% coeff))
 var_resid <- sum(residuals^2)/(nrows-NROW(coeff))
@@ -1152,8 +1152,8 @@ arima_fit <- forecast::auto.arima(arimav, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
 returns <- drop(zoo::coredata(na.omit(rutils::etfenv$returns$VTI)))
 design <- sapply(1:5, rutils::lagit, input=returns)
-design_inv <- MASS::ginv(design)
-coeff <- drop(design_inv %*% returns)
+designinv <- MASS::ginv(design)
+coeff <- drop(designinv %*% returns)
 # Calculate t-values of AR(5) coefficients
 residuals <- drop(returns - drop(design %*% coeff))
 var_resid <- sum(residuals^2)/(nrows-NROW(coeff))
@@ -1175,9 +1175,9 @@ arimav <- as.numeric(arimav)
 # Define design matrix for arimav
 design <- sapply(1:3, rutils::lagit, input=arimav)
 # Generalized inverse of design matrix
-design_inv <- MASS::ginv(design)
+designinv <- MASS::ginv(design)
 # Regression coefficients with response equal to arimav
-coeff <- drop(design_inv %*% arimav)
+coeff <- drop(designinv %*% arimav)
 all.equal(arima_fit$coef, coeff, check.attributes=FALSE)
 
 # Compute autocorrelation coefficients
@@ -1375,9 +1375,9 @@ colnames(design)[1] <- "response"
 look_back <- 100
 # Invert the predictor matrix
 rangev <- (nrows-look_back):(nrows-1)
-design_inv <- MASS::ginv(design[rangev, -1])
+designinv <- MASS::ginv(design[rangev, -1])
 # Calculate fitted coefficients
-coeff <- drop(design_inv %*% design[rangev, 1])
+coeff <- drop(designinv %*% design[rangev, 1])
 # Calculate forecast
 drop(design[nrows, -1] %*% coeff)
 
@@ -1405,9 +1405,9 @@ forecasts <- sapply((look_back+1)/nrows, function(endp) {
   # startp <- 1
   rangev <- startp:(endp-1)
   # Invert the predictor matrix
-  design_inv <- MASS::ginv(predictor[rangev, ])
+  designinv <- MASS::ginv(predictor[rangev, ])
   # Calculate fitted coefficients
-  coeff <- drop(design_inv %*% response[rangev])
+  coeff <- drop(designinv %*% response[rangev])
   # Calculate forecast
   drop(predictor[endp, ] %*% coeff)
 })  # end sapply
@@ -1448,9 +1448,9 @@ sim_forecasts <- function(response, nagg=5,
     # startp <- 1
     rangev <- startp:(endp-1)
     # Invert the predictor matrix
-    design_inv <- MASS::ginv(predictor[rangev, ])
+    designinv <- MASS::ginv(predictor[rangev, ])
     # Calculate fitted coefficients
-    coeff <- drop(design_inv %*% response[rangev])
+    coeff <- drop(designinv %*% response[rangev])
     # Calculate forecast
     drop(predictor[endp, ] %*% coeff)
   })  # end sapply
@@ -1467,8 +1467,8 @@ look_backs <- seq(20, 200, 20)
 forecasts <- sapply(look_backs, sim_forecasts, response=returns,
                nagg=nagg, ordern=ordern)
 colnames(forecasts) <- look_backs
-mse_s <- apply(forecasts, 2, function(x) mean((returns - x)^2))
+msev <- apply(forecasts, 2, function(x) mean((returns - x)^2))
 # Plot forecasting series with legend
-plot(x=look_backs, y=mse_s,
+plot(x=look_backs, y=msev,
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")

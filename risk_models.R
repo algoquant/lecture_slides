@@ -1409,20 +1409,20 @@ closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Define look-back window
 look_back <- 11
 # Calculate time series of medians
-medi_an <- roll::roll_median(closep, width=look_back)
-# medi_an <- TTR::runMedian(closep, n=look_back)
+medianv <- roll::roll_median(closep, width=look_back)
+# medianv <- TTR::runMedian(closep, n=look_back)
 # Calculate time series of MAD
 madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(closep, n=look_back)
 # Calculate time series of z-scores
-zscores <- (closep - medi_an)/madv
+zscores <- (closep - medianv)/madv
 zscores[1:look_back, ] <- 0
 tail(zscores, look_back)
 range(zscores)
 
 x11(width=6, height=5)
 # Plot prices and medians
-dygraphs::dygraph(cbind(closep, medi_an), main="VTI median") %>%
+dygraphs::dygraph(cbind(closep, medianv), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Plot histogram of z-scores
 histp <- hist(zscores, col="lightgrey",
@@ -1431,19 +1431,19 @@ histp <- hist(zscores, col="lightgrey",
 lines(density(zscores, adjust=1.5), lwd=3, col="blue")
 
 # Calculate one-sided Hampel z-scores
-medi_an <- roll::roll_median(closep, width=look_back)
-# medi_an <- TTR::runMedian(closep, n=look_back)
+medianv <- roll::roll_median(closep, width=look_back)
+# medianv <- TTR::runMedian(closep, n=look_back)
 madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(closep, n=look_back)
-zscores <- (closep - medi_an)/madv
+zscores <- (closep - medianv)/madv
 zscores[1:look_back, ] <- 0
 tail(zscores, look_back)
 range(zscores)
 # Calculate two-sided Hampel z-scores
 half_back <- look_back %/% 2
-medi_an <- rutils::lagit(medi_an, lagg=-half_back)
+medianv <- rutils::lagit(medianv, lagg=-half_back)
 madv <- rutils::lagit(madv, lagg=-half_back)
-zscores <- (closep - medi_an)/madv
+zscores <- (closep - medianv)/madv
 zscores[1:look_back, ] <- 0
 tail(zscores, look_back)
 range(zscores)

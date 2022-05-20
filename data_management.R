@@ -433,8 +433,8 @@ head(data_table[, .(origin)])
 # Select two columns of data_table
 data_table[, list(origin, month)]
 data_table[, .(origin, month)]
-column_s <- c("origin", "month")
-data_table[, ..column_s]
+columnv <- c("origin", "month")
+data_table[, ..columnv]
 data_table[, month, origin]
 # Select two columns and rename them
 data_table[, .(orig=origin, mon=month)]

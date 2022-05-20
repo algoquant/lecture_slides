@@ -1722,14 +1722,14 @@ quantmod::chart_Series(x=xtes$XLK.Close,
 # Calculate centered Hampel filter to remove price jumps
 look_back <- 111
 half_back <- look_back %/% 2
-medi_an <- roll::roll_median(taq$price, width=look_back)
-# medi_an <- TTR::runMedian(taq$price, n=look_back)
-medi_an <- rutils::lagit(medi_an, lagg=-half_back, pad_zeros=FALSE)
+medianv <- roll::roll_median(taq$price, width=look_back)
+# medianv <- TTR::runMedian(taq$price, n=look_back)
+medianv <- rutils::lagit(medianv, lagg=-half_back, pad_zeros=FALSE)
 madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(taq$price, n=look_back)
 madv <- rutils::lagit(madv, lagg=-half_back, pad_zeros=FALSE)
 # Calculate Z-scores
-zscores <- (taq$price - medi_an)/madv
+zscores <- (taq$price - medianv)/madv
 zscores[is.na(zscores)] <- 0
 zscores[!is.finite(zscores)] <- 0
 sum(is.na(zscores))
@@ -1763,31 +1763,31 @@ sum(is_bad)
 # Add 200 random price jumps into prices
 set.seed(1121)
 n_bad <- 200
-is_jump <- logical(NROW(closep))
-is_jump[sample(x=NROW(is_jump), size=n_bad)] <- TRUE
-closep[is_jump] <- closep[is_jump]*
+isjump <- logical(NROW(closep))
+isjump[sample(x=NROW(isjump), size=n_bad)] <- TRUE
+closep[isjump] <- closep[isjump]*
   sample(c(0.95, 1.05), size=n_bad, replace=TRUE)
 # Plot prices and medians
-dygraphs::dygraph(cbind(closep, medi_an), main="VTI median") %>%
+dygraphs::dygraph(cbind(closep, medianv), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Calculate time series of z-scores
-medi_an <- roll::roll_median(closep, width=look_back)
-# medi_an <- TTR::runMedian(closep, n=look_back)
+medianv <- roll::roll_median(closep, width=look_back)
+# medianv <- TTR::runMedian(closep, n=look_back)
 madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(closep, n=look_back)
-zscores <- (closep - medi_an)/madv
+zscores <- (closep - medianv)/madv
 zscores[1:look_back, ] <- 0
 # Calculate number of prices classified as bad data
 is_bad <- (abs(zscores) > threshold)
 sum(is_bad)
 
 # Calculate confusion matrix
-table(actual=!is_jump, forecast=!is_bad)
+table(actual=!isjump, forecast=!is_bad)
 sum(is_bad)
 # FALSE positive (type I error)
-sum(!is_jump & is_bad)
+sum(!isjump & is_bad)
 # FALSE negative (type II error)
-sum(is_jump & !is_bad)
+sum(isjump & !is_bad)
 
 # Confusion matrix as function of threshold
 confun <- function(actu_al, zscores, threshold) {
@@ -1795,12 +1795,12 @@ confun <- function(actu_al, zscores, threshold) {
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
-confun(is_jump, zscores, threshold=threshold)
+confun(isjump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
 threshv <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actu_al=is_jump, zscores=zscores)  # end sapply
+  actu_al=isjump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -1826,12 +1826,12 @@ confun <- function(actu_al, zscores, threshold) {
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
-confun(is_jump, zscores, threshold=threshold)
+confun(isjump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
 threshv <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actu_al=is_jump, zscores=zscores)  # end sapply
+  actu_al=isjump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -1852,13 +1852,13 @@ plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
 abline(a=0.0, b=1.0, lwd=3, col="orange")
 
 # Calculate centered Hampel filter over 3 data points
-medi_an <- roll::roll_median(taq$price, width=3)
-medi_an[1:2] <- taq$price[1:2]
-medi_an <- rutils::lagit(medi_an, lagg=-1, pad_zeros=FALSE)
+medianv <- roll::roll_median(taq$price, width=3)
+medianv[1:2] <- taq$price[1:2]
+medianv <- rutils::lagit(medianv, lagg=-1, pad_zeros=FALSE)
 madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=-1, pad_zeros=FALSE)
 # Calculate Z-scores
-zscores <- ifelse(madv > 0, (taq$price - medi_an)/madv, 0)
+zscores <- ifelse(madv > 0, (taq$price - medianv)/madv, 0)
 range(zscores); mad(zscores)
 madv <- mad(zscores[abs(zscores)>0])
 hist(zscores, breaks=2000, xlim=c(-5*madv, 5*madv))

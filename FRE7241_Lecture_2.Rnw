@@ -2201,11 +2201,11 @@ returns <- drop(zoo::coredata(returns))
 nrows <- NROW(returns)
 # Calculate compounded VTI returns
 holdp <- 252
-cumrets <- sqrt(holdp)*sapply(1:nrows, function(x) {
+retscum <- sqrt(holdp)*sapply(1:nrows, function(x) {
     mean(returns[sample.int(nrows, size=holdp, replace=TRUE)])
 })  # end sapply
 # Calculate mean, standard deviation, skewness, and kurtosis
-datav <- cbind(returns, cumrets)
+datav <- cbind(returns, retscum)
 colnames(datav) <- c("VTI", "Agg")
 apply(datav, MARGIN=2, function(x) {
   # Standardize the returns
@@ -2233,8 +2233,8 @@ par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 plot(density(returns), t="l", lwd=3, col="blue",
      xlab="returns", ylab="density", xlim=c(-0.04, 0.04),
      main="Distribution of Compounded Stock Returns")
-lines(density(cumrets), t="l", col="red", lwd=3)
-curve(expr=dnorm(x, mean=mean(cumrets), sd=sd(cumrets)), col="green", lwd=3, add=TRUE)
+lines(density(retscum), t="l", col="red", lwd=3)
+curve(expr=dnorm(x, mean=mean(retscum), sd=sd(retscum)), col="green", lwd=3, add=TRUE)
 legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
        inset=-0.1, bg="white", lty=1, lwd=6, col=c("blue", "red", "green"), bty="n")
       @
@@ -3361,13 +3361,13 @@ nrows <- NROW(vti)
 # Simulate stop-loss strategy
 stopl <- 0.05
 maxp <- 0.0
-cumrets <- 0.0
+retscum <- 0.0
 pnls <- vti
 for (i in 1:nrows) {
 # Calculate drawdown
-  cumrets <- cumrets + vti[i]
-  maxp <- max(maxp, cumrets)
-  dd <- (cumrets - maxp)
+  retscum <- retscum + vti[i]
+  maxp <- max(maxp, retscum)
+  dd <- (retscum - maxp)
 # Check for stop-loss
   if (dd < -stopl*maxp)
     pnls[i+1] <- 0

@@ -1012,18 +1012,18 @@ pnls <- lapply(lambdas, function(lambda) {
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdas)
 # Plot dygraph of mean reverting EWMA strategies
-column_s <- seq(1, NCOL(pnls), by=4)
-colors <- colorRampPalette(c("blue", "red"))(NROW(column_s))
-dygraphs::dygraph(cumsum(pnls["2007/", column_s]), main="Cumulative Returns of Mean Reverting EWMA Strategies") %>%
+columnv <- seq(1, NCOL(pnls), by=4)
+colors <- colorRampPalette(c("blue", "red"))(NROW(columnv))
+dygraphs::dygraph(cumsum(pnls["2007/", columnv]), main="Cumulative Returns of Mean Reverting EWMA Strategies") %>%
   dyOptions(colors=colors, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Plot EWMA strategies with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colors
-quantmod::chart_Series(pnls[, column_s],
+quantmod::chart_Series(pnls[, columnv],
   theme=plot_theme, name="Cumulative Returns of Mean Reverting EWMA Strategies")
-legend("topleft", legend=colnames(pnls[, column_s]),
+legend("topleft", legend=colnames(pnls[, columnv]),
   inset=0.1, bg="white", cex=0.8, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 
@@ -1176,7 +1176,7 @@ for (i in 1:NROW(shad_e)) {
 # Plot the dygraph object
 dyplot
 
-sim_ewma2 <- function(ohlc, lambda_1=0.1, lambda2=0.01, look_back=333,
+sim_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
                 bid_offer=0.001, trend=1, lagg=1) {
   close <- log(quantmod::Cl(ohlc))
   returns <- rutils::diffit(close)

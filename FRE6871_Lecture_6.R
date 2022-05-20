@@ -10,6 +10,7 @@ listv <- list(first=c("a", "b"), second=1:4)
 listv
 names(listv)
 unlist(listv)
+
 listv[2]  # Extract second element as sublist
 listv[[2]]  # Extract second element
 listv[[2]][3]  # Extract third element of second element
@@ -22,10 +23,12 @@ listv$a <- 1
 listv[2] <- 2
 listv
 names(listv)
+
 # Convert vector elements to list elements
 as.list(1:3)
 # Convert whole vector to single list element
 list(1:3)
+
 data_frame <- data.frame(  # Create a data frame
                 type=c("rose", "daisy", "tulip"),
                 color=c("red", "white", "yellow"),
@@ -38,8 +41,10 @@ rownames(data_frame)  # Get the rownames attribute
 class(data_frame)  # Get object class
 typeof(data_frame)  # Data frames are listv
 is.data.frame(data_frame)
+
 class(data_frame$type)  # Get column class
 class(data_frame$price)  # Get column class
+
 data_frame[, 3]  # Extract third column as vector
 data_frame[[3]]  # Extract third column as vector
 data_frame[3]  # Extract third column as data frame
@@ -52,6 +57,7 @@ data_frame[2, ][3]  # Third element from second column
 data_frame[2, 3]  # Third element from second column
 unlist(data_frame[2, ])  # Coerce to vector
 is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
+
 data_frame <- data.frame(  # Create a data frame
                 type=c("rose", "daisy", "tulip"),
                 color=c("red", "white", "yellow"),
@@ -65,10 +71,12 @@ class(data_frame$price)  # Get column class
 options("stringsAsFactors")
 default.stringsAsFactors()
 options(stringsAsFactors=FALSE)
+
 str(data_frame)  # Display the object structure
 dim(cars)  # The cars data frame has 50 rows
 head(cars, n=5)  # Get first five rows
 tail(cars, n=5)  # Get last five rows
+
 # Create a named vector of student scores
 score_s <- sample(round(runif(5, min=1, max=10), digits=2))
 names(score_s) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
@@ -87,6 +95,7 @@ score_s
 # Examples for sort() with ties
 order(c(2, 1:4))  # There's a tie
 order(c(2, 1:4), 1:5)  # There's a tie
+
 # Create a vector of student ranks
 ra_nks <- c("fifth", "fourth", "third", "second", "first")
 # Reverse sort the student ranks according to students
@@ -101,10 +110,13 @@ order(data_frame$price)
 data_frame[order(data_frame$price), ]
 # Sort data_frame on color column
 data_frame[order(data_frame$color), ]
+
+
 as.matrix(data_frame)
 vectorv <- sample(9)
 matrix(vectorv, ncol=3)
 as.matrix(vectorv, ncol=3)
+
 matrixv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
 rownames(matrixv) <- c("row1", "row2")  # Rownames attribute
 colnames(matrixv) <- c("col1", "col2", "col3")  # Colnames attribute
@@ -115,17 +127,20 @@ as.data.frame.matrix(matrixv)
 sample(methods(as.data.frame), size=4)
 # Function method is faster than generic function
 summary(microbenchmark(
-  as_data_frame_matrix=as.data.frame.matrix(matrixv),
+  as_data_frame_matrix=
+    as.data.frame.matrix(matrixv),
   as_data_frame=as.data.frame(matrixv),
   data_frame=data.frame(matrixv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
-  as_list=as.list(as.data.frame.matrix(matrixv)),
-  applyloop=lapply(seq_along(matrixv[1, ]),
+  aslist=as.list(as.data.frame.matrix(matrixv)),
+  lapply=lapply(seq_along(matrixv[1, ]),
      function(indeks) matrixv[, indeks]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 # ?iris  # Get information on iris
 dim(iris)
 head(iris, 2)
@@ -136,6 +151,7 @@ class(unique(iris$Species))
 sapply(iris, is.numeric)
 # Calculate means of iris columns
 sapply(iris, mean)  # Returns NA for Species
+
 # ?mtcars  # mtcars data from 1974 Motor Trend magazine
 # mpg   Miles/(US) gallon
 # qsec   1/4 mile time
@@ -148,6 +164,7 @@ colnames(mtcars)
 head(rownames(mtcars), 3)
 unique(mtcars$cyl)  # Extract list of car cylinders
 sapply(mtcars, mean)  # Calculate means of mtcars columns
+
 library(MASS)
 # ?Cars93  # Get information on Cars93
 dim(Cars93)
@@ -158,6 +175,7 @@ unique(Cars93$Type)  # Extract list of car types
 # Plot histogram of Highway MPG using the Freedman-Diaconis rule
 hist(Cars93$MPG.highway, col="lightblue1",
      main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+
 rm(list=ls())
 as.numeric(c(1:3, "a"))  # NA from coercion
 0/0  # NaN from ambiguous math
@@ -172,6 +190,7 @@ mean(datav)  # Returns NA, when NAs are input
 mean(datav, na.rm=TRUE)  # remove NAs from input data
 datav[!is.na(datav)]  # Delete the NA values
 sum(!is.na(datav))  # Count non-NA values
+
 # airquality data has some NAs
 head(airquality)
 dim(airquality)
@@ -181,6 +200,7 @@ sum(is.na(airquality))
 sum(!complete.cases(airquality))
 # Display rows containing NAs
 head(airquality[!complete.cases(airquality), ])
+
 # Create vector containing NA values
 vectorv <- sample(22)
 vectorv[sample(NROW(vectorv), 4)] <- NA
@@ -199,20 +219,22 @@ good_air <- zoo::na.locf(airquality)
 dim(good_air)
 # NAs replaced
 head(good_air)
+
 # Replace NAs in xts time series
 library(rutils)  # load package rutils
 se_ries <- rutils::etfenv$prices[, 1]
 head(se_ries, 3)
 sum(is.na(se_ries))
-series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
+series_zoo <- zoo::na.locf(se_ries, fromLast=TRUE)
 series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
 all.equal(series_zoo, series_xts, check.attributes=FALSE)
 head(series_xts, 3)
 library(microbenchmark)
 summary(microbenchmark(
-  zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
+  zoo=zoo::na.locf(se_ries, fromLast=TRUE),
   xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 # NULL values have no mode or type
 c(mode(NULL), mode(NA))
 c(typeof(NULL), typeof(NA))
@@ -239,6 +261,7 @@ vectorv <- numeric(5)
 # Assign to vector in a loop - good code
 for (indeks in 1:5)
   vectorv[indeks] <- runif(1)
+
 # Create list of vectors
 listv <- lapply(1:3, function(x) sample(6))
 # Bind list elements into matrix - doesn't work
@@ -257,6 +280,7 @@ do.call(cbind, list(1:2, 3:5))
 do.call(cbind, list(1, NULL, 3, 4))
 # NA element isn't skipped
 do.call(cbind, list(1, NA, 3, 4))
+
 library(microbenchmark)
 list_vectors <- lapply(1:5, rnorm, n=10)
 matrixv <- do.call(rbind, list_vectors)
@@ -275,15 +299,17 @@ rbind(listv[[indeks]], listv[[indeks+1]])
   listv[[1]]
 }  # end do_call_rbind
 identical(matrixv, do_call_rbind(list_vectors))
+
 library(microbenchmark)
-airquality[(airquality$Solar.R>320 &
+airquality[(airquality$Solar.R > 320 &
         !is.na(airquality$Solar.R)), ]
-subset(x=airquality, subset=(Solar.R>320))
+subset(x=airquality, subset=(Solar.R > 320))
 summary(microbenchmark(
-    subset=subset(x=airquality, subset=(Solar.R>320)),
-    brackets=airquality[(airquality$Solar.R>320 &
+    subset=subset(x=airquality, subset=(Solar.R > 320)),
+    brackets=airquality[(airquality$Solar.R > 320 &
             !is.na(airquality$Solar.R)), ],
 times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 unique(iris$Species)  # Species has three distinct values
 # Split into separate data frames by hand
 setosa <- iris[iris$Species=="setosa", ]
@@ -298,6 +324,7 @@ names(split_iris)
 dim(split_iris$setosa)
 head(split_iris$setosa, 2)
 all.equal(setosa, split_iris$setosa)
+
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
@@ -319,6 +346,7 @@ aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
 aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate() all columns
 aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
+
 # Mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
@@ -329,6 +357,7 @@ with(mtcars, sapply(sort(unique(cyl)), function(x) {
      }))  # end with
 # Function by() instead of tapply()
 with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
+
 # Get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
         function(x) {
@@ -344,6 +373,7 @@ data_cars <- lapply(split_cars,  # Now same using lapply
 is.list(data_cars)  # lapply produces a list
 # do.call flattens list into a matrix
 do.call(cbind, data_cars)
+
 # Download CRSPpanel.txt from Brightspace
 # Read the file using read.table() with header and sep arguments
 panel_data <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt",
@@ -366,10 +396,11 @@ aggregate(formula=(Sector ~ Industry), data=panel_data,
 with(panel_data, aggregate(x=Sector, by=list(Industry),
                      FUN=unique))
 # Or
-with(panel_data, sapply(confls(Industry),
+with(panel_data, sapply(unique(Industry),
   function(x) {
     Sector[match(x, Industry)]
   }))  # end sapply
+
 # Split panel_data based on Sector column
 split_panel <- split(panel_data, panel_data$Sector)
 # Number of companies in each Sector
@@ -395,6 +426,7 @@ sec_ind2 <- with(panel_data,
 # Coerce sec_ind2 into a jagged array
 sec_ind2 <- drop(as.matrix(sec_ind2))
 all.equal(sec_ind2, sec_ind)
+
 # Average ROE in each Industry
 with(panel_data,
   sapply(split(ROE, Industry), mean))
@@ -417,168 +449,3 @@ t(sapply(split_panel, FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
 aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
   by=list(panel_data$Industry), FUN=mean)
-# ?options  # Get info on global options
-getOption("warn")  # Global option for "warn"
-options("warn")  # Global option for "warn"
-getOption("error")  # Global option for "error"
-sqrt_safe <- function(input) {
-# Returns its argument
-  if (input<0) {
-    warning("sqrt_safe: input is negative")
-    NULL  # Return NULL for negative argument
-  } else {
-    sqrt(input)
-  }  # end if
-}  # end sqrt_safe
-sqrt_safe(5)
-sqrt_safe(-1)
-options(warn=-1)
-sqrt_safe(-1)
-options(warn=0)
-sqrt_safe()
-options(warn=1)
-sqrt_safe()
-options(warn=3)
-sqrt_safe()
-# Function valido validates its arguments
-valido <- function(input=NULL) {
-# Check if argument is valid and return double
-  if (is.null(input)) {
-    return("valido: input is missing")
-  } else if (is.numeric(input)) {
-    2*input
-  } else cat("valido: input not numeric")
-}  # end valido
-valido(3)
-valido("a")
-valido()
-# valido validates arguments using missing()
-valido <- function(input) {
-# Check if argument is valid and return double
-  if (missing(input)) {
-    return("valido: input is missing")
-  } else if (is.numeric(input)) {
-    2*input
-  } else cat("valido: input is not numeric")
-}  # end valido
-valido(3)
-valido("a")
-valido()
-# valido() validates its arguments and assertions
-valido <- function(input) {
-# Check if argument is valid and return double
-  if (missing(input)) {
-    stop("valido: input is missing")
-  } else if (!is.numeric(input)) {
-    cat("input =", input, "\n")
-    stop("valido: input is not numeric")
-  } else 2*input
-}  # end valido
-valido(3)
-valido("a")
-valido()
-# Print the call stack
-traceback()
-valido <- function(input) {
-# Check argument using long form '&&' operator
-  stopifnot(!missing(input) && is.numeric(input))
-  2*input
-}  # end valido
-valido(3)
-valido()
-valido("a")
-valido <- function(input) {
-# Check argument using logical '&' operator
-  stopifnot(!missing(input) & is.numeric(input))
-  2*input
-}  # end valido
-valido()
-valido("a")
-# sumtwo() returns the sum of its two arguments
-sumtwo <- function(input1, input2) {  # Even more robust
-# Check if at least one argument is not missing
-  stopifnot(!missing(input1) &&
-        !missing(input2))
-# Check if arguments are valid and return sum
-  if (is.numeric(input1) && is.numeric(input2)) {
-    input1 + input2  # Both valid
-  } else if (is.numeric(input1)) {
-    cat("input2 is not numeric\n")
-    input1  # input1 is valid
-  } else if (is.numeric(input2)) {
-    cat("input1 is not numeric\n")
-    input2  # input2 is valid
-  } else {
-    stop("none of the arguments are numeric")
-  }
-}  # end sumtwo
-sumtwo(1, 2)
-sumtwo(5, 'a')
-sumtwo('a', 5)
-sumtwo('a', 'b')
-sumtwo()
-# Flag "valido" for debugging
-debug(valido)
-# Calling "valido" starts debugger
-valido(3)
-# unflag "valido" for debugging
-undebug(valido)
-valido <- function(input) {
-  browser()  # Pause and invoke debugger
-# Check argument using long form '&&' operator
-  stopifnot(!missing(input) && is.numeric(input))
-  2*input
-}  # end valido
-valido()  # Invokes debugger
-options("error")  # Show default NULL "error" option
-options(error=recover)  # Set "error" option to "recover"
-options(error=NULL)  # Set back to default "error" option
-str(tryCatch)  # Get arguments of tryCatch()
-tryCatch(  # Without error handler
-  {  # Evaluate expressions
-    numv <- 101  # Assign
-    stop('my error')  # Produce error
-  },
-  finally=print(paste("numv=", numv))
-)  # end tryCatch
-tryCatch(  # With error handler
-  {  # Evaluate expressions
-    numv <- 101  # Assign
-    stop('my error')  # Produce error
-  },
-  # Error handler captures error condition
-  error=function(error_cond) {
-    print(paste("error handler: ", error_cond))
-  },  # end error handler
-  # Warning handler captures warning condition
-  warning=function(warning_cond) {
-    print(paste("warning handler: ", warning_cond))
-  },  # end warning handler
-  finally=print(paste("numv=", numv))
-)  # end tryCatch
-# Apply loop without tryCatch
-apply(matrix(1:5), 1, function(numv) {  # Anonymous function
-    stopifnot(!(numv = 3))  # Check for error
-    # Broadcast message to console
-    cat("(cat) numv =", numv, "\n")
-    # Return a value
-    paste("(return) numv =", numv)
-  }  # end anonymous function
-)  # end apply
-# Apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(numv) {  # Anonymous function
-    tryCatch(  # With error handler
-{  # Body
-  stopifnot(numv != 3)  # Check for error
-  # Broadcast message to console
-  cat("(cat) numv =", numv, "\t")
-  # Return a value
-  paste("(return) numv =", numv)
-},
-# Error handler captures error condition
-error=function(error_cond)
-  paste("handler: ", error_cond),
-finally=print(paste("(finally) numv =", numv))
-    )  # end tryCatch
-  }  # end anonymous function
-)  # end apply

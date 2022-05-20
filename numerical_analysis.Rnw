@@ -333,33 +333,33 @@ integrate(function(x) x*dnorm(x),
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
-returns <- rutils::etfenv$returns$VTI
-returns <- drop(coredata(na.omit(returns)))
-nrows <- NROW(returns)
+retsp <- rutils::etfenv$returns$VTI
+retsp <- drop(coredata(na.omit(retsp)))
+nrows <- NROW(retsp)
 # Mean and standard deviation of returns
-c(mean(returns), sd(returns))
+c(mean(retsp), sd(retsp))
 # Calculate the MAD of returns 10 points apart
-returns <- sort(returns)
-bwidth <- 10*mad(rutils::diffit(returns, lagg=10))
+retsp <- sort(retsp)
+bwidth <- 10*mad(rutils::diffit(retsp, lagg=10))
 # Calculate the kernel density
 densityv <- sapply(1:nrows, function(it) {
-  sum(dnorm(returns-returns[it], sd=bwidth))
+  sum(dnorm(retsp-retsp[it], sd=bwidth))
 })  # end sapply
-madv <- mad(returns)
-plot(returns, densityv, xlim=c(-5*madv, 5*madv), 
+madv <- mad(retsp)
+plot(retsp, densityv, xlim=c(-5*madv, 5*madv), 
      t="l", col="blue", lwd=3, 
      xlab="returns", ylab="density",
      main="Density of VTI Returns")
 # Calculate the kernel density using density()
-densityv <- density(returns, bw=bwidth)
+densityv <- density(retsp, bw=bwidth)
 NROW(densityv$y)
 x11(width=6, height=5)
 plot(densityv, xlim=c(-5*madv, 5*madv), 
      xlab="returns", ylab="density",
      col="blue", lwd=3, main="Density of VTI Returns")
 # Interpolate the densityv vector into returns
-densityv <- approx(densityv$x, densityv$y, xout=returns)
-all.equal(densityv$x, returns)
+densityv <- approx(densityv$x, densityv$y, xout=retsp)
+all.equal(densityv$x, retsp)
 plot(densityv, xlim=c(-5*madv, 5*madv), 
      xlab="returns", ylab="density",
      t="l", col="blue", lwd=3, 
@@ -391,13 +391,13 @@ plot(densityv, xlim=c(-5*madv, 5*madv),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
-histp <- hist(returns, breaks=100, freq=FALSE,
+histp <- hist(retsp, breaks=100, freq=FALSE,
   xlim=c(-5*madv, 5*madv), xlab="", ylab="", 
   main="VTI Return Distribution")
 # Draw kernel density of histogram
 lines(densityv, col="red", lwd=2)
 # Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
+curve(expr=dnorm(x, mean=mean(retsp), sd=sd(retsp)),
       add=TRUE, type="l", lwd=2, col="blue")
 # Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
@@ -931,12 +931,12 @@ profvis::profvis({
   mean_s <- vapply(matrixv, mean, numeric(1))
 })  # end profvis
 # Four methods of calculating data frame column means
-data_frame <- as.data.frame(matrixv)
+dframe <- as.data.frame(matrixv)
 profvis::profvis({
-  mean_s <- apply(data_frame, 2, mean)
-  mean_s <- colMeans(data_frame)
-  mean_s <- lapply(data_frame, mean)
-  mean_s <- vapply(data_frame, mean, numeric(1))
+  mean_s <- apply(dframe, 2, mean)
+  mean_s <- colMeans(dframe)
+  mean_s <- lapply(dframe, mean)
+  mean_s <- vapply(dframe, mean, numeric(1))
 })  # end profvis
 # Profile a shiny app
 profvis::profvis(
@@ -1351,7 +1351,7 @@ summary(microbenchmark(
             lapply(seq_along(matrixv[1, ]),
                    function(indeks)
                      matrixv[, indeks])),
-  as_data_frame =
+  as_dframe =
     do.call(pmin.int,
             as.data.frame.matrix(matrixv)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -2371,11 +2371,11 @@ apply(boot_data, MARGIN=2, function(x)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI returns
 library(rutils)
-returns <- rutils::etfenv$returns$VTI
-returns <- na.omit(returns)
-nrows <- NROW(returns)
+retsp <- rutils::etfenv$returns$VTI
+retsp <- na.omit(retsp)
+nrows <- NROW(retsp)
 # Sample from VTI returns
-samplev <- returns[sample.int(nrows, replace=TRUE)]
+samplev <- retsp[sample.int(nrows, replace=TRUE)]
 c(sd=sd(samplev), mad=mad(samplev))
 # sample.int() is a little faster than sample()
 library(microbenchmark)
@@ -2415,9 +2415,9 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Sample from time series of VTI returns
 library(rutils)
-returns <- rutils::etfenv$returns$VTI
-returns <- na.omit(returns)
-nrows <- NROW(returns)
+retsp <- rutils::etfenv$returns$VTI
+retsp <- na.omit(retsp)
+nrows <- NROW(retsp)
 # Bootstrap sd and MAD under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
@@ -2425,19 +2425,19 @@ cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 nboot <- 10000
 boot_data <- parLapply(cluster, 1:nboot,
-  function(x, returns, nrows) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
+  function(x, retsp, nrows) {
+    samplev <- retsp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
-  }, returns=returns, nrows*nrows)  # end parLapply
+  }, retsp=retsp, nrows*nrows)  # end parLapply
 # Bootstrap sd and MAD under Mac-OSX or Linux
 boot_data <- mclapply(1:nboot, function(x) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
+    samplev <- retsp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 boot_data <- rutils::do_call(rbind, boot_data)
 # Standard error assuming normal distribution of returns
-sd(returns)/sqrt(nboot)
+sd(retsp)/sqrt(nboot)
 # Means and standard errors from bootstrap
 stderrors <- apply(boot_data, MARGIN=2,
   function(x) c(mean=mean(x), stderror=sd(x)))
@@ -2768,16 +2768,16 @@ text(x=(nrows-60), y=strikep, labels="strike price", pos=3, cex=1)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-prices <- quantmod::Cl(rutils::etfenv$VTI)
-startd <- as.numeric(prices[1, ])
-returns <- rutils::diffit(log(prices))
-class(returns); head(returns)
-sum(is.na(returns))
-nrows <- NROW(returns)
+pricets <- quantmod::Cl(rutils::etfenv$VTI)
+startd <- as.numeric(pricets[1, ])
+retsp <- rutils::diffit(log(pricets))
+class(retsp); head(retsp)
+sum(is.na(retsp))
+nrows <- NROW(retsp)
 # Define barrier level with respect to prices
-barl <- 1.5*max(prices)
+barl <- 1.5*max(pricets)
 # Calculate single bootstrap sample
-samplev <- returns[sample.int(nrows, replace=TRUE)]
+samplev <- retsp[sample.int(nrows, replace=TRUE)]
 # Calculate prices from percentage returns
 samplev <- startd*exp(cumsum(samplev))
 # Calculate if prices crossed barrier
@@ -2794,16 +2794,16 @@ clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl"))
 nboot <- 10000
 boot_data <- parLapply(cluster, 1:nboot,
-  function(x, returns, nrows) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
+  function(x, retsp, nrows) {
+    samplev <- retsp[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
     samplev <- startd*exp(cumsum(samplev))
     # Calculate if prices crossed barrier
     sum(samplev > barl) > 0
-  }, returns=returns, nrows*nrows)  # end parLapply
+  }, retsp=retsp, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:nboot, function(x) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
+    samplev <- retsp[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
     samplev <- startd*exp(cumsum(samplev))
     # Calculate if prices crossed barrier
@@ -2836,20 +2836,20 @@ sum(boot_data)/nboot
 # Calculate percentage returns from VTI prices
 library(rutils)
 ohlc <- rutils::etfenv$VTI
-prices <- as.numeric(ohlc[, 4])
-startd <- prices[1]
-returns <- rutils::diffit(log(prices))
-nrows <- NROW(returns)
+pricets <- as.numeric(ohlc[, 4])
+startd <- pricets[1]
+retsp <- rutils::diffit(log(pricets))
+nrows <- NROW(retsp)
 # Calculate difference of OHLC price columns
-ohlc_diff <- ohlc[, 1:3] - prices
-class(returns); head(returns)
+ohlc_diff <- ohlc[, 1:3] - pricets
+class(retsp); head(retsp)
 # Calculate bootstrap prices from percentage returns
 datav <- sample.int(nrows, replace=TRUE)
-boot_prices <- startd*exp(cumsum(returns[datav]))
+boot_prices <- startd*exp(cumsum(retsp[datav]))
 boot_ohlc <- ohlc_diff + boot_prices
 boot_ohlc <- cbind(boot_ohlc, boot_prices)
 # Define barrier level with respect to prices
-barl <- 1.5*max(prices)
+barl <- 1.5*max(pricets)
 # Calculate if High bootstrapped prices crossed barrier level
 sum(boot_ohlc[, 2] > barl) > 0
       @
@@ -2864,20 +2864,20 @@ clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl", "ohlc_diff"))
 nboot <- 10000
 boot_data <- parLapply(cluster, 1:nboot,
-  function(x, returns, nrows) {
+  function(x, retsp, nrows) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
-    boot_prices <- startd*exp(cumsum(returns[datav]))
+    boot_prices <- startd*exp(cumsum(retsp[datav]))
     boot_ohlc <- ohlc_diff + boot_prices
     boot_ohlc <- cbind(boot_ohlc, boot_prices)
     # Calculate statistic
     sum(boot_ohlc[, 2] > barl) > 0
-  }, returns=returns, nrows*nrows)  # end parLapply
+  }, retsp=retsp, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:nboot, function(x) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
-    boot_prices <- startd*exp(cumsum(returns[datav]))
+    boot_prices <- startd*exp(cumsum(retsp[datav]))
     boot_ohlc <- ohlc_diff + boot_prices
     boot_ohlc <- cbind(boot_ohlc, boot_prices)
     # Calculate statistic
@@ -3982,10 +3982,10 @@ inner_mult_r(1:3, 6:3)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=inner_mult_r(1:10000, 1:10000),
+  rcode=inner_mult_r(1:10000, 1:10000),
   inner_r=1:10000 %*% 1:10000,
-  r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_lagmugar(1:10000, 1:10000),
+  cppcode=inner_mult(1:10000, 1:10000),
+  cppcode_sugar=inner_lagmugar(1:10000, 1:10000),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4021,14 +4021,14 @@ boot_data <- function(datav, nboot=nboot) {
   apply(boot_data, MARGIN=2,
     function(x) c(mean=mean(x), stderror=sd(x)))
 
-  returns <- numeric(nrows)
-  prices <- numeric(nrows)
-  prices[1] <- eq_price
+  retsp <- numeric(nrows)
+  pricets <- numeric(nrows)
+  pricets[1] <- eq_price
   for (i in 2:nrows) {
-    returns[i] <- thetav*(eq_price - prices[i-1]) + volat*rnorm(1)
-    prices[i] <- prices[i-1] + returns[i]
+    retsp[i] <- thetav*(eq_price - pricets[i-1]) + volat*rnorm(1)
+    pricets[i] <- pricets[i-1] + retsp[i]
   }  # end for
-  prices
+  pricets
 }  # end boot_data
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
@@ -4089,14 +4089,14 @@ static const double pi = 3.14159265;
 # Define Ornstein-Uhlenbeck function in R
 sim_ou <- function(nrows=1000, eq_price=5.0,
                     volat=0.01, theta=0.01) {
-  returns <- numeric(nrows)
-  prices <- numeric(nrows)
-  prices[1] <- eq_price
+  retsp <- numeric(nrows)
+  pricets <- numeric(nrows)
+  pricets[1] <- eq_price
   for (i in 2:nrows) {
-    returns[i] <- theta*(eq_price - prices[i-1]) + volat*rnorm(1)
-    prices[i] <- prices[i-1] + returns[i]
+    retsp[i] <- theta*(eq_price - pricets[i-1]) + volat*rnorm(1)
+    pricets[i] <- pricets[i-1] + retsp[i]
   }  # end for
-  prices
+  pricets
 }  # end sim_ou
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
@@ -4114,14 +4114,14 @@ NumericVector sim_ou_rcpp(double eq_price,
                       double theta,
                       NumericVector innov) {
   int(nrows = innov.size();
-  NumericVector prices*nrows);
-  NumericVector returns*nrows);
-  prices[0] = eq_price;
+  NumericVector pricets*nrows);
+  NumericVector retsp*nrows);
+  pricets[0] = eq_price;
   for (int it = 1; it < nrows; it++) {
-    returns[it] = theta*(eq_price - prices[it-1]) + volat*innov[it-1];
-    prices[it] = prices[it-1] + returns[it];
+    retsp[it] = theta*(eq_price - pricets[it-1]) + volat*innov[it-1];
+    pricets[it] = pricets[it-1] + retsp[it];
   }  // end for
-  return prices;
+  return pricets;
 }")  # end cppFunction
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
@@ -4133,8 +4133,8 @@ all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  rcode=sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
+  cppcode=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4172,8 +4172,8 @@ all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  rcode=sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
+  cppcode=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -4191,14 +4191,14 @@ NumericVector sim_ou_rcpp(double eq_price,
                           double thetav,
                           NumericVector innov) {
   int(nrows = innov.size();
-  NumericVector prices*nrows);
-  NumericVector returns*nrows);
-  prices[0] = eq_price;
+  NumericVector pricets*nrows);
+  NumericVector retsp*nrows);
+  pricets[0] = eq_price;
   for (int it = 1; it < nrows; it++) {
-    returns[it] = thetav*(eq_price - prices[it-1]) + volat*innov[it-1];
-    prices[it] = prices[it-1] + returns[it];
+    retsp[it] = thetav*(eq_price - pricets[it-1]) + volat*innov[it-1];
+    pricets[it] = pricets[it-1] + retsp[it];
   }  // end for
-  return prices;
+  return pricets;
 }  // end sim_ou_rcpp
     \end{lstlisting}
   \end{columns}
@@ -4231,9 +4231,9 @@ Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifun.cpp")
 # Microbenchmark Rcpp code
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=runif(1e5),
+  rcode=runif(1e5),
   rloop=unifun(0.3, 1e5),
-  r_cpp=uniform_rcpp(0.3, 1e5),
+  cppcode=uniform_rcpp(0.3, 1e5),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -4300,14 +4300,14 @@ boot_data <- function(datav, nboot=1000) {
   apply(boot_data, MARGIN=2,
     function(x) c(mean=mean(x), stderror=sd(x)))
 
-  returns <- numeric(nrows)
-  prices <- numeric(nrows)
-  prices[1] <- eq_price
+  retsp <- numeric(nrows)
+  pricets <- numeric(nrows)
+  pricets[1] <- eq_price
   for (i in 2:nrows) {
-    returns[i] <- thetav*(eq_price - prices[i-1]) + volat*rnorm(1)
-    prices[i] <- prices[i-1] + returns[i]
+    retsp[i] <- thetav*(eq_price - pricets[i-1]) + volat*rnorm(1)
+    pricets[i] <- pricets[i-1] + retsp[i]
   }  # end for
-  prices
+  pricets
 }  # end boot_data
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
@@ -4390,14 +4390,14 @@ boot_data <- function(datav, nboot=1000) {
   apply(boot_data, MARGIN=2,
         function(x) c(mean=mean(x), stderror=sd(x)))
 
-  returns <- numeric(nrows)
-  prices <- numeric(nrows)
-  prices[1] <- eq_price
+  retsp <- numeric(nrows)
+  pricets <- numeric(nrows)
+  pricets[1] <- eq_price
   for (i in 2:nrows) {
-    returns[i] <- thetav*(eq_price - prices[i-1]) + volat*rnorm(1)
-    prices[i] <- prices[i-1] + returns[i]
+    retsp[i] <- thetav*(eq_price - pricets[i-1]) + volat*rnorm(1)
+    pricets[i] <- pricets[i-1] + retsp[i]
   }  # end for
-  prices
+  pricets
 }  # end boot_data
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
@@ -4722,17 +4722,17 @@ arma::mat calc_inv(const arma::mat& tseries,
   } else {
     // Calculate the regularized inverse using SVD decomposition
     // Allocate SVD
-    arma::vec svd_val;
-    arma::mat svd_u, svd_v;
+    arma::vec svdval;
+    arma::mat svdu, svdv;
     // Calculate the SVD
-    arma::svd(svd_u, svd_val, svd_v, tseries);
+    arma::svd(svdu, svdval, svdv, tseries);
     // Subset the SVD
     eigen_max = eigen_max - 1;
-    svd_u = svd_u.cols(0, eigen_max);
-    svd_v = svd_v.cols(0, eigen_max);
-    svd_val = svd_val.subvec(0, eigen_max);
+    svdu = svdu.cols(0, eigen_max);
+    svdv = svdv.cols(0, eigen_max);
+    svdval = svdval.subvec(0, eigen_max);
     // Calculate the inverse from the SVD
-    return svd_v*arma::diagmat(1/svd_val)*svd_u.t();
+    return svdv*arma::diagmat(1/svdval)*svdu.t();
   }  // end if
 }  // end calc_inv
     \end{lstlisting}

@@ -150,7 +150,7 @@ knit_theme$set(thm)
       \hskip1em\url{http://setosa.io/ev/eigenvectors-and-eigenvalues/}
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eigenvalues.png}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_values.png}
       <<echo=TRUE,eval=FALSE>>=
 # Create random real symmetric matrix
 matrixv <- matrix(runif(25), nc=5)
@@ -492,13 +492,13 @@ all.equal(matrixv, matrixv %*% invsvd %*% matrixv)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Set tolerance for determining zero singular values
-precision <- sqrt(.Machine$double.eps)
+precv <- sqrt(.Machine$double.eps)
 # Check for zero singular values
 round(svdec$d, 12)
-not_zero <- (svdec$d > (precision * svdec$d[1]))
+notzero <- (svdec$d > (precv * svdec$d[1]))
 # Calculate regularized inverse from SVD
-invsvd <- svdec$v[, not_zero] %*%
-  (t(svdec$u[, not_zero]) / svdec$d[not_zero])
+invsvd <- svdec$v[, notzero] %*%
+  (t(svdec$u[, notzero]) / svdec$d[notzero])
 # Verify inverse property of matrixv
 all.equal(matrixv, matrixv %*% invsvd %*% matrixv)
 # Calculate regularized inverse using MASS::ginv()
@@ -622,11 +622,11 @@ eigend <- eigen(matrixv)
 eigenval <- eigend$values
 eigenvec <- eigend$vectors
 # Set tolerance for determining zero singular values
-precision <- sqrt(.Machine$double.eps)
+precv <- sqrt(.Machine$double.eps)
 # If needed convert to positive definite matrix
-not_zero <- (eigenval > (precision*eigenval[1]))
-if (sum(!not_zero) > 0) {
-  eigenval[!not_zero] <- 2*precision
+notzero <- (eigenval > (precv*eigenval[1]))
+if (sum(!notzero) > 0) {
+  eigenval[!notzero] <- 2*precv
   matrixv <- eigenvec %*% (eigenval * t(eigenvec))
 }  # end if
 # Calculate the Cholesky matrixv
@@ -676,12 +676,12 @@ cholmat
 # Simulate random uncorrelated returns
 nassets <- 5
 nrows <- 10000
-returns <- matrix(rnorm(nassets*nrows), nc=nassets)
+retsp <- matrix(rnorm(nassets*nrows), nc=nassets)
 # Calculate correlated returns by applying Cholesky
-corr_returns <- returns %*% cholmat
+retscorr <- retsp %*% cholmat
 # Calculate covariance matrix
-cov_returns <- crossprod(corr_returns) /(nrows-1)
-all.equal(covmat, cov_returns)
+covmat2 <- crossprod(retscorr) /(nrows-1)
+all.equal(covmat, covmat2)
       @
   \end{columns}
 \end{block}
@@ -709,13 +709,13 @@ all.equal(covmat, cov_returns)
 nassets <- 10
 nrows <- 100
 set.seed(1121)  # Initialize random number generator
-returns <- matrix(rnorm(nassets*nrows), nc=nassets)
+retsp <- matrix(rnorm(nassets*nrows), nc=nassets)
 # Calculate de-meaned returns matrix
-returns <- t(t(returns) - colMeans(returns))
+retsp <- t(t(retsp) - colMeans(retsp))
 # Or
-returns <- apply(returns, MARGIN=2, function(x) (x-mean(x)))
+retsp <- apply(retsp, MARGIN=2, function(x) (x-mean(x)))
 # Calculate covariance matrix
-covmat <- crossprod(returns) /(nrows-1)
+covmat <- crossprod(retsp) /(nrows-1)
 # Calculate eigenvectors and eigenvalues
 eigend <- eigen(covmat)
 eigend$values
@@ -732,9 +732,9 @@ barplot(eigend$values, # Plot eigenvalues
 # as function of number of returns
 ndata <- ((nassets/2):(2*nassets))
 eigenval <- sapply(ndata, function(x) {
-  returns <- returns[1:x, ]
-  returns <- apply(returns, MARGIN=2, function(y) (y - mean(y)))
-  covmat <- crossprod(returns) / (x-1)
+  retsp <- retsp[1:x, ]
+  retsp <- apply(retsp, MARGIN=2, function(y) (y - mean(y)))
+  covmat <- crossprod(retsp) / (x-1)
   min(eigen(covmat)$values)
 })  # end sapply
 plot(y=eigenval, x=ndata, t="l", xlab="", ylab="", lwd=3, col="blue",
@@ -783,12 +783,12 @@ eigend <- eigen(covmat)
 eigenvec <- eigend$vectors
 eigenval <- eigend$values
 # Set tolerance for determining zero singular values
-precision <- sqrt(.Machine$double.eps)
+precv <- sqrt(.Machine$double.eps)
 # Calculate regularized inverse matrix
-not_zero <- (eigenval > (precision * eigenval[1]))
-invreg <- eigenvec[, not_zero] %*%
-  (t(eigenvec[, not_zero]) / eigenval[not_zero])
-# Verify inverse property of matrixv
+notzero <- (eigenval > (precv * eigenval[1]))
+invreg <- eigenvec[, notzero] %*%
+  (t(eigenvec[, notzero]) / eigenval[notzero])
+# Verify that invmat is same as invreg
 all.equal(invmat, invreg)
       @
   \end{columns}
@@ -812,9 +812,9 @@ all.equal(invmat, invreg)
       \vskip1ex
       Even though the \emph{regularized} inverse $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
       \vskip1ex
-      The parameter \texttt{max\_eigen} specifies the number of eigenvalues used for calculating the \emph{regularized} inverse of the covariance matrix of returns.
+      The parameter \texttt{eigen\_max} specifies the number of eigenvalues used for calculating the \emph{regularized} inverse of the covariance matrix of returns.
       \vskip1ex
-      The optimal value of the parameter \texttt{max\_eigen} can be determined using \emph{backtesting} (\emph{cross-validation}).
+      The optimal value of the parameter \texttt{eigen\_max} can be determined using \emph{backtesting} (\emph{cross-validation}).
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -822,7 +822,7 @@ all.equal(invmat, invreg)
 eigen_max <- 3
 invmat <- eigenvec[, 1:eigen_max] %*%
   (t(eigenvec[, 1:eigen_max]) / eigend$values[1:eigen_max])
-# Verify inverse property of matrixv
+# Verify that invmat is same as invreg
 all.equal(invmat, invreg)
       @
   \end{columns}
@@ -891,50 +891,50 @@ invmat <- solve(covshrink)
       The first principal component can be
       returns of \emph{XLP} and \emph{VTI} are highly correlated because they both share a common factor of market returns.
       <<echo=TRUE,eval=FALSE>>=
-returns <- scale(na.omit(rutils::etfenv$returns
+retsp <- scale(na.omit(rutils::etfenv$returns
                 [, as.character(formulav)[-1]]))
-crossprod(returns) / NROW(returns)
+crossprod(retsp) / NROW(retsp)
 w1 <- sqrt(0.5); w2 <- w1
 foo <- matrix(c(w1, w2, -w2, w1), nc=2)
 t(foo) %*% foo
-# bar <- returns %*% t(solve(foo))
+# bar <- retsp %*% t(solve(foo))
 (t(bar) %*% bar) / NROW(bar)
 
-covmat <- function(returns, an_gle=0) {
-  w1 <- cos(an_gle)
-  w2 <- sin(an_gle)
+covmat <- function(retsp, anglev=0) {
+  w1 <- cos(anglev)
+  w2 <- sin(anglev)
   matrixv <- matrix(c(w1, -w2, w2, w1), nc=2)
-  compo_nents <- returns %*% t(matrixv)
-  (t(compo_nents) %*% compo_nents) / NROW(compo_nents)
+  pcav <- retsp %*% t(matrixv)
+  (t(pcav) %*% pcav) / NROW(pcav)
 }  # end covmat
 
-bar <- covmat(returns, an_gle=pi/4)
-crossprod(returns) / NROW(returns)
+bar <- covmat(retsp, anglev=pi/4)
+crossprod(retsp) / NROW(retsp)
 (t(bar) %*% bar) / NROW(bar)
 
-angle_s <- seq(0, pi/2, by=pi/24)
-covmat <- sapply(angle_s, function(an_gle)
-  covmat(returns, an_gle=an_gle)[1, 1])
-plot(x=angle_s, y=covmat, t="l")
+angles <- seq(0, pi/2, by=pi/24)
+covmat <- sapply(angles, function(anglev)
+  covmat(retsp, anglev=anglev)[1, 1])
+plot(x=angles, y=covmat, t="l")
 
 optiml <- optimize(
-  f=function(an_gle)
-    -covmat(returns, an_gle=an_gle)[1, 1],
-  interval=range(angle_s))
-an_gle <- optiml$minimum
-bar <- covmat(returns, an_gle=an_gle)
-tan(an_gle)
+  f=function(anglev)
+    -covmat(retsp, anglev=anglev)[1, 1],
+  interval=range(angles))
+anglev <- optiml$minimum
+bar <- covmat(retsp, anglev=anglev)
+tan(anglev)
 
-w1 <- cos(an_gle)
-w2 <- sin(an_gle)
+w1 <- cos(anglev)
+w2 <- sin(anglev)
 matrixv <- matrix(c(w1, -w2, w2, w1), nc=2)
-compo_nents <- returns %*% t(matrixv)
-(t(compo_nents) %*% compo_nents) / NROW(compo_nents)
+pcav <- retsp %*% t(matrixv)
+(t(pcav) %*% pcav) / NROW(pcav)
 
-plot(x=compo_nents[, 1], y=compo_nents[, 2],
+plot(x=pcav[, 1], y=pcav[, 2],
      xlim=c(-10, 10), ylim=c(-10, 10))
 
-model <- lm(formulav, data=returns)
+model <- lm(formulav, data=retsp)
 # Get regression coefficients
 coef(summary(model))
 
@@ -944,11 +944,11 @@ plot(x=foo[, 1], y=foo[, 2])
 summary(lm(foo[, 1] ~ foo[, 2]))
 
 optiml <- optimize(
-  f=function(an_gle)
-    -covmat(foo, an_gle=an_gle)[1, 1],
-  interval=range(angle_s))
-an_gle <- optiml$minimum
-tan(an_gle)
+  f=function(anglev)
+    -covmat(foo, anglev=anglev)[1, 1],
+  interval=range(angles))
+anglev <- optiml$minimum
+tan(anglev)
 
 ###
 
@@ -996,35 +996,35 @@ library(rutils)
 # Select ETF symbols
 symbolv <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # Calculate ETF prices and percentage returns
-prices <- rutils::etfenv$prices[, symbolv]
-prices <- zoo::na.locf(prices, na.rm=FALSE)
-prices <- zoo::na.locf(prices, fromLast=TRUE)
+pricets <- rutils::etfenv$prices[, symbolv]
+pricets <- zoo::na.locf(pricets, na.rm=FALSE)
+pricets <- zoo::na.locf(pricets, fromLast=TRUE)
 # Calculate log returns without standardizing
-returns <- rutils::diffit(log(prices))
+retsp <- rutils::diffit(log(pricets))
 # Calculate covariance matrix
-covmat <- cov(returns)
+covmat <- cov(retsp)
 # Standardize (de-mean and scale) the returns
-returns <- lapply(returns, function(x) {(x - mean(x))/sd(x)})
-returns <- rutils::do_call(cbind, returns)
-round(sapply(returns, mean), 6)
-sapply(returns, sd)
+retsp <- lapply(retsp, function(x) {(x - mean(x))/sd(x)})
+retsp <- rutils::do_call(cbind, retsp)
+round(sapply(retsp, mean), 6)
+sapply(retsp, sd)
 # Alternative (much slower) center (de-mean) and scale the returns
-# returns <- apply(returns, 2, scale)
-# returns <- xts::xts(returns, zoo::index(prices))
+# retsp <- apply(retsp, 2, scale)
+# retsp <- xts::xts(retsp, zoo::index(pricets))
 # Alternative (much slower) center (de-mean) and scale the returns
-# returns <- scale(returns, center=TRUE, scale=TRUE)
-# returns <- xts::xts(returns, zoo::index(prices))
+# retsp <- scale(retsp, center=TRUE, scale=TRUE)
+# retsp <- xts::xts(retsp, zoo::index(pricets))
 # Alternative (much slower) center (de-mean) and scale the returns
-# returns <- t(returns) - colMeans(returns)
-# returns <- returns/sqrt(rowSums(returns^2)/(NCOL(returns)-1))
-# returns <- t(returns)
-# returns <- xts::xts(returns, zoo::index(prices))
+# retsp <- t(retsp) - colMeans(retsp)
+# retsp <- retsp/sqrt(rowSums(retsp^2)/(NCOL(retsp)-1))
+# retsp <- t(retsp)
+# retsp <- xts::xts(retsp, zoo::index(pricets))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/corr_etf.png}
             <<echo=TRUE,eval=FALSE>>=
 # Calculate correlation matrix
-cormat <- cor(returns)
+cormat <- cor(retsp)
 # Reorder correlation matrix based on clusters
 library(corrplot)
 ordern <- corrMatOrder(cormat, order="hclust", 
@@ -1073,16 +1073,16 @@ nweights <- NROW(symbolv)
 weights <- rep(1/sqrt(nweights), nweights)
 names(weights) <- symbolv
 # Objective function equal to minus portfolio variance
-objfun <- function(weights, returns) {
-  retsp <- returns %*% weights
+objfun <- function(weights, retsp) {
+  retsp <- retsp %*% weights
   -sum(retsp^2) + 1e7*(1 - sum(weights^2))^2
 }  # end objfun
 # Objective for equal weight portfolio
-objfun(weights, returns)
+objfun(weights, retsp)
 # Compare speed of vector multiplication methods
 summary(microbenchmark(
-  transp=(t(returns[, 1]) %*% returns[, 1]),
-  sumv=sum(returns[, 1]^2),
+  transp=(t(retsp[, 1]) %*% retsp[, 1]),
+  sumv=sum(retsp[, 1]^2),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -1092,13 +1092,13 @@ summary(microbenchmark(
 # Find weights with maximum variance
 optiml <- optim(par=weights,
   fn=objfun,
-  returns=returns,
+  retsp=retsp,
   method="L-BFGS-B",
   upper=rep(10.0, nweights),
   lower=rep(-10.0, nweights))
 # Optimal weights and maximum variance
 weights1 <- optiml$par
--objfun(weights1, returns)
+-objfun(weights1, retsp)
 # Plot first principal component weights
 barplot(weights1, names.arg=names(weights1), xlab="", ylab="",
         main="First Principal Component Weights")
@@ -1121,18 +1121,18 @@ barplot(weights1, names.arg=names(weights1), xlab="", ylab="",
       Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # PC1 returns
-pc1 <- drop(returns %*% weights1)
+pc1 <- drop(retsp %*% weights1)
 # Redefine objective function
-objfun <- function(weights, returns) {
-  retsp <- returns %*% weights
+objfun <- function(weights, retsp) {
+  retsp <- retsp %*% weights
   -sum(retsp^2) + 1e7*(1 - sum(weights^2))^2 +
     1e7*(sum(weights1*weights))^2
 }  # end objfun
 # Find second PC weights using parallel DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(returns)),
-  lower=rep(-10, NCOL(returns)),
-  returns=returns, control=list(parVar="weights1",
+  upper=rep(10, NCOL(retsp)),
+  lower=rep(-10, NCOL(retsp)),
+  retsp=retsp, control=list(parVar="weights1",
     trace=FALSE, itermax=1000, parallelType=1))
       @
     \column{0.5\textwidth}
@@ -1141,11 +1141,11 @@ optiml <- DEoptim::DEoptim(fn=objfun,
       <<echo=TRUE,eval=FALSE>>=
 # PC2 weights
 weights2 <- optiml$optim$bestmem
-names(weights2) <- colnames(returns)
+names(weights2) <- colnames(retsp)
 sum(weights2^2)
 sum(weights1*weights2)
 # PC2 returns
-pc2 <- drop(returns %*% weights2)
+pc2 <- drop(retsp %*% weights2)
 # Plot second principal component loadings
 barplot(weights2, names.arg=names(weights2), xlab="", ylab="",
         main="Second Principal Component Loadings")
@@ -1227,7 +1227,7 @@ barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
 # Eigen decomposition of correlation matrix
 eigend <- eigen(cormat)
 # Perform PCA with scaling
-pcad <- prcomp(returns, scale=TRUE)
+pcad <- prcomp(retsp, scale=TRUE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -1235,7 +1235,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
 # Eigen decomposition of covariance matrix
 eigend <- eigen(covmat)
 # Perform PCA without scaling
-pcad <- prcomp(returns, scale=FALSE)
+pcad <- prcomp(retsp, scale=FALSE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -1259,27 +1259,27 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
       So the highest order \emph{principal component} is equal to the \emph{Minimum Variance Portfolio}.
       <<echo=TRUE,eval=FALSE>>=
 # Redefine objective function to minimize variance
-objfun <- function(weights, returns) {
-  retsp <- returns %*% weights
+objfun <- function(weights, retsp) {
+  retsp <- retsp %*% weights
   sum(retsp^2) + 1e7*(1 - sum(weights^2))^2
 }  # end objfun
 # Find highest order PC weights using parallel DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(returns)),
-  lower=rep(-10, NCOL(returns)),
-  returns=returns, control=list(trace=FALSE,
+  upper=rep(10, NCOL(retsp)),
+  lower=rep(-10, NCOL(retsp)),
+  retsp=retsp, control=list(trace=FALSE,
     itermax=1000, parallelType=1))
 # PC6 weights and returns
-weights_6 <- optiml$optim$bestmem
-names(weights_6) <- colnames(returns)
-sum(weights_6^2)
-sum(weights1*weights_6)
+weights6 <- optiml$optim$bestmem
+names(weights6) <- colnames(retsp)
+sum(weights6^2)
+sum(weights1*weights6)
 # Compare with eigend vector
-weights_6
+weights6
 eigend$vectors[, 6]
 # Calculate objective function
-objfun(weights_6, returns)
-objfun(eigend$vectors[, 6], returns)
+objfun(weights6, retsp)
+objfun(eigend$vectors[, 6], retsp)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1288,7 +1288,7 @@ objfun(eigend$vectors[, 6], returns)
 # Plot highest order principal component loadings
 x11(width=6, height=5)
 par(mar=c(2.5, 2, 2, 3), oma=c(0, 0, 0, 0), mgp=c(2, 0.5, 0))
-barplot(weights_6, names.arg=names(weights2), xlab="", ylab="",
+barplot(weights6, names.arg=names(weights2), xlab="", ylab="",
         main="Highest Order Principal Component Loadings")
       @
   \end{columns}
@@ -1319,7 +1319,7 @@ barplot(weights_6, names.arg=names(weights2), xlab="", ylab="",
       A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # Perform principal component analysis PCA
-pcad <- prcomp(returns, scale=TRUE)
+pcad <- prcomp(retsp, scale=TRUE)
 # Plot standard deviations of principal components
 barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
         las=3, xlab="", ylab="",
@@ -1379,15 +1379,15 @@ for (ordern in 1:nweights) {
 # Calculate products of principal component time series
 round(t(pcad$x) %*% pcad$x, 2)
 # Calculate principal component time series from returns
-dates <- zoo::index(prices)
-pcarets <- xts::xts(returns %*% pcad$rotation, order.by=dates)
-round(cov(pcarets), 3)
-all.equal(coredata(pcarets), pcad$x, check.attributes=FALSE)
-pcats <- cumsum(pcarets)
+dates <- zoo::index(pricets)
+retspca <- xts::xts(retsp %*% pcad$rotation, order.by=dates)
+round(cov(retspca), 3)
+all.equal(coredata(retspca), pcad$x, check.attributes=FALSE)
+pcacum <- cumsum(retspca)
 # Plot principal component time series in multiple panels
-rangev <- range(pcats)
+rangev <- range(pcacum)
 for (ordern in 1:nweights) {
-  plot.zoo(pcats[, ordern], ylim=rangev, xlab="", ylab="")
+  plot.zoo(pcacum[, ordern], ylim=rangev, xlab="", ylab="")
   title(paste0("PC", ordern), line=-1, col.main="red")
 }  # end for
       @
@@ -1417,17 +1417,17 @@ for (ordern in 1:nweights) {
       The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
       <<echo=TRUE,eval=FALSE>>=
 # Invert all the principal component time series
-pcarets <- returns %*% pcad$rotation
-solved <- pcarets %*% solve(pcad$rotation)
-all.equal(coredata(returns), solved)
+retspca <- retsp %*% pcad$rotation
+solved <- retspca %*% solve(pcad$rotation)
+all.equal(coredata(retsp), solved)
 # Invert first 3 principal component time series
-solved <- pcarets[, 1:3] %*% solve(pcad$rotation)[1:3, ]
+solved <- retspca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
 solved <- xts::xts(solved, dates)
 solved <- cumsum(solved)
-cumrets <- cumsum(returns)
+retscum <- cumsum(retsp)
 # Plot the solved returns
 for (symbol in symbolv) {
-  plot.zoo(cbind(cumrets[, symbol], solved[, symbol]),
+  plot.zoo(cbind(retscum[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n", legend=paste0(symbol, c("", " solved")),
          title=NULL, inset=0.0, cex=1.0, lwd=6, lty=1, col=c("black", "blue"))
@@ -1807,9 +1807,9 @@ alphasd <- residsd*
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-model_sum <- summary(model)  # Copy regression summary
-model_sum  # Print the summary to console
-attributes(model_sum)$names  # get summary elements
+modelsum <- summary(model)  # Copy regression summary
+modelsum  # Print the summary to console
+attributes(modelsum)$names  # get summary elements
       @
   \end{columns}
 \end{block}
@@ -1840,17 +1840,17 @@ attributes(model_sum)$names  # get summary elements
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-model_sum$coeff
+modelsum$coeff
 # Standard errors
-model_sum$coefficients[2, "Std. Error"]
+modelsum$coefficients[2, "Std. Error"]
 all.equal(c(alphasd, betasd),
-  model_sum$coefficients[, "Std. Error"], 
+  modelsum$coefficients[, "Std. Error"], 
   check.attributes=FALSE)
 # R-squared
-model_sum$r.squared
-model_sum$adj.r.squared
+modelsum$r.squared
+modelsum$adj.r.squared
 # F-statistic and ANOVA
-model_sum$fstatistic
+modelsum$fstatistic
 anova(model)
       @
   \end{columns}
@@ -1904,9 +1904,9 @@ reg_stats <- function(stdev) {  # Noisy regression
 # Specify regression formula
   formulav <- response ~ predictor
 # Perform regression and get summary
-  model_sum <- summary(lm(formulav))
+  modelsum <- summary(lm(formulav))
 # Extract regression statistics
-  with(model_sum, c(pval=coefficients[2, 4],
+  with(modelsum, c(pval=coefficients[2, 4],
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end reg_stats
@@ -1945,9 +1945,9 @@ reg_stats <- function(datav) {  # get regression
 # Perform regression and get summary
   colnamev <- colnames(datav)
   formulav <- paste(colnamev[2], colnamev[1], sep="~")
-  model_sum <- summary(lm(formulav, data=datav))
+  modelsum <- summary(lm(formulav, data=datav))
 # Extract regression statistics
-  with(model_sum, c(pval=coefficients[2, 4],
+  with(modelsum, c(pval=coefficients[2, 4],
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end reg_stats
@@ -2099,8 +2099,8 @@ tail(foo)
 class(foo)
 dim(foo)
 model <- lm(paste(names(foo), collapse=" ~ "), data=foo)
-model_sum <- summary(model)
-model_sum
+modelsum <- summary(model)
+modelsum
 lmtest::dwtest(model)
 
 # Filter over non-overlapping periods
@@ -2121,9 +2121,9 @@ response <- cumsum(rnorm(100))
 formulav <- response ~ predictor
 model <- lm(formulav)  # Perform regression
 # Summary indicates statistically significant regression
-model_sum <- summary(model)
-model_sum$coeff
-model_sum$r.squared
+modelsum <- summary(model)
+modelsum$coeff
+modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- lmtest::dwtest(model)
 c(dw_test$statistic[[1]], dw_test$p.value)
@@ -2474,9 +2474,9 @@ response <- cumsum(rnorm(100))
 formulav <- response ~ predictor
 model <- lm(formulav)  # Perform regression
 # Summary indicates statistically significant regression
-model_sum <- summary(model)
-model_sum$coeff
-model_sum$r.squared
+modelsum <- summary(model)
+modelsum$coeff
+modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- lmtest::dwtest(model)
 c(dw_test$statistic[[1]], dw_test$p.value)
@@ -2804,9 +2804,9 @@ omitv <- sin(0.2*1:30)
 response <- 0.2*predictor + omitv + 0.2*rnorm(30)
 # Mis-specified regression only one predictor
 model_ovb <- lm(response ~ predictor)
-model_sum <- summary(model_ovb)
-model_sum$coeff
-model_sum$r.squared
+modelsum <- summary(model_ovb)
+modelsum$coeff
+modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 lmtest::dwtest(model_ovb)
 # Plot the regression diagnostic plots
@@ -2860,12 +2860,12 @@ plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
       Where $\beta$ is equal to the expected value of $\hat\beta$: $\beta = \mathbbm{E}[\hat\beta] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
         <<echo=TRUE,eval=TRUE>>=
 # Regression model summary
-model_sum <- summary(model)
+modelsum <- summary(model)
 # Degrees of freedom of residuals
 nrows <- NROW(predictor)
 ncols <- NCOL(predictor)
 degf <- (nrows - ncols)
-all.equal(degf, model_sum$df[2])
+all.equal(degf, modelsum$df[2])
 # Variance of residuals
 residvar <- sum(residuals^2)/degf
       @
@@ -2907,13 +2907,13 @@ residvar <- sum(residuals^2)/degf
 beta_covar <- residvar*predictor2
 # Round(beta_covar, 3)
 betasd <- sqrt(diag(beta_covar))
-all.equal(betasd, model_sum$coeff[, 2], check.attributes=FALSE)
+all.equal(betasd, modelsum$coeff[, 2], check.attributes=FALSE)
 # Calculate t-values of betas
 beta_tvals <- drop(betas)/betasd
-all.equal(beta_tvals, model_sum$coeff[, 3], check.attributes=FALSE)
+all.equal(beta_tvals, modelsum$coeff[, 3], check.attributes=FALSE)
 # Calculate two-sided p-values of betas
 beta_pvals <- 2*pt(-abs(beta_tvals), df=degf)
-all.equal(beta_pvals, model_sum$coeff[, 4], check.attributes=FALSE)
+all.equal(beta_pvals, modelsum$coeff[, 4], check.attributes=FALSE)
 # The square of the generalized inverse is equal
 # to the inverse of the square
 all.equal(MASS::ginv(crossprod(predictor)),
@@ -2985,26 +2985,26 @@ plot(fitsd, type="l", lwd=3, col="blue",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load time series of ETF percentage returns
-returns <- rutils::etfenv$returns[, c("XLF", "XLE")]
-returns <- na.omit(returns)
-nrows <- NROW(returns)
-head(returns)
+retsp <- rutils::etfenv$returns[, c("XLF", "XLE")]
+retsp <- na.omit(retsp)
+nrows <- NROW(retsp)
+head(retsp)
 # Define regression formula
-formulav <- paste(colnames(returns)[1],
-  paste(colnames(returns)[-1], collapse="+"),
+formulav <- paste(colnames(retsp)[1],
+  paste(colnames(retsp)[-1], collapse="+"),
   sep=" ~ ")
 # Standard regression
-model <- lm(formulav, data=returns)
-model_sum <- summary(model)
+model <- lm(formulav, data=retsp)
+modelsum <- summary(model)
 # Bootstrap of regression
 set.seed(1121)  # initialize random number generator
 boot_data <- sapply(1:100, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
-  model <- lm(formulav, data=returns[samplev, ])
+  model <- lm(formulav, data=retsp[samplev, ])
   model$coefficients
 })  # end sapply
 # Means and standard errors from regression
-model_sum$coefficients
+modelsum$coefficients
 # Means and standard errors from bootstrap
 dim(boot_data)
 t(apply(boot_data, MARGIN=1,
@@ -3078,7 +3078,7 @@ formulav <- paste0("response ~ ",
   paste(colnames(predictor), collapse=" + "), " - 1")
 # Specify multivariate regression using formula
 model <- lm(formulav, data=data.frame(cbind(response, predictor)))
-model_sum <- summary(model)
+modelsum <- summary(model)
 # Predict from lm object
 predictlm <- predict.lm(object=model, newdata=newdata,
            interval="confidence", confl=1-2*(1-pnorm(2)))
@@ -3160,10 +3160,10 @@ all.equal(tss, ess + rss)
 # Set regression attribute for intercept
 attributes(model$terms)$intercept <- 1
 # Regression summary
-model_sum <- summary(model)
+modelsum <- summary(model)
 # Regression R-squared
 rsquared <- ess/tss
-all.equal(rsquared, model_sum$r.squared)
+all.equal(rsquared, modelsum$r.squared)
 # Correlation between response and fitted values
 cor_fitted <- drop(cor(response, fittedv))
 # Squared correlation between response and fitted values
@@ -3203,7 +3203,7 @@ degf <- (nrows - ncols)
 # Adjusted R-squared
 rsquared_adj <- (1-sum(residuals^2)/degf/var(response))
 # Compare adjusted R-squared from lm()
-all.equal(drop(rsquared_adj), model_sum$adj.r.squared)
+all.equal(drop(rsquared_adj), modelsum$adj.r.squared)
       @
   \end{columns}
 \end{block}
@@ -3352,12 +3352,12 @@ pf(fratio, nrows-1, nrows-1)
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # F-statistic from lm()
-model_sum$fstatistic
+modelsum$fstatistic
 # Degrees of freedom of residuals
 degf <- (nrows - ncols)
 # F-statistic from ESS and RSS
 fstat <- (ess/(ncols-1))/(rss/degf)
-all.equal(fstat, model_sum$fstatistic[1], check.attributes=FALSE)
+all.equal(fstat, modelsum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=fstat, df1=(ncols-1), df2=(nrows-ncols))
       @
@@ -3400,9 +3400,9 @@ all.equal(fstat, model_sum$fstatistic[1], check.attributes=FALSE)
       The regularized inverse satisfies the inverse equation only approximately (it has \emph{bias}), but it's often used in machine learning because it has lower \emph{variance} than the exact inverse.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate ETF returns
-returns <- na.omit(rutils::etfenv$returns)
+retsp <- na.omit(rutils::etfenv$returns)
 # Perform singular value decomposition
-svdec <- svd(returns)
+svdec <- svd(retsp)
 barplot(svdec$d, main="Singular Values of ETF Returns")
       @
     \column{0.5\textwidth}
@@ -3412,20 +3412,20 @@ barplot(svdec$d, main="Singular Values of ETF Returns")
 # Calculate generalized inverse from SVD
 invmat <- svdec$v %*% (t(svdec$u) / svdec$d)
 # Verify inverse property of inverse
-all.equal(zoo::coredata(returns), returns %*% invmat %*% returns)
+all.equal(zoo::coredata(retsp), retsp %*% invmat %*% retsp)
 # Calculate regularized inverse from SVD
 eigen_max <- 1:3
 invreg <- svdec$v[, eigen_max] %*%
   (t(svdec$u[, eigen_max]) / svdec$d[eigen_max])
 # Calculate regularized inverse using RcppArmadillo
-invcpp <- HighFreq::calc_inv(returns, eigen_max=3)
+invcpp <- HighFreq::calc_inv(retsp, eigen_max=3)
 all.equal(invreg, invcpp, check.attributes=FALSE)
 # Calculate regularized inverse from Moore-Penrose pseudo-inverse
-retsq <- t(returns) %*% returns
+retsq <- t(retsp) %*% retsp
 eigend <- eigen(retsq)
 squared_inv <- eigend$vectors[, eigen_max] %*% 
   (t(eigend$vectors[, eigen_max]) / eigend$values[eigen_max])
-invmp <- squared_inv %*% t(returns)
+invmp <- squared_inv %*% t(retsp)
 all.equal(invreg, invmp, check.attributes=FALSE)
       @
   \end{columns}
@@ -3710,7 +3710,7 @@ set.seed(1121)  # Reset random number generator
 # Simulate overlapping scores data
 sample1 <- runif(100, max=0.6)
 sample2 <- runif(100, min=0.4)
-# Perform Wilcoxon test for mean
+# Perform Wilcoxon test for similar distributions
 wilcox.test(sample1, sample2)
 # Combine scores and add categorical variable
 predictor <- c(sample1, sample2)
@@ -3729,7 +3729,7 @@ par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 ordern <- order(predictor)
 plot(x=predictor[ordern], y=glmod$fitted.values[ordern],
      main="Category Densities and Logistic Function",
-     type="l", lwd=4, col="orange", xlab="score", ylab="density")
+     type="l", lwd=4, col="orange", xlab="predictor", ylab="density")
 densityv <- density(predictor[response])
 densityv$y <- densityv$y/max(densityv$y)
 lines(densityv, col="red")
@@ -3867,6 +3867,8 @@ rgl::persp3d(
   x=Vectorize(function(x, y) rastrigin(vectorv=c(x, y))),
   xlim=c(-10, 10), ylim=c(-10, 10),
   col="green", axes=FALSE, zlab="", main="rastrigin")
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
 # Optimize with respect to vector argument
 optiml <- optim(par=vectorv, fn=rastrigin,
                 method="L-BFGS-B",
@@ -3923,8 +3925,8 @@ optim_fit$par
 unname(glmod$coefficients)
 # Standard errors of parameters
 sqrt(diag(solve(optim_fit$hessian)))
-model_sum <- summary(glmod)
-model_sum$coefficients[, 2]
+modelsum <- summary(glmod)
+modelsum$coefficients[, 2]
       @
   \end{columns}
 \end{block}
@@ -4319,19 +4321,19 @@ legend(x="topright", bty="n",
       \vskip1ex
       Let the \emph{null hypothesis} be that the subject will not default: \texttt{default = FALSE}.
       \vskip1ex
-      If the \emph{forecast probability} is greater than the \emph{discrimination threshold}, then the forecast is that the subject will not default and that the \emph{null hypothesis} is \texttt{TRUE}.
+      If the \emph{forecast probability} is \emph{less} than the \emph{discrimination threshold}, then the forecast is that the subject will not default and that the \emph{null hypothesis} is \texttt{TRUE}.
       \vskip1ex
       The \emph{in-sample forecasts} are just the \emph{fitted values} of the \emph{glm} model.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Perform in-sample forecast from logistic regression model
-forecasts <- predict(glmod, type="response")
-all.equal(glmod$fitted.values, forecasts)
+forecastv <- predict(glmod, type="response")
+all.equal(glmod$fitted.values, forecastv)
 # Define discrimination threshold value
 threshold <- 0.7
 # Calculate confusion matrix in-sample
-table(actual=!default, forecast=(forecasts < threshold))
+table(actual=!default, forecast=(forecastv < threshold))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
@@ -4340,10 +4342,10 @@ traindata <- Default[samplev, ]
 glmod <- glm(formulav, data=traindata, family=binomial(logit))
 # Forecast over test data out-of-sample
 testdata <- Default[-samplev, ]
-forecasts <- predict(glmod, newdata=testdata, type="response")
+forecastv <- predict(glmod, newdata=testdata, type="response")
 # Calculate confusion matrix out-of-sample
 table(actual=!testdata$default, 
-      forecast=(forecasts < threshold))
+      forecast=(forecastv < threshold))
       @
   \end{columns}
 \end{block}
@@ -4374,12 +4376,12 @@ table(actual=!testdata$default,
       <<echo=TRUE,eval=TRUE>>=
 # Calculate confusion matrix out-of-sample
 confmat <- table(actual=!testdata$default, 
-      forecast=(forecasts < threshold))
+      forecast=(forecastv < threshold))
 confmat
 # Calculate FALSE positive (type I error)
-sum(!testdata$default & (forecasts > threshold))
+sum(!testdata$default & (forecastv > threshold))
 # Calculate FALSE negative (type II error)
-sum(testdata$default & (forecasts < threshold))
+sum(testdata$default & (forecastv < threshold))
       @
   \end{columns}
 \end{block}
@@ -4464,17 +4466,17 @@ print(xtable::xtable(confusion_matrix,
       The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-confun <- function(actu_al, forecasts, threshold) {
-    confmat <- table(actu_al, (forecasts < threshold))
+confun <- function(actualv, forecastv, threshold) {
+    confmat <- table(actualv, (forecastv < threshold))
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
-confun(!testdata$default, forecasts, threshold=threshold)
+confun(!testdata$default, forecastv, threshold=threshold)
 # Define vector of discrimination thresholds
 threshv <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actu_al=!testdata$default, forecasts=forecasts)  # end sapply
+  actualv=!testdata$default, forecastv=forecastv)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -4528,7 +4530,7 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       <<echo=TRUE,eval=FALSE>>=
 library(HighFreq)
 # Read TAQ trade data from csv file
-taq <- data.table::fread(file="/Volumes/external/Develop/data/xlk_tick_trades2020_0316.csv")
+taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.csv")
 # Inspect the TAQ data
 taq
 class(taq)
@@ -4553,7 +4555,7 @@ last(dates)
 unclass(last(dates))
 as.numeric(last(dates))
 # Calculate the number of ticks per second
-n_secs <- as.numeric(last(dates)) - as.numeric(first(dates))
+nsecs <- as.numeric(last(dates)) - as.numeric(first(dates))
 NROW(taq)/(6.5*3600)
 # Select TAQ data columns
 taq <- taq[, .(price=PRICE, volume=SIZE)]
@@ -4588,16 +4590,16 @@ taq <- cbind(index=dates, taq)
       % \includegraphics[width=0.45\paperwidth]{figure/hf_stocks_bounce.png}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce trade ticks to xts series
-xtes <- xts::xts(taq[, .(price, volume)], taq$index)
-colnames(xtes) <- paste(symbol, c("Close", "Volume"), sep=".")
-save(xtes, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xtes, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+xtsv <- xts::xts(taq[, .(price, volume)], taq$index)
+colnames(xtsv) <- paste(symbol, c("Close", "Volume"), sep=".")
+save(xtsv, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+# save(xtsv, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
 # Plot dygraph
-dygraphs::dygraph(xtes$XLK.Close,
+dygraphs::dygraph(xtsv$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16")
 # Plot in x11 window
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtes$XLK.Close,
+quantmod::chart_Series(x=xtsv$XLK.Close,
   name="XLK Trade Ticks for 2020-03-16")
       @
   \end{columns}
@@ -4624,14 +4626,14 @@ quantmod::chart_Series(x=xtes$XLK.Close,
 # Calculate centered Hampel filter to remove price jumps
 look_back <- 111
 half_back <- look_back %/% 2
-medi_an <- roll::roll_median(taq$price, width=look_back)
-# medi_an <- TTR::runMedian(taq$price, n=look_back)
-medi_an <- rutils::lagit(medi_an, lagg=-half_back, pad_zeros=FALSE)
+medianv <- roll::roll_median(taq$price, width=look_back)
+# medianv <- TTR::runMedian(taq$price, n=look_back)
+medianv <- rutils::lagit(medianv, lagg=-half_back, pad_zeros=FALSE)
 madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(taq$price, n=look_back)
 madv <- rutils::lagit(madv, lagg=-half_back, pad_zeros=FALSE)
 # Calculate Z-scores
-zscores <- (taq$price - medi_an)/madv
+zscores <- (taq$price - medianv)/madv
 zscores[is.na(zscores)] <- 0
 zscores[!is.finite(zscores)] <- 0
 sum(is.na(zscores))
@@ -4650,14 +4652,14 @@ good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
 sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
-xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
-colnames(xtes) <- c("XLK.Close", "XLK.Volume")
+xtsv <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
+colnames(xtsv) <- c("XLK.Close", "XLK.Volume")
 # Plot dygraph of the clean lots
-dygraphs::dygraph(xtes$XLK.Close,
+dygraphs::dygraph(xtsv$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
 # Plot the large lots
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtes$XLK.Close,
+quantmod::chart_Series(x=xtsv$XLK.Close,
   name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
       @
   \end{columns}
@@ -4694,28 +4696,28 @@ quantmod::chart_Series(x=xtes$XLK.Close,
 # Define discrimination threshold value
 threshold <- 6*mad(zscores)
 # Calculate number of prices classified as bad data
-is_bad <- (abs(zscores) > threshold)
-sum(is_bad)
+isbad <- (abs(zscores) > threshold)
+sum(isbad)
 # Add 200 random price jumps into prices
 set.seed(1121)
 nbad <- 200
-is_jump <- logical(NROW(closep))
-is_jump[sample(x=NROW(is_jump), size=nbad)] <- TRUE
-closep[is_jump] <- closep[is_jump]*
+isjump <- logical(NROW(closep))
+isjump[sample(x=NROW(isjump), size=nbad)] <- TRUE
+closep[isjump] <- closep[isjump]*
   sample(c(0.95, 1.05), size=nbad, replace=TRUE)
 # Plot prices and medians
-dygraphs::dygraph(cbind(closep, medi_an), main="VTI median") %>%
+dygraphs::dygraph(cbind(closep, medianv), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Calculate time series of z-scores
-medi_an <- roll::roll_median(closep, width=look_back)
-# medi_an <- TTR::runMedian(closep, n=look_back)
+medianv <- roll::roll_median(closep, width=look_back)
+# medianv <- TTR::runMedian(closep, n=look_back)
 madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(closep, n=look_back)
-zscores <- (closep - medi_an)/madv
+zscores <- (closep - medianv)/madv
 zscores[1:look_back, ] <- 0
 # Calculate number of prices classified as bad data
-is_bad <- (abs(zscores) > threshold)
-sum(is_bad)
+isbad <- (abs(zscores) > threshold)
+sum(isbad)
       @
   \end{columns}
 \end{block}
@@ -4753,12 +4755,12 @@ sum(is_bad)
       \end{tabular}}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate confusion matrix
-table(actual=!is_jump, forecast=!is_bad)
-sum(is_bad)
+table(actual=!isjump, forecast=!isbad)
+sum(isbad)
 # FALSE positive (type I error)
-sum(!is_jump & is_bad)
+sum(!isjump & isbad)
 # FALSE negative (type II error)
-sum(is_jump & !is_bad)
+sum(isjump & !isbad)
       @
     \column{0.5\textwidth}
       Let the \emph{null hypothesis} be that the given price is a good data point.
@@ -4792,17 +4794,17 @@ sum(is_jump & !is_bad)
       The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-confun <- function(actu_al, zscores, threshold) {
-    confmat <- table(!actu_al, !(abs(zscores) > threshold))
+confun <- function(actualv, zscores, threshold) {
+    confmat <- table(!actualv, !(abs(zscores) > threshold))
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
-confun(is_jump, zscores, threshold=threshold)
+confun(isjump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
 threshv <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actu_al=is_jump, zscores=zscores)  # end sapply
+  actualv=isjump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -4849,17 +4851,17 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-confun <- function(actu_al, zscores, threshold) {
-    confmat <- table(!actu_al, !(abs(zscores) > threshold))
+confun <- function(actualv, zscores, threshold) {
+    confmat <- table(!actualv, !(abs(zscores) > threshold))
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
-confun(is_jump, zscores, threshold=threshold)
+confun(isjump, zscores, threshold=threshold)
 # Define vector of discrimination thresholds
 threshv <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actu_al=is_jump, zscores=zscores)  # end sapply
+  actualv=isjump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -4901,13 +4903,13 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       If the \emph{z-score} exceeds the \emph{threshold value} then it's classified as an \emph{outlier} (jump in prices).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate centered Hampel filter over 3 data points
-medi_an <- roll::roll_median(taq$price, width=3)
-medi_an[1:2] <- taq$price[1:2]
-medi_an <- rutils::lagit(medi_an, lagg=-1, pad_zeros=FALSE)
+medianv <- roll::roll_median(taq$price, width=3)
+medianv[1:2] <- taq$price[1:2]
+medianv <- rutils::lagit(medianv, lagg=-1, pad_zeros=FALSE)
 madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=-1, pad_zeros=FALSE)
 # Calculate Z-scores
-zscores <- ifelse(madv > 0, (taq$price - medi_an)/madv, 0)
+zscores <- ifelse(madv > 0, (taq$price - medianv)/madv, 0)
 range(zscores); mad(zscores)
 madv <- mad(zscores[abs(zscores)>0])
 hist(zscores, breaks=2000, xlim=c(-5*madv, 5*madv))
@@ -4922,14 +4924,14 @@ good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
 sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
-xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
-colnames(xtes) <- c("XLK.Close", "XLK.Volume")
+xtsv <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
+colnames(xtsv) <- c("XLK.Close", "XLK.Volume")
 # Plot dygraph of the clean lots
-dygraphs::dygraph(xtes$XLK.Close,
+dygraphs::dygraph(xtsv$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
 # Plot the large lots
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtes$XLK.Close,
+quantmod::chart_Series(x=xtsv$XLK.Close,
   name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
       @
   \end{columns}

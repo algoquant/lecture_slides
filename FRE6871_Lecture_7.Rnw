@@ -64,7 +64,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 25, 2022}
+\date{May 16, 2022}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -79,1664 +79,56 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Writing and Reading Data from Files}
+\section{Debugging and Exception Handling}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Text Strings}
+\subsection{Exception Conditions: Errors and Warnings}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{cat()} concatenates strings and writes them to standard output or to files.
+      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions.
       \vskip1ex
-      \texttt{cat()} interretsp its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value.
+      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler.
       \vskip1ex
-      The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it.
+      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler.
       \vskip1ex
-      Typing the name of an object in \texttt{R} implicitly calls \texttt{print()} on that object.
-      \vskip1ex
-      The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-cat("Enter\ttab")  # Cat() interretsp backslash escape sequences
-print("Enter\ttab")
-
-my_text <- print("hello")
-my_text  # Print() returns its argument
-
-# Create string
-my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
-cat(my_text, file="mytext.txt")  # Write to text file
-
-cat("Title: My Text",  # Write several lines to text file
-    "Some numbers: 1,2,3,...",
-    "Rprofile files contain code executed at R startup,",
-    file="mytext.txt", sep="\n")
-
-save(my_text, file="mytext.RData")  # Write to binary file
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Displaying Numeric Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{print()} displays numeric data objects, with the number of digits given by the global option \texttt{"digits"}.
-      \vskip1ex
-      The function \texttt{sprintf()} returns strings formatted from text strings and numeric data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-print(pi)
-print(pi, digits=10)
-getOption("digits")
-foo <- 12
-bar <- "months"
-sprintf("There are %i %s in the year", foo, bar)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Text from Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{scan()} reads text or data from a file and returns it as a vector or a list.
-      \vskip1ex
-      The function \texttt{readLines()} reads lines of text from a connection (file or console), and returns them as a vector of \texttt{character} strings.
-      \vskip1ex
-      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string.
-      \vskip1ex
-      The function \texttt{file.show()} reads text or data from a file and displays in editor.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read text from file
-scan(file="mytext.txt", what=character(), sep="\n")
-
-# Read lines from file
-readLines(con="mytext.txt")
-
-# Read text from console
-input <- readline("Enter a number: ")
-class(input)
-# Coerce to numeric
-input <- as.numeric(input)
-
-# Read text from file and display in editor:
-# file.show("mytext.txt")
-# file.show("mytext.txt", pager="")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} from \protect\emph{Text} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.table()} and \texttt{read.table()} write and read \emph{data frames} from text files.
-      \vskip1ex
-      \texttt{write.table()} coerces objects to \emph{data frames} before it writes them.
-      \vskip1ex
-      \texttt{read.table()} returns a \emph{data frame}, without coercing non-numeric values to \texttt{factors} (so no need for the option \texttt{stringsAsFactors=FALSE}).
-      \vskip1ex
-      \texttt{write.table()} and \texttt{read.table()} can be used to write and read matrices from text files, but they have to be coerced back to matrices.
-      \vskip1ex
-      \texttt{write.table()} and \texttt{read.table()} are inefficient for very large data sets.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-data_frame <- data.frame(type=c("rose", "daisy", "tulip"),
-  color=c("red", "white", "yellow"),
-  price=c(1.5, 0.5, 1.0),
-  row.names=c("flower1", "flower2", "flower3"))  # end data.frame
-matrixv <- matrix(sample(1:12), ncol=3,
-  dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(matrixv) <- paste("row", 1:NROW(matrixv), sep="")
-# Write data frame to text file, and then read it back
-write.table(data_frame, file="florist.txt")
-data_read <- read.table(file="florist.txt")
-data_read  # A data frame
-
-# Write matrix to text file, and then read it back
-write.table(matrixv, file="matrix.txt")
-mat_read <- read.table(file="matrix.txt")
-mat_read  # write.table() coerced matrix to data frame
-class(mat_read)
-# Coerce from data frame back to matrix
-mat_read <- as.matrix(mat_read)
-class(mat_read)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Copying \protect\emph{Data Frames} Between the \protect\emph{clipboard} and \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data frames} stored in the \emph{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()}.
-      \vskip1ex
-      \emph{Data frames} in \texttt{R} can be copied into the \emph{clipboard} using the function \texttt{write.table()}.
-      \vskip1ex
-      This allows convenient copying of \emph{data frames} between \texttt{R} and \texttt{Excel}.
-      \vskip1ex
-      \emph{Data frames} can also be manipulated directly in the \texttt{R} spreadsheet-style data editor.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-data_frame <- read.table("mydata.txt", header=TRUE)
-data_frame <- read.table("clipboard", header=TRUE)
-
-write.table(x=data_frame, file="clipboard", sep="\t")
-
-# Wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t", header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  # end read_clip
-
-data_frame <- read_clip()
-
-# Wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write_clip <- function(data, row.names=FALSE, col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t",
-              row.names=row.names, col.names=col.names, ...)
-}  # end write_clip
-
-write_clip(data=data_frame)
-
-# Launch spreadsheet-style data editor
-data_frame <- edit(data_frame)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
-      \vskip1ex
-      The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
-      \vskip1ex
-      These functions are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
-      \vskip1ex
-      \texttt{read.csv()} doesn't coerce non-numeric values to \texttt{factors}, so no need for the option \texttt{stringsAsFactors=FALSE}.
-      \vskip1ex
-      \texttt{read.csv()} reads row names as an extra column, unless the \texttt{row.names=1} argument is used.
-      \vskip1ex
-      The argument \texttt{"row.names"} accepts either the number or the name of the column containing the row names.
-      \vskip1ex
-      The \texttt{*.csv()} functions are very inefficient for large data sets.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write data frame to CSV file, and then read it back
-write.csv(data_frame, file="florist.csv")
-data_read <- read.csv(file="florist.csv")
-data_read  # the row names are read in as extra column
-# Restore row names
-rownames(data_read) <- data_read[, 1]
-data_read <- data_read[, -1]  # Remove extra column
-data_read
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", row.names=1)
-data_read
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} From \texttt{.csv} Files (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read \emph{data frames} from \texttt{.csv} format files \emph{without using row names}.
-      \vskip1ex
-      Row names can be omitted from the output file by calling \texttt{write.csv()} with the argument \texttt{row.names=FALSE}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write data frame to CSV file, without row names
-write.csv(data_frame, row.names=FALSE, file="florist.csv")
-data_read <- read.csv(file="florist.csv")
-data_read  # A data frame without row names
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Data From Very Large \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Data from very large \texttt{.csv} files can be read in small chunks instead of all at once.
-      \vskip1ex
-      The function \texttt{file()} opens a connection to a file or an internet website \texttt{URL}.
-      \vskip1ex
-      The function \texttt{read.csv()} with the argument \texttt{"nrows"} reads only the specified number of rows from a connection and returns a \emph{data frame}.  The connection pointer is reset to the next row.
-      \vskip1ex
-      The function \texttt{read.csv()} with the argument \texttt{"nrows"} allows reading data sequentially from very large files that wouldn't fit into memory.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Open a read connection to a file
-con_read = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
-# Read the first 10 rows
-data10 <- read.csv(con_read, nrows=10)
-# Read another 10 rows
-data20 <- read.csv(con_read, nrows=10, header=FALSE)
-colnames(data20) <- colnames(data10)
-# Close the connection to the file
-close(con_read)
-# Open a read connection to a file
-con_read = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
-# Read the first 1000 rows
-data10 <- read.csv(con_read, nrows=1e3)
-colnamev <- colnames(data10)
-# Write to a file
-countv <- 1
-write.csv(data10, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
-# Read remaining rows in a loop 10 rows at a time
-# Can produce error without getting to end of file
-while (isOpen(con_read)) {
-  datav <- read.csv(con_read, nrows=1e3)
-  colnames(datav) <- colnamev
-  write.csv(datav, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
-  countv <- countv + 1
-}  # end while
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Matrices From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read matrices from \texttt{.csv} format files.
-      \vskip1ex
-      If row names can be omitted in the output file, then \texttt{write.csv()} can be called with argument \texttt{row.names=FALSE}.
-      \vskip1ex
-      If the input file doesn't contain row names, then \texttt{read.csv()} can be called without the \texttt{"row.names"} argument.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write matrix to csv file, and then read it back
-write.csv(matrixv, file="matrix.csv")
-mat_read <- read.csv(file="matrix.csv", row.names=1)
-mat_read  # Read.csv() reads matrix as data frame
-class(mat_read)
-mat_read <- as.matrix(mat_read)  # Coerce to matrix
-identical(matrixv, mat_read)
-write.csv(matrixv, row.names=FALSE,
-          file="matrix_ex_rows.csv")
-mat_read <- read.csv(file="matrix_ex_rows.csv")
-mat_read <- as.matrix(mat_read)
-mat_read  # A matrix without row names
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Matrices (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      There are several ways of writing and reading matrices from \texttt{.csv} files, with tradeoffs between simplicity, data size, and speed.
-      \vskip1ex
-      The function \texttt{write.matrix()} writes a matrix to a text file, without its row names.
-      \vskip1ex
-      \texttt{write.matrix()} is part of package \emph{MASS}.
-      \vskip1ex
-      The advantage of function \texttt{scan()} is its speed, but it doesn't handle row names easily.
-      \vskip1ex
-      Removing row names simplifies the writing and reading of matrices.
-      \vskip1ex
-      The function \texttt{readLines} reads whole lines and returns them as single strings.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-library(MASS)  # Load package "MASS"
-# Write to CSV file by row - it's very SLOW!!!
-MASS::write.matrix(matrixv, file="matrix.csv", sep=",")
-# Read using scan() and skip first line with colnames
-mat_read <- scan(file="matrix.csv", sep=",", skip=1,
-  what=numeric())
-# Read colnames
-colnamev <- readLines(con="matrix.csv", n=1)
-colnamev  # this is a string!
-# Convert to char vector
-colnamev <- strsplit(colnamev, split=",")[[1]]
-mat_read  # mat_read is a vector, not matrix!
-# Coerce by row to matrix
-mat_read <- matrix(mat_read, ncol=NROW(colnamev), byrow=TRUE)
-# Restore colnames
-colnames(mat_read) <- colnamev
-mat_read
-# Scan() is a little faster than read.csv()
-library(microbenchmark)
-summary(microbenchmark(
-  read_csv=read.csv("matrix.csv"),
-  scan=scan(file="matrix.csv", sep=",",
-    skip=1, what=numeric()),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Matrices Containing Bad Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Very often data that is read from external sources contains elements with bad data.
-      \vskip1ex
-      An example of bad data are \texttt{character} strings within sets of \texttt{numeric} data.
-      \vskip1ex
-      Columns of numeric data that contain strings are coerced to \texttt{character} or \texttt{factor}, when they're read by \texttt{read.csv()}.
-      \vskip1ex
-      The function \texttt{as.numeric()} coerces complex data objects into \texttt{numeric} vectors, and removes all their \emph{attributes}.
-      \vskip1ex
-      \texttt{as.numeric()} coerces strings that don't represent numbers into \texttt{NA} values.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read data from a csv file, including row names
-matrixv <- read.csv(file="matrix_bad.csv", row.names=1)
-matrixv
-class(matrixv)
-# Columns with bad data are character or factor
-sapply(matrixv, class)
-# Copy row names
-row_names <- row.names(matrixv)
-# sapply loop over columns and coerce to numeric
-matrixv <- sapply(matrixv, as.numeric)
-# Restore row names
-row.names(matrixv) <- row_names
-# Replace NAs with zero
-matrixv[is.na(matrixv)] <- 0
-# matrix without NAs
-matrixv
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series From \protect\emph{Text} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{zoo} contains functions \texttt{write.zoo()} and \texttt{read.zoo()} for writing and reading \emph{zoo} time series from \texttt{.txt} and \texttt{.csv} files.
-      \vskip1ex
-      The functions \texttt{write.zoo()} and \texttt{read.zoo()} are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
-      \vskip1ex
-      The function \texttt{write.zoo()} writes the \emph{zoo} series index as a character string in quotations \texttt{""}, to make it easier to read (parse) by \texttt{read.zoo()}.
-      \vskip1ex
-      Users may also directly use \texttt{write.table()} and \texttt{read.table()}, instead of \texttt{write.zoo()} and \texttt{read.zoo()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-rm(list=ls())
-set.seed(1121)  # Reset random number generator
-library(zoo)  # Load package zoo
-# Create zoo with Date index
-dates <- seq(from=as.Date("2013-06-15"), by="day",
-              length.out=100)
-zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
-head(zoo_series, 3)
-# Write zoo series to text file, and then read it back
-write.zoo(zoo_series, file="zoo_series.txt")
-zoo_read <- read.zoo("zoo_series.txt")  # Read it back
-all.equal(zoo_read, zoo_series)
-# Perform the same using write.table() and read.table()
-# First coerce zoo_series into data frame
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(dates, data_frame)
-# Write zoo_series to text file using write.table
-write.table(data_frame, file="zoo_series.txt",
-            row.names=FALSE, col.names=FALSE)
-# Read data frame from file
-zoo_read <- read.table(file="zoo_series.txt")
-sapply(zoo_read, class)  # A data frame
-# Coerce data frame into zoo_series
-zoo_read <- zoo::zoo(
-  drop(as.matrix(zoo_read[, -1])),
-  order.by=as.Date(zoo_read[, 1]))
-all.equal(zoo_read, zoo_series)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      By default the functions \texttt{zoo::write.zoo()} and \texttt{zoo::read.zoo()} write data in \emph{space}-delimited text format, but they can also write to \emph{comma}-delimited \texttt{.csv} files by passing the parameter \texttt{sep=","}.
-      \vskip1ex
-      Single column \emph{zoo} time series usually don't have a dimension attribute, and they don't have a column name, unlike multi-column \emph{zoo} time series, and this can cause hard to detect bugs.
-      \vskip1ex
-      It's best to always pass the argument \texttt{"col.names=TRUE"} to the function \texttt{write.zoo()}, to make sure it writes a column name for a single column \emph{zoo} time series.
-      \vskip1ex
-      Reading a \texttt{.csv} file containing a single column of data using the function \texttt{read.zoo()} produces a \emph{zoo} time series with a \texttt{NULL} dimension, unless the argument \texttt{"drop=FALSE"} is passed to \texttt{read.zoo()}.
-      \vskip1ex
-      Users may also directly use \texttt{write.table()} and \texttt{read.table()}, instead of \texttt{write.zoo()} and \texttt{read.zoo()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(zoo)  # Load package zoo
-# Write zoo series to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv",
-          sep=",", col.names=TRUE)
-zoo_read <- read.zoo(file="zoo_series.csv",
-  header=TRUE, sep=",", drop=FALSE)
-all.equal(zoo_series, drop(zoo_read))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series With \protect\emph{Date-time} Index}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{read.csv.zoo()} reads \emph{zoo} time series from \texttt{.csv} files.
-      \vskip1ex
-      The function \texttt{xts::as.xts()} coerces \emph{zoo} time series into \emph{xts} series.
-      \vskip1ex
-      If the index of a \emph{zoo} time series is a \emph{date-time}, then \texttt{write.zoo()} writes the date and time fields as character strings separated by a \emph{space} between them, inside quotations \texttt{""}.
-      \vskip1ex
-      Very often \texttt{.csv} files contain custom \emph{date-time} formats, which need to be passed as parameters into \texttt{read.zoo()} for proper formatting.
-      \vskip1ex
-      The \texttt{"FUN"} argument of \texttt{read.zoo()} accepts a function for coercing the date and time columns of the input data into a \emph{date-time} object suitable for the \emph{zoo} index.
-      \vskip1ex
-      The function \texttt{as.POSIXct()} coerces \texttt{character} strings into \texttt{POSIXct} \emph{date-time} objects.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-# Create zoo with POSIXct date-time index
-dates <- seq(from=as.POSIXct("2013-06-15"),
-              by="hour", length.out=100)
-zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
-head(zoo_series, 3)
-# Write zoo series to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv",
-          sep=",", col.names=TRUE)
-# Read from CSV file using read.csv.zoo()
-zoo_read <- read.csv.zoo(file="zoo_series.csv")
-all.equal(zoo_series, zoo_read)
-# Coerce to xts series
-xtes <- xts::as.xts(zoo_read)
-class(xtes); head(xtes, 3)
-# Coerce zoo series into data frame with custom date format
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(format(dates, "%m-%d-%Y %H:%M:%S"),
-                    data_frame)
-head(data_frame, 3)
-# Write zoo series to csv file using write.table
-write.table(data_frame, file="zoo_series.csv",
-            sep=",", row.names=FALSE, col.names=FALSE)
-# Read from CSV file using read.csv.zoo()
-zoo_read <- read.zoo(file="zoo_series.csv",
-  header=FALSE, sep=",", FUN=as.POSIXct,
-  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-# Or using read.csv.zoo()
-zoo_read <- read.csv.zoo(file="zoo_series.csv", header=FALSE,
-  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-head(zoo_read, 3)
-all.equal(zoo_series, zoo_read)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Time Series With \texttt{Numeric} \protect\emph{Date-time} Index}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the index of a time series is \texttt{numeric} (representing the \emph{moment of time}, either as the number of days or seconds), then it must be coerced to a proper \emph{date-time} class.
-      \vskip1ex
-      A convenient way of reading time series with a numeric index is by using \texttt{read.table()}, and then coercing the \emph{data frame} into a time series.
-      \vskip1ex
-      The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read time series from CSV file, with numeric date-time
-zoo_read <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/es_ohlc.csv",
-  header=TRUE, sep=",")
-# A data frame
-class(zoo_read)
-sapply(zoo_read, class)
-# Coerce data frame into xts series
-zoo_read <- xts::xts(as.matrix(zoo_read[, -1]),
-  order.by=as.POSIXct.numeric(zoo_read[, 1], tz="America/New_York",
-                              origin="1970-01-01"))
-# An xts series
-class(zoo_read)
-head(zoo_read, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Passing Arguments to the \texttt{save()} Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{save()} writes objects to a binary file.
-      \vskip1ex
-      Object names can be passed into \texttt{save()} either through the \texttt{"..."} argument, or the \texttt{"list"} argument.
-      \vskip1ex
-      Objects passed through the \texttt{"..."} argument are not evaluated, so they must be either object names or character strings.
-      \vskip1ex
-      Object names aren't surrounded by quotes \texttt{""}, while character strings that represent object names are surrounded by quotes \texttt{""}.
-      \vskip1ex
-      Objects passed through the \texttt{"list"} argument are evaluated, so they may be variables containing character strings.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())  # Remove all objects
-var1 <- 1; var2 <- 2
-ls()  # List all objects
-ls()[1]  # List first object
-args(save)  # List arguments of save function
-# Save "var1" to a binary file using string argument
-save("var1", file="my_data.RData")
-# Save "var1" to a binary file using object name
-save(var1, file="my_data.RData")
-# Save multiple objects
-save(var1, var2, file="my_data.RData")
-# Save first object in list by passing to "..." argument
-# ls()[1] is not evaluated
-save(ls()[1], file="my_data.RData")
-# Save first object in list by passing to "list" argument
-save(list=ls()[1], file="my_data.RData")
-# Save whole list by passing it to the "list" argument
-save(list=ls(), file="my_data.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Lists of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace.
-      \vskip1ex
-      The vector of names can be used to manipulate the objects in loops, or to pass them to functions.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-rm(list=ls())  # Remove all objects
-# Load objects from file
-load_ed <- load(file="my_data.RData")
-load_ed  # vector of loaded objects
-ls()  # List objects
-# Assign new values to objects in  global environment
-sapply(load_ed, function(symbol) {
-  assign(symbol, runif(1), envir=globalenv())
-})  # end sapply
-ls()  # List objects
-# Assign new values to objects using for loop
-for (symbol in load_ed) {
-  assign(symbol, runif(1))
-}  # end for
-ls()  # List objects
-# Save vector of objects
-save(list=load_ed, file="my_data.RData")
-# Remove only loaded objects
-rm(list=load_ed)
-# Remove the object "load_ed"
-rm(load_ed)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Saving Output of \texttt{R} to a File}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{sink()} diverts \texttt{R} \emph{text} output (excluding graphics) to a file, or ends the diversion.
-      \vskip1ex
-      Remember to call \texttt{sink()} to end the diversion!
-      \vskip1ex
-      The function \texttt{pdf()} diverts graphics output to a \emph{pdf} file (text output isn't diverted), in vector graphics format.
-      \vskip1ex
-      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert graphics output to graphics files (text output isn't diverted).
-      \vskip1ex
-      The function \texttt{dev.off()} ends the diversion.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-sink("sinkdata.txt")# Redirect text output to file
-
-cat("Redirect text output from R\n")
-print(runif(10))
-cat("\nEnd data\nbye\n")
-
-sink()  # turn redirect off
-
-pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
-
-cat("Redirect data from R into pdf file\n")
-myvar <- seq(-2*pi, 2*pi, len=100)
-plot(x=myvar, y=sin(myvar), main="Sine wave",
-   xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn pdf output off
-
-png("r_plot.png")  # Redirect graphics output to png file
-
-cat("Redirect graphics from R into png file\n")
-plot(x=myvar, y=sin(myvar), main="Sine wave",
- xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn png output off
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{High Performance Data Management}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{data.table} for High Performance Data Management}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/data.table/}{\emph{data.table}}
-      is designed for high performance data management.
-      \vskip1ex
-      The package \emph{data.table} implements \emph{data table} objects, which are a special type of \emph{data frame}, and an extension of the \emph{data frame} class.
-      \vskip1ex
-      \emph{Data tables} are faster and more convenient to work with than \emph{data frames}.
-      \vskip1ex
-      \emph{data.table} functions are optimized for high performance (speed), because they are written in \texttt{C++} and they perform operations by reference (in place), without copying data in memory.
-      \vskip1ex
-      Some of the attractive features of package \emph{data.table} are:
+      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
       \begin{itemize}
-        \item Syntax is analogous to SQL,
-        \item Very fast writing and reading from files,
-        \item Very fast sorting and merging operations,
-        \item Subsetting using multiple logical clauses,
-        \item Columns of type \texttt{character} are never converted to factors,
+        \item \emph{negative} then warnings are ignored,
+        \item \emph{zero} then warnings are stored and printed after the top-confl function has completed,
+        \item \emph{one} - warnings are printed as they occur,
+        \item \emph{two} or larger - warnings are turned into errors,
       \end{itemize}
+      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Install package data.table
-install.packages("data.table")
-# Load package data.table
-library(data.table)
-# Get documentation for package data.table
-# Get short description
-packageDescription("data.table")
-# Load help page
-help(package="data.table")
-# List all datasets in "data.table"
-data(package="data.table")
-# List all objects in "data.table"
-ls("package:data.table")
-# Remove data.table from search path
-detach("package:data.table")
-      @
-      The package \emph{data.table} has extensive documentation:\\
-      \hskip1em\url{https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html}\\
-      \hskip1em\url{https://github.com/Rdatatable/data.table/wiki}
-      \vskip1ex
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
-      \vskip1ex
-      \emph{Data table} objects resemble databases, with columns of different types of data, and rows of records containing individual observations.
-      \vskip1ex
-      The function \texttt{data.table::data.table()} creates a \emph{data table} object.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes), and their rows can be referenced without a following comma.
-      \vskip1ex
-      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.n_rows")} is less than \texttt{100}).
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-      \vskip1ex
-      \emph{Data table} computations are usually much faster than equivalent \texttt{R} computations, but not always.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create a data table
-library(data.table)
-data_table <- data.table::data.table(
-  col1=sample(7), col2=sample(7), col3=sample(7))
-# Print data_table
-class(data_table); data_table
-# Column referenced without quotes
-data_table[, col2]
-# Row referenced without a following comma
-data_table[2]
-# Print option "datatable.print.n_rows"
-getOption("datatable.print.n_rows")
-options(datatable.print.n_rows=10)
-getOption("datatable.print.n_rows")
-# Number of rows in data_table
-NROW(data_table)
-# Or
-data_table[, NROW(col1)]
-# Or
-data_table[, .N]
-# microbenchmark speed of data.table syntax
-library(microbenchmark)
-summary(microbenchmark(
-  dt=data_table[, .N],
-  pure_r=NROW(data_table),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{data.table}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
-      \vskip1ex
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
-      \vskip1ex
-      The function \texttt{data.table::fread()} is over \texttt{6} times faster than \texttt{read.csv()}!
-      \vskip1ex
-      The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()}!
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read a data table from CSV file
-dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-data_table <- data.table::fread(file_name)
-class(data_table); dim(data_table)
-data_table
-# fread() reads the same data as read.csv()
-all.equal(read.csv(file_name),
-          setDF(data.table::fread(file_name)))
-# fread() is much faster than read.csv()
-summary(microbenchmark(
-  pure_r=read.csv(file_name),
-  fread=setDF(data.table::fread(file_name)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Write data table to file in different ways
-data.table::fwrite(data_table, file="data_table.csv")
-write.csv(data_table, file="data_table2.csv")
-cat(unlist(data_table), file="data_table3.csv")
-# microbenchmark speed of data.table::fwrite()
-library(microbenchmark)
-summary(microbenchmark(
-  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
-  write_csv=write.csv(data_table, file="data_table2.csv"),
-  cat=cat(unlist(data_table), file="data_table3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}.
-      \vskip1ex
-      \emph{Data table} rows can be subset without a following comma.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables), after a comma.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names.
-      \vskip1ex
-      The brackets \texttt{"[]"} operator is a \emph{data.table} function, and all the commands inside the brackets \texttt{"[]"} are executed using code from the package \emph{data.table}.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select first five rows of data_table
-data_table[1:5]
-# Select rows with JFK flights
-jfk_flights <- data_table[origin=="JFK"]
-# Select rows JFK flights in June
-jfk_flights <- data_table[origin=="JFK" & month==6]
-# Select rows without JFK flights
-jfk_flights <- data_table[!(origin=="JFK")]
-# Select flights with carrier_delay
-data_table[carrier_delay > 0]
-# Select column of data_table and return a vector
-head(data_table[, origin])
-# Select column of data_table and return a data_table, not vector
-head(data_table[, list(origin)])
-head(data_table[, .(origin)])
-# Select two columns of data_table
-data_table[, list(origin, month)]
-data_table[, .(origin, month)]
-column_s <- c("origin", "month")
-data_table[, ..column_s]
-data_table[, month, origin]
-# Select two columns and rename them
-data_table[, .(orig=origin, mon=month)]
-# Select all columns except origin
-head(data_table[, !"origin"])
-head(data_table[, -"origin"])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Computations on \protect\emph{Data Table} Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the second argument in the brackets \texttt{"[]"} operator is a function of the columns, then the brackets return the result of the function's computations on those columns.
-      \vskip1ex
-      The second argument in the brackets \texttt{"[]"} can also be a list of functions, in which case the brackets return a vector of computations.
-      \vskip1ex
-      The brackets \texttt{"[]"} can evaluate most standard \texttt{R} functions, but they are executed using \emph{data.table} code, which is usually much faster than the equivalent \texttt{R} functions.
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select flights with positive carrier_delay
-data_table[carrier_delay > 0]
-# Number of flights with carrier_delay
-data_table[, sum(carrier_delay > 0)]
-# Or standard R commands
-sum(data_table[, carrier_delay > 0])
-# microbenchmark speed of data.table syntax
-summary(microbenchmark(
-  dt=data_table[, sum(carrier_delay > 0)],
-  pure_r=sum(data_table[, carrier_delay > 0]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Average carrier_delay
-data_table[, mean(carrier_delay)]
-# Average carrier_delay and aircraft_delay
-data_table[, .(carrier=mean(carrier_delay),
-               aircraft=mean(aircraft_delay))]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Number of flights from JFK
-data_table[origin=="JFK", NROW(aircraft_delay)]
-# Or
-data_table[origin=="JFK", .N]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Grouping \protect\emph{Data Table} Computations by Factor Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{data table} brackets \texttt{"[]"} operator can accept three arguments: \texttt{[i, j, by]}
-      \begin{itemize}
-        \item \texttt{i}: the row index to select,
-        \item \texttt{j}: a list of columns or functions on columns,
-        \item \texttt{by}: the columns of factors to aggregate over.
-      \end{itemize}
-      The \emph{data table} columns can be \emph{aggregated} over categories (factors) defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      The \texttt{"keyby"} argument is similar to \texttt{"by"}, but it sorts the output according to the categories used to group by.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Number of flights from each airport
-data_table[, .N, by=origin]
-# Same, but add names to output
-data_table[, .(flights=.N), by=.(airport=origin)]
-# Number of AA flights from each airport
-data_table[carrier=="AA", .(flights=.N),
-           by=.(airport=origin)]
-# Number of flights from each airport and airline
-data_table[, .(flights=.N),
-           by=.(airport=origin, airline=carrier)]
-# Average aircraft_delay
-data_table[, mean(aircraft_delay)]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Average aircraft_delay from each airport
-data_table[, .(delay=mean(aircraft_delay)),
-           by=.(airport=origin)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
-           by=.(airport=origin, month=month)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
-           keyby=.(airport=origin, month=month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sorting \protect\emph{Data Table} Rows by Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
-      \vskip1ex
-      The function \texttt{order()} calculates the permutation index, to sort a given vector into ascending order.
-      \vskip1ex
-      The function \texttt{setorder()} sorts the rows of a \emph{data table} by reference (in place), without copying data in memory.
-      \vskip1ex
-      \texttt{setorder()} is over \texttt{10} times faster than \texttt{order()}, because it doesn't copy data in memory.
-      \vskip1ex
-      Several brackets \texttt{"[]"} operators can be chained together to perform several consecutive computations.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Sort ascending by origin, then descending by dest
-order_table <- data_table[order(origin, -dest)]
-order_table
-# Doesn't work outside data_table
-order(origin, -dest)
-# Sort data_table by reference
-setorder(data_table, origin, -dest)
-all.equal(data_table, order_table)
-# setorder() is much faster than order()
-summary(microbenchmark(
-  order=data_table[order(origin, -dest)],
-  setorder=setorder(data_table, origin, -dest),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Average aircraft_delay by month
-order_table[, .(mean_delay=mean(aircraft_delay)),
-            by=.(month=month)]
-# Chained brackets to sort output by month
-order_table[, .(mean_delay=mean(aircraft_delay)),
-            by=.(month=month)][order(month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting, Computing, and Grouping \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The special symbol \texttt{.SD} selects a subset of a \emph{data table}.
-      \vskip1ex
-      The symbol \texttt{.SDcols} specifies the columns to select by the symbol \texttt{.SD}.
-      \vskip1ex
-      Inside the brackets \texttt{"[]"} operator, the \texttt{.SD} symbol can be treated as a virtual \emph{data table}, and standard \texttt{R} functions can be applied to it.
-      \vskip1ex
-      The \texttt{"by"} argument can be used to group the outputs produced by the functions applied to the \texttt{.SD} symbol.
-      \vskip1ex
-      If the symbol \texttt{.SDcols} is not defined, then the symbol \texttt{.SD} returns the remaining columns not passed to the \texttt{"by"} operator.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select weather_delay and aircraft_delay in two different ways
-data_table[1:7, .SD,
-           .SDcols=c("weather_delay", "aircraft_delay")]
-data_table[1:7, .(weather_delay, aircraft_delay)]
-# Calculate mean of weather_delay and aircraft_delay
-data_table[, sapply(.SD, mean),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-sapply(data_table[, .SD,
-           .SDcols=c("weather_delay", "aircraft_delay")], mean)
-# Return origin and dest, then all other columns
-data_table[1:7, .SD, by=.(origin, dest)]
-# Return origin and dest, then weather_delay and aircraft_delay columns
-data_table[1:7, .SD,
-           by=.(origin, dest),
-           .SDcols="weather_delay", "aircraft_delay"]
-# Return first two rows from each month
-data_table[, head(.SD, 2), by=.(month)]
-data_table[, head(.SD, 2), by=.(month),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Calculate mean of weather_delay and aircraft_delay, grouped by origin
-data_table[, lapply(.SD, mean),
-           by=.(origin),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Or simply
-data_table[, .(weather_delay=mean(weather_delay),
-               aircraft_delay=mean(aircraft_delay)),
-           by=.(origin)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modifying \protect\emph{Data Table} Objects by Reference}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The special assignment operator \texttt{":="} allows modifying \emph{data table} columns by reference (in place), without copying data in memory.
-      \vskip1ex
-      The computations on columns by reference can be \emph{grouped} over categories defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      The computations are recycled to fit the size of each group.
-      \vskip1ex
-      The selected parts of columns can also be modified by reference, by combining the \texttt{i} and \texttt{j} arguments.
-      \vskip1ex
-      The special symbols \texttt{.SD} and \texttt{.SDcols} can be used to perform computations on several columns.
-      \vskip1ex
-      Modifying by reference is several times faster than standard \texttt{R} assignment.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add tot_delay column
-data_table[, tot_delay := (carrier_delay + aircraft_delay)]
-head(data_table, 4)
-# Delete tot_delay column
-data_table[, tot_delay := NULL]
-# Add max_delay column grouped by origin and dest
-data_table[, max_delay := max(aircraft_delay),
-           by=.(origin, dest)]
-data_table[, max_delay := NULL]
-# Add date and tot_delay columns
-data_table[, c("date", "tot_delay") :=
-             list(paste(month, day, year, sep="/"),
-                  (carrier_delay + aircraft_delay))]
-# Modify select rows of tot_delay column
-data_table[month == 12, tot_delay := carrier_delay]
-data_table[, c("date", "tot_delay") := NULL]
-# Add several columns
-data_table[, c("max_carrier", "max_aircraft") :=
-             lapply(.SD, max),
-           by=.(origin, dest),
-           .SDcols=c("carrier_delay", "aircraft_delay")]
-data_table[, c("max_carrier", "max_aircraft") := NULL]
-# Modifying by reference is much faster than standard R
-summary(microbenchmark(
-  dt=data_table[, tot_delay := (carrier_delay + aircraft_delay)],
-  pure_r=(data_table[, "tot_delay"] <- data_table[, "carrier_delay"] + data_table[, "aircraft_delay"]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding \protect\emph{keys} to \protect\emph{Data Tables} for Fast Binary Search}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows.
-      \vskip1ex
-      The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
-      \vskip1ex
-      \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
-      \vskip1ex
-      Subsetting rows using a \emph{key} can be several times faster than standard \texttt{R}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add a key based on the "origin" column
-setkey(data_table, origin)
-haskey(data_table)
-key(data_table)
-# Select rows with LGA using the key
-data_table["LGA"]
-all.equal(data_table["LGA"],
-          data_table[origin == "LGA"])
-# Select rows with LGA and JFK using the key
-data_table[c("LGA", "JFK")]
-# Add a key based on the "origin" and "dest" columns
-setkey(data_table, origin, dest)
-key(data_table)
-# Select rows with origin from JFK and MIA
-data_table[c("JFK", "MIA")]
-# Select rows with origin from JFK and dest to MIA
-data_table[.("JFK", "MIA")]
-all.equal(data_table[.("JFK", "MIA")],
-          data_table[origin == "JFK" & dest == "MIA"])
-# Selecting rows using a key is much faster than standard R
-summary(microbenchmark(
-  with_key=data_table[.("JFK", "MIA")],
-  standard_r=data_table[origin == "JFK" & dest == "MIA"],
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \protect\emph{Data Table} Objects Into \protect\emph{Data Frames}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{data.table::setDT()} and \texttt{data.table::setDF()} coerce \emph{data frames} to \emph{data tables}, and vice versa.
-      \vskip1ex
-      The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference (in place), without returning any values or copying data to a new memory location, which makes them very fast.
-      \vskip1ex
-      \emph{Data table} objects can also be coerced into \emph{data frames} using the function \texttt{as.data.frame()}, but it's much slower because it makes copies of data.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create data frame and coerce it to data table
-data_table <- data.frame(
-  col1=sample(7), col2=sample(7), col3=sample(7))
-class(data_table); data_table
-data.table::setDT(data_table)
-class(data_table); data_table
-# Coerce data_table into data frame
-data.table::setDF(data_table)
-class(data_table); data_table
-# Or
-data_table <- data.table:::as.data.frame.data.table(data_table)
-# SetDF() is much faster than as.data.frame()
-summary(microbenchmark(
-  as.data.frame=data.table:::as.data.frame.data.table(data_table),
-  setDF=data.table::setDF(data_table),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \texttt{xts} Time Series Into \protect\emph{Data Tables}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
-      \vskip1ex
-      But then the time index of the \texttt{xts} series is coerced into strings, not dates.
-      \vskip1ex
-      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce xts to a data frame
-prices <- rutils::etfenv$VTI
-class(prices); head(prices)
-prices <- as.data.frame(prices)
-class(prices); head(prices)
-# Coerce data frame to a data table
-data.table::setDT(prices, keep.rownames=TRUE)
-class(prices); head(prices)
-# Dates are coerced to strings
-sapply(prices, class)
-# Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etfenv$VTI,
-  keep.rownames=TRUE)
-class(data_table); head(data_table)
-# Dates are not coerced to strings
-sapply(data_table, class)
-all.equal(prices, data_table, check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{fst} for High Performance Data Management}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      provides functions for very fast writing and reading of \emph{data frames} from \emph{compressed binary files}.
-      \vskip1ex
-      The package \emph{fst} writes to \emph{compressed binary files} in the
-\texttt{fst} fast-storage format.
-      \vskip1ex
-      The package \emph{fst} uses the \texttt{LZ4} and \texttt{ZSTD} compression algorithms, and utilizes multithreaded (parallel) processing on multiple CPU cores.
-      \vskip1ex
-      The package \emph{fst} has extensive documentation:\\
-      \hskip1em\url{http://www.fstpackage.org/}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install package fst
-install.packages("fst")
-# Load package fst
-library(fst)
-# Get documentation for package fst
-# Get short description
-packageDescription("fst")
-# Load help page
-help(package="fst")
-# List all datasets in "fst"
-data(package="fst")
-# List all objects in "fst"
-ls("package:fst")
-# Remove fst from search path
-detach("package:fst")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{fst}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      allows very fast writing and reading of \emph{data frames} from \emph{compressed binary files} in the \texttt{fst} fast-storage format.
-      \vskip1ex
-      The function \texttt{fst::write\_fst()} writes to \texttt{.fst} files over \texttt{10} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()} write to \texttt{.csv} files!
-      \vskip1ex
-      The function \texttt{fst::fread()} reads from \texttt{.fst} files over \texttt{10} times faster than the function \texttt{read.csv()} from \texttt{.csv} files!
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read a data frame from CSV file
-dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-data.table::setDF(data_frame)
-class(data_frame); dim(data_frame)
-# Write data frame to .fst file in different ways
-fst::write_fst(data_frame, path="data_frame.fst")
-write.csv(data_frame, file="data_frame2.csv")
-# microbenchmark speed of fst::write_fst()
-library(microbenchmark)
-summary(microbenchmark(
-  fst=fst::write_fst(data_frame, path="data_frame.csv"),
-  write_csv=write.csv(data_frame, file="data_frame2.csv"),
-  cat=cat(unlist(data_frame), file="data_frame3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# fst::read_fst() reads the same data as read.csv()
-all.equal(read.csv(file_name),
-          fst::read_fst("data_frame.fst"))
-# fst::read_fst() is 10 times faster than read.csv()
-summary(microbenchmark(
-  fst=fst::read_fst("data_frame.fst"),
-  read_csv=read.csv(file_name),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Random Access to Large Data Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      allows \emph{random access} to very large \emph{data frames} stored in compressed data files in the \texttt{.fst} format.
-      \vskip1ex
-      Data frames can be accessed \emph{randomly} by loading only the selected rows and columns into memory, without fully loading the whole data frame.
-      \vskip1ex
-      function \texttt{fst::fst()} reads an \texttt{.fst} file and returns an \emph{fst\_table} reference object (pointer) to the data, without loading the whole data into memory.
-      \vskip1ex
-      The \emph{fst\_table} reference provides access to the data similar to a regular \emph{data frame}, but it requires only a small amount of memory because the data isn't loaded into memory.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce TAQ xts to a data frame
-library(HighFreq)
-t_aq <- HighFreq::SPY_TAQ
-t_aq <- as.data.frame(t_aq)
-class(t_aq)
-# Coerce data frame to a data table
-data.table::setDT(t_aq, keep.rownames=TRUE)
-class(t_aq); head(t_aq)
-# Get memory size of data table
-format(object.size(t_aq), units="MB")
-# Save data table to .fst file
-fst::write_fst(t_aq, path="/Users/jerzy/Develop/data/taq.fst")
-# Create reference to .fst file similar to a data frame
-fs_t <- fst::fst("/Users/jerzy/Develop/data/taq.fst")
-class(fs_t)
-# Memory size of reference to .fst is very small
-format(object.size(fs_t), units="MB")
-# Get sizes of all objects in workspace
-sort(sapply(mget(ls()), object.size))
-# Reference to .fst can be treated similar to a data table
-dim(t_aq); dim(fs_t)
-fst:::print.fst_table(fs_t)
-# Subset reference to .fst just like a data table
-fs_t[1e4:(1e4+5), ]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Package \protect\emph{Rcpp} for Running \texttt{C++} Programs}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{Rcpp} for Calling \texttt{C++} Programs from \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{Rcpp} allows calling \texttt{C++} programs from \texttt{R}, by compiling the \texttt{C++} code and creating \texttt{R} functions.
-      \vskip1ex
-      \emph{Rcpp} functions are \texttt{R} functions that were compiled from \texttt{C++} code using package \emph{Rcpp}.
-      \vskip1ex
-      \emph{Rcpp} functions are much faster than code written in \texttt{R}, so they're suitable for large numerical calculations.
-      \vskip1ex
-      The package \emph{Rcpp} relies on \emph{Rtools} for compiling the \texttt{C++} code: \\
-      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}
-      \vskip1ex
-      You can learn more about the package \emph{Rcpp} here: \\
-      \hskip1em\url{http://adv-r.had.co.nz/Rcpp.html}\\
-      \hskip1em\url{http://www.rcpp.org/}\\
-      \hskip1em\url{http://gallery.rcpp.org/}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Verify that rtools are working properly:
-devtools::find_rtools()
-devtools::has_devel()
-
-# Load package Rcpp
-library(Rcpp)
-# Get documentation for package Rcpp
-# Get short description
-packageDescription("Rcpp")
-# Load help page
-help(package="Rcpp")
-# List all datasets in "Rcpp"
-data(package="Rcpp")
-# List all objects in "Rcpp"
-ls("package:Rcpp")
-# Remove Rcpp from search path
-detach("package:Rcpp")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function \texttt{cppFunction()} for Compiling \texttt{C++} code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{cppFunction()} compiles \texttt{C++} code into an \texttt{R} function.
-      \vskip1ex
-      The function \texttt{cppFunction()} creates an \texttt{R} function only for the current \texttt{R} session, and it must be recompiled for every new \texttt{R} session.
-      \vskip1ex
-      The function \texttt{sourceCpp()} compiles \texttt{C++} code contained in a file into \texttt{R} functions.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define Rcpp function
-Rcpp::cppFunction("
-  int times_two(int x)
-    { return 2 * x;}
-  ")  # end cppFunction
-# Run Rcpp function
-times_two(3)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/mult_rcpp.cpp")
-# Multiply two numbers
-mult_rcpp(2, 3)
-mult_rcpp(1:3, 6:4)
-# Multiply two vectors
-mult_vec_rcpp(2, 3)
-mult_vec_rcpp(1:3, 6:4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Loops in \protect\emph{Rcpp Sugar}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Loops written in \emph{Rcpp} can be two orders of magnitude faster than loops in \texttt{R}!
-      \vskip1ex
-      \emph{Rcpp Sugar} allows using \texttt{R}-style vectorized syntax in \emph{Rcpp} code.
-      <<echo=TRUE,eval=FALSE>>=
-# Define Rcpp function with loop
-Rcpp::cppFunction("
-double inner_mult(NumericVector x, NumericVector y) {
-int x_size = x.size();
-int y_size = y.size();
-if (x_size != y_size) {
-    return 0;
+# ?options  # Get info on global options
+getOption("warn")  # Global option for "warn"
+options("warn")  # Global option for "warn"
+getOption("error")  # Global option for "error"
+sqrt_safe <- function(input) {
+# Returns its argument
+  if (input<0) {
+    warning("sqrt_safe: input is negative")
+    NULL  # Return NULL for negative argument
   } else {
-    double total = 0;
-    for(int i = 0; i < x_size; ++i) {
-      total += x[i] * y[i];
-  }
-  return total;
-  }
-}")  # end cppFunction
-# Run Rcpp function
-inner_mult(1:3, 6:4)
-inner_mult(1:3, 6:3)
-# Define Rcpp Sugar function with loop
-Rcpp::cppFunction("
-double inner_lagmugar(NumericVector x, NumericVector y) {
-  return sum(x * y);
-}")  # end cppFunction
-# Run Rcpp Sugar function
-inner_lagmugar(1:3, 6:4)
-inner_lagmugar(1:3, 6:3)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define R function with loop
-inner_mult_r <- function(x, y) {
-    to_tal <- 0
-    for(i in 1:NROW(x)) {
-      to_tal <- to_tal + x[i] * y[i]
-    }
-    to_tal
-}  # end inner_mult_r
-# Run R function
-inner_mult_r(1:3, 6:4)
-inner_mult_r(1:3, 6:3)
-# Compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=inner_mult_r(1:10000, 1:10000),
-  inner_r=1:10000 %*% 1:10000,
-  r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_lagmugar(1:10000, 1:10000),
-  times=10))[, c(1, 4, 5)]
+    sqrt(input)
+  }  # end if
+}  # end sqrt_safe
+sqrt_safe(5)
+sqrt_safe(-1)
+options(warn=-1)
+sqrt_safe(-1)
+options(warn=0)
+sqrt_safe()
+options(warn=1)
+sqrt_safe()
+options(warn=3)
+sqrt_safe()
       @
   \end{columns}
 \end{block}
@@ -1745,64 +137,52 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Ornstein-Uhlenbeck Process Using \protect\emph{Rcpp}}
+\subsection{Validating Function Arguments}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Simulating the Ornstein-Uhlenbeck Process in \emph{Rcpp} is about 30 times faster than in \texttt{R}!
-      <<echo=TRUE,eval=FALSE>>=
-# Define Ornstein-Uhlenbeck function in R
-sim_ou <- function(nrows=1000, eq_price=5.0,
-                    volat=0.01, theta=0.01) {
-  returns <- numeric(nrows)
-  prices <- numeric(nrows)
-  prices[1] <- eq_price
-  for (i in 2:nrows) {
-    returns[i] <- thetav*(eq_price - prices[i-1]) + volat*rnorm(1)
-    prices[i] <- prices[i-1] + returns[i]
-  }  # end for
-  prices
-}  # end sim_ou
-# Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
-thetav <- 0.01; nrows <- 1000
-set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
-      @
+      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type}.
+      \vskip1ex
+      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call.
+      \vskip1ex
+      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise.
+      \vskip1ex
+      Missing arguments can be detected by:\\
+      - assigning a \texttt{NULL} default value to formal arguments and then calling  \texttt{is.null()} on them,\\
+      - calling the function \texttt{missing()} on the arguments.
+      \vskip1ex
+      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
+      \vskip1ex
+      The function \texttt{return()} returns its argument and terminates futher function execution.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Define Ornstein-Uhlenbeck function in Rcpp
-Rcpp::cppFunction("
-NumericVector sim_ou_rcpp(double eq_price,
-                      double volat,
-                      double thetav,
-                      NumericVector innov) {
-  int(nrows = innov.size();
-  NumericVector prices*nrows);
-  NumericVector returns*nrows);
-  prices[0] = eq_price;
-  for (int it = 1; it <.n_rows; it++) {
-    returns[it] = thetav*(eq_price - prices[it-1]) + volat*innov[it-1];
-    prices[it] = prices[it-1] + returns[it];
-  }  // end for
-  return prices;
-}")  # end cppFunction
-# Simulate Ornstein-Uhlenbeck process in Rcpp
-set.seed(1121)  # Reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  volat=sigmav,
-  theta=thetav,
-  innov=rnorm(nrows))
-all.equal(ou_sim, ou_sim_rcpp)
-# Compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
-  times=10))[, c(1, 4, 5)]
+# Function valido validates its arguments
+valido <- function(input=NULL) {
+# Check if argument is valid and return double
+  if (is.null(input)) {
+    return("valido: input is missing")
+  } else if (is.numeric(input)) {
+    2*input
+  } else cat("valido: input not numeric")
+}  # end valido
+valido(3)
+valido("a")
+valido()
+# valido validates arguments using missing()
+valido <- function(input) {
+# Check if argument is valid and return double
+  if (missing(input)) {
+    return("valido: input is missing")
+  } else if (is.numeric(input)) {
+    2*input
+  } else cat("valido: input is not numeric")
+}  # end valido
+valido(3)
+valido("a")
+valido()
       @
   \end{columns}
 \end{block}
@@ -1811,207 +191,42 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Rcpp Attributes}}
+\subsection{Validating Assertions Inside Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Rcpp attributes} are instructions for the \texttt{C++} compiler, embedded in the \emph{Rcpp} code as \texttt{C++} comments, and preceded by the \texttt{"//"} symbol.
+      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution.
       \vskip1ex
-      The \texttt{Rcpp::depends} attribute specifies additional \texttt{C++} library dependencies.
+      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code.
       \vskip1ex
-      The \texttt{Rcpp::export} attribute specifies that a function should be exported to \texttt{R}, where it can be called as an \texttt{R} function.
+      Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced.
       \vskip1ex
-      Only functions which are preceded by the \texttt{Rcpp::export} attribute are exported to \texttt{R}.
+      The function \texttt{traceback()} prints the call stack, showing the function that produced the \emph{error} condition.
       \vskip1ex
-      The function \texttt{sourceCpp()} compiles \texttt{C++} code contained in a file into \texttt{R} functions.
-      <<echo=TRUE,eval=FALSE>>=
-# Source Rcpp function for Ornstein-Uhlenbeck process from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_ou.cpp")
-# Simulate Ornstein-Uhlenbeck process in Rcpp
-set.seed(1121)  # Reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  volat=sigmav,
-  theta=thetav,
-  innov=rnorm(nrows))
-all.equal(ou_sim, ou_sim_rcpp)
-# Compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
-  times=10))[, c(1, 4, 5)]
-      @
+      \texttt{cat()} statements inside the function body provide information about the state of its variables.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namesvpace
-
-// The function sim_ou_rcpp() simulates an Ornstein-Uhlenbeck process
-// export the function roll_maxmin() to R
-// [[Rcpp::export]]
-NumericVector sim_ou_rcpp(double eq_price,
-                          double volat,
-                          double thetav,
-                          NumericVector innov) {
-  int(nrows = innov.size();
-  NumericVector prices*nrows);
-  NumericVector returns*nrows);
-  prices[0] = eq_price;
-  for (int it = 1; it <.n_rows; it++) {
-    returns[it] = thetav*(eq_price - prices[it-1]) + volat*innov[it-1];
-    prices[it] = prices[it-1] + returns[it];
-  }  // end for
-  return prices;
-}  // end sim_ou_rcpp
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Generating Random Numbers Using Logistic Map in \protect\emph{Rcpp}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{logistic map} in \emph{Rcpp} is about seven times faster than the loop in \texttt{R}, and even slightly faster than the standard \texttt{runif()} function in \texttt{R}!
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate uniformly distributed pseudo-random sequence
-unifun <- function(seedv, nrows=10) {
-  output <- numeric(nrows)
-  output[1] <- seedv
-  for (i in 2:nrows) {
-    output[i] <- 4*output[i-1]*(1-output[i-1])
-  }  # end for
-  acos(1-2*output)/pi
-}  # end unifun
-
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifun.cpp")
-# Microbenchmark Rcpp code
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=runif(1e5),
-  rloop=unifun(0.3, 1e5),
-  r_cpp=uniform_rcpp(0.3, 1e5),
-  times=10))[, c(1, 4, 5)]
+            <<echo=TRUE,eval=FALSE>>=
+# valido() validates its arguments and assertions
+valido <- function(input) {
+# Check if argument is valid and return double
+  if (missing(input)) {
+    stop("valido: input is missing")
+  } else if (!is.numeric(input)) {
+    cat("input =", input)
+    stop("valido: input is not numeric")
+  } else 2*input
+}  # end valido
+valido(3)
+valido("a")
+valido()
       @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namesvpace
-
-// This is a simple example of exporting a C++ function to R.
-// You can source this function into an R session using the
-// function Rcpp::sourceCpp()
-// (or via the Source button on the editor toolbar).
-// Learn more about Rcpp at:
-//
-//   http://www.rcpp.org/
-//   http://adv-r.had.co.nz/Rcpp.html
-//   http://gallery.rcpp.org/
-
-// function unifun() produces a vector of
-// uniformly distributed pseudo-random numbers
-// [[Rcpp::export]]
-NumericVector uniform_rcpp(double seedv, int(nrows) {
-// define pi
-static const double pi = 3.14159265;
-// allocate output vector
-  NumericVector output(nrows);
-// initialize output vector
-  output[0] = seedv;
-// perform loop
-  for (int i=1; i <.n_rows; ++i) {
-    output[i] = 4*output[i-1]*(1-output[i-1]);
-  }  // end for
-// rescale output vector and return it
-  return acos(1-2*output)/pi;
-}
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{RcppArmadillo} for Fast Linear Algebra}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{RcppArmadillo} allows calling the high-confl \emph{Armadillo} \texttt{C++} linear algebra library.
-      \vskip1ex
-      \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab}.
-      \vskip1ex
-      \emph{RcppArmadillo} functions are often faster than even compiled \texttt{R} functions, because they use better optimized \texttt{C++} code:\\
-      \url{http://arma.sourceforge.net/speed.html}\\
-      \vskip1ex
-      You can learn more about \emph{RcppArmadillo}: \\
-      \tiny \url{http://arma.sourceforge.net/}\\
-      \tiny \url{http://dirk.eddelbuettel.com/code/rcpp.armadillo.html}\\
-      \tiny \url{https://cran.r-project.org/web/packages/RcppArmadillo/index.html}\\
-      \tiny \url{https://github.com/RcppCore/RcppArmadillo}
-      <<echo=TRUE,eval=FALSE>>=
-library(RcppArmadillo)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/armadillofuntions.cpp")
-vec1 <- runif(1e5)
-vec2 <- runif(1e5)
-vec_in(vec1, vec2)
-vec1 %*% vec2
-      @
-    \column{0.5\textwidth}
       \vspace{-2em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namesvpace from Armadillo library
-// declare dependency on RcppArmadillo
-// [[Rcpp::depends(RcppArmadillo)]]
-
-// Examples of RcppArmadillo functions below
-
-// vec_in() calculates the inner (dot) product of two vectors.
-// It accepts pointers to the two vectors and returns a double.
-//' @export
-// [[Rcpp::export]]
-double vec_in(const arma::vec& vec1, const arma::vec& vec2){
-  return arma::dot(vec1, vec2);
-}  // end vec_in
-
-// mat2vec_in() calculates the inner (dot) product of a matrix
-// with two vectors.
-// It accepts pointers to the matrix and vectors, and returns a double.
-//' @export
-// [[Rcpp::export]]
-double mat2vec_in(const arma::vec& vector2, const arma::mat& matrixv, const arma::vec& vector1){
-  return arma::as_scalar(trans(vector2) * (matrixv * vector1));
-}  // end mat2vec_in
-    \end{lstlisting}
-      \vspace{-1.5em}
       <<echo=TRUE,eval=FALSE>>=
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  vec_in = vec_in(vec1, vec2),
-  r_code = (vec1 %*% vec2),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# vec_in() is several times faster than %*%, especially for longer vectors.
-#     expr     mean   median
-# 1 vec_in 110.7067 110.4530
-# 2 r_code 585.5127 591.3575
+# Print the call stack
+traceback()
       @
   \end{columns}
 \end{block}
@@ -2020,159 +235,40 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating \protect\emph{ARIMA} Processes Using \protect\emph{RcppArmadillo}}
+\subsection{Validating Assertions Using \texttt{stopifnot()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{ARIMA} processes can be simulated using \emph{RcppArmadillo} even faster than by using the function \texttt{filter()}.
-      <<echo=TRUE,eval=FALSE>>=
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_arima.cpp")
-# Define AR(2) coefficients
-coeff <- c(0.9, 0.09)
-nrows <- 1e4
-set.seed(1121)
-innov <- rnorm(nrows)
-# Simulate ARIMA using filter()
-arima_filter <- filter(x=innov,
-  filter=coeff, method="recursive")
-# Simulate ARIMA using sim_arima()
-arimav <- sim_arima(innov, rev(coeff))
-all.equal(drop(arimav),
-  as.numeric(arima_filter))
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  sim_arima = sim_arima(innov, rev(coeff)),
-  filter = filter(x=innov, filter=coeff, method="recursive"),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-    \column{0.5\textwidth}
-      % \vspace{-2em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namesvpace from Armadillo library
-// declare dependency on RcppArmadillo
-// [[Rcpp::depends(RcppArmadillo)]]
-
-//' @export
-// [[Rcpp::export]]
-arma::vec sim_arima(const arma::vec& innov, const arma::vec& coeff) {
-  uword.n_rows = innov.n_elem;
-  uword look_back = coeff.n_elem;
-  arma::vec arimav[nrows);
-
-  // startup period
-  arimav(0) = innov(0);
-  arimav(1) = innov(1) + coeff(look_back-1) * arimav(0);
-  for (uword it = 2; it < look_back-1; it++) {
-    arimav(it) = innov(it) + arma::dot(coeff.subvec(look_back-it, look_back-1), arimav.subvec(0, it-1));
-  }  // end for
-
-  // remaining periods
-  for (uword it = look_back; it <.n_rows; it++) {
-    arimav(it) = innov(it) + arma::dot(coeff, arimav.subvec(it-look_back, it-1));
-  }  // end for
-
-  return arimav;
-}  // end sim_arima
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fast Matrix Algebra Using \protect\emph{RcppArmadillo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{RcppArmadillo} functions can be made even faster by operating on pointers to matrices and performing calculations in place, without copying large matrices.
+      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()}.
       \vskip1ex
-      \emph{RcppArmadillo} functions can be compiled using the same \emph{Rtools} as those for \emph{Rcpp} functions:\\
-      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}
-      <<echo=TRUE,eval=FALSE>>=
-library(RcppArmadillo)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/armadillofuntions.cpp")
-matrixv <- matrix(runif(1e5), nc=1e3)
-# De-mean using apply()
-newmapt <- apply(matrixv, 2,
-  function(x) (x-mean(x)))
-# De-mean using demean_mat()
-demean_mat(matrixv)
-all.equal(newmapt, matrixv)
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  apply = (apply(matrixv, 2, mean)),
-  demean_mat = demean_mat(matrixv),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# Demean_mat() is over 70 times faster than apply()
-#         expr       mean   median
-# 1 demean_mat   127.7539  125.604
-# 2      apply 10781.7534 9291.674
-
-# Perform matrix inversion
-# Create random positive semi-definite matrix
-matrixv <- matrix(runif(25), nc=5)
-matrixv <- t(matrixv) %*% matrixv
-# Invert the matrix
-matrix_inv <- solve(matrixv)
-inv_mat(matrixv)
-all.equal(inv_mat, matrixv)
-# Microbenchmark RcppArmadillo code
-library(microbenchmark)
-summary(microbenchmark(
-  solve = solve(matrixv),
-  inv_mat = inv_mat(matrixv),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# inv_mat() is over 10 times faster than solve()
-#      expr     mean median
-# 1 inv_mat  3.42669  2.933
-# 2 solve   32.00254 31.280
-      @
+      If the argument to function \texttt{stopifnot()} is \texttt{FALSE}, then it produces an \emph{error} condition, and halts function execution.
+      \vskip1ex
+      \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if ()} statements.
+      \vskip1ex
+      \texttt{stopifnot()} is often used to check the validity of function arguments.
+      \vskip1ex
+      \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namesvpace from Armadillo library
-// declare dependency on RcppArmadillo
-// [[Rcpp::depends(RcppArmadillo)]]
-
-// Examples of RcppArmadillo functions below
-
-// demean_mat() calculates a matrix with de-meaned columns.
-// It accepts a pointer to a matrix and operates on the matrix in place.
-// It returns the number of columns of the input matrix.
-//' @export
-// [[Rcpp::export]]
-double demean_mat(arma::mat& matrixv){
-  for (unsigned int i = 0; i < matrixv.n_cols; i++) {
-    matrixv.col(i) -= arma::mean(matrixv.col(i));
-  }  // end for
-  return matrixv.n_cols;
-}  // end demean_mat
-
-// inv_mat() calculates the inverse of symmetric positive
-// definite matrix.
-// It accepts a pointer to a matrix and operates on the matrix in place.
-// It returns the number of columns of the input matrix.
-// It uses RcppArmadillo.
-//' @export
-// [[Rcpp::export]]
-double inv_mat(arma::mat& matrixv){
-  matrixv = arma::inv_sympd(matrixv);
-  return matrixv.n_cols;
-}  // end inv_mat
-    \end{lstlisting}
+      <<echo=TRUE,eval=FALSE>>=
+valido <- function(input) {
+# Check argument using long form '&&' operator
+  stopifnot(!missing(input) && is.numeric(input))
+  2*input
+}  # end valido
+valido(3)
+valido()
+valido("a")
+valido <- function(input) {
+# Check argument using logical '&' operator
+  stopifnot(!missing(input) & is.numeric(input))
+  2*input
+}  # end valido
+valido()
+valido("a")
+      @
   \end{columns}
 \end{block}
 
@@ -2180,216 +276,274 @@ double inv_mat(arma::mat& matrixv){
 
 
 %%%%%%%%%%%%%%%
-\subsection{Fast Covariance Matrix Inverse Using \protect\emph{RcppArmadillo}}
+\subsection{Validating Function Arguments and Assertions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
-  % \begin{columns}[T]
-    % \column{0.5\textwidth}
-      \emph{RcppArmadillo} can be used to quickly calculate the regularized inverse of a covariance matrix.
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
-using namespace Rcpp; // use Rcpp C++ namesvpace
-using namespace arma;
-
-//' @export
-// [[Rcpp::export]]
-arma::mat calc_inv(const arma::mat& matrixv, const arma::uword& eigen_max) {
-  arma::mat eigenvec;
-  arma::vec eigenval;
-
-  arma::eig_sym(eigenval, eigenvec, cov(matrixv));
-  eigenvec = eigenvec.cols(eigenvec.n_cols-eigen_max, eigenvec.n_cols-1);
-  eigenval = 1/eigenval.subvec(eigenval.n_elem-eigen_max, eigenval.n_elem-1);
-
-  return eigenvec*diagmat(eigenval)*eigenvec.t();
-
-}  // end calc_inv
-    \end{lstlisting}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE}.
+      \vskip1ex
+      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions.
+      \vskip1ex
+      \texttt{cat()} statements can provide information about the state of variables inside a function.
+      \vskip1ex
+      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error}.
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(RcppArmadillo)
-# Source Rcpp functions from file
-Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/calc_weights.cpp")
-# Calculate matrix of random returns
-matrixv <- matrix(rnorm(300), nc=5)
-# Regularized inverse of covariance matrix
-eigen_max <- 4
-eigend <- eigen(cov(matrixv))
-covinv <- eigend$vectors[, 1:eigen_max] %*%
-  (t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])
-# Regularized inverse using RcppArmadillo
-covinv_arma <- calc_inv(matrixv, eigen_max)
-all.equal(covinv, covinv_arma)
-# Microbenchmark RcppArmadillo code
-library(microbenchmark)
-summary(microbenchmark(
-  Rcode = {
-    eigend <- eigen(cov(matrixv))
-    eigend$vectors[, 1:eigen_max] %*%
-      (t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])
-  },
-  Rcpp = calc_inv(matrixv, eigen_max),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-    % \column{0.5\textwidth}
-  % \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization Using \protect\emph{RcppArmadillo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  % \begin{columns}[T]
-    % \column{0.5\textwidth}
-      Fast portfolio optimization using matrix algebra can be implemented using \protect\emph{RcppArmadillo}.
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Fast portfolio optimization using matrix algebra and RcppArmadillo
-// Rcpp header with information for C++ compiler
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
-using namespace Rcpp; // use Rcpp C++ namesvpace
-using namespace arma;
-
-//' @export
-// [[Rcpp::export]]
-arma::vec calc_weights(const arma::mat& returns,
-                       const std::string& typev = "max_sharpe",
-                       int eigen_max = 1,
-                       const double& probv = 0.1,
-                       const double& alpha = 0.0,
-                       const bool scalev = true) {
-  // Initialize
-  arma::vec weights(returns[ncols);
-  if (eigen_max == 1)  eigen_max = returns[ncols;
-
-  // Calculate weights depending on typev
-  if (typev == "max_sharpe") {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::mean(returns, 0));
-    // Shrink meancols to the mean of returns
-    meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
-    // Apply regularized inverse
-    weights = calc_inv(returns, eigen_max)*meancols;
-  } else if (typev == "max_sharpe_median") {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::median(returns, 0));
-    // Shrink meancols to the mean of returns
-    meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
-    // Apply regularized inverse
-    weights = calc_inv(returns, eigen_max)*meancols;
-  } else if (typev == "min_var") {
-    // Apply regularized inverse to unit vector
-    weights = calc_inv(returns, eigen_max)*arma::ones(returns[ncols);
-  } else if (typev == "min_varpca") {
-    // Calculate highest order principal component
-    arma::vec eigenval;
-    arma::mat eigenvec;
-    arma::eig_sym(eigenval, eigenvec, cov(returns));
-    weights = eigenvec.col(0);
-  } else if (typev == "rank") {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::mean(returns, 0));
-    // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
-    sd_cols.replace(0, 1);
-    meancols = meancols/sd_cols;
-    // Weights equal to ranks of Sharpe
-    weights = conv_to< vec >::from(arma::sort_zoo::index(arma::sort_zoo::index(meancols)));
-    weights = (weights - arma::mean(weights));
-  } else if (typev == "rankrob") {
-    // Median returns by columns
-    arma::vec meancols = arma::trans(arma::median(returns, 0));
-    // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
-    sd_cols.replace(0, 1);
-    meancols = meancols/sd_cols;
-    // Apply regularized inverse
-    weights = conv_to< vec >::from(arma::sort_zoo::index(arma::sort_zoo::index(meancols)));
-    weights = (weights - arma::mean(weights));
-  } else if (typev == "quantilev") {
-    // Sum of quantiles for columns
-    arma::vec probs = {probv, 1-probv};
-    weights = conv_to< vec >::from(arma::sum(arma::quantile(returns, probs, 0), 0));
-    // Weights equal to ranks
-    weights = conv_to< vec >::from(arma::sort_zoo::index(arma::sort_zoo::index(weights)));
-    weights = (weights - arma::mean(weights));
+# sumtwo() returns the sum of its two arguments
+sumtwo <- function(input1, input2) {  # Even more robust
+# Check if at least one argument is not missing
+  stopifnot(!missing(input1) &&
+              !missing(input2))
+# Check if arguments are valid and return sum
+  if (is.numeric(input1) && is.numeric(input2)) {
+    input1 + input2  # Both valid
+  } else if (is.numeric(input1)) {
+    cat("input2 is not numeric\n")
+    input1  # input1 is valid
+  } else if (is.numeric(input2)) {
+    cat("input1 is not numeric\n")
+    input2  # input2 is valid
   } else {
-    cout << "Warning: Incorrect typev argument: " << typev << endl;
-    return arma::ones(returns[ncols);
-  }  // end if
-
-  if (scalev == TRUE) {
-    return weights*arma::stddev(arma::mean(returns, 1))/arma::stddev(returns*weights);
-  }  // end if
-
-  return weights;
-}  // end calc_weights
-    \end{lstlisting}
-    % \column{0.5\textwidth}
-      % \vspace{-1em}
-  % \end{columns}
+    stop("none of the arguments are numeric")
+  }
+}  # end sumtwo
+sumtwo(1, 2)
+sumtwo(5, 'a')
+sumtwo('a', 5)
+sumtwo('a', 'b')
+sumtwo()
+      @
+  \end{columns}
 \end{block}
 
 \end{frame}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Strategy Backtesting Using \protect\emph{RcppArmadillo}}
+\subsection{The \texttt{R} Debugger Facility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
-  % \begin{columns}[T]
-    % \column{0.5\textwidth}
-      Fast backtesting of strategies can be implemented using \protect\emph{RcppArmadillo}.
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
-using namespace Rcpp; // use Rcpp C++ namesvpace
-using namespace arma;
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{debug()} flags a function for future debugging, but doesn't invoke the debugger.
+      \vskip1ex
+      After a function is flagged for debugging with the call \texttt{"debug(myfun)"}, then the function call \texttt{"myfun()"} automatically invokes the debugger (browser).
+      \vskip1ex
+      When the debugger is first invoked, it prints the function code to the console, and produces a \emph{browser} prompt: \texttt{"Browse[2]>"}.
+      \vskip1ex
+      Once inside the debugger, the user can execute the function code one command at a time by pressing the \emph{Enter} key.
+      \vskip1ex
+      The user can examine the function arguments and variables with standard \texttt{R} commands, and can also change the values of objects or create new ones.
+      \vskip1ex
+      The command \texttt{"c"} executes the remainder of the function code without pausing.
+      \vskip1ex
+      The command \texttt{"Q"} exits the debugger (browser).
+      \vskip1ex
+      The call \texttt{"undebug(myfun)"} at the \texttt{R} prompt unflags the function for debugging.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Flag "valido" for debugging
+debug(valido)
+# Calling "valido" starts debugger
+valido(3)
+# unflag "valido" for debugging
+undebug(valido)
+      @
+  \end{columns}
+\end{block}
 
-arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
-                    const arma::mat& returns, // Portfolio returns
-                    const arma::uvec& startp,
-                    const arma::uvec& endp,
-                    const std::string& typev = "max_sharpe",
-                    const arma::uword& eigen_max = 1,
-                    const double& probv = 0.1,
-                    const double& alpha = 0,
-                    const bool& scalev = true,
-                    const double& coeff = 1.0,
-                    const double& bid_offer = 0.0) {
-  arma::vec pnls = zeros(returns*nrows);
-  arma::vec weights_past = zeros(returns[ncols);
-  arma::vec weights(returns[ncols);
+\end{frame}
 
-  // Perform loop over the endp
-  for (arma::uword it=1; it < endp.size(); it++) {
-    // cout << "it: " << it << endl;
-    // Calculate portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), typev, eigen_max, probv, alpha, scalev);
-    // Calculate out-of-sample returns
-    pnls.subvec(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
-    // Add transaction costs
-    pnls.row(endp(it-1)+1) -= bid_offer*sum(abs(weights - weights_past))/2;
-    weights_past = weights;
-  }  // end for
-  // Return the strategy returns
-  return pnls;
-}  // end back_test
-    \end{lstlisting}
-    % \column{0.5\textwidth}
-      % \vspace{-1em}
-  % \end{columns}
+
+%%%%%%%%%%%%%%%
+\subsection{Debugging Using \texttt{browser()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      As an alternative to flagging a function for debugging, the user can insert the function \texttt{browser()} into the function body.
+      \vskip1ex
+      \texttt{browser()} pauses the execution of a function and invokes the debugger (browser) at the point where \texttt{browser()} was called.
+      \vskip1ex
+      Once inside the debugger, the user can execute all the same browser commands as when using \texttt{debug()}.
+      \vskip1ex
+      \texttt{browser()} is usually inserted just before the command that is suspected of producing an \emph{error} condition.
+      \vskip1ex
+      Another alternative to flagging a function for debugging, or inserting \texttt{browser()} calls, is setting the \texttt{"error"} option equal to \texttt{"recover"}.
+      \vskip1ex
+      Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+valido <- function(input) {
+  browser()  # Pause and invoke debugger
+# Check argument using long form '&&' operator
+  stopifnot(!missing(input) && is.numeric(input))
+  2*input
+}  # end valido
+valido()  # Invokes debugger
+options("error")  # Show default NULL "error" option
+options(error=recover)  # Set "error" option to "recover"
+options(error=NULL)  # Set back to default "error" option
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using the Debugger in \protect\emph{RStudio}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
+      \begin{itemize}
+        \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
+        \item stepping into functions,
+        \item environment pane with environment stack, instead of calling \texttt{ls()},
+        \item traceback pane, instead of calling \texttt{traceback()},
+      \end{itemize}
+      \emph{RStudio} provides an online debugging tutorial:
+      \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{image/rstudio_debug.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Handling Exception Conditions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
+      \vskip1ex
+      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument.
+      \vskip1ex
+      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression.
+      \vskip1ex
+      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition}.
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console.
+      \vskip1ex
+      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+str(tryCatch)  # Get arguments of tryCatch()
+tryCatch(  # Without error handler
+  {  # Evaluate expressions
+    numv <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  finally=print(paste("numv=", numv))
+)  # end tryCatch
+
+tryCatch(  # With error handler
+  {  # Evaluate expressions
+    numv <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  # Error handler captures error condition
+  error=function(error_cond) {
+    print(paste("error handler: ", error_cond))
+  },  # end error handler
+  # Warning handler captures warning condition
+  warning=function(warning_cond) {
+    print(paste("warning handler: ", warning_cond))
+  },  # end warning handler
+  finally=print(paste("numv=", numv))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Error Conditions in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If an \emph{error} occurs in an \texttt{apply()} loop, then the loop exits without returning any result.
+      \vskip1ex
+      \texttt{apply()} collects the values returned by the function supplied to its \texttt{FUN} argument, and returns them only after the loop is finished.
+      \vskip1ex
+      If one of the function calls produces an error, then the loop is interrupted and \texttt{apply()} exits without returning any result.
+      \vskip1ex
+      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Apply loop without tryCatch
+apply(matrix(1:5), 1, function(numv) {  # Anonymous function
+    stopifnot(!(numv = 3))  # Check for error
+    # Broadcast message to console
+    cat("(cat) numv =", numv, "\n")
+    # Return a value
+    paste("(return) numv =", numv)
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Handling in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results.
+      \vskip1ex
+      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()}.
+      \vskip1ex
+      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()}.
+      \vskip1ex
+      \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# Apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(numv) {  # Anonymous function
+    tryCatch(  # With error handler
+      {  # Body
+        stopifnot(numv != 3)  # Check for error
+        # Broadcast message to console
+        cat("(cat) numv =", numv, "\t")
+        # Return a value
+        paste("(return) numv =", numv)
+      },
+      # Error handler captures error condition
+      error=function(error_cond)
+        paste("handler: ", error_cond),
+      finally=print(paste("(finally) numv =", numv))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
 \end{block}
 
 \end{frame}
@@ -2914,7 +1068,8 @@ dates <- Sys.Date() + -5:2
 dates
 
 # Create Boolean vector of business days
-is_busday <- isBusinessDay(  # RQuantLib calendar
+# Use RQuantLib calendar
+is_busday <- RQuantLib::isBusinessDay(
   calendar="UnitedStates/GovernmentBond", dates)
 
 # Create daily series of business days
@@ -3006,15 +1161,13 @@ startd <- decimal_date(Sys.Date()-6)
 endd <- decimal_date(Sys.Date())
 # Create vector of geometric Brownian motion
 datav <- exp(cumsum(rnorm(6)/100))
-fre_quency <- NROW(datav)/(endd-startd)
-ts_series <- ts(data=datav,
-                start=startd,
-                frequency=fre_quency)
-ts_series  # Display time series
+tstep <- NROW(datav)/(endd-startd)
+tseries <- ts(data=datav, start=startd, frequency=tstep)
+tseries  # Display time series
 # Display index dates
-as.Date(date_decimal(zoo::coredata(time(ts_series))))
+as.Date(date_decimal(zoo::coredata(time(tseries))))
 # bi-monthly geometric Brownian motion starting mid-1990
-ts_series <- ts(data=exp(cumsum(rnorm(96)/100)),
+tseries <- ts(data=exp(cumsum(rnorm(96)/100)),
              frequency=6, start=1990.5)
       @
   \end{columns}
@@ -3043,13 +1196,13 @@ ts_series <- ts(data=exp(cumsum(rnorm(96)/100)),
 # Show some methods for class "ts"
 matrix(methods(class="ts")[3:8], ncol=2)
 # "tsp" attribute specifies the date-time index
-attributes(ts_series)
+attributes(tseries)
 # Extract the index
-tail(time(ts_series), 11)
+tail(time(tseries), 11)
 # The index is equally spaced
-diff(tail(time(ts_series), 11))
+diff(tail(time(tseries), 11))
 # Subset the time series
-window(ts_series, start=1992, end=1992.25)
+window(tseries, start=1992, end=1992.25)
       @
   \end{columns}
 \end{block}
@@ -3067,7 +1220,7 @@ window(ts_series, start=1992, end=1992.25)
       The method \texttt{plot.ts()} plots \emph{ts} time series objects.
       <<ts_obj,echo=(-1),eval=FALSE,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-plot(ts_series, type="l",  # Create plot
+plot(tseries, type="l",  # Create plot
      col="red", lty="solid", xlab="", ylab="")
 title(main="Random Prices", line=-1)  # Add title
       @
@@ -3110,7 +1263,7 @@ plot(EuStockMarkets, main="EuStockMarkets", xlab="")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/eustxtes.png}
+      \includegraphics[width=0.5\paperwidth]{figure/eustx_ts.png}
   \end{columns}
 \end{block}
 
@@ -3169,11 +1322,11 @@ set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
 # Create zoo time series of random returns
 dates <- Sys.Date() + 0:3
-zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
-zoo_series
-attributes(zoo_series)
-class(zoo_series)  # Class "zoo"
-tail(zoo_series, 3)  # Get last few elements
+zoots <- zoo(rnorm(NROW(dates)), order.by=dates)
+zoots
+attributes(zoots)
+class(zoots)  # Class "zoo"
+tail(zoots, 3)  # Get last few elements
       @
   \end{columns}
 \end{block}
@@ -3192,7 +1345,7 @@ tail(zoo_series, 3)  # Get last few elements
       \vskip1ex
       The function \texttt{zoo::index()} extracts the time index of a \emph{zoo} object.
       \vskip1ex
-      The function \texttt{xts::.zoo::index()} extracts the time index expressed in the number of seconds.
+      The function \texttt{xts::.index()} extracts the time index expressed in the number of seconds.
       \vskip1ex
       The functions \texttt{start()} and \texttt{end()} return the time index values of the first and last elements of a \emph{zoo} object.
       \vskip1ex
@@ -3201,16 +1354,16 @@ tail(zoo_series, 3)  # Get last few elements
       \vspace{-1em}
       <<echo=(-1)>>=
 library(zoo)  # Load package zoo
-zoo::coredata(zoo_series)  # Extract coredata
-zoo::index(zoo_series)  # Extract time index
-start(zoo_series)  # First date
-end(zoo_series)  # Last date
-zoo_series[start(zoo_series)]  # First element
-zoo_series[end(zoo_series)]  # Last element
-zoo::coredata(zoo_series) <- rep(1, 4)  # Replace coredata
-cumsum(zoo_series)  # Cumulative sum
-cummax(cumsum(zoo_series))
-cummin(cumsum(zoo_series))
+zoo::coredata(zoots)  # Extract coredata
+zoo::index(zoots)  # Extract time index
+start(zoots)  # First date
+end(zoots)  # Last date
+zoots[start(zoots)]  # First element
+zoots[end(zoots)]  # Last element
+zoo::coredata(zoots) <- rep(1, 4)  # Replace coredata
+cumsum(zoots)  # Cumulative sum
+cummax(cumsum(zoots))
+cummin(cumsum(zoots))
       @
   \end{columns}
 \end{block}
@@ -3234,12 +1387,12 @@ cummin(cumsum(zoo_series))
       \vspace{-1em}
       <<echo=(-1)>>=
 library(zoo)  # Load package zoo
-zoo_series <- zoo(matrix(cumsum(rnorm(100)), nc=1),
+zoots <- zoo(matrix(cumsum(rnorm(100)), nc=1),
   order.by=seq(from=as.Date("2013-06-15"), by="day", len=100))
-colnames(zoo_series) <- "zoo_series"
-tail(zoo_series)
-dim(zoo_series)
-attributes(zoo_series)
+colnames(zoots) <- "zoots"
+tail(zoots)
+dim(zoots)
+attributes(zoots)
       @
   \end{columns}
 \end{block}
@@ -3271,14 +1424,14 @@ attributes(zoo_series)
       \vspace{-1em}
       <<echo=(-1)>>=
 library(zoo)  # Load package zoo
-zoo::coredata(zoo_series) <- (1:4)^2  # Replace coredata
-zoo_series
-lag(zoo_series)  # One day lag
-lag(zoo_series, 2)  # Two day lag
-lag(zoo_series, k=-1)  # Proper one day lag
-diff(zoo_series)  # Diff with one day lag
+zoo::coredata(zoots) <- (1:4)^2  # Replace coredata
+zoots
+lag(zoots)  # One day lag
+lag(zoots, 2)  # Two day lag
+lag(zoots, k=-1)  # Proper one day lag
+diff(zoots)  # Diff with one day lag
 # Proper lag and original length
-lag(zoo_series, -2, na.pad=TRUE)
+lag(zoots, -2, na.pad=TRUE)
       @
   \end{columns}
 \end{block}
@@ -3300,15 +1453,15 @@ library(zoo)  # Load package zoo
 # Create index of daily dates
 dates <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 # Create vector of geometric Brownian motion
-zoo_data <- exp(cumsum(rnorm(NROW(dates))/100))
+datav <- exp(cumsum(rnorm(NROW(dates))/100))
 # Create zoo series of geometric Brownian motion
-zoo_series <- zoo(x=zoo_data, order.by=dates)
+zoots <- zoo(x=datav, order.by=dates)
       @
       \vspace{-2em}
       <<zoo_ts,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot using plot.zoo method
-plot(zoo_series, xlab="", ylab="")
+plot(zoots, xlab="", ylab="")
 title(main="Random Prices", line=-1)  # Add title
       @
     \column{0.5\textwidth}
@@ -3336,13 +1489,13 @@ title(main="Random Prices", line=-1)  # Add title
       <<echo=(-(1:1)),eval=FALSE>>=
 library(zoo)  # Load package zoo
 # Subset zoo as matrix
-zoo_series[459:463, 1]
+zoots[459:463, 1]
 # Subset zoo using window()
-window(zoo_series,
+window(zoots,
        start=as.Date("2014-10-15"),
        end=as.Date("2014-10-19"))
 # Subset zoo using Date object
-zoo_series[as.Date("2014-10-15")]
+zoots[as.Date("2014-10-15")]
       @
   \end{columns}
 \end{block}
@@ -3365,18 +1518,18 @@ library(zoo)  # Load package zoo
 # Create daily date series of class "Date"
 index1 <- seq(Sys.Date(), by="days", length.out=365)
 # Create zoo time series of random returns
-zoo_series1 <- zoo(rnorm(NROW(index1)), order.by=index1)
+zoots1 <- zoo(rnorm(NROW(index1)), order.by=index1)
 # Create another zoo time series of random returns
 index2 <- seq(Sys.Date()+350, by="days", length.out=365)
-zoo_series2 <- zoo(rnorm(NROW(index2)), order.by=index2)
+zoots2 <- zoo(rnorm(NROW(index2)), order.by=index2)
 # rbind the two time series - ts1 supersedes ts2
-zoo_series3 <- rbind(zoo_series1,
-  zoo_series2[zoo::index(zoo_series2) > end(zoo_series1)])
+zoots3 <- rbind(zoots1,
+  zoots2[zoo::index(zoots2) > end(zoots1)])
 # Plot zoo time series of geometric Brownian motion
-plot(exp(cumsum(zoo_series3)/100), xlab="", ylab="")
+plot(exp(cumsum(zoots3)/100), xlab="", ylab="")
 # Add vertical lines at stitch point
-abline(v=end(zoo_series1), col="blue", lty="dashed")
-abline(v=start(zoo_series2), col="red", lty="dashed")
+abline(v=end(zoots1), col="blue", lty="dashed")
+abline(v=start(zoots2), col="red", lty="dashed")
 title(main="Random Prices", line=-1)  # Add title
       @
     \column{0.5\textwidth}
@@ -3407,13 +1560,13 @@ title(main="Random Prices", line=-1)  # Add title
 # Create daily date series of class "Date"
 index1 <- Sys.Date() + -3:1
 # Create zoo time series of random returns
-zoo_series1 <- zoo(rnorm(NROW(index1)), order.by=index1)
+zoots1 <- zoo(rnorm(NROW(index1)), order.by=index1)
 # Create another zoo time series of random returns
 index2 <- Sys.Date() + -1:3
-zoo_series2 <- zoo(rnorm(NROW(index2)), order.by=index2)
-merge(zoo_series1, zoo_series2)  # union of dates
+zoots2 <- zoo(rnorm(NROW(index2)), order.by=index2)
+merge(zoots1, zoots2)  # union of dates
 # Intersection of dates
-merge(zoo_series1, zoo_series2, all=FALSE)
+merge(zoots1, zoots2, all=FALSE)
       @
   \end{columns}
 \end{block}
@@ -3490,18 +1643,17 @@ sum(is.na(returns))
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Replace NAs in xts time series
-se_ries <- rutils::etfenv$prices[, 1]
-head(se_ries)
-sum(is.na(se_ries))
+pricem <- rutils::etfenv$prices[, 1]
+head(pricem)
+sum(is.na(pricem))
 library(quantmod)
-series_zoo <- as.xts(zoo::na.locf(se_ries, na.rm=FALSE,
-                                  fromLast=TRUE))
-series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
-all.equal(series_zoo, series_xts, check.attributes=FALSE)
+pricezoo <- zoo::na.locf(pricem, na.rm=FALSE, fromLast=TRUE)
+pricexts <- xts:::na.locf.xts(pricem, fromLast=TRUE)
+all.equal(pricezoo, pricexts, check.attributes=FALSE)
 library(microbenchmark)
 summary(microbenchmark(
-  zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
-  xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
+  zoo=zoo::na.locf(pricem, fromLast=TRUE),
+  xts=xts:::na.locf.xts(pricem, fromLast=TRUE),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -3534,17 +1686,17 @@ library(zoo)  # Load package zoo
 # methods(as.zoo)  # Many methods of coercing into zoo
 class(EuStockMarkets)  # Multiple ts object
 # Coerce mts object into zoo
-zoo_series <- as.zoo(EuStockMarkets)
-class(zoo::index(zoo_series))  # Index is numeric
-head(zoo_series, 3)
+zoots <- as.zoo(EuStockMarkets)
+class(zoo::index(zoots))  # Index is numeric
+head(zoots, 3)
 # Approximately convert index into class "Date"
-zoo::index(zoo_series) <-
-  as.Date(365*(zoo::index(zoo_series)-1970))
-head(zoo_series, 3)
+zoo::index(zoots) <-
+  as.Date(365*(zoo::index(zoots)-1970))
+head(zoots, 3)
 # Convert index into class "POSIXct"
-zoo_series <- as.zoo(EuStockMarkets)
-zoo::index(zoo_series) <- date_decimal(zoo::index(zoo_series))
-head(zoo_series, 3)
+zoots <- as.zoo(EuStockMarkets)
+zoo::index(zoots) <- date_decimal(zoo::index(zoots))
+head(zoots, 3)
       @
   \end{columns}
 \end{block}
@@ -3575,27 +1727,26 @@ set.seed(1121)  # Reset random number generator
 # Create index of daily dates
 dates <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 # Create vector of geometric Brownian motion
-zoo_data <- exp(cumsum(rnorm(NROW(dates))/100))
+datav <- exp(cumsum(rnorm(NROW(dates))/100))
 # Create zoo time series of geometric Brownian motion
-zoo_series <- zoo(x=zoo_data, order.by=dates)
-head(zoo_series, 3)  # zoo object
+zoots <- zoo(x=datav, order.by=dates)
+head(zoots, 3)  # zoo object
 # as.ts() creates ts object with frequency=1
-ts_series <- as.ts(zoo_series)
-tsp(ts_series)  # Frequency=1
-# Get start and end dates of zoo_series
-startd <- decimal_date(start(zoo_series))
-endd <- decimal_date(end(zoo_series))
-# Calculate frequency of zoo_series
-fre_quency <- NROW(zoo_series)/(endd-startd)
-datav <- zoo::coredata(zoo_series)  # Extract data from zoo_series
+tseries <- as.ts(zoots)
+tsp(tseries)  # Frequency=1
+# Get start and end dates of zoots
+startd <- decimal_date(start(zoots))
+endd <- decimal_date(end(zoots))
+# Calculate frequency of zoots
+tstep <- NROW(zoots)/(endd-startd)
+datav <- zoo::coredata(zoots)  # Extract data from zoots
 # Create ts object using ts()
-ts_series <- ts(data=datav, start=startd,
-                frequency=fre_quency)
+tseries <- ts(data=datav, start=startd, frequency=tstep)
 # Display start of time series
-window(ts_series, start=start(ts_series),
-       end=start(ts_series)+4/365)
-head(time(ts_series))  # Display index dates
-head(as.Date(date_decimal(zoo::coredata(time(ts_series)))))
+window(tseries, start=start(tseries),
+       end=start(tseries)+4/365)
+head(time(tseries))  # Display index dates
+head(as.Date(date_decimal(zoo::coredata(time(tseries)))))
       @
   \end{columns}
 \end{block}
@@ -3619,22 +1770,22 @@ head(as.Date(date_decimal(zoo::coredata(time(ts_series)))))
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 # Create weekday Boolean vector
-week_days <- weekdays(zoo::index(zoo_series))
-is_weekday <- !((week_days == "Saturday") |
-  (week_days == "Sunday"))
+weekdayv <- weekdays(zoo::index(zoots))
+is_weekday <- !((weekdayv == "Saturday") |
+  (weekdayv == "Sunday"))
 # Remove weekends from zoo time series
-zoo_series <- zoo_series[is_weekday, ]
-head(zoo_series, 7)  # zoo object
+zoots <- zoots[is_weekday, ]
+head(zoots, 7)  # zoo object
 # as.ts() creates NA values
-ts_series <- as.ts(zoo_series)
-head(ts_series, 7)
+tseries <- as.ts(zoots)
+head(tseries, 7)
 # Create vector of regular dates, including weekends
-dates <- seq(from=start(zoo_series),
+dates <- seq(from=start(zoots),
                   by="day",
-                  length.out=NROW(zoo_series))
-zoo::index(zoo_series) <- dates
-ts_series <- as.ts(zoo_series)
-head(ts_series, 7)
+                  length.out=NROW(zoots))
+zoo::index(zoots) <- dates
+tseries <- as.ts(zoots)
+head(tseries, 7)
       @
   \end{columns}
 \end{block}
@@ -3703,14 +1854,14 @@ indexTZ(xtes)
       \vskip1ex
       \emph{xts} can be plotted using the generic function \texttt{plot()}, which dispatches the \texttt{plot.xts()} method.
       <<echo=(-(1:1)),eval=FALSE>>=
-load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
+load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
 library(xts)  # Load package xts
 # as.xts() coerces zoo series into xts series
-st_ox <- as.xts(zoo_stx)
-dim(st_ox)
-head(st_ox[, 1:4], 4)
+pricexts <- as.xts(pricezoo)
+dim(pricexts)
+head(pricexts[, 1:4], 4)
 # Plot using plot.xts method
-xts::plot.xts(st_ox[, "Close"], xlab="", ylab="", main="")
+xts::plot.xts(pricexts[, "Close"], xlab="", ylab="", main="")
 title(main="MSFT Prices")  # Add title
       @
     \column{0.5\textwidth}
@@ -3789,7 +1940,7 @@ library(ggplot2)
 prices <- rutils::etfenv$prices[, 1]
 prices <- na.omit(prices)
 # Create ggplot object
-etf_gg <- qplot(x=zoo::index(prices),
+plotobj <- qplot(x=zoo::index(prices),
                 y=as.numeric(prices),
                 geom="line",
                 main=names(prices)) +
@@ -3800,7 +1951,7 @@ etf_gg <- qplot(x=zoo::index(prices),
     plot.background=element_blank()
   )  # end theme
 # Render ggplot object
-etf_gg
+plotobj
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/xts_ggplot-1}
@@ -3827,14 +1978,14 @@ library(ggplot2)
 prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 # Create data frame of time series
-data_frame <- data.frame(dates=zoo::index(prices),
+dframe <- data.frame(dates=zoo::index(prices),
     zoo::coredata(prices))
-# Reshape data into a single column
-data_frame <-
-  reshape2::melt(data_frame, id="dates")
+# reshape data into a single column
+dframe <-
+  reshape2::melt(dframe, id="dates")
 x11(width=6, height=5)  # Open plot window
-# ggplot the melted data_frame
-ggplot(data=data_frame,
+# ggplot the melted dframe
+ggplot(data=dframe,
        mapping=aes(x=dates, y=value, colour=variable)) +
        geom_line() +
   xlab("") + ylab("") +
@@ -3911,10 +2062,10 @@ library(plotly)
 prices <- rutils::etfenv$prices[, c("VTI", "IEF")]
 prices <- na.omit(prices)
 # Create data frame of time series
-data_frame <- data.frame(dates=zoo::index(prices),
+dframe <- data.frame(dates=zoo::index(prices),
     zoo::coredata(prices))
 # Plotly syntax using pipes
-data_frame %>%
+dframe %>%
   plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
   add_trace(x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF") %>%
   layout(title="VTI and IEF prices",
@@ -3922,7 +2073,7 @@ data_frame %>%
          yaxis=list(title="Stock Prices"),
          legend=list(x=0.1, y=0.9))
 # Or use standard plotly syntax
-p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI")
+p_lot <- plot_ly(data=dframe, x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI")
 p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
@@ -3956,17 +2107,17 @@ p_lot
       <<echo=TRUE,eval=FALSE>>=
 # Subset xts using a date range string
 prices <- rutils::etfenv$prices
-sub_prices <- prices["2014-10-15/2015-01-10", 1:4]
-first(sub_prices)
-last(sub_prices)
+pricesub <- prices["2014-10-15/2015-01-10", 1:4]
+first(pricesub)
+last(pricesub)
 # Subset Nov 2014 using a date string
-sub_prices <- prices["2014-11", 1:4]
-first(sub_prices)
-last(sub_prices)
+pricesub <- prices["2014-11", 1:4]
+first(pricesub)
+last(pricesub)
 # Subset all data after Nov 2014
-sub_prices <- prices["2014-11/", 1:4]
-first(sub_prices)
-last(sub_prices)
+pricesub <- prices["2014-11/", 1:4]
+first(pricesub)
+last(pricesub)
 # Comma after date range not necessary
 all.equal(prices["2014-11", ], prices["2014-11"])
 # .subset_xts() is faster than the bracket []
@@ -3998,23 +2149,23 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Specify string representing a date
-dat_e <- "2014-10-15"
+datev <- "2014-10-15"
 # Subset prices in two different ways
 prices <- rutils::etfenv$prices
-all.equal(prices[zoo::index(prices) >= dat_e],
-          prices[paste0(dat_e, "/")])
+all.equal(prices[zoo::index(prices) >= datev],
+          prices[paste0(datev, "/")])
 # Boolean subsetting is slower because coercing string into date
 library(microbenchmark)
 summary(microbenchmark(
-  boolean=(prices[zoo::index(prices) >= dat_e]),
-  date=(prices[paste0(dat_e, "/")]),
+  boolean=(prices[zoo::index(prices) >= datev]),
+  date=(prices[paste0(datev, "/")]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Coerce string into a date
-dat_e <- as.Date("2014-10-15")
+datev <- as.Date("2014-10-15")
 # Boolean subsetting is faster than using date string
 summary(microbenchmark(
-  boolean=(prices[zoo::index(prices) >= dat_e]),
-  date=(prices[paste0(dat_e, "/")]),
+  boolean=(prices[zoo::index(prices) >= datev]),
+  date=(prices[paste0(datev, "/")]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -4090,8 +2241,8 @@ all.equal(vti, rutils::etfenv$VTI)
 # Remove duplicates starting from the end
 vti <- rbind(vti1, vti2)
 vti <- vti[!duplicated(dates), ]
-vti_fl <- vti[!duplicated(dates, fromLast=TRUE), ]
-all.equal(vti, vti_fl)
+vtifl <- vti[!duplicated(dates, fromLast=TRUE), ]
+all.equal(vti, vtifl)
       @
   \end{columns}
 \end{block}
@@ -4215,23 +2366,23 @@ head(prices[endp, ])
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Lower the periodicity to months
-xts_monthly <- to.period(x=prices,
+pricesm <- to.period(x=prices,
                    period="months", name="MSFT")
 # Convert colnames to standard OHLC format
-colnames(xts_monthly)
-colnames(xts_monthly) <- sapply(
-  strsplit(colnames(xts_monthly), split=".", fixed=TRUE),
+colnames(pricesm)
+colnames(pricesm) <- sapply(
+  strsplit(colnames(pricesm), split=".", fixed=TRUE),
   function(na_me) na_me[-1]
   )  # end sapply
-head(xts_monthly, 3)
+head(pricesm, 3)
 # Lower the periodicity to years
-xts_yearly <- to.period(x=xts_monthly,
+pricesy <- to.period(x=pricesm,
                    period="years", name="MSFT")
-colnames(xts_yearly) <- sapply(
-  strsplit(colnames(xts_yearly), split=".", fixed=TRUE),
+colnames(pricesy) <- sapply(
+  strsplit(colnames(pricesy), split=".", fixed=TRUE),
   function(na_me) na_me[-1]
   )  # end sapply
-head(xts_yearly)
+head(pricesy)
       @
   \end{columns}
 \end{block}
@@ -4249,15 +2400,15 @@ head(xts_yearly)
       The method (function) \texttt{plot.xts()} can plot \emph{OHLC} time series of class \emph{xts}.
       <<xts_plot_OHLC,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
+load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
 library(xts)  # Load package xts
 # as.xts() coerces zoo series into xts series
-st_ox <- as.xts(zoo_prices)
+pricexts <- as.xts(zoo_prices)
 # Subset xts using a date
-stox_sub <- st_ox["2014-11", 1:4]
+pricexts <- pricexts["2014-11", 1:4]
 
 # Plot OHLC using plot.xts method
-xts::plot.xts(stox_sub, type="candles", main="")
+xts::plot.xts(pricexts, type="candles", main="")
 title(main="MSFT Prices")  # Add title
       @
     \column{0.5\textwidth}
@@ -4290,15 +2441,1071 @@ title(main="MSFT Prices")  # Add title
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1))>>=
-load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-stxts <- as.ts(zoo_stx)
-class(stxts)
-tail(stxts[, 1:4])
+load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
+pricets <- as.ts(pricezoo)
+class(pricets)
+tail(pricets[, 1:4])
 library(xts)
-st_ox <- as.xts(zoo_stx)
-class(st_ox)
-tail(st_ox[, 1:4])
+pricexts <- as.xts(pricezoo)
+class(pricexts)
+tail(pricexts[, 1:4])
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%
+\section{Writing and Reading Data from Files}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Text Strings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{cat()} concatenates strings and writes them to standard output or to files.
+      \vskip1ex
+      \texttt{cat()} interretsp its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value.
+      \vskip1ex
+      The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it.
+      \vskip1ex
+      Typing the name of an object in \texttt{R} implicitly calls \texttt{print()} on that object.
+      \vskip1ex
+      The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+cat("Enter\ttab")  # Cat() interretsp backslash escape sequences
+print("Enter\ttab")
+
+my_text <- print("hello")
+my_text  # Print() returns its argument
+
+# Create string
+my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
+
+cat(my_text, file="mytext.txt")  # Write to text file
+
+cat("Title: My Text",  # Write several lines to text file
+    "Some numbers: 1,2,3,...",
+    "Rprofile files contain code executed at R startup,",
+    file="mytext.txt", sep="\n")
+
+save(my_text, file="mytext.RData")  # Write to binary file
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Displaying Numeric Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{print()} displays numeric data objects, with the number of digits given by the global option \texttt{"digits"}.
+      \vskip1ex
+      The function \texttt{sprintf()} returns strings formatted from text strings and numeric data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+print(pi)
+print(pi, digits=10)
+getOption("digits")
+foo <- 12
+bar <- "months"
+sprintf("There are %i %s in the year", foo, bar)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Text from Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{scan()} reads text or data from a file and returns it as a vector or a list.
+      \vskip1ex
+      The function \texttt{readLines()} reads lines of text from a connection (file or console), and returns them as a vector of \texttt{character} strings.
+      \vskip1ex
+      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string.
+      \vskip1ex
+      The function \texttt{file.show()} reads text or data from a file and displays in editor.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read text from file
+scan(file="mytext.txt", what=character(), sep="\n")
+
+# Read lines from file
+readLines(con="mytext.txt")
+
+# Read text from console
+input <- readline("Enter a number: ")
+class(input)
+# Coerce to numeric
+input <- as.numeric(input)
+
+# Read text from file and display in editor:
+# file.show("mytext.txt")
+# file.show("mytext.txt", pager="")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading \protect\emph{Data Frames} from \protect\emph{Text} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{write.table()} and \texttt{read.table()} write and read \emph{data frames} from text files.
+      \vskip1ex
+      \texttt{write.table()} coerces objects to \emph{data frames} before it writes them.
+      \vskip1ex
+      \texttt{read.table()} returns a \emph{data frame}, without coercing non-numeric values to \texttt{factors} (so no need for the option \texttt{stringsAsFactors=FALSE}).
+      \vskip1ex
+      \texttt{write.table()} and \texttt{read.table()} can be used to write and read matrices from text files, but they have to be coerced back to matrices.
+      \vskip1ex
+      \texttt{write.table()} and \texttt{read.table()} are inefficient for very large data sets.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+setwd("/Users/jerzy/Develop/lecture_slides/data")
+dframe <- data.frame(type=c("rose", "daisy", "tulip"),
+  color=c("red", "white", "yellow"),
+  price=c(1.5, 0.5, 1.0),
+  row.names=c("flower1", "flower2", "flower3"))  # end data.frame
+matrixv <- matrix(sample(1:12), ncol=3,
+  dimnames=list(NULL, c("col1", "col2", "col3")))
+rownames(matrixv) <- paste("row", 1:NROW(matrixv), sep="")
+# Write data frame to text file, and then read it back
+write.table(dframe, file="florist.txt")
+data_read <- read.table(file="florist.txt")
+data_read  # A data frame
+
+# Write matrix to text file, and then read it back
+write.table(matrixv, file="matrix.txt")
+mat_read <- read.table(file="matrix.txt")
+mat_read  # write.table() coerced matrix to data frame
+class(mat_read)
+# Coerce from data frame back to matrix
+mat_read <- as.matrix(mat_read)
+class(mat_read)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Copying \protect\emph{Data Frames} Between the \protect\emph{clipboard} and \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Data frames} stored in the \emph{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()}.
+      \vskip1ex
+      \emph{Data frames} in \texttt{R} can be copied into the \emph{clipboard} using the function \texttt{write.table()}.
+      \vskip1ex
+      This allows convenient copying of \emph{data frames} between \texttt{R} and \texttt{Excel}.
+      \vskip1ex
+      \emph{Data frames} can also be manipulated directly in the \texttt{R} spreadsheet-style data editor.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:3)),eval=FALSE>>=
+setwd("/Users/jerzy/Develop/lecture_slides/data")
+dframe <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
+dframe <- read.table("mydata.txt", header=TRUE)
+dframe <- read.table("clipboard", header=TRUE)
+
+write.table(x=dframe, file="clipboard", sep="\t")
+
+# Wrapper function for copying data frame from clipboard into R
+# by default, data is tab delimited, with a header
+read_clip <- function(file="clipboard", sep="\t", header=TRUE, ...) {
+  read.table(file=file, sep=sep, header=header, ...)
+}  # end read_clip
+
+dframe <- read_clip()
+
+# Wrapper function for copying data frame from R into clipboard
+# by default, data is tab delimited, with a header
+write_clip <- function(data, row.names=FALSE, col.names=TRUE, ...) {
+  write.table(x=data, file="clipboard", sep="\t",
+              row.names=row.names, col.names=col.names, ...)
+}  # end write_clip
+
+write_clip(data=dframe)
+
+# Launch spreadsheet-style data editor
+dframe <- edit(dframe)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading \protect\emph{Data Frames} From \texttt{.csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
+      \vskip1ex
+      The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
+      \vskip1ex
+      The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
+      \vskip1ex
+      These functions are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
+      \vskip1ex
+      \texttt{read.csv()} doesn't coerce non-numeric values to \texttt{factors}, so no need for the option \texttt{stringsAsFactors=FALSE}.
+      \vskip1ex
+      \texttt{read.csv()} reads row names as an extra column, unless the \texttt{row.names=1} argument is used.
+      \vskip1ex
+      The argument \texttt{"row.names"} accepts either the number or the name of the column containing the row names.
+      \vskip1ex
+      The \texttt{*.csv()} functions are very inefficient for large data sets.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Write data frame to CSV file, and then read it back
+write.csv(dframe, file="florist.csv")
+data_read <- read.csv(file="florist.csv")
+data_read  # the row names are read in as extra column
+# Restore row names
+rownames(data_read) <- data_read[, 1]
+data_read <- data_read[, -1]  # Remove extra column
+data_read
+# Read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv", row.names=1)
+data_read
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading \protect\emph{Data Frames} From \texttt{.csv} Files (cont.)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read \emph{data frames} from \texttt{.csv} format files \emph{without using row names}.
+      \vskip1ex
+      Row names can be omitted from the output file by calling \texttt{write.csv()} with the argument \texttt{row.names=FALSE}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Write data frame to CSV file, without row names
+write.csv(dframe, row.names=FALSE, file="florist.csv")
+data_read <- read.csv(file="florist.csv")
+data_read  # A data frame without row names
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Data From Very Large \texttt{.csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Data from very large \texttt{.csv} files can be read in small chunks instead of all at once.
+      \vskip1ex
+      The function \texttt{file()} opens a connection to a file or an internet website \texttt{URL}.
+      \vskip1ex
+      The function \texttt{read.csv()} with the argument \texttt{"nrows"} reads only the specified number of rows from a connection and returns a \emph{data frame}.  The connection pointer is reset to the next row.
+      \vskip1ex
+      The function \texttt{read.csv()} with the argument \texttt{"nrows"} allows reading data sequentially from very large files that wouldn't fit into memory.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Open a read connection to a file
+con_read = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
+# Read the first 10 rows
+data10 <- read.csv(con_read, nrows=10)
+# Read another 10 rows
+data20 <- read.csv(con_read, nrows=10, header=FALSE)
+colnames(data20) <- colnames(data10)
+# Close the connection to the file
+close(con_read)
+# Open a read connection to a file
+con_read = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
+# Read the first 1000 rows
+data10 <- read.csv(con_read, nrows=1e3)
+colnamev <- colnames(data10)
+# Write to a file
+countv <- 1
+write.csv(data10, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
+# Read remaining rows in a loop 10 rows at a time
+# Can produce error without getting to end of file
+while (isOpen(con_read)) {
+  datav <- read.csv(con_read, nrows=1e3)
+  colnames(datav) <- colnamev
+  write.csv(datav, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
+  countv <- countv + 1
+}  # end while
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading Matrices From \texttt{.csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read matrices from \texttt{.csv} format files.
+      \vskip1ex
+      If row names can be omitted in the output file, then \texttt{write.csv()} can be called with argument \texttt{row.names=FALSE}.
+      \vskip1ex
+      If the input file doesn't contain row names, then \texttt{read.csv()} can be called without the \texttt{"row.names"} argument.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Write matrix to csv file, and then read it back
+write.csv(matrixv, file="matrix.csv")
+mat_read <- read.csv(file="matrix.csv", row.names=1)
+mat_read  # Read.csv() reads matrix as data frame
+class(mat_read)
+mat_read <- as.matrix(mat_read)  # Coerce to matrix
+identical(matrixv, mat_read)
+write.csv(matrixv, row.names=FALSE,
+          file="matrix_ex_rows.csv")
+mat_read <- read.csv(file="matrix_ex_rows.csv")
+mat_read <- as.matrix(mat_read)
+mat_read  # A matrix without row names
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading Matrices (cont.)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      There are several ways of writing and reading matrices from \texttt{.csv} files, with tradeoffs between simplicity, data size, and speed.
+      \vskip1ex
+      The function \texttt{write.matrix()} writes a matrix to a text file, without its row names.
+      \vskip1ex
+      \texttt{write.matrix()} is part of package \emph{MASS}.
+      \vskip1ex
+      The advantage of function \texttt{scan()} is its speed, but it doesn't handle row names easily.
+      \vskip1ex
+      Removing row names simplifies the writing and reading of matrices.
+      \vskip1ex
+      The function \texttt{readLines} reads whole lines and returns them as single strings.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+setwd("/Users/jerzy/Develop/lecture_slides/data")
+library(MASS)  # Load package "MASS"
+# Write to CSV file by row - it's very SLOW!!!
+MASS::write.matrix(matrixv, file="matrix.csv", sep=",")
+# Read using scan() and skip first line with colnames
+mat_read <- scan(file="matrix.csv", sep=",", skip=1,
+  what=numeric())
+# Read colnames
+colnamev <- readLines(con="matrix.csv", n=1)
+colnamev  # this is a string!
+# Convert to char vector
+colnamev <- strsplit(colnamev, split=",")[[1]]
+mat_read  # mat_read is a vector, not matrix!
+# Coerce by row to matrix
+mat_read <- matrix(mat_read, ncol=NROW(colnamev), byrow=TRUE)
+# Restore colnames
+colnames(mat_read) <- colnamev
+mat_read
+# Scan() is a little faster than read.csv()
+library(microbenchmark)
+summary(microbenchmark(
+  read_csv=read.csv("matrix.csv"),
+  scan=scan(file="matrix.csv", sep=",",
+    skip=1, what=numeric()),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Matrices Containing Bad Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Very often data that is read from external sources contains elements with bad data.
+      \vskip1ex
+      An example of bad data are \texttt{character} strings within sets of \texttt{numeric} data.
+      \vskip1ex
+      Columns of numeric data that contain strings are coerced to \texttt{character} or \texttt{factor}, when they're read by \texttt{read.csv()}.
+      \vskip1ex
+      The function \texttt{as.numeric()} coerces complex data objects into \texttt{numeric} vectors, and removes all their \emph{attributes}.
+      \vskip1ex
+      \texttt{as.numeric()} coerces strings that don't represent numbers into \texttt{NA} values.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read data from a csv file, including row names
+matrixv <- read.csv(file="matrix_bad.csv", row.names=1)
+matrixv
+class(matrixv)
+# Columns with bad data are character or factor
+sapply(matrixv, class)
+# Copy row names
+row_names <- row.names(matrixv)
+# sapply loop over columns and coerce to numeric
+matrixv <- sapply(matrixv, as.numeric)
+# Restore row names
+row.names(matrixv) <- row_names
+# Replace NAs with zero
+matrixv[is.na(matrixv)] <- 0
+# matrix without NAs
+matrixv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading Time Series From \protect\emph{Text} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{zoo} contains functions \texttt{write.zoo()} and \texttt{read.zoo()} for writing and reading \emph{zoo} time series from \texttt{.txt} and \texttt{.csv} files.
+      \vskip1ex
+      The functions \texttt{write.zoo()} and \texttt{read.zoo()} are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
+      \vskip1ex
+      The function \texttt{write.zoo()} writes the \emph{zoo} series index as a character string in quotations \texttt{""}, to make it easier to read (parse) by \texttt{read.zoo()}.
+      \vskip1ex
+      Users may also directly use \texttt{write.table()} and \texttt{read.table()}, instead of \texttt{write.zoo()} and \texttt{read.zoo()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4)),eval=FALSE>>=
+setwd("/Users/jerzy/Develop/lecture_slides/data")
+rm(list=ls())
+set.seed(1121)  # Reset random number generator
+library(zoo)  # Load package zoo
+# Create zoo with Date index
+dates <- seq(from=as.Date("2013-06-15"), by="day",
+              length.out=100)
+zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
+head(zoo_series, 3)
+# Write zoo series to text file, and then read it back
+write.zoo(zoo_series, file="zoo_series.txt")
+zoo_read <- read.zoo("zoo_series.txt")  # Read it back
+all.equal(zoo_read, zoo_series)
+# Perform the same using write.table() and read.table()
+# First coerce zoo_series into data frame
+dframe <- as.data.frame(zoo_series)
+dframe <- cbind(dates, dframe)
+# Write zoo_series to text file using write.table
+write.table(dframe, file="zoo_series.txt",
+            row.names=FALSE, col.names=FALSE)
+# Read data frame from file
+zoo_read <- read.table(file="zoo_series.txt")
+sapply(zoo_read, class)  # A data frame
+# Coerce data frame into zoo_series
+zoo_read <- zoo::zoo(
+  drop(as.matrix(zoo_read[, -1])),
+  order.by=as.Date(zoo_read[, 1]))
+all.equal(zoo_read, zoo_series)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading Time Series From \texttt{.csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      By default the functions \texttt{zoo::write.zoo()} and \texttt{zoo::read.zoo()} write data in \emph{space}-delimited text format, but they can also write to \emph{comma}-delimited \texttt{.csv} files by passing the parameter \texttt{sep=","}.
+      \vskip1ex
+      Single column \emph{zoo} time series usually don't have a dimension attribute, and they don't have a column name, unlike multi-column \emph{zoo} time series, and this can cause hard to detect bugs.
+      \vskip1ex
+      It's best to always pass the argument \texttt{"col.names=TRUE"} to the function \texttt{write.zoo()}, to make sure it writes a column name for a single column \emph{zoo} time series.
+      \vskip1ex
+      Reading a \texttt{.csv} file containing a single column of data using the function \texttt{read.zoo()} produces a \emph{zoo} time series with a \texttt{NULL} dimension, unless the argument \texttt{"drop=FALSE"} is passed to \texttt{read.zoo()}.
+      \vskip1ex
+      Users may also directly use \texttt{write.table()} and \texttt{read.table()}, instead of \texttt{write.zoo()} and \texttt{read.zoo()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(zoo)  # Load package zoo
+# Write zoo series to CSV file, and then read it back
+write.zoo(zoo_series, file="zoo_series.csv",
+          sep=",", col.names=TRUE)
+zoo_read <- read.zoo(file="zoo_series.csv",
+  header=TRUE, sep=",", drop=FALSE)
+all.equal(zoo_series, drop(zoo_read))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading Time Series With \protect\emph{Date-time} Index}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{read.csv.zoo()} reads \emph{zoo} time series from \texttt{.csv} files.
+      \vskip1ex
+      The function \texttt{xts::as.xts()} coerces \emph{zoo} time series into \emph{xts} series.
+      \vskip1ex
+      If the index of a \emph{zoo} time series is a \emph{date-time}, then \texttt{write.zoo()} writes the date and time fields as character strings separated by a \emph{space} between them, inside quotations \texttt{""}.
+      \vskip1ex
+      Very often \texttt{.csv} files contain custom \emph{date-time} formats, which need to be passed as parameters into \texttt{read.zoo()} for proper formatting.
+      \vskip1ex
+      The \texttt{"FUN"} argument of \texttt{read.zoo()} accepts a function for coercing the date and time columns of the input data into a \emph{date-time} object suitable for the \emph{zoo} index.
+      \vskip1ex
+      The function \texttt{as.POSIXct()} coerces \texttt{character} strings into \texttt{POSIXct} \emph{date-time} objects.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+# Create zoo with POSIXct date-time index
+dates <- seq(from=as.POSIXct("2013-06-15"),
+              by="hour", length.out=100)
+zoo_series <- zoo(rnorm(NROW(dates)), order.by=dates)
+head(zoo_series, 3)
+# Write zoo series to CSV file, and then read it back
+write.zoo(zoo_series, file="zoo_series.csv",
+          sep=",", col.names=TRUE)
+# Read from CSV file using read.csv.zoo()
+zoo_read <- read.csv.zoo(file="zoo_series.csv")
+all.equal(zoo_series, zoo_read)
+# Coerce to xts series
+xtes <- xts::as.xts(zoo_read)
+class(xtes); head(xtes, 3)
+# Coerce zoo series into data frame with custom date format
+dframe <- as.data.frame(zoo_series)
+dframe <- cbind(format(dates, "%m-%d-%Y %H:%M:%S"),
+                    dframe)
+head(dframe, 3)
+# Write zoo series to csv file using write.table
+write.table(dframe, file="zoo_series.csv",
+            sep=",", row.names=FALSE, col.names=FALSE)
+# Read from CSV file using read.csv.zoo()
+zoo_read <- read.zoo(file="zoo_series.csv",
+  header=FALSE, sep=",", FUN=as.POSIXct,
+  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
+# Or using read.csv.zoo()
+zoo_read <- read.csv.zoo(file="zoo_series.csv", header=FALSE,
+  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
+head(zoo_read, 3)
+all.equal(zoo_series, zoo_read)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Time Series With \texttt{Numeric} \protect\emph{Date-time} Index}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the index of a time series is \texttt{numeric} (representing the \emph{moment of time}, either as the number of days or seconds), then it must be coerced to a proper \emph{date-time} class.
+      \vskip1ex
+      A convenient way of reading time series with a numeric index is by using \texttt{read.table()}, and then coercing the \emph{data frame} into a time series.
+      \vskip1ex
+      The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read time series from CSV file, with numeric date-time
+zoo_read <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/es_ohlc.csv",
+  header=TRUE, sep=",")
+# A data frame
+class(zoo_read)
+sapply(zoo_read, class)
+# Coerce data frame into xts series
+zoo_read <- xts::xts(as.matrix(zoo_read[, -1]),
+  order.by=as.POSIXct.numeric(zoo_read[, 1], tz="America/New_York",
+                              origin="1970-01-01"))
+# An xts series
+class(zoo_read)
+head(zoo_read, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Passing Arguments to the \texttt{save()} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{save()} writes objects to a binary file.
+      \vskip1ex
+      Object names can be passed into \texttt{save()} either through the \texttt{"..."} argument, or the \texttt{"list"} argument.
+      \vskip1ex
+      Objects passed through the \texttt{"..."} argument are not evaluated, so they must be either object names or character strings.
+      \vskip1ex
+      Object names aren't surrounded by quotes \texttt{""}, while character strings that represent object names are surrounded by quotes \texttt{""}.
+      \vskip1ex
+      Objects passed through the \texttt{"list"} argument are evaluated, so they may be variables containing character strings.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+rm(list=ls())  # Remove all objects
+var1 <- 1; var2 <- 2
+ls()  # List all objects
+ls()[1]  # List first object
+args(save)  # List arguments of save function
+# Save "var1" to a binary file using string argument
+save("var1", file="my_data.RData")
+# Save "var1" to a binary file using object name
+save(var1, file="my_data.RData")
+# Save multiple objects
+save(var1, var2, file="my_data.RData")
+# Save first object in list by passing to "..." argument
+# ls()[1] is not evaluated
+save(ls()[1], file="my_data.RData")
+# Save first object in list by passing to "list" argument
+save(list=ls()[1], file="my_data.RData")
+# Save whole list by passing it to the "list" argument
+save(list=ls(), file="my_data.RData")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading Lists of Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace.
+      \vskip1ex
+      The vector of names can be used to manipulate the objects in loops, or to pass them to functions.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+rm(list=ls())  # Remove all objects
+# Load objects from file
+load_ed <- load(file="my_data.RData")
+load_ed  # vector of loaded objects
+ls()  # List objects
+# Assign new values to objects in  global environment
+sapply(load_ed, function(symbol) {
+  assign(symbol, runif(1), envir=globalenv())
+})  # end sapply
+ls()  # List objects
+# Assign new values to objects using for loop
+for (symbol in load_ed) {
+  assign(symbol, runif(1))
+}  # end for
+ls()  # List objects
+# Save vector of objects
+save(list=load_ed, file="my_data.RData")
+# Remove only loaded objects
+rm(list=load_ed)
+# Remove the object "load_ed"
+rm(load_ed)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Saving Output of \texttt{R} to a File}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{sink()} diverts \texttt{R} \emph{text} output (excluding graphics) to a file, or ends the diversion.
+      \vskip1ex
+      Remember to call \texttt{sink()} to end the diversion!
+      \vskip1ex
+      The function \texttt{pdf()} diverts graphics output to a \emph{pdf} file (text output isn't diverted), in vector graphics format.
+      \vskip1ex
+      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert graphics output to graphics files (text output isn't diverted).
+      \vskip1ex
+      The function \texttt{dev.off()} ends the diversion.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+sink("sinkdata.txt")# Redirect text output to file
+
+cat("Redirect text output from R\n")
+print(runif(10))
+cat("\nEnd data\nbye\n")
+
+sink()  # turn redirect off
+
+pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
+
+cat("Redirect data from R into pdf file\n")
+myvar <- seq(-2*pi, 2*pi, len=100)
+plot(x=myvar, y=sin(myvar), main="Sine wave",
+   xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
+
+dev.off()  # turn pdf output off
+
+png("r_plot.png")  # Redirect graphics output to png file
+
+cat("Redirect graphics from R into png file\n")
+plot(x=myvar, y=sin(myvar), main="Sine wave",
+ xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
+
+dev.off()  # turn png output off
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Combining \texttt{R} with \texttt{Excel}}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Data From \texttt{Excel} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package
+      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
+      \vskip1ex
+      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
+      \vskip1ex
+      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
+      \vskip1ex
+      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
+      \vskip1ex
+      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
+      \vskip1ex
+      \emph{tibble} objects are also used by the package
+      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
+      \vskip1ex
+      DataCamp offers a
+      \href{https://www.datacamp.com/community/tutorials/r-tutorial-read-excel-into-r}{Tutorial on Importing Excel Files into R}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Install and load package readxl
+install.packages("readxl")
+library(readxl)
+dir_name <- "/Users/jerzy/Develop/lecture_slides/data"
+filev <- file.path(dir_name, "multi_tabs.xlsx")
+# Read a time series from first sheet of xlsx file
+tibblev <- readxl::read_xlsx(filev)
+class(tibblev)
+# Coerce POSIXct dates into Date class
+class(tibblev$Dates)
+tibblev$Dates <- as.Date(tibblev$Dates)
+# Some columns are character strings
+sapply(tibblev, class)
+sapply(tibblev, is.character)
+# Coerce columns with strings to numeric
+listv <- lapply(tibblev, function(x) {
+  if (is.character(x))
+    as.numeric(x)
+  else
+    x
+})  # end lapply
+# Coerce list into xts time series
+xtes <- xts::xts(do.call(cbind, listv)[, -1], listv[[1]])
+class(xtes); dim(xtes)
+# Replace NA values with the most recent non-NA values
+sum(is.na(xtes))
+xtes <- zoo::na.locf(xtes, na.rm=FALSE)
+xtes <- zoo::na.locf(xtes, fromLast=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Multiple Sheets From \texttt{Excel} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{readxl::excel\_sheets()} returns a vector of character strings with the names of all the sheets in an \texttt{Excel} spreadsheet.
+      \vskip1ex
+      The package
+      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
+      \vskip1ex
+      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
+      \vskip1ex
+      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
+      \vskip1ex
+      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
+      \vskip1ex
+      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
+      \vskip1ex
+      \emph{tibble} objects are also used by the package
+      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Read names of all the sheets in an Excel spreadsheet
+namesv <- readxl::excel_sheets(filev)
+# Read all the sheets from an Excel spreadsheet
+sheets <- lapply(namesv, read_xlsx, path=filev)
+names(sheets) <- namesv
+# sheets is a list of tibbles
+sapply(sheets, class)
+# Create function to coerce tibble to xts
+to_xts <- function(tibblev) {
+  tibblev$Dates <- as.Date(tibblev$Dates)
+  # Coerce columns with strings to numeric
+  listv <- lapply(tibblev, function(x) {
+    if (is.character(x))
+      as.numeric(x)
+    else
+      x
+  })  # end lapply
+  # Coerce list into xts series
+  xts::xts(do.call(cbind, listv)[, -1], listv$Dates)
+}  # end to_xts
+# Coerce list of tibbles to list of xts
+class(sheets)
+sheets <- lapply(sheets, to_xts)
+sapply(sheets, class)
+# Replace NA values with the most recent non-NA values
+sapply(sheets, function(xtes) sum(is.na(xtes)))
+sheets <- lapply(sheets, zoo::na.locf, na.rm=FALSE)
+sheets <- lapply(sheets, zoo::na.locf, fromLast=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Calculations in \texttt{Excel} Using \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{Excel} can run \texttt{R} using either \texttt{VBA} scripts, or through a \emph{COM} interface (available on \emph{Windows} only).
+      \vskip1ex
+      \texttt{R} can perform calculations and export its output to \texttt{Excel} files, or it can modify \texttt{Excel} files (requires packages using \texttt{Java} or \texttt{Perl} code).
+      \vskip1ex
+      Calculations in \texttt{R} and \texttt{Excel} can be combined in several different ways:
+      \begin{itemize}
+        \item Data from \texttt{Excel} can be exchanged with \texttt{R} via \texttt{.csv} files (simplest and best method),
+        \item \texttt{Excel} can execute \texttt{R} commands using \texttt{VBA} scripts, and then import the \texttt{R} output from \texttt{.csv} files,
+        \item An \texttt{Excel} add-in can execute \texttt{R} commands as \texttt{Excel} functions (relies on \emph{COM} protocol, so works only for \emph{Windows}): add-ins
+        \emph{\href{http://bert-toolkit.com/}{BERT}},
+        \emph{\href{http://sunsite.univie.ac.at/rcom/}{RExcel}},
+        \item \texttt{R} can modify \texttt{Excel} files and run \texttt{Excel} functions (requires packages using \texttt{Java} or \texttt{Perl} code): packages
+        \emph{\href{https://cran.r-project.org/web/packages/xlsx/index.html}{xlsx}},
+        \emph{\href{https://cran.r-project.org/web/packages/XLConnect/index.html}{XLConnect}},
+        \emph{\href{https://cran.r-project.org/web/packages/excel.link/index.html}{excel.link}},
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+### Perform calculations in R,
+### And export to CSV files
+setwd("/Users/jerzy/Develop/lecture_slides/data")
+# Read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv", row.names=1)
+# Subset data frame
+data_read <- data_read[data_read[, "type"]=="daisy", ]
+# Write data frame to CSV file, with row names
+write.csv(data_read, file="daisies.csv")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Running \texttt{R} Code from \texttt{Excel}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      There are several ways of performing calculations in \texttt{R} and exporting the outputs to \texttt{Excel}:
+      \begin{itemize}
+        \item Export data from \texttt{Excel} via \texttt{.csv} files to \texttt{R}, perform the calculations in \texttt{R}, and import the outputs back to \texttt{Excel} via \texttt{.csv} files (simplest and best method),
+        \item Run \texttt{R} from \texttt{Excel} using \texttt{VBA} scripts, and exchange data via \texttt{.csv} files,
+        \item Run \texttt{R} from \texttt{Excel} using an \texttt{Excel} add-in, and execute \texttt{R} commands as \texttt{Excel} functions (relies on the \emph{COM} protocol, so works only for \emph{Windows}),
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+### Perform calculations in R,
+### And export to CSV files
+setwd("/Users/jerzy/Develop/lecture_slides/data")
+# Read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv", row.names=1)
+# Subset data frame
+data_read <- data_read[data_read[, "type"]=="daisy", ]
+# Write data frame to CSV file, with row names
+write.csv(data_read, file="daisies.csv")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Running \texttt{R} Code Using \protect\texttt{VBA} Scripts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \texttt{R} session can be launched from \texttt{Excel} using a \texttt{VBA} script (macro).
+      \vskip1ex
+      The \texttt{VBA} function \texttt{shell()} executes a program by running an executable \emph{exe} file (with extension \emph{exe}).
+      \vskip1ex
+      A \texttt{VBA} script can also run an \texttt{R} \emph{batch} process.
+      \vskip1ex
+      The \texttt{R} \emph{batch} process can write to \texttt{.csv} files, which can then be imported into \texttt{Excel}.
+    \column{0.5\textwidth}
+      \renewcommand{\ttdefault}{pcr}
+      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
+' VBA macro to run R process
+Sub run_r()
+ Call shell("R", vbNormalFocus)
+End Sub
+      \end{lstlisting}
+      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
+' VBA macro to run interactive R process
+Sub run_rinteractive()
+ Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
+ Dim script_file As String: script_file = "plot_interactive.R"
+ Dim log_file As String: log_file = "C:\Develop\R\scripts\log.txt"
+ Call shell("R --vanilla < " & script_dir & script_file & ">" & log_file, vbNormalFocus)
+End Sub
+      \end{lstlisting}
+      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
+' VBA macro to run batch R process
+Sub run_rbatch()
+ Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
+ Dim script_file As String: script_file = "plot_to_file.R"
+ Dim log_file As String: log_file = "C:\Develop\R\scripts\log.txt"
+ Call shell("R --vanilla < " & script_dir & script_file & ">" & log_file, vbNormalFocus)
+End Sub
+      \end{lstlisting}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{BERT} Excel Add-in for Running \texttt{R} Code}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{BERT} is an \texttt{Excel} add-in which allows executing \texttt{R} commands as \texttt{Excel} functions:\\
+      \hskip1em\url{http://bert-toolkit.com/}\\
+      \hskip1em\url{http://bert-toolkit.com/bert-quick-start}\\
+      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit/wiki}\\
+      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit}
+      \vskip1ex
+      \emph{BERT} launches its own \texttt{R} process from \texttt{Excel}.
+      \vskip1ex
+      \emph{BERT} can create its own menu in the \texttt{Excel} add-ins tab:\\
+      After installing \emph{BERT}, click on upper-left \emph{Office Button}, click \texttt{Excel} options, on the bottom of the window choose (Manage: \emph{COM} Add-ins) Go, add the \emph{COM} add-in BERTRibbon2x86.dll.
+      \vskip1ex
+      \emph{BERT} relies on the \emph{COM} protocol, so it works only for \emph{Windows}.
+    \column{0.5\textwidth}
+      \renewcommand{\ttdefault}{pcr}
+      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
+' calculate sum of Excel cells using R
+R.Add(B1:D1)
+
+' remove NAs over Excel cell range using R function
+R.na_omit(F2:H4)
+
+' calculate eigenValues of Excel matrix using R function
+R.EigenValues(A1:H8)
+      \end{lstlisting}
   \end{columns}
 \end{block}
 
