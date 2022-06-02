@@ -513,14 +513,14 @@ all.equal(invreg, invmat)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate shrinkage inverse from SVD
-eigen_max <- 3
-invreg <- svdec$v[, 1:eigen_max] %*%
-  (t(svdec$u[, 1:eigen_max]) / svdec$d[1:eigen_max])
+dimax <- 3
+invreg <- svdec$v[, 1:dimax] %*%
+  (t(svdec$u[, 1:dimax]) / svdec$d[1:dimax])
 # Inverse property fails for invreg
 all.equal(zoo::coredata(predictor), 
           predictor %*% invreg %*% predictor)
 # Calculate shrinkage inverse using RcppArmadillo
-inverse_rcpp <- HighFreq::calc_inv(predictor, eigen_max=eigen_max)
+inverse_rcpp <- HighFreq::calc_inv(predictor, dimax=dimax)
 all.equal(invreg, inverse_rcpp, check.attributes=FALSE)
       @
   \end{columns}
@@ -543,10 +543,10 @@ all.equal(invreg, inverse_rcpp, check.attributes=FALSE)
       Although it's not realistic to achieve the in-sample performance, it's useful because it provides insights into how the model can be improved.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
-# Calculate in-sample pnls for different eigen_max values
+# Calculate in-sample pnls for different dimax values
 eigenvals <- 2:7
-pnls <- lapply(eigenvals, function(eigen_max) {
-  invmat <- HighFreq::calc_inv(predictor, eigen_max=eigen_max)
+pnls <- lapply(eigenvals, function(dimax) {
+  invmat <- HighFreq::calc_inv(predictor, dimax=dimax)
   coeff <- drop(invmat %*% response)
   forecastv <- (predictor %*% coeff)
   sign(forecastv)*response
@@ -584,10 +584,10 @@ dygraphs::dygraph(cumsum(pnls), main="In-Sample Returns of Shrinkage YC Strategi
 # Define in-sample and out-of-sample intervals
 insample <- (dates < as.Date("2020-01-01"))
 outsample <- (dates >= as.Date("2020-01-01"))
-# Calculate in-sample pnls for different eigen_max values
+# Calculate in-sample pnls for different dimax values
 eigenvals <- 2:7
 pnls <- lapply(eigenvals, function(x) {
-  invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=x)
+  invmat <- HighFreq::calc_inv(predictor[insample, ], dimax=x)
   coeff <- drop(invmat %*% response[insample, ])
   forecastv <- (predictor[outsample, ] %*% coeff)
   sign(forecastv)*response[outsample, ]
@@ -629,13 +629,13 @@ format(dates[NROW(dates)], "%m-%Y")
 months <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month")
 # Perform loop over monthly dates
 look_back <- 6
-eigen_max <- 3
+dimax <- 3
 pnls <- lapply((look_back+1):(NROW(months)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
   insample <- (dates > months[ep-look_back]) & (dates < months[ep])
   outsample <- (dates > months[ep]) & (dates < months[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=eigen_max)
+  invmat <- HighFreq::calc_inv(predictor[insample, ], dimax=dimax)
   coeff <- drop(invmat %*% response[insample, ])
   forecastv <- (predictor[outsample, ] %*% coeff)
   sign(forecastv)*response[outsample, ]
@@ -678,13 +678,13 @@ dygraphs::dygraph(cumsum(wealth), main="Rolling Monthly Shrinkage YC Strategy") 
 weeks <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks")
 # Perform loop over weekly dates
 look_back <- 4
-eigen_max <- 4
+dimax <- 4
 pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
   insample <- (dates > weeks[ep-look_back]) & (dates < weeks[ep])
   outsample <- (dates > weeks[ep]) & (dates < weeks[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=eigen_max)
+  invmat <- HighFreq::calc_inv(predictor[insample, ], dimax=dimax)
   coeff <- drop(invmat %*% response[insample, ])
   forecastv <- (predictor[outsample, ] %*% coeff)
   sign(forecastv)*response[outsample, ]
@@ -772,10 +772,10 @@ response <- retsp
       Although it's not realistic to achieve the in-sample performance, it's useful because it provides insights into how the model can be improved.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
-# Calculate in-sample pnls for different eigen_max values
+# Calculate in-sample pnls for different dimax values
 eigenvals <- 2:11
-pnls <- lapply(eigenvals, function(eigen_max) {
-  invmat <- HighFreq::calc_inv(predictor, eigen_max=eigen_max)
+pnls <- lapply(eigenvals, function(dimax) {
+  invmat <- HighFreq::calc_inv(predictor, dimax=dimax)
   coeff <- drop(invmat %*% response)
   forecastv <- (predictor %*% coeff)
   sign(forecastv)*response
@@ -813,10 +813,10 @@ dygraphs::dygraph(cumsum(pnls), main="In-Sample Returns of Combined Strategies W
 # Define in-sample and out-of-sample intervals
 insample <- (dates < as.Date("2020-01-01"))
 outsample <- (dates >= as.Date("2020-01-01"))
-# Calculate in-sample pnls for different eigen_max values
+# Calculate in-sample pnls for different dimax values
 eigenvals <- 2:11
 pnls <- lapply(eigenvals, function(x) {
-  invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=x)
+  invmat <- HighFreq::calc_inv(predictor[insample, ], dimax=x)
   coeff <- drop(invmat %*% response[insample, ])
   forecastv <- (predictor[outsample, ] %*% coeff)
   sign(forecastv)*response[outsample, ]
@@ -858,13 +858,13 @@ format(dates[NROW(dates)], "%m-%Y")
 months <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month")
 # Perform loop over monthly dates
 look_back <- 6
-eigen_max <- 3
+dimax <- 3
 pnls <- lapply((look_back+1):(NROW(months)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
   insample <- (dates > months[ep-look_back]) & (dates < months[ep])
   outsample <- (dates > months[ep]) & (dates < months[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=eigen_max)
+  invmat <- HighFreq::calc_inv(predictor[insample, ], dimax=dimax)
   coeff <- drop(invmat %*% response[insample, ])
   forecastv <- (predictor[outsample, ] %*% coeff)
   sign(forecastv)*response[outsample, ]
@@ -907,13 +907,13 @@ dygraphs::dygraph(cumsum(wealth), main="Rolling Monthly Shrinkage YC Strategy") 
 weeks <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks")
 # Perform loop over weekly dates
 look_back <- 8
-eigen_max <- 4
+dimax <- 4
 pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   # Define in-sample and out-of-sample intervals
   insample <- (dates > weeks[ep-look_back]) & (dates < weeks[ep])
   outsample <- (dates > weeks[ep]) & (dates < weeks[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- HighFreq::calc_inv(predictor[insample, ], eigen_max=eigen_max)
+  invmat <- HighFreq::calc_inv(predictor[insample, ], dimax=dimax)
   coeff <- drop(invmat %*% response[insample, ])
   forecastv <- (predictor[outsample, ] %*% coeff)
   sign(forecastv)*response[outsample, ]
@@ -2787,7 +2787,7 @@ all.equal(invmat, invreg)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Eigen Shrinkage of Inverse Covariance Matrix}
+\subsection{Dimension Reduction of the Covariance Matrix}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2795,17 +2795,17 @@ all.equal(invmat, invreg)
     \column{0.5\textwidth}
       If the higher order singular values are very small then the inverse matrix amplifies the statistical noise in the response matrix.
       \vskip1ex
-      The technique of \emph{eigen shrinkage} calculates the inverse of a covariance matrix by removing the very small, higher order eigenvalues, to reduce the propagation of statistical noise and improve the signal-to-noise ratio:
+      The technique of \emph{dimension reduction} calculates the inverse of a covariance matrix by removing the very small, higher order eigenvalues, to reduce the propagation of statistical noise and improve the signal-to-noise ratio:
       \begin{displaymath}
-        \mathbb{C}_{shrinkage}^{-1} = \mathbb{O}_{max\_eigen} \, \mathbb{D}_{max\_eigen}^{-1} \, \mathbb{O}_{max\_eigen}^T
+        \mathbb{C}^{-1}_{DR} = \mathbb{O}_{dimax} \, \mathbb{D}^{-1}_{dimax} \, \mathbb{O}_{dimax}^T
       \end{displaymath}
-      The parameter \texttt{eigen\_max} specifies the number of eigenvalues used for calculating the \emph{shrinkage inverse} of the covariance matrix of returns.
+      The parameter \texttt{dimax} specifies the number of eigenvalues used for calculating the \emph{dimension reduction inverse} of the covariance matrix of returns.
       \vskip1ex
-      Even though the \emph{shrinkage inverse} $\mathbb{C}_{shrinkage}^{-1}$ does not satisfy the matrix inverse property (so it's biased), its out-of-sample forecasts are usually more accurate than those using the actual inverse matrix.
+      Even though the \emph{dimension reduction inverse} $\mathbb{C}^{-1}_{DR}$ does not satisfy the matrix inverse property (so it's biased), its out-of-sample forecasts are usually more accurate than those using the actual inverse matrix.
       \vskip1ex
       But removing a larger number of eigenvalues increases the bias of the covariance matrix, which is an example of the \emph{bias-variance tradeoff}.
       \vskip1ex
-      The optimal value of the parameter \texttt{eigen\_max} can be determined using \emph{backtesting} (\emph{cross-validation}).
+      The optimal value of the parameter \texttt{dimax} can be determined using \emph{backtesting} (\emph{cross-validation}).
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -2814,12 +2814,12 @@ covmat <- cov(retsis)
 eigend <- eigen(covmat)
 eigenvec <- eigend$vectors
 eigenval <- eigend$values
-# Calculate shrinkage inverse of covariance matrix
-eigen_max <- 3
-invmat <- eigenvec[, 1:eigen_max] %*%
-  (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+# Calculate dimension reduction inverse of covariance matrix
+dimax <- 3
+covinv <- eigenvec[, 1:dimax] %*%
+  (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
 # Verify inverse property of inverse
-all.equal(covmat, covmat %*% invmat %*% covmat)
+all.equal(covmat, covmat %*% covinv %*% covmat)
       @
   \end{columns}
 \end{block}
@@ -2955,7 +2955,7 @@ pnls <- do.call(rbind, pnls)
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of rolling ETF portfolio strategy
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
 wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
 colnames(wealth) <- c("Index", "Strategy", "Combined")
 # Calculate the out-of-sample Sharpe and Sortino ratios
@@ -2983,7 +2983,7 @@ dygraphs::dygraph(cumsum(wealth)[endp], main="Monthly ETF Rolling Portfolio Stra
       The strategy performs especially well during sharp market selloffs, like in the years \texttt{2008} and \texttt{2020}.
       <<echo=TRUE,eval=FALSE>>=
 # Define monthly end points
-look_back <- 3; eigen_max <- 9
+look_back <- 3; dimax <- 9
 startp <- c(rep_len(0, look_back), endp[1:(npts-look_back)])
 # Perform loop over end points
 pnls <- lapply(2:npts, function(ep) {
@@ -2992,8 +2992,8 @@ pnls <- lapply(2:npts, function(ep) {
     eigend <- eigen(cov(insample))
     eigenvec <- eigend$vectors
     eigenval <- eigend$values
-    invmat <- eigenvec[, 1:eigen_max] %*%
-      (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+    invmat <- eigenvec[, 1:dimax] %*%
+      (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
     # Calculate the maximum Sharpe ratio portfolio weights
     weightv <- invmat %*% colMeans(insample)
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
@@ -3009,7 +3009,7 @@ pnls <- do.call(rbind, pnls)
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of rolling ETF portfolio strategy
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
 wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
 colnames(wealth) <- c("Index", "Strategy", "Combined")
 # Calculate the out-of-sample Sharpe and Sortino ratios
@@ -3045,8 +3045,8 @@ pnls <- lapply(2:npts, function(ep) {
     eigend <- eigen(cov(insample))
     eigenvec <- eigend$vectors
     eigenval <- eigend$values
-    invmat <- eigenvec[, 1:eigen_max] %*%
-      (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+    invmat <- eigenvec[, 1:dimax] %*%
+      (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
     # Shrink the in-sample returns to their mean
     insample <- (1-alpha)*insample + alpha*rowMeans(insample)
     # Calculate the maximum Sharpe ratio portfolio weights
@@ -3064,7 +3064,7 @@ pnls <- do.call(rbind, pnls)
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of rolling ETF portfolio strategy
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
 wealth <- cbind(indeks, pnls, (pnls+indeks)/2)
 colnames(wealth) <- c("Index", "Strategy", "Combined")
 # Calculate the out-of-sample Sharpe and Sortino ratios
@@ -3096,7 +3096,7 @@ dygraphs::dygraph(cumsum(wealth)[endp], main="Rolling Portfolio Strategy With Re
 weeks <- seq.Date(from=as.Date("2001-01-01"), to=as.Date("2021-04-01"), by="weeks")
 # Perform loop over monthly dates
 look_back <- 21
-eigen_max <- 3
+dimax <- 3
 pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   # Define in-sample and out-of-sample returns
   insample <- (dates > weeks[ep-look_back]) & (dates < weeks[ep])
@@ -3105,7 +3105,7 @@ pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   retsos <- retsp[outsample]
   # Calculate regularized inverse of covariance matrix
   # invmat <- MASS::ginv(cov(retsis))  # if VXX and SVXY are included then no shrinkage is better
-  invmat <- HighFreq::calc_inv(cov(retsis), eigen_max=eigen_max)
+  invmat <- HighFreq::calc_inv(cov(retsis), dimax=dimax)
   weightv <- invmat %*% colMeans(retsis - riskf)
   weightv <- drop(weightv/sqrt(sum(weightv^2)))
   # Calculate portfolio pnls out-of-sample
@@ -3149,7 +3149,7 @@ roll_portf <- function(excess, # Excess returns
                        returns, # Stock returns
                        endp, # End points
                        look_back=12, # Look-back interval
-                       eigen_max=3, # Eigen shrinkage intensity
+                       dimax=3, # Eigen shrinkage intensity
                        alpha=0.0, # Return shrinkage intensity
                        bid_offer=0.0, # Bid-offer spread
                        ...) {
@@ -3161,8 +3161,8 @@ roll_portf <- function(excess, # Excess returns
     eigend <- eigen(cov(insample))
     eigenvec <- eigend$vectors
     eigenval <- eigend$values
-    invmat <- eigenvec[, 1:eigen_max] %*%
-      (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+    invmat <- eigenvec[, 1:dimax] %*%
+      (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
     # Shrink the in-sample returns to their mean
     insample <- (1-alpha)*insample + alpha*rowMeans(insample)
     # Calculate the maximum Sharpe ratio portfolio weights
@@ -3195,11 +3195,11 @@ roll_portf <- function(excess, # Excess returns
       <<echo=TRUE,eval=FALSE>>=
 # Simulate a monthly ETF momentum strategy
 pnls <- roll_portf(excess=retsx, returns=retsp, endp=endp, 
-  look_back=look_back, eigen_max=eigen_max)
+  look_back=look_back, dimax=dimax)
 # Perform sapply loop over look_backs
 look_backs <- seq(2, 15, by=1)
 pnls <- lapply(look_backs, roll_portf,
-  returns=retsp, excess=retsx, endp=endp, eigen_max=eigen_max)
+  returns=retsp, excess=retsx, endp=endp, dimax=dimax)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("look_back=", look_backs)
 pnlsums <- sapply(pnls, sum)
@@ -3239,14 +3239,14 @@ legend("bottomleft", legend=colnames(pnls),
     \column{0.5\textwidth}
       Multiple \emph{rolling portfolio optimization} strategies can be backtested by calling the function \texttt{roll\_portf()} in a loop over a vector of the eigen shrinkage parameter.
       <<echo=TRUE,eval=FALSE>>=
-# Perform backtest for different eigen_max values
+# Perform backtest for different dimax values
 eigenvals <- 2:11
 pnls <- lapply(eigenvals, roll_portf, excess=retsx, 
   returns=retsp, endp=endp, look_back=look_back)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("eigenval=", eigenvals)
 pnlsums <- sapply(pnls, sum)
-eigen_max <- eigenvals[which.max(pnlsums)]
+dimax <- eigenvals[which.max(pnlsums)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3286,7 +3286,7 @@ legend("bottomleft", legend=colnames(pnls),
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.0, to=0.9, by=0.1)
 pnls <- lapply(alphav, roll_portf, excess=retsx, 
-  returns=retsp, endp=endp, look_back=look_back, eigen_max=eigen_max)
+  returns=retsp, endp=endp, look_back=look_back, dimax=dimax)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("alpha=", alphav)
 pnlsums <- sapply(pnls, sum)
@@ -3387,12 +3387,12 @@ dygraphs::dygraph(cumsum(pnls)[endp], main="Out-of-sample Optimal Portfolio Retu
       The \emph{in-sample} performance is worse because shrinkage reduces \emph{overfitting}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate regularized inverse of covariance matrix
-look_back <- 8; eigen_max <- 21
+look_back <- 8; dimax <- 21
 eigend <- eigen(cov(retsis))
 eigenvec <- eigend$vectors
 eigenval <- eigend$values
-invmat <- eigenvec[, 1:eigen_max] %*%
-  (t(eigenvec[, 1:eigen_max]) / eigenval[1:eigen_max])
+invmat <- eigenvec[, 1:dimax] %*%
+  (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
 # Calculate portfolio weights
 weightv <- invmat %*% colMeans(retsx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
@@ -3494,30 +3494,30 @@ Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/back_test.cpp")
 # Create random matrix of returns
 matrixv <- matrix(rnorm(300), nc=5)
 # Regularized inverse of covariance matrix
-eigen_max <- 4
+dimax <- 4
 eigend <- eigen(cov(matrixv))
-covinv <- eigend$vectors[, 1:eigen_max] %*%
-  (t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])
+covinv <- eigend$vectors[, 1:dimax] %*%
+  (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
 # Regularized inverse using RcppArmadillo
-covinv_arma <- calc_inv(matrixv, eigen_max)
+covinv_arma <- calc_inv(matrixv, dimax)
 all.equal(covinv, covinv_arma)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
   rcode={eigend <- eigen(cov(matrixv))
-    eigend$vectors[, 1:eigen_max] %*%
-      (t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])
+    eigend$vectors[, 1:dimax] %*%
+      (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
   },
-  cppcode=calc_inv(matrixv, eigen_max),
+  cppcode=calc_inv(matrixv, dimax),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \column{0.5\textwidth}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 arma::mat calc_inv(const arma::mat& tseries,
                    double eigen_thresh = 0.001, 
-                   arma::uword eigen_max = 0) {
+                   arma::uword dimax = 0) {
   
-  if (eigen_max == 0) {
+  if (dimax == 0) {
     // Calculate the inverse using arma::pinv()
     return arma::pinv(tseries, eigen_thresh);
   } else {
@@ -3531,11 +3531,11 @@ arma::mat calc_inv(const arma::mat& tseries,
     arma::svd(svdu, svdval, svdv, tseries);
     
     // Subset the SVD
-    eigen_max = eigen_max - 1;
-    // For no regularization: eigen_max = tseries.n_cols
-    svdu = svdu.cols(0, eigen_max);
-    svdv = svdv.cols(0, eigen_max);
-    svdval = svdval.subvec(0, eigen_max);
+    dimax = dimax - 1;
+    // For no regularization: dimax = tseries.n_cols
+    svdu = svdu.cols(0, dimax);
+    svdv = svdv.cols(0, dimax);
+    svdval = svdval.subvec(0, dimax);
     
     // Calculate the inverse from the SVD
     return svdv*arma::diagmat(1/svdval)*svdu.t();
@@ -3562,14 +3562,14 @@ arma::mat calc_inv(const arma::mat& tseries,
 arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
                        std::string method = "ranksharpe",
                        double eigen_thresh = 0.001,
-                       arma::uword eigen_max = 0,
+                       arma::uword dimax = 0,
                        double confi = 0.1,
                        double alpha = 0.0,
                        bool scale = true,
                        double vol_target = 0.01) {
   // Initialize
   arma::vec weightv(returns[ncols, fill::zeros);
-  if (eigen_max == 0)  eigen_max = returns[ncols;
+  if (dimax == 0)  dimax = returns[ncols;
   
   // Switch for the different methods for weights
   switch(calc_method(method)) {
@@ -3591,9 +3591,9 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     // Shrink meancols to the mean of returns
     meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    // weightv = calc_inv(cov(returns), eigen_max)*meancols;
-    weightv = calc_inv(cov(returns), eigen_thresh, eigen_max)*meancols;
+    // arma::mat inverse = calc_inv(cov(returns), dimax);
+    // weightv = calc_inv(cov(returns), dimax)*meancols;
+    weightv = calc_inv(cov(returns), eigen_thresh, dimax)*meancols;
     break;
   }  // end max_sharpe
   case method::max_sharpe_median: {
@@ -3602,13 +3602,13 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     // Shrink meancols to the mean of returns
     meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
     // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    weightv = calc_inv(cov(returns), eigen_thresh, eigen_max)*meancols;
+    // arma::mat inverse = calc_inv(cov(returns), dimax);
+    weightv = calc_inv(cov(returns), eigen_thresh, dimax)*meancols;
     break;
   }  // end max_sharpe_median
   case method::min_var: {
     // Apply regularized inverse to unit vector
-    weightv = calc_inv(cov(returns), eigen_thresh, eigen_max)*arma::ones(returns[ncols);
+    weightv = calc_inv(cov(returns), eigen_thresh, dimax)*arma::ones(returns[ncols);
     break;
   }  // end min_var
   case method::min_varpca: {
@@ -3640,9 +3640,9 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     sd_cols.replace(0, 1);
     meancols = meancols/sd_cols;
     // Apply regularized inverse
-    // arma::mat invmat = calc_inv(cov(returns), eigen_max);
-    // weightv = calc_inv(cov(returns), eigen_max)*meancols;
-    // weightv = calc_inv(cov(returns), eigen_max)*meancols;
+    // arma::mat invmat = calc_inv(cov(returns), dimax);
+    // weightv = calc_inv(cov(returns), dimax)*meancols;
+    // weightv = calc_inv(cov(returns), dimax)*meancols;
     // // Standard deviation by columns
     // arma::vec sd_cols = meancols;
     // for (arma::uword it=0; it < returns[ncols; it++) {
@@ -3711,7 +3711,7 @@ arma::mat back_test(const arma::mat& retsx, // Portfolio excess returns
                     arma::uvec endp, 
                     std::string method = "ranksharpe",
                     double eigen_thresh = 0.001,
-                    arma::uword eigen_max = 0,
+                    arma::uword dimax = 0,
                     double confi = 0.1,
                     double alpha = 0.0,
                     bool scale = true,
@@ -3727,7 +3727,7 @@ arma::mat back_test(const arma::mat& retsx, // Portfolio excess returns
   for (arma::uword it = 1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weightv = coeff*calc_weights(retsx.rows(startp(it-1), endp(it-1)), method, eigen_thresh, eigen_max, confi, alpha, scale, vol_target);
+    weightv = coeff*calc_weights(retsx.rows(startp(it-1), endp(it-1)), method, eigen_thresh, dimax, confi, alpha, scale, vol_target);
     // Calculate out-of-sample returns
     pnls.rows(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weightv;
     // Add transaction costs
@@ -3828,10 +3828,10 @@ startp <- (startp - 1)
 startp[startp < 0] <- 0
 # Specify eigen shrinkage and return shrinkage
 alpha <- 0.7
-eigen_max <- 21
+dimax <- 21
 # Perform backtest in Rcpp
 pnls <- HighFreq::back_test(excess=retsx, returns=retsp,
-  startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
+  startp=startp, endp=endp, alpha=alpha, dimax=dimax, method="max_sharpe")
 pnls <- pnls*sd(indeks)/sd(pnls)
       @
     \column{0.5\textwidth}
@@ -3861,9 +3861,9 @@ dygraphs::dygraph(cumsum(wealth)[endp], main="Rolling S&P500 Portfolio Optimizat
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The optimal values of the eigen shrinkage parameter \texttt{eigen\_max} and the return shrinkage intensity parameter $\alpha$ can be determined using \emph{backtesting}.
+      The optimal values of the eigen shrinkage parameter \texttt{dimax} and the return shrinkage intensity parameter $\alpha$ can be determined using \emph{backtesting}.
       \vskip1ex
-      The best eigen shrinkage parameter for this portfolio of stocks is equal to \texttt{eigen\_max=33}, which means relatively weak eigen shrinkage.
+      The best eigen shrinkage parameter for this portfolio of stocks is equal to \texttt{dimax=33}, which means relatively weak eigen shrinkage.
       \vskip1ex
       The best return shrinkage parameter for this portfolio of stocks is equal to $\alpha=0.81$, which means strong return shrinkage.
       <<echo=TRUE,eval=FALSE>>=
@@ -3871,7 +3871,7 @@ dygraphs::dygraph(cumsum(wealth)[endp], main="Rolling S&P500 Portfolio Optimizat
 alphav <- seq(from=0.01, to=0.91, by=0.1)
 pnls <- lapply(alphav, function(alpha) {
   HighFreq::back_test(excess=retsx, returns=retsp,
-  startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
+  startp=startp, endp=endp, alpha=alpha, dimax=dimax, method="max_sharpe")
 })  # end lapply
 profilev <- sapply(pnls, sum)
 plot(x=alphav, y=profilev, t="l", main="Rolling Strategy as Function of Return Shrinkage",
@@ -3881,15 +3881,15 @@ alpha <- alphav[whichmax]
 pnls <- pnls[[whichmax]]
 # Perform backtest over vector of eigen shrinkage eigenvals
 eigenvals <- seq(from=3, to=40, by=2)
-pnls <- lapply(eigenvals, function(eigen_max) {
+pnls <- lapply(eigenvals, function(dimax) {
   HighFreq::back_test(excess=retsx, returns=retsp,
-    startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
+    startp=startp, endp=endp, alpha=alpha, dimax=dimax, method="max_sharpe")
 })  # end lapply
 profilev <- sapply(pnls, sum)
-plot(x=eigenvals, y=profilev, t="l", main="Strategy PnL as Function of eigen_max",
-  xlab="eigen_max", ylab="pnl")
+plot(x=eigenvals, y=profilev, t="l", main="Strategy PnL as Function of dimax",
+  xlab="dimax", ylab="pnl")
 whichmax <- which.max(profilev)
-eigen_max <- eigenvals[whichmax]
+dimax <- eigenvals[whichmax]
 pnls <- pnls[[whichmax]]
 pnls <- pnls*sd(indeks)/sd(pnls)
       @
@@ -3931,7 +3931,7 @@ pnls <- lapply(look_backs, function(look_back) {
   startp <- (startp - 1)
   startp[startp < 0] <- 0
   HighFreq::back_test(excess=retsx, returns=retsp,
-    startp=startp, endp=endp, alpha=alpha, eigen_max=eigen_max, method="max_sharpe")
+    startp=startp, endp=endp, alpha=alpha, dimax=dimax, method="max_sharpe")
 })  # end lapply
 profilev <- sapply(pnls, sum)
 plot(x=look_backs, y=profilev, t="l", main="Strategy PnL as Function of Look-back Interval",

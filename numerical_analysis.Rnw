@@ -807,7 +807,7 @@ summary(microbenchmark(
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Disable JIT
-jit_confl <- compiler::enableJIT(0)
+jit_level <- compiler::enableJIT(0)
 # Create inefficient function
 my_mean <- function(x) {
   output <- 0; n_elem <- NROW(x)
@@ -844,7 +844,7 @@ summary(microbenchmark(
   sapply2(vectorv, sqrt),
   times=10))[, c(1, 4, 5)]
 # enable JIT
-compiler::enableJIT(jit_confl)
+compiler::enableJIT(jit_level)
       @
   \end{columns}
 \end{block}
@@ -1326,7 +1326,7 @@ summary(microbenchmark(
   \begin{columns}[T]
     \column{0.5\textwidth}
       The package
-      \href{https://cran.r-project.org/web/packages/matrixStats}{\color{blue}{\emph{matrixStats}}}
+      \href{https://cran.r-project.org/web/packages/matrixStats/index.html}{\color{blue}{\emph{matrixStats}}}
       contains functions for calculating aggregations over matrix columns and rows, and other matrix computations, such as:
       \begin{itemize}
         \item estimating location and scale: \texttt{rowRanges()}, \texttt{colRanges()}, and \texttt{rowMaxs()}, \texttt{rowMins()}, etc.,
@@ -3756,7 +3756,10 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
     \column{0.5\textwidth}
       The package \emph{ROI} provides a framework for defining optimization problems and their associated constraints, and an interface to fast optimization functions.
       \vskip1ex
-      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      The function \texttt{DEoptim()} from package 
+      \href{https://cran.r-project.org/web/packages/DEoptim/index.html}{\color{blue}{\emph{DEoptim}}}
+      \emph{DEoptim} 
+      performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
       \vskip1ex
       \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
       \hskip1em\url{http://www1.icsi.berkeley.edu/~storn/code.html}
@@ -4453,7 +4456,7 @@ static const double pi = 3.14159265;
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{RcppArmadillo} allows calling the high-confl \emph{Armadillo} \texttt{C++} linear algebra library.
+      The package \emph{RcppArmadillo} allows calling the high-level \emph{Armadillo} \texttt{C++} linear algebra library.
       \vskip1ex
       \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab}.
       \vskip1ex
@@ -4684,20 +4687,20 @@ Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/calc_weights.cpp")
 # Calculate matrix of random returns
 matrixv <- matrix(rnorm(300), nc=5)
 # Regularized inverse of correlation matrix
-eigen_max <- 4
+dimax <- 4
 cormat <- cor(matrixv)
 eigend <- eigen(cormat)
-inverse <- eigend$vectors[, 1:eigen_max] %*%
-  (t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])
+inverse <- eigend$vectors[, 1:dimax] %*%
+  (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
 # Regularized inverse using RcppArmadillo
-inverse_arma <- calc_inv(cormat, eigen_max=eigen_max)
+inverse_arma <- calc_inv(cormat, dimax=dimax)
 all.equal(inverse, inverse_arma)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
   Rcode = {eigend <- eigen(cormat)
-      eigend$vectors[, 1:eigen_max] %*% (t(eigend$vectors[, 1:eigen_max]) / eigend$values[1:eigen_max])},
-  Rcpp = calc_inv(cormat, eigen_max=eigen_max),
+      eigend$vectors[, 1:dimax] %*% (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])},
+  Rcpp = calc_inv(cormat, dimax=dimax),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
     \column{0.5\textwidth}
@@ -4714,9 +4717,9 @@ using namespace arma;
 // [[Rcpp::export]]
 arma::mat calc_inv(const arma::mat& tseries,
                    double eigen_thresh = 0.001, 
-                   arma::uword eigen_max = 0) {
+                   arma::uword dimax = 0) {
   
-  if (eigen_max == 0) {
+  if (dimax == 0) {
     // Calculate the inverse using arma::pinv()
     return arma::pinv(tseries, eigen_thresh);
   } else {
@@ -4727,10 +4730,10 @@ arma::mat calc_inv(const arma::mat& tseries,
     // Calculate the SVD
     arma::svd(svdu, svdval, svdv, tseries);
     // Subset the SVD
-    eigen_max = eigen_max - 1;
-    svdu = svdu.cols(0, eigen_max);
-    svdv = svdv.cols(0, eigen_max);
-    svdval = svdval.subvec(0, eigen_max);
+    dimax = dimax - 1;
+    svdu = svdu.cols(0, dimax);
+    svdv = svdv.cols(0, dimax);
+    svdval = svdval.subvec(0, dimax);
     // Calculate the inverse from the SVD
     return svdv*arma::diagmat(1/svdval)*svdu.t();
   }  // end if
@@ -4765,14 +4768,14 @@ using namespace arma;
 arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
                        std::string method = "ranksharpe",
                        double eigen_thresh = 0.001,
-                       arma::uword eigen_max = 0,
+                       arma::uword dimax = 0,
                        double confi = 0.1,
                        double alpha = 0.0,
                        bool scale = true,
                        double vol_target = 0.01) {
   // Initialize
   arma::vec weights(returns[ncols, fill::zeros);
-  if (eigen_max == 0)  eigen_max = returns[ncols;
+  if (dimax == 0)  dimax = returns[ncols;
   
   // Switch for the different methods for weights
   switch(calc_method(method)) {
@@ -4794,9 +4797,9 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     // Shrink meancols to the mean of returns
     meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
     // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    // weights = calc_inv(cov(returns), eigen_max)*meancols;
-    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*meancols;
+    // arma::mat inverse = calc_inv(cov(returns), dimax);
+    // weights = calc_inv(cov(returns), dimax)*meancols;
+    weights = calc_inv(cov(returns), eigen_thresh, dimax)*meancols;
     break;
   }  // end max_sharpe
   case method::max_sharpe_median: {
@@ -4805,13 +4808,13 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     // Shrink meancols to the mean of returns
     meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
     // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*meancols;
+    // arma::mat inverse = calc_inv(cov(returns), dimax);
+    weights = calc_inv(cov(returns), eigen_thresh, dimax)*meancols;
     break;
   }  // end max_sharpe_median
   case method::min_var: {
     // Apply regularized inverse to unit vector
-    weights = calc_inv(cov(returns), eigen_thresh, eigen_max)*arma::ones(returns[ncols);
+    weights = calc_inv(cov(returns), eigen_thresh, dimax)*arma::ones(returns[ncols);
     break;
   }  // end min_var
   case method::min_varpca: {
@@ -4843,9 +4846,9 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     sd_cols.replace(0, 1);
     meancols = meancols/sd_cols;
     // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), eigen_max);
-    // weights = calc_inv(cov(returns), eigen_max)*meancols;
-    // weights = calc_inv(cov(returns), eigen_max)*meancols;
+    // arma::mat inverse = calc_inv(cov(returns), dimax);
+    // weights = calc_inv(cov(returns), dimax)*meancols;
+    // weights = calc_inv(cov(returns), dimax)*meancols;
     // // Standard deviation by columns
     // arma::vec sd_cols = meancols;
     // for (arma::uword it=0; it < returns[ncols; it++) {
@@ -4922,7 +4925,7 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
                     arma::uvec endp, 
                     std::string method = "ranksharpe",
                     double eigen_thresh = 0.001,
-                    arma::uword eigen_max = 0,
+                    arma::uword dimax = 0,
                     double confi = 0.1,
                     double alpha = 0.0,
                     bool scale = true,
@@ -4938,7 +4941,7 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
   for (arma::uword it = 1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), method, eigen_thresh, eigen_max, confi, alpha, scale, vol_target);
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), method, eigen_thresh, dimax, confi, alpha, scale, vol_target);
     // Calculate out-of-sample returns
     pnls.rows(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
     // Add transaction costs
