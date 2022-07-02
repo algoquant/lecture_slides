@@ -119,7 +119,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/indica_tor/indic/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/in_nov/innov/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/in_put/input/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/in_verse/inverse/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/inter_face/uiface/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/inter_face/uifun/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/inter_val/interval/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/iter_ations/iterations/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/joincols/join_cols/g' *.R*

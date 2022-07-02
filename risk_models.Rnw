@@ -2166,11 +2166,11 @@ retsp <- drop(zoo::coredata(retsp))
 nrows <- NROW(retsp)
 # Calculate compounded VTI returns
 holdp <- 252
-retscum <- sqrt(holdp)*sapply(1:nrows, function(x) {
+retc <- sqrt(holdp)*sapply(1:nrows, function(x) {
     mean(retsp[sample.int(nrows, size=holdp, replace=TRUE)])
 })  # end sapply
 # Calculate mean, standard deviation, skewness, and kurtosis
-datav <- cbind(retsp, retscum)
+datav <- cbind(retsp, retc)
 colnames(datav) <- c("VTI", "Agg")
 apply(datav, MARGIN=2, function(x) {
   # Standardize the returns
@@ -2198,8 +2198,8 @@ par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 plot(density(retsp), t="l", lwd=3, col="blue",
      xlab="returns", ylab="density", xlim=c(-0.04, 0.04),
      main="Distribution of Compounded Stock Returns")
-lines(density(retscum), t="l", col="red", lwd=3)
-curve(expr=dnorm(x, mean=mean(retscum), sd=sd(retscum)), col="green", lwd=3, add=TRUE)
+lines(density(retc), t="l", col="red", lwd=3)
+curve(expr=dnorm(x, mean=mean(retc), sd=sd(retc)), col="green", lwd=3, add=TRUE)
 legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
        inset=-0.1, bg="white", lty=1, lwd=6, col=c("blue", "red", "green"), bty="n")
       @
@@ -3432,18 +3432,18 @@ variance <- sapply(1:nrows, function(it) {
   sum((retsp - mean(retsp))^2)
 }) / (look_back)  # end sapply
 # Use only vectorized functions
-retscum <- cumsum(retsp)
-retscum <- (retscum -
-  c(rep_len(0, look_back), retscum[1:(nrows-look_back)]))
-retscum2 <- cumsum(retsp^2)
-retscum2 <- (retscum2 -
-  c(rep_len(0, look_back), retscum2[1:(nrows-look_back)]))
-variance2 <- (retscum2 - retscum^2/look_back)/(look_back)
+retc <- cumsum(retsp)
+retc <- (retc -
+  c(rep_len(0, look_back), retc[1:(nrows-look_back)]))
+retc2 <- cumsum(retsp^2)
+retc2 <- (retc2 -
+  c(rep_len(0, look_back), retc2[1:(nrows-look_back)]))
+variance2 <- (retc2 - retc^2/look_back)/(look_back)
 all.equal(variance[-(1:look_back)], as.numeric(variance2)[-(1:look_back)])
 # Same, using package rutils
-retscum <- rutils::roll_sum(retsp, look_back=look_back, min_obs=1)
-retscum2 <- rutils::roll_sum(retsp^2, look_back=look_back, min_obs=1)
-variance2 <- (retscum2 - retscum^2/look_back)/(look_back)
+retc <- rutils::roll_sum(retsp, look_back=look_back, min_obs=1)
+retc2 <- rutils::roll_sum(retsp^2, look_back=look_back, min_obs=1)
+variance2 <- (retc2 - retc^2/look_back)/(look_back)
 # Coerce variance into xts
 tail(variance)
 class(variance)
