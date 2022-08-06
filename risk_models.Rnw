@@ -3618,7 +3618,7 @@ sd(retsp)
 retsp <- rutils::diffit(log(SPY[, 4]))
 sd(retsp)
 # Table of time intervals - 60 second is most frequent
-indeks <- rutils::diffit(.zoo::index(SPY))
+indeks <- rutils::diffit(xts::.index(SPY))
 table(indeks)
 # SPY returns divided by the overnight time intervals (unit per second)
 retsp <- retsp/indeks
@@ -4597,7 +4597,7 @@ retsp <- rutils::diffit(log(SPY["2012-02-13", 4]))
 # Minutely SPY volatility (unit per minute)
 sd(retsp)
 # Divide minutely SPY returns by time intervals (unit per second)
-retsp <- retsp / rutils::diffit(.zoo::index(SPY["2012-02-13"]))
+retsp <- retsp / rutils::diffit(xts::.index(SPY["2012-02-13"]))
 retsp[1] <- 0
 # Minutely SPY volatility scaled to unit per minute
 60*sd(retsp)
@@ -4606,7 +4606,7 @@ retsp <- rutils::diffit(log(SPY[, 4]))
 # Minutely SPY volatility (includes overnight jumps)
 sd(retsp)
 # Table of intervals - 60 second is most frequent
-indeks <- rutils::diffit(.zoo::index(SPY))
+indeks <- rutils::diffit(xts::.index(SPY))
 table(indeks)
 # hist(indeks)
 # SPY returns with overnight scaling (unit per second)
@@ -4614,212 +4614,6 @@ retsp <- retsp/indeks
 retsp[1] <- 0
 # Minutely SPY volatility scaled to unit per minute
 60*sd(retsp)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Volatility as Function of Aggregation Interval}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The estimated volatility $\sigma$ scales as the \emph{power} of the length of the aggregation time interval $\Delta t$:
-      \begin{displaymath}
-        \frac{\sigma_t}{\sigma} = {\Delta t} ^ H
-      \end{displaymath}
-      Where \texttt{H} is the \emph{Hurst} exponent, $\sigma$ is the return volatility, and $\sigma_t$ is the volatility of the aggregated returns.
-      \vskip1ex
-      If returns follow \emph{Brownian motion} then the volatility scales as the \emph{square root} of the length of the aggregation interval (\texttt{H = 0.5}).
-      \vskip1ex
-      If returns are \emph{mean reverting} then the volatility scales slower than the \emph{square root} (\texttt{H < 0.5}).
-      \vskip1ex
-      If returns are \emph{trending} then the volatility scales faster than the \emph{square root} (\texttt{H > 0.5}).
-      \vskip1ex
-      The length of the daily time interval is often approximated to be equal to \texttt{390 = 6.5*60} minutes, since the exchange trading session is equal to \texttt{6.5} hours, and daily volatility is dominated by the trading session.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load HighFreq
-# Minutely OHLC SPY prices aggregated to daily prices
-SPY_daily <- rutils::to_period(ohlc=HighFreq::SPY, period="days")
-# Daily SPY volatility from daily returns
-sd(rutils::diffit(log(SPY_daily[, 4])))
-# Minutely SPY returns (unit per minute)
-retsp <- rutils::diffit(log(SPY[, 4]))
-# Minutely SPY volatility scaled to daily interval
-sqrt(6.5*60)*sd(retsp)
-# Minutely SPY returns with overnight scaling (unit per second)
-retsp <- rutils::diffit(log(SPY[, 4]))
-indeks <- rutils::diffit(.zoo::index(SPY))
-retsp <- retsp/indeks
-retsp[1] <- 0
-# Daily SPY volatility from minutely returns
-sqrt(6.5*60)*60*sd(retsp)
-# Daily SPY volatility
-# Scale by extra time over weekends and holidays
-24*60*60*sd(rutils::diffit(log(SPY_daily[, 4]))[-1] /
-            rutils::diffit(.zoo::index(SPY_daily))[-1])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Hurst Exponent From Volatility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      For a single aggregation interval, the \emph{Hurst exponent} \texttt{H} is equal to:
-      \begin{displaymath}
-        H = \frac{\log{\sigma_t} - \log{\sigma}}{\log{\Delta t}}
-      \end{displaymath}
-      For a vector of aggregation intervals, the \emph{Hurst exponent} \texttt{H} can be calculated by regressing the volatility against the aggregation intervals.
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate SPY returns adjusted for overnight jumps
-closep <- log(as.numeric(Cl(HighFreq::SPY[, 4])))
-retsp <- rutils::diffit(closep) / 
-  rutils::diffit(.zoo::index(HighFreq::SPY))
-retsp[1] <- 0
-closep <- cumsum(retsp)
-nrows <- NROW(closep)
-# Calculate volatilities for vector of aggregation intervals
-aggv <- seq.int(from=3, to=35, length.out=9)^2
-volv <- sapply(aggv, function(aggint) {
-  naggs <- nrows %/% aggint
-  endp <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
-  # endp <- rutils::calc_endpoints(closep, interval=aggint)
-  sd(rutils::diffit(closep[endp]))
-})  # end sapply
-# Calculate Hurst as regression slope using formula
-volog <- log(volv)
-agglog <- log(aggv)
-hurstexp <- cov(volog, agglog)/var(agglog)
-# Or using function lm()
-model <- lm(volog ~ agglog)
-coef(model)[2]
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hurst_vol.png}
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate Hurst from single data point
-(last(volog) - log(sd(retsp)))/last(agglog)
-# Plot the volatilities
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
-plot(volog ~ agglog, lwd=6, col="red",
-     xlab="aggregation intervals (log)", ylab="volatility (log)",
-     main="Hurst Exponent for SPY From Volatilities")
-abline(model, lwd=3, col="blue")
-text(agglog[2], volog[NROW(volog)-1], 
-     paste0("Hurst = ", round(hurstexp, 4)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rescaled Range Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The range $R_{\Delta t}$ of prices $p_t$ over an interval $\Delta t$, is the difference between the highest attained price minus the lowest:
-      \begin{displaymath}
-        R_t = \max_{\Delta t}{[p_{\tau}]} - \min_{\Delta t}{[p_{\tau}]}
-      \end{displaymath}
-      The \emph{Rescaled Range} $RS_{\Delta t}$ is equal to the range $R_{\Delta t}$ divided by the standard deviation of the price differences $\sigma_t$: $RS_{\Delta t} = R_t / \sigma_t$.
-      \vskip1ex
-      The \emph{Rescaled Range} $RS_{\Delta t}$ for a time series of prices is calculated by:
-      \begin{itemize}
-        \item Dividing the time series into non-overlapping intervals of length $\Delta t$,
-        \item Calculating the \emph{rescaled range} $RS_{\Delta t}$ for each interval,
-        \item Calculating the average of the \emph{rescaled ranges} $RS_{\Delta t}$ for all the intervals.
-      \end{itemize}
-      \emph{Rescaled Range Analysis} (R/S) consists of calculating the average \emph{rescaled range} $RS_{\Delta t}$ as a function of the length of the aggregation interval $\Delta t$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate the rescaled range
-aggint <- 500
-nrows <- NROW(closep); naggs <- nrows %/% aggint
-endp <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
-# Or
-# endp <- rutils::calc_endpoints(closep, interval=aggint)
-rrange <- sapply(2:NROW(endp), function(ep) {
-  indeks <- endp[ep-1]:endp[ep]
-  diff(range(closep[indeks]))/sd(retsp[indeks])
-})  # end sapply
-mean(rrange)
-# Calculate Hurst from single data point
-log(mean(rrange))/log(aggint)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Hurst Exponent From Rescaled Range}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Rescaled Range} $RS_{\Delta t}$ is proportional to the length of the aggregation interval $\Delta t$ raised to the power of the \emph{Hurst exponent} \texttt{H}:
-      \begin{displaymath}
-        RS_{\Delta t} \propto {\Delta t}^H
-      \end{displaymath}
-      The \emph{Hurst exponents} calculated from the \emph{rescaled range} and the \emph{volatility} are similar because they both measure the dependence of returns over time, but they're not exactly equal because they use different methods to estimate price dispersion.
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate rescaled range for vector of aggregation intervals
-nrows <- NROW(closep)
-rrange <- sapply(aggv, function(aggint) {
-# Calculate end points
-  naggs <- nrows %/% aggint
-  endp <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
-# Calculate rescaled ranges
-  rrange <- sapply(2:NROW(endp), function(ep) {
-    indeks <- endp[ep-1]:endp[ep]
-    diff(range(closep[indeks]))/sd(retsp[indeks])
-  })  # end sapply
-  mean(na.omit(rrange))
-})  # end sapply
-# Calculate Hurst as regression slope using formula
-rangelog <- log(rrange)
-agglog <- log(aggv)
-hurstexp <- cov(rangelog, agglog)/var(agglog)
-# Or using function lm()
-model <- lm(rangelog ~ agglog)
-coef(model)[2]
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hurst_reg.png}
-      \vspace{-1em}
-        <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
-plot(rangelog ~ agglog, lwd=6, col="red",
-     xlab="aggregation intervals (log)",
-     ylab="rescaled range (log)",
-     main="Rescaled Range Analysis for SPY")
-abline(model, lwd=3, col="blue")
-text(agglog[2], rangelog[NROW(rangelog)-1], 
-     paste0("Hurst = ", round(hurstexp, 4)))
       @
   \end{columns}
 \end{block}
