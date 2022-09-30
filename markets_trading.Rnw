@@ -63,7 +63,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Markets and Trading]{Markets and Trading}
-\subtitle{FRE6871 \& FRE7241, Spring 2022}
+\subtitle{FRE6871 \& FRE7241, Fall 2022}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -77,212 +77,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
-
-%%%%%%%%%%%%%%%
-\section{Market Databases}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{S\&P500} Stock Index Constituent Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The file \texttt{sp500.RData} contains the \emph{environment} \texttt{sp500\_env} with \emph{OHLC} prices and trading volumes of \emph{S\&P500} stock index constituents.
-      \vskip1ex
-      The \emph{S\&P500} stock index constituent data is of poor quality before \texttt{2000}, so we'll mostly use the data after the year \texttt{2000}.
-      <<echo=TRUE,eval=FALSE>>=
-# Load S&P500 constituent stock prices
-load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-pricets <- eapply(sp500env, quantmod::Cl)
-pricets <- rutils::do_call(cbind, pricets)
-# Carry forward non-NA prices
-pricets <- zoo::na.locf(pricets, na.rm=FALSE)
-# Drop ".Close" from column names
-colnames(pricets[, 1:4])
-colnames(pricets) <- rutils::get_name(colnames(pricets))
-# Or
-# colnames(pricets) <- do.call(rbind,
-#   strsplit(colnames(pricets), split="[.]"))[, 1]
-# Calculate percentage returns of the S&P500 constituent stocks
-# retsp <- xts::diff.xts(log(pricets))
-retsp <- xts::diff.xts(pricets)/
-  rutils::lagit(pricets, pad_zeros=FALSE)
-set.seed(1121)
-samplev <- sample(NCOL(retsp), s=100, replace=FALSE)
-prices100 <- pricets[, samplev]
-returns100 <- retsp[, samplev]
-save(pricets, prices100,
-  file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
-save(retsp, returns100,
-  file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_without_prices.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate number of constituents without prices
-datav <- rowSums(is.na(pricets))
-datav <- xts::xts(datav, order.by=zoo::index(pricets))
-dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
-  dyOptions(colors="blue", strokeWidth=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{S\&P500} Stock Portfolio Index}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The price-weighted index of \emph{S\&P500} constituents closely follows the VTI \emph{ETF}.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate price weighted index of constituent
-ncols <- NCOL(pricets)
-pricets <- zoo::na.locf(pricets, fromLast=TRUE)
-indeks <- xts(rowSums(pricets)/ncols, zoo::index(pricets))
-colnames(indeks) <- "index"
-# Combine index with VTI
-datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
-colnamev <- c("index", "VTI")
-colnames(datav) <- colnamev
-# Plot index with VTI
-dygraphs::dygraph(datav,
-  main="S&P 500 Price-weighted Index and VTI") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="red") %>%
-  dySeries(name=colnamev[2], axis="y2", col="blue")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_portfolio_index.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{ETF} Database}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Exchange-traded Funds (\emph{ETFs}) are funds which invest in portfolios of assets, such as stocks, commodities, or bonds.
-      \vskip1ex
-      \emph{ETFs} are shares in portfolios of assets, and they are traded just like stocks.
-      \vskip1ex
-      \emph{ETFs} provide investors with convenient, low cost, and liquid instruments to invest in various portfolios of assets.
-      \vskip1ex
-      The file \texttt{etf\_list.csv} contains a database of exchange-traded funds (\emph{ETFs}) and exchange traded notes (\emph{ETNs}).
-      \vskip1ex
-      We will select a portfolio of \emph{ETFs} for illustrating various investment strategies.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=TRUE,size="tiny">>=
-# Select ETF symbols for asset allocation
-symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
-  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
-  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
-# Read etf database into data frame
-etflist <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etflist.csv")
-rownames(etflist) <- etflist$Symbol
-# Select from etflist only those ETF's in symbolv
-etflist <- etflist[symbolv, ]
-# Shorten names
-etfnames <- sapply(etflist$Name, function(name) {
-  namesvplit <- strsplit(name, split=" ")[[1]]
-  namesvplit <- namesvplit[c(-1, -NROW(namesvplit))]
-  name_match <- match("Select", namesvplit)
-  if (!is.na(name_match))
-    namesvplit <- namesvplit[-name_match]
-  paste(namesvplit, collapse=" ")
-})  # end sapply
-etflist$Name <- etfnames
-etflist["IEF", "Name"] <- "10 year Treasury Bond Fund"
-etflist["TLT", "Name"] <- "20 plus year Treasury Bond Fund"
-etflist["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-etflist["EEM", "Name"] <- "Emerging Market Stock Fund"
-etflist["MTUM", "Name"] <- "Momentum Factor Fund"
-etflist["SVXY", "Name"] <- "Short VIX Futures"
-etflist["VXX", "Name"] <- "Long VIX Futures"
-etflist["DBC", "Name"] <- "Commodity Futures Fund"
-etflist["USO", "Name"] <- "WTI Oil Futures Fund"
-etflist["GLD", "Name"] <- "Physical Gold Fund"
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{ETF} Portfolio for Investment Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The portfolio contains \emph{ETFs} representing different \emph{industry sectors} and \emph{investment styles}.
-      \vskip1ex
-      The \emph{ETFs} with names \emph{X*} represent industry \emph{sector funds} (energy, financial, etc.)
-      \vskip1ex
-      The \emph{ETFs} with names \emph{I*} represent \emph{style funds} (value, growth, size).
-      \vskip1ex
-      \emph{IWB} is the Russell 1000 small-cap fund.
-      \vskip1ex
-      \emph{MTUM} is an \emph{ETF} which owns a stock portfolio representing the \emph{momentum factor}.
-      \vskip1ex
-      \emph{DBC} is an \emph{ETF} providing the total return on a portfolio of commodity futures.
-      \vskip1ex
-      \emph{VXX} is an \emph{ETN} providing the total return of \emph{long VIX} futures contracts (specifically the \emph{S\&P} VIX Short-Term Futures Index).
-      \vskip1ex
-      \emph{VXX} is \emph{bearish} because it's \emph{long} VIX futures, and the VIX \emph{rises} when stock prices \emph{drop}.
-      \vskip1ex
-      \emph{SVXY} is an \emph{ETF} providing the total return of \emph{short VIX} futures contracts.
-      \vskip1ex
-      \emph{SVXY} is \emph{bullish} because it's \emph{short} VIX futures, and the VIX \emph{drops} when stock prices \emph{rise}.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=FALSE,eval=TRUE,results='asis'>>=
-print(xtable::xtable(etflist), comment=FALSE, size="tiny", include.rownames=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exchange Traded Notes (\protect\emph{ETNs})}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{ETNs} are similar to \emph{ETFs}, with the difference that \emph{ETFs} are shares in a fund which owns the underlying assets, while \emph{ETNs} are notes from issuers which promise payouts according to a formula tied to the underlying asset.
-      \vskip1ex
-      \emph{ETFs} are similar to mutual funds, while \emph{ETNs} are similar to corporate bonds.
-      \vskip1ex
-      \emph{ETNs} are technically unsecured corporate debt, but instead of fixed coupons, they promise to provide returns on a market index or futures contract.
-      \vskip1ex
-      The \emph{ETN} issuer promises the payout and is responsible for tracking the index.
-      \vskip1ex
-      The \emph{ETN} investor has counterparty credit risk to the \emph{ETN} issuer.
-    \column{0.5\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
 
 
 %%%%%%%%%%%%%%%
@@ -308,34 +102,34 @@ print(xtable::xtable(etflist), comment=FALSE, size="tiny", include.rownames=FALS
 # Symbols for constant maturity Treasury rates
 symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
 # Create new environment for time series
-rates_env <- new.env()
-# Download time series for symbolv into rates_env
-quantmod::getSymbols(symbolv, env=rates_env, src="FRED")
-# List files in rates_env
-ls(rates_env)
-# Get class of all objects in rates_env
-sapply(rates_env, class)
+ratesenv <- new.env()
+# Download time series for symbolv into ratesenv
+quantmod::getSymbols(symbolv, env=ratesenv, src="FRED")
+# List files in ratesenv
+ls(ratesenv)
+# Get class of all objects in ratesenv
+sapply(ratesenv, class)
 # Get class of all objects in R workspace
 sapply(ls(), function(name) class(get(name)))
 # Save the time series environment into a binary .RData file
-save(rates_env, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
+save(ratesenv, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/treas_10y_rate.png}
       <<echo=TRUE,eval=FALSE>>=
 # Get class of time series object DGS10
-class(get(x="DGS10", envir=rates_env))
+class(get(x="DGS10", envir=ratesenv))
 # Another way
-class(rates_env$DGS10)
+class(ratesenv$DGS10)
 # Get first 6 rows of time series
-head(rates_env$DGS10)
+head(ratesenv$DGS10)
 # Plot dygraphs of 10-year Treasury rate
-dygraphs::dygraph(rates_env$DGS10, main="10-year Treasury Rate") %>%
+dygraphs::dygraph(ratesenv$DGS10, main="10-year Treasury Rate") %>%
   dyOptions(colors="blue", strokeWidth=2)
 # Plot 10-year constant maturity Treasury rate
 x11(width=6, height=5)
 par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
-chart_Series(rates_env$DGS10["1990/"], name="10-year Treasury Rate")
+chart_Series(ratesenv$DGS10["1990/"], name="10-year Treasury Rate")
       @
   \end{columns}
 \end{block}
@@ -357,14 +151,14 @@ chart_Series(rates_env$DGS10["1990/"], name="10-year Treasury Rate")
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get most recent yield curve
-ycnow <- eapply(rates_env, xts::last)
+ycnow <- eapply(ratesenv, xts::last)
 class(ycnow)
 ycnow <- do.call(cbind, ycnow)
 # Check if 2020-03-25 is not a holiday
 date2020 <- as.Date("2020-03-25")
 weekdays(date2020)
 # Get yield curve from 2020-03-25
-yc2020 <- eapply(rates_env, function(x) x[date2020])
+yc2020 <- eapply(ratesenv, function(x) x[date2020])
 yc2020 <- do.call(cbind, yc2020)
 # Combine the yield curves
 rates <- c(yc2020, ycnow)
@@ -382,14 +176,14 @@ colnames(rates) <- substr(colnames(rates), start=1, stop=4)
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Plot using matplot()
-colors <- c("blue", "red")
+colorv <- c("blue", "red")
 matplot(rates, main="Yield Curves in 2020 and 2021", xaxt="n", lwd=3, lty=1,
-        type="l", xlab="maturity", ylab="yield", col=colors)
+        type="l", xlab="maturity", ylab="yield", col=colorv)
 # Add x-axis
 axis(1, seq_along(rownames(rates)), rownames(rates))
 # Add legend
-legend("topleft", legend=colnames(rates),
-       col=colors, lty=1, lwd=6, inset=0.05, cex=1.0)
+legend("topleft", legend=colnames(rates), y.intersp=0.5,
+       bty="n", col=colorv, lty=1, lwd=6, inset=0.05, cex=1.0)
       @
   \end{columns}
 \end{block}
@@ -411,10 +205,10 @@ par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
-dates <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
-dates <- zoo::index(rates_env$DGS1["2006/"][dates])
+dates <- xts::endpoints(ratesenv$DGS1["2006/"], on="years")
+dates <- zoo::index(ratesenv$DGS1["2006/"][dates])
 # Create time series of end-of-year rates
-rates <- eapply(rates_env, function(ratev) ratev[dates])
+rates <- eapply(ratesenv, function(ratev) ratev[dates])
 rates <- rutils::do_call(cbind, rates)
 # Rename columns and rows, sort columns, and transpose into matrix
 colnames(rates) <- substr(colnames(rates), start=4, stop=11)
@@ -423,14 +217,14 @@ colnames(rates) <- paste0(colnames(rates), "yr")
 rates <- t(rates)
 colnames(rates) <- substr(colnames(rates), start=1, stop=4)
 # Plot matrix using plot.zoo()
-colors <- colorRampPalette(c("red", "blue"))(NCOL(rates))
+colorv <- colorRampPalette(c("red", "blue"))(NCOL(rates))
 plot.zoo(rates, main="Yield curve since 2006", lwd=3, xaxt="n",
-         plot.type="single", xlab="maturity", ylab="yield", col=colors)
+         plot.type="single", xlab="maturity", ylab="yield", col=colorv)
 # Add x-axis
 axis(1, seq_along(rownames(rates)), rownames(rates))
 # Add legend
-legend("topleft", legend=colnames(rates),
-       col=colors, lty=1, lwd=4, inset=0.05, cex=0.8)
+legend("topleft", legend=colnames(rates), y.intersp=0.5,
+       bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -438,12 +232,12 @@ legend("topleft", legend=colnames(rates),
       <<echo=TRUE,eval=FALSE>>=
 # Alternative plot using matplot()
 matplot(rates, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
-        type="l", xlab="maturity", ylab="yield", col=colors)
+        type="l", xlab="maturity", ylab="yield", col=colorv)
 # Add x-axis
 axis(1, seq_along(rownames(rates)), rownames(rates))
 # Add legend
-legend("topleft", legend=colnames(rates),
-       col=colors, lty=1, lwd=4, inset=0.05, cex=0.8)
+legend("topleft", legend=colnames(rates), y.intersp=0.5,
+       bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
       @
   \end{columns}
 \end{block}
@@ -463,9 +257,9 @@ legend("topleft", legend=colnames(rates),
         \mathbb{C} = \frac{(\mathbf{r} - \bar{\mathbf{r}})^T (\mathbf{r} - \bar{\mathbf{r}})} {n-1}
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
-# Extract rates from rates_env
+# Extract rates from ratesenv
 symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
-rates <- mget(symbolv, envir=rates_env)
+rates <- mget(symbolv, envir=ratesenv)
 rates <- rutils::do_call(cbind, rates)
 rates <- zoo::na.locf(rates, na.rm=FALSE)
 rates <- zoo::na.locf(rates, fromLast=TRUE)
@@ -490,9 +284,9 @@ cormat <- cormat[ordern, ordern]
       <<echo=TRUE,eval=FALSE>>=
 # Plot the correlation matrix
 x11(width=6, height=6)
-colors <- colorRampPalette(c("red", "white", "blue"))
+colorv <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cormat, title=NA, tl.col="black",
-    method="square", col=colors(NCOL(cormat)), tl.cex=0.8,
+    method="square", col=colorv(NCOL(cormat)), tl.cex=0.8,
     cl.offset=0.75, cl.cex=0.7, cl.align.text="l", cl.ratio=0.25)
 title("Correlation of Treasury Rates", line=1)
 # Draw rectangles on the correlation matrix plot
@@ -869,7 +663,7 @@ par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 for (symbol in symbolv) {
   plot.zoo(cbind(retc[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
-  legend(x="topleft", bty="n",
+  legend(x="topleft", bty="n", y.intersp=0.5,
          legend=paste0(symbol, c("", " solved")),
          title=NULL, inset=0.0, cex=1.0, lwd=6,
          lty=1, col=c("black", "blue"))
@@ -986,7 +780,7 @@ print(xtable::xtable(futures), comment=FALSE, size="scriptsize", include.rowname
 % \centering
 <<echo=FALSE,eval=TRUE,results='asis'>>=
 # Monthly futures contract codes
-codes <- cbind(c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"),
+codes <- cbind(c("January", "February", "September", "April", "May", "June", "July", "August", "September", "October", "November", "December"),
                      c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z"))
 colnames(codes) <- c("Month", "Code")
 print(xtable::xtable(codes), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushright")
@@ -1140,11 +934,11 @@ startd <- (endd - 30)
 volumes <- cbind(Vo(ESU8),
   Vo(ESM8))[paste0(startd, "/", endd)]
 colnames(volumes) <- c("ESU8", "ESM8")
-colors <- c("blue", "green")
-plot(volumes, col=colors, lwd=3, major.ticks="days",
+colorv <- c("blue", "green")
+plot(volumes, col=colorv, lwd=3, major.ticks="days",
      format.labels="%b-%d", observation.based=TRUE,
      main="Volumes of ESU8 and ESM8 futures")
-legend("topleft", legend=colnames(volumes), col=colors,
+legend("topleft", legend=colnames(volumes), col=colorv, y.intersp=0.5,
        title=NULL, bty="n", lty=1, lwd=6, inset=0.1, cex=0.7)
       @
   \end{columns}
@@ -1373,7 +1167,7 @@ plot(futcurves[, 1], type="l", lty=1, col="blue", lwd=3,
 axis(1, at=(1:NROW(futcurves)), labels=rownames(futcurves))
 lines(futcurves[, 2], lty=1, lwd=3, col="red")
 legend(x="topright", legend=colnames(futcurves),
-       inset=0.05, cex=1.0, bty="n",
+       inset=0.05, cex=1.0, bty="n", y.intersp=0.5,
        col=c("blue", "red"), lwd=6, lty=1)
       @
     \column{0.5\textwidth}
@@ -3022,9 +2816,9 @@ retsp <- (retsp - mean(retsp))/sd(retsp)
 sapply(c(var=2, skew=3, kurt=4), function(x) sum(retsp^x)/nrows)
 tseries::jarque.bera.test(retsp)
 # Fit SPY returns using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(retsp, densfun="t", df=2)
-loc <- optim_fit$estimate[1]
-scalev <- optim_fit$estimate[2]
+optiml <- MASS::fitdistr(retsp, densfun="t", df=2)
+loc <- optiml$estimate[1]
+scalev <- optiml$estimate[2]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3045,7 +2839,7 @@ curve(expr=dnorm(x, mean=mean(retsp),
   sd=sd(retsp)), add=TRUE, lwd=3, col="blue")
 # Add legend
 legend("topright", inset=0.05, bty="n",
-  leg=c("t-distr", "normal"),
+  leg=c("t-distr", "normal"), y.intersp=0.5,
   lwd=6, lty=1, col=c("red", "blue"))
       @
   \end{columns}
@@ -3096,7 +2890,7 @@ lines(density(retsh, bw=0.4), lwd=3, col="green")
 lines(density(retsd, bw=0.4), lwd=3, col="red")
 # Add legend
 legend("topright", inset=0.05, bty="n",
-  leg=c("minutely", "hourly", "daily"),
+  leg=c("minutely", "hourly", "daily"), y.intersp=0.5,
   lwd=6, lty=1, col=c("blue", "green", "red"))
       @
   \end{columns}
@@ -3152,7 +2946,7 @@ plot_theme$col$line.col <- c("blue", "red")
 chart_Series(vol_rolling, theme=plot_theme,
              name="Rolling Volatility with Overnight Spikes")
 legend("topright", legend=colnames(vol_rolling),
-  inset=0.1, bg="white", lty=1, lwd=6,
+  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -3358,7 +3152,7 @@ plot(density(retsp), xlim=c(-3, 3),
 lines(density(rets_scaled, bw=0.4), lwd=3, col="red")
 curve(expr=dnorm, add=TRUE, lwd=3, col="green")
 # Add legend
-legend("topright", inset=0.05, bty="n",
+legend("topright", inset=0.05, bty="n", y.intersp=0.5,
   leg=c("minutely", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
       @

@@ -57,7 +57,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Univariate]{Time Series Univariate}
-\subtitle{FRE6871 \& FRE7241, Spring 2022}
+\subtitle{FRE6871 \& FRE7241, Fall 2022}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -1128,7 +1128,6 @@ title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/brown_geom.png}
-      \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # Define daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 1000
@@ -2255,8 +2254,6 @@ dygraphs::dygraph(get(namev, pricets), main=namev)
 # Dygraph of stock with lowest volatility
 namev <- names(which.min(volat))
 dygraphs::dygraph(get(namev, pricets), main=namev)
-# Calculate the Hurst exponents of stocks
-hurstv <- sapply(pricets, HighFreq::calc_hurst, aggv=aggv)
 # Calculate the regression of the Hurst exponents versus volatilities
 model <- lm(hurstv ~ volat)
 summary(model)
@@ -2376,7 +2373,7 @@ text(x=mean(hurstis), y=max(hurstos),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The relationship between stock trading volumes and Hurst exponents is not significant.
+      The relationship between stock trading volumes and Hurst exponents is not very significant.
       \vskip1ex
       The relationship is dominated by a few stocks with very large trading volumes, like \emph{AAPL}, which also tend to be more volatile and therefore have larger Hurst exponents.
       <<echo=TRUE,eval=FALSE>>=
@@ -2787,13 +2784,13 @@ for (it in 4:NROW(arimav)) {
   arimav[it] <- arimav[(it-1):(it-3)] %*% coeff + innov[it]
 }  # end for
 # Simulate AR process using filter()
-arima_faster <- filter(x=innov, filter=coeff, method="recursive")
-class(arima_faster)
-all.equal(arimav, as.numeric(arima_faster))
+arimafaster <- filter(x=innov, filter=coeff, method="recursive")
+class(arimafaster)
+all.equal(arimav, as.numeric(arimafaster))
 # Fast simulation of AR process using C_rfilter()
-arima_fastest <- .Call(stats:::C_rfilter, innov, coeff,
+arimacpp <- .Call(stats:::C_rfilter, innov, coeff,
                        double(NROW(coeff) + NROW(innov)))[-(1:3)]
-all.equal(arimav, arima_fastest)
+all.equal(arimav, arimacpp)
       @
   \end{columns}
 \end{block}
@@ -2821,28 +2818,28 @@ all.equal(arimav, arima_fastest)
       \vspace{-1em}
     <<echo=TRUE,eval=FALSE>>=
 # Calculate modulus of roots of characteristic equation
-root_s <- Mod(polyroot(c(1, -coeff)))
+rootv <- Mod(polyroot(c(1, -coeff)))
 # Calculate warmup period
-warm_up <- NROW(coeff) + ceiling(6/log(min(root_s)))
+warmup <- NROW(coeff) + ceiling(6/log(min(rootv)))
 set.seed(1121)
 nrows <- 1e4
-innov <- rnorm(nrows + warm_up)
+innov <- rnorm(nrows + warmup)
 # Simulate AR process using arima.sim()
 arimav <- arima.sim(n=nrows,
   model=list(ar=coeff),
-  start.innov=innov[1:warm_up],
-  innov=innov[(warm_up+1):NROW(innov)])
+  start.innov=innov[1:warmup],
+  innov=innov[(warmup+1):NROW(innov)])
 # Simulate AR process using filter()
-arima_fast <- filter(x=innov, filter=coeff, method="recursive")
-all.equal(arima_fast[-(1:warm_up)], as.numeric(arimav))
+arimafast <- filter(x=innov, filter=coeff, method="recursive")
+all.equal(arimafast[-(1:warmup)], as.numeric(arimav))
 # Benchmark the speed of the three methods of simulating AR process
 library(microbenchmark)
 summary(microbenchmark(
   filter=filter(x=innov, filter=coeff, method="recursive"),
   arima_sim=arima.sim(n=nrows,
                       model=list(ar=coeff),
-                      start.innov=innov[1:warm_up],
-                      innov=innov[(warm_up+1):NROW(innov)]),
+                      start.innov=innov[1:warmup],
+                      innov=innov[(warmup+1):NROW(innov)]),
   arima_loop={for (it in 4:NROW(arimav)) {
   arimav[it] <- arimav[(it-1):(it-3)] %*% coeff + innov[it]}}
   ), times=10)[, c(1, 4, 5)]
@@ -2903,21 +2900,25 @@ acfv$acf[1:5]
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      An autocorrelation of lag $1$ induces higher order autocorrelations of lag \texttt{2, 3, ...}, which may obscure the direct higher order autocorrelations.
+      \vskip1ex
       If two random variables are both correlated to a third variable, then they are indirectly correlated with each other.
       \vskip1ex
       The indirect correlation can be removed by defining new variables with no correlation to the third variable.
       \vskip1ex
       The \emph{partial correlation} is the correlation after the correlations to the common variables are removed.
       \vskip1ex
-      The \emph{partial autocorrelations} $\varrho_i$ of an \emph{AR(1)} process can be computed recursively from the autocorrelations $\rho_i$ using the Durbin-Levinson algorithm:
-      \begin{align*}
-        \varrho_1 &= \rho_1 \\
-        \varrho_2 &= \rho_2 - \varrho_1 \rho_1 \\
-        \varrho_3 &= \rho_3 - \varrho_1 \rho_2 - \varrho_2 \rho_1
-      \end{align*}
-      The function \texttt{pacf()} calculates and plots the \emph{partial autocorrelations}, but it performs regressions instead of using the Durbin-Levinson algorithm.
+      A linear combination of the time series and its own lag can be created, such that its lag $1$ autocorrelation is zero.
+      \vskip1ex
+      The lag $2$ autocorrelation of this new series is called the \emph{partial autocorrelation} of lag $2$, and represents the true second order autocorrelation.
+      \vskip1ex
+      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation of lag \texttt{k}, after all the autocorrelations of lag \texttt{1, ..., k-1} have been removed.
+      \vskip1ex
+      The \emph{partial autocorrelations} $\varrho_i$ are the estimators of the coefficients $\phi_i$ of the \emph{AR(n)} process.
+      \vskip1ex
+      The function \texttt{pacf()} calculates and plots the \emph{partial autocorrelations} using the Durbin-Levinson algorithm.
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pacf.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/ar_pacf.png}
       An \emph{AR(1)} process has an exponentially decaying \emph{ACF} and a non-zero \emph{PACF} at lag one.
       <<echo=TRUE,eval=FALSE>>=
 # PACF of AR(1) process
@@ -2933,51 +2934,7 @@ pacfv[1:5]
 
 
 %%%%%%%%%%%%%%%
-\subsection{Partial Autocorrelations of \protect\emph{AR(1)} Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An autocorrelation of lag $1$ induces higher order autocorrelations of lag \texttt{2, 3, ...}, which may obscure the true higher order autocorrelations.
-      \vskip1ex
-      A linear combination of the time series and its own lag can be created, such that its lag $1$ autocorrelation is zero.
-      \vskip1ex
-      The lag $2$ autocorrelation of this new series is called the \emph{partial autocorrelation} of lag $2$, and represents the true second order autocorrelation.
-      \vskip1ex
-      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation of lag \texttt{k}, after all the autocorrelations of lag \texttt{1, ..., k-1} have been removed.
-      \vskip1ex
-      The \emph{partial autocorrelations} $\varrho_i$ of an \emph{AR(1)} process can be computed recursively from the autocorrelations $\rho_i$ using the Durbin-Levinson algorithm:
-      \begin{displaymath}
-        \varrho_k = \rho_k - \sum_{i=1}^{k-1} {\varrho_i \rho_{k-i}}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Compute pacf recursively from acf using Durbin-Levinson algorithm
-acfv <- rutils::plot_acf(arimav, lag=10, plotobj=FALSE)
-acfv <- as.numeric(acfv$acf)
-pacfvl <- numeric(3)
-pacfvl[1] <- acfv[1]
-pacfvl[2] <- acfv[2] - acfv[1]^2
-pacfvl[3] <- acfv[3] - pacfvl[2]*acfv[1] - acfv[2]*pacfvl[1]
-# Compute pacf recursively in a loop using Durbin-Levinson algorithm
-pacfvl <- numeric(NROW(acfv))
-pacfvl[1] <- acfv[1]
-for (it in 2:NROW(pacfvl)) {
-  pacfvl[it] <- acfv[it] - pacfvl[1:(it-1)] %*% acfv[(it-1):1]
-}  # end for
-# Compare pacf using Durbin-Levinson algorithm
-all.equal(pacfv, pacfvl)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Higher Order Autocorrelations}
+\subsection{draft: Higher Order Autocorrelations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2990,12 +2947,11 @@ all.equal(pacfv, pacfvl)
       Autoregressive processes \emph{AR(n)} of order \emph{n} have an exponentially decaying \emph{ACF} and a non-zero \emph{PACF} up to lag \emph{n}.
       \vskip1ex
       The number of non-zero \emph{partial autocorrelations} is equal to the \emph{order} parameter \emph{n} of the \emph{AR(n)} process.
-      <<ar_pacf,echo=(-(1:3)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+      <<echo=TRUE,eval=FALSE>>=
 # Set two vertical plot panels
 par(mfrow=c(2,1))
 # Simulate AR process of returns
-arimav <- arima.sim(n=1e3, model=list(ar=c(0.1, 0.5, 0.1)))
+arimav <- arima.sim(n=1e5, model=list(ar=c(0.0, 0.5, 0.1)))
 # ACF of AR(3) process
 rutils::plot_acf(arimav, lag=10, xlab="", ylab="",
          main="ACF of AR(3) process")
@@ -3318,11 +3274,11 @@ abline(h=, col='red', lwd=2)
 retsp <- rutils::diffit(prices)
 pricelag <- rutils::lagit(prices)
 formulav <- retsp ~ pricelag
-lmod <- lm(formulav)
-summary(lmod)
+regmod <- lm(formulav)
+summary(regmod)
 # Plot regression
 plot(formulav, main="OU Returns Versus Lagged Prices")
-abline(lmod, lwd=2, col="red")
+abline(regmod, lwd=2, col="red")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/ou_scatter.png}
@@ -3350,7 +3306,7 @@ abline(lmod, lwd=2, col="red")
 # Calculate volatility parameter
 c(volatility=sigmav, estimate=sd(retsp))
 # Extract OU parameters from regression
-coeff <- summary(lmod)$coefficients
+coeff <- summary(regmod)$coefficients
 # Calculate regression alpha and beta directly
 betav <- cov(retsp, pricelag)/var(pricelag)
 alpha <- (mean(retsp) - betav*mean(pricelag))
@@ -3963,6 +3919,62 @@ coeff
 
 
 %%%%%%%%%%%%%%%
+\subsection{The Durbin-Levinson Algorithm for Partial Autocorrelations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{partial autocorrelations} $\varrho_i$ are the estimators of the coefficients $\varphi_i$ of the \emph{AR(n)} process.
+      \vskip1ex
+      The \emph{partial autocorrelations} $\varrho_i$ can be calculated by inverting the Yule-Walker equations.
+      \vskip1ex
+      The \emph{partial autocorrelations} $\varrho_i$ of an \emph{AR(n)} process can be computed recursively from the autocorrelations $\rho_i$ using the Durbin-Levinson algorithm:
+      \begin{align*}
+        & \varrho_{i, i} = \frac{\rho_i - \sum_{k=1}^{i-1} \varrho_{i-1, k} \rho_{i-k}}{1 - \sum_{k=1}^{i-1} \varrho_{i-1, k} \rho_k} \\
+        & \varrho_{i, k} = {\varrho_{i-1, k} - \varrho_{i, i} \varrho_{i-1, i-k}} \quad \tiny{(1 \leq k \leq (i-1))}
+      \end{align*}
+      \vskip1ex
+      The diagonal elements $\varrho_{i, i}$ are updated first using the first equation.  Then the off-diagonal elements $\varrho_{i, k}$ are updated using the second equation.
+      \vskip1ex
+      The \emph{partial autocorrelations} are the diagonal elements: $\varrho_i = \varrho_{i, i}$
+      \vskip1ex
+      The Durbin-Levinson algorithm solves the Yule-Walker equations efficiently, without matrix inversion.
+      \vskip1ex
+      The function \texttt{pacf()} calculates and plots the \emph{partial autocorrelations} using the Durbin-Levinson algorithm.
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate PACF from acf using Durbin-Levinson algorithm
+acfv <- rutils::plot_acf(arimav, lag=10, plotobj=FALSE)
+acfv <- drop(acfv$acf)
+nrows <- NROW(acfv)
+pacfv <- numeric(2)
+pacfv[1] <- acfv[1]
+pacfv[2] <- (acfv[2] - acfv[1]^2)/(1 - acfv[1]^2)
+# Calculate PACF recursively in a loop using Durbin-Levinson algorithm
+pacfvl <- matrix(numeric(nrows*nrows), nc=nrows)
+pacfvl[1, 1] <- acfv[1]
+for (it in 2:nrows) {
+  pacfvl[it, it] <- (acfv[it] - pacfvl[it-1, 1:(it-1)] %*% acfv[(it-1):1])/(1 - pacfvl[it-1, 1:(it-1)] %*% acfv[1:(it-1)])
+  for (it2 in 1:(it-1)) {
+    pacfvl[it, it2] <- pacfvl[it-1, it2] - pacfvl[it, it] %*% pacfvl[it-1, it-it2]
+  }  # end for
+}  # end for
+pacfvl <- diag(pacfvl)
+# Compare with the PACF without loop
+all.equal(pacfv, pacfvl[1:2])
+# Calculate PACF using pacf()
+pacfv <- pacf(arimav, lag=10, plot=FALSE)
+pacfv <- drop(pacfv$acf)
+all.equal(pacfv, pacfvl)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Forecasting Autoregressive Processes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -3989,9 +4001,9 @@ set.seed(1121); innov <- rnorm(nrows, sd=0.01)
 arimav <- filter(x=innov, filter=coeff, method="recursive")
 arimav <- as.numeric(arimav)
 # Simulate AR process using C_rfilter()
-arima_fast <- .Call(stats:::C_rfilter, innov, coeff,
+arimafast <- .Call(stats:::C_rfilter, innov, coeff,
   double(nrows + ncoeff))
-all.equal(arimav, arima_fast[-(1:ncoeff)],
+all.equal(arimav, arimafast[-(1:ncoeff)],
   check.attributes=FALSE)
       @
     \column{0.5\textwidth}
@@ -4042,31 +4054,31 @@ legend(x="topright", legend=c("series", "forecasts"),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Forecast using filter()
-filter_fast <- filter(x=arimav, sides=1,
+filterfast <- filter(x=arimav, sides=1,
   filter=coeff, method="convolution")
-filter_fast <- as.numeric(filter_fast)
+filterfast <- as.numeric(filterfast)
 # Compare excluding warmup period
-all.equal(forecastv[-(1:ncoeff)], filter_fast[-(1:(ncoeff-1))],
+all.equal(forecastv[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Filter using C_cfilter() compiled C++ function directly
-filter_fast <- .Call(stats:::C_cfilter, arimav, filter=coeff,
+filterfast <- .Call(stats:::C_cfilter, arimav, filter=coeff,
                      sides=1, circular=FALSE)
 # Compare excluding warmup period
-all.equal(forecastv[-(1:ncoeff)], filter_fast[-(1:(ncoeff-1))],
+all.equal(forecastv[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Filter using HighFreq::roll_conv() Rcpp function
-filter_fast <- HighFreq::roll_conv(matrix(arimav), matrix(coeff))
+filterfast <- HighFreq::roll_conv(matrix(arimav), matrix(coeff))
 # Compare excluding warmup period
-all.equal(forecastv[-(1:ncoeff)], filter_fast[-(1:(ncoeff-1))],
+all.equal(forecastv[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Define predictor matrix for forecasting
 predictor <- sapply(0:(ncoeff-1), function(lagg) {
   rutils::lagit(arimav, lagg=lagg)
 })  # end sapply
 # Forecast using predictor matrix
-filter_fast <- c(0, drop(predictor %*% coeff))
+filterfast <- c(0, drop(predictor %*% coeff))
 # Compare with loop in R
-all.equal(forecastv, filter_fast, check.attributes=FALSE)
+all.equal(forecastv, filterfast, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}

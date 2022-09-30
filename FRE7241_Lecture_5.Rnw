@@ -58,7 +58,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#5]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#5, Spring 2022}
+\subtitle{Lecture\#5, Fall 2022}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
@@ -482,13 +482,13 @@ for (it in 4:NROW(arimav)) {
   arimav[it] <- arimav[(it-1):(it-3)] %*% coeff + innov[it]
 }  # end for
 # Simulate AR process using filter()
-arima_faster <- filter(x=innov, filter=coeff, method="recursive")
-class(arima_faster)
-all.equal(arimav, as.numeric(arima_faster))
+arimafaster <- filter(x=innov, filter=coeff, method="recursive")
+class(arimafaster)
+all.equal(arimav, as.numeric(arimafaster))
 # Fast simulation of AR process using C_rfilter()
-arima_fastest <- .Call(stats:::C_rfilter, innov, coeff,
+arimacpp <- .Call(stats:::C_rfilter, innov, coeff,
                        double(NROW(coeff) + NROW(innov)))[-(1:3)]
-all.equal(arimav, arima_fastest)
+all.equal(arimav, arimacpp)
       @
   \end{columns}
 \end{block}
@@ -516,28 +516,28 @@ all.equal(arimav, arima_fastest)
       \vspace{-1em}
     <<echo=TRUE,eval=FALSE>>=
 # Calculate modulus of roots of characteristic equation
-root_s <- Mod(polyroot(c(1, -coeff)))
+rootv <- Mod(polyroot(c(1, -coeff)))
 # Calculate warmup period
-warm_up <- NROW(coeff) + ceiling(6/log(min(root_s)))
+warmup <- NROW(coeff) + ceiling(6/log(min(rootv)))
 set.seed(1121)
 nrows <- 1e4
-innov <- rnorm(nrows + warm_up)
+innov <- rnorm(nrows + warmup)
 # Simulate AR process using arima.sim()
 arimav <- arima.sim(n=nrows,
   model=list(ar=coeff),
-  start.innov=innov[1:warm_up],
-  innov=innov[(warm_up+1):NROW(innov)])
+  start.innov=innov[1:warmup],
+  innov=innov[(warmup+1):NROW(innov)])
 # Simulate AR process using filter()
-arima_fast <- filter(x=innov, filter=coeff, method="recursive")
-all.equal(arima_fast[-(1:warm_up)], as.numeric(arimav))
+arimafast <- filter(x=innov, filter=coeff, method="recursive")
+all.equal(arimafast[-(1:warmup)], as.numeric(arimav))
 # Benchmark the speed of the three methods of simulating AR process
 library(microbenchmark)
 summary(microbenchmark(
   filter=filter(x=innov, filter=coeff, method="recursive"),
   arima_sim=arima.sim(n=nrows,
                       model=list(ar=coeff),
-                      start.innov=innov[1:warm_up],
-                      innov=innov[(warm_up+1):NROW(innov)]),
+                      start.innov=innov[1:warmup],
+                      innov=innov[(warmup+1):NROW(innov)]),
   arima_loop={for (it in 4:NROW(arimav)) {
   arimav[it] <- arimav[(it-1):(it-3)] %*% coeff + innov[it]}}
   ), times=10)[, c(1, 4, 5)]
@@ -1010,11 +1010,11 @@ abline(h=eq_price, col='red', lwd=2)
 returns <- rutils::diffit(prices)
 lag_prices <- rutils::lagit(prices)
 formulav <- returns ~ lag_prices
-lmod <- lm(formulav)
-summary(lmod)
+regmod <- lm(formulav)
+summary(regmod)
 # Plot regression
 plot(formulav, main="OU Returns Versus Lagged Prices")
-abline(lmod, lwd=2, col="red")
+abline(regmod, lwd=2, col="red")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.4\paperwidth]{figure/ou_scatter.png}
@@ -1042,7 +1042,7 @@ abline(lmod, lwd=2, col="red")
 # Calculate volatility parameter
 c(volatility=sigmav, estimate=sd(returns))
 # Extract OU parameters from regression
-coeff <- summary(lmod)$coefficients
+coeff <- summary(regmod)$coefficients
 # Calculate regression alpha and beta directly
 betav <- cov(returns, lag_prices)/var(lag_prices)
 alpha <- (mean(returns) - betav*mean(lag_prices))
@@ -1523,9 +1523,9 @@ set.seed(1121); innov <- rnorm(nrows, sd=0.01)
 arimav <- filter(x=innov, filter=coeff, method="recursive")
 arimav <- as.numeric(arimav)
 # Simulate AR process using C_rfilter()
-arima_fast <- .Call(stats:::C_rfilter, innov, coeff,
+arimafast <- .Call(stats:::C_rfilter, innov, coeff,
   double(nrows + ncoeff))
-all.equal(arimav, arima_fast[-(1:ncoeff)],
+all.equal(arimav, arimafast[-(1:ncoeff)],
   check.attributes=FALSE)
       @
     \column{0.5\textwidth}
@@ -1576,31 +1576,31 @@ legend(x="topright", legend=c("series", "forecasts"),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Forecast using filter()
-filter_fast <- filter(x=arimav, sides=1,
+filterfast <- filter(x=arimav, sides=1,
   filter=coeff, method="convolution")
-filter_fast <- as.numeric(filter_fast)
+filterfast <- as.numeric(filterfast)
 # Compare excluding warmup period
-all.equal(forecasts[-(1:ncoeff)], filter_fast[-(1:(ncoeff-1))],
+all.equal(forecasts[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Filter using C_cfilter() compiled C++ function directly
-filter_fast <- .Call(stats:::C_cfilter, arimav, filter=coeff,
+filterfast <- .Call(stats:::C_cfilter, arimav, filter=coeff,
                      sides=1, circular=FALSE)
 # Compare excluding warmup period
-all.equal(forecasts[-(1:ncoeff)], filter_fast[-(1:(ncoeff-1))],
+all.equal(forecasts[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Filter using HighFreq::roll_conv() Rcpp function
-filter_fast <- HighFreq::roll_conv(matrix(arimav), matrix(coeff))
+filterfast <- HighFreq::roll_conv(matrix(arimav), matrix(coeff))
 # Compare excluding warmup period
-all.equal(forecasts[-(1:ncoeff)], filter_fast[-(1:(ncoeff-1))],
+all.equal(forecasts[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Define predictor matrix for forecasting
 predictor <- sapply(0:(ncoeff-1), function(lagg) {
   rutils::lagit(arimav, lagg=lagg)
 })  # end sapply
 # Forecast using predictor matrix
-filter_fast <- c(0, drop(predictor %*% coeff))
+filterfast <- c(0, drop(predictor %*% coeff))
 # Compare with loop in R
-all.equal(forecasts, filter_fast, check.attributes=FALSE)
+all.equal(forecasts, filterfast, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}

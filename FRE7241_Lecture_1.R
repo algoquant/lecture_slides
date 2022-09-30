@@ -357,14 +357,14 @@ matrixv <- matrix(rnorm(10000), ncol=2)
 # Allocate memory for row sums
 rowsumv <- numeric(NROW(matrixv))
 summary(microbenchmark(
-  rowsumv = rowSums(matrixv),  # end rowsumv
-  applyloop = apply(matrixv, 1, sum),  # end apply
-  applyloop = lapply(1:NROW(matrixv), function(indeks)
+  rowsums = rowSums(matrixv),  # end rowsumv
+  apply = apply(matrixv, 1, sum),  # end apply
+  lapply = lapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ])),  # end lapply
-  v_apply = vapply(1:NROW(matrixv), function(indeks)
+  vapply = vapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ]),
     FUN.VALUE = c(sum=0)),  # end vapply
-  s_apply = sapply(1:NROW(matrixv), function(indeks)
+  sapply = sapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ])),  # end sapply
   forloop = for (i in 1:NROW(matrixv)) {
     rowsumv[i] <- sum(matrixv[i,])
@@ -451,7 +451,7 @@ summary(microbenchmark(
       lapply(seq_along(matrixv[1, ]),
              function(indeks)
                matrixv[, indeks])),
-  as_data_frame =
+  as_dframe =
     do.call(pmin.int,
       as.data.frame.matrix(matrixv)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -632,7 +632,7 @@ library(microbenchmark)  # Load package microbenchmark
 # Compare speed of lapply versus parallel computing
 summary(microbenchmark(
   standard = lapply(1:10, paws),
-  parallel = parLapply(cluster, 1:10, paws),
+  parallel = mclapply(1:10, paws, mc.cores=ncores),
   times=10)
 )[, c(1, 4, 5)]
 
@@ -753,7 +753,7 @@ sum(datav < (-2))/nrows
 # Monte Carlo estimate of quantile
 confl <- 0.02
 qnorm(confl)  # Exact value
-cutoff <- confl/nrows
+cutoff <- confl*nrows
 datav <- sort(datav)
 datav[cutoff]  # Naive Monte Carlo value
 quantile(datav, probs=confl)
@@ -772,26 +772,26 @@ nrows <- 1000; datav <- rnorm(nrows)
 mean(datav); sd(datav)
 # Bootstrap of sample mean and median
 nboot <- 10000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   # Sample from Standard Normal Distribution
   samplev <- rnorm(nrows)
   c(mean=mean(samplev), median=median(samplev))
 })  # end sapply
-boot_data[, 1:3]
-boot_data <- t(boot_data)
+bootd[, 1:3]
+bootd <- t(bootd)
 # Standard error from formula
 sd(datav)/sqrt(nrows)
 # Standard error of mean from bootstrap
-sd(boot_data[, "mean"])
+sd(bootd[, "mean"])
 # Standard error of median from bootstrap
-sd(boot_data[, "median"])
+sd(bootd[, "median"])
 
 # Plot the densities of the bootstrap data
 x11(width=6, height=5)
-plot(density(boot_data[, "mean"]), lwd=3, xlab="Estimator Value",
+plot(density(bootd[, "mean"]), lwd=3, xlab="Estimator Value",
      main="Distribution of Bootstrapped Mean and Median", col="green")
-lines(density(boot_data[, "median"]), lwd=3, col="blue")
-abline(v=mean(boot_data[, "mean"]), lwd=2, col="red")
+lines(density(bootd[, "median"]), lwd=3, col="blue")
+abline(v=mean(bootd[, "mean"]), lwd=2, col="red")
 legend("topright", inset=0.05, cex=0.8, title=NULL,
  leg=c("mean", "median"), bty="n",
  lwd=6, bg="white", col=c("green", "blue"))
@@ -800,20 +800,20 @@ set.seed(1121)  # Reset random number generator
 nrows <- 1000
 # Bootstrap of sample mean and median
 nboot <- 100
-boot_data <- sapply(1:nboot, function(x) median(rnorm(nrows)))
+bootd <- sapply(1:nboot, function(x) median(rnorm(nrows)))
 # Perform vectorized bootstrap
 set.seed(1121)  # Reset random number generator
 # Calculate matrix of random data
 samplev <- matrix(rnorm(nboot*nrows), ncol=nboot)
-boot_vec <- Rfast::colMedians(samplev)
-all.equal(boot_data, boot_vec)
+boot_vec <- matrixStats::colMedians(samplev)
+all.equal(bootd, boot_vec)
 # Compare speed of loops with vectorized R code
 library(microbenchmark)
 summary(microbenchmark(
   loop = sapply(1:nboot, function(x) median(rnorm(nrows))),
   cpp = {
     samplev <- matrix(rnorm(nboot*nrows), ncol=nboot)
-    Rfast::colMedians(samplev)
+    matrixStats::colMedians(samplev)
     },
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
@@ -825,20 +825,20 @@ set.seed(1121)  # Reset random number generator
 nrows <- 1000
 # Bootstrap mean and median under Windows
 nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, datav, nrows) {
   samplev <- rnorm(nrows)
   c(mean=mean(samplev), median=median(samplev))
   }, datav=datav, nrows*nrows)  # end parLapply
 # Bootstrap mean and median under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot,
+bootd <- mclapply(1:nboot,
   function(x) {
   samplev <- rnorm(nrows)
   c(mean=mean(samplev), median=median(samplev))
   }, mc.cores=ncores)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x)
+apply(bootd, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
 # Standard error from formula
 sd(datav)/sqrt(nrows)
@@ -851,35 +851,35 @@ median(abs(datav - median(datav)))
 median(abs(datav - median(datav)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 nboot <- 10000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   samplev <- rnorm(nrows)
   c(sd=sd(samplev), mad=mad(samplev))
 })  # end sapply
-boot_data <- t(boot_data)
+bootd <- t(bootd)
 # Analyze bootstrapped variance
-head(boot_data)
-sum(is.na(boot_data))
+head(bootd)
+sum(is.na(bootd))
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x)
+apply(bootd, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, datav) {
     samplev <- rnorm(nrows)
     c(sd=sd(samplev), mad=mad(samplev))
   }, datav=datav)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
+bootd <- mclapply(1:nboot, function(x) {
   samplev <- rnorm(nrows)
   c(sd=sd(samplev), mad=mad(samplev))
 }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x)
+apply(bootd, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
 
 # Calculate time series of VTI returns
@@ -908,22 +908,22 @@ ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, returns, nrows) {
     samplev <- returns[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, returns=returns, nrows*nrows)  # end parLapply
 # Bootstrap sd and MAD under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
+bootd <- mclapply(1:nboot, function(x) {
     samplev <- returns[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Standard error assuming normal distribution of returns
 sd(returns)/sqrt(nboot)
 # Means and standard errors from bootstrap
-stderrors <- apply(boot_data, MARGIN=2,
+stderrors <- apply(bootd, MARGIN=2,
   function(x) c(mean=mean(x), stderror=sd(x)))
 stderrors
 # Relative standard errors
@@ -944,7 +944,7 @@ plot(response ~ predictor, data=design)
 abline(a=alpha, b=betav, lwd=3, col="blue")
 # Bootstrap of beta regression coefficient
 nboot <- 100
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   samplev <- sample.int(NROW(design), replace=TRUE)
   design <- design[samplev, ]
   cov(design[, 1], design[, 2])/var(design[, 2])
@@ -953,27 +953,27 @@ boot_data <- sapply(1:nboot, function(x) {
 x11(width=6, height=5)
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), stderror=sd(boot_data))
+c(mean=mean(bootd), stderror=sd(bootd))
 # Plot density of bootstrapped beta coefficients
-plot(density(boot_data), lwd=2, xlab="Regression slopes",
+plot(density(bootd), lwd=2, xlab="Regression slopes",
      main="Bootstrapped Regression Slopes")
 # Add line for expected value
-abline(v=mean(boot_data), lwd=2, col="red")
-text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
+abline(v=mean(bootd), lwd=2, col="red")
+text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
 
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 # Bootstrap of regression under Windows
-boot_data <- parLapply(cluster, 1:1000,
+bootd <- parLapply(cluster, 1:1000,
   function(x, design) {
     samplev <- sample.int(NROW(design), replace=TRUE)
     design <- design[samplev, ]
     cov(design[, 1], design[, 2])/var(design[, 2])
   }, design=design)  # end parLapply
 # Bootstrap of regression under Mac-OSX or Linux
-boot_data <- mclapply(1:1000,
+bootd <- mclapply(1:1000,
   function(x) {
     samplev <- sample.int(NROW(design), replace=TRUE)
     design <- design[samplev, ]
@@ -982,17 +982,17 @@ boot_data <- mclapply(1:1000,
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 
 # Collapse the bootstrap list into a vector
-class(boot_data)
-boot_data <- unlist(boot_data)
+class(bootd)
+bootd <- unlist(bootd)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), stderror=sd(boot_data))
+c(mean=mean(bootd), stderror=sd(bootd))
 # Plot density of bootstrapped beta coefficients
-plot(density(boot_data),
+plot(density(bootd),
      lwd=2, xlab="Regression slopes",
      main="Bootstrapped Regression Slopes")
 # Add line for expected value
-abline(v=mean(boot_data), lwd=2, col="red")
-text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
+abline(v=mean(bootd), lwd=2, col="red")
+text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
 
 set.seed(1121)  # Reset random number generator
@@ -1008,7 +1008,7 @@ while ((indeks <= nrows) && (paths[indeks - 1] < barl)) {
 }  # end while
 # Fill remaining paths after it crosses barl
 if (indeks <= nrows)
-  paths[indeks*nrows] <- paths[indeks - 1]
+  paths[indeks:nrows] <- paths[indeks - 1]
 # Plot the Brownian motion
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
@@ -1092,7 +1092,7 @@ cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl"))
 nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, returns, nrows) {
     samplev <- returns[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
@@ -1101,7 +1101,7 @@ boot_data <- parLapply(cluster, 1:nboot,
     sum(samplev > barl) > 0
   }, returns=returns, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
+bootd <- mclapply(1:nboot, function(x) {
     samplev <- returns[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
     samplev <- startd*exp(cumsum(samplev))
@@ -1109,9 +1109,9 @@ boot_data <- mclapply(1:nboot, function(x) {
     sum(samplev > barl) > 0
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Calculate frequency of crossing barrier
-sum(boot_data)/nboot
+sum(bootd)/nboot
 
 # Calculate percentage returns from VTI prices
 library(rutils)
@@ -1140,7 +1140,7 @@ cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl", "ohlc_diff"))
 nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, returns, nrows) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
@@ -1151,7 +1151,7 @@ boot_data <- parLapply(cluster, 1:nboot,
     sum(boot_ohlc[, 2] > barl) > 0
   }, returns=returns, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
+bootd <- mclapply(1:nboot, function(x) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
     boot_prices <- startd*exp(cumsum(returns[datav]))
@@ -1161,9 +1161,9 @@ boot_data <- mclapply(1:nboot, function(x) {
     sum(boot_ohlc[, 2] > barl) > 0
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Calculate frequency of crossing barrier
-sum(boot_data)/nboot
+sum(bootd)/nboot
 
 options(width=50, dev="pdf")
 str(optimize)
@@ -1368,936 +1368,3 @@ optiml$optim$bestmem
 rastrigin(optiml$optim$bestmem)
 summary(optiml)
 plot(optiml)
-
-# Load S&P500 constituent stock prices
-load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-prices <- eapply(sp500env, quantmod::Cl)
-prices <- rutils::do_call(cbind, prices)
-# Carry forward non-NA prices
-prices <- zoo::na.locf(prices, na.rm=FALSE)
-# Drop ".Close" from column names
-colnames(prices[, 1:4])
-colnames(prices) <- rutils::get_name(colnames(prices))
-# Or
-# colnames(prices) <- do.call(rbind,
-#   strsplit(colnames(prices), split="[.]"))[, 1]
-# Calculate percentage returns of the S&P500 constituent stocks
-# returns <- xts::diff.xts(log(prices))
-returns <- xts::diff.xts(prices)/
-  rutils::lagit(prices, pad_zeros=FALSE)
-set.seed(1121)
-samplev <- sample(NCOL(returns), s=100, replace=FALSE)
-prices100 <- prices[, samplev]
-returns100 <- returns[, samplev]
-save(prices, prices100,
-  file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
-save(returns, returns100,
-  file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-
-# Calculate number of constituents without prices
-datav <- rowSums(is.na(prices))
-datav <- xts::xts(datav, order.by=zoo::index(prices))
-dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
-  dyOptions(colors="blue", strokeWidth=2)
-
-# Calculate price weighted index of constituent
-ncols <- NCOL(prices)
-prices <- zoo::na.locf(prices, fromLast=TRUE)
-indeks <- xts(rowSums(prices)/ncols, zoo::index(prices))
-colnames(indeks) <- "index"
-# Combine index with VTI
-datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
-colnamev <- c("index", "VTI")
-colnames(datav) <- colnamev
-# Plot index with VTI
-dygraphs::dygraph(datav,
-  main="S&P 500 Price-weighted Index and VTI") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="red") %>%
-  dySeries(name=colnamev[2], axis="y2", col="blue")
-
-# Select ETF symbols for asset allocation
-symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
-  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
-  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
-# Read etf database into data frame
-etf_list <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etf_list.csv")
-rownames(etf_list) <- etf_list$Symbol
-# Select from etf_list only those ETF's in symbolv
-etf_list <- etf_list[symbolv, ]
-# Shorten names
-etf_names <- sapply(etf_list$Name, function(name) {
-  namesvplit <- strsplit(name, split=" ")[[1]]
-  namesvplit <- namesvplit[c(-1, -NROW(namesvplit))]
-  name_match <- match("Select", namesvplit)
-  if (!is.na(name_match))
-    namesvplit <- namesvplit[-name_match]
-  paste(namesvplit, collapse=" ")
-})  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "10 year Treasury Bond Fund"
-etf_list["TLT", "Name"] <- "20 plus year Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-etf_list["EEM", "Name"] <- "Emerging Market Stock Fund"
-etf_list["MTUM", "Name"] <- "Momentum Factor Fund"
-etf_list["SVXY", "Name"] <- "Short VIX Futures"
-etf_list["VXX", "Name"] <- "Long VIX Futures"
-etf_list["DBC", "Name"] <- "Commodity Futures Fund"
-etf_list["USO", "Name"] <- "WTI Oil Futures Fund"
-etf_list["GLD", "Name"] <- "Physical Gold Fund"
-
-print(xtable::xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
-
-library(rutils)  # Load package rutils
-# Calculate VTI percentage returns
-returns <- rutils::etfenv$returns$VTI
-returns <- drop(coredata(na.omit(returns)))
-nrows <- NROW(returns)
-# Mean and standard deviation of returns
-c(mean(returns), sd(returns))
-# Calculate the smoothing bandwidth as the MAD of returns 10 points apart
-returns <- sort(returns)
-bwidth <- 10*mad(rutils::diffit(returns, lagg=10))
-# Calculate the kernel density
-densityv <- sapply(1:nrows, function(i_d) {
-  sum(dnorm(returns-returns[i_d], sd=bwidth))
-})  # end sapply
-madv <- mad(returns)
-plot(returns, densityv, xlim=c(-5*madv, 5*madv),
-     t="l", col="blue", lwd=3,
-     xlab="returns", ylab="density",
-     main="Density of VTI Returns")
-# Calculate the kernel density using density()
-densityv <- density(returns, bw=bwidth)
-NROW(densityv$y)
-x11(width=6, height=5)
-plot(densityv, xlim=c(-5*madv, 5*madv),
-     xlab="returns", ylab="density",
-     col="blue", lwd=3, main="Density of VTI Returns")
-# Interpolate the densityv vector into returns
-densityv <- approx(densityv$x, densityv$y, xout=returns)
-all.equal(densityv$x, returns)
-plot(densityv, xlim=c(-5*madv, 5*madv),
-     xlab="returns", ylab="density",
-     t="l", col="blue", lwd=3,
-     main="Density of VTI Returns")
-
-# Plot histogram
-histp <- hist(returns, breaks=100, freq=FALSE,
-  xlim=c(-5*madv, 5*madv), xlab="", ylab="",
-  main="VTI Return Distribution")
-# Draw kernel density of histogram
-lines(densityv, col="red", lwd=2)
-# Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
-add=TRUE, lwd=2, col="blue")
-# Add legend
-legend("topright", inset=0.05, cex=0.8, title=NULL,
- leg=c("VTI", "Normal"), bty="n",
- lwd=6, bg="white", col=c("red", "blue"))
-
-# Create normal Q-Q plot
-qqnorm(returns, ylim=c(-0.1, 0.1), main="VTI Q-Q Plot",
- xlab="Normal Quantiles")
-# Fit a line to the normal quantiles
-qqline(returns, col="red", lwd=2)
-# Perform Shapiro-Wilk test
-shapiro.test(returns)
-
-# Boxplot method for formula
-boxplot(formula=mpg ~ cyl, data=mtcars,
-  main="Mileage by number of cylinders",
-  xlab="Cylinders", ylab="Miles per gallon")
-# Boxplot method for data frame of EuStockMarkets percentage returns
-boxplot(x=diff(log(EuStockMarkets)))
-
-# Calculate VTI percentage returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
-# Number of observations
-nrows <- NROW(returns)
-# Mean of VTI returns
-mean_rets <- mean(returns)
-# Standard deviation of VTI returns
-sd_rets <- sd(returns)
-# Skewness of VTI returns
-nrows/((nrows-1)*(nrows-2))*
-  sum(((returns - mean_rets)/sd_rets)^3)
-# Kurtosis of VTI returns
-nrows*(nrows+1)/((nrows-1)^3)*
-  sum(((returns - mean_rets)/sd_rets)^4)
-# Random normal returns
-returns <- rnorm(nrows, sd=sd_rets)
-# Mean and standard deviation of random normal returns
-mean_rets <- mean(returns)
-sd_rets <- sd(returns)
-# Skewness of random normal returns
-nrows/((nrows-1)*(nrows-2))*
-  sum(((returns - mean_rets)/sd_rets)^3)
-# Kurtosis of random normal returns
-nrows*(nrows+1)/((nrows-1)^3)*
-  sum(((returns - mean_rets)/sd_rets)^4)
-
-# calc_skew() calculates skew of returns
-calc_skew <- function(returns) {
-  returns <- na.omit(returns)
-  sum(((returns - mean(returns))/sd(returns))^3)/NROW(returns)
-}  # end calc_skew
-# calc_kurt() calculates kurtosis of returns
-calc_kurt <- function(returns) {
-  returns <- na.omit(returns)
-  sum(((returns - mean(returns))/sd(returns))^4)/NROW(returns)
-}  # end calc_kurt
-# Calculate skew and kurtosis of VTI returns
-calc_skew(returns)
-calc_kurt(returns)
-# calcmom() calculates the moments of returns
-calcmom <- function(returns, moment=3) {
-  returns <- na.omit(returns)
-  sum(((returns - mean(returns))/sd(returns))^moment)/NROW(returns)
-}  # end calcmom
-# Calculate skew and kurtosis of VTI returns
-calcmom(returns, moment=3)
-calcmom(returns, moment=4)
-
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-nrows <- 1000
-datav <- rnorm(nrows)
-# Sample mean
-mean(datav)
-# Sample standard deviation
-sd(datav)
-# Standard error of sample mean
-sd(datav)/sqrt(nrows)
-
-xvar <- seq(-5, 7, length=100)
-yvar <- dnorm(xvar, mean=1.0, sd=2.0)
-plot(xvar, yvar, type="l", lty="solid", xlab="", ylab="")
-title(main="Normal Density Function", line=0.5)
-startp <- 3; endp <- 5  # Set lower and upper bounds
-# Set polygon base
-subv <- ((xvar >= startp) & (xvar <= endp))
-polygon(c(startp, xvar[subv], endp),  # Draw polygon
-  c(-1, yvar[subv], -1), col="red")
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
-# Create plot colors
-colors <- c("red", "black", "blue", "green")
-# Create legend labels
-labelv <- paste("sigma", sigmavs, sep="=")
-for (indeks in 1:4) {  # Plot four curves
-  curve(expr=dnorm(x, sd=sigmavs[indeks]),
-  xlim=c(-4, 4), xlab="", ylab="", lwd=2,
-  col=colors[indeks], add=as.logical(indeks-1))
-}  # end for
-# Add title
-title(main="Normal Distributions", line=0.5)
-# Add legend
-legend("topright", inset=0.05, title="Sigmas",
- labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colors)
-
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-degf <- c(3, 6, 9)  # Df values
-colors <- c("black", "red", "blue", "green")
-labelv <- c("normal", paste("df", degf, sep="="))
-# Plot a Normal probability distribution
-curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
-for (indeks in 1:3) {  # Plot three t-distributions
-  curve(expr=dt(x, df=degf[indeks]), xlab="", ylab="",
-lwd=2, col=colors[indeks+1], add=TRUE)
-}  # end for
-
-# Add title
-title(main="t-distributions", line=0.5)
-# Add legend
-legend("topright", inset=0.05, bty="n",
-       title="Degrees\n of freedom", labelv,
-       cex=0.8, lwd=6, lty=1, col=colors)
-
-# Mixture of two normal distributions with sd=1 and sd=2
-nrows <- 1e5
-returns <- c(rnorm(nrows/2), 2*rnorm(nrows/2))
-returns <- (returns-mean(returns))/sd(returns)
-# Kurtosis of normal
-calc_kurt(rnorm(nrows))
-# Kurtosis of mixture
-calc_kurt(returns)
-# Or
-nrows*sum(returns^4)/(nrows-1)^2
-
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Plot the distributions
-plot(density(returns), xlab="", ylab="",
-  main="Mixture of Normal Returns",
-  xlim=c(-3, 3), type="l", lwd=3, col="red")
-curve(expr=dnorm, lwd=2, col="blue", add=TRUE)
-curve(expr=dt(x, df=3), lwd=2, col="green", add=TRUE)
-# Add legend
-legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
-  legend=c("Mixture", "Normal", "t-distribution"),
-  col=c("red", "blue", "green"))
-
-dev.new(width=6, height=5, noRStudioGD=TRUE)
-# x11(width=6, height=5)
-# Define density of non-standard t-distribution
-tdistr <- function(x, dfree, loc=0, scalev=1) {
-  dt((x-loc)/scalev, df=dfree)/scalev
-}  # end tdistr
-# Or
-tdistr <- function(x, dfree, loc=0, scalev=1) {
-  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scalev)*
-    (1+((x-loc)/scalev)^2/dfree)^(-(dfree+1)/2)
-}  # end tdistr
-# Calculate vector of scale values
-scalev <- c(0.5, 1.0, 2.0)
-colors <- c("blue", "black", "red")
-labelv <- paste("scale", format(scalev, digits=2), sep="=")
-# Plot three t-distributions
-for (indeks in 1:3) {
-  curve(expr=tdistr(x, dfree=3, scalev=scalev[indeks]), xlim=c(-3, 3),
-xlab="", ylab="", lwd=2, col=colors[indeks], add=(indeks>1))
-}  # end for
-
-# Add title
-title(main="t-distributions with Different Scale Parameters", line=0.5)
-# Add legend
-legend("topright", inset=0.05, bty="n", title="Scale Parameters", labelv,
-       cex=0.8, lwd=6, lty=1, col=colors)
-
-# Calculate VTI percentage returns
-library(rutils)
-returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))[1:4999]
-# Reduce number of output digits
-ndigits <- options(digits=5)
-# Shapiro-Wilk test for normal distribution
-nrows <- NROW(returns)
-shapiro.test(rnorm(nrows))
-# Shapiro-Wilk test for VTI returns
-shapiro.test(returns)
-# Shapiro-Wilk test for uniform distribution
-shapiro.test(runif(nrows))
-# Restore output digits
-options(digits=ndigits$digits)
-
-library(tseries)  # Load package tseries
-# Jarque-Bera test for normal distribution
-jarque.bera.test(rnorm(nrows))
-# Jarque-Bera test for VTI returns
-jarque.bera.test(returns)
-# Jarque-Bera test for uniform distribution
-jarque.bera.test(runif(NROW(returns)))
-
-# KS test for normal distribution
-ks_test <- ks.test(rnorm(100), pnorm)
-ks_test$p.value
-# KS test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS test for two shifted normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-# KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, sd=2.0))
-# KS test for VTI returns vs normal distribution
-returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
-returns <- (returns - mean(returns))/sd(returns)
-ks.test(returns, pnorm)
-
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Degrees of freedom
-degf <- c(2, 5, 8, 11)
-# Plot four curves in loop
-colors <- c("red", "black", "blue", "green")
-for (indeks in 1:4) {
-  curve(expr=dchisq(x, df=degf[indeks]),
-  xlim=c(0, 20), ylim=c(0, 0.3),
-  xlab="", ylab="", col=colors[indeks],
-  lwd=2, add=as.logical(indeks-1))
-}  # end for
-
-# Add title
-title(main="Chi-squared Distributions", line=0.5)
-# Add legend
-labelv <- paste("df", degf, sep="=")
-legend("topright", inset=0.05, bty="n",
-       title="Degrees of freedom", labelv,
-       cex=0.8, lwd=6, lty=1, col=colors)
-
-# Observed frequencies from random normal data
-histp <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
-countsn <- histp$counts
-# Theoretical frequencies
-countst <- rutils::diffit(pnorm(histp$breaks))
-# Perform Chi-squared test for normal data
-chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-# Return p-value
-chisq_test <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-chisq_test$p.value
-# Observed frequencies from shifted normal data
-histp <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
-countsn <- histp$counts/sum(histp$counts)
-# Theoretical frequencies
-countst <- rutils::diffit(pnorm(histp$breaks))
-# Perform Chi-squared test for shifted normal data
-chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-# Calculate histogram of VTI returns
-histp <- hist(returns, breaks=100, plot=FALSE)
-countsn <- histp$counts
-# Calculate cumulative probabilities and then difference them
-countst <- pt((histp$breaks-loc)/scalev, df=2)
-countst <- rutils::diffit(countst)
-# Perform Chi-squared test for VTI returns
-chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-
-# Objective function from function dt()
-likefun <- function(par, dfree, data) {
-  -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
-}  # end likefun
-# Demonstrate equivalence with log(dt())
-likefun(c(1, 0.5), 2, 2:5)
--sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
-# Objective function is negative log-likelihood
-likefun <- function(par, dfree, data) {
-  sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
-    log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
-}  # end likefun
-
-# Calculate VTI percentage returns
-returns <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
-# Fit VTI returns using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(returns, densfun="t", df=3)
-summary(optim_fit)
-# Fitted parameters
-optim_fit$estimate
-loc <- optim_fit$estimate[1]
-scalev <- optim_fit$estimate[2]
-loc; scalev
-# Standard errors of parameters
-optim_fit$sd
-# Log-likelihood value
-optim_fit$value
-# Fit distribution using optim()
-initp <- c(mean=0, scale=0.01)  # Initial parameters
-optim_fit <- optim(par=initp,
-  fn=likefun, # Log-likelihood function
-  data=returns,
-  dfree=3, # Degrees of freedom
-  method="L-BFGS-B", # Quasi-Newton method
-  upper=c(1, 0.1), # Upper constraint
-  lower=c(-1, 1e-7)) # Lower constraint
-# Optimal parameters
-loc <- optim_fit$par["mean"]
-scalev <- optim_fit$par["scale"]
-loc; scalev
-
-dev.new(width=6, height=5, noRStudioGD=TRUE)
-# x11(width=6, height=5)
-# Plot histogram of VTI returns
-madv <- mad(returns)
-histp <- hist(returns, col="lightgrey",
-  xlab="returns", breaks=100, xlim=c(-5*madv, 5*madv),
-  ylab="frequency", freq=FALSE, main="Histogram of VTI Returns")
-lines(density(returns, adjust=1.5), lwd=3, col="blue")
-# Plot the Normal probability distribution
-curve(expr=dnorm(x, mean=mean(returns),
-  sd=sd(returns)), add=TRUE, lwd=3, col="green")
-# Define non-standard t-distribution
-tdistr <- function(x, dfree, loc=0, scalev=1) {
-  dt((x-loc)/scalev, df=dfree)/scalev
-}  # end tdistr
-# Plot t-distribution function
-curve(expr=tdistr(x, dfree=3, loc=loc, scalev=scalev), col="red", lwd=3, add=TRUE)
-# Add legend
-legend("topright", inset=0.05, bty="n",
-  leg=c("density", "t-distr", "normal"),
-  lwd=6, lty=1, col=c("blue", "red", "green"))
-
-# Calculate sample from non-standard t-distribution with df=3
-tdata <- scalev*rt(NROW(returns), df=3) + loc
-# Q-Q plot of VTI Returns vs non-standard t-distribution
-qqplot(tdata, returns, xlab="t-Dist Quantiles", ylab="VTI Quantiles",
-       main="Q-Q plot of VTI Returns vs Student's t-distribution")
-# Calculate quartiles of the distributions
-probs <- c(0.25, 0.75)
-qrets <- quantile(returns, probs)
-qtdata <- quantile(tdata, probs)
-# Calculate slope and plot line connecting quartiles
-slope <- diff(qrets)/diff(qtdata)
-intercept <- qrets[1]-slope*qtdata[1]
-abline(intercept, slope, lwd=2, col="red")
-
-# KS test for VTI returns vs t-distribution data
-ks.test(returns, tdata)
-# Define cumulative distribution of non-standard t-distribution
-ptdistr <- function(x, dfree, loc=0, scalev=1) {
-  pt((x-loc)/scalev, df=dfree)
-}  # end ptdistr
-# KS test for VTI returns vs cumulative t-distribution
-ks.test(sample(returns, replace=TRUE), ptdistr, dfree=3, loc=loc, scalev=scalev)
-
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Plot histogram of VTI returns
-histp <- hist(returns, breaks=100, plot=FALSE)
-plot(histp, xlab="returns", ylab="frequency",
-     col="lightgrey", freq=FALSE, main="VTI Left Tail Returns Histogram",
-     xlim=c(min(returns), -0.02),
-     ylim=c(0.0, histp$density[findInterval(-0.02, histp$breaks)]))
-lines(density(returns, adjust=1.5), lwd=4, col="blue")
-# Plot t-distribution function
-curve(expr=dt((x-loc)/scalev, df=2)/scalev, type="l", lwd=4, col="red", add=TRUE)
-# Plot the Normal probability distribution
-curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)), add=TRUE, lwd=4, col="green")
-# Add legend
-legend("topleft", inset=0.05, bty="n",
-  leg=c("density", "t-distr", "normal"),
-  lwd=6, lty=1, col=c("blue", "red", "green"))
-
-# Calculate VTI returns and trading volumes
-ohlc <- rutils::etfenv$VTI
-closep <- drop(coredata(quantmod::Cl(ohlc)))
-returns <- rutils::diffit(log(closep))
-volumes <- coredata(quantmod::Vo(ohlc))
-# Calculate rolling variance
-look_back <- 121
-variance <- HighFreq::roll_var_ohlc(log(ohlc), method="close", look_back=look_back, scale=FALSE)
-variance[1:look_back, ] <- variance[look_back+1, ]
-# Calculate rolling average volume
-volume_roll <- HighFreq::roll_vec(volumes, look_back=look_back)/look_back
-# dygraph plot of VTI variance and trading volumes
-datav <- xts::xts(cbind(variance, volume_roll), zoo::index(ohlc))
-colnamev <- c("variance", "volume")
-colnames(datav) <- colnamev
-dygraphs::dygraph(datav, main="VTI Variance and Trading Volumes") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], strokeWidth=2, axis="y", col="blue") %>%
-  dySeries(name=colnamev[2], strokeWidth=2, axis="y2", col="red")
-
-# Scale returns using volume (volume clock)
-rets_scaled <- ifelse(volumes > 0, sqrt(volume_roll)*returns/sqrt(volumes), 0)
-rets_scaled <- sd(returns)*rets_scaled/sd(rets_scaled)
-# rets_scaled <- ifelse(volumes > 1e4, returns/volumes, 0)
-# Calculate moments of scaled returns
-nrows <- NROW(returns)
-sapply(list(returns=returns, rets_scaled=rets_scaled),
-  function(rets) {sapply(c(skew=3, kurt=4),
-     function(x) sum((rets/sd(rets))^x)/nrows)
-})  # end sapply
-
-# x11(width=6, height=5)
-dev.new(width=6, height=5, noRStudioGD=TRUE)
-par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-# Plot densities of SPY returns
-madv <- mad(returns)
-# bwidth <- mad(rutils::diffit(returns))
-plot(density(returns, bw=madv/10), xlim=c(-5*madv, 5*madv),
-     lwd=3, mgp=c(2, 1, 0), col="blue",
-     xlab="returns (standardized)", ylab="frequency",
-     main="Density of Volume-scaled VTI Returns")
-lines(density(rets_scaled, bw=madv/10), lwd=3, col="red")
-curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
-add=TRUE, lwd=3, col="green")
-# Add legend
-legend("topright", inset=0.05, bty="n",
-  leg=c("unscaled", "scaled", "normal"),
-  lwd=6, lty=1, col=c("blue", "red", "green"))
-quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
-
-# Load package PerformanceAnalytics
-library(PerformanceAnalytics)
-# Get documentation for package PerformanceAnalytics
-# Get short description
-packageDescription("PerformanceAnalytics")
-# Load help page
-help(package="PerformanceAnalytics")
-# List all objects in PerformanceAnalytics
-ls("package:PerformanceAnalytics")
-# List all datasets in PerformanceAnalytics
-data(package="PerformanceAnalytics")
-# Remove PerformanceAnalytics from search path
-detach("package:PerformanceAnalytics")
-
-perf_data <- unclass(data(
-    package="PerformanceAnalytics"))$results[, -(1:2)]
-apply(perf_data, 1, paste, collapse=" - ")
-# Load "managers" data set
-data(managers)
-class(managers)
-dim(managers)
-head(managers, 3)
-
-# Load package "PerformanceAnalytics"
-library(PerformanceAnalytics)
-# Calculate ETF returns
-returns <- rutils::etfenv$returns[, c("VTI", "DBC", "IEF")]
-returns <- na.omit(returns)
-# Plot cumulative ETF returns
-x11(width=6, height=5)
-chart.CumReturns(returns, lwd=2, ylab="",
-  legend.loc="topleft", main="ETF Cumulative Returns")
-
-returns <- rutils::etfenv$returns$VTI
-returns <- na.omit(returns)
-x11(width=6, height=5)
-chart.Histogram(returns, xlim=c(-0.04, 0.04),
-  colorset = c("lightgray", "red", "blue"), lwd=3,
-  main=paste("Distribution of", colnames(returns), "Returns"),
-  methods = c("add.density", "add.normal"))
-legend("topright", inset=0.05, bty="n",
- leg=c("VTI Density", "Normal"),
- lwd=6, lty=1, col=c("red", "blue"))
-
-returns <- rutils::etfenv$returns[,
-  c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")]
-x11(width=6, height=5)
-chart.Boxplot(names=FALSE, returns)
-par(cex.lab=0.8, cex.axis=0.8)
-axis(side=2, at=(1:NCOL(returns))/7.5-0.05,labels=colnames(returns))
-
-# Simulate normally distributed data
-nrows <- 1000
-datav <- rnorm(nrows)
-sd(datav)
-mad(datav)
-median(abs(datav - median(datav)))
-median(abs(datav - median(datav)))/qnorm(0.75)
-# Bootstrap of sd and mad estimators
-boot_data <- sapply(1:10000, function(x) {
-  samplev <- datav[sample.int(nrows, replace=TRUE)]
-  c(sd=sd(samplev), mad=mad(samplev))
-})  # end sapply
-boot_data <- t(boot_data)
-# Analyze bootstrapped variance
-head(boot_data)
-sum(is.na(boot_data))
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), stderror=sd(x)))
-# Parallel bootstrap under Windows
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # Initialize compute cluster
-boot_data <- parLapply(cluster, 1:10000,
-  function(x, datav) {
-    samplev <- datav[sample.int(nrows, replace=TRUE)]
-    c(sd=sd(samplev), mad=mad(samplev))
-  }, datav=datav)  # end parLapply
-# Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000, function(x) {
-    samplev <- datav[sample.int(nrows, replace=TRUE)]
-    c(sd=sd(samplev), mad=mad(samplev))
-  }, mc.cores=ncores)  # end mclapply
-stopCluster(cluster)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), stderror=sd(x)))
-
-# Calculate VTI returns
-returns <- rutils::etfenv$returns$VTI
-returns <- na.omit(returns)
-nrows <- NROW(returns)
-sd(returns)
-mad(returns)
-# Bootstrap of sd and mad estimators
-boot_data <- sapply(1:10000, function(x) {
-  samplev <- returns[sample.int(nrows, replace=TRUE)]
-  c(sd=sd(samplev), mad=mad(samplev))
-})  # end sapply
-boot_data <- t(boot_data)
-# Means and standard errors from bootstrap
-100*apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), stderror=sd(x)))
-# Parallel bootstrap under Windows
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # Initialize compute cluster
-clusterExport(cluster, c("nrows", "returns"))
-boot_data <- parLapply(cluster, 1:10000,
-  function(x) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
-    c(sd=sd(samplev), mad=mad(samplev))
-  })  # end parLapply
-# Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000, function(x) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
-    c(sd=sd(samplev), mad=mad(samplev))
-  }, mc.cores=ncores)  # end mclapply
-stopCluster(cluster)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x)
-  c(mean=mean(x), stderror=sd(x)))
-
-library(PerformanceAnalytics)
-# Define target rate of return of 50 bps
-targetr <- 0.005
-# Calculate the full downside returns
-returns_sub <- (returns - targetr)
-returns_sub <- ifelse(returns_sub < 0, returns_sub, 0)
-nrows <- NROW(returns_sub)
-# Calculate the downside deviation
-all.equal(sqrt(sum(returns_sub^2)/nrows),
-  drop(DownsideDeviation(returns, MAR=targetr, method="full")))
-# Calculate the subset downside returns
-returns_sub <- (returns - targetr)
-returns_sub <- returns_sub[returns_sub < 0]
-nrows <- NROW(returns_sub)
-# Calculate the downside deviation
-all.equal(sqrt(sum(returns_sub^2)/nrows),
-          drop(DownsideDeviation(returns, MAR=targetr, method="subset")))
-
-# Calculate time series of VTI drawdowns
-closep <- log(quantmod::Cl(rutils::etfenv$VTI))
-draw_downs <- (closep - cummax(closep))
-# Extract the date index from the time series closep
-dates <- zoo::index(closep)
-# Calculate the maximum drawdown date and depth
-index_min <- which.min(draw_downs)
-date_min <- dates[index_min]
-max_drawdown <- draw_downs[date_min]
-# Calculate the drawdown start and end dates
-startd <- max(dates[(dates < date_min) & (draw_downs == 0)])
-endd <- min(dates[(dates > date_min) & (draw_downs == 0)])
-# dygraph plot of VTI drawdowns
-datav <- cbind(closep, draw_downs)
-colnamev <- c("VTI", "Drawdowns")
-colnames(datav) <- colnamev
-dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2],
-   valueRange=(1.2*range(draw_downs)+0.1), independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", col="red") %>%
-  dyEvent(startd, "start drawdown", col="blue") %>%
-  dyEvent(date_min, "max drawdown", col="red") %>%
-  dyEvent(endd, "end drawdown", col="green")
-
-# Plot VTI drawdowns using package quantmod
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
-x11(width=6, height=5)
-quantmod::chart_Series(x=closep, name="VTI Drawdowns", theme=plot_theme)
-xval <- match(startd, dates)
-yval <- max(closep)
-abline(v=xval, col="blue")
-text(x=xval, y=0.95*yval, "start drawdown", col="blue", cex=0.9)
-xval <- match(date_min, dates)
-abline(v=xval, col="red")
-text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
-xval <- match(endd, dates)
-abline(v=xval, col="green")
-text(x=xval, y=0.85*yval, "end drawdown", col="green", cex=0.9)
-
-library(xtable)
-library(PerformanceAnalytics)
-closep <- log(quantmod::Cl(rutils::etfenv$VTI))
-returns <- rutils::diffit(closep)
-# Calculate table of VTI drawdowns
-tablev <- PerformanceAnalytics::table.Drawdowns(returns, geometric=FALSE)
-# Convert dates to strings
-tablev <- cbind(sapply(tablev[, 1:3], as.character), tablev[, 4:7])
-# Print table of VTI drawdowns
-print(xtable(tablev), comment=FALSE, size="tiny", include.rownames=FALSE)
-library(xtable)
-library(PerformanceAnalytics)
-closep <- log(quantmod::Cl(rutils::etfenv$VTI))
-returns <- rutils::diffit(closep)
-# Calculate table of VTI drawdowns
-tablev <- PerformanceAnalytics::table.Drawdowns(returns, geometric=FALSE)
-# Convert dates to strings
-tablev <- cbind(sapply(tablev[, 1:3], as.character), tablev[, 4:7])
-# Print table of VTI drawdowns
-print(xtable(tablev), comment=FALSE, size="tiny", include.rownames=FALSE)
-
-# Load "managers" data set
-data(managers)
-charts.PerformanceSummary(ham1,
-  main="", lwd=2, ylog=TRUE)
-
-# Calculate VTI percentage returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
-confl <- 0.1
-varisk <- quantile(returns, confl)
-cvar <- mean(returns[returns < varisk])
-# Plot histogram of VTI returns
-x11(width=6, height=5)
-par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
-histp <- hist(returns, col="lightgrey",
-  xlab="returns", ylab="frequency", breaks=100,
-  xlim=c(-0.05, 0.01), freq=FALSE, main="VTI Returns Histogram")
-# Calculate density
-densv <- density(returns, adjust=1.5)
-
-# Plot density
-lines(densv, lwd=3, col="blue")
-# Plot line for VaR
-abline(v=varisk, col="red", lwd=3)
-text(x=varisk, y=25, labels="VaR", lwd=2, pos=2)
-# Plot polygon shading for CVaR
-text(x=1.5*varisk, y=10, labels="CVaR", lwd=2, pos=2)
-var_max <- -0.06
-rangev <- (densv$x < varisk) &  (densv$x > var_max)
-polygon(c(var_max, densv$x[rangev], varisk),
-  c(0, densv$y[rangev], 0), col=rgb(1, 0, 0,0.5), border=NA)
-
-# Calculate VTI percentage returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
-confl <- 0.05
-# Calculate VaR as quantile
-varisk <- quantile(returns, probs=confl)
-# Or by sorting
-sortv <- sort(as.numeric(returns))
-indeks <- round(confl*NROW(returns))
-varisk <- sortv[indeks]
-# PerformanceAnalytics VaR
-PerformanceAnalytics::VaR(returns,
-  p=(1-confl), method="historical")
-all.equal(unname(varisk),
-  as.numeric(PerformanceAnalytics::VaR(returns,
-  p=(1-confl), method="historical")))
-
-x11(width=6, height=5)
-par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
-# Calculate VaR as quantile
-varisk <- quantile(returns, confl)
-# Calculate CVaR as expected loss
-cvar <- mean(returns[returns < varisk])
-# Or by sorting
-sortv <- sort(as.numeric(returns))
-indeks <- round(confl*NROW(returns))
-varisk <- sortv[indeks]
-cvar <- mean(sortv[1:indeks])
-# PerformanceAnalytics VaR
-PerformanceAnalytics::ETL(returns,
-  p=(1-confl), method="historical")
-all.equal(cvar,
-  as.numeric(PerformanceAnalytics::ETL(returns,
-  p=(1-confl), method="historical")))
-
-# Calculate the risk-return statistics
-risk_ret <-
-  PerformanceAnalytics::table.Stats(rutils::etfenv$returns)
-class(risk_ret)
-# Transpose the data frame
-risk_ret <- as.data.frame(t(risk_ret))
-# Add Name column
-risk_ret$Name <- rownames(risk_ret)
-# Add Sharpe ratio column
-risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
-# Sort on Sharpe ratio
-risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
-
-# Copy from rutils to save time
-risk_ret <- rutils::etfenv$riskstats
-# Add Sharpe ratio column
-risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
-# Sort on Sharpe ratio
-risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
-# Print data frame
-knitr::kable(risk_ret[, c("Sharpe", "Skewness", "Kurtosis")])
-
-# Print data frame
-knitr::kable(risk_ret[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
-
-# dygraph plot of VXX versus SVXY
-prices <- na.omit(rutils::etfenv$prices[, c("VXX", "SVXY")])
-prices <- prices["2017/"]
-colnamev <- c("VXX", "SVXY")
-colnames(prices) <- colnamev
-dygraphs::dygraph(prices, main="Prices of VXX and SVXY") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="green") %>%
-  dyLegend(show="always", width=500)
-
-# Remove VIX volatility ETF data
-risk_ret <- risk_ret[-match(c("VXX", "SVXY"), risk_ret$Name), ]
-# Plot scatterplot of Sharpe vs Skewness
-plot(Sharpe ~ Skewness, data=risk_ret,
-     ylim=1.1*range(risk_ret$Sharpe),
-     main="Sharpe vs Skewness")
-# Add labels
-text(x=risk_ret$Skewness, y=risk_ret$Sharpe,
-    labels=risk_ret$Name, pos=3, cex=0.8)
-# Plot scatterplot of Kurtosis vs Skewness
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-plot(Kurtosis ~ Skewness, data=risk_ret,
-     ylim=c(1, max(risk_ret$Kurtosis)),
-     main="Kurtosis vs Skewness")
-# Add labels
-text(x=risk_ret$Skewness, y=risk_ret$Kurtosis,
-    labels=risk_ret$Name, pos=1, cex=0.8)
-
-library(PerformanceAnalytics)
-returns <- rutils::etfenv$returns[, c("VTI", "IEF")]
-returns <- na.omit(returns)
-# Calculate the Sharpe ratio
-confl <- 0.05
-PerformanceAnalytics::SharpeRatio(returns, p=(1-confl),
-  method="historical")
-# Calculate the Sortino ratio
-PerformanceAnalytics::SortinoRatio(returns)
-# Calculate the Calmar ratio
-PerformanceAnalytics::CalmarRatio(returns)
-# Calculate the Dowd ratio
-PerformanceAnalytics::SharpeRatio(returns, FUN="VaR",
-  p=(1-confl), method="historical")
-# Calculate the Dowd ratio from scratch
-varisk <- sapply(returns, quantile, probs=confl)
--sapply(returns, mean)/varisk
-# Calculate the Conditional Dowd ratio
-PerformanceAnalytics::SharpeRatio(returns, FUN="ES",
-  p=(1-confl), method="historical")
-# Calculate the Conditional Dowd ratio from scratch
-cvar <- sapply(returns, function(x) {
-  mean(x[x < quantile(x, confl)])
-})
--sapply(returns, mean)/cvar
-
-# Calculate VTI percentage returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
-returns <- drop(zoo::coredata(returns))
-nrows <- NROW(returns)
-# Calculate compounded VTI returns
-holdp <- 252
-cumrets <- sqrt(holdp)*sapply(1:nrows, function(x) {
-    mean(returns[sample.int(nrows, size=holdp, replace=TRUE)])
-})  # end sapply
-# Calculate mean, standard deviation, skewness, and kurtosis
-datav <- cbind(returns, cumrets)
-colnames(datav) <- c("VTI", "Agg")
-apply(datav, MARGIN=2, function(x) {
-  # Standardize the returns
-  meanval <- mean(x); stddev <- sd(x); x <- (x - meanval)/stddev
-  c(mean=meanval, stddev=stddev, skew=mean(x^3), kurt=mean(x^4))
-})  # end sapply
-# Calculate the Sharpe and Dowd ratios
-confl <- 0.05
-sapply(colnames(datav), function(name) {
-  x <- datav[, name]; stddev <- sd(x)
-  varisk <- unname(quantile(x, probs=confl))
-  cvar <- mean(x[x < varisk])
-  ratio <- 1
-  if (name == colnames(datav)[2]) {ratio <- holdp}
-  sqrt(252/ratio)*mean(x)/c(Sharpe=stddev, Dowd=-varisk, DowdC=-cvar)
-})  # end sapply
-
-# Plot the densities of returns
-x11(width=6, height=5)
-par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
-plot(density(returns), t="l", lwd=3, col="blue",
-     xlab="returns", ylab="density", xlim=c(-0.04, 0.04),
-     main="Distribution of Compounded Stock Returns")
-lines(density(cumrets), t="l", col="red", lwd=3)
-curve(expr=dnorm(x, mean=mean(cumrets), sd=sd(cumrets)), col="green", lwd=3, add=TRUE)
-legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
- inset=-0.1, bg="white", lty=1, lwd=6, col=c("blue", "red", "green"), bty="n")

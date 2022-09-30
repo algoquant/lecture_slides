@@ -63,7 +63,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Data Management]{Data Management}
-\subtitle{FRE6871 \& FRE7241, Spring 2022}
+\subtitle{FRE6871 \& FRE7241, Fall 2022}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -1995,6 +1995,127 @@ save(pricets, file="pricets.RData")
 \end{frame}
 
 
+
+%%%%%%%%%%%%%%%
+\section{Market Databases}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{ETF} Database}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Exchange-traded Funds (\emph{ETFs}) are funds which invest in portfolios of assets, such as stocks, commodities, or bonds.
+      \vskip1ex
+      \emph{ETFs} are shares in portfolios of assets, and they are traded just like stocks.
+      \vskip1ex
+      \emph{ETFs} provide investors with convenient, low cost, and liquid instruments to invest in various portfolios of assets.
+      \vskip1ex
+      The file \texttt{etf\_list.csv} contains a database of exchange-traded funds (\emph{ETFs}) and exchange traded notes (\emph{ETNs}).
+      \vskip1ex
+      We will select a portfolio of \emph{ETFs} for illustrating various investment strategies.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=TRUE,size="tiny">>=
+# Select ETF symbols for asset allocation
+symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
+  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
+# Read etf database into data frame
+etflist <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etf_list.csv")
+rownames(etflist) <- etflist$Symbol
+# Select from etflist only those ETF's in symbolv
+etflist <- etflist[symbolv, ]
+# Shorten names
+etfnames <- sapply(etflist$Name, function(name) {
+  namesvplit <- strsplit(name, split=" ")[[1]]
+  namesvplit <- namesvplit[c(-1, -NROW(namesvplit))]
+  name_match <- match("Select", namesvplit)
+  if (!is.na(name_match))
+    namesvplit <- namesvplit[-name_match]
+  paste(namesvplit, collapse=" ")
+})  # end sapply
+etflist$Name <- etfnames
+etflist["IEF", "Name"] <- "10 year Treasury Bond Fund"
+etflist["TLT", "Name"] <- "20 plus year Treasury Bond Fund"
+etflist["XLY", "Name"] <- "Consumer Discr. Sector Fund"
+etflist["EEM", "Name"] <- "Emerging Market Stock Fund"
+etflist["MTUM", "Name"] <- "Momentum Factor Fund"
+etflist["SVXY", "Name"] <- "Short VIX Futures"
+etflist["VXX", "Name"] <- "Long VIX Futures"
+etflist["DBC", "Name"] <- "Commodity Futures Fund"
+etflist["USO", "Name"] <- "WTI Oil Futures Fund"
+etflist["GLD", "Name"] <- "Physical Gold Fund"
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{ETF} Portfolio for Investment Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The portfolio contains \emph{ETFs} representing different \emph{industry sectors} and \emph{investment styles}.
+      \vskip1ex
+      The \emph{ETFs} with names \emph{X*} represent industry \emph{sector funds} (energy, financial, etc.)
+      \vskip1ex
+      The \emph{ETFs} with names \emph{I*} represent \emph{style funds} (value, growth, size).
+      \vskip1ex
+      \emph{IWB} is the Russell 1000 small-cap fund.
+      \vskip1ex
+      \emph{MTUM} is an \emph{ETF} which owns a stock portfolio representing the \emph{momentum factor}.
+      \vskip1ex
+      \emph{DBC} is an \emph{ETF} providing the total return on a portfolio of commodity futures.
+      \vskip1ex
+      \emph{VXX} is an \emph{ETN} providing the total return of \emph{long VIX} futures contracts (specifically the \emph{S\&P} VIX Short-Term Futures Index).
+      \vskip1ex
+      \emph{VXX} is \emph{bearish} because it's \emph{long} VIX futures, and the VIX \emph{rises} when stock prices \emph{drop}.
+      \vskip1ex
+      \emph{SVXY} is an \emph{ETF} providing the total return of \emph{short VIX} futures contracts.
+      \vskip1ex
+      \emph{SVXY} is \emph{bullish} because it's \emph{short} VIX futures, and the VIX \emph{drops} when stock prices \emph{rise}.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=FALSE,eval=TRUE,results='asis'>>=
+print(xtable::xtable(etflist), comment=FALSE, size="tiny", include.rownames=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exchange Traded Notes (\protect\emph{ETNs})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{ETNs} are similar to \emph{ETFs}, with the difference that \emph{ETFs} are shares in a fund which owns the underlying assets, while \emph{ETNs} are notes from issuers which promise payouts according to a formula tied to the underlying asset.
+      \vskip1ex
+      \emph{ETFs} are similar to mutual funds, while \emph{ETNs} are similar to corporate bonds.
+      \vskip1ex
+      \emph{ETNs} are technically unsecured corporate debt, but instead of fixed coupons, they promise to provide returns on a market index or futures contract.
+      \vskip1ex
+      The \emph{ETN} issuer promises the payout and is responsible for tracking the index.
+      \vskip1ex
+      The \emph{ETN} investor has counterparty credit risk to the \emph{ETN} issuer.
+    \column{0.5\textwidth}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 %%%%%%%%%%%%%%%
 \subsection{Downloading ETF Prices Using Package \protect\emph{quantmod}}
 \begin{frame}[fragile,t]{\subsecname}
@@ -2361,23 +2482,23 @@ assign("prices", rutils::do_call(cbind,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The file \texttt{sp500\_WRDS\_08-30-17.csv} contains a \emph{data frame} of \emph{S\&P500} constituents.
+      The file \texttt{sp500\_constituents.csv} contains a \emph{data frame} of \emph{S\&P500} constituents.
       \vskip1ex
-      The stock tickers are stored in the column \texttt{"co\_tic"}.
+      The stock tickers are stored in the column \texttt{"Ticker"}.
       \vskip1ex
       The \emph{data frame} contains duplicate tickers, which must be removed.
       \vskip1ex
-      Some tickers (like "BRK.B") are not valid symbols in \texttt{R}, so they must be downloaded separately.
+      Some tickers (like "BRK.B" and "BF.B") are not valid symbols in \emph{Tiingo}, so they must be renamed.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load data frame of S&P500 constituents from CSV file
-sp500 <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_WRDS_08-30-17.csv")
+sp500 <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
 # Inspect data frame of S&P500 constituents
 dim(sp500)
 colnames(sp500)
-# Extract tickers from the column co_tic
-symbolv <- sp500$co_tic
+# Extract tickers from the column Ticker
+symbolv <- sp500$Ticker
 # Get duplicate tickers
 tablev <- table(symbolv)
 duplicates <- tablev[tablev>1]
@@ -2388,8 +2509,9 @@ sp500[symbolv %in% duplicates, ]
 symbolv <- unique(symbolv)
 # Find index of ticker "BRK.B"
 which(symbolv=="BRK.B")
-# Remove "BRK.B" and later download it separately
-symbolv <- symbolv[-which(symbolv=="BRK.B")]
+# Rename "BRK.B" to "BRK-B" and "BF.B" to "BF-B"
+symbolv[which(symbolv=="BRK.B")] <- "BRK-B"
+symbolv[which(symbolv=="BF.B")] <- "BF-B"
 @
   \end{columns}
 \end{block}
@@ -2425,7 +2547,7 @@ sp500env <- new.env()
 isdownloaded <- symbolv %in% ls(sp500env)
 # Download in while loop from Tiingo and copy into environment
 nattempts <- 0  # Number of download attempts
-while (((sum(!isdownloaded)) > 0) & (nattempts<5)) {
+while (((sum(!isdownloaded)) > 0) & (nattempts<3)) {
   # Download data and copy it into environment
   nattempts <- nattempts + 1
   cat("Download attempt = ", nattempts, "\n")
@@ -2448,7 +2570,44 @@ while (((sum(!isdownloaded)) > 0) & (nattempts<5)) {
 class(sp500env$AAPL)
 class(zoo::index(sp500env$AAPL))
 tail(sp500env$AAPL)
+symbolv[!isdownloaded]
 @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Date-time Indices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The date-time indices of the \emph{OHLC} stock prices are in the \texttt{POSIXct} format suitable for intraday prices, not daily prices.
+      \vskip1ex
+      The function \texttt{as.Date()} coerces \texttt{POSIXct} objects into \texttt{Date} objects.
+      \vskip1ex
+      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names.
+      \vskip1ex
+      The function \texttt{assign()} assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name).
+      \vskip1ex
+      The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# The date-time index of AAPL is POSIXct
+class(zoo::index(sp500env$AAPL))
+# Coerce the date-time index of AAPL to Date
+zoo::index(sp500env$AAPL) <- as.Date(zoo::index(sp500env$AAPL))
+# Coerce all the date-time indices to Date
+for (symbol in ls(sp500env)) {
+  ohlc <- get(symbol, envir=sp500env)
+  zoo::index(ohlc) <- as.Date(zoo::index(ohlc))
+  assign(symbol, ohlc, envir=sp500env)
+}  # end for
+      @
   \end{columns}
 \end{block}
 
@@ -2514,6 +2673,91 @@ dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices"
 
 
 %%%%%%%%%%%%%%%
+\subsection{\protect\emph{S\&P500} Stock Index Constituent Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The file \texttt{sp500.RData} contains the \emph{environment} \texttt{sp500\_env} with \emph{OHLC} prices and trading volumes of \emph{S\&P500} stock index constituents.
+      \vskip1ex
+      The \emph{S\&P500} stock index constituent data is of poor quality before \texttt{2000}, so we'll mostly use the data after the year \texttt{2000}.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 constituent stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+pricets <- eapply(sp500env, quantmod::Cl)
+pricets <- rutils::do_call(cbind, pricets)
+# Carry forward non-NA prices
+pricets <- zoo::na.locf(pricets, na.rm=FALSE)
+# Drop ".Close" from column names
+colnames(pricets[, 1:4])
+colnames(pricets) <- rutils::get_name(colnames(pricets))
+# Or
+# colnames(pricets) <- do.call(rbind,
+#   strsplit(colnames(pricets), split="[.]"))[, 1]
+# Calculate percentage returns of the S&P500 constituent stocks
+# retsp <- xts::diff.xts(log(pricets))
+retsp <- xts::diff.xts(pricets)/
+  rutils::lagit(pricets, pad_zeros=FALSE)
+set.seed(1121)
+samplev <- sample(NCOL(retsp), s=100, replace=FALSE)
+prices100 <- pricets[, samplev]
+returns100 <- retsp[, samplev]
+save(pricets, prices100,
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+save(retsp, returns100,
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_without_prices.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate number of constituents without prices
+datav <- rowSums(is.na(pricets))
+datav <- xts::xts(datav, order.by=zoo::index(pricets))
+dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{S\&P500} Stock Portfolio Index}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The price-weighted index of \emph{S\&P500} constituents closely follows the VTI \emph{ETF}.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate price weighted index of constituent
+ncols <- NCOL(pricets)
+pricets <- zoo::na.locf(pricets, fromLast=TRUE)
+indeks <- xts(rowSums(pricets)/ncols, zoo::index(pricets))
+colnames(indeks) <- "index"
+# Combine index with VTI
+datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
+colnamev <- c("index", "VTI")
+colnames(datav) <- colnamev
+# Plot index with VTI
+dygraphs::dygraph(datav,
+  main="S&P 500 Price-weighted Index and VTI") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="red") %>%
+  dySeries(name=colnamev[2], axis="y2", col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_portfolio_index.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Writing Time Series To Files}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -2521,8 +2765,6 @@ dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices"
   \begin{columns}[T]
     \column{0.5\textwidth}
       The data from \emph{Tiingo} is downloaded as \texttt{xts} time series, with a date-time index of class \texttt{POSIXct} (not \texttt{Date}).
-      \vskip1ex
-      The function \texttt{as.Date()} parses \texttt{character} strings, and coerces \texttt{numeric}  and \texttt{POSIXct} objects into \texttt{Date} objects.
       \vskip1ex
       The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
       \vskip1ex
@@ -2535,17 +2777,7 @@ dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices"
       The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{278} times faster than function \texttt{cat()}!
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-class(sp500env$AAPL)
-# The date-time index is class POSIXct not Date
-class(zoo::index(sp500env$AAPL))
-# Coerce time indices from class POSIXct to class Date
-for (symbol in ls(sp500env)) {
-  xtsv <- get(symbol, envir=sp500env)
-  zoo::index(xtsv) <- as.Date(zoo::index(xtsv))
-  assign(symbol, xtsv, envir=sp500env)
-}  # end for
-class(zoo::index(sp500env$AAPL))
+      <<echo=TRUE,eval=FALSE>>=
 # Save the environment to compressed .RData file
 dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
 save(sp500env, file=paste0(dir_name, "sp500.RData"))
@@ -2588,7 +2820,7 @@ unlist(file_names)
       \vskip1ex
       The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
       \vskip1ex
-      The function \texttt{as.Date()} parses \texttt{character} strings, and coerces \texttt{numeric}  and \texttt{POSIXct} objects into \texttt{Date} objects.
+      The function \texttt{as.Date()} parses \texttt{character} strings, and coerces \texttt{numeric} and \texttt{POSIXct} objects into \texttt{Date} objects.
       \vskip1ex
       The function \texttt{data.table::setDF()} coerces a \emph{data table} object into a \emph{data frame} using a \emph{side effect}, without making copies of data.
       \vskip1ex

@@ -96,7 +96,7 @@ getOption("stringsAsFactors")  # Display option
 options("stringsAsFactors")  # Display option
 options(stringsAsFactors=FALSE)  # Set option
 # number of digits printed for numeric values
-
+options(digits=3)
 # control exponential scientific notation of print method
 # positive "scipen" values bias towards fixed notation
 # negative "scipen" values bias towards scientific notation
@@ -398,30 +398,30 @@ vectorv[vectorv > 0.5]  # Filter elements > 0.5
 which(vectorv > 0.5)  # Index of elements > 0.5
 
 # Create factor vector
-ratio <- factor(c("b", "c", "d", "a", "c", "b"))
-ratio
-ratio[3]
+factorv <- factor(c("b", "c", "d", "a", "c", "b"))
+factorv
+factorv[3]
 # Get factor attributes
-attributes(ratio)
+attributes(factorv)
 # Get allowed values
-levels(ratio)
+levels(factorv)
 # Get encoding vector
-as.numeric(ratio)
-is.vector(ratio)
+as.numeric(factorv)
+is.vector(factorv)
 # Coerce vector to factor
 as.factor(1:5)
 # Coerce factor to character vector
 as.vector(as.factor(1:5))
 
-ratio
+factorv
 # Get unique elements
-unique(ratio)
+unique(factorv)
 # Get levels attribute of the factor
-levels(ratio)
+levels(factorv)
 # Calculate the factor elements from its levels
-levels(ratio)[as.numeric(ratio)]
+levels(factorv)[as.numeric(factorv)]
 # Get contingency (frequency) table
-table(ratio)
+table(factorv)
 
 # Display the formal arguments of findInterval
 args(findInterval)
@@ -471,8 +471,9 @@ returns <- na.omit(rutils::etfenv$returns$VTI)
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+madv <- mad(returns)
 histp <- hist(returns, breaks=100,
-  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
+  main="", xlim=c(-5*madv, 5*madv),
   xlab="", ylab="", freq=FALSE)
 
 # Draw kernel density of histogram
@@ -531,7 +532,7 @@ rm(list=ls())
 TRUE | FALSE
 TRUE | NA
 vector1 <- c(2, 4, 6)
-vector1 < 5  # element-wise comparison
+vector1 < 5  # Element-wise comparison
 (vector1 < 5) & (vector1 > 3)
 vector1[(vector1 < 5) & (vector1 > 3)]
 vector2 <- c(-10, 0, 10)
@@ -547,19 +548,19 @@ echo_false <- function() {cat("echo_false\t"); FALSE}
 echo_true() | echo_false()
 echo_true() || echo_false()  # echo_false() isn't evaluated at all!
 vectorv <- c(2, 4, 6)
-# works (does nothing) using '&&'
+# Works (does nothing) using '&&'
 if (is.matrix(vectorv) && (vectorv[2, 3] > 0)) {
   vectorv[2, 3] <- 1
 }
-# no short-circuit so fails (produces an error)
+# No short-circuit so fails (produces an error)
 if (is.matrix(vectorv) & (vectorv[2, 3] > 0)) {
   vectorv[2, 3] <- 1
 }
 
 ?Arithmetic
-4.7 * 0.5  # multiplication
+4.7 * 0.5  # Multiplication
 4.7 / 0.5  # division
-# exponentiation
+# Exponentiation
 2**3
 2^3
 
@@ -568,7 +569,7 @@ numv==2
 identical(numv, 2)
 
 identical(numv, NULL)
-# this doesn't work:
+# This doesn't work:
 # numv==NULL
 is.null(numv)
 
@@ -580,59 +581,69 @@ identical(vectorv, 2)
 numv <- 1.0 + 2*sqrt(.Machine$double.eps)
 all.equal(numv, 1.0)
 
-# info machine precision of computer R is running on
+# Info machine precision of computer R is running on
 # ?.Machine
-# machine precision
+# Machine precision
 .Machine$double.eps
 
-vectorv <- sample(1:6, 21, replace=TRUE)
-matrixv <- matrix(vectorv, ncol=3)
-vectorv
+vectorv <- sample(1e3, 1e3)
+matrixv <- matrix(vectorv, ncol=4)
 which(vectorv == 5)
-# equivalent but slower than above
+match(5, vectorv)
+# Equivalent but slower than above
 (1:NROW(vectorv))[vectorv == 5]
-which(vectorv > 5)
-# find indices of TRUE elements of Boolean matrix
+which(vectorv < 5)
+# Find indices of TRUE elements of Boolean matrix
 which((matrixv == 5)|(matrixv == 6), arr.ind=TRUE)
-# equivalent but slower than above
+# Equivalent but slower than above
 arrayInd(which((matrixv == 5)|(matrixv == 6)),
    dim(matrixv), dimnames(matrixv))
+# Find index of largest element
 which.max(vectorv)
-# equivalent but slower than above
 which(vectorv == max(vectorv))
+# Find index of smallest element
 which.min(vectorv)
+# Benchmark match() versus which()
+all.equal(match(5, vectorv),
+    min(which(vectorv == 5)))
+library(microbenchmark)
+summary(microbenchmark(
+  match=match(5, vectorv),
+  which=min(which(vectorv == 5)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-match(5, vectorv)
-# more general but slower than above
-which(vectorv == 5)
-match(-5, vectorv)
+# Does 5 belong in vectorv?
 5 %in% vectorv
-# equivalent to above
 match(5, vectorv, nomatch=0) > 0
--5 %in% vectorv
+# Does (-5) belong in vectorv?
+(-5) %in% vectorv
 c(5, -5) %in% vectorv
-# equivalent to "5 %in% vectorv"
+match(-5, vectorv)
+# Equivalent to "5 %in% vectorv"
 any(vectorv == 5)
-# equivalent to "-5 %in% vectorv"
+# Equivalent to "(-5) %in% vectorv"
 any(vectorv == (-5))
-if (any(vectorv < 0))
-  cat("vector contains negative values\n")
-# partial matching of strings
+# Any negative values in vectorv?
+any(vectorv < 0)
+# Example of use in if() statement
+if (any(vectorv < 2))
+  cat("vector contains small values\n")
+# Partial matching of strings
 pmatch("med", c("mean", "median", "mode"))
 
 str(findInterval)
-# get index of the element of "vec" that matches 5
+# Get index of the element of "vec" that matches 5
 findInterval(x=5, vec=c(3, 5, 7))
 match(5, c(3, 5, 7))
-# no exact match
+# No exact match
 findInterval(x=6, vec=c(3, 5, 7))
 match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
+# Indices of "vec" that match elements of "x"
 findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
+# Return only indices of inside intervals
 findInterval(x=1:8, vec=c(3, 5, 7),
        all.inside=TRUE)
-# make rightmost interval inclusive
+# Make rightmost interval inclusive
 findInterval(x=1:8, vec=c(3, 5, 7),
        rightmost.closed=TRUE)
 
@@ -641,7 +652,7 @@ numv1
 numv1 = 3
 numv1
 2<-3  # "<" operator confused with "<-"
-2 < -3  # add space or brackets to avoid confusion
+2 < -3  # Add space or brackets to avoid confusion
 # "=" assignment within argument list
 median(x=1:10)
 x  # x doesn't exist outside the function
@@ -649,32 +660,32 @@ x  # x doesn't exist outside the function
 median(x <- 1:10)
 x  # x exists outside the function
 
-myvar <- 1  # create new object
-assign(x="myvar", value=2)  # assign value to existing object
+myvar <- 1  # Create new object
+assign(x="myvar", value=2)  # Assign value to existing object
 myvar
-rm(myvar)  # remove myvar
-assign(x="myvar", value=3)  # create new object from name
+rm(myvar)  # Remove myvar
+assign(x="myvar", value=3)  # Create new object from name
 myvar
-# create new object in new environment
-new_env <- new.env()  # create new environment
-assign("myvar", 3, envir=new_env)  # assign value to name
-ls(new_env)  # list objects in "new_env"
+# Create new object in new environment
+new_env <- new.env()  # Create new environment
+assign("myvar", 3, envir=new_env)  # Assign value to name
+ls(new_env)  # List objects in "new_env"
 new_env$myvar
 rm(list=ls())  # delete all objects
 symbol <- "myvar"  # define symbol containing string "myvar"
-assign(symbol, 1)  # assign value to "myvar"
+assign(symbol, 1)  # Assign value to "myvar"
 ls()
 myvar
 assign("symbol", "new_var")
-assign(symbol, 1)  # assign value to "new_var"
+assign(symbol, 1)  # Assign value to "new_var"
 ls()
 symbol <- 10
-assign(symbol, 1)  # can't assign to non-string
+assign(symbol, 1)  # Can't assign to non-string
 
 rm(list=ls())  # delete all objects
-# create individual vectors from column names of EuStockMarkets
+# Create individual vectors from column names of EuStockMarkets
 for (colname in colnames(EuStockMarkets)) {
-# assign column values to column names
+# Assign column values to column names
   assign(colname, EuStockMarkets[, colname])
 }  # end for
 ls()
@@ -682,24 +693,24 @@ head(DAX)
 head(EuStockMarkets[, "DAX"])
 identical(DAX, EuStockMarkets[, "DAX"])
 
-# create new environment
+# Create new environment
 test_env <- new.env()
-# pass string as name to create new object
+# Pass string as name to create new object
 assign("myvar1", 2, envir=test_env)
-# create new object using $ string referencing
+# Create new object using $ string referencing
 test_env$myvar2 <- 1
-# list objects in new environment
+# List objects in new environment
 ls(test_env)
-# reference an object by name
+# Reference an object by name
 test_env$myvar1
-# reference an object by string name using get
+# Reference an object by string name using get
 get("myvar1", envir=test_env)
-# retrieve and assign value to object
+# Retrieve and assign value to object
 assign("myvar1",
        2*get("myvar1", envir=test_env),
        envir=test_env)
 get("myvar1", envir=test_env)
-# return all objects in an environment
+# Return all objects in an environment
 mget(ls(test_env), envir=test_env)
 # delete environment
 rm(test_env)
@@ -802,8 +813,7 @@ for (i in seq_along(vectorv))
   vectorv[i] <- i^2
 
 # sapply() loop returns vector of values
-vectorv <- sapply(seq_along(vectorv), 
-          function(x) (x^2))
+vectorv <- sapply(seq_along(vectorv), function(x) (x^2))
 
 rm(list=ls())
 # fib_seq <- numeric()  # zero length numeric vector
@@ -816,154 +826,162 @@ for (i in 3:10) {  # perform recurrence loop
 }  # end for
 fib_seq
 
-# allocate character vector
+# Allocate character vector
 character()
 character(5)
 is.character(character(5))
-# allocate integer vector
+# Allocate integer vector
 integer()
 integer(5)
 is.integer(integer(5))
 is.numeric(integer(5))
-# allocate numeric vector
+# Allocate numeric vector
 numeric()
 numeric(5)
 is.integer(numeric(5))
 is.numeric(numeric(5))
-# allocate Boolean vector
+# Allocate Boolean vector
 vector()
 vector(length=5)
-# allocate numeric vector
+# Allocate numeric vector
 vector(length=5, mode="numeric")
 is.null(vector())
-# allocate Boolean matrix
+# Allocate Boolean matrix
 matrix()
 is.null(matrix())
-# allocate integer matrix
+# Allocate integer matrix
 matrix(NA_integer_, nrow=3, ncol=2)
 is.integer(matrix(NA_integer_, nrow=3, ncol=2))
-# allocate numeric matrix
+# Allocate numeric matrix
 matrix(NA_real_, nrow=3, ncol=2)
 is.numeric(matrix(NA_real_, nrow=3, ncol=2))
 
 vectorv <- sample(1:9)
 vectorv
-vectorv < 5  # element-wise comparison
-vectorv == 5  # element-wise comparison
+vectorv < 5  # Element-wise comparison
+vectorv == 5  # Element-wise comparison
 matrixv <- matrix(vectorv, ncol=3)
 matrixv
-matrixv < 5  # element-wise comparison
-matrixv == 5  # element-wise comparison
+matrixv < 5  # Element-wise comparison
+matrixv == 5  # Element-wise comparison
 
-matrixv <- 1:6  # create a vector
-class(matrixv)  # get its class
-# is it vector or matrix?
+matrixv <- 1:6  # Create a vector
+class(matrixv)  # Get its class
+# Is it vector or matrix?
 c(is.vector(matrixv), is.matrix(matrixv))
-structure(matrixv, dim=c(2, 3))  # matrix object
-# adding dimension attribute coerces into matrix
+structure(matrixv, dim=c(2, 3))  # Matrix object
+# Adding dimension attribute coerces into matrix
 dim(matrixv) <- c(2, 3)
-class(matrixv)  # get its class
-# is it vector or matrix?
+class(matrixv)  # Get its class
+# Is it vector or matrix?
 c(is.vector(matrixv), is.matrix(matrixv))
-# assign dimnames attribute
+# Assign dimnames attribute
 dimnames(matrixv) <- list(rows=c("row1", "row2"),
             columns=c("col1", "col2", "col3"))
 matrixv
 
-matrixv <- matrix(1:10, 2, 5)  # create matrix
+matrixv <- matrix(1:10, 2, 5)  # Create matrix
 matrixv
 # as.numeric strips dim attribute from matrix
 as.numeric(matrixv)
-# explicitly coerce to "character"
+# Explicitly coerce to "character"
 matrixv <- as.character(matrixv)
 c(typeof(matrixv), mode(matrixv), class(matrixv))
-# coercion converted matrix to vector
+# Coercion converted matrix to vector
 c(is.matrix(matrixv), is.vector(matrixv))
 
-vector1 <- 1:3  # define vector
-vector2 <- 6:4  # define vector
-# bind vectors into columns
+vector1 <- 1:3  # Define vector
+vector2 <- 6:4  # Define vector
+# Bind vectors into columns
 cbind(vector1, vector2)
-# bind vectors into rows
+# Bind vectors into rows
 rbind(vector1, vector2)
-# extend to four elements
+# Extend to four elements
 vector2 <- c(vector2, 7)
-# recycling rule applied
+# Recycling rule applied
 cbind(vector1, vector2)
-# another example of recycling rule
+# Another example of recycling rule
 1:6 + c(10, 20)
 
-# replicate a single element
+# Replicate a single element
 rep("a", 5)
-# replicate the whole vector several times
+# Replicate the whole vector several times
 rep(c("a", "b"), 5)
 rep(c("a", "b"), times=5)
-# replicate the first element, then the second, etc.
+# Replicate the first element, then the second, etc.
 rep(c("a", "b"), each=5)
-# replicate to specified length
+# Replicate to specified length
 rep(c("a", "b"), length.out=5)
 
-# define vector and matrix
+# Define vector and matrix
 vector1 <- c(2, 4, 3)
 matrixv <- matrix(sample(1:12), ncol=3)
-# multiply matrix by vector column-wise
-vector1 * matrixv
-matrixv * vector1
-# multiply matrix by vector row-wise
-t(vector1 * t(matrixv))
-
-foo <- lapply(1:NROW(matrixv), function(r) vector1*matrixv[r, ])
-foo <- do.call(rbind, foo)
+# Multiply columns of matrix by vector
+vector1*matrixv
+# Or
+matrixv*vector1
+# Multiply rows of matrix by vector
+t(vector1*t(matrixv))
+# Multiply rows of matrix by vector - transpose is very slow
+product <- lapply(1:NCOL(matrixv), 
+  function(x) vector1[x]*matrixv[, x])
+do.call(cbind, product)
+library(microbenchmark)
+summary(microbenchmark(
+  trans=t(vector1*t(matrixv)),
+  lapp={
+    product <- lapply(1:NCOL(matrixv), function(x) vector1[x]*matrixv[, x])
+    do.call(cbind, product)
+  },
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 vector1
-vector2 <- 6:4  # define vector
-# multiply two vectors element-by-element
+vector2 <- 6:4  # Define vector
+# Multiply two vectors element-by-element
 vector1 * vector2
-# calculate inner product
+# Calculate inner product
 vector1 %*% vector2
-# calculate inner product and drop dimensions
+# Calculate inner product and drop dimensions
 drop(vector1 %*% vector2)
-# multiply columns of matrix by vector
-matrixv %*% vector1  # single column matrix
+# Multiply columns of matrix by vector
+matrixv %*% vector1  # Single column matrix
 drop(matrixv %*% vector1)  # vector
 rowSums(t(vector1 * t(matrixv)))
 # using rowSums() and t() is 10 times slower than %*%
 library(microbenchmark)
 summary(microbenchmark(
-  in_ner=drop(matrixv %*% vector1),
-  rowsumv=rowSums(t(vector1 * t(matrixv))),
+  inner=drop(matrixv %*% vector1),
+  transp=rowSums(t(vector1 * t(matrixv))),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 library(microbenchmark)
-# multiply matrix by vector fails because dimensions aren't conformable
+# Multiply matrix by vector fails because dimensions aren't conformable
 vector1 %*% matrixv
-# works after transpose
+# Works after transpose
 drop(vector1 %*% t(matrixv))
-# calculate inner product
+# Calculate inner product
 crossprod(vector1, vector2)
-# create matrix and vector
+# Create matrix and vector
 matrixv <- matrix(1:3000, ncol=3)
 tmatrixv <- t(matrixv)
 vectorv <- 1:3
-# crossprod is slightly faster than "%*%" operator
+# crossprod() is slightly faster than "%*%" operator
 summary(microbenchmark(
   cross_prod=crossprod(tmatrixv, vectorv),
   inner_prod=matrixv %*% vectorv,
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-# define named vectors
+# Define named vectors
 vector1 <- sample(1:4)
-names(vector1) <-
-  paste0("row", 1:4, "=", vector1)
+names(vector1) <- paste0("row", 1:4, "=", vector1)
 vector1
 vector2 <- sample(1:3)
-names(vector2) <-
-  paste0("col", 1:3, "=", vector2)
+names(vector2) <- paste0("col", 1:3, "=", vector2)
 vector2
-# calculate outer product of two vectors
+# Calculate outer product of two vectors
 matrixv <- outer(vector1, vector2)
 matrixv
-# calculate vectorized function spanned over two vectors
+# Calculate vectorized function spanned over two vectors
 matrixv <- outer(vector1, vector2,
            FUN=function(x1, x2) x2*sin(x1))
 matrixv
@@ -1051,7 +1069,7 @@ calc_skew <- function(returns=rnorm(1000)) {
   # Standardize returns
   returns <- (returns - mean(returns))/sd(returns)
   # Calculate skew - last statement automatically returned
- .n_rows*sum(returns^3)/((nrows-1)*(nrows-2))
+  nrows*sum(returns^3)/((nrows-1)*(nrows-2))
 }  # end calc_skew
 
 # Calculate skew of DAX returns
@@ -1209,7 +1227,7 @@ testfun <- function(func_name) {
 testfun(mean)
 testfun(sd)
 
-# Func_tional accepts function name and additional argument
+# Functional accepts function name and additional argument
 testfun <- function(func_name, input) {
 # Produce function name from argument
   func_name <- match.fun(func_name)
@@ -1220,10 +1238,10 @@ testfun(sqrt, 4)
 # String also works because match.fun() converts it to a function
 testfun("sqrt", 4)
 str(sum)  # Sum() accepts multiple arguments
-# Func_tional can't accept indefinite number of arguments
+# Functional can't accept indefinite number of arguments
 testfun(sum, 1, 2, 3)
 
-# Func_tional accepts function name and dots '...' argument
+# Functional accepts function name and dots '...' argument
 testfun <- function(func_name, ...) {
   func_name <- match.fun(func_name)
   func_name(...)  # Execute function call
@@ -1233,8 +1251,7 @@ testfun(sum, 1, 2, NA, 4, 5)
 testfun(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
 # Function with three arguments and dots '...' arguments
 testfun <- function(input, param1, param2, ...) {
-  c(input=input, param1=param1, param2=param2,
-dots=c(...))
+  c(input=input, param1=param1, param2=param2, dots=c(...))
 }  # end testfun
 testfun(1, 2, 3, param2=4, param1=5)
 testfun(testfun, 1, 2, 3, param2=4, param1=5)
@@ -1267,7 +1284,7 @@ str(do.call)  # "what" argument is a function
 do.call(sum, list(1, 2, 3))
 do.call(sum, list(1, 2, NA, 3))
 do.call(sum, list(1, 2, NA, 3, na.rm=TRUE))
-# Func_tional() accepts list with function name and arguments
+# Functional accepts list with function name and arguments
 testfun <- function(list_arg) {
 # Produce function name from argument
   func_name <- match.fun(list_arg[[1]])
@@ -1276,7 +1293,7 @@ testfun <- function(list_arg) {
 }  # end testfun
 arg_list <- list("sum", 1, 2, 3)
 testfun(arg_list)
-# Do_call() performs same operation as do.call()
+# do_call() performs same operation as do.call()
 all.equal(
   do.call(sum, list(1, 2, NA, 3, na.rm=TRUE)),
   rutils::do_call(sum, list(1, 2, NA, 3), na.rm=TRUE))
@@ -1316,16 +1333,16 @@ str(moment)  # Get list of arguments
 # Apply moment function
 moment(x=returns, order=3)
 # 4x1 matrix of moment orders
-moment_orders <- as.matrix(1:4)
+morderv <- as.matrix(1:4)
 # Anonymous function allows looping over function parameters
-apply(X=moment_orders, MARGIN=1,
+apply(X=morderv, MARGIN=1,
       FUN=function(moment_order) {
   moment(x=returns, order=moment_order)
 }  # end anonymous function
       )  # end apply
 
 # Another way of passing parameters into moment() function
-apply(X=moment_orders, MARGIN=1, FUN=moment, x=returns)
+apply(X=morderv, MARGIN=1, FUN=moment, x=returns)
 
 # Function with three arguments
 testfun <- function(arg1, arg2, arg3) {
@@ -1388,11 +1405,11 @@ yvar <- dnorm(xvar, mean=1.0, sd=2.0)
 plot(xvar, yvar, type="l", lty="solid",
      xlab="", ylab="")
 title(main="Normal Density Function", line=0.5)
-startd <- 3; fin_ish <- 5  # Set lower and upper bounds
+startp <- 3; endp <- 5  # Set lower and upper bounds
 # Set polygon base
-are_a <- ((xvar >= startd) & (xvar <= fin_ish))
-polygon(c(startd, xvar[are_a], fin_ish),  # Draw polygon
-  c(-1, yvar[are_a], -1), col="red")
+subv <- ((xvar >= startp) & (xvar <= endp))
+polygon(c(startp, xvar[subv], endp),  # Draw polygon
+  c(-1, yvar[subv], -1), col="red")
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values

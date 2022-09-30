@@ -60,7 +60,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Numerical Analysis]{Numerical Analysis}
-\subtitle{FRE6871 \& FRE7241, Spring 2022}
+\subtitle{FRE6871 \& FRE7241, Fall 2022}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -735,7 +735,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \texttt{R} performs automatic memory management as users assign values to objects.
       \vskip1ex
-      \texttt{R} doesn't require allocating the full memory for vectors or listv, and allows appending new data to existing objects ("growing" them).
+      \texttt{R} doesn't require allocating the full memory for vectors or lists, and allows appending new data to existing objects ("growing" them).
       \vskip1ex
       For example, \texttt{R} allows assigning a value to a vector element that doesn't exist yet.
       \vskip1ex
@@ -1145,7 +1145,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \texttt{R} performs automatic memory management as users assign values to objects.
       \vskip1ex
-      \texttt{R} doesn't require allocating the full memory for vectors or listv, and allows appending new data to existing objects ("growing" them).
+      \texttt{R} doesn't require allocating the full memory for vectors or lists, and allows appending new data to existing objects ("growing" them).
       \vskip1ex
       For example, \texttt{R} allows assigning a value to a vector element that doesn't exist yet.
       \vskip1ex
@@ -1511,7 +1511,7 @@ set.seed(1121)
 sapply(stdevs, rnorm, n=2, mean=0)
 # Loop over means
 set.seed(1121)
-sapply(means, function(me_an) rnorm(n=2, mean=me_an))
+sapply(means, function(meanv) rnorm(n=2, mean=meanv))
 # Same
 set.seed(1121)
 sapply(means, rnorm, n=2)
@@ -2122,19 +2122,19 @@ nrows <- 1000; datav <- rnorm(nrows)
 mean(datav); sd(datav)
 # Bootstrap of sample mean and median
 nboot <- 10000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   # Sample from Standard Normal Distribution
   samplev <- rnorm(nrows)
   c(mean=mean(samplev), median=median(samplev))
 })  # end sapply
-boot_data[, 1:3]
-boot_data <- t(boot_data)
+bootd[, 1:3]
+bootd <- t(bootd)
 # Standard error from formula
 sd(datav)/sqrt(nrows)
 # Standard error of mean from bootstrap
-sd(boot_data[, "mean"])
+sd(bootd[, "mean"])
 # Standard error of median from bootstrap
-sd(boot_data[, "median"])
+sd(bootd[, "median"])
       @
   \end{columns}
 \end{block}
@@ -2164,10 +2164,10 @@ sd(boot_data[, "median"])
       <<echo=TRUE,eval=FALSE>>=
 # Plot the densities of the bootstrap data
 x11(width=6, height=5)
-plot(density(boot_data[, "mean"]), lwd=3, xlab="Estimator Value",
+plot(density(bootd[, "mean"]), lwd=3, xlab="Estimator Value",
      main="Distribution of Bootstrapped Mean and Median", col="green")
-lines(density(boot_data[, "median"]), lwd=3, col="blue")
-abline(v=mean(boot_data[, "mean"]), lwd=2, col="red")
+lines(density(bootd[, "median"]), lwd=3, col="blue")
+abline(v=mean(bootd[, "mean"]), lwd=2, col="red")
 legend("topright", inset=0.05, cex=0.8, title=NULL,
        leg=c("mean", "median"), bty="n",
        lwd=6, bg="white", col=c("green", "blue"))
@@ -2198,13 +2198,13 @@ set.seed(1121)  # Reset random number generator
 nrows <- 1000
 # Bootstrap of sample mean and median
 nboot <- 100
-boot_data <- sapply(1:nboot, function(x) median(rnorm(nrows)))
+bootd <- sapply(1:nboot, function(x) median(rnorm(nrows)))
 # Perform vectorized bootstrap
 set.seed(1121)  # Reset random number generator
 # Calculate matrix of random data
 samplev <- matrix(rnorm(nboot*nrows), ncol=nboot)
-boot_vec <- Rfast::colMedians(samplev)
-all.equal(boot_data, boot_vec)
+bootv <- Rfast::colMedians(samplev)
+all.equal(bootd, bootv)
 # Compare speed of loops with vectorized R code
 library(microbenchmark)
 summary(microbenchmark(
@@ -2254,20 +2254,20 @@ set.seed(1121)  # Reset random number generator
 nrows <- 1000
 # Bootstrap mean and median under Windows
 nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, datav, nrows) {
   samplev <- rnorm(nrows)
   c(mean=mean(samplev), median=median(samplev))
   }, datav=datav, nrows*nrows)  # end parLapply
 # Bootstrap mean and median under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot,
+bootd <- mclapply(1:nboot,
   function(x) {
   samplev <- rnorm(nrows)
   c(mean=mean(samplev), median=median(samplev))
   }, mc.cores=ncores)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x) 
+apply(bootd, MARGIN=2, function(x) 
   c(mean=mean(x), stderror=sd(x)))
 # Standard error from formula
 sd(datav)/sqrt(nrows)
@@ -2309,35 +2309,35 @@ median(abs(datav - median(datav)))
 median(abs(datav - median(datav)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 nboot <- 10000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   samplev <- rnorm(nrows)
   c(sd=sd(samplev), mad=mad(samplev))
 })  # end sapply
-boot_data <- t(boot_data)
+bootd <- t(bootd)
 # Analyze bootstrapped variance
-head(boot_data)
-sum(is.na(boot_data))
+head(bootd)
+sum(is.na(bootd))
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x) 
+apply(bootd, MARGIN=2, function(x) 
   c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, datav) {
     samplev <- rnorm(nrows)
     c(sd=sd(samplev), mad=mad(samplev))
   }, datav=datav)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
+bootd <- mclapply(1:nboot, function(x) {
   samplev <- rnorm(nrows)
   c(sd=sd(samplev), mad=mad(samplev))
 }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2, function(x) 
+apply(bootd, MARGIN=2, function(x) 
   c(mean=mean(x), stderror=sd(x)))
       @
   \end{columns}
@@ -2424,22 +2424,22 @@ ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, retsp, nrows) {
     samplev <- retsp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, retsp=retsp, nrows*nrows)  # end parLapply
 # Bootstrap sd and MAD under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
+bootd <- mclapply(1:nboot, function(x) {
     samplev <- retsp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Standard error assuming normal distribution of returns
 sd(retsp)/sqrt(nboot)
 # Means and standard errors from bootstrap
-stderrors <- apply(boot_data, MARGIN=2,
+stderrors <- apply(bootd, MARGIN=2,
   function(x) c(mean=mean(x), stderror=sd(x)))
 stderrors
 # Relative standard errors
@@ -2472,7 +2472,7 @@ set.seed(1121)
 nrows <- 100
 predictor <- rnorm(nrows, mean=2)
 noise <- rnorm(nrows)
-response <- (-3 + predictor + noise)
+response <- (-3 + 2*predictor + noise)
 design <- cbind(response, predictor)
 # Calculate alpha and beta regression coefficients
 betav <- cov(design[, 1], design[, 2])/var(design[, 2])
@@ -2482,7 +2482,7 @@ plot(response ~ predictor, data=design)
 abline(a=alpha, b=betav, lwd=3, col="blue")
 # Bootstrap of beta regression coefficient
 nboot <- 100
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
   design <- design[samplev, ]
   cov(design[, 1], design[, 2])/var(design[, 2])
@@ -2512,13 +2512,13 @@ boot_data <- sapply(1:nboot, function(x) {
 x11(width=6, height=5)
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), stderror=sd(boot_data))
+c(mean=mean(bootd), stderror=sd(bootd))
 # Plot density of bootstrapped beta coefficients
-plot(density(boot_data), lwd=2, xlab="Regression slopes",
+plot(density(bootd), lwd=2, xlab="Regression slopes",
      main="Bootstrapped Regression Slopes")
 # Add line for expected value
-abline(v=mean(boot_data), lwd=2, col="red")
-text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
+abline(v=mean(bootd), lwd=2, col="red")
+text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
       @
     \column{0.5\textwidth}
@@ -2559,14 +2559,14 @@ library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 # Bootstrap of regression under Windows
-boot_data <- parLapply(cluster, 1:1000,
+bootd <- parLapply(cluster, 1:1000,
   function(x, design) {
     samplev <- sample.int(nrows, replace=TRUE)
     design <- design[samplev, ]
     cov(design[, 1], design[, 2])/var(design[, 2])
   }, design=design)  # end parLapply
 # Bootstrap of regression under Mac-OSX or Linux
-boot_data <- mclapply(1:1000,
+bootd <- mclapply(1:1000,
   function(x) {
     samplev <- sample.int(nrows, replace=TRUE)
     design <- design[samplev, ]
@@ -2594,17 +2594,17 @@ stopCluster(cluster)  # Stop R processes over cluster under Windows
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Collapse the bootstrap list into a vector
-class(boot_data)
-boot_data <- unlist(boot_data)
+class(bootd)
+bootd <- unlist(bootd)
 # Mean and standard error of beta regression coefficient
-c(mean=mean(boot_data), stderror=sd(boot_data))
+c(mean=mean(bootd), stderror=sd(bootd))
 # Plot density of bootstrapped beta coefficients
-plot(density(boot_data),
+plot(density(bootd),
      lwd=2, xlab="Regression slopes",
      main="Bootstrapped Regression Slopes")
 # Add line for expected value
-abline(v=mean(boot_data), lwd=2, col="red")
-text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
+abline(v=mean(bootd), lwd=2, col="red")
+text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
       @
   \end{columns}
@@ -2717,18 +2717,18 @@ nrows <- 1000  # Number of simulation steps
 nsimu <- 100  # Number of simulations
 # Simulate multiple paths of Brownian motion
 set.seed(1121)
-paths <- rnorm(nsimu*nrows, mean=drift, sd=sigmav)
-paths <- matrix(paths, nc=nsimu)
-paths <- matrixStats::colCumsums(paths)
+pathm <- rnorm(nsimu*nrows, mean=drift, sd=sigmav)
+pathm <- matrix(pathm, nc=nsimu)
+pathm <- matrixStats::colCumsums(pathm)
 # Final distribution of paths
-mean(paths[nrows, ]) ; sd(paths[nrows, ])
+mean(pathm[nrows, ]) ; sd(pathm[nrows, ])
 # Calculate option payout at maturity
 strikep <- 50  # Strike price
-payouts <- (paths[nrows, ] - strikep)
+payouts <- (pathm[nrows, ] - strikep)
 sum(payouts[payouts > 0])/nsimu
 # Calculate probability of crossing the barrier at any point
 barl <- 50
-crossi <- (colSums(paths > barl) > 0)
+crossi <- (colSums(pathm > barl) > 0)
 sum(crossi)/nsimu
       @
     \column{0.5\textwidth}
@@ -2740,9 +2740,10 @@ sum(crossi)/nsimu
 x11(width=6, height=5)
 par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
 # Select and plot full range of paths
-ordern <- order(paths[nrows, ])
+ordern <- order(pathm[nrows, ])
+pathm[nrows, ordern]
 indeks <- ordern[seq(1, 100, 9)]
-zoo::plot.zoo(paths[, indeks], main="Paths of Brownian Motion",
+zoo::plot.zoo(pathm[, indeks], main="Paths of Brownian Motion",
   xlab="time steps", ylab=NA, plot.type="single")
 abline(h=strikep, col="red", lwd=3)
 text(x=(nrows-60), y=strikep, labels="strike price", pos=3, cex=1)
@@ -2793,7 +2794,7 @@ cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl"))
 nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, retsp, nrows) {
     samplev <- retsp[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
@@ -2802,7 +2803,7 @@ boot_data <- parLapply(cluster, 1:nboot,
     sum(samplev > barl) > 0
   }, retsp=retsp, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
+bootd <- mclapply(1:nboot, function(x) {
     samplev <- retsp[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
     samplev <- startd*exp(cumsum(samplev))
@@ -2810,9 +2811,9 @@ boot_data <- mclapply(1:nboot, function(x) {
     sum(samplev > barl) > 0
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Calculate frequency of crossing barrier
-sum(boot_data)/nboot
+sum(bootd)/nboot
       @
   \end{columns}
 \end{block}
@@ -2863,7 +2864,7 @@ cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl", "ohlc_diff"))
 nboot <- 10000
-boot_data <- parLapply(cluster, 1:nboot,
+bootd <- parLapply(cluster, 1:nboot,
   function(x, retsp, nrows) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
@@ -2874,7 +2875,7 @@ boot_data <- parLapply(cluster, 1:nboot,
     sum(boot_ohlc[, 2] > barl) > 0
   }, retsp=retsp, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:nboot, function(x) {
+bootd <- mclapply(1:nboot, function(x) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
     boot_prices <- startd*exp(cumsum(retsp[datav]))
@@ -2884,9 +2885,9 @@ boot_data <- mclapply(1:nboot, function(x) {
     sum(boot_ohlc[, 2] > barl) > 0
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 # Calculate frequency of crossing barrier
-sum(boot_data)/nboot
+sum(bootd)/nboot
       @
   \end{columns}
 \end{block}
@@ -2923,19 +2924,19 @@ nrows <- 1000
 datav <- rnorm(nrows)
 # Estimate the 95% quantile
 nboot <- 10000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   samplev <- datav[sample.int(nrows, replace=TRUE)]
   quantile(samplev, 0.95)
 })  # end sapply
-sd(boot_data)
+sd(bootd)
 # Estimate the 95% quantile using antithetic sampling
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   samplev <- datav[sample.int(nrows, replace=TRUE)]
   quantile(c(samplev, -samplev), 0.95)
 })  # end sapply
 # Standard error of quantile from bootstrap
-sd(boot_data)
-sqrt(2)*sd(boot_data)
+sd(bootd)
+sqrt(2)*sd(bootd)
       @
   \end{columns}
 \end{block}
@@ -3034,7 +3035,7 @@ weights <- exp(-lambda*datat + lambda^2/2)
 sum((datat < quantilev)*weights)/nrows
 # Bootstrap of standard errors of cumulative probability
 nboot <- 1000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   datav <- rnorm(nrows)
   naivemc <- sum(datav < quantilev)/nrows
   datav <- (datav + lambda)
@@ -3042,7 +3043,7 @@ boot_data <- sapply(1:nboot, function(x) {
   isample <- sum((datav < quantilev)*weights)/nrows
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
-apply(boot_data, MARGIN=1,
+apply(bootd, MARGIN=1,
   function(x) c(mean=mean(x), sd=sd(x)))
       @
   \end{columns}
@@ -3089,7 +3090,7 @@ cumprob <- cumsum(weights)/nrows
 datat[findInterval(confl, cumprob)]
 # Bootstrap of standard errors of quantile
 nboot <- 1000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   naivemc <- datav[cutoff]
   datat <- datav + lambda
@@ -3098,7 +3099,7 @@ boot_data <- sapply(1:nboot, function(x) {
   isample <- datat[findInterval(confl, cumprob)]
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
-apply(boot_data, MARGIN=1,
+apply(bootd, MARGIN=1,
   function(x) c(mean=mean(x), sd=sd(x)))
       @
   \end{columns}
@@ -3126,26 +3127,26 @@ apply(boot_data, MARGIN=1,
       <<echo=TRUE,eval=FALSE>>=
 # VaR and CVaR from Naive Monte Carlo
 varisk <- datav[cutoff]
-sum((datav < varisk)*datav)/sum((datav < varisk))
+sum((datav <= varisk)*datav)/sum((datav <= varisk))
 # CVaR from importance sample
 varisk <- datat[findInterval(confl, cumprob)]
-sum((datat < varisk)*datat*weights)/sum((datat < varisk)*weights)
+sum((datat <= varisk)*datat*weights)/sum((datat <= varisk)*weights)
 # CVaR from integration
 integrate(function(x) x*dnorm(x), low=-Inf, up=varisk)$value/pnorm(varisk)
 # Bootstrap of standard errors of expected value
 nboot <- 1000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   datav <- sort(rnorm(nrows))
   varisk <- datav[cutoff]
-  naivemc <- sum((datav < varisk)*datav)/sum((datav < varisk))
+  naivemc <- sum((datav <= varisk)*datav)/sum((datav <= varisk))
   datat <- datav + lambda
   weights <- exp(-lambda*datat + lambda^2/2)
   cumprob <- cumsum(weights)/nrows
   varisk <- datat[findInterval(confl, cumprob)]
-  isample <- sum((datat < varisk)*datat*weights)/sum((datat < varisk)*weights)
+  isample <- sum((datat <= varisk)*datat*weights)/sum((datat <= varisk)*weights)
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
-apply(boot_data, MARGIN=1,
+apply(bootd, MARGIN=1,
   function(x) c(mean=mean(x), sd=sd(x)))
       @
   \end{columns}
@@ -3278,11 +3279,11 @@ head(datav, 33)
 weigh_t*sum(datav)/nrows
 # Bootstrap of standard errors
 nboot <- 1000
-boot_data <- sapply(1:nboot, function(x) {
+bootd <- sapply(1:nboot, function(x) {
   c(naivemc=sum(rbinom(n=nrows, size=1, probv))/nrows,
     importmc=weigh_t*sum(rbinom(n=nrows, size=1, p_tilted))/nrows)
 }) # end sapply
-apply(boot_data, MARGIN=1,
+apply(bootd, MARGIN=1,
   function(x) c(mean=mean(x), sd=sd(x)))
       @
   \end{columns}
@@ -3321,30 +3322,30 @@ set.seed(1121)
 datav <- rnorm(nsimu*nrows, mean=drift, sd=sigmav)
 datav <- matrix(datav, nc=nsimu)
 # Simulate paths of Brownian motion
-paths <- matrixStats::colCumsums(datav)
+pathm <- matrixStats::colCumsums(datav)
 # Tilt the datav
 lambda <- 0.04  # Tilt parameter
 datat <- datav + lambda  # Tilt the random numbers
-paths_tilt <- matrixStats::colCumsums(datat)
+patht <- matrixStats::colCumsums(datat)
 # Calculate path weights
-weights <- exp(-lambda*datat + lambda^2/2)
-path_weights <- matrixStats::colProds(weights)
+weightm <- exp(-lambda*datat + lambda^2/2)
+weightm <- matrixStats::colProds(weightm)
 # Or
-path_weights <- exp(-lambda*colSums(datat) + nrows*lambda^2/2)
+weightm <- exp(-lambda*colSums(datat) + nrows*lambda^2/2)
 # Calculate option payout using standard MC
 strikep <- 10  # Strike price
-payouts <- (paths[nrows, ] - strikep)
+payouts <- (pathm[nrows, ] - strikep)
 sum(payouts[payouts > 0])/nsimu
 # Calculate option payout using importance sampling
-payouts <- (paths_tilt[nrows, ] - strikep)
-sum((path_weights*payouts)[payouts > 0])/nsimu
+payouts <- (patht[nrows, ] - strikep)
+sum((weightm*payouts)[payouts > 0])/nsimu
 # Calculate crossing probability using standard MC
 barl <- 10
-crossi <- (colSums(paths > barl) > 0)
+crossi <- (colSums(pathm > barl) > 0)
 sum(crossi)/nsimu
 # Calculate crossing probability using importance sampling
-crossi <- colSums(paths_tilt > barl) > 0
-sum(path_weights*crossi)/nsimu
+crossi <- colSums(patht > barl) > 0
+sum(weightm*crossi)/nsimu
       @
   \end{columns}
 \end{block}
@@ -3616,22 +3617,22 @@ rgl::persp3d(z=-objective_grid, zlab="objective",
 # Initial parameters
 initp <- c(mean=0, sd=1)
 # Perform optimization using optim()
-optim_fit <- optim(par=initp,
+optiml <- optim(par=initp,
   fn=objfun, # Log-likelihood function
   datav=datav,
   method="L-BFGS-B", # Quasi-Newton method
   upper=c(10, 10), # Upper constraint
   lower=c(-10, 0.1)) # Lower constraint
 # Optimal parameters
-optim_fit$par
+optiml$par
 # Perform optimization using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(datav, densfun="normal")
-optim_fit$estimate
-optim_fit$sd
+optiml <- MASS::fitdistr(datav, densfun="normal")
+optiml$estimate
+optiml$sd
 # Plot histogram
 histp <- hist(datav, plot=FALSE)
 plot(histp, freq=FALSE, main="histogram of sample")
-curve(expr=dnorm(x, mean=optim_fit$par["mean"], sd=optim_fit$par["sd"]),
+curve(expr=dnorm(x, mean=optiml$par["mean"], sd=optiml$par["sd"]),
       add=TRUE, type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
        leg="optimal parameters", lwd=2, bg="white", col="red")
@@ -3717,13 +3718,13 @@ persp(par_mean, par_sd, -objective_grid,
 # Initial parameters
 initp <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # Perform optimization
-optim_fit <- optim(par=initp,
+optiml <- optim(par=initp,
             fn=objfun,
             datav=datav,
             method="L-BFGS-B",
             upper=c(1,10,10,10,10),
             lower=c(0,-10,0.2,-10,0.2))
-optim_fit$par
+optiml$par
 # Plot histogram
 histp <- hist(datav, plot=FALSE)
 plot(histp, freq=FALSE,
@@ -3732,7 +3733,7 @@ fitfun <- function(x, parv) {
   parv["weight"]*dnorm(x, mean=parv["m1"], sd=parv["s1"]) +
   (1-parv["weight"])*dnorm(x, mean=parv["m2"], sd=parv["s2"])
 }  # end fitfun
-curve(expr=fitfun(x, parv=optim_fit$par), add=TRUE,
+curve(expr=fitfun(x, parv=optiml$par), add=TRUE,
       type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
        leg="optimal parameters",
@@ -3762,7 +3763,7 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
       performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
       \vskip1ex
       \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
-      \hskip1em\url{http://www1.icsi.berkeley.edu/~storn/code.html}
+      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
       \vskip1ex
       The first generation of solutions is selected randomly.
       \vskip1ex
@@ -3807,7 +3808,7 @@ plot(optiml)
       The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
       \vskip1ex
       \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations:\\
-      \hskip1em\url{http://www1.icsi.berkeley.edu/~storn/code.html}
+      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
       \vskip1ex
       The first generation of solutions is selected randomly.
       \vskip1ex
@@ -3973,11 +3974,11 @@ inner_lagmugar(1:3, 6:3)
       <<echo=TRUE,eval=FALSE>>=
 # Define R function with loop
 inner_mult_r <- function(x, y) {
-    to_tal <- 0
+    sumv <- 0
     for(i in 1:NROW(x)) {
-      to_tal <- to_tal + x[i] * y[i]
+      sumv <- sumv + x[i] * y[i]
     }
-    to_tal
+    sumv
 }  # end inner_mult_r
 # Run R function
 inner_mult_r(1:3, 6:4)
@@ -4011,17 +4012,17 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in R
 nboot <- 1000
-boot_data <- function(datav, nboot=nboot) {
-  boot_data <- sapply(1:nboot, function(x) {
+bootd <- function(datav, nboot=nboot) {
+  bootd <- sapply(1:nboot, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   })  # end sapply
-  boot_data <- t(boot_data)
+  bootd <- t(bootd)
   # Analyze bootstrapped variance
-  head(boot_data)
-  sum(is.na(boot_data))
+  head(bootd)
+  sum(is.na(bootd))
   # Means and standard errors from bootstrap
-  apply(boot_data, MARGIN=2,
+  apply(bootd, MARGIN=2,
     function(x) c(mean=mean(x), stderror=sd(x)))
 
   retsp <- numeric(nrows)
@@ -4032,7 +4033,7 @@ boot_data <- function(datav, nboot=nboot) {
     pricets[i] <- pricets[i-1] + retsp[i]
   }  # end for
   pricets
-}  # end boot_data
+}  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
@@ -4290,17 +4291,17 @@ static const double pi = 3.14159265;
       Simulating the Ornstein-Uhlenbeck Process in \emph{Rcpp} is about 30 times faster than in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in R
-boot_data <- function(datav, nboot=1000) {
-  boot_data <- sapply(1:nboot, function(x) {
+bootd <- function(datav, nboot=1000) {
+  bootd <- sapply(1:nboot, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   })  # end sapply
-  boot_data <- t(boot_data)
+  bootd <- t(bootd)
   # Analyze bootstrapped variance
-  head(boot_data)
-  sum(is.na(boot_data))
+  head(bootd)
+  sum(is.na(bootd))
   # Means and standard errors from bootstrap
-  apply(boot_data, MARGIN=2,
+  apply(bootd, MARGIN=2,
     function(x) c(mean=mean(x), stderror=sd(x)))
 
   retsp <- numeric(nrows)
@@ -4311,7 +4312,7 @@ boot_data <- function(datav, nboot=1000) {
     pricets[i] <- pricets[i-1] + retsp[i]
   }  # end for
   pricets
-}  # end boot_data
+}  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
@@ -4380,17 +4381,17 @@ static const double pi = 3.14159265;
       Simulating the Ornstein-Uhlenbeck Process in \emph{Rcpp} is about 30 times faster than in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in R
-boot_data <- function(datav, nboot=1000) {
-  boot_data <- sapply(1:nboot, function(x) {
+bootd <- function(datav, nboot=1000) {
+  bootd <- sapply(1:nboot, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   })  # end sapply
-  boot_data <- t(boot_data)
+  bootd <- t(bootd)
   # Analyze bootstrapped variance
-  head(boot_data)
-  sum(is.na(boot_data))
+  head(bootd)
+  sum(is.na(bootd))
   # Means and standard errors from bootstrap
-  apply(boot_data, MARGIN=2,
+  apply(bootd, MARGIN=2,
         function(x) c(mean=mean(x), stderror=sd(x)))
 
   retsp <- numeric(nrows)
@@ -4401,7 +4402,7 @@ boot_data <- function(datav, nboot=1000) {
     pricets[i] <- pricets[i-1] + retsp[i]
   }  # end for
   pricets
-}  # end boot_data
+}  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
@@ -4606,10 +4607,10 @@ library(RcppArmadillo)
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillofuntions.cpp")
 matrixv <- matrix(runif(1e5), nc=1e3)
 # De-mean using apply()
-newmapt <- apply(matrixv, 2, function(x) (x-mean(x)))
+newmacppt <- apply(matrixv, 2, function(x) (x-mean(x)))
 # De-mean using demean_mat()
 demean_mat(matrixv)
-all.equal(newmapt, matrixv)
+all.equal(newmacppt, matrixv)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
@@ -4690,11 +4691,11 @@ matrixv <- matrix(rnorm(300), nc=5)
 dimax <- 4
 cormat <- cor(matrixv)
 eigend <- eigen(cormat)
-inverse <- eigend$vectors[, 1:dimax] %*%
+invmat <- eigend$vectors[, 1:dimax] %*%
   (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
 # Regularized inverse using RcppArmadillo
-inverse_arma <- calc_inv(cormat, dimax=dimax)
-all.equal(inverse, inverse_arma)
+invarma <- HighFreq::calc_inv(cormat, dimax=dimax)
+all.equal(invmat, invarma)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(

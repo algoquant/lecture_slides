@@ -64,7 +64,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#5]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#5, Spring 2022}
+\subtitle{Lecture\#5, Fall 2022}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
@@ -162,9 +162,9 @@ wilcox.test(sample1, sample2)
 predictor <- c(sample1, sample2)
 response <- c(logical(100), !logical(100))
 # Perform logit regression
-glmod <- glm(response ~ predictor, family=binomial(logit))
-class(glmod)
-summary(glmod)
+logmod <- glm(response ~ predictor, family=binomial(logit))
+class(logmod)
+summary(logmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -173,7 +173,7 @@ summary(glmod)
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 ordern <- order(predictor)
-plot(x=predictor[ordern], y=glmod$fitted.values[ordern],
+plot(x=predictor[ordern], y=logmod$fitted.values[ordern],
      main="Category Densities and Logistic Function",
      type="l", lwd=4, col="orange", xlab="predictor", ylab="density")
 densityv <- density(predictor[response])
@@ -358,7 +358,7 @@ rastrigin(optiml$par, param=1)
 # Initial parameters
 initp <- c(1, 1)
 # Find max likelihood parameters using steepest descent optimizer
-optim_fit <- optim(par=initp,
+optiml <- optim(par=initp,
                    fn=likefun, # Log-likelihood function
                    method="L-BFGS-B", # Quasi-Newton method
                    response=response,
@@ -367,11 +367,11 @@ optim_fit <- optim(par=initp,
                    lower=c(-20, -20), # Lower constraint
                    hessian=TRUE)
 # Optimal logistic parameters
-optim_fit$par
-unname(glmod$coefficients)
+optiml$par
+unname(logmod$coefficients)
 # Standard errors of parameters
-sqrt(diag(solve(optim_fit$hessian)))
-modelsum <- summary(glmod)
+sqrt(diag(solve(optiml$hessian)))
+modelsum <- summary(logmod)
 modelsum$coefficients[, 2]
       @
   \end{columns}
@@ -543,9 +543,9 @@ boxplot(formula=income ~ default,
       The residuals are not normally distributed, so the data is fitted using the \emph{maximum likelihood} method, instead of least squares.
       <<echo=TRUE,eval=TRUE>>=
 # Fit logistic regression model
-glmod <- glm(default ~ balance, family=binomial(logit))
-class(glmod)
-summary(glmod)
+logmod <- glm(default ~ balance, family=binomial(logit))
+class(logmod)
+summary(logmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -557,7 +557,7 @@ plot(x=balance, y=default,
      main="Logistic Regression of Credit Defaults", 
      col="orange", xlab="credit balance", ylab="defaults")
 ordern <- order(balance)
-lines(x=balance[ordern], y=glmod$fitted.values[ordern], col="blue", lwd=3)
+lines(x=balance[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n", lwd=6,
        legend=c("defaults", "logit fitted values"),
        col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
@@ -587,9 +587,9 @@ default_s <- sapply(balance, function(lim) {
     sum(default[balance <= lim])
 })  # end sapply
 # Perform logit regression
-glmod <- glm(cbind(default_s, to_tal-default_s) ~ balance,
+logmod <- glm(cbind(default_s, to_tal-default_s) ~ balance,
   family=binomial(logit))
-summary(glmod)
+summary(logmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -599,7 +599,7 @@ plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
      main="Cumulative Defaults Versus Balance",
      xlab="credit balance", ylab="cumulative defaults")
 ordern <- order(balance)
-lines(x=balance[ordern], y=glmod$fitted.values[ordern],
+lines(x=balance[ordern], y=logmod$fitted.values[ordern],
       col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n",
        legend=c("cumulative defaults", "fitted values"),
@@ -637,8 +637,8 @@ colnamev <- colnames(Default)
 formulav <- as.formula(paste(colnamev[1],
   paste(colnamev[-1], collapse="+"), sep=" ~ "))
 formulav
-glmod <- glm(formulav, data=Default, family=binomial(logit))
-summary(glmod)
+logmod <- glm(formulav, data=Default, family=binomial(logit))
+summary(logmod)
       @
   \end{columns}
 \end{block}
@@ -669,7 +669,7 @@ summary(glmod)
 glm_student <- glm(default ~ student, family=binomial(logit))
 summary(glm_student)
 # Multifactor coefficient is negative
-glmod$coefficients
+logmod$coefficients
 # Single-factor coefficient is positive
 glm_student$coefficients
       @
@@ -727,8 +727,8 @@ boxplot(formula=balance ~ !student,
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Perform in-sample forecast from logistic regression model
-forecasts <- predict(glmod, type="response")
-all.equal(glmod$fitted.values, forecasts)
+forecasts <- predict(logmod, type="response")
+all.equal(logmod$fitted.values, forecasts)
 # Define discrimination threshold value
 threshold <- 0.7
 # Calculate confusion matrix in-sample
@@ -738,10 +738,10 @@ set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
 samplev <- sample.int(n=nrows, size=nrows/2)
 traindata <- Default[samplev, ]
-glmod <- glm(formulav, data=traindata, family=binomial(logit))
+logmod <- glm(formulav, data=traindata, family=binomial(logit))
 # Forecast over test data out-of-sample
 testdata <- Default[-samplev, ]
-forecasts <- predict(glmod, newdata=testdata, type="response")
+forecasts <- predict(logmod, newdata=testdata, type="response")
 # Calculate confusion matrix out-of-sample
 table(actual=!testdata$default, 
       forecast=(forecasts < threshold))
@@ -881,10 +881,10 @@ rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
-true_pos <- (1 - error_rates[, "typeII"])
-true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diffit(error_rates[, "typeI"])
-abs(sum(true_pos*false_pos))
+truepos <- (1 - error_rates[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(error_rates[, "typeI"])
+abs(sum(truepos*falsepos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1948,10 +1948,10 @@ rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
-true_pos <- (1 - error_rates[, "typeII"])
-true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diffit(error_rates[, "typeI"])
-abs(sum(true_pos*false_pos))
+truepos <- (1 - error_rates[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(error_rates[, "typeI"])
+abs(sum(truepos*falsepos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}

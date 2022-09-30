@@ -57,7 +57,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Portfolio Construction]{Portfolio Construction}
-\subtitle{FRE6871 \& FRE7241, Spring 2022}
+\subtitle{FRE6871 \& FRE7241, Fall 2022}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -2027,7 +2027,7 @@ optiml <- quadprog::solve.QP(Dmat=2*covmat,
       The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
       \vskip1ex
       \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
-      \hskip1em\url{http://www1.icsi.berkeley.edu/~storn/code.html}
+      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
       \vskip1ex
       The first generation of solutions is selected randomly.
       \vskip1ex
@@ -3265,17 +3265,24 @@ defprob
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      To simplify, we can assume that the number of assets is very large and that they all have the same default probabilities $p_i=p$, so the default threshold is equal to $t=\Phi^{-1}(p)$.
+      A formula for the default distribution under the Vasicek Model can be derived under the simplifying assumptions that the number of assets is very large and that they all have the same default probabilities $p_i=p$.
       \vskip1ex
-      Then the \emph{asset value} $a_i$ follows the \emph{Normal} distribution with mean equal to $\sqrt{\rho} s$ and standard deviation equal to $\sqrt{1-\rho}$
+      In that case the single default threshold is equal to $t=\Phi^{-1}(p)$.
       \vskip1ex
-      So the conditional default probability $p(s)$, given the systematic factor $s$, is equal to:
+      If the systematic factor $s$ is fixed, then the \emph{asset value} $a_i$ follows the \emph{Normal} distribution with mean equal to $\sqrt{\rho} s$ and standard deviation equal to $\sqrt{1-\rho}$:
+      \begin{displaymath}
+        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i
+      \end{displaymath}
+      \vskip1ex
+      The conditional default probability $p(s)$, given the systematic factor $s$, is equal to:
       \begin{displaymath}
         p(s) = \Phi(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})
       \end{displaymath}
-      If the systematic factor $s$ is fixed, then the defaults are all independent, and the percentage of the portfolio that defaults $x$, is equal to the conditional default probability $x = p(s)$.
+      Since the systematic factor $s$ is fixed, then the defaults are all independent with the same default probability $p(s)$.
     \column{0.5\textwidth}
-      We can invert the previous formula to obtain the systematic factor $s$:
+      Because the number of assets is very large, the percentage $x$ of the portfolio that defaults, is equal to the conditional default probability $x = p(s)$.
+      \vskip1ex
+      We can invert the formula $x = \Phi(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})$ to obtain the systematic factor $s$:
       \begin{displaymath}
         s = \frac{{\sqrt{1-\rho}} \, \Phi^{-1}(x) - t}{\sqrt{\rho}}
       \end{displaymath}
@@ -3887,7 +3894,7 @@ varisk <- quantile(losses, confl)
 cvar <- mean(losses[losses > varisk])
 # Plot the density of portfolio losses
 x11(width=6, height=5)
-densv <- density(losses)
+densv <- density(losses, from=0)
 plot(densv, xlab="loss percentage", ylab="density", 
      cex.main=1.8, cex.lab=1.8, cex.axis=1.5, 
      lwd=3, col="blue", main="Portfolio Loss Distribution")
@@ -4065,15 +4072,15 @@ defthresh <- qnorm(defprobs)
 nboot <- 500
 # Perform bootstrap of calcvar
 set.seed(1121)
-boot_data <- sapply(rep(lgd, nboot), calcvar,
+bootd <- sapply(rep(lgd, nboot), calcvar,
   defthresh=defthresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   nsimu=nsimu, confls=confls)  # end sapply
-boot_data <- t(boot_data)
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-stderr_var <- apply(boot_data[, 1:7], MARGIN=2,
+bootd <- t(bootd)
+# Calculate vectors of standard errors of VaR and CVaR from bootd data
+stderr_var <- apply(bootd[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-stderr_cvar <- apply(boot_data[, 8:14], MARGIN=2,
+stderr_cvar <- apply(bootd[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
 stderr_var[2, ] <- stderr_var[2, ]/stderr_var[1, ]
@@ -4140,21 +4147,21 @@ ncores <- detectCores() - 1  # number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster
 # Perform bootstrap of calcvar for Windows
 clusterSetRNGStream(cluster, 1121)
-boot_data <- parLapply(cluster, rep(lgd, nboot),
+bootd <- parLapply(cluster, rep(lgd, nboot),
   fun=calcvar, defthresh=defthresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   nsimu=nsimu, confls=confls)  # end parLapply
 # Bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(rep(lgd, nboot),
+bootd <- mclapply(rep(lgd, nboot),
   FUN=calcvar, defthresh=defthresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   nsimu=nsimu, confls=confls)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 stopCluster(cluster)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-stderr_var <- apply(boot_data[, 1:7], MARGIN=2,
+# Calculate vectors of standard errors of VaR and CVaR from bootd data
+stderr_var <- apply(bootd[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-stderr_cvar <- apply(boot_data[, 8:14], MARGIN=2,
+stderr_cvar <- apply(bootd[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
 stderr_vars <- stderr_var[2, ]/stderr_var[1, ]
@@ -4240,21 +4247,21 @@ ncores <- detectCores() - 1  # number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster
 # Perform bootstrap of calcvar for Windows
 clusterSetRNGStream(cluster, 1121)
-boot_data <- parLapply(cluster, rep(lgd, nboot),
+bootd <- parLapply(cluster, rep(lgd, nboot),
   fun=calcvar, defprobs=defprobs,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   nsimu=nsimu, confls=confls)  # end parLapply
 # Bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(rep(lgd, nboot),
+bootd <- mclapply(rep(lgd, nboot),
   FUN=calcvar, defprobs=defprobs,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   nsimu=nsimu, confls=confls)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
+bootd <- rutils::do_call(rbind, bootd)
 stopCluster(cluster)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-stderr_var_param <- apply(boot_data[, 1:7], MARGIN=2,
+# Calculate vectors of standard errors of VaR and CVaR from bootd data
+stderr_var_param <- apply(bootd[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-stderr_cvar_param <- apply(boot_data[, 8:14], MARGIN=2,
+stderr_cvar_param <- apply(bootd[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
       @
     \column{0.5\textwidth}
@@ -4475,16 +4482,16 @@ defthresh <- qnorm(defprobs)
 nboot <- 500
 # Perform bootstrap of calcvar
 set.seed(1121)
-boot_data <- sapply(rep(lgd, nboot),
+bootd <- sapply(rep(lgd, nboot),
   calcvar,
   defthresh=defthresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   nsimu=nsimu, confls=confls)  # end sapply
-boot_data <- t(boot_data)
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-stderr_var <- apply(boot_data[, 1:7], MARGIN=2,
+bootd <- t(bootd)
+# Calculate vectors of standard errors of VaR and CVaR from bootd data
+stderr_var <- apply(bootd[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-stderr_cvar <- apply(boot_data[, 8:14], MARGIN=2,
+stderr_cvar <- apply(bootd[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
 stderr_var[2, ] <- stderr_var[2, ]/stderr_var[1, ]

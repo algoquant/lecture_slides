@@ -62,7 +62,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Machine Learning]{Machine Learning}
-\subtitle{FRE6871 \& FRE7241, Spring 2022}
+\subtitle{FRE6871 \& FRE7241, Fall 2022}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
@@ -326,9 +326,9 @@ leftmat <- eigend$vectors[, 1:nright]
 rightmat <- matrix(runif(nright^2), nc=nright)
 eigend <- eigen(crossprod(rightmat))
 rightmat <- eigend$vectors
-sing_values <- sort(runif(nright, min=1, max=5), decreasing=TRUE)
+singval <- sort(runif(nright, min=1, max=5), decreasing=TRUE)
 # Compose rectangular matrix
-matrixv <- leftmat %*% (sing_values * t(rightmat))
+matrixv <- leftmat %*% (singval * t(rightmat))
 # Perform singular value decomposition
 svdec <- svd(matrixv)
 # Recompose matrixv from SVD
@@ -336,16 +336,16 @@ all.equal(matrixv, svdec$u %*% (svdec$d*t(svdec$v)))
 # Compare SVD with matrixv components
 all.equal(abs(svdec$u), abs(leftmat))
 all.equal(abs(svdec$v), abs(rightmat))
-all.equal(svdec$d, sing_values)
+all.equal(svdec$d, singval)
 # Eigen decomposition of matrixv squared
 retsq <- matrixv %*% t(matrixv)
 eigend <- eigen(retsq)
-all.equal(eigend$values[1:nright], sing_values^2)
+all.equal(eigend$values[1:nright], singval^2)
 all.equal(abs(eigend$vectors[, 1:nright]), abs(leftmat))
 # Eigen decomposition of matrixv squared
 retsq <- t(matrixv) %*% matrixv
 eigend <- eigen(retsq)
-all.equal(eigend$values, sing_values^2)
+all.equal(eigend$values, singval^2)
 all.equal(abs(eigend$vectors), abs(rightmat))
       @
   \end{columns}
@@ -397,8 +397,7 @@ inveigen <- eigenvec %*% (t(eigenvec) / eigend$values)
 all.equal(invmat, inveigen)
 # Decompose diagonal matrix with inverse of eigenvalues
 # diagmat <- diag(1/eigend$values)
-# inveigen <-
-#   eigenvec %*% (diagmat %*% t(eigenvec))
+# inveigen <- eigenvec %*% (diagmat %*% t(eigenvec))
       @
   \end{columns}
 \end{block}
@@ -934,9 +933,9 @@ pcav <- retsp %*% t(matrixv)
 plot(x=pcav[, 1], y=pcav[, 2],
      xlim=c(-10, 10), ylim=c(-10, 10))
 
-model <- lm(formulav, data=retsp)
+regmod <- lm(formulav, data=retsp)
 # Get regression coefficients
-coef(summary(model))
+coef(summary(regmod))
 
 foo <- cbind(rnorm(1000, sd=0.2), rnorm(1000)) %*% t(matrixv)
 (t(foo) %*% foo) / NROW(foo)
@@ -959,7 +958,7 @@ foo <- matrix(c(s1^2, s1*s2*w1, s1*s2*w1, s2^2), nc=2)
 eigen(foo)
 
 # Durbin-Watson test of autocorrelation of residuals
-lmtest::dwtest(model)
+lmtest::dwtest(regmod)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -970,7 +969,7 @@ lmtest::dwtest(model)
 plot(formulav, data=rutils::etfenv$returns,
      main="Regression XLP ~ VTI")
 # Add regression line
-abline(model, lwd=2, col="red")
+abline(regmod, lwd=2, col="red")
       @
   \end{columns}
 \end{block}
@@ -1031,10 +1030,10 @@ ordern <- corrMatOrder(cormat, order="hclust",
   hclust.method="complete")
 cormat <- cormat[ordern, ordern]
 # Plot the correlation matrix
-colors <- colorRampPalette(c("red", "white", "blue"))
+colorv <- colorRampPalette(c("red", "white", "blue"))
 x11(width=6, height=6)
 corrplot(cormat, title=NA, tl.col="black", mar=c(0,0,0,0), 
-    method="square", col=colors(NCOL(cormat)), tl.cex=0.8, 
+    method="square", col=colorv(NCOL(cormat)), tl.cex=0.8, 
     cl.offset=0.75, cl.cex=0.7, cl.align.text="l", cl.ratio=0.25)
 title("ETF Correlation Matrix", line=1)
 # Draw rectangles on the correlation matrix plot
@@ -1429,7 +1428,7 @@ retc <- cumsum(retsp)
 for (symbol in symbolv) {
   plot.zoo(cbind(retc[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
-  legend(x="topleft", bty="n", legend=paste0(symbol, c("", " solved")),
+  legend(x="topleft", bty="n", legend=paste0(symbol, c("", " solved")), y.intersp=0.5,
          title=NULL, inset=0.0, cex=1.0, lwd=6, lty=1, col=c("black", "blue"))
 }  # end for
       @
@@ -1562,7 +1561,7 @@ set.seed(1121)  # Initialize random number generator
 predictor <- runif(nrows)
 noise <- rnorm(nrows)
 # Response equals linear form plus random noise
-response <- (1 + predictor + noise)
+response <- (-3 + 2*predictor + noise)
       @
       \vspace{-1em}
       The \emph{response vector} and the \emph{predictor matrix} don't have to be normally distributed.
@@ -1610,10 +1609,10 @@ response <- (1 + predictor + noise)
       The expected value of the \emph{RSS} is equal to the \emph{degrees of freedom} $(n-2)$ times the variance $\sigma^2_\varepsilon$ of the \emph{residuals} $\varepsilon_i$: $\mathbb{E}[RSS] = (n-2) \sigma^2_\varepsilon$.
         <<echo=TRUE,eval=TRUE>>=
 # Calculate de-meaned explanatory (predictor) and response vectors
-predictor_zm <- predictor - mean(predictor)
-response_zm <- response - mean(response)
+predzm <- predictor - mean(predictor)
+respzm <- response - mean(response)
 # Calculate the regression beta
-betav <- sum(predictor_zm*response_zm)/sum(predictor_zm^2)
+betav <- cov(predictor, response)/var(predictor)
 # Calculate the regression alpha
 alpha <- mean(response) - betav*mean(predictor)
       @
@@ -1648,12 +1647,12 @@ alpha <- mean(response) - betav*mean(predictor)
         <<echo=TRUE,eval=TRUE>>=
 # Specify regression formula
 formulav <- response ~ predictor
-model <- lm(formulav)  # Perform regression
-class(model)  # Regressions have class lm
-attributes(model)
-eval(model$call$formula)  # Regression formula
-model$coeff  # Regression coefficients
-all.equal(coef(model), c(alpha, betav),
+regmod <- lm(formulav)  # Perform regression
+class(regmod)  # Regressions have class lm
+attributes(regmod)
+eval(regmod$call$formula)  # Regression formula
+regmod$coeff  # Regression coefficients
+all.equal(coef(regmod), c(alpha, betav),
           check.attributes=FALSE)
       @
   \end{columns}
@@ -1679,7 +1678,7 @@ all.equal(coef(model), c(alpha, betav),
       \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object.
         <<echo=TRUE,eval=FALSE>>=
 fittedv <- (alpha + betav*predictor)
-all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
+all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
 x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
@@ -1687,9 +1686,9 @@ par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 plot(formulav, xlab="predictor", ylab="response")
 title(main="Simple Regression", line=0.5)
 # Add regression line
-abline(model, lwd=3, col="blue")
+abline(regmod, lwd=3, col="blue")
 # Plot fitted (predicted) response values
-points(x=predictor, y=model$fitted.values, pch=16, col="blue")
+points(x=predictor, y=regmod$fitted.values, pch=16, col="blue")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/reg_scatter_plot.png}
@@ -1698,8 +1697,8 @@ points(x=predictor, y=model$fitted.values, pch=16, col="blue")
 lines(x=predictor, y=(response-noise), col="red", lwd=3)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
-       title=NULL, inset=0.08, cex=0.8, lwd=6,
-       lty=1, col=c("red", "blue"))
+       title=NULL, inset=0.01, cex=1.0, lwd=6, y.intersp=0.5,
+       bty="n", lty=1, col=c("red", "blue"))
       @
   \end{columns}
 \end{block}
@@ -1722,7 +1721,7 @@ legend(x="topleft", # Add legend
 # Calculate the residuals
 fittedv <- (alpha + betav*predictor)
 residuals <- (response - fittedv)
-all.equal(residuals, model$residuals, check.attributes=FALSE)
+all.equal(residuals, regmod$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to the predictor
 all.equal(sum(residuals*predictor), target=0)
 # Residuals are orthogonal to the fitted values
@@ -1737,7 +1736,7 @@ x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
 # Extract residuals
-datav <- cbind(predictor, model$residuals)
+datav <- cbind(predictor, regmod$residuals)
 colnames(datav) <- c("predictor", "residuals")
 # Plot residuals
 plot(datav)
@@ -1773,14 +1772,14 @@ abline(h=0, lwd=3, col="red")
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Degrees of freedom of residuals
-degf <- model$df.residual
+degf <- regmod$df.residual
 # Standard deviation of residuals
 residsd <- sqrt(sum(residuals^2)/degf)
 # Standard error of beta
-betasd <- residsd/sqrt(sum(predictor_zm^2))
+betasd <- residsd/sqrt(sum(predzm^2))
 # Standard error of alpha
 alphasd <- residsd*
-  sqrt(1/nrows + mean(predictor)^2/sum(predictor_zm^2))
+  sqrt(1/nrows + mean(predictor)^2/sum(predzm^2))
       @
   \end{columns}
 \end{block}
@@ -1807,9 +1806,9 @@ alphasd <- residsd*
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-modelsum <- summary(model)  # Copy regression summary
+modelsum <- summary(regmod)  # Copy regression summary
 modelsum  # Print the summary to console
-attributes(modelsum)$names  # get summary elements
+attributes(regmodsum)$names  # get summary elements
       @
   \end{columns}
 \end{block}
@@ -1851,7 +1850,7 @@ modelsum$r.squared
 modelsum$adj.r.squared
 # F-statistic and ANOVA
 modelsum$fstatistic
-anova(model)
+anova(regmod)
       @
   \end{columns}
 \end{block}
@@ -1873,11 +1872,11 @@ anova(model)
         <<echo=(-(1:1)),eval=TRUE>>=
 set.seed(1121)  # initialize random number generator
 # High noise compared to coefficient
-response <- (1 + predictor + rnorm(nrows, sd=8))
-model <- lm(formulav)  # Perform regression
+response <- (-3 + 2*predictor + rnorm(nrows, sd=8))
+regmod <- lm(formulav)  # Perform regression
 # Values of regression coefficients are not
 # Statistically significant
-summary(model)
+summary(regmod)
       @
   \end{columns}
 \end{block}
@@ -1906,7 +1905,7 @@ reg_stats <- function(stdev) {  # Noisy regression
 # Perform regression and get summary
   modelsum <- summary(lm(formulav))
 # Extract regression statistics
-  with(modelsum, c(pval=coefficients[2, 4],
+  with(regmodsum, c(pval=coefficients[2, 4],
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end reg_stats
@@ -1947,7 +1946,7 @@ reg_stats <- function(datav) {  # get regression
   formulav <- paste(colnamev[2], colnamev[1], sep="~")
   modelsum <- summary(lm(formulav, data=datav))
 # Extract regression statistics
-  with(modelsum, c(pval=coefficients[2, 4],
+  with(regmodsum, c(pval=coefficients[2, 4],
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end reg_stats
@@ -2017,8 +2016,8 @@ for (it in 1:NCOL(statsmat)) {
 # Set plot paramaters - margins and font scale
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2, 2))  # Plot 2x2 panels
-plot(model)  # Plot diagnostic scatterplots
-plot(model, which=2)  # Plot just Q-Q
+plot(regmod)  # Plot diagnostic scatterplots
+plot(regmod, which=2)  # Plot just Q-Q
       @
       \vspace{-1em}
       \hspace*{-1em}
@@ -2054,7 +2053,7 @@ plot(model, which=2)  # Plot just Q-Q
       <<echo=TRUE,eval=TRUE>>=
 library(lmtest)  # Load lmtest
 # Perform Durbin-Watson test
-lmtest::dwtest(model)
+lmtest::dwtest(regmod)
       @
   \end{columns}
 \end{block}
@@ -2098,10 +2097,10 @@ head(foo)
 tail(foo)
 class(foo)
 dim(foo)
-model <- lm(paste(names(foo), collapse=" ~ "), data=foo)
-modelsum <- summary(model)
+regmod <- lm(paste(names(foo), collapse=" ~ "), data=foo)
+modelsum <- summary(regmod)
 modelsum
-lmtest::dwtest(model)
+lmtest::dwtest(regmod)
 
 # Filter over non-overlapping periods
 bar <- names(foo)
@@ -2119,13 +2118,13 @@ library(lmtest)
 predictor <- cumsum(rnorm(100))  # Unit root time series
 response <- cumsum(rnorm(100))
 formulav <- response ~ predictor
-model <- lm(formulav)  # Perform regression
+regmod <- lm(formulav)  # Perform regression
 # Summary indicates statistically significant regression
-modelsum <- summary(model)
+modelsum <- summary(regmod)
 modelsum$coeff
 modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-dw_test <- lmtest::dwtest(model)
+dw_test <- lmtest::dwtest(regmod)
 c(dw_test$statistic[[1]], dw_test$p.value)
       @
       \vspace{-2em}
@@ -2135,8 +2134,8 @@ par(mfrow=c(2,1))  # Set plot panels
 plot(formulav, xlab="", ylab="")  # Plot scatterplot using formula
 title(main="Spurious Regression", line=-1)
 # Add regression line
-abline(model, lwd=2, col="red")
-plot(model, which=2, ask=FALSE)  # Plot just Q-Q
+abline(regmod, lwd=2, col="red")
+plot(regmod, which=2, ask=FALSE)  # Plot just Q-Q
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2164,7 +2163,7 @@ plot(model, which=2, ask=FALSE)  # Plot just Q-Q
       \begin{displaymath}
         y = \mathbb{X} \beta + \varepsilon
       \end{displaymath}
-      With two \emph{regression coefficients}: $\beta = (\alpha, \beta1)$, and a \emph{predictor matrix} $\mathbb{X}$ with two columns, with the first column equal to a unit vector.
+      With two \emph{regression coefficients}: $\beta = (\alpha, \beta_1)$, and a \emph{predictor matrix} $\mathbb{X}$ with two columns, with the first column equal to a unit vector.
       \vskip1ex
       After the second column of the \emph{predictor matrix} $\mathbb{X}$ is de-meaned, its \emph{covariance matrix} is given by:
       \begin{displaymath}
@@ -2179,7 +2178,7 @@ plot(model, which=2, ask=FALSE)  # Plot just Q-Q
         \mathbb{H}_{ij} = [\mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T]_{ij} =
         \frac{1}{n} + \frac{(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i=1}^n (x_i - \bar{x})^2}
       \end{displaymath}
-      The first term above is due to the influence of the regression intercept $\alpha$, and the second term is due to the influence of the regression slope $\beta1$.
+      The first term above is due to the influence of the regression intercept $\alpha$, and the second term is due to the influence of the regression slope $\beta_1$.
       \vskip1ex
       The diagonal elements of the \emph{influence matrix} $\mathbb{H}_{ii}$ form the \emph{leverage vector}.
     \column{0.5\textwidth}
@@ -2302,8 +2301,8 @@ matplot(x=predictor[,2], y=fittedv,
 lines(x=predictor[,2], y=response, col="red", lwd=4)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
-       title=NULL, inset=0.05, cex=0.8, lwd=6,
-       lty=1, col=c("red", "blue"))
+       title=NULL, inset=0.05, cex=0.8, lwd=6, y.intersp=0.5,
+       bty="n", lty=1, col=c("red", "blue"))
       @
   \end{columns}
 \end{block}
@@ -2390,8 +2389,8 @@ lines(x=newdata, y=predicthigh, lwd=3, col="red")
 lines(x=newdata, y=predictlow, lwd=3, col="green")
 legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),
-       title=NULL, inset=0.05, cex=0.8, lwd=6,
-       lty=1, col=c("blue", "red", "green"))
+       title=NULL, inset=0.05, cex=0.8, lwd=6, y.intersp=0.5,
+       bty="n", lty=1, col=c("blue", "red", "green"))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2415,7 +2414,7 @@ legend(x="topleft", # Add legend
         <<echo=TRUE,eval=FALSE>>=
 # Perform univariate regression
 predictor <- predictor[, 2]
-model <- lm(response ~ predictor)
+regmod <- lm(response ~ predictor)
 # Perform prediction from regression
 newdata <- data.frame(predictor=newdata)
 predictlm <- predict(object=model,
@@ -2434,7 +2433,7 @@ plot(response ~ predictor,
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/reg_predictlm.png}
         <<echo=TRUE,eval=FALSE>>=
-abline(model, col="blue", lwd=3)
+abline(regmod, col="blue", lwd=3)
 with(predictlm, {
   points(x=newdata$predictor, y=fit, pch=16, col="blue")
   lines(x=newdata$predictor, y=lwr, lwd=3, col="green")
@@ -2442,8 +2441,8 @@ with(predictlm, {
 })  # end with
 legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),
-       title=NULL, inset=0.05, cex=0.8, lwd=6,
-       lty=1, col=c("blue", "red", "green"))
+       title=NULL, inset=0.05, cex=0.8, lwd=6, y.intersp=0.5,
+       bty="n", lty=1, col=c("blue", "red", "green"))
       @
   \end{columns}
 \end{block}
@@ -2472,13 +2471,13 @@ library(lmtest)
 predictor <- cumsum(rnorm(100))  # Unit root time series
 response <- cumsum(rnorm(100))
 formulav <- response ~ predictor
-model <- lm(formulav)  # Perform regression
+regmod <- lm(formulav)  # Perform regression
 # Summary indicates statistically significant regression
-modelsum <- summary(model)
+modelsum <- summary(regmod)
 modelsum$coeff
 modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-dw_test <- lmtest::dwtest(model)
+dw_test <- lmtest::dwtest(regmod)
 c(dw_test$statistic[[1]], dw_test$p.value)
       @
       \vspace{-2em}
@@ -2488,8 +2487,8 @@ par(mfrow=c(2,1))  # Set plot panels
 plot(formulav, xlab="", ylab="")  # Plot scatterplot using formula
 title(main="Spurious Regression", line=-1)
 # Add regression line
-abline(model, lwd=2, col="red")
-plot(model, which=2, ask=FALSE)  # Plot just Q-Q
+abline(regmod, lwd=2, col="red")
+plot(regmod, which=2, ask=FALSE)  # Plot just Q-Q
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2545,7 +2544,7 @@ colnames(predictor) <- paste0("col", 1:ncols)
 weights <- sample(3:(ncols+2))
 # Response equals weighted predictor plus random noise
 noise <- rnorm(nrows, sd=5)
-response <- (-1 + predictor %*% weights + noise)
+response <- (-3 + 2*predictor %*% weights + noise)
       @
   \end{columns}
 \end{block}
@@ -2584,18 +2583,18 @@ response <- (-1 + predictor %*% weights + noise)
       The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
         <<echo=TRUE,eval=TRUE>>=
 # Perform multivariate regression using lm()
-model <- lm(response ~ predictor)
+regmod <- lm(response ~ predictor)
 # Solve multivariate regression using matrix algebra
 # Calculate de-meaned predictor matrix and response vector
-predictor_zm <- t(t(predictor) - colMeans(predictor))
+predzm <- t(t(predictor) - colMeans(predictor))
 # predictor <- apply(predictor, 2, function(x) (x-mean(x)))
-response_zm <- response - mean(response)
+respzm <- response - mean(response)
 # Calculate the regression coefficients
-betas <- drop(MASS::ginv(predictor_zm) %*% response_zm)
+betas <- drop(MASS::ginv(predzm) %*% respzm)
 # Calculate the regression alpha
 alpha <- mean(response) - sum(colSums(predictor)*betas)/nrows
 # Compare with coefficients from lm()
-all.equal(coef(model), c(alpha, betas), check.attributes=FALSE)
+all.equal(coef(regmod), c(alpha, betas), check.attributes=FALSE)
 # Compare with actual coefficients
 all.equal(c(-1, weights), c(alpha, betas), check.attributes=FALSE)
       @
@@ -2616,7 +2615,7 @@ all.equal(c(-1, weights), c(alpha, betas), check.attributes=FALSE)
       \begin{displaymath}
         y = \mathbb{X} \beta + \varepsilon
       \end{displaymath}
-      Where the \emph{regression coefficients} $\beta$ now contain the intercept $\alpha$: $\beta = (\alpha, \beta1, \ldots, \beta_k)$, and the \emph{predictor matrix} $\mathbb{X}$ has $k+1$ columns and $n$ rows.
+      Where the \emph{regression coefficients} $\beta$ now contain the intercept $\alpha$: $\beta = (\alpha, \beta_1, \ldots, \beta_k)$, and the \emph{predictor matrix} $\mathbb{X}$ has $k+1$ columns and $n$ rows.
       \vskip1ex
       The \emph{OLS} solution for the $\beta$ coefficients is found by equating the \emph{RSS} derivative to zero:
       \begin{flalign*}
@@ -2642,8 +2641,8 @@ invpred <- MASS::ginv(predictor)
 # Calculate the regression coefficients
 betas <- invpred %*% response
 # Perform multivariate regression without intercept term
-model <- lm(response ~ predictor - 1)
-all.equal(drop(betas), coef(model), check.attributes=FALSE)
+regmod <- lm(response ~ predictor - 1)
+all.equal(drop(betas), coef(regmod), check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -2680,10 +2679,10 @@ all.equal(drop(betas), coef(model), check.attributes=FALSE)
         <<echo=TRUE,eval=TRUE>>=
 # Calculate fitted values from regression coefficients
 fittedv <- drop(predictor %*% betas)
-all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
+all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate the residuals
 residuals <- drop(response - fittedv)
-all.equal(residuals, model$residuals, check.attributes=FALSE)
+all.equal(residuals, regmod$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to predictor columns (predictors)
 sapply(residuals %*% predictor, all.equal, target=0)
 # Residuals are orthogonal to the fitted values
@@ -2725,10 +2724,10 @@ influencem <- predictor %*% invpred
 all.equal(influencem, influencem %*% influencem)
 # Calculate fitted values using influence matrix
 fittedv <- drop(influencem %*% response)
-all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
+all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate fitted values from regression coefficients
 fittedv <- drop(predictor %*% betas)
-all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
+all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -2760,21 +2759,21 @@ has the same influence matrix, and
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate zero mean fitted values
-predictor_zm <- t(t(predictor) - colMeans(predictor))
-fitted_zm <- drop(predictor_zm %*% betas)
+predzm <- t(t(predictor) - colMeans(predictor))
+fitted_zm <- drop(predzm %*% betas)
 all.equal(fitted_zm,
-  model$fitted.values - mean(response),
+  regmod$fitted.values - mean(response),
   check.attributes=FALSE)
 # Calculate the residuals
-response_zm <- response - mean(response)
-residuals <- drop(response_zm - fitted_zm)
-all.equal(residuals, model$residuals,
+respzm <- response - mean(response)
+residuals <- drop(respzm - fitted_zm)
+all.equal(residuals, regmod$residuals,
           check.attributes=FALSE)
 # Calculate the influence matrix
-influence_zm <- predictor_zm %*% MASS::ginv(predictor_zm)
+influence_zm <- predzm %*% MASS::ginv(predzm)
 # Compare the fitted values
 all.equal(fitted_zm,
-          drop(influence_zm %*% response_zm),
+          drop(influence_zm %*% respzm),
           check.attributes=FALSE)
       @
   \end{columns}
@@ -2804,19 +2803,19 @@ omitv <- sin(0.2*1:30)
 response <- 0.2*predictor + omitv + 0.2*rnorm(30)
 # Mis-specified regression only one predictor
 model_ovb <- lm(response ~ predictor)
-modelsum <- summary(model_ovb)
+modelsum <- summary(regmod_ovb)
 modelsum$coeff
 modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-lmtest::dwtest(model_ovb)
+lmtest::dwtest(regmod_ovb)
 # Plot the regression diagnostic plots
 x11(width=5, height=7)
 par(mfrow=c(2,1))  # Set plot panels
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
 plot(response ~ predictor)
-abline(model_ovb, lwd=2, col="red")
+abline(regmod_ovb, lwd=2, col="red")
 title(main="Omitted Variable Regression", line=-1)
-plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
+plot(regmod_ovb, which=2, ask=FALSE)  # Plot just Q-Q
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/reg_ovb.png}
@@ -2860,7 +2859,7 @@ plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
       Where $\beta$ is equal to the expected value of $\hat\beta$: $\beta = \mathbbm{E}[\hat\beta] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
         <<echo=TRUE,eval=TRUE>>=
 # Regression model summary
-modelsum <- summary(model)
+modelsum <- summary(regmod)
 # Degrees of freedom of residuals
 nrows <- NROW(predictor)
 ncols <- NCOL(predictor)
@@ -2994,20 +2993,20 @@ formulav <- paste(colnames(retsp)[1],
   paste(colnames(retsp)[-1], collapse="+"),
   sep=" ~ ")
 # Standard regression
-model <- lm(formulav, data=retsp)
-modelsum <- summary(model)
+regmod <- lm(formulav, data=retsp)
+modelsum <- summary(regmod)
 # Bootstrap of regression
 set.seed(1121)  # initialize random number generator
-boot_data <- sapply(1:100, function(x) {
+bootd <- sapply(1:100, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
-  model <- lm(formulav, data=retsp[samplev, ])
-  model$coefficients
+  regmod <- lm(formulav, data=retsp[samplev, ])
+  regmod$coefficients
 })  # end sapply
 # Means and standard errors from regression
 modelsum$coefficients
 # Means and standard errors from bootstrap
-dim(boot_data)
-t(apply(boot_data, MARGIN=1,
+dim(bootd)
+t(apply(bootd, MARGIN=1,
       function(x) c(mean=mean(x), stderror=sd(x))))
       @
   \end{columns}
@@ -3077,8 +3076,8 @@ predsd <- drop(sqrt(newdatav %*% beta_covar %*% t(newdatav)))
 formulav <- paste0("response ~ ",
   paste(colnames(predictor), collapse=" + "), " - 1")
 # Specify multivariate regression using formula
-model <- lm(formulav, data=data.frame(cbind(response, predictor)))
-modelsum <- summary(model)
+regmod <- lm(formulav, data=data.frame(cbind(response, predictor)))
+modelsum <- summary(regmod)
 # Predict from lm object
 predictlm <- predict.lm(object=model, newdata=newdata,
            interval="confidence", confl=1-2*(1-pnorm(2)))
@@ -3158,9 +3157,9 @@ all.equal(tss, ess + rss)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Set regression attribute for intercept
-attributes(model$terms)$intercept <- 1
+attributes(regmod$terms)$intercept <- 1
 # Regression summary
-modelsum <- summary(model)
+modelsum <- summary(regmod)
 # Regression R-squared
 rsquared <- ess/tss
 all.equal(rsquared, modelsum$r.squared)
@@ -3236,11 +3235,11 @@ x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot three curves in loop
 degf <- c(3, 5, 9)  # Degrees of freedom
-colors <- c("black", "red", "blue", "green")
+colorv <- c("black", "red", "blue", "green")
 for (it in 1:NROW(degf)) {
 curve(expr=df(x, df1=degf[it], df2=3),
       xlim=c(0, 4), xlab="", ylab="", lwd=2,
-      col=colors[it], add=as.logical(it-1))
+      col=colorv[it], add=as.logical(it-1))
 }  # end for
       @
     \column{0.5\textwidth}
@@ -3252,7 +3251,7 @@ title(main="F-Distributions", line=0.5)
 # Add legend
 labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
-       labelv, cex=0.8, lwd=2, lty=1, col=colors)
+       y.intersp=0.5, bty="n", labelv, cex=0.8, lwd=2, lty=1, col=colorv)
       @
   \end{columns}
 \end{block}
@@ -3668,20 +3667,19 @@ all.equal(influencem, influence_pcr)
       \includegraphics[width=0.4\paperwidth]{figure/logistic_fun.png}
         <<echo=TRUE,eval=FALSE>>=
 lambdas <- c(0.5, 1, 1.5)
-colors <- c("red", "blue", "green")
+colorv <- c("red", "blue", "green")
 # Plot three curves in loop
 for (it in 1:3) {
   curve(expr=plogis(x, scale=lambdas[it]),
         xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
-        col=colors[it], add=(it>1))
+        col=colorv[it], add=(it>1))
 }  # end for
 # Add title
 title(main="Logistic function", line=0.5)
 # Add legend
 legend("topleft", title="Scale parameters",
-       paste("lambda", lambdas, sep="="),
-       inset=0.05, cex=0.8, lwd=6, bty="n",
-       lty=1, col=colors)
+       paste("lambda", lambdas, sep="="), y.intersp=0.5,
+       inset=0.05, cex=0.8, lwd=6, bty="n", lty=1, col=colorv)
       @
   \end{columns}
 \end{block}
@@ -3716,9 +3714,9 @@ wilcox.test(sample1, sample2)
 predictor <- c(sample1, sample2)
 response <- c(logical(100), !logical(100))
 # Perform logit regression
-glmod <- glm(response ~ predictor, family=binomial(logit))
-class(glmod)
-summary(glmod)
+logmod <- glm(response ~ predictor, family=binomial(logit))
+class(logmod)
+summary(logmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3727,7 +3725,7 @@ summary(glmod)
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 ordern <- order(predictor)
-plot(x=predictor[ordern], y=glmod$fitted.values[ordern],
+plot(x=predictor[ordern], y=logmod$fitted.values[ordern],
      main="Category Densities and Logistic Function",
      type="l", lwd=4, col="orange", xlab="predictor", ylab="density")
 densityv <- density(predictor[response])
@@ -3740,7 +3738,7 @@ lines(densityv, col="blue")
 polygon(c(min(densityv$x), densityv$x, max(densityv$x)), c(min(densityv$y), densityv$y, min(densityv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
 # Add legend
 legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
-       lwd=c(6, NA, NA), pch=c(NA, 15, 15),
+       lwd=c(6, NA, NA), pch=c(NA, 15, 15), bty="n", y.intersp=0.5,
        legend=c("logistic fit", "TRUE", "FALSE"),
        col=c("orange", "red", "blue"),
        text.col=c("black", "red", "blue"))
@@ -3758,7 +3756,7 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $b$ be a binary random variable, which either has the value $b = 1$ with probability $p$, or $b = 0$ with probability $(1-p)$.
+      Let $b$ be a binomial random variable, which either has the value $b = 1$ with probability $p$, or $b = 0$ with probability $(1-p)$.
       \vskip1ex
       Then $b$ follows the binomial distribution:
       \begin{displaymath}
@@ -3784,8 +3782,8 @@ curve(expr=likefun(x, b=1), xlim=c(0, 1), lwd=3,
       main="Binomial Likelihood Function")
 curve(expr=likefun(x, b=0), lwd=3, col="red", add=TRUE)
 legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
-       title=NULL, inset=0.3, cex=1.0, lwd=6,
-       lty=1, col=c("blue", "red"))
+       title=NULL, inset=0.3, cex=1.0, lwd=6, y.intersp=0.5,
+       bty="n", lty=1, col=c("blue", "red"))
       @
   \end{columns}
 \end{block}
@@ -3800,7 +3798,7 @@ legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $b_i$ be binary random variables, with probabilities $p_i$ that depend on the numerical variables $s_i$ through the logistic function: 
+      Let $b_i$ be binomial random variables, with probabilities $p_i$ that depend on the numerical variables $s_i$ through the logistic function: 
       \begin{displaymath}
         p_i = \frac{1}{1 + \exp(- \lambda_0 - \lambda_1 s_i)}
       \end{displaymath}
@@ -3822,6 +3820,8 @@ likefun <- function(coeff, response, predictor) {
   -sum(response*log(probs) + (1-response)*log((1-probs)))
 }  # end likefun
 # Run likelihood function
+coeff <- c(1, 1)
+likefun(coeff, response, predictor)
       @
   \end{columns}
 \end{block}
@@ -3912,7 +3912,7 @@ rastrigin(optiml$par, param=1)
 # Initial parameters
 initp <- c(1, 1)
 # Find max likelihood parameters using steepest descent optimizer
-optim_fit <- optim(par=initp,
+optiml <- optim(par=initp,
                    fn=likefun, # Log-likelihood function
                    method="L-BFGS-B", # Quasi-Newton method
                    response=response,
@@ -3921,11 +3921,11 @@ optim_fit <- optim(par=initp,
                    lower=c(-20, -20), # Lower constraint
                    hessian=TRUE)
 # Optimal logistic parameters
-optim_fit$par
-unname(glmod$coefficients)
+optiml$par
+unname(logmod$coefficients)
 # Standard errors of parameters
-sqrt(diag(solve(optim_fit$hessian)))
-modelsum <- summary(glmod)
+sqrt(diag(solve(optiml$hessian)))
+modelsum <- summary(logmod)
 modelsum$coefficients[, 2]
       @
   \end{columns}
@@ -3942,7 +3942,7 @@ modelsum$coefficients[, 2]
   \begin{columns}[T]
     \column{0.5\textwidth}
       The package \emph{ISLR} contains datasets used in the book
-      \href{http://www-bcf.usc.edu/~gareth/ISL/index.html}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
+      \href{https://www.statlearning.com}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
     \vskip1ex
       The book introduces machine learning techniques using \texttt{R}, and it's a must for advanced finance applications.
       % \fullcite{islbook}
@@ -4031,7 +4031,7 @@ points(income ~ balance, pch=4, lwd=2, col="red",
        data=Default[default, ])
 # Add legend
 legend(x="topright", legend=c("non-defaulters", "defaulters"),
-       bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
+       y.intersp=0.5, bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
       @
   \end{columns}
 \end{block}
@@ -4097,9 +4097,9 @@ boxplot(formula=income ~ default,
       The residuals are not normally distributed, so the data is fitted using the \emph{maximum likelihood} method, instead of least squares.
       <<echo=TRUE,eval=TRUE>>=
 # Fit logistic regression model
-glmod <- glm(default ~ balance, family=binomial(logit))
-class(glmod)
-summary(glmod)
+logmod <- glm(default ~ balance, family=binomial(logit))
+class(logmod)
+summary(logmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4111,8 +4111,8 @@ plot(x=balance, y=default,
      main="Logistic Regression of Credit Defaults", 
      col="orange", xlab="credit balance", ylab="defaults")
 ordern <- order(balance)
-lines(x=balance[ordern], y=glmod$fitted.values[ordern], col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n", lwd=6,
+lines(x=balance[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n", lwd=6, y.intersp=0.5,
        legend=c("defaults", "logit fitted values"),
        col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
       @
@@ -4136,26 +4136,26 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6,
       These two different ways of specifying the \emph{logistic} regression are related, but they are not equivalent, because they have different error terms.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative defaults
-to_tal <- sum(default)
-default_s <- sapply(balance, function(lim) {
+sumd <- sum(default)
+defaultv <- sapply(balance, function(lim) {
     sum(default[balance <= lim])
 })  # end sapply
 # Perform logit regression
-glmod <- glm(cbind(default_s, to_tal-default_s) ~ balance,
+logmod <- glm(cbind(defaultv, sumd-defaultv) ~ balance,
   family=binomial(logit))
-summary(glmod)
+summary(logmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/islr_logistic_count.png}
       <<echo=TRUE,eval=FALSE>>=
-plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
+plot(x=balance, y=defaultv/sumd, col="orange", lwd=1,
      main="Cumulative Defaults Versus Balance",
      xlab="credit balance", ylab="cumulative defaults")
 ordern <- order(balance)
-lines(x=balance[ordern], y=glmod$fitted.values[ordern],
+lines(x=balance[ordern], y=logmod$fitted.values[ordern],
       col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n",
+legend(x="topleft", inset=0.1, bty="n", y.intersp=0.5,
        legend=c("cumulative defaults", "fitted values"),
        col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
       @
@@ -4191,8 +4191,8 @@ colnamev <- colnames(Default)
 formulav <- as.formula(paste(colnamev[1],
   paste(colnamev[-1], collapse="+"), sep=" ~ "))
 formulav
-glmod <- glm(formulav, data=Default, family=binomial(logit))
-summary(glmod)
+logmod <- glm(formulav, data=Default, family=binomial(logit))
+summary(logmod)
       @
   \end{columns}
 \end{block}
@@ -4223,7 +4223,7 @@ summary(glmod)
 glm_student <- glm(default ~ student, family=binomial(logit))
 summary(glm_student)
 # Multifactor coefficient is negative
-glmod$coefficients
+logmod$coefficients
 # Single-factor coefficient is positive
 glm_student$coefficients
       @
@@ -4246,7 +4246,7 @@ plot(x=balance[ordern], y=cum_defaults[ordern, 1],
      col="red", t="l", lwd=2, xlab="credit balance", ylab="",
      main="Cumulative defaults of\n students and non-students")
 lines(x=balance[ordern], y=cum_defaults[ordern, 2], col="blue", lwd=2)
-legend(x="topleft", bty="n",
+legend(x="topleft", bty="n", y.intersp=0.5,
        legend=c("students", "non-students"),
        col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
 # Balance boxplot for student factor
@@ -4271,8 +4271,8 @@ boxplot(formula=balance ~ !student,
       Persons who are students are more likely to default because students have higher credit balances.
       <<echo=TRUE,eval=TRUE>>=
 # Fit logistic regression model
-glmod <- glm(default ~ student, family=binomial(logit))
-summary(glmod)
+logmod <- glm(default ~ student, family=binomial(logit))
+summary(logmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4296,7 +4296,7 @@ plot(income ~ balance,
 points(income ~ balance, pch=4, lwd=2, col="red",
        data=Default[student, ])
 # Add legend
-legend(x="topright", bty="n",
+legend(x="topright", bty="n", y.intersp=0.5,
        legend=c("non-students", "students"),
        col=c("blue", "red"), lty=1, lwd=6, pch=4)
       @
@@ -4328,8 +4328,8 @@ legend(x="topright", bty="n",
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Perform in-sample forecast from logistic regression model
-forecastv <- predict(glmod, type="response")
-all.equal(glmod$fitted.values, forecastv)
+forecastv <- predict(logmod, type="response")
+all.equal(logmod$fitted.values, forecastv)
 # Define discrimination threshold value
 threshold <- 0.7
 # Calculate confusion matrix in-sample
@@ -4339,10 +4339,10 @@ set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
 samplev <- sample.int(n=nrows, size=nrows/2)
 traindata <- Default[samplev, ]
-glmod <- glm(formulav, data=traindata, family=binomial(logit))
+logmod <- glm(formulav, data=traindata, family=binomial(logit))
 # Forecast over test data out-of-sample
 testdata <- Default[-samplev, ]
-forecastv <- predict(glmod, newdata=testdata, type="response")
+forecastv <- predict(logmod, newdata=testdata, type="response")
 # Calculate confusion matrix out-of-sample
 table(actual=!testdata$default, 
       forecast=(forecastv < threshold))
@@ -4482,10 +4482,10 @@ rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
-true_pos <- (1 - error_rates[, "typeII"])
-true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diffit(error_rates[, "typeI"])
-abs(sum(true_pos*false_pos))
+truepos <- (1 - error_rates[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(error_rates[, "typeI"])
+abs(sum(truepos*falsepos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4628,10 +4628,10 @@ look_back <- 111
 half_back <- look_back %/% 2
 medianv <- roll::roll_median(taq$price, width=look_back)
 # medianv <- TTR::runMedian(taq$price, n=look_back)
-medianv <- rutils::lagit(medianv, lagg=-half_back, pad_zeros=FALSE)
+medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
 madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(taq$price, n=look_back)
-madv <- rutils::lagit(madv, lagg=-half_back, pad_zeros=FALSE)
+madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
 # Calculate Z-scores
 zscores <- (taq$price - medianv)/madv
 zscores[is.na(zscores)] <- 0
@@ -4810,10 +4810,10 @@ rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
-true_pos <- (1 - error_rates[, "typeII"])
-true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diffit(error_rates[, "typeI"])
-abs(sum(true_pos*false_pos))
+truepos <- (1 - error_rates[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(error_rates[, "typeI"])
+abs(sum(truepos*falsepos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4867,10 +4867,10 @@ rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
-true_pos <- (1 - error_rates[, "typeII"])
-true_pos <- (true_pos + rutils::lagit(true_pos))/2
-false_pos <- rutils::diffit(error_rates[, "typeI"])
-abs(sum(true_pos*false_pos))
+truepos <- (1 - error_rates[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(error_rates[, "typeI"])
+abs(sum(truepos*falsepos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}

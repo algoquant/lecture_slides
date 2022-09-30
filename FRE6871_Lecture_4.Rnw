@@ -67,13 +67,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#4]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#4, Spring 2022}
+\subtitle{Lecture\#4, Fall 2022}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 18, 2022}
+\date{September 26, 2022}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -153,7 +153,7 @@ knit_theme$set(thm)
       \hskip1em\url{http://setosa.io/ev/eigenvectors-and-eigenvalues/}
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eigenvalues.png}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_values.png}
       <<echo=TRUE,eval=FALSE>>=
 # Create random real symmetric matrix
 matrixv <- matrix(runif(25), nc=5)
@@ -202,11 +202,11 @@ round(t(eigenvec) %*% eigenvec, digits=4)
 round(t(eigenvec) %*% (matrixv %*% eigenvec), digits=4)
 eigend$values
 # eigen decomposition of matrix by rotating the diagonal matrix
-de_comp <- eigenvec %*% (eigend$values * t(eigenvec))
+matrixe <- eigenvec %*% (eigend$values * t(eigenvec))
 # Create diagonal matrix of eigenvalues
-# diago_nal <- diag(eigend$values)
-# de_comp <- eigenvec %*% (diago_nal %*% t(eigenvec))
-all.equal(matrixv, de_comp)
+# diagmat <- diag(eigend$values)
+# matrixe <- eigenvec %*% (diagmat %*% t(eigenvec))
+all.equal(matrixv, matrixe)
       @
       \emph{Orthogonal} matrices represent rotations in \emph{hyperspace}, and their inverse is equal to their transpose: $\mathbb{O}^{-1} = \mathbb{O}^T$.
       \vskip1ex
@@ -329,9 +329,9 @@ leftmat <- eigend$vectors[, 1:nright]
 rightmat <- matrix(runif(nright^2), nc=nright)
 eigend <- eigen(crossprod(rightmat))
 rightmat <- eigend$vectors
-sing_values <- sort(runif(nright, min=1, max=5), decreasing=TRUE)
+singval <- sort(runif(nright, min=1, max=5), decreasing=TRUE)
 # Compose rectangular matrix
-matrixv <- leftmat %*% (sing_values * t(rightmat))
+matrixv <- leftmat %*% (singval * t(rightmat))
 # Perform singular value decomposition
 svdec <- svd(matrixv)
 # Recompose matrixv from SVD
@@ -339,16 +339,16 @@ all.equal(matrixv, svdec$u %*% (svdec$d*t(svdec$v)))
 # Compare SVD with matrixv components
 all.equal(abs(svdec$u), abs(leftmat))
 all.equal(abs(svdec$v), abs(rightmat))
-all.equal(svdec$d, sing_values)
+all.equal(svdec$d, singval)
 # Eigen decomposition of matrixv squared
-square_d <- matrixv %*% t(matrixv)
-eigend <- eigen(square_d)
-all.equal(eigend$values[1:nright], sing_values^2)
+retsq <- matrixv %*% t(matrixv)
+eigend <- eigen(retsq)
+all.equal(eigend$values[1:nright], singval^2)
 all.equal(abs(eigend$vectors[, 1:nright]), abs(leftmat))
 # Eigen decomposition of matrixv squared
-square_d <- t(matrixv) %*% matrixv
-eigend <- eigen(square_d)
-all.equal(eigend$values, sing_values^2)
+retsq <- t(matrixv) %*% matrixv
+eigend <- eigen(retsq)
+all.equal(eigend$values, singval^2)
 all.equal(abs(eigend$vectors), abs(rightmat))
       @
   \end{columns}
@@ -386,22 +386,22 @@ all.equal(abs(eigend$vectors), abs(rightmat))
 matrixv <- matrix(runif(25), nc=5)
 matrixv <- t(matrixv) %*% matrixv
 # Calculate the inverse of matrixv
-inverse <- solve(a=matrixv)
+invmat <- solve(a=matrixv)
 # Multiply inverse with matrix
-round(inverse %*% matrixv, 4)
-round(matrixv %*% inverse, 4)
+round(invmat %*% matrixv, 4)
+round(matrixv %*% invmat, 4)
 
 # Calculate eigenvectors and eigenvalues
 eigend <- eigen(matrixv)
 eigenvec <- eigend$vectors
 
 # Perform eigen decomposition of inverse
-eigen_inverse <- eigenvec %*% (t(eigenvec) / eigend$values)
-all.equal(inverse, eigen_inverse)
+inveigen <- eigenvec %*% (t(eigenvec) / eigend$values)
+all.equal(invmat, inveigen)
 # Decompose diagonal matrix with inverse of eigenvalues
-# diago_nal <- diag(1/eigend$values)
-# eigen_inverse <-
-#   eigenvec %*% (diago_nal %*% t(eigenvec))
+# diagmat <- diag(1/eigend$values)
+# inveigen <-
+#   eigenvec %*% (diagmat %*% t(eigenvec))
       @
   \end{columns}
 \end{block}
@@ -438,25 +438,25 @@ all.equal(inverse, eigen_inverse)
 nleft <- 6 ; nright <- 4
 matrixv <- matrix(runif(nleft*nright), nc=nright)
 # Calculate generalized inverse of matrixv
-inverse <- MASS::ginv(matrixv)
-round(inverse %*% matrixv, 4)
-all.equal(matrixv, matrixv %*% inverse %*% matrixv)
+invmat <- MASS::ginv(matrixv)
+round(invmat %*% matrixv, 4)
+all.equal(matrixv, matrixv %*% invmat %*% matrixv)
 # Random rectangular matrix: nleft < nright
 nleft <- 4 ; nright <- 6
 matrixv <- matrix(runif(nleft*nright), nc=nright)
 # Calculate generalized inverse of matrixv
-inverse <- MASS::ginv(matrixv)
-all.equal(matrixv, matrixv %*% inverse %*% matrixv)
-round(matrixv %*% inverse, 4)
-round(inverse %*% matrixv, 4)
+invmat <- MASS::ginv(matrixv)
+all.equal(matrixv, matrixv %*% invmat %*% matrixv)
+round(matrixv %*% invmat, 4)
+round(invmat %*% matrixv, 4)
 # Perform singular value decomposition
 svdec <- svd(matrixv)
 # Calculate generalized inverse from SVD
-svd_inverse <- svdec$v %*% (t(svdec$u) / svdec$d)
-all.equal(svd_inverse, inverse)
+invsvd <- svdec$v %*% (t(svdec$u) / svdec$d)
+all.equal(invsvd, invmat)
 # Calculate Moore-Penrose pseudo-inverse
 invmp <- MASS::ginv(t(matrixv) %*% matrixv) %*% t(matrixv)
-all.equal(invmp, inverse)
+all.equal(invmp, invmat)
       @
   \end{columns}
 \end{block}
@@ -487,29 +487,29 @@ matrixv <- t(matrixv) %*% matrixv
 # Perform singular value decomposition
 svdec <- svd(matrixv)
 # Incorrect inverse from SVD because of zero singular values
-svd_inverse <- svdec$v %*% (t(svdec$u) / svdec$d)
+invsvd <- svdec$v %*% (t(svdec$u) / svdec$d)
 # Inverse property doesn't hold
-all.equal(matrixv, matrixv %*% svd_inverse %*% matrixv)
+all.equal(matrixv, matrixv %*% invsvd %*% matrixv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Set tolerance for determining zero singular values
-precision <- sqrt(.Machine$double.eps)
+precv <- sqrt(.Machine$double.eps)
 # Check for zero singular values
 round(svdec$d, 12)
-not_zero <- (svdec$d > (precision * svdec$d[1]))
+notzero <- (svdec$d > (precv * svdec$d[1]))
 # Calculate regularized inverse from SVD
-svd_inverse <- svdec$v[, not_zero] %*%
-  (t(svdec$u[, not_zero]) / svdec$d[not_zero])
+invsvd <- svdec$v[, notzero] %*%
+  (t(svdec$u[, notzero]) / svdec$d[notzero])
 # Verify inverse property of matrixv
-all.equal(matrixv, matrixv %*% svd_inverse %*% matrixv)
+all.equal(matrixv, matrixv %*% invsvd %*% matrixv)
 # Calculate regularized inverse using MASS::ginv()
-inverse <- MASS::ginv(matrixv)
-all.equal(svd_inverse, inverse)
+invmat <- MASS::ginv(matrixv)
+all.equal(invsvd, invmat)
 # Calculate Moore-Penrose pseudo-inverse
 invmp <- MASS::ginv(t(matrixv) %*% matrixv) %*% t(matrixv)
-all.equal(invmp, inverse)
+all.equal(invmp, invmat)
       @
   \end{columns}
 \end{block}
@@ -536,10 +536,10 @@ all.equal(invmp, inverse)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Diagonalize the "unit" matrix
-unitmat <- matrixv %*% inverse
+# Diagonalize the unit matrix
+unitmat <- matrixv %*% invmat
 round(unitmat, 4)
-round(matrixv %*% inverse, 4)
+round(matrixv %*% invmat, 4)
 round(t(svdec$u) %*% unitmat %*% svdec$v, 4)
       @
   \end{columns}
@@ -579,14 +579,14 @@ round(t(svdec$u) %*% unitmat %*% svdec$v, 4)
 matrixv <- matrix(c(1, 2, -1, 2), nc=2)
 vectorv <- c(2, 1)
 # Calculate the inverse of matrixv
-inverse <- solve(a=matrixv)
-inverse %*% matrixv
+invmat <- solve(a=matrixv)
+invmat %*% matrixv
 # Calculate solution using inverse of matrixv
-solu_tion <- inverse %*% vectorv
-matrixv %*% solu_tion
+solutionv <- invmat %*% vectorv
+matrixv %*% solutionv
 # Calculate solution of linear system
-solu_tion <- solve(a=matrixv, b=vectorv)
-matrixv %*% solu_tion
+solutionv <- solve(a=matrixv, b=vectorv)
+matrixv %*% solutionv
       @
   \end{columns}
 \end{block}
@@ -594,57 +594,58 @@ matrixv %*% solu_tion
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{Cholesky Decomposition}
+\section{Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{One-dimensional Optimization Using The Functional \texttt{optimize()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Cholesky} decomposition of a \emph{positive definite} matrix $\mathbb{A}$ is defined as:
-      \begin{displaymath}
-        \mathbb{A} = \mathbb{L}^T \mathbb{L}
-      \end{displaymath}
-      Where $\mathbb{L}$ is an upper triangular matrix with positive diagonal elements.
+      The functional \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable.
       \vskip1ex
-      The matrix $\mathbb{L}$ can be considered the square root of $\mathbb{A}$.
+      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval.
       \vskip1ex
-      The vast majority of random \emph{positive semi-definite} matrices are also \emph{positive definite}.
+      \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
       \vskip1ex
-      The function \texttt{chol()} calculates the \emph{Cholesky} decomposition of a \emph{positive definite} matrix.
-      \vskip1ex
-      The functions \texttt{chol2inv()} and \texttt{chol()} calculate the inverse of a \emph{positive definite} matrix two times faster than \texttt{solve()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create large random positive semi-definite matrix
-matrixv <- matrix(runif(1e4), nc=100)
-matrixv <- t(matrixv) %*% matrixv
-# Calculate eigen decomposition
-eigend <- eigen(matrixv)
-eigenval <- eigend$values
-eigenvec <- eigend$vectors
-# Set tolerance for determining zero singular values
-precision <- sqrt(.Machine$double.eps)
-# If needed convert to positive definite matrix
-not_zero <- (eigenval > (precision*eigenval[1]))
-if (sum(!not_zero) > 0) {
-  eigenval[!not_zero] <- 2*precision
-  matrixv <- eigenvec %*% (eigenval * t(eigenvec))
-}  # end if
-# Calculate the Cholesky matrixv
-cholmat <- chol(matrixv)
-cholmat[1:5, 1:5]
-all.equal(matrixv, t(cholmat) %*% cholmat)
-# Calculate inverse from Cholesky
-chol_inverse <- chol2inv(cholmat)
-all.equal(solve(matrixv), chol_inverse)
-# Compare speed of Cholesky inversion
+      The argument \texttt{tol} specifies the numerical accuracy, with smaller values of \texttt{tol} requiring more computations.
+        <<echo=TRUE,eval=FALSE>>=
+# Display the structure of optimize()
+str(optimize)
+# Objective function with multiple minima
+objfun <- function(input, param1=0.01) {
+  sin(0.25*pi*input) + param1*(input-1)^2
+}  # end objfun
+optiml <- optimize(f=objfun, interval=c(-4, 2))
+class(optiml)
+unlist(optiml)
+# Find minimum in different interval
+unlist(optimize(f=objfun, interval=c(0, 8)))
+# Find minimum with less accuracy
+accl <- 1e4*.Machine$double.eps^0.25
+unlist(optimize(f=objfun, interval=c(0, 8), tol=accl))
+# Microbenchmark optimize() with less accuracy
 library(microbenchmark)
 summary(microbenchmark(
-  sol_ve=solve(matrixv),
-  cholmat=chol2inv(chol(matrixv)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  more_accurate = optimize(f=objfun, interval=c(0, 8)),
+  less_accurate = optimize(f=objfun, interval=c(0, 8), tol=accl),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/optim_one_dim-1}
+      \vspace{-4em}
+        <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Plot the objective function
+curve(expr=objfun, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
+# Add title
+title(main="Objective Function", line=-1)
       @
   \end{columns}
 \end{block}
@@ -653,39 +654,36 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Correlated Returns Using Cholesky Matrix}
+\subsection{Package \protect\emph{rgl} for Interactive 3d Surface Plots}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Cholesky} decomposition of a covariance matrix can be used to simulate correlated \emph{Normal} returns following the given covariance matrix: $\mathbb{C} = \mathbb{L}^T \mathbb{L}$
+      The package \emph{rgl} creates \emph{interactive} 3d scatter plots and surface plots by calling the 
+      \href{https://www.khronos.org/webgl/wiki/Main_Page}{\emph{WebGL}}
+      \href{https://en.wikipedia.org/wiki/JavaScript}{\emph{JavaScript}}
+      library.
       \vskip1ex
-      Let $\mathbb{R}$ be a matrix with columns of \emph{uncorrelated} returns following the \emph{Standard Normal} distribution.
-      \vskip1ex
-      The \emph{correlated} returns $\mathbb{R}_c$ can be calculated from the \emph{uncorrelated} returns $\mathbb{R}$ by multiplying them by the \emph{Cholesky} matrix $\mathbb{L}$:
-      \begin{displaymath}
-        \mathbb{R}_c = \mathbb{L}^T \mathbb{R}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate random covariance matrix
-covmat <- matrix(runif(25), nc=5)
-covmat <- t(covmat) %*% covmat
-# Calculate the Cholesky matrix
-cholmat <- chol(covmat)
-cholmat
-# Simulate random uncorrelated returns
-nassets <- 5
-nrows <- 10000
-returns <- matrix(rnorm(nassets*nrows), nc=nassets)
-# Calculate correlated returns by applying Cholesky
-corr_returns <- returns %*% cholmat
-# Calculate covariance matrix
-cov_returns <- crossprod(corr_returns) /(nrows-1)
-all.equal(covmat, cov_returns)
+      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a \emph{vectorized} function or a matrix.
+      <<eval=FALSE,echo=TRUE>>=
+# Rastrigin function
+rastrigin <- function(x, y, param=25) {
+  x^2 + y^2 - param*(cos(x) + cos(y))
+}  # end rastrigin
+# Rastrigin function is vectorized!
+rastrigin(c(-10, 5), c(-10, 5))
+# Set rgl options and load package rgl
+library(rgl)
+options(rgl.useNULL=TRUE)
+# Draw 3d surface plot of function
+rgl::persp3d(x=rastrigin, xlim=c(-10, 10), ylim=c(-10, 10),
+        col="green", axes=FALSE, param=15)
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
       @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/rgl_rastrigin.png}
   \end{columns}
 \end{block}
 
@@ -693,184 +691,52 @@ all.equal(covmat, cov_returns)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Eigenvalues of Singular Covariance Matrices}
+\subsection{Multi-dimensional Optimization Using \texttt{optim()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If $\mathbb{R}$ is a matrix of returns (with zero mean) for a portfolio of \texttt{k} assets (columns), over \texttt{n} time periods (rows), then the sample covariance matrix is equal to:
-      \begin{displaymath}
-        \mathbb{C} = \mathbb{R}^T \mathbb{R} / (n-1)
-      \end{displaymath}
-      If the number of time periods of returns is less than the number of portfolio assets, then the returns are \emph{collinear}, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero).
+      The function \texttt{optim()} performs \emph{multi-dimensional} optimization.
       \vskip1ex
-      The function \texttt{crossprod()} performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but it is slightly faster.
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate random portfolio returns
-nassets <- 10
-nrows <- 100
-set.seed(1121)  # Initialize random number generator
-returns <- matrix(rnorm(nassets*nrows), nc=nassets)
-# Calculate de-meaned returns matrix
-returns <- t(t(returns) - colMeans(returns))
-# Or
-returns <- apply(returns, MARGIN=2, function(x) (x-mean(x)))
-# Calculate covariance matrix
-covmat <- crossprod(returns) /(nrows-1)
-# Calculate eigenvectors and eigenvalues
-eigend <- eigen(covmat)
-eigend$values
-barplot(eigend$values, # Plot eigenvalues
-  xlab="", ylab="", las=3,
-  names.arg=paste0("ev", 1:NROW(eigend$values)),
-  main="Eigenvalues of covariance matrix")
-      @
+      The argument \texttt{fn} is the objective function to be minimized.
+      \vskip1ex
+      The argument of \texttt{fn} that is to be optimized, must be a vector argument.
+      \vskip1ex
+      The argument \texttt{par} is the initial vector argument value.
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton \emph{gradient} optimization method.
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
+      \vskip1ex
+      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum.
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eigen_covmat.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate eigenvectors and eigenvalues
-# as function of number of returns
-ndata <- ((nassets/2):(2*nassets))
-e_values <- sapply(ndata, function(x) {
-  returns <- returns[1:x, ]
-  returns <- apply(returns, MARGIN=2, function(y) (y - mean(y)))
-  covmat <- crossprod(returns) / (x-1)
-  min(eigen(covmat)$values)
-})  # end sapply
-plot(y=e_values, x=ndata, t="l", xlab="", ylab="", lwd=3, col="blue",
-  main="Smallest eigenvalue of covariance matrix
-  as function of number of returns")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Regularized Inverse of Singular Covariance Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{regularization} technique allows calculating the inverse of \emph{singular} covariance matrices while reducing the effects of statistical noise.
-      \vskip1ex
-      If the number of time periods of returns is less than the number of assets (columns), then the covariance matrix of returns is \emph{singular}, and some of its \emph{eigenvalues} are zero, so it doesn't have an inverse.
-      \vskip1ex
-      The \emph{regularized} inverse $\mathbb{C}_n^{-1}$ is calculated by removing the higher order eigenvalues that are almost zero, and keeping only the first $n$ \emph{eigenvalues}:
-      \begin{displaymath}
-        \mathbb{C}_n^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
-      \end{displaymath}
-      Where $\mathbb{D}_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
-      \vskip1ex
-      The function \texttt{MASS::ginv()} calculates the \emph{regularized} inverse of a matrix.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create rectangular matrix with collinear columns
-matrixv <- matrix(rnorm(10*8), nc=10)
-# Calculate covariance matrix
-covmat <- cov(matrixv)
-# Calculate inverse of covmat - error
-inverse <- solve(covmat)
-# Calculate regularized inverse of covmat
-inverse <- MASS::ginv(covmat)
-# Verify inverse property of matrixv
-all.equal(covmat, covmat %*% inverse %*% covmat)
-# Perform eigen decomposition
-eigend <- eigen(covmat)
-eigenvec <- eigend$vectors
-eigenval <- eigend$values
-# Set tolerance for determining zero singular values
-precision <- sqrt(.Machine$double.eps)
-# Calculate regularized inverse matrix
-not_zero <- (eigenval > (precision * eigenval[1]))
-reg_inverse <- eigenvec[, not_zero] %*%
-  (t(eigenvec[, not_zero]) / eigenval[not_zero])
-# Verify inverse property of matrixv
-all.equal(inverse, reg_inverse)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Bias-Variance Tradeoff of the Regularized Inverse}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Removing the very small higher order eigenvalues can also be used to reduce the propagation of statistical noise and improve the signal-to-noise ratio.
-      \vskip1ex
-      Removing a larger number of eigenvalues further reduces the noise, but it increases the bias of the covariance matrix.
-      \vskip1ex
-      This is an example of the \emph{bias-variance tradeoff}.
-      \vskip1ex
-      Even though the \emph{regularized} inverse $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
-      \vskip1ex
-      The parameter \texttt{max\_eigen} specifies the number of eigenvalues used for calculating the \emph{regularized} inverse of the covariance matrix of returns.
-      \vskip1ex
-      The optimal value of the parameter \texttt{max\_eigen} can be determined using \emph{backtesting} (\emph{cross-validation}).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate regularized inverse matrix using cutoff
-eigen_max <- 3
-inverse <- eigenvec[, 1:eigen_max] %*%
-  (t(eigenvec[, 1:eigen_max]) / eigend$values[1:eigen_max])
-# Verify inverse property of matrixv
-all.equal(inverse, reg_inverse)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Shrinkage Estimator of Covariance Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The estimates of the covariance matrix suffer from statistical noise, and those noise are magnified when the covariance matrix is inverted.
-      \vskip1ex
-      In the \emph{shrinkage} technique the covariance matrix $\mathbb{C}_s$ is estimated as a weighted sum of the sample covariance estimator $\mathbb{C}$ plus a target matrix $\mathbb{T}$:
-      \begin{displaymath}
-        \mathbb{C}_s = (1-\alpha) \, \mathbb{C} + \alpha \, \mathbb{T}
-      \end{displaymath}
-      The target matrix $\mathbb{T}$ represents an estimate of the covariance matrix subject to some constraint, such as that all the correlations are equal to each other.
-      \vskip1ex
-      The shrinkage intensity $\alpha$ determines the amount of shrinkage that is applied, with $\alpha = 1$ representing a complete shrinkage towards the target matrix.
-      \vskip1ex
-      The \emph{shrinkage} estimator reduces the estimate variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create random covariance matrix
-set.seed(1121)
-matrixv <- matrix(rnorm(5e2), nc=5)
-covmat <- cov(matrixv)
-cormat <- cor(matrixv)
-stdev <- sqrt(diag(covmat))
-# Calculate target matrix
-cor_mean <- mean(cormat[upper.tri(cormat)])
-targetr <- matrix(cor_mean, nr=NROW(covmat), nc=NCOL(covmat))
-diag(targetr) <- 1
-targetr <- t(t(targetr * stdev) * stdev)
-# Calculate shrinkage covariance matrix
-alpha <- 0.5
-cov_shrink <- (1-alpha)*covmat + alpha*targetr
-# Calculate inverse matrix
-inverse <- solve(cov_shrink)
+        <<echo=TRUE,eval=FALSE>>=
+# Rastrigin function with vector argument for optimization
+rastrigin <- function(vectorv, param=25) {
+  sum(vectorv^2 - param*cos(vectorv))
+}  # end rastrigin
+vectorv <- c(pi, pi/4)
+rastrigin(vectorv=vectorv)
+# Draw 3d surface plot of Rastrigin function
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastrigin(vectorv=c(x, y))),
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastrigin")
+# Optimize with respect to vector argument
+optiml <- optim(par=vectorv, fn=rastrigin,
+                method="L-BFGS-B",
+                upper=c(14*pi, 14*pi),
+                lower=c(pi/2, pi/2),
+                param=1)
+# Optimal parameters and value
+optiml$par
+optiml$value
+rastrigin(optiml$par, param=1)
       @
   \end{columns}
 \end{block}
@@ -902,34 +768,34 @@ inverse <- solve(cov_shrink)
 # Symbols for constant maturity Treasury rates
 symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
 # Create new environment for time series
-rates_env <- new.env()
-# Download time series for symbolv into rates_env
-quantmod::getSymbols(symbolv, env=rates_env, src="FRED")
-# List files in rates_env
-ls(rates_env)
-# Get class of all objects in rates_env
-sapply(rates_env, class)
+ratesenv <- new.env()
+# Download time series for symbolv into ratesenv
+quantmod::getSymbols(symbolv, env=ratesenv, src="FRED")
+# List files in ratesenv
+ls(ratesenv)
+# Get class of all objects in ratesenv
+sapply(ratesenv, class)
 # Get class of all objects in R workspace
 sapply(ls(), function(name) class(get(name)))
 # Save the time series environment into a binary .RData file
-save(rates_env, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
+save(ratesenv, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/treas_10y_rate.png}
       <<echo=TRUE,eval=FALSE>>=
 # Get class of time series object DGS10
-class(get(x="DGS10", envir=rates_env))
+class(get(x="DGS10", envir=ratesenv))
 # Another way
-class(rates_env$DGS10)
+class(ratesenv$DGS10)
 # Get first 6 rows of time series
-head(rates_env$DGS10)
+head(ratesenv$DGS10)
 # Plot dygraphs of 10-year Treasury rate
-dygraphs::dygraph(rates_env$DGS10, main="10-year Treasury Rate") %>%
+dygraphs::dygraph(ratesenv$DGS10, main="10-year Treasury Rate") %>%
   dyOptions(colors="blue", strokeWidth=2)
 # Plot 10-year constant maturity Treasury rate
 x11(width=6, height=5)
 par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
-chart_Series(rates_env$DGS10["1990/"], name="10-year Treasury Rate")
+chart_Series(ratesenv$DGS10["1990/"], name="10-year Treasury Rate")
       @
   \end{columns}
 \end{block}
@@ -951,17 +817,17 @@ chart_Series(rates_env$DGS10["1990/"], name="10-year Treasury Rate")
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get most recent yield curve
-yc2021 <- eapply(rates_env, xts::last)
-class(yc2021)
-yc2021 <- do.call(cbind, yc2021)
+ycnow <- eapply(ratesenv, xts::last)
+class(ycnow)
+ycnow <- do.call(cbind, ycnow)
 # Check if 2020-03-25 is not a holiday
-day2020 <- as.Date("2020-03-25")
-weekdays(day2020)
+date2020 <- as.Date("2020-03-25")
+weekdays(date2020)
 # Get yield curve from 2020-03-25
-yc2020 <- eapply(rates_env, function(x) x[day2020])
+yc2020 <- eapply(ratesenv, function(x) x[date2020])
 yc2020 <- do.call(cbind, yc2020)
 # Combine the yield curves
-rates <- c(yc2020, yc2021)
+rates <- c(yc2020, ycnow)
 # Rename columns and rows, sort columns, and transpose into matrix
 colnames(rates) <- substr(colnames(rates), start=4, stop=11)
 rates <- rates[, order(as.numeric(colnames(rates)))]
@@ -1005,10 +871,10 @@ par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
-dates <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
-dates <- zoo::index(rates_env$DGS1["2006/"][dates])
+dates <- xts::endpoints(ratesenv$DGS1["2006/"], on="years")
+dates <- zoo::index(ratesenv$DGS1["2006/"][dates])
 # Create time series of end-of-year rates
-rates <- eapply(rates_env, function(ra_te) ra_te[dates])
+rates <- eapply(ratesenv, function(ratev) ratev[dates])
 rates <- rutils::do_call(cbind, rates)
 # Rename columns and rows, sort columns, and transpose into matrix
 colnames(rates) <- substr(colnames(rates), start=4, stop=11)
@@ -1057,21 +923,21 @@ legend("topleft", legend=colnames(rates),
         \mathbb{C} = \frac{(\mathbf{r} - \bar{\mathbf{r}})^T (\mathbf{r} - \bar{\mathbf{r}})} {n-1}
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
-# Extract rates from rates_env
+# Extract rates from ratesenv
 symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
-rates <- mget(symbolv, envir=rates_env)
+rates <- mget(symbolv, envir=ratesenv)
 rates <- rutils::do_call(cbind, rates)
 rates <- zoo::na.locf(rates, na.rm=FALSE)
 rates <- zoo::na.locf(rates, fromLast=TRUE)
 # Calculate daily percentage rates changes
-returns <- rutils::diffit(log(rates))
+retsp <- rutils::diffit(log(rates))
 # De-mean the returns
-returns <- lapply(returns, function(x) {x - mean(x)})
-returns <- rutils::do_call(cbind, returns)
-sapply(returns, mean)
+retsp <- lapply(retsp, function(x) {x - mean(x)})
+retsp <- rutils::do_call(cbind, retsp)
+sapply(retsp, mean)
 # Covariance and Correlation matrices of Treasury rates
-covmat <- cov(returns)
-cormat <- cor(returns)
+covmat <- cov(retsp)
+cormat <- cor(retsp)
 # Reorder correlation matrix based on clusters
 library(corrplot)
 ordern <- corrMatOrder(cormat, order="hclust",
@@ -1124,17 +990,17 @@ nweights <- NROW(symbolv)
 weights <- rep(1/sqrt(nweights), nweights)
 names(weights) <- symbolv
 # Objective function equal to minus portfolio variance
-objfun <- function(weights, returns) {
-  retsp <- returns %*% weights
+objfun <- function(weights, retsp) {
+  retsp <- retsp %*% weights
   -1e7*var(retsp) + 1e7*(1 - sum(weights*weights))^2
 }  # end objfun
 # Objective function for equal weight portfolio
-objfun(weights, returns)
+objfun(weights, retsp)
 # Compare speed of vector multiplication methods
 library(microbenchmark)
 summary(microbenchmark(
-  transp=t(returns) %*% returns,
-  sumv=sum(returns*returns),
+  transp=t(retsp) %*% retsp,
+  sumv=sum(retsp*retsp),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -1143,13 +1009,13 @@ summary(microbenchmark(
 # Find weights with maximum variance
 optiml <- optim(par=weights,
   fn=objfun,
-  returns=returns,
+  retsp=retsp,
   method="L-BFGS-B",
   upper=rep(5.0, nweights),
   lower=rep(-5.0, nweights))
 # Optimal weights and maximum variance
 weights1 <- optiml$par
-objfun(weights1, returns)
+objfun(weights1, retsp)
 # Plot first principal component loadings
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -1176,17 +1042,17 @@ barplot(weights1, names.arg=names(weights1),
       The number of principal components is equal to the dimension of the covariance matrix.
       <<echo=TRUE,eval=FALSE>>=
 # pc1 weights and returns
-pc1 <- drop(returns %*% weights1)
+pc1 <- drop(retsp %*% weights1)
 # Redefine objective function
-objfun <- function(weights, returns) {
-  retsp <- returns %*% weights
+objfun <- function(weights, retsp) {
+  retsp <- retsp %*% weights
   -1e7*var(retsp) + 1e7*(1 - sum(weights^2))^2 +
     1e7*sum(weights1*weights)^2
 }  # end objfun
 # Find second principal component weights
 optiml <- optim(par=weights,
                    fn=objfun,
-                   returns=returns,
+                   retsp=retsp,
                    method="L-BFGS-B",
                    upper=rep(5.0, nweights),
                    lower=rep(-5.0, nweights))
@@ -1197,7 +1063,7 @@ optiml <- optim(par=weights,
       <<echo=TRUE,eval=FALSE>>=
 # pc2 weights and returns
 weights2 <- optiml$par
-pc2 <- drop(returns %*% weights2)
+pc2 <- drop(retsp %*% weights2)
 sum(pc1*pc2)
 # Plot second principal component loadings
 barplot(weights2, names.arg=names(weights2),
@@ -1281,7 +1147,7 @@ barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
 # Eigen decomposition of correlation matrix
 eigend <- eigen(cormat)
 # Perform PCA with scaling
-pcad <- prcomp(returns, scale=TRUE)
+pcad <- prcomp(retsp, scale=TRUE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -1289,7 +1155,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
 # Eigen decomposition of covariance matrix
 eigend <- eigen(covmat)
 # Perform PCA without scaling
-pcad <- prcomp(returns, scale=FALSE)
+pcad <- prcomp(retsp, scale=FALSE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -1323,7 +1189,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
       A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # Perform principal component analysis PCA
-pcad <- prcomp(returns, scale=TRUE)
+pcad <- prcomp(retsp, scale=TRUE)
 # Plot standard deviations
 barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
   las=3, xlab="", ylab="",
@@ -1386,17 +1252,17 @@ for (ordern in 1:NCOL(pcad$rotation)) {
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
 # Standardize (de-mean and scale) the returns
-returns <- lapply(returns, function(x) {(x - mean(x))/sd(x)})
-returns <- rutils::do_call(cbind, returns)
-sapply(returns, mean)
-sapply(returns, sd)
+retsp <- lapply(retsp, function(x) {(x - mean(x))/sd(x)})
+retsp <- rutils::do_call(cbind, retsp)
+sapply(retsp, mean)
+sapply(retsp, sd)
 # Calculate principal component time series
-pcacum <- returns %*% pcad$rotation
+pcacum <- retsp %*% pcad$rotation
 all.equal(pcad$x, pcacum, check.attributes=FALSE)
 # Calculate products of principal component time series
 round(t(pcacum) %*% pcacum, 2)
 # Coerce to xts time series
-pcacum <- xts(pcacum, order.by=zoo::index(returns))
+pcacum <- xts(pcacum, order.by=zoo::index(retsp))
 pcacum <- cumsum(pcacum)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
@@ -1429,9 +1295,9 @@ for (ordern in 1:NCOL(pcacum)) {
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Invert all the principal component time series
-pcarets <- returns %*% pcad$rotation
-solved <- pcarets %*% solve(pcad$rotation)
-all.equal(coredata(returns), solved)
+retspca <- retsp %*% pcad$rotation
+solved <- retspca %*% solve(pcad$rotation)
+all.equal(coredata(retsp), solved)
       @
   \end{columns}
 \end{block}
@@ -1453,10 +1319,10 @@ all.equal(coredata(returns), solved)
       The \emph{Kaiser-Guttman} rule uses only \emph{principal components} with variance greater than $1$.
       <<echo=TRUE,eval=FALSE>>=
 # Invert first 3 principal component time series
-solved <- pcarets[, 1:3] %*% solve(pcad$rotation)[1:3, ]
-solved <- xts::xts(solved, zoo::index(returns))
+solved <- retspca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
+solved <- xts::xts(solved, zoo::index(retsp))
 solved <- cumsum(solved)
-retc <- cumsum(returns)
+retc <- cumsum(retsp)
 # Plot the solved returns
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
@@ -1534,6 +1400,42 @@ plot(x=disc_curves$zerorates, t="l", main="zerorates")
 
 %%%%%%%%%%%%%%%
 \section{Univariate Regression}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vector and Matrix Calculus}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+    \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\mathbf{v}$ and $\mathbf{w}$ be vectors, with $\mathbf{v} = \left\{ v_i \right\}_{i=1}^{i=n}$, and let $\mathbbm{1}$ be the unit vector, with $\mathbbm{1} = \left\{ 1 \right\}_{i=1}^{i=n}$.
+      \vskip1ex
+      Then the inner product of $\mathbf{v}$ and $\mathbf{w}$ can be written as $\mathbf{v}^T \mathbf{w} = \mathbf{w}^T \mathbf{v} = {\sum_{i=1}^n {v_i w_i}}$.
+      \vskip1ex
+      We can then express the sum of the elements of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbbm{1} = \mathbbm{1}^T \mathbf{v} = {\sum_{i=1}^n v_i}$.
+      \vskip1ex
+      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v^2_i}$.
+      \vskip1ex
+      Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$.
+      \vskip1ex
+      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as:
+      \begin{displaymath}
+        \mathbf{v}^T \mathbb{A} \, \mathbf{w} = \mathbf{w}^T \mathbb{A}^T \mathbf{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        \frac{d (\mathbf{v}^T \mathbbm{1})}{d \mathbf{v}} = d_v[\mathbf{v}^T \mathbbm{1}] = d_v[\mathbbm{1}^T \mathbf{v}] = \mathbbm{1}^T\\
+        d_v[\mathbf{v}^T \mathbf{w}] = d_v[\mathbf{w}^T \mathbf{v}] = \mathbf{w}^T\\
+        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{w}] = \mathbf{w}^T \mathbb{A}^T\\
+        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{v}] = \mathbf{v}^T \mathbb{A} + \mathbf{v}^T \mathbb{A}^T
+      \end{align*}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%
 \subsection{Formula Objects}
@@ -1616,7 +1518,7 @@ set.seed(1121)  # Initialize random number generator
 predictor <- runif(nrows)
 noise <- rnorm(nrows)
 # Response equals linear form plus random noise
-response <- (1 + predictor + noise)
+response <- (-3 + 2*predictor + noise)
       @
       \vspace{-1em}
       The \emph{response vector} and the \emph{predictor matrix} don't have to be normally distributed.
@@ -1664,10 +1566,10 @@ response <- (1 + predictor + noise)
       The expected value of the \emph{RSS} is equal to the \emph{degrees of freedom} $(n-2)$ times the variance $\sigma^2_\varepsilon$ of the \emph{residuals} $\varepsilon_i$: $\mathbb{E}[RSS] = (n-2) \sigma^2_\varepsilon$.
         <<echo=TRUE,eval=TRUE>>=
 # Calculate de-meaned explanatory (predictor) and response vectors
-predictor_zm <- predictor - mean(predictor)
-response_zm <- response - mean(response)
+predzm <- predictor - mean(predictor)
+respzm <- response - mean(response)
 # Calculate the regression beta
-betav <- sum(predictor_zm*response_zm)/sum(predictor_zm^2)
+betav <- cov(predictor, response)/var(predictor)
 # Calculate the regression alpha
 alpha <- mean(response) - betav*mean(predictor)
       @
@@ -1829,12 +1731,12 @@ abline(h=0, lwd=3, col="red")
 # Degrees of freedom of residuals
 degf <- model$df.residual
 # Standard deviation of residuals
-resid_std <- sqrt(sum(residuals^2)/degf)
+residsd <- sqrt(sum(residuals^2)/degf)
 # Standard error of beta
-beta_std <- resid_std/sqrt(sum(predictor_zm^2))
+betasd <- residsd/sqrt(sum(predzm^2))
 # Standard error of alpha
-alpha_std <- resid_std*
-  sqrt(1/nrows + mean(predictor)^2/sum(predictor_zm^2))
+alphasd <- residsd*
+  sqrt(1/nrows + mean(predictor)^2/sum(predzm^2))
       @
   \end{columns}
 \end{block}
@@ -1897,7 +1799,7 @@ attributes(modelsum)$names  # get summary elements
 modelsum$coeff
 # Standard errors
 modelsum$coefficients[2, "Std. Error"]
-all.equal(c(alpha_std, beta_std),
+all.equal(c(alphasd, betasd),
   modelsum$coefficients[, "Std. Error"], 
   check.attributes=FALSE)
 # R-squared
@@ -1927,7 +1829,7 @@ anova(model)
         <<echo=(-(1:1)),eval=TRUE>>=
 set.seed(1121)  # initialize random number generator
 # High noise compared to coefficient
-response <- (1 + predictor + rnorm(nrows, sd=8))
+response <- (-3 + 2*predictor + rnorm(nrows, sd=8))
 model <- lm(formulav)  # Perform regression
 # Values of regression coefficients are not
 # Statistically significant
@@ -1965,16 +1867,16 @@ reg_stats <- function(stdev) {  # Noisy regression
          fstat=fstatistic[1]))
 }  # end reg_stats
 # Apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <- t(sapply(vec_sd, reg_stats))
+vecsd <- seq(from=0.1, to=0.5, by=0.1)
+names(vecsd) <- paste0("sd=", vecsd)
+statsmat <- t(sapply(vecsd, reg_stats))
 # Plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (it in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, it], type="l",
+par(mfrow=c(NCOL(statsmat), 1))
+for (it in 1:NCOL(statsmat)) {
+  plot(statsmat[, it], type="l",
        xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[it], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)), labels=rownames(mat_stats))
+  title(main=colnames(statsmat)[it], line=-1.0)
+  axis(1, at=1:(NROW(statsmat)), labels=rownames(statsmat))
 }  # end for
       @
     \column{0.5\textwidth}
@@ -2006,9 +1908,9 @@ reg_stats <- function(datav) {  # get regression
          fstat=fstatistic[1]))
 }  # end reg_stats
 # Apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <- t(sapply(vec_sd, function(stdev) {
+vecsd <- seq(from=0.1, to=0.5, by=0.1)
+names(vecsd) <- paste0("sd=", vecsd)
+statsmat <- t(sapply(vecsd, function(stdev) {
     set.seed(1121)  # initialize number generator
 # Define explanatory (predictor) and response variables
     predictor <- rnorm(100, mean=2)
@@ -2017,13 +1919,13 @@ mat_stats <- t(sapply(vec_sd, function(stdev) {
     reg_stats(data.frame(predictor, response))
     }))
 # Plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (it in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, it], type="l",
+par(mfrow=c(NCOL(statsmat), 1))
+for (it in 1:NCOL(statsmat)) {
+  plot(statsmat[, it], type="l",
        xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[it], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
-       labels=rownames(mat_stats))
+  title(main=colnames(statsmat)[it], line=-1.0)
+  axis(1, at=1:(NROW(statsmat)),
+       labels=rownames(statsmat))
 }  # end for
       @
     \column{0.5\textwidth}
@@ -2109,6 +2011,309 @@ plot(model, which=2)  # Plot just Q-Q
 library(lmtest)  # Load lmtest
 # Perform Durbin-Watson test
 lmtest::dwtest(model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Predictions From Univariate Regression Models}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Leverage} for Univariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      We can add an extra unit column to the \emph{predictor matrix} $\mathbb{X}$ so that the univariate regression can be written in \emph{homogeneous form} as:
+      \begin{displaymath}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      With two \emph{regression coefficients}: $\beta = (\alpha, \beta_1)$, and a \emph{predictor matrix} $\mathbb{X}$ with two columns, with the first column equal to a unit vector.
+      \vskip1ex
+      After the second column of the \emph{predictor matrix} $\mathbb{X}$ is de-meaned, its \emph{covariance matrix} is given by:
+      \begin{displaymath}
+        \mathbb{X}^T \mathbb{X} =
+          \begin{pmatrix}
+            n & 0 \\
+            0 & \sum_{i=1}^n (x_i - \bar{x})^2 \\
+          \end{pmatrix}
+      \end{displaymath}
+      And the \emph{influence matrix} $\mathbb{H}$ is given by:
+      \begin{displaymath}
+        \mathbb{H}_{ij} = [\mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T]_{ij} =
+        \frac{1}{n} + \frac{(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i=1}^n (x_i - \bar{x})^2}
+      \end{displaymath}
+      The first term above is due to the influence of the regression intercept $\alpha$, and the second term is due to the influence of the regression slope $\beta_1$.
+      \vskip1ex
+      The diagonal elements of the \emph{influence matrix} $\mathbb{H}_{ii}$ form the \emph{leverage vector}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_leverage.png}
+        <<echo=(-(1:3)),eval=FALSE>>=
+x11(width=6, height=5)  # Open x11 for plotting
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
+# Add unit column to the predictor matrix
+predictor <- cbind(rep(1, nrows), predictor)
+# Calculate generalized inverse of the predictor matrix
+invpred <- MASS::ginv(predictor)
+# Calculate the influence matrix
+influencem <- predictor %*% invpred
+# Plot the leverage vector
+ordern <- order(predictor[, 2])
+plot(x=predictor[ordern, 2], y=diag(influencem)[ordern],
+     type="l", lwd=3, col="blue",
+     xlab="predictor", ylab="leverage",
+     main="Leverage as Function of Predictor")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of Fitted Values in Univariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{fitted values} $y_{fit}$ can be considered to be \emph{random variables} $\hat{y}_{fit}$:
+      \begin{displaymath}
+        \hat{y}_{fit} = \mathbb{H} \hat{y} = \mathbb{H} (y_{fit} + \hat\varepsilon) = y_{fit} + \mathbb{H} \hat\varepsilon
+      \end{displaymath}
+      The \emph{covariance matrix} of the \emph{fitted values} $\hat{y}_{fit}$ is:
+      \begin{align*}
+        & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{H} \hat\varepsilon (\mathbb{H} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat\varepsilon \hat\varepsilon^T \mathbb{H}^T]}{d_{free}} = \\
+        & \frac{\mathbb{H} \, \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{H}^T}{d_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
+      \end{align*}
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+      \vskip1ex
+      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
+      \vskip1ex
+      This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate the influence matrix
+influencem <- predictor %*% invpred
+# The influence matrix is idempotent
+all.equal(influencem, influencem %*% influencem)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_fitsd.png}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate covariance and standard deviations of fitted values
+betas <- invpred %*% response
+fittedv <- drop(predictor %*% betas)
+residuals <- drop(response - fittedv)
+degf <- (NROW(predictor) - NCOL(predictor))
+residvar <- sqrt(sum(residuals^2)/degf)
+fitcovar <- residvar*influencem
+fitsd <- sqrt(diag(fitcovar))
+# Plot the standard deviations
+fitsd <- cbind(fitted=fittedv, stddev=fitsd)
+fitsd <- fitsd[order(fittedv), ]
+plot(fitsd, type="l", lwd=3, col="blue",
+     xlab="Fitted Value", ylab="Standard Deviation",
+     main="Standard Deviations of Fitted Values\nin Univariate Regression")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitted Values for Different Realizations of Random Noise}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The fitted values are more volatile for \emph{predictor} values that are further away from their mean, because those points have higher \emph{leverage}.
+      \vskip1ex
+      The higher \emph{leverage} of points further away from the mean of the \emph{predictor} is due to their greater sensitivity to changes in the slope of the regression.
+      \vskip1ex
+      The fitted values for different realizations of random noise can be calculated using the influence matrix.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate response without random noise for univariate regression,
+# equal to weighted sum over columns of predictor.
+betas <- c(-1, 1)
+response <- predictor %*% betas
+# Perform loop over different realizations of random noise
+fittedv <- lapply(1:50, function(it) {
+  # Add random noise to response
+  response <- response + rnorm(nrows, sd=1.0)
+  # Calculate fitted values using influence matrix
+  influencem %*% response
+})  # end lapply
+fittedv <- rutils::do_call(cbind, fittedv)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_fitted.png}
+        <<echo=(-(1:3)),eval=FALSE>>=
+x11(width=5, height=4)  # Open x11 for plotting
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
+# Plot fitted values
+matplot(x=predictor[,2], y=fittedv,
+        type="l", lty="solid", lwd=1, col="blue",
+        xlab="predictor", ylab="fitted",
+        main="Fitted Values for Different Realizations
+        of Random Noise")
+lines(x=predictor[,2], y=response, col="red", lwd=4)
+legend(x="topleft", # Add legend
+       legend=c("response without noise", "fitted values"),
+       title=NULL, inset=0.05, cex=0.8, lwd=6,
+       lty=1, col=c("red", "blue"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictions From \protect\emph{Univariate Regression} Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The prediction $y_{pred}$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
+      \begin{displaymath}
+        y_{pred} = \mathbb{X}_{new} \, \beta
+      \end{displaymath}
+      The variance $\sigma^2_{pred}$ of the \emph{predicted value} is:
+      \begin{align*}
+        & \sigma^2_{pred} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = 
+        \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
+        \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
+      \end{align*}
+      The variance $\sigma^2_{pred}$ of the \emph{predicted value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Inverse of predictor matrix squared
+predictor2 <- MASS::ginv(crossprod(predictor))
+# Define new predictors
+newdata <- (max(predictor[, 2]) + 10*(1:5)/nrows)
+# Calculate the predicted values and standard errors
+predictorn <- cbind(rep(1, NROW(newdata)), newdata)
+predsd <- sqrt(predictorn %*% predictor2 %*% t(predictorn))
+predictv <- cbind(
+  prediction=drop(predictorn %*% betas),
+  stddev=diag(residvar*predsd))
+# Or: Perform loop over predictorn
+predictv <- apply(predictorn, MARGIN=1, function(predictor) {
+  # Calculate predicted values
+  prediction <- predictor %*% betas
+  # Calculate standard deviation
+  predsd <- sqrt(t(predictor) %*% predictor2 %*% predictor)
+  predictsd <- residvar*predsd
+  c(prediction=prediction, stddev=predictsd)
+})  # end sapply
+predictv <- t(predictv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Confidence Intervals of Regression Predictions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}.
+        <<echo=TRUE,eval=FALSE>>=
+# Prepare plot data
+xdata <- c(predictor[,2], newdata)
+xlim <- range(xdata)
+ydata <- c(fittedv, predictv[, 1])
+# Calculate t-quantile
+tquant <- qt(pnorm(2), df=degf)
+predictlow <- predictv[, 1]-tquant*predictv[, 2]
+predicthigh <- predictv[, 1]+tquant*predictv[, 2]
+ylim <- range(c(response, ydata, predictlow, predicthigh))
+# Plot the regression predictions
+plot(x=xdata, y=ydata, xlim=xlim, ylim=ylim,
+     type="l", lwd=3, col="blue",
+     xlab="predictor", ylab="fitted or predicted",
+     main="Predictions from Linear Regression")
+points(x=predictor[,2], y=response, col="blue")
+points(x=newdata, y=predictv[, 1], pch=16, col="blue")
+lines(x=newdata, y=predicthigh, lwd=3, col="red")
+lines(x=newdata, y=predictlow, lwd=3, col="green")
+legend(x="topleft", # Add legend
+       legend=c("predictions", "+2SD", "-2SD"),
+       title=NULL, inset=0.05, cex=0.8, lwd=6,
+       lty=1, col=c("blue", "red", "green"))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_predict.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictions From \protect\emph{Linear Regression} Using Function \texttt{lm()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
+      \vskip1ex
+      \texttt{predict.lm()} is the predict method for linear models (regressions) produced by the function \texttt{lm()}.
+        <<echo=TRUE,eval=FALSE>>=
+# Perform univariate regression
+predictor <- predictor[, 2]
+model <- lm(response ~ predictor)
+# Perform prediction from regression
+newdata <- data.frame(predictor=newdata)
+predictlm <- predict(object=model,
+  newdata=newdata, confl=1-2*(1-pnorm(2)),
+  interval="confidence")
+predictlm <- as.data.frame(predictlm)
+all.equal(predictlm$fit, predictv[, 1])
+all.equal(predictlm$lwr, predictlow)
+all.equal(predictlm$upr, predicthigh)
+plot(response ~ predictor,
+     xlim=range(predictor, newdata),
+     ylim=range(response, predictlm),
+     xlab="predictor", ylab="fitted or predicted",
+     main="Predictions from lm() Regression")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_predictlm.png}
+        <<echo=TRUE,eval=FALSE>>=
+abline(model, col="blue", lwd=3)
+with(predictlm, {
+  points(x=newdata$predictor, y=fit, pch=16, col="blue")
+  lines(x=newdata$predictor, y=lwr, lwd=3, col="green")
+  lines(x=newdata$predictor, y=upr, lwd=3, col="red")
+})  # end with
+legend(x="topleft", # Add legend
+       legend=c("predictions", "+2SD", "-2SD"),
+       title=NULL, inset=0.05, cex=0.8, lwd=6,
+       lty=1, col=c("blue", "red", "green"))
       @
   \end{columns}
 \end{block}
