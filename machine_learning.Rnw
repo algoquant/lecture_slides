@@ -317,16 +317,16 @@ round(t(svdec$v) %*% svdec$v, 4)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Dimensions of left and right matrices
-nleft <- 6 ; nright <- 4
+nrows <- 6 ; ncols <- 4
 # Calculate left matrix
-leftmat <- matrix(runif(nleft^2), nc=nleft)
+leftmat <- matrix(runif(nrows^2), nc=nrows)
 eigend <- eigen(crossprod(leftmat))
-leftmat <- eigend$vectors[, 1:nright]
+leftmat <- eigend$vectors[, 1:ncols]
 # Calculate right matrix and singular values
-rightmat <- matrix(runif(nright^2), nc=nright)
+rightmat <- matrix(runif(ncols^2), nc=ncols)
 eigend <- eigen(crossprod(rightmat))
 rightmat <- eigend$vectors
-singval <- sort(runif(nright, min=1, max=5), decreasing=TRUE)
+singval <- sort(runif(ncols, min=1, max=5), decreasing=TRUE)
 # Compose rectangular matrix
 matrixv <- leftmat %*% (singval * t(rightmat))
 # Perform singular value decomposition
@@ -340,8 +340,8 @@ all.equal(svdec$d, singval)
 # Eigen decomposition of matrixv squared
 retsq <- matrixv %*% t(matrixv)
 eigend <- eigen(retsq)
-all.equal(eigend$values[1:nright], singval^2)
-all.equal(abs(eigend$vectors[, 1:nright]), abs(leftmat))
+all.equal(eigend$values[1:ncols], singval^2)
+all.equal(abs(eigend$vectors[, 1:ncols]), abs(leftmat))
 # Eigen decomposition of matrixv squared
 retsq <- t(matrixv) %*% matrixv
 eigend <- eigen(retsq)
@@ -430,16 +430,16 @@ all.equal(invmat, inveigen)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Random rectangular matrix: nleft > nright
-nleft <- 6 ; nright <- 4
-matrixv <- matrix(runif(nleft*nright), nc=nright)
+# Random rectangular matrix: nrows > ncols
+nrows <- 6 ; ncols <- 4
+matrixv <- matrix(runif(nrows*ncols), nc=ncols)
 # Calculate generalized inverse of matrixv
 invmat <- MASS::ginv(matrixv)
 round(invmat %*% matrixv, 4)
 all.equal(matrixv, matrixv %*% invmat %*% matrixv)
-# Random rectangular matrix: nleft < nright
-nleft <- 4 ; nright <- 6
-matrixv <- matrix(runif(nleft*nright), nc=nright)
+# Random rectangular matrix: nrows < ncols
+nrows <- 4 ; ncols <- 6
+matrixv <- matrix(runif(nrows*ncols), nc=ncols)
 # Calculate generalized inverse of matrixv
 invmat <- MASS::ginv(matrixv)
 all.equal(matrixv, matrixv %*% invmat %*% matrixv)
@@ -476,9 +476,9 @@ all.equal(invmp, invmat)
       Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices with the rows and columns corresponding to zero \emph{singular values} removed.
       <<echo=TRUE,eval=FALSE>>=
 # Create random singular matrix
-# More columns than rows: nright > nleft
-nleft <- 4 ; nright <- 6
-matrixv <- matrix(runif(nleft*nright), nc=nright)
+# More columns than rows: ncols > nrows
+nrows <- 4 ; ncols <- 6
+matrixv <- matrix(runif(nrows*ncols), nc=ncols)
 matrixv <- t(matrixv) %*% matrixv
 # Perform singular value decomposition
 svdec <- svd(matrixv)
@@ -494,7 +494,7 @@ all.equal(matrixv, matrixv %*% invsvd %*% matrixv)
 precv <- sqrt(.Machine$double.eps)
 # Check for zero singular values
 round(svdec$d, 12)
-notzero <- (svdec$d > (precv * svdec$d[1]))
+notzero <- (svdec$d > (precv*svdec$d[1]))
 # Calculate regularized inverse from SVD
 invsvd <- svdec$v[, notzero] %*%
   (t(svdec$u[, notzero]) / svdec$d[notzero])
@@ -702,7 +702,6 @@ all.equal(covmat, covmat2)
       If the number of time periods of returns is less than the number of portfolio assets, then the returns are \emph{collinear}, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero).
       \vskip1ex
       The function \texttt{crossprod()} performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but it is slightly faster.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Simulate random portfolio returns
 nassets <- 10
@@ -995,11 +994,11 @@ library(rutils)
 # Select ETF symbols
 symbolv <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # Calculate ETF prices and percentage returns
-pricets <- rutils::etfenv$prices[, symbolv]
-pricets <- zoo::na.locf(pricets, na.rm=FALSE)
-pricets <- zoo::na.locf(pricets, fromLast=TRUE)
+pricev <- rutils::etfenv$prices[, symbolv]
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
 # Calculate log returns without standardizing
-retsp <- rutils::diffit(log(pricets))
+retsp <- rutils::diffit(log(pricev))
 # Calculate covariance matrix
 covmat <- cov(retsp)
 # Standardize (de-mean and scale) the returns
@@ -1009,15 +1008,15 @@ round(sapply(retsp, mean), 6)
 sapply(retsp, sd)
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- apply(retsp, 2, scale)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- scale(retsp, center=TRUE, scale=TRUE)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- t(retsp) - colMeans(retsp)
 # retsp <- retsp/sqrt(rowSums(retsp^2)/(NCOL(retsp)-1))
 # retsp <- t(retsp)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/corr_etf.png}
@@ -1378,7 +1377,7 @@ for (ordern in 1:nweights) {
 # Calculate products of principal component time series
 round(t(pcad$x) %*% pcad$x, 2)
 # Calculate principal component time series from returns
-dates <- zoo::index(pricets)
+dates <- zoo::index(pricev)
 retspca <- xts::xts(retsp %*% pcad$rotation, order.by=dates)
 round(cov(retspca), 3)
 all.equal(coredata(retspca), pcad$x, check.attributes=FALSE)
@@ -2124,8 +2123,8 @@ modelsum <- summary(regmod)
 modelsum$coeff
 modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-dw_test <- lmtest::dwtest(regmod)
-c(dw_test$statistic[[1]], dw_test$p.value)
+dwtest <- lmtest::dwtest(regmod)
+c(dwtest$statistic[[1]], dwtest$p.value)
       @
       \vspace{-2em}
         <<autocorr_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
@@ -2477,8 +2476,8 @@ modelsum <- summary(regmod)
 modelsum$coeff
 modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-dw_test <- lmtest::dwtest(regmod)
-c(dw_test$statistic[[1]], dw_test$p.value)
+dwtest <- lmtest::dwtest(regmod)
+c(dwtest$statistic[[1]], dwtest$p.value)
       @
       \vspace{-2em}
         <<spur_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
@@ -3071,7 +3070,7 @@ predsd <- drop(sqrt(newdatav %*% beta_covar %*% t(newdatav)))
       In order for \texttt{predict.lm()} to work properly, the multivariate regression must be specified using a formula.
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
+        <<echo=TRUE,eval=FALSE>>=
 # Create formula from text string
 formulav <- paste0("response ~ ",
   paste(colnames(predictor), collapse=" + "), " - 1")
@@ -3307,15 +3306,15 @@ pf(fratio, nrows-1, nrows-1)
     \column{0.5\textwidth}
       The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response}.
       \vskip1ex
-      Let the \emph{restricted} model have $p1$ parameters with $df1 = n - p1$ degrees of freedom, and the \emph{unrestricted} model have $p2$ parameters with $df2 = n - p2$ degrees of freedom, with $p2 < p1$.
+      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_1 > p_2$.
       \vskip1ex
       Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}:
       \begin{displaymath}
-        F = \frac{(RSS1 - RSS2)/(df1 - df2)}{RSS2/df2}
+        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
       \end{displaymath}
-      Follows the \emph{F-distribution} with $(p2 - p1)$ and $(n - p2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
     \column{0.5\textwidth}
-      If the \emph{restricted} model only has one parameter (the constant intercept term), then $df1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS1$ is equal to the $TSS$: $RSS1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS1 = TSS - RSS1 = 0$.
+      If the \emph{restricted} model only has one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
       \vskip1ex
       Let the \emph{unrestricted} multivariate regression model be defined as:
       \begin{displaymath}
@@ -3323,7 +3322,7 @@ pf(fratio, nrows-1, nrows-1)
       \end{displaymath}
       Where $y$ is the \emph{response}, $\mathbb{X}$ is the \emph{predictor matrix} (with $k$ \emph{predictors}, including the intercept term), and $\beta$ are the $k$ \emph{regression coefficients}.
       \vskip1ex
-      So the \emph{unrestricted} model has $k$ parameters ($p2 = k$), and $RSS2 = RSS$ and $ESS2 = ESS$, and then the \emph{F}-statistic can be written as:
+      So the \emph{unrestricted} model has $k$ parameters ($p_2 = k$), and $RSS_2 = RSS$ and $ESS_2 = ESS$, and then the \emph{F}-statistic can be written as:
       \begin{displaymath}
         F = \frac{ESS/(k-1)}{RSS/(n-k)}
       \end{displaymath}
@@ -3694,21 +3693,21 @@ legend("topleft", title="Scale parameters",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Linear} regression isn't suitable when the response variable is discrete data (like \texttt{factors} or \texttt{integers}).
-      \vskip1ex
-      But \emph{logistic} regression (\emph{logit}) can be used to model data with a discrete response variable.
+      \emph{Logistic} regression (\emph{logit}) is used when the response are discrete variables (like \texttt{factors} or \texttt{integers}), when \emph{linear} regression can't be applied.
       \vskip1ex
       The function \texttt{glm()} fits generalized linear models, including \emph{logistic} regressions.
       \vskip1ex
-      \texttt{glm()} can fit categorical data (\texttt{factors}) from individual observations, and frequencies of categorical data (\texttt{integers}) from groups of observations.
-      \vskip1ex
       The parameter \texttt{family=binomial(logit)} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
+      \vskip1ex
+      The \emph{Mann-Whitney} test \emph{null hypothesis} is that the two samples, $x_i$ and $y_i$, were obtained from probability distributions with the same median (location).
+      \vskip1ex
+      The function \texttt{wilcox.test()} with parameter \texttt{paired=FALSE} (the default) calculates the \emph{Mann-Whitney} test statistic and its \emph{p}-value.
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # Reset random number generator
 # Simulate overlapping scores data
 sample1 <- runif(100, max=0.6)
 sample2 <- runif(100, min=0.4)
-# Perform Wilcoxon test for similar distributions
+# Perform Mann-Whitney test for data location
 wilcox.test(sample1, sample2)
 # Combine scores and add categorical variable
 predictor <- c(sample1, sample2)
@@ -3738,7 +3737,7 @@ lines(densityv, col="blue")
 polygon(c(min(densityv$x), densityv$x, max(densityv$x)), c(min(densityv$y), densityv$y, min(densityv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
 # Add legend
 legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
-       lwd=c(6, NA, NA), pch=c(NA, 15, 15), bty="n", y.intersp=0.5,
+       lwd=c(6, NA, NA), pch=c(NA, 15, 15), y.intersp=0.5,
        legend=c("logistic fit", "TRUE", "FALSE"),
        col=c("orange", "red", "blue"),
        text.col=c("black", "red", "blue"))
@@ -3781,7 +3780,7 @@ curve(expr=likefun(x, b=1), xlim=c(0, 1), lwd=3,
       xlab="prob", ylab="likelihood", col="blue",
       main="Binomial Likelihood Function")
 curve(expr=likefun(x, b=0), lwd=3, col="red", add=TRUE)
-legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
+legend(x="top", legend=c("b = 1", "b = 0"),
        title=NULL, inset=0.3, cex=1.0, lwd=6, y.intersp=0.5,
        bty="n", lty=1, col=c("blue", "red"))
       @
@@ -4020,7 +4019,6 @@ head(Default)
       \includegraphics[width=0.45\paperwidth]{figure/islr_default_data.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot data points for non-defaulters
-x11(width=6, height=5)
 xlim <- range(balance); ylim <- range(income)
 plot(income ~ balance,
      main="Default Dataset from Package ISLR",
@@ -4056,11 +4054,11 @@ legend(x="topright", legend=c("non-defaulters", "defaulters"),
       \vskip1ex
       \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (involving categorical variables), and another for \texttt{data frames}.
       \vskip1ex
-      The \emph{Wilcoxon} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
+      The \emph{Mann-Whitney} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
       <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for balance predictor
+# Perform Mann-Whitney test for the location of the balances
 wilcox.test(balance[default], balance[!default])
-# Wilcoxon test for income predictor
+# Perform Mann-Whitney test for the location of the incomes
 wilcox.test(income[default], income[!default])
       @
     \column{0.5\textwidth}
@@ -4137,8 +4135,8 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6, y.intersp=0.5,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative defaults
 sumd <- sum(default)
-defaultv <- sapply(balance, function(lim) {
-    sum(default[balance <= lim])
+defaultv <- sapply(balance, function(balv) {
+    sum(default[balance <= balv])
 })  # end sapply
 # Perform logit regression
 logmod <- glm(cbind(defaultv, sumd-defaultv) ~ balance,
@@ -4232,9 +4230,9 @@ glm_student$coefficients
       \includegraphics[width=0.45\paperwidth]{figure/islr_student_boxplot.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative defaults
-cum_defaults <- sapply(balance, function(lim) {
-c(student=sum(default[student & (balance <= lim)]),
-  non_student=sum(default[!student & (balance <= lim)]))
+cum_defaults <- sapply(balance, function(balv) {
+c(student=sum(default[student & (balance <= balv)]),
+  non_student=sum(default[!student & (balance <= balv)]))
 })  # end sapply
 total_defaults <- c(student=sum(student & default), 
             student=sum(!student & default))
@@ -4269,7 +4267,7 @@ boxplot(formula=balance ~ !student,
       The \texttt{student} column can be used to calculate the probability of default using \emph{logistic} regression.
       \vskip1ex
       Persons who are students are more likely to default because students have higher credit balances.
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # Fit logistic regression model
 logmod <- glm(default ~ student, family=binomial(logit))
 summary(logmod)
@@ -4338,14 +4336,13 @@ table(actual=!default, forecast=(forecastv < threshold))
 set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
 samplev <- sample.int(n=nrows, size=nrows/2)
-traindata <- Default[samplev, ]
-logmod <- glm(formulav, data=traindata, family=binomial(logit))
+trainset <- Default[samplev, ]
+logmod <- glm(formulav, data=trainset, family=binomial(logit))
 # Forecast over test data out-of-sample
-testdata <- Default[-samplev, ]
-forecastv <- predict(logmod, newdata=testdata, type="response")
+testset <- Default[-samplev, ]
+forecastv <- predict(logmod, newdata=testset, type="response")
 # Calculate confusion matrix out-of-sample
-table(actual=!testdata$default, 
-      forecast=(forecastv < threshold))
+table(actual=!testset$default, forecast=(forecastv < threshold))
       @
   \end{columns}
 \end{block}
@@ -4375,13 +4372,13 @@ table(actual=!testdata$default,
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Calculate confusion matrix out-of-sample
-confmat <- table(actual=!testdata$default, 
+confmat <- table(actual=!testset$default, 
       forecast=(forecastv < threshold))
 confmat
 # Calculate FALSE positive (type I error)
-sum(!testdata$default & (forecastv > threshold))
+sum(!testset$default & (forecastv > threshold))
 # Calculate FALSE negative (type II error)
-sum(testdata$default & (forecastv < threshold))
+sum(testset$default & (forecastv < threshold))
       @
   \end{columns}
 \end{block}
@@ -4471,12 +4468,12 @@ confun <- function(actualv, forecastv, threshold) {
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
-confun(!testdata$default, forecastv, threshold=threshold)
+confun(!testset$default, forecastv, threshold=threshold)
 # Define vector of discrimination thresholds
 threshv <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actualv=!testdata$default, forecastv=forecastv)  # end sapply
+  actualv=!testset$default, forecastv=forecastv)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -4842,6 +4839,7 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
   \begin{columns}[T]
     \column{0.5\textwidth}
       The performance of the Hampel noise classification model depends on the length of the look-back time interval.
+      a binary.
       \emph{area under the ROC curve} (AUC) is a measure of 
       a binary.
       The optimal \emph{threshold value} can be determined using \emph{cross-validation}. 

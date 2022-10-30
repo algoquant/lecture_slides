@@ -556,7 +556,7 @@ t(weightv) %*% covmat %*% weightv
 # Calculate vector of mean returns
 retsm <- colMeans(retsp)
 # Specify the target return
-rett <- 1.5*mean(retsp)
+retarget <- 1.5*mean(retsp)
 # Products of inverse with mean returns and unit vector
 fmat <- matrix(c(
   t(unitv) %*% covinv %*% unitv,
@@ -564,12 +564,12 @@ fmat <- matrix(c(
   t(retsm) %*% covinv %*% unitv,
   t(retsm) %*% covinv %*% retsm), nc=2)
 # Solve for the Lagrange multipliers
-lagm <- solve(a=fmat, b=c(2, 2*rett))
+lagm <- solve(a=fmat, b=c(2, 2*retarget))
 # Calculate weights
 weightv <- drop(0.5*covinv %*% cbind(unitv, retsm) %*% lagm)
 # Calculate constraints
 all.equal(1, sum(weightv))
-all.equal(rett, sum(retsm*weightv))
+all.equal(retarget, sum(retsm*weightv))
       @
   \end{columns}
 \end{block}
@@ -604,27 +604,27 @@ all.equal(rett, sum(retsm*weightv))
       \end{align*}
       The above formula shows that the variance of the \emph{efficient portfolios} is a \emph{parabola} with respect to the target return $r_t$.
       \vskip1ex
-      The vertex of the \emph{parabola} is at $r_t = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{r} / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$ and $\sigma^2 = 1 / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$.
+      The vertex of the \emph{parabola} is at $r_t = b/a = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{r} / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$ and $\sigma^2 = 1/c = 1 / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate portfolio return and standard deviation
-retsp <- drop(retsp %*% weightv)
-c(return=mean(retsp), sd=sd(retsp))
-all.equal(mean(retsp), rett)
+retsport <- drop(retsp %*% weightv)
+c(return=mean(retsport), sd=sd(retsport))
+all.equal(mean(retsport), retarget)
 # Calculate portfolio variance
-uu <- c(1, rett)
+uu <- c(1, retarget)
 finv <- solve(fmat)
-all.equal(var(retsp), drop(t(uu) %*% finv %*% uu))
+all.equal(var(retsport), drop(t(uu) %*% finv %*% uu))
 # Calculate vertex of variance parabola
 weightv <- drop(covinv %*% unitv /
   drop(t(unitv) %*% covinv %*% unitv))
-retsp <- drop(retsp %*% weightv)
+retsport <- drop(retsp %*% weightv)
 retsv <- drop(t(unitv) %*% covinv %*% retsm /
   t(unitv) %*% covinv %*% unitv)
-all.equal(mean(retsp), retsv)
-varmin <- drop(1/t(unitv) %*% covinv %*% unitv)
-all.equal(var(retsp), varmin)
+all.equal(mean(retsport), retsv)
+varmin <- 1/drop(t(unitv) %*% covinv %*% unitv)
+all.equal(var(retsport), varmin)
       @
   \end{columns}
 \end{block}
@@ -642,14 +642,13 @@ all.equal(var(retsp), varmin)
       The \emph{efficient frontier} is the plot of the \emph{efficient portfolio} standard deviations with respect to the target return $r_t$, which is a \emph{hyperbola}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate efficient frontier from target returns
-retst <- retsv*(1+seq(from=(-1), to=1, by=0.1))
-effront <- sapply(retst, function(rett) {
+targetv <- retsv*(1+seq(from=(-1), to=1, by=0.1))
+effront <- sapply(targetv, function(rett) {
   uu <- c(1, rett)
   sqrt(drop(t(uu) %*% finv %*% uu))
 })  # end sapply
 # Plot efficient frontier
-x11(width=6, height=5)
-plot(x=effront, y=retst, t="l", col="blue", lwd=2,
+plot(x=effront, y=targetv, t="l", col="blue", lwd=2,
      main="Efficient Frontier and Minimum Variance Portfolio",
      xlab="standard deviation", ylab="return")
 points(x=sqrt(varmin), y=retsv, col="green", lwd=6)
@@ -671,6 +670,8 @@ text(x=sqrt(varmin), y=retsv, labels="minimum \nvariance",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The \emph{tangent} line connects the risk-free point $(\sigma=0, r=r_f)$ with a single tangent point on the \emph{efficient frontier}. 
+      \vskip1ex
       A \emph{tangent} line can be drawn at every point on the \protect\emph{efficient frontier}.
       \vskip1ex
       The slope $\beta$ of the \emph{tangent} line can be calculated by differentiating the variance $\sigma^2$ by the target return $r_t$:
@@ -691,12 +692,12 @@ text(x=sqrt(varmin), y=retsv, labels="minimum \nvariance",
 # Calculate portfolio standard deviation
 stdev <- sqrt(drop(t(uu) %*% finv %*% uu))
 # Calculate the slope of the tangent line
-slopev <- (stdev*det(fmat))/(fmat[1, 1]*rett-fmat[1, 2])
+sharper <- (stdev*det(fmat))/(fmat[1, 1]*retarget-fmat[1, 2])
 # Calculate the risk-free rate as intercept of the tangent line
-riskf <- rett - slopev*stdev
+riskf <- retarget - sharper*stdev
 # Calculate the risk-free rate from target return
-riskf <- (rett*fmat[1, 2]-fmat[2, 2]) /
-  (rett*fmat[1, 1]-fmat[1, 2])
+riskf <- (retarget*fmat[1, 2]-fmat[2, 2]) /
+  (retarget*fmat[1, 1]-fmat[1, 2])
       @
   \end{columns}
 \end{block}
@@ -705,37 +706,72 @@ riskf <- (rett*fmat[1, 2]-fmat[2, 2]) /
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Tangent Line} on the \protect\emph{Efficient Frontier}}
+\subsection{The \protect\emph{Capital Market Line}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{efficient portfolios} are also called \emph{tangency portfolios}, since they are the tangent points on the \emph{efficient frontier}.
+      The \emph{Capital Market Line} (CML) is the tangent line connecting the risk-free point $(\sigma=0, r=r_f)$ with a single tangent point on the \emph{efficient frontier}. 
       \vskip1ex
-      The \emph{tangency portfolio} is the \emph{market portfolio} corresponding to the given \emph{risk-free} rate.
+      The \emph{tangency portfolio} is the \emph{efficient portfolio} at the tangent point corresponding to the given \emph{risk-free} rate.  
       \vskip1ex
-      The \emph{tangent line} at the \emph{market portfolio} is known as the \emph{Capital Market Line} (CML).
+      Each value of the \emph{risk-free} rate $r_f$ corresponds to a unique \emph{tangency portfolio}.
+      \vskip1ex
+      For a given \emph{risk-free} rate $r_f$, the \emph{tangency portfolio} has the highest \emph{Sharpe ratio} among all the \emph{efficient portfolios}.
       <<echo=TRUE,eval=FALSE>>=
 # Plot efficient frontier
-plot(x=effront, y=retst, t="l", col="blue", lwd=2,
-     xlim=c(0.0, max(effront)),
-     main="Efficient Frontier and Tangency Portfolio",
+aspratio <- 1.0*max(effront)/diff(range(targetv))
+plot(x=effront, y=targetv, t="l", col="blue", lwd=2, asp=aspratio,
+     xlim=c(0.4, 0.6)*max(effront), ylim=c(0.2, 0.9)*max(targetv), 
+     main="Efficient Frontier and Capital Market Line",
      xlab="standard deviation", ylab="return")
 # Plot minimum variance
 points(x=sqrt(varmin), y=retsv, col="green", lwd=6)
 text(x=sqrt(varmin), y=retsv, labels="minimum \nvariance",
      pos=4, cex=0.8)
-# Plot tangent point
-points(x=stdev, y=rett, col="red", lwd=6)
-text(x=stdev, y=rett, labels="tangency\nportfolio", pos=2, cex=0.8)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent2.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot tangent portfolio
+points(x=stdev, y=retarget, col="red", lwd=6)
+text(x=stdev, y=retarget, labels="tangency\nportfolio", pos=2, cex=0.8)
 # Plot risk-free point
 points(x=0, y=riskf, col="red", lwd=6)
 text(x=0, y=riskf, labels="risk-free", pos=4, cex=0.8)
 # Plot tangent line
-abline(a=riskf, b=slopev, lwd=2, col="green")
+abline(a=riskf, b=sharper, lwd=2, col="green")
+rangev <- par("usr")
+text(x=0.6*stdev, y=0.8*retarget,
+     labels="Capital Market Line", pos=2, cex=0.8,
+     srt=180/pi*atan(aspratio*sharper))
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Market Portfolio}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
     \column{0.5\textwidth}
+      The \emph{market portfolio} is the \emph{tangency portfolio} corresponding to the given \emph{risk-free} rate.
+      \vskip1ex
+      The points on the \emph{Capital Market Line} represent portfolios consisting of the \emph{market portfolio} and the \emph{risk-free} asset.
+      \vskip1ex
+      The \emph{CML} portfolios above the tangent point are levered with respect to the \emph{market portfolio} through borrowing at the \emph{risk-free} rate $r_f$.
+      \vskip1ex
+      The \emph{CML} portfolios below the tangent point are delevered with respect to the \emph{market portfolio} through investing at the \emph{risk-free} rate $r_f$.
+      \vskip1ex
+      All the \emph{CML} portfolios have the same \emph{Sharpe ratio}. 
+    \column{0.5\textwidth}
+      \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent2.png}
   \end{columns}
 \end{block}
@@ -878,6 +914,10 @@ maxsharpe <- weightv
       The maximum \emph{Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
       \begin{displaymath}
         w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
+      \end{displaymath}
+      The portfolio weights are proportional to the \emph{Kelly ratios} - the excess returns divided by the variances:
+      \begin{displaymath}
+        w_i \propto \frac{\mu_i}{\sigma^2_i}
       \end{displaymath}
   \end{columns}
 \end{block}
@@ -1289,11 +1329,11 @@ text(stdevs, retsp, labels=names(retsp), pos=4, cex=0.8)
 points(x=0, y=riskf, col="blue", lwd=3)
 text(0, riskf, labels="risk-free\nrate", pos=4, cex=0.8)
 abline(a=riskf, b=sharpem, lwd=2, col="blue")
-range_s <- par("usr")
+rangev <- par("usr")
 text(portfsd[whichmax]/2, (retsp[whichmax]+riskf)/2,
      labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(sharpem*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+                   (rangev[4]-rangev[3])*
                    heightp/widthp)/(0.25*pi))
       @
   \end{columns}
@@ -1356,11 +1396,11 @@ text(stdevs, retsm, labels=names(retsp), pos=2, cex=0.8)
 points(x=0, y=riskf, col="blue", lwd=6)
 text(0, riskf, labels="risk-free", pos=4, cex=0.8)
 abline(a=riskf, b=sharpem, col="blue", lwd=2)
-range_s <- par("usr")
+rangev <- par("usr")
 text(max(portfv[, "stddev"])/3, 0.75*max(portfv[, "returns"]),
      labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(sharpem*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+                   (rangev[4]-rangev[3])*
                    heightp/widthp)/(0.25*pi))
       @
   \end{columns}
@@ -1729,11 +1769,11 @@ text(stdevs, retsm, labels=names(retsm), pos=2, cex=0.8)
 points(x=0, y=riskf)
 text(0, riskf, labels="risk-free", pos=4, cex=0.8)
 abline(a=riskf, b=sharpem, col="blue")
-range_s <- par("usr")
+rangev <- par("usr")
 text(optim_sd/3, (optim_ret+riskf)/2.5,
      labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(sharpem*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+                   (rangev[4]-rangev[3])*
                    heightp/widthp)/(0.25*pi))
       @
     \column{0.5\textwidth}
@@ -3393,8 +3433,7 @@ legend(x="topright",
        bty="n", lwd=6, lty=1, col=c("blue", "green"))
 # Add unconditional default probability
 abline(v=defprob, col="red", lwd=3)
-text(x=defprob, y=2,
-       labels="default probability",
+text(x=defprob, y=2, labels="default probability",
        lwd=2, srt=90, pos=2)
       @
   \end{columns}

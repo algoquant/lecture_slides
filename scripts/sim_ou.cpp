@@ -5,9 +5,9 @@
 #include <Rcpp.h> // include C++ header files
 using namespace Rcpp; // use Rcpp C++ namespace
 
-// The function sim_ou_rcpp() simulates an Ornstein-Uhlenbeck process
+// The function sim_oucpp() simulates an Ornstein-Uhlenbeck process
 // [[Rcpp::export]]
-NumericVector sim_ou_rcpp(double eq_price, 
+NumericVector sim_oucpp(double eq_price, 
                           double volat, 
                           double thetav, 
                           NumericVector innov) {
@@ -20,4 +20,4 @@ NumericVector sim_ou_rcpp(double eq_price,
     prices[it] = prices[it-1] + returns[it];
   }  // end for
   return prices;
-}  // end sim_ou_rcpp
+}  // end sim_oucpp

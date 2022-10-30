@@ -4,8 +4,8 @@
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="tiny", fig.width=4, fig.height=4)
-options(width=80, dev="pdf")
 options(digits=3)
+options(width=80, dev="pdf")
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -1618,7 +1618,7 @@ sapply(split(mtcars$mpg, mtcars$cyl), mean)
 # Same but using with()
 with(mtcars, sapply(split(mpg, cyl), mean))
 # Or: aggregate() using formula syntax
-aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+aggregate(x=(mpg ~ cyl), data=mtcars, FUN=mean)
 # Or: aggregate() using data frame syntax
 aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
 # Or: using name for mpg
@@ -1734,6 +1734,7 @@ do.call(cbind, data_cars)
 # Read the file using read.table() with header and sep arguments
 panel_data <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt", 
                          header=TRUE, sep="\t")
+attach(panel_data)
 # Split panel_data based on Industry column
 split_panel <- split(panel_data, panel_data$Industry)
 # Number of companies in each Industry
@@ -1743,19 +1744,16 @@ sapply(split_panel, function(x) {
   NROW(unique(x$Sector))
 })  # end sapply
 # Or
-aggregate(formula=(Sector ~ Industry), 
+aggregate(x=(Sector ~ Industry), 
   data=panel_data, FUN=function(x) NROW(unique(x)))
 # Industries and the Sector to which they belong
-aggregate(formula=(Sector ~ Industry), data=panel_data, 
-          FUN=unique)
+aggregate(x=(Sector ~ Industry), data=panel_data, FUN=unique)
 # Or
-with(panel_data, aggregate(x=Sector, by=list(Industry), 
-                           FUN=unique))
+aggregate(x=Sector, by=list(Industry), FUN=unique)
 # Or
-with(panel_data, sapply(unique(Industry), 
-  function(x) {
-    Sector[match(x, Industry)]
-  }))  # end sapply
+sapply(unique(Industry), function(x) {
+  Sector[match(x, Industry)]
+})  # end sapply
       @
   \end{columns}
 \end{block}
@@ -1790,22 +1788,20 @@ split_panel <- split(panel_data, panel_data$Sector)
 sapply(split_panel, NROW)
 # Industries belonging to each Sector (jagged array)
 sec_ind <- sapply(split_panel, 
-  function(x) unique(as.vector(x$Industry)))
+  function(x) unique(x$Industry))
 # Or use aggregate() (returns a data frame)
-sec_ind2 <- aggregate(formula=(Industry ~ Sector), 
-  data=panel_data, FUN=function(x) unique(as.vector(x)))
+sec_ind2 <- aggregate(x=(Industry ~ Sector), 
+  data=panel_data, FUN=function(x) unique(x))
 # Or use aggregate() with "by" argument
-sec_ind2 <- with(panel_data, 
-  aggregate(x=Industry, by=list(Sector), 
-    FUN=function(x) as.vector(unique(x))))
+sec_ind2 <- aggregate(x=Industry, by=list(Sector), 
+    FUN=function(x) as.vector(unique(x)))
 # Coerce sec_ind2 into a jagged array
 namesv <- as.vector(sec_ind2[, 1])
 sec_ind2 <- sec_ind2[, 2]
 names(sec_ind2) <- namesv
 all.equal(sec_ind2, sec_ind)
 # Or use tapply() (returns an array)
-sec_ind2 <- with(panel_data, 
-  tapply(X=as.vector(Industry), INDEX=Sector, FUN=unique))
+sec_ind2 <- tapply(X=Industry, INDEX=Sector, FUN=unique)
 # Coerce sec_ind2 into a jagged array
 sec_ind2 <- drop(as.matrix(sec_ind2))
 all.equal(sec_ind2, sec_ind)
@@ -1832,13 +1828,10 @@ all.equal(sec_ind2, sec_ind)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Average ROE in each Industry
-with(panel_data, 
-  sapply(split(ROE, Industry), mean))
+sapply(split(ROE, Industry), mean)
 # Average, min, and max ROE in each Industry
-t(with(panel_data, 
-  sapply(split(ROE, Industry), FUN=function(x) 
-      c(mean=mean(x), max=max(x), min=min(x)))  # end sapply
-  ))  # end with
+t(sapply(split(ROE, Industry), FUN=function(x) 
+  c(mean=mean(x), max=max(x), min=min(x))))
 # Split panel_data based on Industry column
 split_panel <- split(panel_data, panel_data$Industry)
 # Average ROE and EPS in each Industry

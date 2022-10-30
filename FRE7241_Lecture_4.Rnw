@@ -131,10 +131,10 @@ pricez <- ifelse(stdev > 0, pricez/stdev, 0)
       \includegraphics[width=0.45\paperwidth]{figure/features_price_zscores.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of z-scores of VTI prices
-pricets <- cbind(closep, pricez)
-colnames(pricets) <- c("VTI", "Z-scores")
-colnamev <- colnames(pricets)
-dygraphs::dygraph(pricets["2009"], main="VTI Price Z-Scores") %>%
+pricev <- cbind(closep, pricez)
+colnames(pricev) <- c("VTI", "Z-scores")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI Price Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -643,13 +643,13 @@ dygraphs::dygraph(cumsum(wealthv)[endp],
 set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
 samplev <- sample.int(n=nrows, size=nrows/2)
-traindata <- Default[samplev, ]
-logmod <- glm(formulav, data=traindata, family=binomial(logit))
+trainset <- Default[samplev, ]
+logmod <- glm(formulav, data=trainset, family=binomial(logit))
 # Forecast over test data out-of-sample
-testdata <- Default[-samplev, ]
-forecastv <- predict(logmod, newdata=testdata, type="response")
+testset <- Default[-samplev, ]
+forecastv <- predict(logmod, newdata=testset, type="response")
 # Calculate confusion matrix out-of-sample
-table(actual=!testdata$default, 
+table(actual=!testset$default, 
       forecast=(forecastv < threshold))
       @
   \end{columns}
@@ -1707,11 +1707,11 @@ library(rutils)
 # Select ETF symbols
 symbolv <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # Calculate ETF prices and percentage returns
-pricets <- rutils::etfenv$prices[, symbolv]
-pricets <- zoo::na.locf(pricets, na.rm=FALSE)
-pricets <- zoo::na.locf(pricets, fromLast=TRUE)
+pricev <- rutils::etfenv$prices[, symbolv]
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
 # Calculate log returns without standardizing
-retsp <- rutils::diffit(log(pricets))
+retsp <- rutils::diffit(log(pricev))
 # Calculate covariance matrix
 covmat <- cov(retsp)
 # Standardize (de-mean and scale) the returns
@@ -1721,15 +1721,15 @@ round(sapply(retsp, mean), 6)
 sapply(retsp, sd)
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- apply(retsp, 2, scale)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- scale(retsp, center=TRUE, scale=TRUE)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- t(retsp) - colMeans(retsp)
 # retsp <- retsp/sqrt(rowSums(retsp^2)/(NCOL(retsp)-1))
 # retsp <- t(retsp)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/corr_etf.png}
@@ -1742,10 +1742,10 @@ ordern <- corrMatOrder(cormat, order="hclust",
   hclust.method="complete")
 cormat <- cormat[ordern, ordern]
 # Plot the correlation matrix
-colors <- colorRampPalette(c("red", "white", "blue"))
+colorv <- colorRampPalette(c("red", "white", "blue"))
 x11(width=6, height=6)
 corrplot(cormat, title=NA, tl.col="black", mar=c(0,0,0,0), 
-    method="square", col=colors(NCOL(cormat)), tl.cex=0.8, 
+    method="square", col=colorv(NCOL(cormat)), tl.cex=0.8, 
     cl.offset=0.75, cl.cex=0.7, cl.align.text="l", cl.ratio=0.25)
 title("ETF Correlation Matrix", line=1)
 # Draw rectangles on the correlation matrix plot
@@ -2090,7 +2090,7 @@ for (ordern in 1:nweights) {
 # Calculate products of principal component time series
 round(t(pcad$x) %*% pcad$x, 2)
 # Calculate principal component time series from returns
-dates <- zoo::index(pricets)
+dates <- zoo::index(pricev)
 retspca <- xts::xts(retsp %*% pcad$rotation, order.by=dates)
 round(cov(retspca), 3)
 all.equal(coredata(retspca), pcad$x, check.attributes=FALSE)
@@ -3068,8 +3068,8 @@ modelsum <- summary(model)
 modelsum$coeff
 modelsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-dw_test <- lmtest::dwtest(model)
-c(dw_test$statistic[[1]], dw_test$p.value)
+dwtest <- lmtest::dwtest(model)
+c(dwtest$statistic[[1]], dwtest$p.value)
       @
       \vspace{-2em}
         <<spur_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
@@ -3826,11 +3826,11 @@ x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot three curves in loop
 degf <- c(3, 5, 9)  # Degrees of freedom
-colors <- c("black", "red", "blue", "green")
+colorv <- c("black", "red", "blue", "green")
 for (it in 1:NROW(degf)) {
 curve(expr=df(x, df1=degf[it], df2=3),
       xlim=c(0, 4), xlab="", ylab="", lwd=2,
-      col=colors[it], add=as.logical(it-1))
+      col=colorv[it], add=as.logical(it-1))
 }  # end for
       @
     \column{0.5\textwidth}
@@ -3842,7 +3842,7 @@ title(main="F-Distributions", line=0.5)
 # Add legend
 labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
-       labelv, cex=0.8, lwd=2, lty=1, col=colors)
+       labelv, cex=0.8, lwd=2, lty=1, col=colorv)
       @
   \end{columns}
 \end{block}

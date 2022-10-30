@@ -615,7 +615,7 @@ sapply(split(mtcars$mpg, mtcars$cyl), mean)
 # Same but using with()
 with(mtcars, sapply(split(mpg, cyl), mean))
 # Or: aggregate() using formula syntax
-aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+aggregate(x=(mpg ~ cyl), data=mtcars, FUN=mean)
 # Or: aggregate() using data frame syntax
 aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
 # Or: using name for mpg
@@ -663,10 +663,10 @@ sapply(split_panel, function(x) {
   NROW(unique(x$Sector))
 })  # end sapply
 # Or
-aggregate(formula=(Sector ~ Industry),
+aggregate(x=(Sector ~ Industry),
   data=panel_data, FUN=function(x) NROW(unique(x)))
 # Industries and the Sector to which they belong
-aggregate(formula=(Sector ~ Industry), data=panel_data,
+aggregate(x=(Sector ~ Industry), data=panel_data,
     FUN=unique)
 # Or
 with(panel_data, aggregate(x=Sector, by=list(Industry),
@@ -685,7 +685,7 @@ sapply(split_panel, NROW)
 sec_ind <- sapply(split_panel,
   function(x) unique(as.vector(x$Industry)))
 # Or use aggregate() (returns a data frame)
-sec_ind2 <- aggregate(formula=(Industry ~ Sector),
+sec_ind2 <- aggregate(x=(Industry ~ Sector),
   data=panel_data, FUN=function(x) unique(as.vector(x)))
 # Or use aggregate() with "by" argument
 sec_ind2 <- with(panel_data,

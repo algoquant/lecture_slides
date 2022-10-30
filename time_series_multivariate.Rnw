@@ -85,27 +85,27 @@ knit_theme$set(thm)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
+      The daily stock returns $r_i - r_f$ in excess of the risk-free rate $r_f$, can be decomposed into \emph{systematic} returns $\beta (r_m - r_f)$ (where $r_m - r_f$ are the excess market returns) plus \emph{idiosyncratic} returns $\alpha + \varepsilon_i$ (which are uncorrelated to the market returns):
       \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
+        r_i - r_f = \alpha + \beta (r_m - r_f) + \varepsilon_i
       \end{displaymath}
-      The returns of \emph{XLP} and \emph{VTI} are highly correlated because they are driven by common market factors of returns.
+      The \emph{alpha} $\alpha$ are the abnormal returns in excess of the risk premium, and $\varepsilon_i$ are the regression residuals with zero mean.
       \vskip1ex
-      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error.
-      \vskip1ex
-      The \emph{p}-value is the probability of obtaining values exceeding the \emph{t}-statistic, assuming the \emph{null hypothesis} is true.
-      \vskip1ex
-      A small \emph{p}-value means that the regression coefficients are very unlikely to be zero (given the data).
+      The \emph{idiosyncratic} risk (equal to $\varepsilon_i$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
       <<echo=TRUE,eval=TRUE>>=
 # Perform regression using formula
-model <- lm(XLP ~ VTI, data=rutils::etfenv$returns)
+retsp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
+riskfree <- 0.03/252
+retsp <- (retsp - riskfree)
+regmod <- lm(XLP ~ VTI, data=retsp)
+regmodsum <- summary(regmod)
 # Get regression coefficients
-coef(summary(model))
+coef(regmodsum)
 # Get alpha and beta
-coef(summary(model))[, 1]
+coef(regmodsum)[, 1]
       @
     \column{0.5\textwidth}
-    \vspace{-2em}
+      \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/reg_rets.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -114,9 +114,8 @@ plot(XLP ~ VTI, data=rutils::etfenv$returns,
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
      asp=1, main="Regression XLP ~ VTI")
 # Add regression line and perpendicular line
-abline(model, lwd=2, col="red")
-abline(a=0, b=-1/coef(summary(model))[2, 1], 
-       lwd=2, col="blue")
+abline(regmod, lwd=2, col="red")
+abline(a=0, b=-1/coef(regmodsum)[2, 1], lwd=2, col="blue")
       @
   \end{columns}
 \end{block}
@@ -131,31 +130,42 @@ abline(a=0, b=-1/coef(summary(model))[2, 1],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The stock $\beta$ is independent of the risk-free rate $r_f$:
+      \begin{displaymath}
+        \beta = \frac{\mathrm{Cov}(r_i, r_m)}{\mathrm{Var}(r_m)}
+      \end{displaymath}
+      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error.
+      \vskip1ex
+      The \emph{p}-value is the probability of obtaining values exceeding the \emph{t}-statistic, assuming the \emph{null hypothesis} is true.
+      \vskip1ex
+      A small \emph{p}-value means that the regression coefficients are very unlikely to be zero (given the data).
+      \vskip1ex
       The \emph{beta} $\beta$ values of stock returns are very statistically significant, but the \emph{alpha} $\alpha$ values are mostly not significant.
       \vskip1ex
-      In addition, the \emph{Durbin-Watson} test shows that the regression residuals are autocorrelated which means that the regression \emph{p}-values may be smaller than the reported values.
+      The \emph{p}-value of the \emph{Durbin-Watson} test is large, which indicates that the regression residuals are not autocorrelated.
+      \vskip1ex
+      In practice, the $\alpha$, $\beta$, and the risk-free rate $r_f$, depend on the time interval of the data, so they're time dependent.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Get regression coefficients
-coef(summary(model))
+coef(regmodsum)
 # Calculate regression coefficients from scratch
-design <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
-betav <- drop(cov(design$XLP, design$VTI)/var(design$VTI))
-alpha <- drop(mean(design$XLP) - betav*mean(design$VTI))
+betav <- drop(cov(retsp$XLP, retsp$VTI)/var(retsp$VTI))
+alpha <- drop(mean(retsp$XLP) - betav*mean(retsp$VTI))
 c(alpha, betav)
 # Calculate the residuals
-residuals <- (design$XLP - (alpha + betav*design$VTI))
+residuals <- (retsp$XLP - (alpha + betav*retsp$VTI))
 # Calculate the standard deviation of residuals
 nrows <- NROW(residuals)
 residsd <- sqrt(sum(residuals^2)/(nrows - 2))
 # Calculate the standard errors of beta and alpha
-sum2 <- sum((design$VTI - mean(design$VTI))^2)
+sum2 <- sum((retsp$VTI - mean(retsp$VTI))^2)
 betasd <- residsd/sqrt(sum2)
-alphasd <- residsd*sqrt(1/nrows + mean(design$VTI)^2/sum2)
+alphasd <- residsd*sqrt(1/nrows + mean(retsp$VTI)^2/sum2)
 c(alphasd, betasd)
 # Perform the Durbin-Watson test of autocorrelation of residuals
-lmtest::dwtest(model)
+lmtest::dwtest(regmod)
       @
   \end{columns}
 \end{block}
@@ -169,39 +179,38 @@ lmtest::dwtest(model)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.55\textwidth}
+    \column{0.5\textwidth}
       The \emph{beta} $\beta$ values of ETF returns are very statistically significant, but the \emph{alpha} $\alpha$ values are mostly not significant.
       \vskip1ex
       Some of the ETFs with significant \emph{alpha} $\alpha$ values are the bond ETFs \emph{IEF} and \emph{TLT} (which have performed very well), and the natural resource ETFs \emph{USO} and \emph{DBC} (which have performed very poorly).
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(rutils)  # Load rutils
+      <<echo=TRUE,eval=TRUE>>=
 retsp <- rutils::etfenv$returns
 symbolv <- colnames(retsp)
 symbolv <- symbolv[symbolv != "VTI"]
 # Perform regressions and collect statistics
-betasetf <- sapply(symbolv, function(symbol) {
+betam <- sapply(symbolv, function(symbol) {
 # Specify regression formula
   formulav <- as.formula(paste(symbol, "~ VTI"))
 # Perform regression
-  model <- lm(formulav, data=retsp)
+  regmod <- lm(formulav, data=retsp)
 # Get regression summary
-  modelsum <- summary(model)
+  regmodsum <- summary(regmod)
 # Collect regression statistics
-  with(modelsum, 
+  with(regmodsum, 
     c(beta=coefficients[2, 1], 
       pbeta=coefficients[2, 4],
       alpha=coefficients[1, 1], 
       palpha=coefficients[1, 4], 
-      pdw=lmtest::dwtest(model)$p.value))
+      pdw=lmtest::dwtest(regmod)$p.value))
 })  # end sapply
-betasetf <- t(betasetf)
+betam <- t(betam)
 # Sort by palpha
-betasetf <- betasetf[order(betasetf[, "palpha"]), ]
+betam <- betam[order(betam[, "palpha"]), ]
       @
-    \column{0.45\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-betasetf
+betam
       @
   \end{columns}
 \end{block}
@@ -216,42 +225,35 @@ betasetf
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
+      The \emph{CAPM} model states that the expected return for stock $n$: $\mathbbm{E}[R_n]$ is proportional to its beta $\beta_n$ times the expected excess return of the market $\mathbbm{E}[R_m] - r_f$:
       \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
+        \mathbbm{E}[R_n] = r_f + \beta_n (\mathbbm{E}[R_m] - r_f)
       \end{displaymath}
-      Where $R_m$ are the market returns, and $R_f$ are the risk-free returns.
+      The \emph{CAPM} model states that if a stock has a higher beta then it's also expected to earn higher returns.
       \vskip1ex
-      The \emph{systematic} returns are proportional to $\beta$.
+      According to the \emph{CAPM} model, assets are on average expected to earn only a \emph{systematic} return proportional to their \emph{systematic} risk.
       \vskip1ex
-      The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$.
+      The \emph{CAPM} model is not a regression model.
       \vskip1ex
-      The \emph{alpha} $\alpha$ are the returns in excess of \emph{systematic} returns, that may be attributed to portfolio selection or active manager performance.
-      \vskip1ex
-      The \emph{idiosyncratic} risk (equal to $\varepsilon$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
-      \vskip1ex
-      The $\beta$ is proportional to the correlation of returns between the asset and the market:
-      \begin{displaymath}
-        \beta = \frac{\sum_{i=1}^n (R_i-\bar{R}) (R_{i,m}-\bar{R_m})}{\sum_{i=1}^n (R_{i,m}-\bar{R_m})^2} = \rho \frac{\sigma}{\sigma_m}
-      \end{displaymath}
-      The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it earns higher \emph{systematic} returns.
+      The \emph{CAPM} model depends on the choice of the risk-free rate $r_f$.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 library(PerformanceAnalytics)
-retsp <- na.omit(retsp[, c("XLP", "XLF", "VTI")])
 # Calculate XLP beta
 PerformanceAnalytics::CAPM.beta(Ra=retsp$XLP, Rb=retsp$VTI)
 # Or
-betav <- cov(retsp)[1, 2]/var(retsp$VTI)[1]
-# Calculate XLP bull beta
-PerformanceAnalytics::CAPM.beta.bull(Ra=retsp$XLP, Rb=retsp$VTI)
-# Calculate XLP bear beta
-PerformanceAnalytics::CAPM.beta.bear(Ra=retsp$XLP, Rb=retsp$VTI)
+retsxlp <- na.omit(retsp[, c("XLP", "VTI")])
+betav <- drop(cov(retsxlp$XLP, retsxlp$VTI)/var(retsxlp$VTI))
+betav
 # Calculate XLP alpha
 PerformanceAnalytics::CAPM.alpha(Ra=retsp$XLP, Rb=retsp$VTI)
 # Or
 mean(retsp$XLP - betav*retsp$VTI)
+# Calculate XLP bull beta
+PerformanceAnalytics::CAPM.beta.bull(Ra=retsp$XLP, Rb=retsp$VTI)
+# Calculate XLP bear beta
+PerformanceAnalytics::CAPM.beta.bear(Ra=retsp$XLP, Rb=retsp$VTI)
       @
   \end{columns}
 \end{block}
@@ -266,33 +268,55 @@ mean(retsp$XLP - betav*retsp$VTI)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      According to the \emph{CAPM} model, assets should earn a \emph{systematic} return proportional to their \emph{systematic} risk $\beta$.
+      The \emph{Security Market Line} (SML) represents the linear relationship between expected stock returns and their \emph{systematic} risk $\beta$.
       \vskip1ex
-      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk $\beta$ and return, for different stocks.
-      <<echo=(-1),eval=FALSE>>=
-library(PerformanceAnalytics)
-betasetf <- sapply(retsp[, colnames(retsp)!="VXX"], CAPM.beta, Rb=retsp$VTI)
-retsann <- sapply(retsp[, colnames(retsp)!="VXX"], Return.annualized)
-# Plot scatterplot
-plot(retsann ~ betasetf, xlab="betas", 
-            ylab="ann. rets", xlim=c(-0.25, 1.6))
-points(x=1, y=retsann["VTI"], col="red", lwd=3, pch=21)
-abline(a=0, b=retsann["VTI"])
-labelv <- rownames(betasetf)[1:13]
-# Add labels
-text(x=1, y=retsann["VTI"], labels="VTI", pos=2)
-text(x=betasetf[labelv], y=retsann[labelv], 
-     labels=labelv, pos=2, cex=0.8)
-      @
-    \column{0.5\textwidth}
-    \vspace{-4em}
-      \includegraphics[width=0.5\paperwidth]{figure/capm_scatter-1}\\
-    \vspace{-1em}
+      The \emph{SML} depends on the choice of the risk-free rate $r_f$, with a steeper \emph{SML} line for lower risk-free rates $r_f$.
+      \vskip1ex
+      All the different \emph{SML} lines pass through the point $(\beta=1, r=R_m)$ corresponding to the market, and they intersect the y-axis at the risk-free point $(\beta=0, r=r_f)$. 
+      \vskip1ex
       A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't.
       \vskip1ex
       If an asset lies on the \emph{SML}, then its returns are mostly \emph{systematic}, and its $\alpha$ is equal to zero.
       \vskip1ex
       Assets above the \emph{SML} have a positive $\alpha$, and those below have a negative $\alpha$.
+      <<echo=TRUE,eval=FALSE>>=
+symbolv <- rownames(betam)
+betav <- betam[-match(c("VXX", "SVXY", "MTUM", "USMV", "QUAL"), symbolv), 1]
+betav <- c(1, betav)
+names(betav)[1] <- "VTI"
+retsann <- sapply(retsp[, names(betav)], PerformanceAnalytics::Return.annualized)
+# Plot scatterplot of returns vs betas
+minrets <- min(retsann)
+plot(retsann ~ betav, xlab="betas", ylab="returns", 
+     ylim=c(minrets, -minrets), main="Security Market Line for ETFs")
+retvti <- retsann["VTI"]
+points(x=1, y=retvti, col="red", lwd=3, pch=21)
+# Plot Security Market Line
+riskfree <- 0.01
+abline(a=riskfree, b=(retvti-riskfree), col="green", lwd=2)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/capm_sml_etf.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add labels
+text(x=betav, y=retsann, labels=names(betav), pos=2, cex=0.8)
+# Find optimal risk-free rate by minimizing residuals
+rss <- function(riskfree) {
+  sum((retsann - riskfree - betav*(retvti-riskfree))^2)
+}  # end rss
+optimrss <- optimize(rss, c(-1, 1))
+riskfree <- optimrss$minimum
+# Or simply
+retsadj <- (retsann - retvti*betav)
+betadj <- (1-betav)
+riskfree <- sum(retsadj*betadj)/sum(betadj^2)
+abline(a=riskfree, b=(retvti-riskfree), col="blue", lwd=2)
+legend(x="topleft", bty="n", title="Security Market Line",
+       legend=c("optimal fit", "riskfree=0.01"),
+       y.intersp=0.5, cex=1.0, lwd=6, lty=1, col=c("blue", "green"))
+      @
   \end{columns}
 \end{block}
 
@@ -300,41 +324,59 @@ text(x=betasetf[labelv], y=retsann[labelv],
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: The Security Market Line for Stocks}
+\subsection{The Security Market Line for Stocks}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      According to the \emph{CAPM} model, assets should earn a \emph{systematic} return proportional to their \emph{systematic} risk $\beta$.
+      The best fitting \emph{Security Market Line} (SML) for stocks is almost flat, which shows that stocks with higher $\beta$ don't earn higher returns.
       \vskip1ex
-      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk $\beta$ and return, for different stocks.
-      <<echo=(-1),eval=FALSE>>=
-library(PerformanceAnalytics)
-betasetf <- sapply(retsp[, colnames(retsp)!="VXX"], 
-                    CAPM.beta, Rb=retsp$VTI)
-retsann <- sapply(retsp[, colnames(retsp)!="VXX"], 
-                      Return.annualized)
-# Plot scatterplot
-plot(retsann ~ betasetf, xlab="betas", 
-            ylab="ann. rets", xlim=c(-0.25, 1.6))
-points(x=1, y=retsann["VTI"], col="red", lwd=3, pch=21)
-abline(a=0, b=retsann["VTI"])
-labelv <- rownames(betasetf)[1:13]
-# Add labels
-text(x=1, y=retsann["VTI"], labels="VTI", pos=2)
-text(x=betasetf[labelv], y=retsann[labelv], 
-     labels=labelv, pos=2, cex=0.8)
+      This is called the \emph{low beta anomaly}.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 constituent stock returns
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+retvti <- na.omit(rutils::etfenv$returns$VTI)
+retsp <- returns[index(retvti), ]
+nrows <- NROW(retsp)
+# Calculate stock betas
+betav <- sapply(retsp, function(x) {
+  retsp <- na.omit(cbind(x, retvti))
+  drop(cov(retsp[, 1], retsp[, 2])/var(retsp[, 2]))
+})  # end sapply
+mean(betav)
+# Calculate annual stock returns
+retsann <- retsp
+retsann[1, ] <- 0
+retsann <- zoo::na.locf(retsann, na.rm=FALSE)
+retsann <- 252*sapply(retsann, sum)/nrows
+# Remove stocks with zero returns
+sum(retsann == 0)
+betav <- betav[retsann > 0]
+retsann <- retsann[retsann > 0]
+retvti <- 252*mean(retvti)
+# Plot scatterplot of returns vs betas
+plot(retsann ~ betav, xlab="betas", ylab="returns", 
+     main="Security Market Line for Stocks")
+points(x=1, y=retvti, col="red", lwd=3, pch=21)
+# Plot Security Market Line
+riskfree <- 0.01
+abline(a=riskfree, b=(retvti-riskfree), col="green", lwd=2)
       @
     \column{0.5\textwidth}
-    \vspace{-4em}
-      \includegraphics[width=0.5\paperwidth]{figure/capm_scatter-1}\\
-    \vspace{-1em}
-      A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't.
-      \vskip1ex
-      If an asset lies on the \emph{SML}, then its returns are mostly \emph{systematic}, and its $\alpha$ is equal to zero.
-      \vskip1ex
-      Assets above the \emph{SML} have a positive $\alpha$, and those below have a negative $\alpha$.
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/capm_sml_stocks.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Find optimal risk-free rate by minimizing residuals
+retsadj <- (retsann - retvti*betav)
+betadj <- (1-betav)
+riskfree <- sum(retsadj*betadj)/sum(betadj^2)
+abline(a=riskfree, b=(retvti-riskfree), col="blue", lwd=2)
+legend(x="topleft", bty="n", title="Security Market Line",
+       legend=c("optimal fit", "riskfree=0.01"),
+       y.intersp=0.5, cex=1.0, lwd=6, lty=1, col=c("blue", "green"))
+      @
   \end{columns}
 \end{block}
 
@@ -350,7 +392,7 @@ text(x=betasetf[labelv], y=retsann[labelv],
     \column{0.5\textwidth}
       The \emph{Treynor} ratio measures the excess returns per unit of the \emph{systematic} risk \emph{beta} $\beta$, and is equal to the excess returns (over a risk-free return) divided by the $\beta$:
       \begin{displaymath}
-        T_r=\frac{E[R-R_f]}{\beta}
+        T_r=\frac{E[R-r_f]}{\beta}
       \end{displaymath}
       The \emph{Treynor} ratio is similar to the \emph{Sharpe} ratio, with the difference that its denominator represents only \emph{systematic} risk, not total risk.
       \vskip1ex
@@ -444,22 +486,22 @@ startp <- c(rep(1, look_back), endp[1:(NROW(endp)-look_back)])
 head(cbind(endp, startp), look_back+2)
 # Calculate rolling beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
-betas_r <- sapply(1:NROW(endp), FUN=function(ep) {
+betar <- sapply(1:NROW(endp), FUN=function(ep) {
     datav <- retsp[startp[ep]:endp[ep], ]
     # coef(lm(formulav, data=datav))[2]
-    drop(cov(datav[, 1], datav[, 2])/var(datav[, 2]))
+    drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
 # Calculate rolling betas using RcppArmadillo
-reg_stats <- HighFreq::roll_reg(response=retsp[, 1], design=retsp[, 2], endp=(endp-1), startp=(startp-1))
-betas <- reg_stats[, 2]
-all.equal(betas, betas_r)
+reg_stats <- HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endp=(endp-1), startp=(startp-1))
+betas <- reg_stats$VTI
+all.equal(betas, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(response=retsp[, 1], design=retsp[, 2], endp=(endp-1), startp=(startp-1)),
+  Rcpp=HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endp=(endp-1), startp=(startp-1)),
   Rcode=sapply(1:NROW(endp), FUN=function(ep) {
     datav <- retsp[startp[ep]:endp[ep], ]
-    drop(cov(datav[, 1], datav[, 2])/var(datav[, 2]))
+    drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   }),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -469,8 +511,8 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of rolling XLP beta and VTI prices
 dates <- zoo::index(retsp[endp, ])
-pricets <- rutils::etfenv$prices$VTI[dates]
-datav <- cbind(pricets, betas)
+pricev <- rutils::etfenv$prices$VTI[dates]
+datav <- cbind(pricev, betas)
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
@@ -486,12 +528,14 @@ dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Engle-Granger Two-step Procedure for Cointegration}
+\subsection{draft: Engle-Granger Two-step Procedure for Cointegration}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      Use log prices?
+      \vskip1ex
       The \emph{ADF} test can be applied to test for the cointegration of time series of prices.
       \vskip1ex
       The Engle-Granger two-step procedure for two time series consists of:
@@ -499,13 +543,13 @@ dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
         \item Performing a regression to calculate the cointegrating factor $\beta$,
         \item Applying the \emph{ADF} test to the residuals of the regression to determine that they don't have a unit root (they are mean reverting).
       \end{itemize}
-      The regression of prices is not statistically valid because they are not normally distributed.
+      The regression of prices is not statistically valid because they are not stationary and not normally distributed.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate XLB and XLE prices
-pricets <- na.omit(rutils::etfenv$prices[, c("XLB", "XLE")])
-cor(rutils::diffit(log(pricets)))
-xlb <- drop(zoo::coredata(pricets$XLB))
-xle <- drop(zoo::coredata(pricets$XLE))
+pricev <- na.omit(rutils::etfenv$prices[, c("XLB", "XLE")])
+cor(rutils::diffit(log(pricev)))
+xlb <- drop(zoo::coredata(pricev$XLB))
+xle <- drop(zoo::coredata(pricev$XLE))
 # Calculate regression coefficients of XLB ~ XLE
 betav <- cov(xlb, xle)/var(xle)
 alpha <- (mean(xlb) - betav*mean(xle))
@@ -517,13 +561,13 @@ tseries::adf.test(residuals, k=1)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/coint_prices.png}
+      \includegraphics[width=0.45\paperwidth]{figure/coint_prices.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot prices
-dygraphs::dygraph(pricets, main="XLB and XLE Prices") %>%
+dygraphs::dygraph(pricev, main="XLB and XLE Prices") %>%
   dyOptions(colors=c("blue", "red"))
 # Plot cointegration residuals
-residuals <- xts::xts(residuals, zoo::index(pricets))
+residuals <- xts::xts(residuals, zoo::index(pricev))
 dygraphs::dygraph(residuals, main="XLB and XLE Cointegration Residuals")
       @
   \end{columns}
@@ -552,7 +596,7 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 # Calculate stock prices and percentage returns
 pricets <- zoo::na.locf(pricets, na.rm=FALSE)
 pricets <- zoo::na.locf(pricets, fromLast=TRUE)
-retsp <- rutils::diffit(log(pricets))
+retsp <- rutils::diffit(log(pricev))
 # Standardize (de-mean and scale) the returns
 retsp <- lapply(retsp, function(x) {(x - mean(x))/sd(x)})
 retsp <- rutils::do_call(cbind, retsp)
@@ -562,7 +606,7 @@ pcad <- prcomp(retsp, scale=TRUE)
 ncomp <- which(pcad$sdev^2 < 2)[1]
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_scree.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_sp500_scree.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot standard deviations of principal components
@@ -605,7 +649,7 @@ for (ordern in 2:ncomps) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_loadings.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_sp500_loadings.png}
   \end{columns}
 \end{block}
 
@@ -638,7 +682,7 @@ for (ordern in 1:ncomps) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_series.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_sp500_series.png}
   \end{columns}
 \end{block}
 
@@ -683,7 +727,7 @@ for (symbol in symbolv) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_series_solved.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_sp500_series_solved.png}
   \end{columns}
 \end{block}
 
@@ -726,7 +770,7 @@ adf_pvalues <- sapply(1:NCOL(pcacum), function(ordern)
 tseries::adf.test(rnorm(1e5))
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_residuals.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_sp500_residuals.png}
   \end{columns}
 \end{block}
 
@@ -757,9 +801,9 @@ ordern <- corrMatOrder(cormat, order="hclust",
 # Apply permutation vector
 cormat <- cormat[ordern, ordern]
 # Plot the correlation matrix
-colors <- colorRampPalette(c("red", "white", "blue"))
+colorv <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cormat, tl.col="black", tl.cex=0.8, 
-    method="square", col=colors(8), 
+    method="square", col=colorv(8), 
     cl.offset=0.75, cl.cex=0.7, 
     cl.align.text="l", cl.ratio=0.25)
 # draw rectangles on the correlation matrix plot
@@ -767,7 +811,7 @@ corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
                 method="complete", col="red")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/corr_plot-1}
+      \includegraphics[width=0.45\paperwidth]{figure/corr_plot-1}
   \end{columns}
 \end{block}
 
@@ -800,13 +844,13 @@ corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
       Neighboring branches combine into larger branches, that then combine with their closest branches, etc.
     \column{0.5\textwidth}
       \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/cluster_plot-1}
+      \includegraphics[width=0.45\paperwidth]{figure/cluster_plot-1}
       \vspace{-4em}
       <<cluster_plot,echo=TRUE,eval=FALSE,fig.width=6,fig.height=6,fig.show='hide'>>=
 # Convert correlation matrix into distance object
-dis_tance <- as.dist(1-cormat)
+distancev <- as.dist(1-cormat)
 # Perform hierarchical clustering analysis
-cluster <- hclust(dis_tance)
+cluster <- hclust(distancev)
 plot(cluster, ann=FALSE, xlab="", ylab="")
 title("Dendrogram representing hierarchical clustering
       \nwith dissimilarity = 1-correlation", line=-0.5)
@@ -848,7 +892,7 @@ title(main="ETF cumulative returns", line=-1)
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_cum_returns-1}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_cum_returns-1}
   \end{columns}
 \end{block}
 
@@ -913,7 +957,7 @@ barplot(as.vector(pca2),
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_plot-1}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_plot-1}
   \end{columns}
 \end{block}
 
@@ -952,7 +996,7 @@ for (ordern in 1:3) {
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_vec-1}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_vec-1}
   \end{columns}
 \end{block}
 
@@ -1042,7 +1086,7 @@ plot(factpca, which.plot.group=3, n.max=30, loop=FALSE)
       @
     \column{0.6\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/fact_load-1}
+      \includegraphics[width=0.45\paperwidth]{figure/fact_load-1}
   \end{columns}
 \end{block}
 
@@ -1069,7 +1113,7 @@ chart.CumReturns(factpca$factors,
       @
     \column{0.6\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/fact_tsplot-1}
+      \includegraphics[width=0.45\paperwidth]{figure/fact_tsplot-1}
   \end{columns}
 \end{block}
 
@@ -1091,7 +1135,7 @@ plot(factpca, which.plot.group=7, loop=FALSE,
       @
     \column{0.6\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/fact_corr_plot-1}
+      \includegraphics[width=0.45\paperwidth]{figure/fact_corr_plot-1}
   \end{columns}
 \end{block}
 
@@ -1114,7 +1158,7 @@ chart.CumReturns(factpca$residuals[, c("IEF", "DBC", "XLF")],
       @
     \column{0.6\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/fact_resid_plot-1}
+      \includegraphics[width=0.45\paperwidth]{figure/fact_resid_plot-1}
   \end{columns}
 \end{block}
 
@@ -1139,7 +1183,7 @@ plot(factpca, asset.name="VTI",
       @
     \column{0.6\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/fact_resid_hist-1}
+      \includegraphics[width=0.45\paperwidth]{figure/fact_resid_hist-1}
   \end{columns}
 \end{block}
 
@@ -1163,7 +1207,7 @@ plot(factpca, asset.name="VTI",
       @
     \column{0.6\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/fact_resid_qq-1}
+      \includegraphics[width=0.45\paperwidth]{figure/fact_resid_qq-1}
   \end{columns}
 \end{block}
 
@@ -1186,7 +1230,7 @@ plot(factpca, asset.name="VTI",
       @
     \column{0.6\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/fact_resid_autocorr-1}
+      \includegraphics[width=0.45\paperwidth]{figure/fact_resid_autocorr-1}
   \end{columns}
 \end{block}
 

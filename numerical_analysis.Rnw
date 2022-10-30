@@ -967,7 +967,7 @@ profvis::profvis(
       \end{itemize}
     \column{0.5\textwidth}
       \begin{itemize}
-        \item Write your own \texttt{C++} functions, compile them using RcppArmadillo, and call them from \texttt{R},
+        \item Write your own \texttt{C++} functions, compile them using \emph{RcppArmadillo}, and call them from \texttt{R},
         \item Pre-allocate memory for new vectors and matrices,
         \item Avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function call).
       \end{itemize}
@@ -1388,7 +1388,7 @@ vectorv <- 1e3
 all.equal(rank(vectorv), Rfast::Rank(vectorv))
 library(microbenchmark)
 summary(microbenchmark(
-  Rcode = rank(vectorv),
+  rcode = rank(vectorv),
   Rfast = Rfast::Rank(vectorv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Benchmark speed of calculating column medians
@@ -2769,14 +2769,14 @@ text(x=(nrows-60), y=strikep, labels="strike price", pos=3, cex=1)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-pricets <- quantmod::Cl(rutils::etfenv$VTI)
-startd <- as.numeric(pricets[1, ])
-retsp <- rutils::diffit(log(pricets))
+pricev <- quantmod::Cl(rutils::etfenv$VTI)
+startd <- as.numeric(pricev[1, ])
+retsp <- rutils::diffit(log(pricev))
 class(retsp); head(retsp)
 sum(is.na(retsp))
 nrows <- NROW(retsp)
 # Define barrier level with respect to prices
-barl <- 1.5*max(pricets)
+barl <- 1.5*max(pricev)
 # Calculate single bootstrap sample
 samplev <- retsp[sample.int(nrows, replace=TRUE)]
 # Calculate prices from percentage returns
@@ -2837,12 +2837,12 @@ sum(bootd)/nboot
 # Calculate percentage returns from VTI prices
 library(rutils)
 ohlc <- rutils::etfenv$VTI
-pricets <- as.numeric(ohlc[, 4])
-startd <- pricets[1]
-retsp <- rutils::diffit(log(pricets))
+pricev <- as.numeric(ohlc[, 4])
+startd <- pricev[1]
+retsp <- rutils::diffit(log(pricev))
 nrows <- NROW(retsp)
 # Calculate difference of OHLC price columns
-ohlc_diff <- ohlc[, 1:3] - pricets
+ohlc_diff <- ohlc[, 1:3] - pricev
 class(retsp); head(retsp)
 # Calculate bootstrap prices from percentage returns
 datav <- sample.int(nrows, replace=TRUE)
@@ -2850,7 +2850,7 @@ boot_prices <- startd*exp(cumsum(retsp[datav]))
 boot_ohlc <- ohlc_diff + boot_prices
 boot_ohlc <- cbind(boot_ohlc, boot_prices)
 # Define barrier level with respect to prices
-barl <- 1.5*max(pricets)
+barl <- 1.5*max(pricev)
 # Calculate if High bootstrapped prices crossed barrier level
 sum(boot_ohlc[, 2] > barl) > 0
       @
@@ -3869,11 +3869,13 @@ plot(optiml)
       \hskip1em\url{http://gallery.rcpp.org/}
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{image/bart_simpson_cpp.jpg}
       <<echo=TRUE,eval=FALSE>>=
-# Verify that rtools are working properly:
-devtools::find_rtools()
+# Verify that Rtools or XCode are working properly:
+devtools::find_rtools()  # Under Windows
 devtools::has_devel()
-
+# Install the packages Rcpp and RcppArmadillo
+install.packages(c("Rcpp", "RcppArmadillo"))
 # Load package Rcpp
 library(Rcpp)
 # Get documentation for package Rcpp
@@ -3945,13 +3947,13 @@ mult_vec_rcpp(1:3, 6:4)
 # Define Rcpp function with loop
 Rcpp::cppFunction("
 double inner_mult(NumericVector x, NumericVector y) {
-int x_size = x.size();
-int y_size = y.size();
-if (x_size != y_size) {
+int xsize = x.size();
+int ysize = y.size();
+if (xsize != ysize) {
     return 0;
   } else {
     double total = 0;
-    for(int i = 0; i < x_size; ++i) {
+    for(int i = 0; i < xsize; ++i) {
       total += x[i] * y[i];
   }
   return total;
@@ -3962,34 +3964,34 @@ inner_mult(1:3, 6:4)
 inner_mult(1:3, 6:3)
 # Define Rcpp Sugar function with loop
 Rcpp::cppFunction("
-double inner_lagmugar(NumericVector x, NumericVector y) {
+double inner_sugar(NumericVector x, NumericVector y) {
   return sum(x * y);
 }")  # end cppFunction
 # Run Rcpp Sugar function
-inner_lagmugar(1:3, 6:4)
-inner_lagmugar(1:3, 6:3)
+inner_sugar(1:3, 6:4)
+inner_sugar(1:3, 6:3)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define R function with loop
-inner_mult_r <- function(x, y) {
+inner_multr <- function(x, y) {
     sumv <- 0
     for(i in 1:NROW(x)) {
       sumv <- sumv + x[i] * y[i]
     }
     sumv
-}  # end inner_mult_r
+}  # end inner_multr
 # Run R function
-inner_mult_r(1:3, 6:4)
-inner_mult_r(1:3, 6:3)
+inner_multr(1:3, 6:4)
+inner_multr(1:3, 6:3)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=inner_mult_r(1:10000, 1:10000),
-  inner_r=1:10000 %*% 1:10000,
-  cppcode=inner_mult(1:10000, 1:10000),
-  cppcode_sugar=inner_lagmugar(1:10000, 1:10000),
+  rcode=inner_multr(1:10000, 1:10000),
+  innerp=1:10000 %*% 1:10000,
+  Rcpp=inner_mult(1:10000, 1:10000),
+  sugar=inner_sugar(1:10000, 1:10000),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4026,19 +4028,14 @@ bootd <- function(datav, nboot=nboot) {
     function(x) c(mean=mean(x), stderror=sd(x)))
 
   retsp <- numeric(nrows)
-  pricets <- numeric(nrows)
-  pricets[1] <- eq_price
+  pricev <- numeric(nrows)
+  pricev[1] <- eq_price
   for (i in 2:nrows) {
-    retsp[i] <- thetav*(eq_price - pricets[i-1]) + volat*rnorm(1)
-    pricets[i] <- pricets[i-1] + retsp[i]
+    retsp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retsp[i]
   }  # end for
-  pricets
+  pricev
 }  # end bootd
-# Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
-thetav <- 0.01; nrows <- 1000
-set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4060,7 +4057,7 @@ using namespace Rcpp; // use Rcpp C++ namesvpace
 // function unifun() produces a vector of
 // uniformly distributed pseudo-random numbers
 // [[Rcpp::export]]
-NumericVector uniform_rcpp(double seedv, int(nrows) {
+NumericVector unifuncpp(double seedv, int(nrows) {
 // define pi
 static const double pi = 3.14159265;
 // allocate output vector
@@ -4091,54 +4088,52 @@ static const double pi = 3.14159265;
       Simulating the Ornstein-Uhlenbeck Process in \emph{Rcpp} is about 30 times faster than in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in R
-sim_ou <- function(nrows=1000, eq_price=5.0,
+sim_our <- function(nrows=1000, eq_price=5.0,
                     volat=0.01, theta=0.01) {
   retsp <- numeric(nrows)
-  pricets <- numeric(nrows)
-  pricets[1] <- eq_price
+  pricev <- numeric(nrows)
+  pricev[1] <- eq_price
   for (i in 2:nrows) {
-    retsp[i] <- theta*(eq_price - pricets[i-1]) + volat*rnorm(1)
-    pricets[i] <- pricets[i-1] + retsp[i]
+    retsp[i] <- theta*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retsp[i]
   }  # end for
-  pricets
-}  # end sim_ou
+  pricev
+}  # end sim_our
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
-NumericVector sim_ou_rcpp(double eq_price,
-                      double volat,
-                      double theta,
-                      NumericVector innov) {
-  int(nrows = innov.size();
-  NumericVector pricets*nrows);
-  NumericVector retsp*nrows);
-  pricets[0] = eq_price;
+NumericVector sim_oucpp(double eq_price, 
+                          double volat, 
+                          double thetav, 
+                          NumericVector innov) {
+  int nrows = innov.size();
+  NumericVector prices(nrows);
+  NumericVector returns(nrows);
+  prices[0] = eq_price;
   for (int it = 1; it < nrows; it++) {
-    retsp[it] = theta*(eq_price - pricets[it-1]) + volat*innov[it-1];
-    pricets[it] = pricets[it-1] + retsp[it];
+    returns[it] = thetav*(eq_price - prices[it-1]) + volat*innov[it-1];
+    prices[it] = prices[it-1] + returns[it];
   }  // end for
-  return pricets;
+  return prices;
 }")  # end cppFunction
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  volat=sigmav,
-  theta=thetav,
-  innov=rnorm(nrows))
-all.equal(ou_sim, ou_sim_rcpp)
+oucpp <- sim_oucpp(eq_price=eq_price,
+  volat=sigmav, theta=thetav, innov=rnorm(nrows))
+all.equal(ousim, oucpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  cppcode=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
+  Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4168,16 +4163,16 @@ summary(microbenchmark(
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_ou.cpp")
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
+oucpp <- sim_oucpp(eq_price=eq_price,
   volat=sigmav,
   theta=thetav,
   innov=rnorm(nrows))
-all.equal(ou_sim, ou_sim_rcpp)
+all.equal(ousim, oucpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  cppcode=sim_ou_rcpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
+  Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -4187,23 +4182,23 @@ summary(microbenchmark(
 #include <Rcpp.h> // include Rcpp C++ header files
 using namespace Rcpp; // use Rcpp C++ namesvpace
 
-// The function sim_ou_rcpp() simulates an Ornstein-Uhlenbeck process
+// The function sim_oucpp() simulates an Ornstein-Uhlenbeck process
 // export the function roll_maxmin() to R
 // [[Rcpp::export]]
-NumericVector sim_ou_rcpp(double eq_price,
+NumericVector sim_oucpp(double eq_price,
                           double volat,
                           double thetav,
                           NumericVector innov) {
   int(nrows = innov.size();
-  NumericVector pricets*nrows);
+  NumericVector pricev*nrows);
   NumericVector retsp*nrows);
-  pricets[0] = eq_price;
+  pricev[0] = eq_price;
   for (int it = 1; it < nrows; it++) {
-    retsp[it] = thetav*(eq_price - pricets[it-1]) + volat*innov[it-1];
-    pricets[it] = pricets[it-1] + retsp[it];
+    retsp[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
+    pricev[it] = pricev[it-1] + retsp[it];
   }  // end for
-  return pricets;
-}  // end sim_ou_rcpp
+  return pricev;
+}  // end sim_oucpp
     \end{lstlisting}
   \end{columns}
 \end{block}
@@ -4237,7 +4232,7 @@ library(microbenchmark)
 summary(microbenchmark(
   rcode=runif(1e5),
   rloop=unifun(0.3, 1e5),
-  cppcode=uniform_rcpp(0.3, 1e5),
+  Rcpp=unifuncpp(0.3, 1e5),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -4260,7 +4255,7 @@ using namespace Rcpp; // use Rcpp C++ namesvpace
 // function unifun() produces a vector of
 // uniformly distributed pseudo-random numbers
 // [[Rcpp::export]]
-NumericVector uniform_rcpp(double seedv, int(nrows) {
+NumericVector unifuncpp(double seedv, int(nrows) {
 // define pi
 static const double pi = 3.14159265;
 // allocate output vector
@@ -4305,19 +4300,19 @@ bootd <- function(datav, nboot=1000) {
     function(x) c(mean=mean(x), stderror=sd(x)))
 
   retsp <- numeric(nrows)
-  pricets <- numeric(nrows)
-  pricets[1] <- eq_price
+  pricev <- numeric(nrows)
+  pricev[1] <- eq_price
   for (i in 2:nrows) {
-    retsp[i] <- thetav*(eq_price - pricets[i-1]) + volat*rnorm(1)
-    pricets[i] <- pricets[i-1] + retsp[i]
+    retsp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retsp[i]
   }  # end for
-  pricets
+  pricev
 }  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4339,7 +4334,7 @@ using namespace Rcpp; // use Rcpp C++ namesvpace
 // function unifun() produces a vector of
 // uniformly distributed pseudo-random numbers
 // [[Rcpp::export]]
-NumericVector uniform_rcpp(double seedv, int(nrows) {
+NumericVector unifuncpp(double seedv, int(nrows) {
 // define pi
 static const double pi = 3.14159265;
 // allocate output vector
@@ -4395,19 +4390,19 @@ bootd <- function(datav, nboot=1000) {
         function(x) c(mean=mean(x), stderror=sd(x)))
 
   retsp <- numeric(nrows)
-  pricets <- numeric(nrows)
-  pricets[1] <- eq_price
+  pricev <- numeric(nrows)
+  pricev[1] <- eq_price
   for (i in 2:nrows) {
-    retsp[i] <- thetav*(eq_price - pricets[i-1]) + volat*rnorm(1)
-    pricets[i] <- pricets[i-1] + retsp[i]
+    retsp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retsp[i]
   }  # end for
-  pricets
+  pricev
 }  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(nrows*nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4429,7 +4424,7 @@ using namespace Rcpp; // use Rcpp C++ namesvpace
 // function unifun() produces a vector of
 // uniformly distributed pseudo-random numbers
 // [[Rcpp::export]]
-NumericVector uniform_rcpp(double seedv, int(nrows) {
+NumericVector unifuncpp(double seedv, int(nrows) {
 // define pi
 static const double pi = 3.14159265;
 // allocate output vector
@@ -4467,12 +4462,12 @@ static const double pi = 3.14159265;
       You can learn more about \emph{RcppArmadillo}: \\
       \tiny \url{http://arma.sourceforge.net/}\\
       \tiny \url{http://dirk.eddelbuettel.com/code/rcpp.armadillo.html}\\
-      \tiny \url{https://cran.r-project.org/web/packages/RcppArmadillo/index.html}\\
-      \tiny \url{https://github.com/RcppCore/RcppArmadillo}
+      \tiny \url{https://cran.r-project.org/web/packages/\emph{RcppArmadillo}/index.html}\\
+      \tiny \url{https://github.com/RcppCore/\emph{RcppArmadillo}}
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillofuntions.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
 vec1 <- runif(1e5)
 vec2 <- runif(1e5)
 inner_vec(vec1, vec2)
@@ -4482,13 +4477,13 @@ vec1 %*% vec2
       \vspace{-2em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h>
+#include <\emph{RcppArmadillo}.h>
 using namespace Rcpp;
 using namespace arma;
-// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(\emph{RcppArmadillo})]]
 
 // The function inner_vec() calculates the inner (dot) product of two vectors.
-// It uses RcppArmadillo.
+// It uses \emph{RcppArmadillo}.
 //' @export
 // [[Rcpp::export]]
 double inner_vec(arma::vec vec1, arma::vec vec2) {
@@ -4498,7 +4493,7 @@ double inner_vec(arma::vec vec1, arma::vec vec2) {
 // The function inner_mat() calculates the inner (dot) product of a matrix
 // with two vectors.
 // It accepts pointers to the matrix and vectors, and returns a double.
-// It uses RcppArmadillo.
+// It uses \emph{RcppArmadillo}.
 //' @export
 // [[Rcpp::export]]
 double inner_mat(const arma::vec& vectorv2, const arma::mat& matrixv, const arma::vec& vectorv1) {
@@ -4507,16 +4502,16 @@ double inner_mat(const arma::vec& vectorv2, const arma::mat& matrixv, const arma
     \end{lstlisting}
       \vspace{-1.5em}
       <<echo=TRUE,eval=FALSE>>=
-# Microbenchmark RcppArmadillo code
+# Microbenchmark \emph{RcppArmadillo} code
 summary(microbenchmark(
-  inner_vec = inner_vec(vec1, vec2),
-  r_code = (vec1 %*% vec2),
+  rcpp = inner_vec(vec1, vec2),
+  rcode = (vec1 %*% vec2),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 # Microbenchmark shows:
 # inner_vec() is several times faster than %*%, especially for longer vectors.
 #     expr     mean   median
 # 1 inner_vec 110.7067 110.4530
-# 2 r_code 585.5127 591.3575
+# 2 rcode 585.5127 591.3575
       @
   \end{columns}
 \end{block}
@@ -4541,15 +4536,15 @@ nrows <- 1e4
 set.seed(1121)
 innov <- rnorm(nrows)
 # Simulate ARIMA using filter()
-arima_filter <- filter(x=innov,
-  filter=coeff, method="recursive")
-# Simulate ARIMA using sim_arima()
-arimav <- sim_arima(innov, rev(coeff))
-all.equal(drop(arimav),
-  as.numeric(arima_filter))
-# Microbenchmark RcppArmadillo code
+arimar <- filter(x=innov, filter=coeff, method="recursive")
+# Simulate ARIMA using sim_ar()
+innov <- matrix(innov)
+coeff <- matrix(coeff)
+arimav <- sim_ar(coeff, innov)
+all.equal(drop(arimav), as.numeric(arimar))
+# Microbenchmark \emph{RcppArmadillo} code
 summary(microbenchmark(
-  sim_arima = sim_arima(innov, rev(coeff)),
+  rcpp = sim_ar(coeff, innov),
   filter = filter(x=innov, filter=coeff, method="recursive"),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -4557,14 +4552,14 @@ summary(microbenchmark(
       % \vspace{-2em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
+#include <\emph{RcppArmadillo}.h> // include C++ header file from Armadillo library
 using namespace arma; // use C++ namesvpace from Armadillo library
-// declare dependency on RcppArmadillo
-// [[Rcpp::depends(RcppArmadillo)]]
+// declare dependency on \emph{RcppArmadillo}
+// [[Rcpp::depends(\emph{RcppArmadillo})]]
 
 //' @export
 // [[Rcpp::export]]
-arma::vec sim_arima(const arma::vec& innov, const arma::vec& coeff) {
+arma::vec sim_ar(const arma::vec& innov, const arma::vec& coeff) {
   uword nrows = innov.n_elem;
   uword look_back = coeff.n_elem;
   arma::vec arimav[nrows);
@@ -4604,48 +4599,48 @@ arma::vec sim_arima(const arma::vec& innov, const arma::vec& coeff) {
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillofuntions.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
 matrixv <- matrix(runif(1e5), nc=1e3)
 # De-mean using apply()
-newmacppt <- apply(matrixv, 2, function(x) (x-mean(x)))
-# De-mean using demean_mat()
+matr <- apply(matrixv, 2, function(x) (x-mean(x)))
+# De-mean in place using Rcpp demean_mat()
 demean_mat(matrixv)
-all.equal(newmacppt, matrixv)
-# Microbenchmark RcppArmadillo code
+all.equal(matr, matrixv)
+# Microbenchmark \emph{RcppArmadillo} code
 library(microbenchmark)
 summary(microbenchmark(
-  apply = (apply(matrixv, 2, mean)),
-  demean_mat = demean_mat(matrixv),
+  rcode = (apply(matrixv, 2, mean)),
+  rcpp = demean_mat(matrixv),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 # Perform matrix inversion
 # Create random positive semi-definite matrix
 matrixv <- matrix(runif(25), nc=5)
 matrixv <- t(matrixv) %*% matrixv
 # Invert the matrix
-matrix_inv <- solve(matrixv)
+matrixinv <- solve(matrixv)
 inv_mat(matrixv)
-all.equal(matrix_inv, matrixv)
-# Microbenchmark RcppArmadillo code
+all.equal(matrixinv, matrixv)
+# Microbenchmark \emph{RcppArmadillo} code
 summary(microbenchmark(
-  solve = solve(matrixv),
-  inv_mat = inv_mat(matrixv),
+  rcode = solve(matrixv),
+  rcpp = inv_mat(matrixv),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
+#include <\emph{RcppArmadillo}.h> // include C++ header file from Armadillo library
 using namespace arma; // use C++ namesvpace from Armadillo library
-// declare dependency on RcppArmadillo
-// [[Rcpp::depends(RcppArmadillo)]]
+// declare dependency on \emph{RcppArmadillo}
+// [[Rcpp::depends(\emph{RcppArmadillo})]]
 
-// Examples of RcppArmadillo functions below
+// Examples of \emph{RcppArmadillo} functions below
 
 // The function demean_mat() calculates a matrix with de-meaned columns.
 // It accepts a pointer to a matrix and operates on the matrix in place.
 // It returns the number of columns of the input matrix.
-// It uses RcppArmadillo.
+// It uses \emph{RcppArmadillo}.
 //' @export
 // [[Rcpp::export]]
 int demean_mat(arma::mat& matrixv) {
@@ -4659,7 +4654,7 @@ int demean_mat(arma::mat& matrixv) {
 // definite matrix.
 // It accepts a pointer to a matrix and operates on the matrix in place.
 // It returns the number of columns of the input matrix.
-// It uses RcppArmadillo.
+// It uses \emph{RcppArmadillo}.
 //' @export
 // [[Rcpp::export]]
 double inv_mat(arma::mat& matrixv) {
@@ -4684,7 +4679,7 @@ double inv_mat(arma::mat& matrixv) {
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/calc_weights.cpp")
+Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/HighFreq.cpp")
 # Calculate matrix of random returns
 matrixv <- matrix(rnorm(300), nc=5)
 # Regularized inverse of correlation matrix
@@ -4693,23 +4688,23 @@ cormat <- cor(matrixv)
 eigend <- eigen(cormat)
 invmat <- eigend$vectors[, 1:dimax] %*%
   (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
-# Regularized inverse using RcppArmadillo
-invarma <- HighFreq::calc_inv(cormat, dimax=dimax)
+# Regularized inverse using \emph{RcppArmadillo}
+invarma <- calc_inv(cormat, dimax=dimax)
 all.equal(invmat, invarma)
-# Microbenchmark RcppArmadillo code
+# Microbenchmark \emph{RcppArmadillo} code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcode = {eigend <- eigen(cormat)
+  rcode = {eigend <- eigen(cormat)
       eigend$vectors[, 1:dimax] %*% (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])},
-  Rcpp = calc_inv(cormat, dimax=dimax),
+  rcpp = calc_inv(cormat, dimax=dimax),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
+// [[Rcpp::depends(\emph{RcppArmadillo})]]
+#include <\emph{RcppArmadillo}.h>  // include Rcpp C++ header files
 using namespace std;
 using namespace Rcpp; // use Rcpp C++ namesvpace
 using namespace arma;
@@ -4717,27 +4712,34 @@ using namespace arma;
 //' @export
 // [[Rcpp::export]]
 arma::mat calc_inv(const arma::mat& tseries,
-                   double eigen_thresh = 0.001, 
+                   double eigen_thresh = 0.01, 
                    arma::uword dimax = 0) {
   
+  // Allocate SVD variables
+  arma::vec svdval;  // Singular values
+  arma::mat svdu, svdv;  // Singular matrices
+  // Calculate the SVD
+  arma::svd(svdu, svdval, svdv, tseries);
+  // Calculate the number of non-small singular values
+  arma::uword svdnum = arma::sum(svdval > eigen_thresh*arma::sum(svdval));
+  
+  // If no regularization then set dimax to (svdnum - 1)
   if (dimax == 0) {
-    // Calculate the inverse using arma::pinv()
-    return arma::pinv(tseries, eigen_thresh);
+    // Set dimax
+    dimax = svdnum - 1;
   } else {
-    // Calculate the regularized inverse using SVD decomposition
-    // Allocate SVD
-    arma::vec svdval;
-    arma::mat svdu, svdv;
-    // Calculate the SVD
-    arma::svd(svdu, svdval, svdv, tseries);
-    // Subset the SVD
-    dimax = dimax - 1;
-    svdu = svdu.cols(0, dimax);
-    svdv = svdv.cols(0, dimax);
-    svdval = svdval.subvec(0, dimax);
-    // Calculate the inverse from the SVD
-    return svdv*arma::diagmat(1/svdval)*svdu.t();
+    // Adjust dimax
+    dimax = std::min(dimax - 1, svdnum - 1);
   }  // end if
+  
+  // Remove all small singular values
+  svdval = svdval.subvec(0, dimax);
+  svdu = svdu.cols(0, dimax);
+  svdv = svdv.cols(0, dimax);
+  
+  // Calculate the regularized inverse from the SVD decomposition
+  return svdv*arma::diagmat(1/svdval)*svdu.t();
+  
 }  // end calc_inv
     \end{lstlisting}
     % \column{0.5\textwidth}
@@ -4756,140 +4758,127 @@ arma::mat calc_inv(const arma::mat& tseries,
     % \column{0.5\textwidth}
       Fast portfolio optimization using matrix algebra can be implemented using \protect\emph{RcppArmadillo}.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Fast portfolio optimization using matrix algebra and RcppArmadillo
-// Rcpp header with information for C++ compiler
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
-using namespace Rcpp; // use Rcpp C++ namesvpace
-using namespace arma;
-
-//' @export
-// [[Rcpp::export]]
-arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
-                       std::string method = "ranksharpe",
-                       double eigen_thresh = 0.001,
-                       arma::uword dimax = 0,
-                       double confi = 0.1,
-                       double alpha = 0.0,
-                       bool scale = true,
-                       double vol_target = 0.01) {
-  // Initialize
-  arma::vec weights(returns[ncols, fill::zeros);
-  if (dimax == 0)  dimax = returns[ncols;
+// Fast portfolio optimization using matrix algebra and \emph{RcppArmadillo}
+arma::vec calc_weights(const arma::mat& returns, // Asset returns
+                       Rcpp::List controlv) { // List of portfolio optimization parameters
   
-  // Switch for the different methods for weights
+  // Apply different calculation methods for weights
   switch(calc_method(method)) {
-  case method::ranksharpe: {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::mean(returns, 0));
-    // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
-    sd_cols.replace(0, 1);
-    meancols = meancols/sd_cols;
-    // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
-    weights = (weights - arma::mean(weights));
+  case methodenum::maxsharpe: {
+    // Mean returns of columns
+    arma::vec colmeans = arma::trans(arma::mean(returns, 0));
+    // Shrink colmeans to the mean of returns
+    colmeans = ((1-alpha)*colmeans + alpha*arma::mean(colmeans));
+    // Calculate weights using regularized inverse
+    weights = calc_inv(covmat, eigen_thresh, dimax)*colmeans;
     break;
-  }  // end ranksharpe
-  case method::max_sharpe: {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::mean(returns, 0));
-    // Shrink meancols to the mean of returns
-    meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
-    // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), dimax);
-    // weights = calc_inv(cov(returns), dimax)*meancols;
-    weights = calc_inv(cov(returns), eigen_thresh, dimax)*meancols;
+  }  // end maxsharpe
+  case methodenum::maxsharpemed: {
+    // Median returns of columns
+    arma::vec colmeans = arma::trans(arma::median(returns, 0));
+    // Shrink colmeans to the median of returns
+    colmeans = ((1-alpha)*colmeans + alpha*arma::median(colmeans));
+    // Calculate weights using regularized inverse
+    weights = calc_inv(covmat, eigen_thresh, dimax)*colmeans;
     break;
-  }  // end max_sharpe
-  case method::max_sharpe_median: {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::median(returns, 0));
-    // Shrink meancols to the mean of returns
-    meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
-    // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), dimax);
-    weights = calc_inv(cov(returns), eigen_thresh, dimax)*meancols;
+  }  // end maxsharpemed
+  case methodenum::minvarlin: {
+    // Minimum variance weights under linear constraint
+    // Multiply regularized inverse times unit vector
+    weights = calc_inv(covmat, eigen_thresh, dimax)*arma::ones(ncols);
     break;
-  }  // end max_sharpe_median
-  case method::min_var: {
-    // Apply regularized inverse to unit vector
-    weights = calc_inv(cov(returns), eigen_thresh, dimax)*arma::ones(returns[ncols);
-    break;
-  }  // end min_var
-  case method::min_varpca: {
+  }  // end minvarlin
+  case methodenum::minvarquad: {
+    // Minimum variance weights under quadratic constraint
     // Calculate highest order principal component
     arma::vec eigenval;
     arma::mat eigenvec;
-    arma::eig_sym(eigenval, eigenvec, arma::cov(returns));
-    weights = eigenvec.col(0);
+    arma::eig_sym(eigenval, eigenvec, covmat);
+    weights = eigenvec.col(ncols-1);
     break;
-  }  // end min_varpca
-  case method::rank: {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::mean(returns, 0));
-    // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
-    sd_cols.replace(0, 1);
-    meancols = meancols/sd_cols;
-    // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
-    weights = (weights - arma::mean(weights));
+  }  // end minvarquad
+  case methodenum::sharpem: {
+    // Momentum weights equal to Sharpe ratios
+    // Mean returns of columns
+    arma::vec colmeans = arma::trans(arma::mean(returns, 0));
+    // Standard deviation of columns
+    arma::vec colsd = arma::sqrt(covmat.diag());
+    colsd.replace(0, 1);
+    // Momentum weights equal to Sharpe ratios
+    weights = colmeans/colsd;
     break;
-  }  // end rank
-  case method::rankrob: {
-    // Median returns by columns
-    arma::vec meancols = arma::trans(arma::median(returns, 0));
-    // meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
-    // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
-    sd_cols.replace(0, 1);
-    meancols = meancols/sd_cols;
-    // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), dimax);
-    // weights = calc_inv(cov(returns), dimax)*meancols;
-    // weights = calc_inv(cov(returns), dimax)*meancols;
-    // // Standard deviation by columns
-    // arma::vec sd_cols = meancols;
-    // for (arma::uword it=0; it < returns[ncols; it++) {
-    //   sd_cols(it) = arma::median(arma::abs((returns.col(it) - sd_cols)));
-    // }  // end for
-    // sd_cols.replace(0, 1);
-    // meancols = meancols/sd_cols;
-    // Weights equal to ranks of Sharpe
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
-    // level;
-    weights = (weights - arma::mean(weights));
+  }  // end sharpem
+  case methodenum::kellym: {
+    // Momentum weights equal to Kelly ratios
+    // Mean returns of columns
+    arma::vec colmeans = arma::trans(arma::mean(returns, 0));
+    // Variance of columns
+    arma::vec colvar = covmat.diag();
+    colvar.replace(0, 1);
+    // Momentum weights equal to Kelly ratios
+    weights = colmeans/colvar;
     break;
-  }  // end rankrob
-  case method::quantile: {
-    // Sum of quantiles for columns
-    arma::vec levels = {confi, 1-confi};
-    weights = conv_to<vec>::from(arma::sum(arma::quantile(returns, levels, 0), 0));
-    // Weights equal to ranks
-    weights = conv_to<vec>::from(arma::sort_index(arma::sort_index(weights)));
-    weights = (weights - arma::mean(weights));
+  }  // end kellym
+  case methodenum::robustm: {
+    // Momentum weights equal to robust Sharpe ratios
+    // Median returns of columns
+    arma::vec colmeans = arma::trans(arma::median(returns, 0));
+    // Standard deviation of columns
+    arma::vec colsd = arma::sqrt(covmat.diag());
+    colsd.replace(0, 1);
+    // Momentum weights equal to robust Sharpe ratios
+    colmeans = colmeans/colsd;
+    break;
+  }  // end robustm
+  case methodenum::quantile: {
+    // Momentum weights equal to sum of quantiles for columns
+    arma::vec levels = {confl, 1-confl};
+    weights = arma::conv_to<vec>::from(arma::sum(arma::quantile(returns, levels, 0), 0));
     break;
   }  // end quantile
   default : {
     cout << "Warning: Invalid method parameter: " << method << endl;
-    return arma::ones(returns[ncols);
+    return arma::ones(ncols);
   }  // end default
   }  // end switch
   
-  if (scale == TRUE) {
-    // return weights/std::sqrt(sum(square(weights)));
-    // return weights/sum(weights);
-    // Returns of equally weighted portfolio
-    // arma::vec me.n_rows = arma::mean(returns, 1);
-    // Returns of weighted portfolio
-    // arma::vec returns_portf = returns*weights;
-    // Scale weights to equally weighted portfolio and return them
-    // return weights*arma::stddev(arma::mean(returns, 1))/arma::stddev(returns*weights);
-    // Scale weights so the resulting portfolio has a volatility equal to vol_target
-    return weights*vol_target/arma::stddev(returns*weights);
+  if (rankw == TRUE) {
+    // Convert the weights to their ranks
+    weights = arma::conv_to<vec>::from(calc_ranks_stl(weights));
   }  // end if
+  
+  if (centerw == TRUE) {
+    // Center the weights so their sum is equal to zero
+    weights = (weights - arma::mean(weights));
+  }  // end if
+  
+  // Apply different scaling methods for weights
+  switch(calc_method(scalew)) {
+  case methodenum::voltarget: {
+    // Scale the weights so the portfolio has the volatility equal to vol_target
+    weights = weights*vol_target/arma::stddev(returns*weights);
+    break;
+  }  // end voltarget
+  case methodenum::voleqw: {
+    // Scale the weights to the volatility of the equal weight portfolio
+    weights = weights*arma::stddev(arma::mean(returns, 1))/arma::stddev(returns*weights);
+    break;
+  }  // end voleqw
+  case methodenum::sumone: {
+    // Scale the weights so their sum of squares is equal to one
+    weights = weights/arma::sum(weights*arma::ones(ncols));
+    break;
+  }  // end sumone
+  case methodenum::sumsq: {
+    // Scale the weights so their sum of squares is equal to one
+    weights = weights/std::sqrt(arma::sum(square(weights)));
+    break;
+  }  // end sumsq
+  default : {
+    // No scaling
+    break;
+  }  // end default
+  }  // end switch
   
   return weights;
   
@@ -4912,41 +4901,33 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     % \column{0.5\textwidth}
       Fast backtesting of strategies can be implemented using \protect\emph{RcppArmadillo}.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
-using namespace Rcpp; // use Rcpp C++ namesvpace
-using namespace arma;
+arma::mat back_test(const arma::mat& excess, // Asset excess returns
+                    const arma::mat& returns, // Asset returns
+                    Rcpp::List controlv, // List of portfolio optimization model parameters
+                    arma::uvec startp, // Start points
+                    arma::uvec endp, // End points
+                    double lambda = 0.0, // Decay factor for averaging the portfolio weights
+                    double coeff = 1.0, // Multiplier of strategy returns
+                    double bid_offer = 0.0) { // The bid-offer spread
+  
+  double lambda1 = 1-lambda;
+  arma::uword nweights = returns.n_cols;
+  arma::vec weights(nweights, fill::zeros);
+  arma::vec weights_past = ones(nweights)/std::sqrt(nweights);
+  arma::mat pnls = zeros(returns.n_rows, 1);
 
-//' @export
-// [[Rcpp::export]]
-arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
-                    const arma::mat& returns, // Portfolio returns
-                    arma::uvec startp, 
-                    arma::uvec endp, 
-                    std::string method = "ranksharpe",
-                    double eigen_thresh = 0.001,
-                    arma::uword dimax = 0,
-                    double confi = 0.1,
-                    double alpha = 0.0,
-                    bool scale = true,
-                    double vol_target = 0.01,
-                    double coeff = 1.0,
-                    double bid_offer = 0.0) {
-  
-  arma::vec weights(returns[ncols, fill::zeros);
-  arma::vec weights_past = zeros(returns[ncols);
-  arma::mat pnls = zeros(returns*nrows, 1);
-  
   // Perform loop over the end points
   for (arma::uword it = 1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
-    // Calculate portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), method, eigen_thresh, dimax, confi, alpha, scale, vol_target);
+    // Calculate the portfolio weights
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), controlv);
+    // Calculate the weights as the weighted sum with past weights
+    weights = lambda1*weights + lambda*weights_past;
     // Calculate out-of-sample returns
     pnls.rows(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
     // Add transaction costs
     pnls.row(endp(it-1)+1) -= bid_offer*sum(abs(weights - weights_past))/2;
+    // Copy the weights
     weights_past = weights;
   }  // end for
   
@@ -4969,50 +4950,86 @@ arma::mat back_test(const arma::mat& excess, // Portfolio excess returns
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Package \protect\emph{reticulate} for Calling \texttt{Python} from \texttt{R}}
+\subsection{Package \protect\emph{reticulate} for Running \texttt{Python} from \texttt{RStudio}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{reticulate} allows calling \texttt{Python} functions and scripts from \texttt{R}.
+      The package \emph{reticulate} allows running \texttt{Python} functions and scripts from \texttt{RStudio}.
       \vskip1ex
-      \emph{reticulate} functions are \texttt{R} functions that were compiled from \texttt{Python} code using package \emph{reticulate}.
+      The package \emph{reticulate} relies on \texttt{Python} for interpreting the \texttt{Python} code.
       \vskip1ex
-      \emph{reticulate} functions are much faster than code written in \texttt{R}, so they're suitable for large numerical calculations.
-      \vskip1ex
-      The package \emph{reticulate} relies on \texttt{Python} for interpreting the \texttt{Python} code: \\
-      \hskip1em\url{https://conda.io/docs/user-guide/install/index.html}
-      \vskip1ex
-      by compiling the \texttt{Python} code and creating \texttt{R} functions.
+      You must set your Global Options in \texttt{RStudio} to your \texttt{Python} executable, for example:\\
+      /Library/Frameworks/Python.framework/Versions/3.10/bin/python3.10
       \vskip1ex
       You can learn more about the package \emph{reticulate} here: \\
       \hskip1em\url{https://rstudio.github.io/reticulate/}
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# wipp
 # Install package reticulate
 install.packages("reticulate")
-# Load package reticulate
-library(reticulate)
-# Get documentation for package reticulate
-# Get short description
-packageDescription("reticulate")
-# Load help page
-help(package="reticulate")
-# List all datasets in "reticulate"
-data(package="reticulate")
-# List all objects in "reticulate"
-ls("package:reticulate")
-# Remove reticulate from search path
-detach("package:reticulate")
+# Start Python session
+reticulate::repl_python()
+# Exit Python session
+exit
       @
   \end{columns}
 \end{block}
 
 \end{frame}
 
+
+%%%%%%%%%%%%%%%
+\subsection{Running \texttt{Python} Under \protect\emph{reticulate}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+      \vspace{-2em}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+"""
+Script for loading OHLC data from a CSV file and plotting a candlestick plot.
+"""
+# Import packages 
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+# Load OHLC data from csv file - the time index is formatted inside read_csv()
+symbol = "SPY"
+range = "day"
+filename = "/Users/jerzy/Develop/data/" + symbol + "_" + range + ".csv"
+ohlc = pd.read_csv(filename)
+datev = ohlc.Date
+# Calculate log stock prices
+ohlc[["Open", "High", "Low", "Close"]] = np.log(ohlc[["Open", "High", "Low", "Close"]])
+# Calculate moving average
+lookback = 55
+closep = ohlc.Close
+pricema = closep.ewm(span=lookback, adjust=False).mean()
+# Plotly simple candlestick with moving average
+# Create empty graph object
+plotfig = go.Figure()
+# Add trace for candlesticks
+plotfig = plotfig.add_trace(go.Candlestick(x=datev,
+  open=ohlc.Open, high=ohlc.High, low=ohlc.Low, close=ohlc.Close, 
+  name=symbol+" Log OHLC Prices", showlegend=False))
+# Add trace for moving average
+plotfig = plotfig.add_trace(go.Scatter(x=datev, y=pricema, 
+  name="Moving Average", line=dict(color="blue")))
+# Customize plot
+plotfig = plotfig.update_layout(title=symbol + " Log OHLC Prices", 
+  title_font_size=24, title_font_color="blue", yaxis_title="Price", 
+  font_color="black", font_size=18, xaxis_rangeslider_visible=False)
+# Customize legend
+plotfig = plotfig.update_layout(legend=dict(x=0.2, y=0.9, traceorder="normal", 
+  itemsizing="constant", font=dict(family="sans-serif", size=18, color="blue")))
+# Render the plot
+plotfig.show()
+    \end{lstlisting}
+\end{block}
+
+\end{frame}
 
 
 \end{document}

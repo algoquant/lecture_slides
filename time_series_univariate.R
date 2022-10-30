@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 # Get documentation for package tseries
 packageDescription("tseries")  # Get short description
 

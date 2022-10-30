@@ -15,10 +15,10 @@ pricez <- (2*closep -
 pricez <- ifelse(stdev > 0, pricez/stdev, 0)
 
 # Plot dygraph of z-scores of VTI prices
-pricets <- cbind(closep, pricez)
-colnames(pricets) <- c("VTI", "Z-scores")
-colnamev <- colnames(pricets)
-dygraphs::dygraph(pricets["2009"], main="VTI Price Z-Scores") %>%
+pricev <- cbind(closep, pricez)
+colnames(pricev) <- c("VTI", "Z-scores")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI Price Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -707,11 +707,11 @@ library(rutils)
 # Select ETF symbols
 symbolv <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # Calculate ETF prices and percentage returns
-pricets <- rutils::etfenv$prices[, symbolv]
-pricets <- zoo::na.locf(pricets, na.rm=FALSE)
-pricets <- zoo::na.locf(pricets, fromLast=TRUE)
+pricev <- rutils::etfenv$prices[, symbolv]
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
 # Calculate log returns without standardizing
-retsp <- rutils::diffit(log(pricets))
+retsp <- rutils::diffit(log(pricev))
 # Calculate covariance matrix
 covmat <- cov(retsp)
 # Standardize (de-mean and scale) the returns
@@ -721,15 +721,15 @@ round(sapply(retsp, mean), 6)
 sapply(retsp, sd)
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- apply(retsp, 2, scale)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- scale(retsp, center=TRUE, scale=TRUE)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
 # Alternative (much slower) center (de-mean) and scale the returns
 # retsp <- t(retsp) - colMeans(retsp)
 # retsp <- retsp/sqrt(rowSums(retsp^2)/(NCOL(retsp)-1))
 # retsp <- t(retsp)
-# retsp <- xts::xts(retsp, zoo::index(pricets))
+# retsp <- xts::xts(retsp, zoo::index(pricev))
 
 # Calculate correlation matrix
 cormat <- cor(retsp)
@@ -889,7 +889,7 @@ for (ordern in 1:nweights) {
 # Calculate products of principal component time series
 round(t(pcad$x) %*% pcad$x, 2)
 # Calculate principal component time series from returns
-dates <- zoo::index(pricets)
+dates <- zoo::index(pricev)
 retspca <- xts::xts(retsp %*% pcad$rotation, order.by=dates)
 round(cov(retspca), 3)
 all.equal(coredata(retspca), pcad$x, check.attributes=FALSE)

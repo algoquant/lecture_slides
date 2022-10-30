@@ -70,7 +70,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{May 2, 2022}
+\date{October 3, 2022}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -82,6 +82,871 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Multivariate Regression}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Multivariate} Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{multivariate} linear regression model with $k$ \emph{predictors} ${x_j}$, is defined by the formula:
+      \begin{displaymath}
+        y_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $k$.
+      \vskip1ex
+      The \emph{residuals} $\varepsilon_i$ are assumed to be normally distributed $\phi(0, \sigma_\varepsilon)$, independent, and stationary.
+      \vskip1ex
+      The data consists of $n$ observations, with each observation containing $k$ \emph{predictors} and one \emph{response} value.
+      \vskip1ex
+      The \emph{response vector} $y$, the \emph{predictor} vectors ${x_j}$, and the \emph{residuals} $\varepsilon$ are vectors of length $n$.
+      \vskip1ex
+      The $k$ \emph{predictors} ${x_j}$ form the columns of the $(n,k)$-dimensional \emph{predictor matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{flalign*}
+        & y = \alpha + \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
+        & y_{fit} = \alpha + \mathbb{X} \beta
+      \end{flalign*}
+      Where $y_{fit}$ are the \emph{fitted values} of the model.
+        <<echo=TRUE,eval=TRUE>>=
+# Define predictor matrix
+nrows <- 100
+ncols <- 5
+set.seed(1121)  # initialize random number generator
+predictor <- matrix(rnorm(nrows*ncols), ncol=ncols)
+# Add column names
+colnames(predictor) <- paste0("col", 1:ncols)
+# Define the predictor weights
+weights <- sample(3:(ncols+2))
+# Response equals weighted predictor plus random noise
+noise <- rnorm(nrows, sd=5)
+response <- (-3 + 2*predictor %*% weights + noise)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Solution of \protect\emph{Multivariate Regression}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Residual Sum of Squares} (\emph{RSS}) is defined as the sum of the squared \emph{residuals}:
+      \begin{align*}
+        RSS &= \varepsilon^T \varepsilon = (y - y_{fit})^T (y - y_{fit}) = \\
+        & (y - \alpha + \mathbb{X} \beta)^T (y - \alpha + \mathbb{X} \beta)
+      \end{align*}
+      The \emph{OLS} solution for the regression coefficients is found by equating the \emph{RSS} derivatives to zero:
+      \begin{flalign*}
+        RSS_\alpha = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbbm{1} = 0 \\
+        RSS_\beta = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbb{X} = 0
+      \end{flalign*}
+      The solutions for $\alpha$ and $\beta$ are given by:
+      \begin{flalign*}
+        & \alpha = \bar{y} - \bar{\mathbb{X}} \beta\\
+        & RSS_\beta = -2 (\hat{y} - \hat{\mathbb{X}} \beta)^T \hat{\mathbb{X}} = 0\\
+        & \hat{\mathbb{X}}^T \hat{y} - \hat{\mathbb{X}}^T \hat{\mathbb{X}} \beta = 0\\
+        & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{y} = \hat{\mathbb{X}}^{inv} \hat{y}
+      \end{flalign*}
+      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\hat{y} = y - \bar{y} = \hat{\mathbb{X}} \beta + \varepsilon$ are the de-meaned variables.
+    \column{0.5\textwidth}
+      The matrix $\hat{\mathbb{X}}^{inv}$ is the generalized inverse of the de-meaned \emph{predictor matrix} $\hat{\mathbb{X}}$.
+      \vskip1ex
+      The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
+        <<echo=TRUE,eval=TRUE>>=
+# Perform multivariate regression using lm()
+regmod <- lm(response ~ predictor)
+# Solve multivariate regression using matrix algebra
+# Calculate de-meaned predictor matrix and response vector
+predzm <- t(t(predictor) - colMeans(predictor))
+# predictor <- apply(predictor, 2, function(x) (x-mean(x)))
+respzm <- response - mean(response)
+# Calculate the regression coefficients
+betas <- drop(MASS::ginv(predzm) %*% respzm)
+# Calculate the regression alpha
+alpha <- mean(response) - sum(colSums(predictor)*betas)/nrows
+# Compare with coefficients from lm()
+all.equal(coef(regmod), c(alpha, betas), check.attributes=FALSE)
+# Compare with actual coefficients
+all.equal(c(-1, weights), c(alpha, betas), check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Multivariate Regression} in Homogeneous Form}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      We can add an extra unit column to the \emph{predictor matrix} $\mathbb{X}$ to represent the intercept term, and express the \emph{linear regression} formula in \emph{homogeneous form}:
+      \begin{displaymath}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      Where the \emph{regression coefficients} $\beta$ now contain the intercept $\alpha$: $\beta = (\alpha, \beta_1, \ldots, \beta_k)$, and the \emph{predictor matrix} $\mathbb{X}$ has $k+1$ columns and $n$ rows.
+      \vskip1ex
+      The \emph{OLS} solution for the $\beta$ coefficients is found by equating the \emph{RSS} derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = -2 (y - \mathbb{X} \beta)^T \mathbb{X} = 0\\
+        & \mathbb{X}^T y - \mathbb{X}^T \mathbb{X} \beta = 0\\
+        & \beta = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X}_{inv} y
+      \end{flalign*}
+      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
+      \vskip1ex
+      The coefficients $\beta$ can be interpreted as the projections of the \emph{response vector} $y$ onto the columns of the \emph{predictor matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      The \emph{predictor matrix} $\mathbb{X}$ maps the \emph{regression coefficients} $\beta$ into the \emph{response vector} $y$.
+      \vskip1ex
+      The generalized inverse of the \emph{predictor matrix} $\mathbb{X}_{inv}$ maps the \emph{response vector} $y$ into the \emph{regression coefficients} $\beta$.
+        <<echo=TRUE,eval=TRUE>>=
+# Add intercept column to predictor matrix
+predictor <- cbind(rep(1, NROW(predictor)), predictor)
+ncols <- NCOL(predictor)
+# Add column name
+colnames(predictor)[1] <- "intercept"
+# Calculate generalized inverse of the predictor matrix
+invpred <- MASS::ginv(predictor)
+# Calculate the regression coefficients
+betas <- invpred %*% response
+# Perform multivariate regression without intercept term
+regmod <- lm(response ~ predictor - 1)
+all.equal(drop(betas), coef(regmod), check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Residuals} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{flalign*}
+        & y = \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
+        & y_{fit} = \mathbb{X} \beta
+      \end{flalign*}
+      Where $y_{fit}$ are the \emph{fitted values} of the model.
+      \vskip1ex
+      The \emph{residuals} are equal to the \emph{response vector} minus the \emph{fitted values}: $\varepsilon = y - y_{fit}$.
+      \vskip1ex
+      The \emph{residuals} $\varepsilon$ are orthogonal to the columns of the \emph{predictor matrix} $\mathbb{X}$ (the \emph{predictors}):
+      \begin{flalign*}
+        & \varepsilon^T \mathbb{X} = (y - \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y)^T \mathbb{X} = \\
+        & y^T \mathbb{X} - y^T \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbb{X} = y^T \mathbb{X} - y^T \mathbb{X} = 0
+      \end{flalign*}
+      Therefore the \emph{residuals} are also orthogonal to the \emph{fitted values}: $\varepsilon^T y_{fit} = \varepsilon^T \mathbb{X} \beta = 0$.
+      \vskip1ex
+      Since the first column of the \emph{predictor matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate fitted values from regression coefficients
+fittedv <- drop(predictor %*% betas)
+all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
+# Calculate the residuals
+residuals <- drop(response - fittedv)
+all.equal(residuals, regmod$residuals, check.attributes=FALSE)
+# Residuals are orthogonal to predictor columns (predictors)
+sapply(residuals %*% predictor, all.equal, target=0)
+# Residuals are orthogonal to the fitted values
+all.equal(sum(residuals*fittedv), target=0)
+# Sum of residuals is equal to zero
+all.equal(sum(residuals), target=0)
+      @
+      \vspace{-1em}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Influence Matrix} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The vector $y_{fit} = \mathbb{X} \beta$ are the \emph{fitted values} corresponding to the \emph{response vector} $y$:
+      \begin{displaymath}
+        y_{fit} = \mathbb{X} \beta = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X} \mathbb{X}_{inv} y = \mathbb{H} y
+      \end{displaymath}
+      Where $\mathbb{H} = \mathbb{X} \mathbb{X}_{inv} = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the \emph{influence matrix} (or hat matrix), which maps the \emph{response vector} $y$ into the \emph{fitted values} $y_{fit}$.
+      \vskip1ex
+      The \emph{influence matrix} $\mathbb{H}$ is a projection matrix, and it measures the changes in the \emph{fitted values} $y_{fit}$ due to changes in the \emph{response vector} $y$.
+      \begin{displaymath}
+        \mathbb{H}_{ij} = \frac{\partial{y^{fit}_i}}{\partial{y_j}}
+      \end{displaymath}
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate the influence matrix
+influencem <- predictor %*% invpred
+# The influence matrix is idempotent
+all.equal(influencem, influencem %*% influencem)
+# Calculate fitted values using influence matrix
+fittedv <- drop(influencem %*% response)
+all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
+# Calculate fitted values from regression coefficients
+fittedv <- drop(predictor %*% betas)
+all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Multivariate Regression} With de-Meaned Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{displaymath}
+        y = \alpha + \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      The intercept $\alpha$ can be substituted with its solution: $\alpha = \bar{y} - \bar{\mathbb{X}} \beta$ to obtain the regression model with de-meaned response and predictor matrix:
+      \begin{flalign*}
+        & y = \bar{y} - \bar{\mathbb{X}} \beta + \mathbb{X} \beta \\
+        & \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
+      \end{flalign*}
+      The regression model with a de-meaned \emph{predictor matrix} produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
+has the same influence matrix, and
+      \vskip1ex
+      But the de-meaned regression model has a different \emph{influence matrix}, which maps the de-meaned \emph{response vector} $\hat{y}$ into the de-meaned \emph{fitted values} $\hat{y}_{fit}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate zero mean fitted values
+predzm <- t(t(predictor) - colMeans(predictor))
+fitted_zm <- drop(predzm %*% betas)
+all.equal(fitted_zm,
+  regmod$fitted.values - mean(response),
+  check.attributes=FALSE)
+# Calculate the residuals
+respzm <- response - mean(response)
+residuals <- drop(respzm - fitted_zm)
+all.equal(residuals, regmod$residuals,
+          check.attributes=FALSE)
+# Calculate the influence matrix
+influence_zm <- predzm %*% MASS::ginv(predzm)
+# Compare the fitted values
+all.equal(fitted_zm,
+          drop(influence_zm %*% respzm),
+          check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Omitted Variable Bias}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Omitted Variable Bias} occurs in a regression model that omits important predictors.
+      \vskip1ex
+      The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression.
+      \vskip1ex
+      But the Durbin-Watson test shows that the residuals are autocorrelated, which means that the regression coefficients may not be statistically significant (different from zero).
+        <<echo=TRUE,eval=FALSE>>=
+library(lmtest)  # Load lmtest
+# Define predictor matrix
+predictor <- 1:30
+omitv <- sin(0.2*1:30)
+# Response depends on both predictors
+response <- 0.2*predictor + omitv + 0.2*rnorm(30)
+# Mis-specified regression only one predictor
+model_ovb <- lm(response ~ predictor)
+modelsum <- summary(regmod_ovb)
+modelsum$coeff
+modelsum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+lmtest::dwtest(regmod_ovb)
+# Plot the regression diagnostic plots
+x11(width=5, height=7)
+par(mfrow=c(2,1))  # Set plot panels
+par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
+plot(response ~ predictor)
+abline(regmod_ovb, lwd=2, col="red")
+title(main="Omitted Variable Regression", line=-1)
+plot(regmod_ovb, which=2, ask=FALSE)  # Plot just Q-Q
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_ovb.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Regression Diagnostics}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Coefficients as \protect\emph{Random Variables}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{residuals} $\hat\varepsilon$ can be considered to be \emph{random variables}, with expected value equal to zero $\mathbbm{E}[\hat\varepsilon] = 0$, and variance equal to $\sigma^2_\varepsilon$.
+      \vskip1ex
+      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}:
+      \begin{displaymath}
+        \sigma^2_\varepsilon = \frac{\mathbbm{E}[\varepsilon^T \varepsilon]}{d_{free}}
+      \end{displaymath}
+      Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}, equal to the number of observations $n$, minus the number of \emph{predictors} $k$ (including the intercept term).
+      \vskip1ex
+      The \emph{response vector} $y$ can also be considered to be a \emph{random variable} $\hat{y}$, equal to the sum of the deterministic \emph{fitted values} $y_{fit}$ plus the random \emph{residuals} $\hat\varepsilon$:
+      \begin{displaymath}
+        \hat{y} = \mathbb{X} \beta + \hat\varepsilon = y_{fit} + \hat\varepsilon
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The \emph{regression coefficients} $\beta$ can also be considered to be \emph{random variables} $\hat\beta$:
+      \begin{flalign*}
+        & \hat\beta = \mathbb{X}_{inv} \hat{y} = \mathbb{X}_{inv} (y_{fit} + \hat\varepsilon) = \\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat\varepsilon) =
+        \beta + \mathbb{X}_{inv} \hat\varepsilon
+      \end{flalign*}
+      Where $\beta$ is equal to the expected value of $\hat\beta$: $\beta = \mathbbm{E}[\hat\beta] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
+        <<echo=TRUE,eval=TRUE>>=
+# Regression model summary
+modelsum <- summary(regmod)
+# Degrees of freedom of residuals
+nrows <- NROW(predictor)
+ncols <- NCOL(predictor)
+degf <- (nrows - ncols)
+all.equal(degf, modelsum$df[2])
+# Variance of residuals
+residvar <- sum(residuals^2)/degf
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of the Regression Coefficients}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{covariance matrix} of the \emph{regression coefficients} $\hat\beta$ is given by:
+      \begin{align*}
+        & \sigma^2_\beta = \frac{\mathbbm{E}[(\hat\beta - \beta) (\hat\beta - \beta)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon (\mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T]}{d_{free}} = \\
+        & \frac{(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1}}{d_{free}} = \\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \sigma^2_\varepsilon \mathbbm{1} \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} =
+        \sigma^2_\varepsilon (\mathbb{X}^T \mathbb{X})^{-1}
+      \end{align*}
+      Where the expected values of the squared residuals are proportional to the diagonal unit matrix $\mathbbm{1}$: $\frac{\mathbbm{E}[\hat\varepsilon \hat\varepsilon^T]}{d_{free}} = \sigma^2_\varepsilon \mathbbm{1}$
+      \vskip1ex
+      If any of the predictor matrix columns are close to being \emph{collinear}, then the squared predictor matrix becomes singular, and the covariance of their regression coefficients becomes very large.
+      \vskip1ex
+      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Inverse of predictor matrix squared
+predictor2 <- MASS::ginv(crossprod(predictor))
+# predictor2 <- t(predictor) %*% predictor
+# Variance of residuals
+residvar <- sum(residuals^2)/degf
+# Calculate covariance matrix of betas
+beta_covar <- residvar*predictor2
+# Round(beta_covar, 3)
+betasd <- sqrt(diag(beta_covar))
+all.equal(betasd, modelsum$coeff[, 2], check.attributes=FALSE)
+# Calculate t-values of betas
+beta_tvals <- drop(betas)/betasd
+all.equal(beta_tvals, modelsum$coeff[, 3], check.attributes=FALSE)
+# Calculate two-sided p-values of betas
+beta_pvals <- 2*pt(-abs(beta_tvals), df=degf)
+all.equal(beta_pvals, modelsum$coeff[, 4], check.attributes=FALSE)
+# The square of the generalized inverse is equal
+# to the inverse of the square
+all.equal(MASS::ginv(crossprod(predictor)),
+          invpred %*% t(invpred))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of the Fitted Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{fitted values} $y_{fit}$ can also be considered to be \emph{random variables} $\hat{y}_{fit}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: $\hat{y}_{fit} = \mathbb{X} \hat\beta = \mathbb{X} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = y_{fit} + \mathbb{X} \mathbb{X}_{inv} \hat\varepsilon$.
+      \vskip1ex
+      The \emph{covariance matrix} of the \emph{fitted values} $\sigma^2_{fit}$ is:
+      \begin{align*}
+        & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat\varepsilon \hat\varepsilon^T \mathbb{H}^T]}{d_{free}} = \\
+        & \frac{\mathbb{H} \, \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{H}^T}{d_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
+      \end{align*}
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+      \vskip1ex
+      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
+      \vskip1ex
+      This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate the influence matrix
+influencem <- predictor %*% invpred
+# The influence matrix is idempotent
+all.equal(influencem, influencem %*% influencem)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/regm_fitsd.png}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate covariance and standard deviations of fitted values
+fitcovar <- residvar*influencem
+fitsd <- sqrt(diag(fitcovar))
+# Sort the standard deviations
+fitsd <- cbind(fitted=fittedv, stddev=fitsd)
+fitsd <- fitsd[order(fittedv), ]
+# Plot the standard deviations
+plot(fitsd, type="l", lwd=3, col="blue",
+     xlab="Fitted Value", ylab="Standard Deviation",
+     main="Standard Deviations of Fitted Values\nin Multivariate Regression")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Time Series Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Bootstrapping the regression of asset returns shows that the actual standard errors can be over twice as large as those reported by the function \texttt{lm()}.
+      \vskip1ex
+      This is because the function \texttt{lm()} assumes that the data is normally distributed, while in reality asset returns have very large skewness and kurtosis.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load time series of ETF percentage returns
+retsp <- rutils::etfenv$returns[, c("XLF", "XLE")]
+retsp <- na.omit(retsp)
+nrows <- NROW(retsp)
+head(retsp)
+# Define regression formula
+formulav <- paste(colnames(retsp)[1],
+  paste(colnames(retsp)[-1], collapse="+"),
+  sep=" ~ ")
+# Standard regression
+regmod <- lm(formulav, data=retsp)
+modelsum <- summary(regmod)
+# Bootstrap of regression
+set.seed(1121)  # initialize random number generator
+bootd <- sapply(1:100, function(x) {
+  samplev <- sample.int(nrows, replace=TRUE)
+  regmod <- lm(formulav, data=retsp[samplev, ])
+  regmod$coefficients
+})  # end sapply
+# Means and standard errors from regression
+modelsum$coefficients
+# Means and standard errors from bootstrap
+dim(bootd)
+t(apply(bootd, MARGIN=1,
+      function(x) c(mean=mean(x), stderror=sd(x))))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictions From \protect\emph{Multivariate Regression} Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The prediction $y_{pred}$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
+      \begin{displaymath}
+        y_{pred} = \mathbb{X}_{new} \, \beta
+      \end{displaymath}
+      The prediction is a \emph{random variable} $\hat{y}_{pred}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}:
+      \begin{align*}
+        \hat{y}_{pred} = \mathbb{X}_{new} \hat\beta = \mathbb{X}_{new} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = \\
+        y_{pred} + \mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon
+      \end{align*}
+      The variance $\sigma^2_{pred}$ of the \emph{predicted value} is:
+      \begin{align*}
+        & \sigma^2_{pred} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
+        & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
+        \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
+      \end{align*}
+    \column{0.5\textwidth}
+      The variance $\sigma^2_{pred}$ of the \emph{predicted value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
+        <<echo=TRUE,eval=TRUE>>=
+# New data predictor is a data frame or row vector
+set.seed(1121)
+newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
+colnamev <- colnames(predictor)
+colnames(newdata) <- colnamev
+newdatav <- as.matrix(newdata)
+prediction <- drop(newdatav %*% betas)
+predsd <- drop(sqrt(newdatav %*% beta_covar %*% t(newdatav)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictions From \protect\emph{Multivariate Regression} Using \texttt{lm()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
+      \vskip1ex
+      \texttt{predict.lm()} is the predict method for linear models (regressions) produced by the function \texttt{lm()}.
+      \vskip1ex
+      In order for \texttt{predict.lm()} to work properly, the multivariate regression must be specified using a formula.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Create formula from text string
+formulav <- paste0("response ~ ",
+  paste(colnames(predictor), collapse=" + "), " - 1")
+# Specify multivariate regression using formula
+regmod <- lm(formulav, data=data.frame(cbind(response, predictor)))
+modelsum <- summary(regmod)
+# Predict from lm object
+predictlm <- predict.lm(object=model, newdata=newdata,
+           interval="confidence", confl=1-2*(1-pnorm(2)))
+# Calculate t-quantile
+tquant <- qt(pnorm(2), df=degf)
+predicthigh <- (prediction + tquant*predsd)
+predictlow <- (prediction - tquant*predsd)
+# Compare with matrix calculations
+all.equal(predictlm[1, "fit"], prediction)
+all.equal(predictlm[1, "lwr"], predictlow)
+all.equal(predictlm[1, "upr"], predicthigh)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Total Sum of Squares} and \protect\emph{Explained Sum of Squares}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
+      \begin{flalign*}
+        & TSS = (y - \bar{y})^T (y - \bar{y})\\
+        & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
+        & RSS = (y - y_{fit})^T (y - y_{fit})
+      \end{flalign*}
+      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$:
+      \begin{displaymath}
+        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
+      \end{displaymath}
+      Therefore the \emph{TSS} can be expressed as the sum of the \emph{ESS} plus the \emph{RSS}:
+      \begin{displaymath}
+        TSS = ESS + RSS
+      \end{displaymath}
+      It also follows that the $RSS$ and the $ESS$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
+      \vskip1ex
+      The degrees of freedom of the \emph{Total Sum of Squares} is equal to the sum of the $RSS$ plus the $ESS$: $d^{TSS}_{free} = (n-k) + (k-1) = n-1$.
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_tss.png}
+        <<echo=TRUE,eval=TRUE>>=
+# TSS = ESS + RSS
+tss <- sum((response-mean(response))^2)
+ess <- sum((fittedv-mean(fittedv))^2)
+rss <- sum(residuals^2)
+all.equal(tss, ess + rss)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{R-squared} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{R-squared} is the fraction of the \emph{Explained Sum of Squares} (\emph{ESS}) divided by the \emph{Total Sum of Squares} (\emph{TSS}):
+      \begin{displaymath}
+        R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
+      \end{displaymath}
+      The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to $1$ for models fitting the data very well, and \emph{R-squared} close to $0$ for poorly fitting models.
+      \vskip1ex
+      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
+      \begin{flalign*}
+        & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
+        & \frac{(y_{fit} - \bar{y})^T (y_{fit} - \bar{y})}{\sqrt{TSS \cdot ESS}} = \sqrt{\frac{ESS}{TSS}}
+      \end{flalign*}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Set regression attribute for intercept
+attributes(regmod$terms)$intercept <- 1
+# Regression summary
+modelsum <- summary(regmod)
+# Regression R-squared
+rsquared <- ess/tss
+all.equal(rsquared, modelsum$r.squared)
+# Correlation between response and fitted values
+cor_fitted <- drop(cor(response, fittedv))
+# Squared correlation between response and fitted values
+all.equal(cor_fitted^2, rsquared)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Adjusted R-squared} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weakness of \emph{R-squared} is that it increases with the number of predictors (even for predictors which are purely random), so it may provide an inflated measure of the quality of a model with many predictors.
+      \vskip1ex
+      This is remedied by using the \emph{residual variance} ($\sigma^2_\varepsilon = \frac{RSS}{d_{free}}$) instead of the \emph{RSS}, and the \emph{response variance} ($\sigma^2_y = \frac{TSS}{n-1}$) instead of the \emph{TSS}.
+      \vskip1ex
+      The \emph{adjusted R-squared} is equal to $1$ minus the fraction of the \emph{residual variance} divided by the \emph{response variance}:
+      \begin{displaymath}
+        R^2_{adj} = 1 - \frac{\sigma^2_\varepsilon}{\sigma^2_y} = 1 - \frac{RSS/d_{free}}{TSS/(n-1)}
+      \end{displaymath}
+      Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}.
+      \vskip1ex
+      The \emph{adjusted R-squared} is always smaller than the \emph{R-squared}.
+    \column{0.5\textwidth}
+      The performance of two different models can be compared by comparing their \emph{adjusted R-squared}, since the model with the larger \emph{adjusted R-squared} has a smaller \emph{residual variance}, so it's better able to explain the \emph{response}.
+      <<echo=TRUE,eval=TRUE>>=
+nrows <- NROW(predictor)
+ncols <- NCOL(predictor)
+# Degrees of freedom of residuals
+degf <- (nrows - ncols)
+# Adjusted R-squared
+rsquared_adj <- (1-sum(residuals^2)/degf/var(response))
+# Compare adjusted R-squared from lm()
+all.equal(drop(rsquared_adj), modelsum$adj.r.squared)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fisher's \protect\emph{F-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\chi^2_m$ and $\chi^2_n$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      Then the \emph{F-statistic} random variable:
+      \begin{displaymath}
+        F = \frac{\chi^2_m / m}{\chi^2_n / n}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{m/2-1}}{(n+mF)^{(m+n)/2}}
+      \end{displaymath}
+      The \emph{F-distribution} depends on the \emph{F-statistic} $F$ and also on the degrees of freedom, $m$ and $n$.
+      \vskip1ex
+      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}.
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot three curves in loop
+degf <- c(3, 5, 9)  # Degrees of freedom
+colorv <- c("black", "red", "blue", "green")
+for (it in 1:NROW(degf)) {
+curve(expr=df(x, df1=degf[it], df2=3),
+      xlim=c(0, 4), xlab="", ylab="", lwd=2,
+      col=colorv[it], add=as.logical(it-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/f_dist.png}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="F-Distributions", line=0.5)
+# Add legend
+labelv <- paste("df", degf, sep="=")
+legend("topright", inset=0.05, title="degrees of freedom",
+       y.intersp=0.5, bty="n", labelv, cex=0.8, lwd=2, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-test} For the Variance Ratio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $x$ and $y$ be independent standard \emph{Normal} variables, and let
+      $\sigma^2_x = \frac{1}{m-1} \sum_{i=1}^m (x_i-\bar{x})^2$
+      and
+      $\sigma^2_y = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar{y})^2$
+      be their sample variances.
+      \vskip1ex
+      The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      The \emph{F-test} tests the \emph{null hypothesis} that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance $\sigma^2_x$ is not significantly greater than $\sigma^2_y$).
+      \vskip1ex
+      A large value of the \emph{F-statistic} $F$ indicates that the variances are unlikely to be equal.
+      \vskip1ex
+      The function \texttt{pf(q)} returns the cumulative probability of the \emph{F-distribution}, i.e. the cumulative probability that the \emph{F-statistic} $F$ is less than the quantile $q$.
+      \vskip1ex
+      This \emph{F-test} is very sensitive to the assumption of the normality of the variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+sigmax <- var(rnorm(nrows))
+sigmay <- var(rnorm(nrows))
+fratio <- sigmax/sigmay
+# Cumulative probability for q = fratio
+pf(fratio, nrows-1, nrows-1)
+# p-value for fratios
+1-pf((10:20)/10, nrows-1, nrows-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-statistic} for Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response}.
+      \vskip1ex
+      Let the \emph{restricted} model have $p1$ parameters with $df1 = n - p1$ degrees of freedom, and the \emph{unrestricted} model have $p2$ parameters with $df2 = n - p2$ degrees of freedom, with $p2 < p1$.
+      \vskip1ex
+      Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}:
+      \begin{displaymath}
+        F = \frac{(RSS1 - RSS2)/(df1 - df2)}{RSS2/df2}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(p2 - p1)$ and $(n - p2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+    \column{0.5\textwidth}
+      If the \emph{restricted} model only has one parameter (the constant intercept term), then $df1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS1$ is equal to the $TSS$: $RSS1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS1 = TSS - RSS1 = 0$.
+      \vskip1ex
+      Let the \emph{unrestricted} multivariate regression model be defined as:
+      \begin{displaymath}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      Where $y$ is the \emph{response}, $\mathbb{X}$ is the \emph{predictor matrix} (with $k$ \emph{predictors}, including the intercept term), and $\beta$ are the $k$ \emph{regression coefficients}.
+      \vskip1ex
+      So the \emph{unrestricted} model has $k$ parameters ($p2 = k$), and $RSS2 = RSS$ and $ESS2 = ESS$, and then the \emph{F}-statistic can be written as:
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-test} for Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
+      \vskip1ex
+      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}:
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(k-1)$ and $(n-k)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# F-statistic from lm()
+modelsum$fstatistic
+# Degrees of freedom of residuals
+degf <- (nrows - ncols)
+# F-statistic from ESS and RSS
+fstat <- (ess/(ncols-1))/(rss/degf)
+all.equal(fstat, modelsum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=fstat, df1=(ncols-1), df2=(nrows-ncols))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 
@@ -114,20 +979,19 @@ knit_theme$set(thm)
       \includegraphics[width=0.4\paperwidth]{figure/logistic_fun.png}
         <<echo=TRUE,eval=FALSE>>=
 lambdas <- c(0.5, 1, 1.5)
-colors <- c("red", "blue", "green")
+colorv <- c("red", "blue", "green")
 # Plot three curves in loop
 for (it in 1:3) {
   curve(expr=plogis(x, scale=lambdas[it]),
         xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
-        col=colors[it], add=(it>1))
+        col=colorv[it], add=(it>1))
 }  # end for
 # Add title
 title(main="Logistic function", line=0.5)
 # Add legend
 legend("topleft", title="Scale parameters",
-       paste("lambda", lambdas, sep="="),
-       inset=0.05, cex=0.8, lwd=6, bty="n",
-       lty=1, col=colors)
+       paste("lambda", lambdas, sep="="), y.intersp=0.5,
+       inset=0.05, cex=0.8, lwd=6, bty="n", lty=1, col=colorv)
       @
   \end{columns}
 \end{block}
@@ -142,21 +1006,21 @@ legend("topleft", title="Scale parameters",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Linear} regression isn't suitable when the response variable is discrete data (like \texttt{factors} or \texttt{integers}).
-      \vskip1ex
-      But \emph{logistic} regression (\emph{logit}) can be used to model data with a discrete response variable.
+      \emph{Logistic} regression (\emph{logit}) is used when the response are discrete variables (like \texttt{factors} or \texttt{integers}), when \emph{linear} regression can't be applied.
       \vskip1ex
       The function \texttt{glm()} fits generalized linear models, including \emph{logistic} regressions.
       \vskip1ex
-      \texttt{glm()} can fit categorical data (\texttt{factors}) from individual observations, and frequencies of categorical data (\texttt{integers}) from groups of observations.
-      \vskip1ex
       The parameter \texttt{family=binomial(logit)} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
+      \vskip1ex
+      The \emph{Mann-Whitney} test \emph{null hypothesis} is that the two samples, $x_i$ and $y_i$, were obtained from probability distributions with the same median (location).
+      \vskip1ex
+      The function \texttt{wilcox.test()} with parameter \texttt{paired=FALSE} (the default) calculates the \emph{Mann-Whitney} test statistic and its \emph{p}-value.
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # Reset random number generator
 # Simulate overlapping scores data
 sample1 <- runif(100, max=0.6)
 sample2 <- runif(100, min=0.4)
-# Perform Wilcoxon test for similar distributions
+# Perform Mann-Whitney test for data location
 wilcox.test(sample1, sample2)
 # Combine scores and add categorical variable
 predictor <- c(sample1, sample2)
@@ -186,7 +1050,7 @@ lines(densityv, col="blue")
 polygon(c(min(densityv$x), densityv$x, max(densityv$x)), c(min(densityv$y), densityv$y, min(densityv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
 # Add legend
 legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
-       lwd=c(6, NA, NA), pch=c(NA, 15, 15),
+       lwd=c(6, NA, NA), pch=c(NA, 15, 15), bty="n", y.intersp=0.5,
        legend=c("logistic fit", "TRUE", "FALSE"),
        col=c("orange", "red", "blue"),
        text.col=c("black", "red", "blue"))
@@ -204,7 +1068,7 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $b$ be a binary random variable, which either has the value $b = 1$ with probability $p$, or $b = 0$ with probability $(1-p)$.
+      Let $b$ be a binomial random variable, which either has the value $b = 1$ with probability $p$, or $b = 0$ with probability $(1-p)$.
       \vskip1ex
       Then $b$ follows the binomial distribution:
       \begin{displaymath}
@@ -229,9 +1093,9 @@ curve(expr=likefun(x, b=1), xlim=c(0, 1), lwd=3,
       xlab="prob", ylab="likelihood", col="blue",
       main="Binomial Likelihood Function")
 curve(expr=likefun(x, b=0), lwd=3, col="red", add=TRUE)
-legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
-       title=NULL, inset=0.3, cex=1.0, lwd=6,
-       lty=1, col=c("blue", "red"))
+legend(x="top", legend=c("b = 1", "b = 0"),
+       title=NULL, inset=0.3, cex=1.0, lwd=6, y.intersp=0.5,
+       bty="n", lty=1, col=c("blue", "red"))
       @
   \end{columns}
 \end{block}
@@ -246,7 +1110,7 @@ legend(x="top", bty="n", legend=c("b = 1", "b = 0"),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $b_i$ be binary random variables, with probabilities $p_i$ that depend on the numerical variables $s_i$ through the logistic function: 
+      Let $b_i$ be binomial random variables, with probabilities $p_i$ that depend on the numerical variables $s_i$ through the logistic function: 
       \begin{displaymath}
         p_i = \frac{1}{1 + \exp(- \lambda_0 - \lambda_1 s_i)}
       \end{displaymath}
@@ -268,6 +1132,8 @@ likefun <- function(coeff, response, predictor) {
   -sum(response*log(probs) + (1-response)*log((1-probs)))
 }  # end likefun
 # Run likelihood function
+coeff <- c(1, 1)
+likefun(coeff, response, predictor)
       @
   \end{columns}
 \end{block}
@@ -388,7 +1254,7 @@ modelsum$coefficients[, 2]
   \begin{columns}[T]
     \column{0.5\textwidth}
       The package \emph{ISLR} contains datasets used in the book
-      \href{http://www-bcf.usc.edu/~gareth/ISL/index.html}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
+      \href{https://www.statlearning.com}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
     \vskip1ex
       The book introduces machine learning techniques using \texttt{R}, and it's a must for advanced finance applications.
       % \fullcite{islbook}
@@ -466,7 +1332,6 @@ head(Default)
       \includegraphics[width=0.45\paperwidth]{figure/islr_default_data.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot data points for non-defaulters
-x11(width=6, height=5)
 xlim <- range(balance); ylim <- range(income)
 plot(income ~ balance,
      main="Default Dataset from Package ISLR",
@@ -477,7 +1342,7 @@ points(income ~ balance, pch=4, lwd=2, col="red",
        data=Default[default, ])
 # Add legend
 legend(x="topright", legend=c("non-defaulters", "defaulters"),
-       bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
+       y.intersp=0.5, bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
       @
   \end{columns}
 \end{block}
@@ -502,11 +1367,11 @@ legend(x="topright", legend=c("non-defaulters", "defaulters"),
       \vskip1ex
       \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (involving categorical variables), and another for \texttt{data frames}.
       \vskip1ex
-      The \emph{Wilcoxon} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
+      The \emph{Mann-Whitney} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
       <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for balance predictor
+# Perform Mann-Whitney test for the location of the balances
 wilcox.test(balance[default], balance[!default])
-# Wilcoxon test for income predictor
+# Perform Mann-Whitney test for the location of the incomes
 wilcox.test(income[default], income[!default])
       @
     \column{0.5\textwidth}
@@ -558,7 +1423,7 @@ plot(x=balance, y=default,
      col="orange", xlab="credit balance", ylab="defaults")
 ordern <- order(balance)
 lines(x=balance[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n", lwd=6,
+legend(x="topleft", inset=0.1, bty="n", lwd=6, y.intersp=0.5,
        legend=c("defaults", "logit fitted values"),
        col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
       @
@@ -582,12 +1447,12 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6,
       These two different ways of specifying the \emph{logistic} regression are related, but they are not equivalent, because they have different error terms.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative defaults
-to_tal <- sum(default)
-default_s <- sapply(balance, function(lim) {
+sumd <- sum(default)
+defaultv <- sapply(balance, function(lim) {
     sum(default[balance <= lim])
 })  # end sapply
 # Perform logit regression
-logmod <- glm(cbind(default_s, to_tal-default_s) ~ balance,
+logmod <- glm(cbind(defaultv, sumd-defaultv) ~ balance,
   family=binomial(logit))
 summary(logmod)
       @
@@ -595,13 +1460,13 @@ summary(logmod)
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/islr_logistic_count.png}
       <<echo=TRUE,eval=FALSE>>=
-plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
+plot(x=balance, y=defaultv/sumd, col="orange", lwd=1,
      main="Cumulative Defaults Versus Balance",
      xlab="credit balance", ylab="cumulative defaults")
 ordern <- order(balance)
 lines(x=balance[ordern], y=logmod$fitted.values[ordern],
       col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n",
+legend(x="topleft", inset=0.1, bty="n", y.intersp=0.5,
        legend=c("cumulative defaults", "fitted values"),
        col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
       @
@@ -692,7 +1557,7 @@ plot(x=balance[ordern], y=cum_defaults[ordern, 1],
      col="red", t="l", lwd=2, xlab="credit balance", ylab="",
      main="Cumulative defaults of\n students and non-students")
 lines(x=balance[ordern], y=cum_defaults[ordern, 2], col="blue", lwd=2)
-legend(x="topleft", bty="n",
+legend(x="topleft", bty="n", y.intersp=0.5,
        legend=c("students", "non-students"),
        col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
 # Balance boxplot for student factor
@@ -727,24 +1592,23 @@ boxplot(formula=balance ~ !student,
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Perform in-sample forecast from logistic regression model
-forecasts <- predict(logmod, type="response")
-all.equal(logmod$fitted.values, forecasts)
+forecastv <- predict(logmod, type="response")
+all.equal(logmod$fitted.values, forecastv)
 # Define discrimination threshold value
 threshold <- 0.7
 # Calculate confusion matrix in-sample
-table(actual=!default, forecast=(forecasts < threshold))
+table(actual=!default, forecast=(forecastv < threshold))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
 samplev <- sample.int(n=nrows, size=nrows/2)
-traindata <- Default[samplev, ]
-logmod <- glm(formulav, data=traindata, family=binomial(logit))
+trainset <- Default[samplev, ]
+logmod <- glm(formulav, data=trainset, family=binomial(logit))
 # Forecast over test data out-of-sample
-testdata <- Default[-samplev, ]
-forecasts <- predict(logmod, newdata=testdata, type="response")
+testset <- Default[-samplev, ]
+forecastv <- predict(logmod, newdata=testset, type="response")
 # Calculate confusion matrix out-of-sample
-table(actual=!testdata$default, 
-      forecast=(forecasts < threshold))
+table(actual=!testset$default, forecast=(forecastv < threshold))
       @
   \end{columns}
 \end{block}
@@ -774,13 +1638,13 @@ table(actual=!testdata$default,
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Calculate confusion matrix out-of-sample
-confmat <- table(actual=!testdata$default, 
-      forecast=(forecasts < threshold))
+confmat <- table(actual=!testset$default, 
+      forecast=(forecastv < threshold))
 confmat
 # Calculate FALSE positive (type I error)
-sum(!testdata$default & (forecasts > threshold))
+sum(!testset$default & (forecastv > threshold))
 # Calculate FALSE negative (type II error)
-sum(testdata$default & (forecasts < threshold))
+sum(testset$default & (forecastv < threshold))
       @
   \end{columns}
 \end{block}
@@ -865,17 +1729,17 @@ print(xtable::xtable(confusion_matrix,
       The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-confun <- function(actu_al, forecasts, threshold) {
-    confmat <- table(actu_al, (forecasts < threshold))
+confun <- function(actualv, forecastv, threshold) {
+    confmat <- table(actualv, (forecastv < threshold))
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
-confun(!testdata$default, forecasts, threshold=threshold)
+confun(!testset$default, forecastv, threshold=threshold)
 # Define vector of discrimination thresholds
 threshv <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actu_al=!testdata$default, forecasts=forecasts)  # end sapply
+  actualv=!testset$default, forecastv=forecastv)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -896,745 +1760,6 @@ plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-
-%%%%%%%%%%%%%%%
-\section{High Performance Data Management}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{data.table} for High Performance Data Management}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/data.table/}{\emph{data.table}}
-      is designed for high performance data management.
-      \vskip1ex
-      The package \emph{data.table} implements \emph{data table} objects, which are a special type of \emph{data frame}, and an extension of the \emph{data frame} class.
-      \vskip1ex
-      \emph{Data tables} are faster and more convenient to work with than \emph{data frames}.
-      \vskip1ex
-      \emph{data.table} functions are optimized for high performance (speed), because they are written in \texttt{C++} and they perform operations by reference (in place), without copying data in memory.
-      \vskip1ex
-      Some of the attractive features of package \emph{data.table} are:
-      \begin{itemize}
-        \item Syntax is analogous to SQL,
-        \item Very fast writing and reading from files,
-        \item Very fast sorting and merging operations,
-        \item Subsetting using multiple logical clauses,
-        \item Columns of type \texttt{character} are never converted to factors,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install package data.table
-install.packages("data.table")
-# Load package data.table
-library(data.table)
-# Get documentation for package data.table
-# Get short description
-packageDescription("data.table")
-# Load help page
-help(package="data.table")
-# List all datasets in "data.table"
-data(package="data.table")
-# List all objects in "data.table"
-ls("package:data.table")
-# Remove data.table from search path
-detach("package:data.table")
-      @
-      The package \emph{data.table} has extensive documentation:\\
-      \hskip1em\url{https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html}\\
-      \hskip1em\url{https://github.com/Rdatatable/data.table/wiki}
-      \vskip1ex
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
-      \vskip1ex
-      \emph{Data table} objects resemble databases, with columns of different types of data, and rows of records containing individual observations.
-      \vskip1ex
-      The function \texttt{data.table::data.table()} creates a \emph{data table} object.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes), and their rows can be referenced without a following comma.
-      \vskip1ex
-      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.nrows")} is less than \texttt{100}).
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-      \vskip1ex
-      \emph{Data table} computations are usually much faster than equivalent \texttt{R} computations, but not always.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create a data table
-library(data.table)
-data_table <- data.table::data.table(
-  col1=sample(7), col2=sample(7), col3=sample(7))
-# Print data_table
-class(data_table); data_table
-# Column referenced without quotes
-data_table[, col2]
-# Row referenced without a following comma
-data_table[2]
-# Print option "datatable.print.nrows"
-getOption("datatable.print.nrows")
-options(datatable.print.nrows=10)
-getOption("datatable.print.nrows")
-# Number of rows in data_table
-NROW(data_table)
-# Or
-data_table[, NROW(col1)]
-# Or
-data_table[, .N]
-# microbenchmark speed of data.table syntax
-library(microbenchmark)
-summary(microbenchmark(
-  dt=data_table[, .N],
-  rcode=NROW(data_table),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{data.table}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
-      \vskip1ex
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
-      \vskip1ex
-      The function \texttt{data.table::fread()} is over \texttt{6} times faster than \texttt{read.csv()}!
-      \vskip1ex
-      The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()}!
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read a data table from CSV file
-dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-data_table <- data.table::fread(file_name)
-class(data_table); dim(data_table)
-data_table
-# fread() reads the same data as read.csv()
-all.equal(read.csv(file_name),
-          setDF(data.table::fread(file_name)))
-# fread() is much faster than read.csv()
-library(microbenchmark)
-summary(microbenchmark(
-  rcode=read.csv(file_name),
-  fread=setDF(data.table::fread(file_name)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Write data table to file in different ways
-data.table::fwrite(data_table, file="data_table.csv")
-write.csv(data_table, file="data_table2.csv")
-cat(unlist(data_table), file="data_table3.csv")
-# microbenchmark speed of data.table::fwrite()
-summary(microbenchmark(
-  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
-  write_csv=write.csv(data_table, file="data_table2.csv"),
-  cat=cat(unlist(data_table), file="data_table3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}.
-      \vskip1ex
-      \emph{Data table} rows can be subset without a following comma.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables), after a comma.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names.
-      \vskip1ex
-      The brackets \texttt{"[]"} operator is a \emph{data.table} function, and all the commands inside the brackets \texttt{"[]"} are executed using code from the package \emph{data.table}.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select first five rows of data_table
-data_table[1:5]
-# Select rows with JFK flights
-jfk_flights <- data_table[origin=="JFK"]
-# Select rows JFK flights in June
-jfk_flights <- data_table[origin=="JFK" & month==6]
-# Select rows without JFK flights
-jfk_flights <- data_table[!(origin=="JFK")]
-# Select flights with carrier_delay
-data_table[carrier_delay > 0]
-# Select column of data_table and return a vector
-head(data_table[, origin])
-# Select column of data_table and return a data_table, not vector
-head(data_table[, list(origin)])
-head(data_table[, .(origin)])
-# Select two columns of data_table
-data_table[, list(origin, month)]
-data_table[, .(origin, month)]
-columnv <- c("origin", "month")
-data_table[, ..columnv]
-data_table[, month, origin]
-# Select two columns and rename them
-data_table[, .(orig=origin, mon=month)]
-# Select all columns except origin
-head(data_table[, !"origin"])
-head(data_table[, -"origin"])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Computations on \protect\emph{Data Table} Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the second argument in the brackets \texttt{"[]"} operator is a function of the columns, then the brackets return the result of the function's computations on those columns.
-      \vskip1ex
-      The second argument in the brackets \texttt{"[]"} can also be a list of functions, in which case the brackets return a vector of computations.
-      \vskip1ex
-      The brackets \texttt{"[]"} can evaluate most standard \texttt{R} functions, but they are executed using \emph{data.table} code, which is usually much faster than the equivalent \texttt{R} functions.
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select flights with positive carrier_delay
-data_table[carrier_delay > 0]
-# Number of flights with carrier_delay
-data_table[, sum(carrier_delay > 0)]
-# Or standard R commands
-sum(data_table[, carrier_delay > 0])
-# microbenchmark speed of data.table syntax
-summary(microbenchmark(
-  dt=data_table[, sum(carrier_delay > 0)],
-  rcode=sum(data_table[, carrier_delay > 0]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Average carrier_delay
-data_table[, mean(carrier_delay)]
-# Average carrier_delay and aircraft_delay
-data_table[, .(carrier=mean(carrier_delay),
-               aircraft=mean(aircraft_delay))]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Number of flights from JFK
-data_table[origin=="JFK", NROW(aircraft_delay)]
-# Or
-data_table[origin=="JFK", .N]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Grouping \protect\emph{Data Table} Computations by Factor Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{data table} brackets \texttt{"[]"} operator can accept three arguments: \texttt{[i, j, by]}
-      \begin{itemize}
-        \item \texttt{i}: the row index to select,
-        \item \texttt{j}: a list of columns or functions on columns,
-        \item \texttt{by}: the columns of factors to aggregate over.
-      \end{itemize}
-      The \emph{data table} columns can be \emph{aggregated} over categories (factors) defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      The \texttt{"keyby"} argument is similar to \texttt{"by"}, but it sorts the output according to the categories used to group by.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Number of flights from each airport
-data_table[, .N, by=origin]
-# Same, but add names to output
-data_table[, .(flights=.N), by=.(airport=origin)]
-# Number of AA flights from each airport
-data_table[carrier=="AA", .(flights=.N),
-           by=.(airport=origin)]
-# Number of flights from each airport and airline
-data_table[, .(flights=.N),
-           by=.(airport=origin, airline=carrier)]
-# Average aircraft_delay
-data_table[, mean(aircraft_delay)]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Average aircraft_delay from each airport
-data_table[, .(delay=mean(aircraft_delay)),
-           by=.(airport=origin)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
-           by=.(airport=origin, month=month)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
-           keyby=.(airport=origin, month=month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sorting \protect\emph{Data Table} Rows by Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
-      \vskip1ex
-      The function \texttt{order()} calculates the permutation index, to sort a given vector into ascending order.
-      \vskip1ex
-      The function \texttt{setorder()} sorts the rows of a \emph{data table} by reference (in place), without copying data in memory.
-      \vskip1ex
-      \texttt{setorder()} is over \texttt{10} times faster than \texttt{order()}, because it doesn't copy data in memory.
-      \vskip1ex
-      Several brackets \texttt{"[]"} operators can be chained together to perform several consecutive computations.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Sort ascending by origin, then descending by dest
-order_table <- data_table[order(origin, -dest)]
-order_table
-# Doesn't work outside data_table
-order(origin, -dest)
-# Sort data_table by reference
-setorder(data_table, origin, -dest)
-all.equal(data_table, order_table)
-# setorder() is much faster than order()
-summary(microbenchmark(
-  order=data_table[order(origin, -dest)],
-  setorder=setorder(data_table, origin, -dest),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Average aircraft_delay by month
-order_table[, .(mean_delay=mean(aircraft_delay)),
-            by=.(month=month)]
-# Chained brackets to sort output by month
-order_table[, .(mean_delay=mean(aircraft_delay)),
-            by=.(month=month)][order(month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting, Computing, and Grouping \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The special symbol \texttt{.SD} selects a subset of a \emph{data table}.
-      \vskip1ex
-      The symbol \texttt{.SDcols} specifies the columns to select by the symbol \texttt{.SD}.
-      \vskip1ex
-      Inside the brackets \texttt{"[]"} operator, the \texttt{.SD} symbol can be treated as a virtual \emph{data table}, and standard \texttt{R} functions can be applied to it.
-      \vskip1ex
-      The \texttt{"by"} argument can be used to group the outputs produced by the functions applied to the \texttt{.SD} symbol.
-      \vskip1ex
-      If the symbol \texttt{.SDcols} is not defined, then the symbol \texttt{.SD} returns the remaining columns not passed to the \texttt{"by"} operator.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select weather_delay and aircraft_delay in two different ways
-data_table[1:7, .SD,
-           .SDcols=c("weather_delay", "aircraft_delay")]
-data_table[1:7, .(weather_delay, aircraft_delay)]
-# Calculate mean of weather_delay and aircraft_delay
-data_table[, sapply(.SD, mean),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-sapply(data_table[, .SD,
-           .SDcols=c("weather_delay", "aircraft_delay")], mean)
-# Return origin and dest, then all other columns
-data_table[1:7, .SD, by=.(origin, dest)]
-# Return origin and dest, then weather_delay and aircraft_delay columns
-data_table[1:7, .SD, by=.(origin, dest),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Return first two rows from each month
-data_table[, head(.SD, 2), by=.(month)]
-data_table[, head(.SD, 2), by=.(month),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Calculate mean of weather_delay and aircraft_delay, grouped by origin
-data_table[, lapply(.SD, mean),
-           by=.(origin),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Or simply
-data_table[, .(weather_delay=mean(weather_delay),
-               aircraft_delay=mean(aircraft_delay)),
-           by=.(origin)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modifying \protect\emph{Data Table} Objects by Reference}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The special assignment operator \texttt{":="} allows modifying \emph{data table} columns by reference (in place), without copying data in memory.
-      \vskip1ex
-      The computations on columns by reference can be \emph{grouped} over categories defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      The computations are recycled to fit the size of each group.
-      \vskip1ex
-      The selected parts of columns can also be modified by reference, by combining the \texttt{i} and \texttt{j} arguments.
-      \vskip1ex
-      The special symbols \texttt{.SD} and \texttt{.SDcols} can be used to perform computations on several columns.
-      \vskip1ex
-      Modifying by reference is several times faster than standard \texttt{R} assignment.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add tot_delay column
-data_table[, tot_delay := (carrier_delay + aircraft_delay)]
-head(data_table, 4)
-# Delete tot_delay column
-data_table[, tot_delay := NULL]
-# Add max_delay column grouped by origin and dest
-data_table[, max_delay := max(aircraft_delay),
-           by=.(origin, dest)]
-data_table[, max_delay := NULL]
-# Add date and tot_delay columns
-data_table[, c("date", "tot_delay") :=
-             list(paste(month, day, year, sep="/"),
-                  (carrier_delay + aircraft_delay))]
-# Modify select rows of tot_delay column
-data_table[month == 12, tot_delay := carrier_delay]
-data_table[, c("date", "tot_delay") := NULL]
-# Add several columns
-data_table[, c("max_carrier", "max_aircraft") :=
-             lapply(.SD, max),
-           by=.(origin, dest),
-           .SDcols=c("carrier_delay", "aircraft_delay")]
-data_table[, c("max_carrier", "max_aircraft") := NULL]
-# Modifying by reference is much faster than standard R
-summary(microbenchmark(
-  dt=data_table[, tot_delay := (carrier_delay + aircraft_delay)],
-  rcode=(data_table[, "tot_delay"] <- data_table[, "carrier_delay"] + data_table[, "aircraft_delay"]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding \protect\emph{keys} to \protect\emph{Data Tables} for Fast Binary Search}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows.
-      \vskip1ex
-      The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
-      \vskip1ex
-      \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
-      \vskip1ex
-      Subsetting rows using a \emph{key} can be several times faster than standard \texttt{R}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add a key based on the "origin" column
-setkey(data_table, origin)
-haskey(data_table)
-key(data_table)
-# Select rows with LGA using the key
-data_table["LGA"]
-all.equal(data_table["LGA"],
-          data_table[origin == "LGA"])
-# Select rows with LGA and JFK using the key
-data_table[c("LGA", "JFK")]
-# Add a key based on the "origin" and "dest" columns
-setkey(data_table, origin, dest)
-key(data_table)
-# Select rows with origin from JFK and MIA
-data_table[c("JFK", "MIA")]
-# Select rows with origin from JFK and dest to MIA
-data_table[.("JFK", "MIA")]
-all.equal(data_table[.("JFK", "MIA")],
-          data_table[origin == "JFK" & dest == "MIA"])
-# Selecting rows using a key is much faster than standard R
-summary(microbenchmark(
-  with_key=data_table[.("JFK", "MIA")],
-  standard_r=data_table[origin == "JFK" & dest == "MIA"],
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \protect\emph{Data Table} Objects Into \protect\emph{Data Frames}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{data.table::setDT()} and \texttt{data.table::setDF()} coerce \emph{data frames} to \emph{data tables}, and vice versa.
-      \vskip1ex
-      The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference (in place), without returning any values or copying data to a new memory location, which makes them very fast.
-      \vskip1ex
-      \emph{Data table} objects can also be coerced into \emph{data frames} using the function \texttt{as.data.frame()}, but it's much slower because it makes copies of data.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create data frame and coerce it to data table
-data_table <- data.frame(
-  col1=sample(7), col2=sample(7), col3=sample(7))
-class(data_table); data_table
-data.table::setDT(data_table)
-class(data_table); data_table
-# Coerce data_table into data frame
-data.table::setDF(data_table)
-class(data_table); data_table
-# Or
-data_table <- data.table:::as.data.frame.data.table(data_table)
-# SetDF() is much faster than as.data.frame()
-summary(microbenchmark(
-  as.data.frame=data.table:::as.data.frame.data.table(data_table),
-  setDF=data.table::setDF(data_table),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \texttt{xts} Time Series Into \protect\emph{Data Tables}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
-      \vskip1ex
-      But then the time index of the \texttt{xts} series is coerced into strings, not dates.
-      \vskip1ex
-      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce xts to a data frame
-prices <- rutils::etfenv$VTI
-class(prices); head(prices)
-prices <- as.data.frame(prices)
-class(prices); head(prices)
-# Coerce data frame to a data table
-data.table::setDT(prices, keep.rownames=TRUE)
-class(prices); head(prices)
-# Dates are coerced to strings
-sapply(prices, class)
-# Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etfenv$VTI,
-  keep.rownames=TRUE)
-class(data_table); head(data_table)
-# Dates are not coerced to strings
-sapply(data_table, class)
-all.equal(prices, data_table, check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{fst} for High Performance Data Management}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      provides functions for very fast writing and reading of \emph{data frames} from \emph{compressed binary files}.
-      \vskip1ex
-      The package \emph{fst} writes to \emph{compressed binary files} in the
-\texttt{fst} fast-storage format.
-      \vskip1ex
-      The package \emph{fst} uses the \texttt{LZ4} and \texttt{ZSTD} compression algorithms, and utilizes multithreaded (parallel) processing on multiple CPU cores.
-      \vskip1ex
-      The package \emph{fst} has extensive documentation:\\
-      \hskip1em\url{http://www.fstpackage.org/}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install package fst
-install.packages("fst")
-# Load package fst
-library(fst)
-# Get documentation for package fst
-# Get short description
-packageDescription("fst")
-# Load help page
-help(package="fst")
-# List all datasets in "fst"
-data(package="fst")
-# List all objects in "fst"
-ls("package:fst")
-# Remove fst from search path
-detach("package:fst")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{fst}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      allows very fast writing and reading of \emph{data frames} from \emph{compressed binary files} in the \texttt{fst} fast-storage format.
-      \vskip1ex
-      The function \texttt{fst::write\_fst()} writes to \texttt{.fst} files over \texttt{10} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()} write to \texttt{.csv} files!
-      \vskip1ex
-      The function \texttt{fst::fread()} reads from \texttt{.fst} files over \texttt{10} times faster than the function \texttt{read.csv()} from \texttt{.csv} files!
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read a data frame from CSV file
-dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-data.table::setDF(dframe)
-class(dframe); dim(dframe)
-# Write data frame to .fst file in different ways
-fst::write_fst(dframe, path="dframe.fst")
-write.csv(dframe, file="dframe2.csv")
-# microbenchmark speed of fst::write_fst()
-library(microbenchmark)
-summary(microbenchmark(
-  fst=fst::write_fst(dframe, path="dframe.csv"),
-  write_csv=write.csv(dframe, file="dframe2.csv"),
-  cat=cat(unlist(dframe), file="dframe3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# fst::read_fst() reads the same data as read.csv()
-all.equal(read.csv(file_name),
-          fst::read_fst("dframe.fst"))
-# fst::read_fst() is 10 times faster than read.csv()
-summary(microbenchmark(
-  fst=fst::read_fst("dframe.fst"),
-  read_csv=read.csv(file_name),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Random Access to Large Data Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      allows \emph{random access} to very large \emph{data frames} stored in compressed data files in the \texttt{.fst} format.
-      \vskip1ex
-      Data frames can be accessed \emph{randomly} by loading only the selected rows and columns into memory, without fully loading the whole data frame.
-      \vskip1ex
-      function \texttt{fst::fst()} reads an \texttt{.fst} file and returns an \emph{fst\_table} reference object (pointer) to the data, without loading the whole data into memory.
-      \vskip1ex
-      The \emph{fst\_table} reference provides access to the data similar to a regular \emph{data frame}, but it requires only a small amount of memory because the data isn't loaded into memory.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce TAQ xts to a data frame
-library(HighFreq)
-t_aq <- HighFreq::SPY_TAQ
-t_aq <- as.data.frame(t_aq)
-class(t_aq)
-# Coerce data frame to a data table
-data.table::setDT(t_aq, keep.rownames=TRUE)
-class(t_aq); head(t_aq)
-# Get memory size of data table
-format(object.size(t_aq), units="MB")
-# Save data table to .fst file
-fst::write_fst(t_aq, path="/Users/jerzy/Develop/data/taq.fst")
-# Create reference to .fst file similar to a data frame
-fs_t <- fst::fst("/Users/jerzy/Develop/data/taq.fst")
-class(fs_t)
-# Memory size of reference to .fst is very small
-format(object.size(fs_t), units="MB")
-# Get sizes of all objects in workspace
-sort(sapply(mget(ls()), object.size))
-# Reference to .fst can be treated similar to a data table
-dim(t_aq); dim(fs_t)
-fst:::print.fst_table(fs_t)
-# Subset reference to .fst just like a data table
-fs_t[1e4:(1e4+5), ]
       @
   \end{columns}
 \end{block}
@@ -1728,16 +1853,16 @@ taq <- cbind(index=dates, taq)
       % \includegraphics[width=0.45\paperwidth]{figure/hf_stocks_bounce.png}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce trade ticks to xts series
-xtes <- xts::xts(taq[, .(price, volume)], taq$index)
-colnames(xtes) <- paste(symbol, c("Close", "Volume"), sep=".")
-save(xtes, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xtes, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+xtsv <- xts::xts(taq[, .(price, volume)], taq$index)
+colnames(xtsv) <- paste(symbol, c("Close", "Volume"), sep=".")
+save(xtsv, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+# save(xtsv, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
 # Plot dygraph
-dygraphs::dygraph(xtes$XLK.Close,
+dygraphs::dygraph(xtsv$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16")
 # Plot in x11 window
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtes$XLK.Close,
+quantmod::chart_Series(x=xtsv$XLK.Close,
   name="XLK Trade Ticks for 2020-03-16")
       @
   \end{columns}
@@ -1766,10 +1891,10 @@ look_back <- 111
 half_back <- look_back %/% 2
 medianv <- roll::roll_median(taq$price, width=look_back)
 # medianv <- TTR::runMedian(taq$price, n=look_back)
-medianv <- rutils::lagit(medianv, lagg=-half_back, pad_zeros=FALSE)
+medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
 madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
 # madv <- TTR::runMAD(taq$price, n=look_back)
-madv <- rutils::lagit(madv, lagg=-half_back, pad_zeros=FALSE)
+madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
 # Calculate Z-scores
 zscores <- (taq$price - medianv)/madv
 zscores[is.na(zscores)] <- 0
@@ -1790,14 +1915,14 @@ good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
 sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
-xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
-colnames(xtes) <- c("XLK.Close", "XLK.Volume")
+xtsv <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
+colnames(xtsv) <- c("XLK.Close", "XLK.Volume")
 # Plot dygraph of the clean lots
-dygraphs::dygraph(xtes$XLK.Close,
+dygraphs::dygraph(xtsv$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
 # Plot the large lots
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtes$XLK.Close,
+quantmod::chart_Series(x=xtsv$XLK.Close,
   name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
       @
   \end{columns}
@@ -1834,8 +1959,8 @@ quantmod::chart_Series(x=xtes$XLK.Close,
 # Define discrimination threshold value
 threshold <- 6*mad(zscores)
 # Calculate number of prices classified as bad data
-is_bad <- (abs(zscores) > threshold)
-sum(is_bad)
+isbad <- (abs(zscores) > threshold)
+sum(isbad)
 # Add 200 random price jumps into prices
 set.seed(1121)
 nbad <- 200
@@ -1854,8 +1979,8 @@ madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
 zscores <- (closep - medianv)/madv
 zscores[1:look_back, ] <- 0
 # Calculate number of prices classified as bad data
-is_bad <- (abs(zscores) > threshold)
-sum(is_bad)
+isbad <- (abs(zscores) > threshold)
+sum(isbad)
       @
   \end{columns}
 \end{block}
@@ -1893,12 +2018,12 @@ sum(is_bad)
       \end{tabular}}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate confusion matrix
-table(actual=!isjump, forecast=!is_bad)
-sum(is_bad)
+table(actual=!isjump, forecast=!isbad)
+sum(isbad)
 # FALSE positive (type I error)
-sum(!isjump & is_bad)
+sum(!isjump & isbad)
 # FALSE negative (type II error)
-sum(isjump & !is_bad)
+sum(isjump & !isbad)
       @
     \column{0.5\textwidth}
       Let the \emph{null hypothesis} be that the given price is a good data point.
@@ -1932,8 +2057,8 @@ sum(isjump & !is_bad)
       The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-confun <- function(actu_al, zscores, threshold) {
-    confmat <- table(!actu_al, !(abs(zscores) > threshold))
+confun <- function(actualv, zscores, threshold) {
+    confmat <- table(!actualv, !(abs(zscores) > threshold))
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
@@ -1942,7 +2067,7 @@ confun(isjump, zscores, threshold=threshold)
 threshv <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actu_al=isjump, zscores=zscores)  # end sapply
+  actualv=isjump, zscores=zscores)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -1987,7 +2112,7 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 medianv <- roll::roll_median(taq$price, width=3)
 medianv[1:2] <- taq$price[1:2]
 medianv <- rutils::lagit(medianv, lagg=-1, pad_zeros=FALSE)
-madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
+madv <- HighFreq::roll_var(matrix(taq$price), look_back=3, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=-1, pad_zeros=FALSE)
 # Calculate Z-scores
 zscores <- ifelse(madv > 0, (taq$price - medianv)/madv, 0)
@@ -2005,14 +2130,14 @@ good_ticks <- taq[!bad_ticks]
 # Calculate number of price jumps
 sum(bad_ticks)/NROW(zscores)
 # Coerce trade prices to xts
-xtes <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
-colnames(xtes) <- c("XLK.Close", "XLK.Volume")
+xtsv <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
+colnames(xtsv) <- c("XLK.Close", "XLK.Volume")
 # Plot dygraph of the clean lots
-dygraphs::dygraph(xtes$XLK.Close,
+dygraphs::dygraph(xtsv$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
 # Plot the large lots
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtes$XLK.Close,
+quantmod::chart_Series(x=xtsv$XLK.Close,
   name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
       @
   \end{columns}

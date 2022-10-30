@@ -487,12 +487,12 @@ weightv <- lambda^(0:look_back)
 weightv <- weightv/sum(weightv)
 # Calculate EWMA prices as the convolution
 ewmacpp <- HighFreq::roll_wsum(closep, weights=weightv)
-pricets <- cbind(closep, ewmacpp)
-colnames(pricets) <- c("VTI", "VTI EWMA")
+pricev <- cbind(closep, ewmacpp)
+colnames(pricev) <- c("VTI", "VTI EWMA")
 
 # Dygraphs plot with custom line colors
-colnamev <- colnames(pricets)
-dygraphs::dygraph(pricets["2008/2009"], main="VTI EWMA Prices") %>%
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2008/2009"], main="VTI EWMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
@@ -501,9 +501,9 @@ x11(width=6, height=5)
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
 plot_theme$col$line.col <- colorv
-quantmod::chart_Series(pricets["2009"], theme=plot_theme,
+quantmod::chart_Series(pricev["2009"], theme=plot_theme,
        lwd=2, name="VTI EWMA Prices")
-legend("topleft", legend=colnames(pricets),
+legend("topleft", legend=colnames(pricev),
  inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
  col=plot_theme$col$line.col, bty="n")
 
@@ -523,10 +523,10 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 
 # Dygraphs plot with custom line colors
-pricets <- cbind(closep, ewmacpp)
-colnames(pricets) <- c("VTI", "VTI EWMA")
-colnamev <- colnames(pricets)
-dygraphs::dygraph(pricets["2008/2009"], main="Recursive VTI EWMA Prices") %>%
+pricev <- cbind(closep, ewmacpp)
+colnames(pricev) <- c("VTI", "VTI EWMA")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EWMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
@@ -535,9 +535,9 @@ x11(width=6, height=5)
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
 plot_theme$col$line.col <- colorv
-quantmod::chart_Series(pricets["2009"], theme=plot_theme,
+quantmod::chart_Series(pricev["2009"], theme=plot_theme,
        lwd=2, name="VTI EWMA Prices")
-legend("topleft", legend=colnames(pricets),
+legend("topleft", legend=colnames(pricev),
  inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
  col=plot_theme$col$line.col, bty="n")
 
@@ -550,7 +550,7 @@ shadev <- posit[crossd]
 crossd <- c(zoo::index(shadev), end(posit))
 shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Create dygraph object without plotting it
-dyplot <- dygraphs::dygraph(pricets, main="VTI EWMA Prices") %>%
+dyplot <- dygraphs::dygraph(pricev, main="VTI EWMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=3, col="red") %>%
   dyLegend(show="always", width=500)
@@ -580,11 +580,11 @@ shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 
 # Standard plot of EWMA prices with position shading
 x11(width=6, height=5)
-quantmod::chart_Series(pricets, theme=plot_theme,
+quantmod::chart_Series(pricev, theme=plot_theme,
        lwd=2, name="VTI EWMA Prices")
 add_TA(posit > 0, on=-1, col="lightgreen", border="lightgreen")
 add_TA(posit < 0, on=-1, col="lightgrey", border="lightgrey")
-legend("topleft", legend=colnames(pricets),
+legend("topleft", legend=colnames(pricev),
  inset=0.1, bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
 
@@ -953,8 +953,8 @@ lambda2 <- 0.95
 ewma1 <- HighFreq::run_mean(closep, lambda=lambda1, weights=0)
 ewma2 <- HighFreq::run_mean(closep, lambda=lambda2, weights=0)
 # Calculate EWMA prices
-pricets <- cbind(closep, ewma1, ewma2)
-colnames(pricets) <- c("VTI", "EWMA fast", "EWMA slow")
+pricev <- cbind(closep, ewma1, ewma2)
+colnames(pricev) <- c("VTI", "EWMA fast", "EWMA slow")
 # Calculate positions, either: -1, 0, or 1
 indic <- sign(ewma1 - ewma2)
 lagg <- 2
@@ -973,8 +973,8 @@ shadev <- posit[crossd]
 crossd <- c(zoo::index(shadev), end(posit))
 shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Plot dygraph
-colnamev <- colnames(pricets)
-dyplot <- dygraphs::dygraph(pricets[endd], main="VTI Dual EWMA Prices") %>%
+colnamev <- colnames(pricev)
+dyplot <- dygraphs::dygraph(pricev[endd], main="VTI Dual EWMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
   dySeries(name=colnamev[3], label=colnamev[3], strokeWidth=2, col="purple") %>%

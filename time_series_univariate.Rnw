@@ -769,14 +769,14 @@ add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
 x11(width=6, height=4)
 par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
 # Plot first time series without x-axis
-zoo::plot.zoo(prices[, 1], lwd=2, col="orange",
+zoo::plot.zoo(pricev[, 1], lwd=2, col="orange",
               xlab=NA, ylab=NA, xaxt="n")
 # Create X-axis date labels and add X-axis
-dates <- pretty(zoo::index(prices))
+dates <- pretty(zoo::index(pricev))
 axis(side=1, at=dates, labels=format(dates, "%b-%d-%y"))
 # Plot second time series without y-axis
 par(new=TRUE)  # Allow new line on same plot
-zoo::plot.zoo(prices[, 2], xlab=NA, ylab=NA,
+zoo::plot.zoo(pricev[, 2], xlab=NA, ylab=NA,
               lwd=2, yaxt="n", col="blue", xaxt="n")
 # Plot second y-axis on right
 axis(side=4, lwd=2, col="blue")
@@ -892,13 +892,13 @@ dyplot
       <<echo=TRUE,eval=FALSE>>=
 library(dygraphs)
 # Prepare VTI and IEF prices
-prices <- cbind(Cl(rutils::etfenv$VTI), Cl(rutils::etfenv$IEF))
-prices <- na.omit(prices)
-colnamev <- rutils::get_name(colnames(prices))
-colnames(prices) <- colnamev
+pricev <- cbind(Cl(rutils::etfenv$VTI), Cl(rutils::etfenv$IEF))
+pricev <- na.omit(pricev)
+colnamev <- rutils::get_name(colnames(pricev))
+colnames(pricev) <- colnamev
 # dygraphs plot with two y-axes
 library(dygraphs)
-dygraphs::dygraph(prices, main=paste(colnamev, collapse=" and ")) %>%
+dygraphs::dygraph(pricev, main=paste(colnamev, collapse=" and ")) %>%
   dyAxis(name="y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis(name="y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="red") %>%
@@ -1133,8 +1133,8 @@ title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
 sigmav <- 0.01; drift <- 0.0; nrows <- 1000
 # Simulate geometric Brownian motion
 retsp <- sigmav*rnorm(nrows) + drift - sigmav^2/2
-prices <- exp(cumsum(retsp))
-plot(prices, type="l", xlab="time", ylab="prices",
+pricev <- exp(cumsum(retsp))
+plot(pricev, type="l", xlab="time", ylab="prices",
      main="geometric Brownian motion")
       @
   \end{columns}
@@ -1162,12 +1162,12 @@ drift <- 0.0
 nrows <- 1e4
 dates <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
   length.out=nrows, by="30 min")
-prices <- exp(cumsum(sigmav*rnorm(nrows) + drift - sigmav^2/2))
-prices <- xts(prices, order.by=dates)
-prices <- cbind(prices,
+pricev <- exp(cumsum(sigmav*rnorm(nrows) + drift - sigmav^2/2))
+pricev <- xts(pricev, order.by=dates)
+pricev <- cbind(pricev,
   volume=sample(x=10*(2:18), size=nrows, replace=TRUE))
 # Aggregate to daily OHLC data
-ohlc <- xts::to.daily(prices)
+ohlc <- xts::to.daily(pricev)
 quantmod::chart_Series(ohlc, name="random prices")
 # dygraphs candlestick plot using pipes syntax
 library(dygraphs)
@@ -1194,17 +1194,19 @@ dygraphs::dyCandlestick(dygraphs::dygraph(ohlc[, 1:4]))
       \begin{displaymath}
         \log\phi(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \, \sqrt{2 \pi}}
       \end{displaymath}
-      With mean equal to: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$, and median equal to: $\tilde{y} = \exp(\mu)$
+      With mean equal to: $\bar{y} = \mathbb{E}[y] = e^{(\mu + \sigma^2/2)}$, and median equal to: $\tilde{y} = e^\mu$
+      \vskip1ex
+      With variance equal to: $\sigma_y^2 = (e^{\sigma^2}-1) e^{(2\mu + \sigma^2)}$, and skewness (third moment) equal to: $\varsigma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
       <<echo=TRUE,eval=FALSE>>=
 # Standard deviations of log-normal distribution
 sigmavs <- c(0.5, 1, 1.5)
 # Create plot colors
-colors <- c("black", "red", "blue")
+colorv <- c("black", "red", "blue")
 # Plot all curves
 for (indeks in 1:NROW(sigmavs)) {
   curve(expr=dlnorm(x, sdlog=sigmavs[indeks]),
         type="l", lwd=2, xlim=c(0, 3),
-        xlab="", ylab="", col=colors[indeks],
+        xlab="", ylab="", col=colorv[indeks],
         add=as.logical(indeks-1))
 }  # end for
       @
@@ -1217,7 +1219,7 @@ title(main="Log-normal Distributions", line=0.5)
 legend("topright", inset=0.05, title="Sigmas",
        paste("sigma", sigmavs, sep="="),
        cex=0.8, lwd=2, lty=rep(1, NROW(sigmavs)),
-       col=colors)
+       col=colorv)
       @
   \end{columns}
 \end{block}
@@ -1320,17 +1322,18 @@ curve(expr=pnorm(sigmav*sqrt(x)/2),
 sigmav <- 0.01; drift <- 0.0; nrows <- 5000
 npaths <- 10
 # Simulate multiple paths of geometric Brownian motion
-prices <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
-prices <- matrix(prices, nc=npaths)
-prices <- exp(matrixStats::colCumsums(prices))
+pricev <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+pricev <- matrix(pricev, nc=npaths)
+pricev <- exp(matrixStats::colCumsums(pricev))
 # Create xts time series
-prices <- xts(prices, order.by=seq.Date(Sys.Date()-NROW(prices)+1, Sys.Date(), by=1))
+pricev <- xts(pricev, order.by=seq.Date(Sys.Date()-nrows+1, Sys.Date(), by=1))
+# Sort the columns according to largest terminal values
+pricev <- pricev[, order(pricev[nrows, ])]
 # Plot xts time series
-colors <- colorRampPalette(c("red", "blue"))(NCOL(prices))
-colors <- colors[order(order(prices[NROW(prices), ]))]
+colorv <- colorRampPalette(c("red", "blue"))(NCOL(pricev))
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(prices, main="Multiple paths of geometric Brownian motion",
-         xlab=NA, ylab=NA, plot.type="single", col=colors)
+plot.zoo(pricev, main="Multiple paths of geometric Brownian motion",
+         xlab=NA, ylab=NA, plot.type="single", col=colorv)
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/brown_geom_paths.png}
@@ -1355,11 +1358,11 @@ plot.zoo(prices, main="Multiple paths of geometric Brownian motion",
 sigmav <- 0.01; drift <- 0.0; nrows <- 10000
 npaths <- 100
 # Simulate multiple paths of geometric Brownian motion
-prices <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
-prices <- matrix(prices, nc=npaths)
-prices <- exp(matrixStats::colCumsums(prices))
+pricev <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+pricev <- matrix(pricev, nc=npaths)
+pricev <- exp(matrixStats::colCumsums(pricev))
 # Calculate fraction of paths below the expected value
-fractv <- rowSums(prices < 1.0) / npaths
+fractv <- rowSums(pricev < 1.0) / npaths
 # Create xts time series of percentage of paths below the expected value
 fractv <- xts(fractv, order.by=seq.Date(Sys.Date()-NROW(fractv)+1, Sys.Date(), by=1))
 # Plot xts time series of percentage of paths below the expected value
@@ -1387,42 +1390,44 @@ plot.zoo(fractv, main="Percentage of GBM paths below mean",
 # Load S&P500 stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 ls(sp500env)
-# Extract closing prices
-prices <- eapply(sp500env, quantmod::Cl)
-# Flatten prices into a single xts series
-prices <- rutils::do_call(cbind, prices)
+# Extract the closing prices
+pricev <- eapply(sp500env, quantmod::Cl)
+# Flatten the prices into a single xts series
+pricev <- rutils::do_call(cbind, pricev)
 # Carry forward and backward non-NA prices
-prices <- zoo::na.locf(prices, na.rm=FALSE)
-prices <- zoo::na.locf(prices, fromLast=TRUE)
-sum(is.na(prices))
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+sum(is.na(pricev))
 # Drop ".Close" from column names
-colnames(prices[, 1:4])
-colnames(prices) <- rutils::get_name(colnames(prices))
+colnames(pricev[, 1:4])
+colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
-# colnames(prices) <- do.call(rbind,
-#   strsplit(colnames(prices), split="[.]"))[, 1]
-# Normalize the columns so that prices start at 1
-pricesn <- lapply(prices, function(x) x/as.numeric(x[1]))
-pricesn <- rutils::do_call(cbind, pricesn)
-# Calculate permutation index for sorting on the final prices
-nrows <- NROW(pricesn)
-ordern <- order(pricesn[nrows, ])
-# Sort the symbols according to the final prices
-symbolv <- colnames(pricesn)[ordern]
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
+# Select prices after the year 2000
+pricev <- pricev["2000/", ]
+# Scale the columns so that prices start at 1
+pricev <- lapply(pricev, function(x) x/as.numeric(x[1]))
+pricev <- rutils::do_call(cbind, pricev)
+# Sort the columns according to the final prices
+nrows <- NROW(pricev)
+ordern <- order(pricev[nrows, ])
+pricev <- pricev[, ordern]
 # Select 20 symbols
-symbolv <- symbolv[seq.int(from=1, to=NROW(symbolv), length.out=20)]
+symbolv <- colnames(pricev)
+symbolv <- symbolv[round(seq.int(from=1, to=NROW(symbolv), length.out=20))]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/sp500_price_paths.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot xts time series of prices
-colors <- colorRampPalette(c("red", "blue"))(NROW(symbolv))
-colors <- colors[order(order(pricesn[nrows, symbolv]))]
-plot.zoo(pricesn["2000/", symbolv], main="20 S&P500 Stock Prices (normalized)",
-         xlab=NA, ylab=NA, plot.type="single", col=colors)
-legend(x="topleft", inset=0.02, cex=0.6,
-       legend=rev(symbolv), col=rev(colors), lwd=6, lty=1)
+colorv <- colorRampPalette(c("red", "blue"))(NROW(symbolv))
+endp <- rutils::calc_endpoints(pricev, interval="months")
+plot.zoo(pricev[endp, symbolv], main="20 S&P500 Stock Prices (scaled)",
+         xlab=NA, ylab=NA, plot.type="single", col=colorv)
+legend(x="topleft", inset=0.02, cex=0.5, bty="n", y.intersp=0.5,
+       legend=rev(symbolv), col=rev(colorv), lwd=6, lty=1)
       @
   \end{columns}
 \end{block}
@@ -1442,29 +1447,29 @@ legend(x="topleft", inset=0.02, cex=0.6,
       The \emph{mean} of the final stock prices is much greater than the \emph{median}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the final stock prices
-pricesf <- drop(zoo::coredata(pricesn[NROW(pricesn), ]))
+pricef <- drop(zoo::coredata(pricev[nrows, ]))
 # Calculate the mean and median stock prices
-max(pricesf); min(pricesf)
-which.max(pricesf)
-which.min(pricesf)
-mean(pricesf)
-median(pricesf)
+max(pricef); min(pricef)
+which.max(pricef)
+which.min(pricef)
+mean(pricef)
+median(pricef)
 # Calculate the percentage of stock prices below the mean
-sum(pricesf < mean(pricesf))/NROW(pricesf)
+sum(pricef < mean(pricef))/NROW(pricef)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/sp500_price_hist.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot a histogram of final stock prices
-hist(pricesf, breaks=1e3, xlim=c(0, 300), 
+hist(pricef, breaks=1e3, xlim=c(0, 300), 
      xlab="Stock price", ylab="Count", 
      main="Histogram of Final Stock Prices")
 # Plot a histogram of final stock prices
-abline(v=median(pricesf), lwd=3, col="blue")
-text(x=median(pricesf), y=150, lab="median", pos=4)
-abline(v=mean(pricesf), lwd=3, col="red")
-text(x=mean(pricesf), y=100, lab="mean", pos=4)
+abline(v=median(pricef), lwd=3, col="blue")
+text(x=median(pricef), y=150, lab="median", pos=4)
+abline(v=mean(pricef), lwd=3, col="red")
+text(x=mean(pricef), y=100, lab="mean", pos=4)
       @
   \end{columns}
 \end{block}
@@ -1488,14 +1493,14 @@ text(x=mean(pricesf), y=100, lab="mean", pos=4)
       Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate average of valid stock prices
-validp <- (pricesn != 1)  # Valid stocks
+validp <- (pricev != 1)  # Valid stocks
 nstocks <- rowSums(validp)
-nstocks[1] <- NCOL(pricesn)
-indeks <- rowSums(pricesn*validp)/nstocks
+nstocks[1] <- NCOL(pricev)
+indeks <- rowSums(pricev*validp)/nstocks
 # Calculate fraction of stock prices below the average price
-fractv <- rowSums((pricesn < indeks) & validp)/nstocks
+fractv <- rowSums((pricev < indeks) & validp)/nstocks
 # Create xts time series of average stock prices
-indeks <- xts(indeks, order.by=zoo::index(pricesn))
+indeks <- xts(indeks, order.by=zoo::index(pricev))
       @
     \column{0.5\textwidth}
     % \vspace{-1em}
@@ -1509,7 +1514,7 @@ dev.new(width=6, height=4, noRStudioGD=TRUE)
 plot.zoo(indeks, main="Average S&P500 Stock Prices (normalized from 1990)",
          xlab=NA, ylab=NA, col="blue")
 # Create xts time series of percentage of stock prices below the average price
-fractv <- xts(fractv, order.by=zoo::index(pricesn))
+fractv <- xts(fractv, order.by=zoo::index(pricev))
 # Plot percentage of stock prices below the average price
 plot.zoo(fractv[-(1:2),],
          main="Percentage of S&P500 Stock Prices 
@@ -1563,126 +1568,6 @@ qnorm(0.975)/sqrt(NROW(retsp))
       The horizontal dashed lines are two-tailed confidence intervals of the autocorrelation estimator at \texttt{95\%} significance level: $\frac{\Phi^{-1}(0.975)}{\sqrt{n}}$.
       \vskip1ex
       But the visual inspection of the \emph{ACF} plot alone is not enough to test whether autocorrelations are statistically significant or not.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Standard Errors of Autocorrelations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under the \emph{null hypothesis} of zero autocorrelation, the standard error of the autocorrelation estimator is equal to: $\frac{1}{\sqrt{n-2}}$, and slowly decreases as the square root of $n$ - the length of the time series.
-      \vskip1ex
-      The function \texttt{cor()} calculates the correlation between two numeric vectors.
-      \vskip1ex
-      The function \texttt{cor.test()} performs a test of the statistical significance of the correlation coefficient.
-      \vskip1ex
-      The horizontal dashed lines are two-tailed confidence intervals of the autocorrelation estimator at \texttt{95\%} significance level: .
-      \vskip1ex
-      The \emph{Ljung-Box} test, tests if the autocorrelations of a time series are \emph{statistically significant}.
-      \vskip1ex
-      The test statistic is:
-      \begin{displaymath}
-        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
-      \end{displaymath}
-      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations.
-      \vskip1ex
-      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom.
-      \vskip1ex
-      The \emph{Ljung-Box} statistic is small for time series that have \emph{statistically insignificant} autocorrelations.
-      \vskip1ex
-      The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate VTI and XLF percentage returns
-retsp <- rutils::etfenv$returns[, c("VTI", "XLF")]
-retsp <- na.omit(retsp)
-nrows <- NROW(retsp)
-# De-mean (center) and scale the returns
-retsp <- apply(retsp, MARGIN=2, function(x) (x-mean(x))/sd(x))
-apply(retsp, MARGIN=2, sd)
-# Calculate the correlation
-drop(retsp[, "VTI"] %*% retsp[, "XLF"])/(nrows-1)
-corv <- cor(retsp[, "VTI"], retsp[, "XLF"])
-# Test statistical significance of correlation
-cortest <- cor.test(retsp[, "VTI"], retsp[, "XLF"])
-confl <- qnorm((1+0.95)/2)/sqrt(nrows)
-corv*c(1-confl, 1+confl)
-
-# Get source code
-stats:::cor.test.default
-
-# Ljung-Box test for VTI returns
-# 'lag' is the number of autocorrelation coefficients
-Box.test(retsp, lag=10, type="Ljung")
-library(Ecdat)  # Load Ecdat
-macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macrodata) <- c("unemprate", "3mTbill")
-macrodiff <- na.omit(diff(macrodata))
-# Changes in 3 month T-bill rate are autocorrelated
-Box.test(macrodiff[, "3mTbill"], lag=10, type="Ljung")
-# Changes in unemployment rate are autocorrelated
-Box.test(macrodiff[, "unemprate"], lag=10, type="Ljung")
-      @
-      The \emph{p}-value for \emph{VTI} returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that \emph{VTI} returns are \emph{not} autocorrelated.
-      \vskip1ex
-      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ljung-Box Test for Autocorrelations of Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Ljung-Box} test, tests if the autocorrelations of a time series are \emph{statistically significant}.
-      \vskip1ex
-      The \emph{null hypothesis} of the \emph{Ljung-Box} test is that the autocorrelations are equal to zero.
-      \vskip1ex
-      The test statistic is:
-      \begin{displaymath}
-        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
-      \end{displaymath}
-      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations.
-      \vskip1ex
-      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom.
-      \vskip1ex
-      The \emph{Ljung-Box} statistic is small for time series that have \emph{statistically insignificant} autocorrelations.
-      \vskip1ex
-      The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Ljung-Box test for VTI returns
-# 'lag' is the number of autocorrelation coefficients
-Box.test(retsp, lag=10, type="Ljung")
-# Ljung-Box test for random returns
-Box.test(rnorm(NROW(retsp)), lag=10, type="Ljung")
-library(Ecdat)  # Load Ecdat
-macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macrodata) <- c("unemprate", "3mTbill")
-macrodiff <- na.omit(diff(macrodata))
-# Changes in 3 month T-bill rate are autocorrelated
-Box.test(macrodiff[, "3mTbill"], lag=10, type="Ljung")
-# Changes in unemployment rate are autocorrelated
-Box.test(macrodiff[, "unemprate"], lag=10, type="Ljung")
-      @
-      The \emph{p}-value for \emph{VTI} returns is small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that \emph{VTI} returns do have some small autocorrelations.
-      \vskip1ex
-      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated.
   \end{columns}
 \end{block}
 
@@ -1766,6 +1651,124 @@ Box.test(retsp, lag=10, type="Ljung")
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/acf_vti_bis.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ljung-Box Test for Autocorrelations of Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Ljung-Box} test, tests if the autocorrelations of a time series are \emph{statistically significant}.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{Ljung-Box} test is that the autocorrelations are equal to zero.
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations.
+      \vskip1ex
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom.
+      \vskip1ex
+      The \emph{Ljung-Box} statistic is small for time series that have \emph{statistically insignificant} autocorrelations.
+      \vskip1ex
+      The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Ljung-Box test for VTI returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(retsp, lag=10, type="Ljung")
+# Ljung-Box test for random returns
+Box.test(rnorm(NROW(retsp)), lag=10, type="Ljung")
+library(Ecdat)  # Load Ecdat
+macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macrodata) <- c("unemprate", "3mTbill")
+macrodiff <- na.omit(diff(macrodata))
+# Changes in 3 month T-bill rate are autocorrelated
+Box.test(macrodiff[, "3mTbill"], lag=10, type="Ljung")
+# Changes in unemployment rate are autocorrelated
+Box.test(macrodiff[, "unemprate"], lag=10, type="Ljung")
+      @
+      The \emph{p}-value for \emph{VTI} returns is small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that \emph{VTI} returns do have some small autocorrelations.
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Standard Errors of Autocorrelations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{null hypothesis} of zero autocorrelation, the standard error of the autocorrelation estimator is equal to: $\frac{1}{\sqrt{n-2}}$, and slowly decreases as the square root of $n$ - the length of the time series.
+      \vskip1ex
+      The function \texttt{cor()} calculates the correlation between two numeric vectors.
+      \vskip1ex
+      The function \texttt{cor.test()} performs a test of the statistical significance of the correlation coefficient.
+      \vskip1ex
+      The horizontal dashed lines are two-tailed confidence intervals of the autocorrelation estimator at \texttt{95\%} significance level: .
+      \vskip1ex
+      The \emph{Ljung-Box} test, tests if the autocorrelations of a time series are \emph{statistically significant}.
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations.
+      \vskip1ex
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom.
+      \vskip1ex
+      The \emph{Ljung-Box} statistic is small for time series that have \emph{statistically insignificant} autocorrelations.
+      \vskip1ex
+      The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI and XLF percentage returns
+retsp <- rutils::etfenv$returns[, c("VTI", "XLF")]
+retsp <- na.omit(retsp)
+nrows <- NROW(retsp)
+# De-mean (center) and scale the returns
+retsp <- apply(retsp, MARGIN=2, function(x) (x-mean(x))/sd(x))
+apply(retsp, MARGIN=2, sd)
+# Calculate the correlation
+drop(retsp[, "VTI"] %*% retsp[, "XLF"])/(nrows-1)
+corv <- cor(retsp[, "VTI"], retsp[, "XLF"])
+# Test statistical significance of correlation
+cortest <- cor.test(retsp[, "VTI"], retsp[, "XLF"])
+confl <- qnorm((1+0.95)/2)/sqrt(nrows)
+corv*c(1-confl, 1+confl)
+
+# Get source code
+stats:::cor.test.default
+
+# Ljung-Box test for VTI returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(retsp, lag=10, type="Ljung")
+library(Ecdat)  # Load Ecdat
+macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macrodata) <- c("unemprate", "3mTbill")
+macrodiff <- na.omit(diff(macrodata))
+# Changes in 3 month T-bill rate are autocorrelated
+Box.test(macrodiff[, "3mTbill"], lag=10, type="Ljung")
+# Changes in unemployment rate are autocorrelated
+Box.test(macrodiff[, "unemprate"], lag=10, type="Ljung")
+      @
+      The \emph{p}-value for \emph{VTI} returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that \emph{VTI} returns are \emph{not} autocorrelated.
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated.
   \end{columns}
 \end{block}
 
@@ -2193,28 +2196,28 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 class(sp500env$AAPL)
 head(sp500env$AAPL)
 # Calculate log stock prices after the year 2000
-pricets <- eapply(sp500env, function(ohlc) {
+pricev <- eapply(sp500env, function(ohlc) {
   closep <- log(quantmod::Cl(ohlc)["2000/"])
 # Ignore short lived and penny stocks (less than $1)
   if ((NROW(closep) > 4000) & (last(closep) > 0))
     return(closep)
 })  # end eapply
 # Calculate the number of NULL prices
-sum(sapply(pricets, is.null))
-# Calculate the names of the stocks (remove NULL prices)
-namev <- sapply(pricets, is.null)
+sum(sapply(pricev, is.null))
+# Calculate the names of the stocks (remove NULL pricev)
+namev <- sapply(pricev, is.null)
 namev <- namev[!namev]
 namev <- names(namev)
-pricets <- pricets[namev]
+pricev <- pricev[namev]
 # Calculate the Hurst exponents of stocks
 aggv <- trunc(seq.int(from=3, to=10, length.out=5)^2)
-hurstv <- sapply(pricets, HighFreq::calc_hurst, aggv=aggv)
+hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
 # Dygraph of stock with largest Hurst exponent
 namev <- names(which.max(hurstv))
-dygraphs::dygraph(get(namev, pricets), main=namev)
+dygraphs::dygraph(get(namev, pricev), main=namev)
 # Dygraph of stock with smallest Hurst exponent
 namev <- names(which.min(hurstv))
-dygraphs::dygraph(get(namev, pricets), main=namev)
+dygraphs::dygraph(get(namev, pricev), main=namev)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2245,15 +2248,15 @@ text(x=0.5, y=50, lab="H = 0.5", pos=4)
       Highly volatile stocks tend to have large Hurst exponents. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the volatility of stocks
-volat <- sapply(pricets, function(closep) {
+volat <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep)))
 })  # end sapply
 # Dygraph of stock with highest volatility
 namev <- names(which.max(volat))
-dygraphs::dygraph(get(namev, pricets), main=namev)
+dygraphs::dygraph(get(namev, pricev), main=namev)
 # Dygraph of stock with lowest volatility
 namev <- names(which.min(volat))
-dygraphs::dygraph(get(namev, pricets), main=namev)
+dygraphs::dygraph(get(namev, pricev), main=namev)
 # Calculate the regression of the Hurst exponents versus volatilities
 model <- lm(hurstv ~ volat)
 summary(model)
@@ -2290,11 +2293,11 @@ text(x=mean(volat), y=max(hurstv),
       Highly volatile stocks \emph{in-sample} also tend to have high volatility \emph{out-of-sample}. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample volatility of stocks
-volatis <- sapply(pricets, function(closep) {
+volatis <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep["/2010"])))
 })  # end sapply
 # Calculate the out-of-sample volatility of stocks
-volatos <- sapply(pricets, function(closep) {
+volatos <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep["2010/"])))
 })  # end sapply
 # Calculate the regression of the out-of-sample versus in-sample volatility
@@ -2335,11 +2338,11 @@ text(x=mean(volatis), y=max(volatos),
       This is because stock volatility persists \emph{out-of-sample}, and Hurst exponents are larger for higher volatility stocks. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample Hurst exponents of stocks
-hurstis <- sapply(pricets, function(closep) {
+hurstis <- sapply(pricev, function(closep) {
   HighFreq::calc_hurst(closep["/2010"], aggv=aggv)
 })  # end sapply
 # Calculate the out-of-sample Hurst exponents of stocks
-hurstos <- sapply(pricets, function(closep) {
+hurstos <- sapply(pricev, function(closep) {
   HighFreq::calc_hurst(closep["2010/"], aggv=aggv)
 })  # end sapply
 # Calculate the regression of the out-of-sample versus in-sample Hurst exponents
@@ -2382,13 +2385,13 @@ volumev <- eapply(sp500env, function(ohlc) {
     sum(quantmod::Vo(ohlc)["2000/"])
 })  # end eapply
 # Remove NULL values
-volumev <- volumev[names(pricets)]
+volumev <- volumev[names(pricev)]
 volumev <- unlist(volumev)
 which.max(volumev)
 # Calculate the number of NULL prices
 sum(is.null(volumev))
 # Calculate the Hurst exponents of stocks
-hurstv <- sapply(pricets, HighFreq::calc_hurst, aggv=aggv)
+hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
 # Calculate the regression of the Hurst exponents versus trading volumes
 model <- lm(hurstv ~ volumev)
 summary(model)
@@ -2427,7 +2430,7 @@ text(x=quantile(volumev, 0.998), y=max(hurstv),
       The Hurst exponents of most higher order principal components are less than \texttt{0.5}, so they can potentially be traded in mean-reverting strategies.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log stock returns
-retsp <- lapply(pricets, rutils::diffit)
+retsp <- lapply(pricev, rutils::diffit)
 retsp <- rutils::do_call(cbind, retsp)
 retsp[is.na(retsp)] <- 0
 sum(is.na(retsp))
@@ -2435,7 +2438,7 @@ sum(is.na(retsp))
 colnames(retsp[, 1:4])
 colnames(retsp) <- rutils::get_name(colnames(retsp))
 # Calculate PCA prices using matrix algebra
-eigend <- eigen(cov(retsp))
+eigend <- eigen(cor(retsp))
 retspca <- retsp %*% eigend$vectors
 pricepca <- xts::xts(matrixStats::colCumsums(retspca),
                        order.by=index(retsp))
@@ -2488,7 +2491,7 @@ text(x=mean(orderv), y=max(hurstv),
       That's because the PCA weights are not persistent \emph{out-of-sample} - the PCA weights in the \emph{out-of-sample} interval are often quite different from the \emph{in-sample} weights.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate in-sample eigen decomposition using matrix algebra
-eigend <- eigen(cov(retsp["/2010"]))
+eigend <- eigen(cor(retsp["/2010"]))
 # Calculate out-of-sample PCA prices
 retspca <- retsp["2010/"] %*% eigend$vectors
 pricepca <- xts::xts(matrixStats::colCumsums(retspca),
@@ -2543,19 +2546,19 @@ text(x=mean(orderv), y=max(hurstv),
 # Get ETF log prices
 symbolv <- rutils::etfenv$symbolv
 symbolv <- symbolv[!(symbolv %in% c("MTUM", "QUAL", "VLUE", "USMV"))]
-pricets <- lapply(mget(symbolv, rutils::etfenv), function(x) {
+pricev <- lapply(mget(symbolv, rutils::etfenv), function(x) {
   log(na.omit(quantmod::Cl(x)))
 })  # end lapply
 # Calculate the Hurst exponents of ETFs
 aggv <- trunc(seq.int(from=3, to=10, length.out=5)^2)
-hurstv <- sapply(pricets, HighFreq::calc_hurst, aggv=aggv)
+hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
 hurstv <- sort(unlist(hurstv))
 # Dygraph of ETF with smallest Hurst exponent
 namev <- names(first(hurstv))
-dygraphs::dygraph(get(namev, pricets), main=namev)
+dygraphs::dygraph(get(namev, pricev), main=namev)
 # Dygraph of ETF with largest Hurst exponent
 namev <- names(last(hurstv))
-dygraphs::dygraph(get(namev, pricets), main=namev)
+dygraphs::dygraph(get(namev, pricev), main=namev)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3138,8 +3141,8 @@ plot(variance, xlab="time steps", ylab="",
 # Define Brownian Motion parameters
 nrows <- 1000; sigmav <- 0.01
 # Simulate 5 paths of Brownian motion
-prices <- matrix(rnorm(5*nrows, sd=sigmav), nc=5)
-prices <- matrixStats::colCumsums(prices)
+pricev <- matrix(rnorm(5*nrows, sd=sigmav), nc=5)
+pricev <- matrixStats::colCumsums(pricev)
 # Open plot window on Mac
 dev.new(width=6, height=4, noRStudioGD=TRUE)
 # Set plot parameters to reduce whitespace around plot
@@ -3189,24 +3192,24 @@ sigmav <- 0.02; thetav <- 0.01; nrows <- 1000
 # Initialize the data
 innov <- rnorm(nrows)
 retsp <- numeric(nrows)
-prices <- numeric(nrows)
+pricev <- numeric(nrows)
 retsp[1] <- sigmav*innov[1]
-prices[1] <- init_price
+pricev[1] <- init_price
 # Simulate Ornstein-Uhlenbeck process in R
 for (i in 2:nrows) {
-  retsp[i] <- thetav*(priceq - prices[i-1]) + sigmav*innov[i]
-  prices[i] <- prices[i-1] + retsp[i]
+  retsp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
+  pricev[i] <- pricev[i-1] + retsp[i]
 }  # end for
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 prices_cpp <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
   theta=thetav, innov=matrix(innov))
-all.equal(prices, drop(prices_cpp))
+all.equal(pricev, drop(pricev_cpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
   Rcode={for (i in 2:nrows) {
-    retsp[i] <- thetav*(priceq - prices[i-1]) + sigmav*innov[i]
-    prices[i] <- prices[i-1] + retsp[i]}},
+    retsp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
+    pricev[i] <- pricev[i-1] + retsp[i]}},
   Rcpp=HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
     theta=thetav, innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -3247,7 +3250,7 @@ summary(microbenchmark(
       \includegraphics[width=0.45\paperwidth]{figure/ou_proc.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-plot(prices, type="l", xlab="time", ylab="prices",
+plot(pricev, type="l", xlab="time", ylab="prices",
      main="Ornstein-Uhlenbeck Process")
 legend("topright", title=paste(c(paste0("sigmav = ", sigmav),
                      paste0("eq_price = ", ),
@@ -3271,8 +3274,8 @@ abline(h=, col='red', lwd=2)
     \column{0.5\textwidth}
       Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices.
       <<echo=TRUE,eval=FALSE>>=
-retsp <- rutils::diffit(prices)
-pricelag <- rutils::lagit(prices)
+retsp <- rutils::diffit(pricev)
+pricelag <- rutils::lagit(pricev)
 formulav <- retsp ~ pricelag
 regmod <- lm(formulav)
 summary(regmod)
@@ -3359,12 +3362,12 @@ round(coeff, 4)
       <<echo=TRUE,eval=FALSE>>=
 # Simulate Schwartz process
 retsp <- numeric(nrows)
-prices <- numeric(nrows)
-prices[1] <- exp(sigmav*innov[1])
+pricev <- numeric(nrows)
+pricev[1] <- exp(sigmav*innov[1])
 set.seed(1121)  # Reset random numbers
 for (i in 2:nrows) {
-  retsp[i] <- thetav*(priceq - prices[i-1]) + sigmav*innov[i]
-  prices[i] <- prices[i-1]*exp(retsp[i])
+  retsp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
+  pricev[i] <- pricev[i-1]*exp(retsp[i])
 }  # end for
       @
     \column{0.5\textwidth}
@@ -3372,7 +3375,7 @@ for (i in 2:nrows) {
       \includegraphics[width=0.45\paperwidth]{figure/ou_schwartz.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-plot(prices, type="l", xlab="time", ylab="prices",
+plot(pricev, type="l", xlab="time", ylab="prices",
      main="Schwartz Process")
 legend("topright",
        title=paste(c(paste0("sigmav = ", sigmav),
@@ -3421,28 +3424,28 @@ coeff <- c(0.1, 0.39, 0.5)
 # Initialize the data
 innov <- rnorm(nrows, sd=0.01)
 retsp <- numeric(nrows)
-prices <- numeric(nrows)
+pricev <- numeric(nrows)
 # Simulate Dickey-Fuller process using recursive loop in R
 retsp[1] <- innov[1]
-prices[1] <- init_price
-retsp[2] <- thetav*(priceq - prices[1]) + coeff[1]*retsp[1] + innov[2]
-prices[2] <- prices[1] + retsp[2]
-retsp[3] <- thetav*(priceq - prices[2]) + coeff[1]*retsp[2] + coeff[2]*retsp[1] + innov[3]
-prices[3] <- prices[2] + retsp[3]
+pricev[1] <- init_price
+retsp[2] <- thetav*(priceq - pricev[1]) + coeff[1]*retsp[1] + innov[2]
+pricev[2] <- pricev[1] + retsp[2]
+retsp[3] <- thetav*(priceq - pricev[2]) + coeff[1]*retsp[2] + coeff[2]*retsp[1] + innov[3]
+pricev[3] <- pricev[2] + retsp[3]
 for (it in 4:nrows) {
-  retsp[it] <- thetav*(priceq - prices[it-1]) + retsp[(it-1):(it-3)] %*% coeff + innov[it]
-  prices[it] <- prices[it-1] + retsp[it]
+  retsp[it] <- thetav*(priceq - pricev[it-1]) + retsp[(it-1):(it-3)] %*% coeff + innov[it]
+  pricev[it] <- pricev[it-1] + retsp[it]
 }  # end for
 # Simulate Dickey-Fuller process in Rcpp
 prices_cpp <- HighFreq::sim_df(init_price=init_price, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
 # Compare prices
-all.equal(prices, drop(prices_cpp))
+all.equal(pricev, drop(pricev_cpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
   Rcode={for (it in 4:nrows) {
-  retsp[it] <- thetav*(priceq - prices[it-1]) + retsp[(it-1):(it-3)] %*% coeff + innov[it]
-  prices[it] <- prices[it-1] + retsp[it]
+  retsp[it] <- thetav*(priceq - pricev[it-1]) + retsp[(it-1):(it-3)] %*% coeff + innov[it]
+  pricev[it] <- pricev[it-1] + retsp[it]
   }},
   Rcpp=HighFreq::sim_df(init_price=init_price, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -3495,16 +3498,16 @@ x11(); plot(arimav, t="l", main="AR(1) coefficient = 0.99")
 tseries::adf.test(arimav, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with mean reversion
 init_price <- 0.0; priceq <- 0.0; thetav <- 0.1
-prices <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
   theta=thetav, innov=innov)
-x11(); plot(prices, t="l", main=paste("OU coefficient =", thetav))
-tseries::adf.test(prices, k=1)
+x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
+tseries::adf.test(pricev, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with zero reversion
 thetav <- 0.0
-prices <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
   theta=thetav, innov=innov)
-x11(); plot(prices, t="l", main=paste("OU coefficient =", thetav))
-tseries::adf.test(prices, k=1)
+x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
+tseries::adf.test(pricev, k=1)
       @
       The common practice is to use a small number of lags in the \emph{ADF} test, and if the residuals are autocorrelated, then to increase them until the correlations are no longer significant.
       \vskip1ex
@@ -3581,7 +3584,7 @@ tseries::adf.test(arimav, k=0)
       \vskip1ex
       Therefore the \emph{ADF} test often requires a lot of data before it's able to correctly identify \emph{stationary} time series with \emph{no unit root}.
       \vskip1ex
-      A \emph{true negative} test result is that the \emph{null hypothesis} is \texttt{TRUE} (prices have a unit root), while a \emph{true positive} result is that the \emph{null hypothesis} is \texttt{FALSE} (prices are stationary).
+      A \emph{true negative} test result is that the \emph{null hypothesis} is \texttt{TRUE} (pricev have a unit root), while a \emph{true positive} result is that the \emph{null hypothesis} is \texttt{FALSE} (pricev are stationary).
       \vskip1ex
       The function \texttt{tseries::adf.test()} assumes that the data is \emph{normally distributed}, which may underestimate the standard errors of the parameters, and produce \emph{false positives} (\emph{type I} errors) by incorrectly rejecting the null hypothesis of a unit root process.
     \column{0.5\textwidth}
@@ -4470,8 +4473,8 @@ sim_forecasts <- function(response, nagg=5, ordern=5,
   rutils::roll_sum(forecastv, look_back=nagg)
 }  # end sim_forecasts
 # Simulate the rolling autoregressive forecasts
-forecastv <- sim_forecasts(response=vti, ordern=5, look_back=100)
-c(mse=mean((vti - forecastv)^2), cor=cor(vti, forecastv))
+forecastv <- sim_forecasts(response=retvti, ordern=5, look_back=100)
+c(mse=mean((retvti - forecastv)^2), cor=cor(retvti, forecastv))
       @
   \end{columns}
 \end{block}
@@ -4479,6 +4482,7 @@ c(mse=mean((vti - forecastv)^2), cor=cor(vti, forecastv))
 \end{frame}
 
 
+% Copied to investments_univariate
 %%%%%%%%%%%%%%%
 \subsection{Forecasting Dependence On the Look-back Interval}
 \begin{frame}[fragile,t]{\subsecname}

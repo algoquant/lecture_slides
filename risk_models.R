@@ -608,28 +608,28 @@ all.equal(sqrt(sum(returns_sub^2)/nrows),
 
 # Calculate time series of VTI drawdowns
 closep <- log(quantmod::Cl(rutils::etfenv$VTI))
-draw_downs <- (closep - cummax(closep))
+drawdns <- (closep - cummax(closep))
 # Extract the date index from the time series closep
 dates <- zoo::index(closep)
 # Calculate the maximum drawdown date and depth
-index_min <- which.min(draw_downs)
-date_min <- dates[index_min]
-max_drawdown <- draw_downs[date_min]
+indexmin <- which.min(drawdns)
+datemin <- dates[indexmin]
+maxdd <- drawdns[datemin]
 # Calculate the drawdown start and end dates
-startd <- max(dates[(dates < date_min) & (draw_downs == 0)])
-endd <- min(dates[(dates > date_min) & (draw_downs == 0)])
+startd <- max(dates[(dates < datemin) & (drawdns == 0)])
+endd <- min(dates[(dates > datemin) & (drawdns == 0)])
 # dygraph plot of VTI drawdowns
-datav <- cbind(closep, draw_downs)
+datav <- cbind(closep, drawdns)
 colnamev <- c("VTI", "Drawdowns")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2],
-   valueRange=(1.2*range(draw_downs)+0.1), independentTicks=TRUE) %>%
+   valueRange=(1.2*range(drawdns)+0.1), independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red") %>%
   dyEvent(startd, "start drawdown", col="blue") %>%
-  dyEvent(date_min, "max drawdown", col="red") %>%
+  dyEvent(datemin, "max drawdown", col="red") %>%
   dyEvent(endd, "end drawdown", col="green")
 
 # Plot VTI drawdowns using package quantmod
@@ -641,7 +641,7 @@ xval <- match(startd, dates)
 yval <- max(closep)
 abline(v=xval, col="blue")
 text(x=xval, y=0.95*yval, "start drawdown", col="blue", cex=0.9)
-xval <- match(date_min, dates)
+xval <- match(datemin, dates)
 abline(v=xval, col="red")
 text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
 xval <- match(endd, dates)

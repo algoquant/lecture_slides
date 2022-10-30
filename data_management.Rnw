@@ -564,27 +564,27 @@ library(zoo)  # Load package zoo
 # Create zoo with Date index
 dates <- seq(from=as.Date("2013-06-15"), by="day",
               length.out=100)
-pricets <- zoo(rnorm(NROW(dates)), order.by=dates)
-head(pricets, 3)
+pricev <- zoo(rnorm(NROW(dates)), order.by=dates)
+head(pricev, 3)
 # Write zoo series to text file, and then read it back
-write.zoo(pricets, file="pricets.txt")
-pricezoo <- read.zoo("pricets.txt")  # Read it back
-all.equal(pricezoo, pricets)
+write.zoo(pricev, file="pricev.txt")
+pricezoo <- read.zoo("pricev.txt")  # Read it back
+all.equal(pricezoo, pricev)
 # Perform the same using write.table() and read.table()
-# First coerce pricets into data frame
-dframe <- as.data.frame(pricets)
+# First coerce pricev into data frame
+dframe <- as.data.frame(pricev)
 dframe <- cbind(dates, dframe)
-# Write pricets to text file using write.table
-write.table(dframe, file="pricets.txt",
+# Write pricev to text file using write.table
+write.table(dframe, file="pricev.txt",
             row.names=FALSE, col.names=FALSE)
 # Read data frame from file
-pricezoo <- read.table(file="pricets.txt")
+pricezoo <- read.table(file="pricev.txt")
 sapply(pricezoo, class)  # A data frame
-# Coerce data frame into pricets
+# Coerce data frame into pricev
 pricezoo <- zoo::zoo(
   drop(as.matrix(pricezoo[, -1])),
   order.by=as.Date(pricezoo[, 1]))
-all.equal(pricezoo, pricets)
+all.equal(pricezoo, pricev)
       @
   \end{columns}
 \end{block}
@@ -613,11 +613,11 @@ all.equal(pricezoo, pricets)
       <<echo=(-(1:1)),eval=FALSE>>=
 library(zoo)  # Load package zoo
 # Write zoo series to CSV file, and then read it back
-write.zoo(pricets, file="pricets.csv",
+write.zoo(pricev, file="pricev.csv",
           sep=",", col.names=TRUE)
-pricezoo <- read.zoo(file="pricets.csv",
+pricezoo <- read.zoo(file="pricev.csv",
   header=TRUE, sep=",", drop=FALSE)
-all.equal(pricets, drop(pricezoo))
+all.equal(pricev, drop(pricezoo))
       @
   \end{columns}
 \end{block}
@@ -650,33 +650,33 @@ set.seed(1121)  # Reset random number generator
 # Create zoo with POSIXct date-time index
 dates <- seq(from=as.POSIXct("2013-06-15"),
               by="hour", length.out=100)
-pricets <- zoo(rnorm(NROW(dates)), order.by=dates)
-head(pricets, 3)
+pricev <- zoo(rnorm(NROW(dates)), order.by=dates)
+head(pricev, 3)
 # Write zoo series to CSV file, and then read it back
-write.zoo(pricets, file="pricets.csv",
+write.zoo(pricev, file="pricev.csv",
           sep=",", col.names=TRUE)
 # Read from CSV file using read.csv.zoo()
-pricezoo <- read.csv.zoo(file="pricets.csv")
-all.equal(pricets, pricezoo)
+pricezoo <- read.csv.zoo(file="pricev.csv")
+all.equal(pricev, pricezoo)
 # Coerce to xts series
 xtsv <- xts::as.xts(pricezoo)
 class(xtsv); head(xtsv, 3)
 # Coerce zoo series into data frame with custom date format
-dframe <- as.data.frame(pricets)
+dframe <- as.data.frame(pricev)
 dframe <- cbind(format(dates, "%m-%d-%Y %H:%M:%S"), dframe)
 head(dframe, 3)
 # Write zoo series to csv file using write.table
-write.table(dframe, file="pricets.csv",
+write.table(dframe, file="pricev.csv",
             sep=",", row.names=FALSE, col.names=FALSE)
 # Read from CSV file using read.csv.zoo()
-pricezoo <- read.zoo(file="pricets.csv",
+pricezoo <- read.zoo(file="pricev.csv",
   header=FALSE, sep=",", FUN=as.POSIXct,
   format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
 # Or using read.csv.zoo()
-pricezoo <- read.csv.zoo(file="pricets.csv", header=FALSE,
+pricezoo <- read.csv.zoo(file="pricev.csv", header=FALSE,
   format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
 head(pricezoo, 3)
-all.equal(pricets, pricezoo)
+all.equal(pricev, pricezoo)
       @
   \end{columns}
 \end{block}
@@ -1108,13 +1108,15 @@ summary(microbenchmark(
 dtable[, mean(carrier_delay)]
 # Average carrier_delay and aircraft_delay
 dtable[, .(carrier=mean(carrier_delay),
-               aircraft=mean(aircraft_delay))]
+           aircraft=mean(aircraft_delay))]
 # Average aircraft_delay from JFK
 dtable[origin=="JFK", mean(aircraft_delay)]
 # Number of flights from JFK
 dtable[origin=="JFK", NROW(aircraft_delay)]
 # Or
 dtable[origin=="JFK", .N]
+# In R
+sum(dtable[, origin]=="JFK")
       @
   \end{columns}
 \end{block}
@@ -1150,18 +1152,15 @@ dtable[, .N, by=origin]
 # Same, but add names to output
 dtable[, .(flights=.N), by=.(airport=origin)]
 # Number of AA flights from each airport
-dtable[carrier=="AA", .(flights=.N),
-           by=.(airport=origin)]
+dtable[carrier=="AA", .(flights=.N), by=.(airport=origin)]
 # Number of flights from each airport and airline
-dtable[, .(flights=.N),
-           by=.(airport=origin, airline=carrier)]
+dtable[, .(flights=.N), by=.(airport=origin, airline=carrier)]
 # Average aircraft_delay
 dtable[, mean(aircraft_delay)]
 # Average aircraft_delay from JFK
 dtable[origin=="JFK", mean(aircraft_delay)]
 # Average aircraft_delay from each airport
-dtable[, .(delay=mean(aircraft_delay)),
-           by=.(airport=origin)]
+dtable[, .(delay=mean(aircraft_delay)), by=.(airport=origin)]
 # Average and max delays from each airport and month
 dtable[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
            by=.(airport=origin, month=month)]
@@ -1195,24 +1194,24 @@ dtable[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Sort ascending by origin, then descending by dest
-order_table <- dtable[order(origin, -dest)]
-order_table
+dtables <- dtable[order(origin, -dest)]
+dtables
 # Doesn't work outside dtable
 order(origin, -dest)
 # Sort dtable by reference
 setorder(dtable, origin, -dest)
-all.equal(dtable, order_table)
+all.equal(dtable, dtables)
 # setorder() is much faster than order()
 summary(microbenchmark(
   order=dtable[order(origin, -dest)],
   setorder=setorder(dtable, origin, -dest),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Average aircraft_delay by month
-order_table[, .(mean_delay=mean(aircraft_delay)),
+dtables[, .(mean_delay=mean(aircraft_delay)),
             by=.(month=month)]
 # Chained brackets to sort output by month
-order_table[, .(mean_delay=mean(aircraft_delay)),
-            by=.(month=month)][order(month)]
+dtables[, .(mean_delay=mean(aircraft_delay)),
+        by=.(month=month)][order(month)]
       @
   \end{columns}
 \end{block}
@@ -1299,8 +1298,7 @@ head(dtable, 4)
 # Delete tot_delay column
 dtable[, tot_delay := NULL]
 # Add max_delay column grouped by origin and dest
-dtable[, max_delay := max(aircraft_delay),
-           by=.(origin, dest)]
+dtable[, max_delay := max(aircraft_delay), by=.(origin, dest)]
 dtable[, max_delay := NULL]
 # Add date and tot_delay columns
 dtable[, c("date", "tot_delay") :=
@@ -1310,10 +1308,10 @@ dtable[, c("date", "tot_delay") :=
 dtable[month == 12, tot_delay := carrier_delay]
 dtable[, c("date", "tot_delay") := NULL]
 # Add several columns
-dtable[, c("max_carrier", "max_aircraft") :=
-             lapply(.SD, max),
-           by=.(origin, dest),
-           .SDcols=c("carrier_delay", "aircraft_delay")]
+dtable[, c("max_carrier", "max_aircraft") := lapply(.SD, max),
+       by=.(origin, dest),
+       .SDcols=c("carrier_delay", "aircraft_delay")]
+# Remove columns
 dtable[, c("max_carrier", "max_aircraft") := NULL]
 # Modifying by reference is much faster than standard R
 summary(microbenchmark(
@@ -1350,8 +1348,7 @@ haskey(dtable)
 key(dtable)
 # Select rows with LGA using the key
 dtable["LGA"]
-all.equal(dtable["LGA"],
-          dtable[origin == "LGA"])
+all.equal(dtable["LGA"], dtable[origin == "LGA"])
 # Select rows with LGA and JFK using the key
 dtable[c("LGA", "JFK")]
 # Add a key based on the "origin" and "dest" columns
@@ -1479,8 +1476,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create data frame and coerce it to data table
-dtable <- data.frame(
-  col1=sample(7), col2=sample(7), col3=sample(7))
+dtable <- data.frame(col1=sample(7), col2=sample(7), col3=sample(7))
 class(dtable); dtable
 data.table::setDT(dtable)
 class(dtable); dtable
@@ -1491,7 +1487,7 @@ class(dtable); dtable
 dtable <- data.table:::as.data.frame.data.table(dtable)
 # SetDF() is much faster than as.data.frame()
 summary(microbenchmark(
-  as.data.frame=data.table:::as.data.frame.data.table(dtable),
+  asdataframe=data.table:::as.data.frame.data.table(dtable),
   setDF=data.table::setDF(dtable),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -1519,22 +1515,22 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
-pricets <- rutils::etfenv$VTI
-class(pricets); head(pricets)
-pricets <- as.data.frame(pricets)
-class(pricets); head(pricets)
+pricev <- rutils::etfenv$VTI
+class(pricev); head(pricev)
+pricev <- as.data.frame(pricev)
+class(pricev); head(pricev)
 # Coerce data frame to a data table
-data.table::setDT(pricets, keep.rownames=TRUE)
-class(pricets); head(pricets)
+data.table::setDT(pricev, keep.rownames=TRUE)
+class(pricev); head(pricev)
 # Dates are coerced to strings
-sapply(pricets, class)
+sapply(pricev, class)
 # Coerce xts directly to a data table
 dtable <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(dtable); head(dtable)
 # Dates are not coerced to strings
 sapply(dtable, class)
-all.equal(pricets, dtable, check.attributes=FALSE)
+all.equal(pricev, dtable, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -1559,22 +1555,22 @@ all.equal(pricets, dtable, check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
-pricets <- rutils::etfenv$VTI
-class(pricets); head(pricets)
-pricets <- as.data.frame(pricets)
-class(pricets); head(pricets)
+pricev <- rutils::etfenv$VTI
+class(pricev); head(pricev)
+pricev <- as.data.frame(pricev)
+class(pricev); head(pricev)
 # Coerce data frame to a data table
-data.table::setDT(pricets, keep.rownames=TRUE)
-class(pricets); head(pricets)
+data.table::setDT(pricev, keep.rownames=TRUE)
+class(pricev); head(pricev)
 # Dates are coerced to strings
-sapply(pricets, class)
+sapply(pricev, class)
 # Coerce xts directly to a data table
 dtable <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(dtable); head(dtable)
 # Dates are not coerced to strings
 sapply(dtable, class)
-all.equal(pricets, dtable, check.attributes=FALSE)
+all.equal(pricev, dtable, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -1599,22 +1595,22 @@ all.equal(pricets, dtable, check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
-pricets <- rutils::etfenv$VTI
-class(pricets); head(pricets)
-pricets <- as.data.frame(pricets)
-class(pricets); head(pricets)
+pricev <- rutils::etfenv$VTI
+class(pricev); head(pricev)
+pricev <- as.data.frame(pricev)
+class(pricev); head(pricev)
 # Coerce data frame to a data table
-data.table::setDT(pricets, keep.rownames=TRUE)
-class(pricets); head(pricets)
+data.table::setDT(pricev, keep.rownames=TRUE)
+class(pricev); head(pricev)
 # Dates are coerced to strings
-sapply(pricets, class)
+sapply(pricev, class)
 # Coerce xts directly to a data table
 dtable <- as.data.table(rutils::etfenv$VTI,
   keep.rownames=TRUE)
 class(dtable); head(dtable)
 # Dates are not coerced to strings
 sapply(dtable, class)
-all.equal(pricets, dtable, check.attributes=FALSE)
+all.equal(pricev, dtable, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -1969,7 +1965,7 @@ head(priceur, 4)
       <<echo=(-(1:1)),eval=FALSE>>=
 library(tseries)  # Load package tseries
 # Download price and volume data for symbolv into list of zoo objects
-pricets <- suppressWarnings(
+pricev <- suppressWarnings(
   lapply(symbolv, # Loop for loading data
          get.hist.quote,
          quote=c("AdjClose", "Volume"),
@@ -1978,16 +1974,16 @@ pricets <- suppressWarnings(
          origin="1970-01-01")  # end lapply
 )  # end suppressWarnings
 # Flatten list of zoo objects into a single zoo object
-pricets <- rutils::do_call(cbind, pricets)
+pricev <- rutils::do_call(cbind, pricev)
 # Or
-# pricets <- do.call(cbind, pricets)
+# pricev <- do.call(cbind, pricev)
 # Assign names in format "symbol.Close", "symbol.Volume"
-names(pricets) <- as.numeric(sapply(symbolv,
+names(pricev) <- as.numeric(sapply(symbolv,
     paste, c("Close", "Volume"), sep="."))
-# Save pricets to a comma-separated CSV file
-write.zoo(pricets, file="pricets.csv", sep=",")
-# Save pricets to a binary .RData file
-save(pricets, file="pricets.RData")
+# Save pricev to a comma-separated CSV file
+write.zoo(pricev, file="pricev.csv", sep=",")
+# Save pricev to a binary .RData file
+save(pricev, file="pricev.RData")
       @
   \end{columns}
 \end{block}
@@ -2290,34 +2286,34 @@ library(rutils)  # Load package rutils
 # Define ETF symbols
 symbolv <- c("VTI", "VEU", "IEF", "VNQ")
 # Extract symbolv from rutils::etfenv
-pricets <- mget(symbolv, envir=rutils::etfenv)
-# pricets is a list of xts series
-class(pricets)
-class(pricets[[1]])
-tail(pricets[[1]])
+pricev <- mget(symbolv, envir=rutils::etfenv)
+# pricev is a list of xts series
+class(pricev)
+class(pricev[[1]])
+tail(pricev[[1]])
 # Extract close prices
-pricets <- lapply(pricets, quantmod::Cl)
+pricev <- lapply(pricev, quantmod::Cl)
 # Collapse list into time series the hard way
-prices2 <- cbind(pricets[[1]], pricets[[2]], pricets[[3]], pricets[[4]])
+prices2 <- cbind(pricev[[1]], pricev[[2]], pricev[[3]], pricev[[4]])
 class(prices2)
 dim(prices2)
 # Collapse list into time series using do.call()
-pricets <- do.call(cbind, pricets)
-all.equal(prices2, pricets)
-class(pricets)
-dim(pricets)
+pricev <- do.call(cbind, pricev)
+all.equal(prices2, pricev)
+class(pricev)
+dim(pricev)
 # Or extract and cbind in single step
-pricets <- do.call(cbind, lapply(
+pricev <- do.call(cbind, lapply(
   mget(symbolv, envir=rutils::etfenv), quantmod::Cl))
 # Or extract and bind all data, subset by symbolv
-pricets <- lapply(symbolv, function(symbol) {
+pricev <- lapply(symbolv, function(symbol) {
     quantmod::Cl(get(symbol, envir=rutils::etfenv))
 })  # end lapply
 # Or loop over etfenv without anonymous function
-pricets <- do.call(cbind,
+pricev <- do.call(cbind,
   lapply(as.list(rutils::etfenv)[symbolv], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
-pricets <- do.call(cbind,
+pricev <- do.call(cbind,
   eapply(rutils::etfenv, quantmod::Cl)[symbolv])
       @
   \end{columns}
@@ -2348,25 +2344,25 @@ pricets <- do.call(cbind,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Column names end with ".Close"
-colnames(pricets)
-strsplit(colnames(pricets), split="[.]")
-do.call(rbind, strsplit(colnames(pricets), split="[.]"))
-do.call(rbind, strsplit(colnames(pricets), split="[.]"))[, 1]
+colnames(pricev)
+strsplit(colnames(pricev), split="[.]")
+do.call(rbind, strsplit(colnames(pricev), split="[.]"))
+do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
 # Drop ".Close" from colnames
-colnames(pricets) <- rutils::get_name(colnames(pricets))
+colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
-# colnames(pricets) <- do.call(rbind,
-#   strsplit(colnames(pricets), split="[.]"))[, 1]
-tail(pricets, 3)
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
+tail(pricev, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
-write.zoo(pricets,
+write.zoo(pricev,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
 # Copy prices into etfenv
-etfenv$pricets <- pricets
+etfenv$pricev <- pricev
 # Or
-assign("pricets", pricets, envir=etfenv)
+assign("pricev", pricev, envir=etfenv)
 # Save to .RData file
 save(etfenv, file="etf_data.RData")
       @
@@ -2390,15 +2386,15 @@ save(etfenv, file="etf_data.RData")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract VTI prices
-pricets <- etfenv$prices[ ,"VTI"]
-pricets <- na.omit(pricets)
+pricev <- etfenv$prices[ ,"VTI"]
+pricev <- na.omit(pricev)
 # Calculate percentage returns "by hand"
-pricel <- as.numeric(pricets)
+pricel <- as.numeric(pricev)
 pricel <- c(pricel[1], pricel[-NROW(pricel)])
-pricel <- xts(pricel, zoo::index(pricets))
-retsp <- (pricets-pricel)/pricel
+pricel <- xts(pricel, zoo::index(pricev))
+retsp <- (pricev-pricel)/pricel
 # Calculate percentage returns using dailyReturn()
-retsd <- quantmod::dailyReturn(pricets)
+retsd <- quantmod::dailyReturn(pricev)
 head(cbind(retsd, retsp))
 all.equal(retsd, retsp, check.attributes=FALSE)
 # Calculate returns for all prices in etfenv$prices
@@ -2685,25 +2681,25 @@ dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices"
       <<echo=TRUE,eval=FALSE>>=
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-pricets <- eapply(sp500env, quantmod::Cl)
-pricets <- rutils::do_call(cbind, pricets)
+pricev <- eapply(sp500env, quantmod::Cl)
+pricev <- rutils::do_call(cbind, pricev)
 # Carry forward non-NA prices
-pricets <- zoo::na.locf(pricets, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
 # Drop ".Close" from column names
-colnames(pricets[, 1:4])
-colnames(pricets) <- rutils::get_name(colnames(pricets))
+colnames(pricev[, 1:4])
+colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
-# colnames(pricets) <- do.call(rbind,
-#   strsplit(colnames(pricets), split="[.]"))[, 1]
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns of the S&P500 constituent stocks
-# retsp <- xts::diff.xts(log(pricets))
-retsp <- xts::diff.xts(pricets)/
-  rutils::lagit(pricets, pad_zeros=FALSE)
+# retsp <- xts::diff.xts(log(pricev))
+retsp <- xts::diff.xts(pricev)/
+  rutils::lagit(pricev, pad_zeros=FALSE)
 set.seed(1121)
 samplev <- sample(NCOL(retsp), s=100, replace=FALSE)
-prices100 <- pricets[, samplev]
+prices100 <- pricev[, samplev]
 returns100 <- retsp[, samplev]
-save(pricets, prices100,
+save(pricev, prices100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 save(retsp, returns100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
@@ -2712,8 +2708,8 @@ save(retsp, returns100,
       \includegraphics[width=0.5\paperwidth]{figure/sp500_without_prices.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate number of constituents without prices
-datav <- rowSums(is.na(pricets))
-datav <- xts::xts(datav, order.by=zoo::index(pricets))
+datav <- rowSums(is.na(pricev))
+datav <- xts::xts(datav, order.by=zoo::index(pricev))
 dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
   dyOptions(colors="blue", strokeWidth=2)
       @
@@ -2733,9 +2729,9 @@ dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>
       The price-weighted index of \emph{S\&P500} constituents closely follows the VTI \emph{ETF}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate price weighted index of constituent
-ncols <- NCOL(pricets)
-pricets <- zoo::na.locf(pricets, fromLast=TRUE)
-indeks <- xts(rowSums(pricets)/ncols, zoo::index(pricets))
+ncols <- NCOL(pricev)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+indeks <- xts(rowSums(pricev)/ncols, zoo::index(pricev))
 colnames(indeks) <- "index"
 # Combine index with VTI
 datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
@@ -3008,28 +3004,28 @@ chart_Series(x=etfenv$DJIA["2016/"],
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # Calculate prices from OHLC data of the S&P500 stocks
-pricets <- eapply(sp500env, quantmod::Cl)
-pricets <- rutils::do_call(cbind, pricets)
+pricev <- eapply(sp500env, quantmod::Cl)
+pricev <- rutils::do_call(cbind, pricev)
 # Carry forward non-NA prices
-pricets <- zoo::na.locf(pricets, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
 # Get first column name
-colnames(pricets[, 1])
-rutils::get_name(colnames(pricets[, 1]))
+colnames(pricev[, 1])
+rutils::get_name(colnames(pricev[, 1]))
 # Modify column names
-colnames(pricets) <- rutils::get_name(colnames(pricets))
+colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
-# colnames(pricets) <- do.call(rbind,
-#   strsplit(colnames(pricets), split="[.]"))[, 1]
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns
-retsp <- xts::diff.xts(pricets)/
-  rutils::lagit(pricets, pad_zeros=FALSE)
+retsp <- xts::diff.xts(pricev)/
+  rutils::lagit(pricev, pad_zeros=FALSE)
 # Select a random sample of 100 prices and returns
 set.seed(1121)
 samplev <- sample(NCOL(retsp), s=100, replace=FALSE)
-prices100 <- pricets[, samplev]
+prices100 <- pricev[, samplev]
 returns100 <- retsp[, samplev]
 # Save the data into binary files
-save(pricets, prices100,
+save(pricev, prices100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 save(retsp, returns100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
@@ -3190,14 +3186,14 @@ save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # Extract Close prices
-pricets <- eapply(etfenv, quantmod::Cl)
-pricets <- do.call(cbind, pricets)
+pricev <- eapply(etfenv, quantmod::Cl)
+pricev <- do.call(cbind, pricev)
 # Drop ".Close" from colnames
-colnames(pricets) <- do.call(rbind, strsplit(colnames(pricets), split="[.]"))[, 1]
+colnames(pricev) <- do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate the log returns
-retsp <- xts::diff.xts(log(pricets))
+retsp <- xts::diff.xts(log(pricev))
 # Copy prices and returns into etfenv
-etfenv$pricets <- pricets
+etfenv$pricev <- pricev
 etfenv$retsp <- retsp
 # Copy symbolv into etfenv
 etfenv$symbolv <- symbolv
@@ -3478,26 +3474,26 @@ detach("package:Quandl")
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Download EOD AAPL prices from WIKI free database
-pricets <- Quandl(code="WIKI/AAPL",
+pricev <- Quandl(code="WIKI/AAPL",
                   type="xts", startd="1990-01-01")
 x11(width=14, height=7)
-chart_Series(pricets["2016", 1:4], name="AAPL OHLC prices")
+chart_Series(pricev["2016", 1:4], name="AAPL OHLC prices")
 # Add trade volume in extra panel
-add_TA(pricets["2016", 5])
+add_TA(pricev["2016", 5])
 # Download euro currency rates
-pricets <- Quandl(code="BNP/USDEUR",
+pricev <- Quandl(code="BNP/USDEUR",
     startd="2013-01-01",
     endd="2013-12-01", type="xts")
 # Download multiple time series
-pricets <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
+pricev <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
     startd="2013-01-01", type="xts")
 # Download AAPL gross profits
 prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q", type="xts")
 chart_Series(prof_it, name="AAPL gross profits")
 # Download Hurst time series
-pricets <- Quandl(code="PE/AAPL_HURST",
+pricev <- Quandl(code="PE/AAPL_HURST",
     startd="2013-01-01", type="xts")
-chart_Series(pricets["2016/", 1], name="AAPL Hurst")
+chart_Series(pricev["2016/", 1], name="AAPL Hurst")
       @
   \end{columns}
 \end{block}
@@ -3614,16 +3610,16 @@ library(Quandl)
 # Register Quandl API key
 Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
 # Download E-mini S&P500 futures prices
-pricets <- Quandl(code="CHRIS/CME_ES1",
+pricev <- Quandl(code="CHRIS/CME_ES1",
   type="xts", startd="1990-01-01")
-pricets <- pricets[, c("Open", "High", "Low", "Last", "Volume")]
-colnames(pricets)[4] <- "Close"
+pricev <- pricev[, c("Open", "High", "Low", "Last", "Volume")]
+colnames(pricev)[4] <- "Close"
 # Plot the prices
 x11(width=5, height=4)  # Open x11 for plotting
-chart_Series(x=pricets["2008-06/2009-06"],
+chart_Series(x=pricev["2008-06/2009-06"],
              TA="add_Vo()", name="S&P500 Futures")
 # Plot dygraph
-dygraphs::dygraph(pricets["2008-06/2009-06", -5],
+dygraphs::dygraph(pricev["2008-06/2009-06", -5],
   main="S&P500 Futures") %>%
   dyCandlestick()
       @

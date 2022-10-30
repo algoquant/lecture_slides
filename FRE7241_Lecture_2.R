@@ -107,69 +107,69 @@ library(rutils)  # Load package rutils
 # Define ETF symbols
 symbolv <- c("VTI", "VEU", "IEF", "VNQ")
 # Extract symbolv from rutils::etfenv
-pricets <- mget(symbolv, envir=rutils::etfenv)
-# pricets is a list of xts series
-class(pricets)
-class(pricets[[1]])
-tail(pricets[[1]])
+pricev <- mget(symbolv, envir=rutils::etfenv)
+# pricev is a list of xts series
+class(pricev)
+class(pricev[[1]])
+tail(pricev[[1]])
 # Extract close prices
-pricets <- lapply(pricets, quantmod::Cl)
+pricev <- lapply(pricev, quantmod::Cl)
 # Collapse list into time series the hard way
-prices2 <- cbind(pricets[[1]], pricets[[2]], pricets[[3]], pricets[[4]])
+prices2 <- cbind(pricev[[1]], pricev[[2]], pricev[[3]], pricev[[4]])
 class(prices2)
 dim(prices2)
 # Collapse list into time series using do.call()
-pricets <- do.call(cbind, pricets)
-all.equal(prices2, pricets)
-class(pricets)
-dim(pricets)
+pricev <- do.call(cbind, pricev)
+all.equal(prices2, pricev)
+class(pricev)
+dim(pricev)
 # Or extract and cbind in single step
-pricets <- do.call(cbind, lapply(
+pricev <- do.call(cbind, lapply(
   mget(symbolv, envir=rutils::etfenv), quantmod::Cl))
 # Or extract and bind all data, subset by symbolv
-pricets <- lapply(symbolv, function(symbol) {
+pricev <- lapply(symbolv, function(symbol) {
     quantmod::Cl(get(symbol, envir=rutils::etfenv))
 })  # end lapply
 # Or loop over etfenv without anonymous function
-pricets <- do.call(cbind,
+pricev <- do.call(cbind,
   lapply(as.list(rutils::etfenv)[symbolv], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
-pricets <- do.call(cbind,
+pricev <- do.call(cbind,
   eapply(rutils::etfenv, quantmod::Cl)[symbolv])
 
 # Column names end with ".Close"
-colnames(pricets)
-strsplit(colnames(pricets), split="[.]")
-do.call(rbind, strsplit(colnames(pricets), split="[.]"))
-do.call(rbind, strsplit(colnames(pricets), split="[.]"))[, 1]
+colnames(pricev)
+strsplit(colnames(pricev), split="[.]")
+do.call(rbind, strsplit(colnames(pricev), split="[.]"))
+do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
 # Drop ".Close" from colnames
-colnames(pricets) <- rutils::get_name(colnames(pricets))
+colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
-# colnames(pricets) <- do.call(rbind,
-#   strsplit(colnames(pricets), split="[.]"))[, 1]
-tail(pricets, 3)
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
+tail(pricev, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
-write.zoo(pricets,
+write.zoo(pricev,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
 # Copy prices into etfenv
-etfenv$pricets <- pricets
+etfenv$pricev <- pricev
 # Or
-assign("pricets", pricets, envir=etfenv)
+assign("pricev", pricev, envir=etfenv)
 # Save to .RData file
 save(etfenv, file="etf_data.RData")
 
 # Extract VTI prices
-pricets <- etfenv$prices[ ,"VTI"]
-pricets <- na.omit(pricets)
+pricev <- etfenv$prices[ ,"VTI"]
+pricev <- na.omit(pricev)
 # Calculate percentage returns "by hand"
-pricel <- as.numeric(pricets)
+pricel <- as.numeric(pricev)
 pricel <- c(pricel[1], pricel[-NROW(pricel)])
-pricel <- xts(pricel, zoo::index(pricets))
-retsp <- (pricets-pricel)/pricel
+pricel <- xts(pricel, zoo::index(pricev))
+retsp <- (pricev-pricel)/pricel
 # Calculate percentage returns using dailyReturn()
-retsd <- quantmod::dailyReturn(pricets)
+retsd <- quantmod::dailyReturn(pricev)
 head(cbind(retsd, retsp))
 all.equal(retsd, retsp, check.attributes=FALSE)
 # Calculate returns for all prices in etfenv$prices
@@ -322,39 +322,39 @@ dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices"
 
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-pricets <- eapply(sp500env, quantmod::Cl)
-pricets <- rutils::do_call(cbind, pricets)
+pricev <- eapply(sp500env, quantmod::Cl)
+pricev <- rutils::do_call(cbind, pricev)
 # Carry forward non-NA prices
-pricets <- zoo::na.locf(pricets, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
 # Drop ".Close" from column names
-colnames(pricets[, 1:4])
-colnames(pricets) <- rutils::get_name(colnames(pricets))
+colnames(pricev[, 1:4])
+colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
-# colnames(pricets) <- do.call(rbind,
-#   strsplit(colnames(pricets), split="[.]"))[, 1]
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns of the S&P500 constituent stocks
-# retsp <- xts::diff.xts(log(pricets))
-retsp <- xts::diff.xts(pricets)/
-  rutils::lagit(pricets, pad_zeros=FALSE)
+# retsp <- xts::diff.xts(log(pricev))
+retsp <- xts::diff.xts(pricev)/
+  rutils::lagit(pricev, pad_zeros=FALSE)
 set.seed(1121)
 samplev <- sample(NCOL(retsp), s=100, replace=FALSE)
-prices100 <- pricets[, samplev]
+prices100 <- pricev[, samplev]
 returns100 <- retsp[, samplev]
-save(pricets, prices100,
+save(pricev, prices100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 save(retsp, returns100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 
 # Calculate number of constituents without prices
-datav <- rowSums(is.na(pricets))
-datav <- xts::xts(datav, order.by=zoo::index(pricets))
+datav <- rowSums(is.na(pricev))
+datav <- xts::xts(datav, order.by=zoo::index(pricev))
 dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
   dyOptions(colors="blue", strokeWidth=2)
 
 # Calculate price weighted index of constituent
-ncols <- NCOL(pricets)
-pricets <- zoo::na.locf(pricets, fromLast=TRUE)
-indeks <- xts(rowSums(pricets)/ncols, zoo::index(pricets))
+ncols <- NCOL(pricev)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+indeks <- xts(rowSums(pricev)/ncols, zoo::index(pricev))
 colnames(indeks) <- "index"
 # Combine index with VTI
 datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
@@ -1020,28 +1020,28 @@ all.equal(sqrt(sum(returns_sub^2)/nrows),
 
 # Calculate time series of VTI drawdowns
 closep <- log(quantmod::Cl(rutils::etfenv$VTI))
-draw_downs <- (closep - cummax(closep))
+drawdns <- (closep - cummax(closep))
 # Extract the date index from the time series closep
 dates <- zoo::index(closep)
 # Calculate the maximum drawdown date and depth
-index_min <- which.min(draw_downs)
-date_min <- dates[index_min]
-max_drawdown <- draw_downs[date_min]
+indexmin <- which.min(drawdns)
+datemin <- dates[indexmin]
+maxdd <- drawdns[datemin]
 # Calculate the drawdown start and end dates
-startd <- max(dates[(dates < date_min) & (draw_downs == 0)])
-endd <- min(dates[(dates > date_min) & (draw_downs == 0)])
+startd <- max(dates[(dates < datemin) & (drawdns == 0)])
+endd <- min(dates[(dates > datemin) & (drawdns == 0)])
 # dygraph plot of VTI drawdowns
-datav <- cbind(closep, draw_downs)
+datav <- cbind(closep, drawdns)
 colnamev <- c("VTI", "Drawdowns")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2],
-   valueRange=(1.2*range(draw_downs)+0.1), independentTicks=TRUE) %>%
+   valueRange=(1.2*range(drawdns)+0.1), independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red") %>%
   dyEvent(startd, "start drawdown", col="blue") %>%
-  dyEvent(date_min, "max drawdown", col="red") %>%
+  dyEvent(datemin, "max drawdown", col="red") %>%
   dyEvent(endd, "end drawdown", col="green")
 
 # Plot VTI drawdowns using package quantmod
@@ -1053,7 +1053,7 @@ xval <- match(startd, dates)
 yval <- max(closep)
 abline(v=xval, col="blue")
 text(x=xval, y=0.95*yval, "start drawdown", col="blue", cex=0.9)
-xval <- match(date_min, dates)
+xval <- match(datemin, dates)
 abline(v=xval, col="red")
 text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
 xval <- match(endd, dates)
@@ -1269,35 +1269,35 @@ legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
 
 library(rutils)
 # Extract ETF prices from rutils::etfenv$prices
-pricets <- rutils::etfenv$prices
-pricets <- zoo::na.locf(pricets, na.rm=FALSE)
-pricets <- zoo::na.locf(pricets, fromLast=TRUE)
-dates <- zoo::index(pricets)
+pricev <- rutils::etfenv$prices
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+dates <- zoo::index(pricev)
 # Calculate simple dollar returns
-retsd <- rutils::diffit(pricets)
+retsd <- rutils::diffit(pricev)
 # Or
-# retsd <- lapply(pricets, rutils::diffit)
+# retsd <- lapply(pricev, rutils::diffit)
 # retsd <- rutils::do_call(cbind, retsd)
 # Calculate percentage returns
-retsp <- retsd/rutils::lagit(pricets, lagg=1, pad_zeros=FALSE)
+retsp <- retsd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Calculate log returns
-retsl <- rutils::diffit(log(pricets))
+retsl <- rutils::diffit(log(pricev))
 
 # Set the initial dollar returns
-retsd[1, ] <- pricets[1, ]
+retsd[1, ] <- pricev[1, ]
 # Calculate prices from dollar returns
 pricesn <- cumsum(retsd)
-all.equal(pricesn, pricets)
+all.equal(pricesn, pricev)
 # Compound the percentage returns
 pricesn <- cumprod(1+retsp)
 # Set the initial prices
-pricesi <- as.numeric(pricets[1, ])
+pricesi <- as.numeric(pricev[1, ])
 pricesn <- lapply(1:NCOL(pricesn), function (i)
     pricesi[i]*pricesn[, i])
 pricesn <- rutils::do_call(cbind, pricesn)
 # Or
 # pricesn <- t(t(pricesn)*pricesi)
-all.equal(pricesn, pricets, check.attributes=FALSE)
+all.equal(pricesn, pricev, check.attributes=FALSE)
 # Plot log VTI prices
 endp <- rutils::calc_endpoints(rutils::etfenv$VTI, interval="months")
 dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endp]),
@@ -1306,10 +1306,10 @@ dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endp]),
   dyLegend(show="always", width=500)
 
 # Calculate percentage VTI returns
-pricets <- rutils::etfenv$prices$VTI
-pricets <- na.omit(pricets)
-retsp <- rutils::diffit(pricets)/
-  rutils::lagit(pricets, lagg=1, pad_zeros=FALSE)
+pricev <- rutils::etfenv$prices$VTI
+pricev <- na.omit(pricev)
+retsp <- rutils::diffit(pricev)/
+  rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 
 # Funding rate per day
 frate <- 0.01/252
@@ -1350,17 +1350,17 @@ dygraphs::dygraph(datav[endp], main="VTI Transaction Costs") %>%
   dyLegend(show="always", width=500)
 
 # Calculate VTI and IEF dollar returns
-pricets <- rutils::etfenv$prices[, c("VTI", "IEF")]
-pricets <- na.omit(pricets)
-retsd <- rutils::diffit(pricets)
+pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
+pricev <- na.omit(pricev)
+retsd <- rutils::diffit(pricev)
 # Calculate VTI and IEF percentage returns
-retsp <- retsd/rutils::lagit(pricets, lagg=1, pad_zeros=FALSE)
+retsp <- retsd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Set the initial dollar returns
-retsd[1, ] <- pricets[1, ]
+retsd[1, ] <- pricev[1, ]
 # Wealth of fixed shares equal to $0.5 each (without rebalancing)
 weightv <- c(0.5, 0.5)  # dollar weights
 # Scale the dollar returns using the dollar weights
-pricesi <- as.numeric(pricets[1, ])
+pricesi <- as.numeric(pricev[1, ])
 wealth_fsa <- cumsum(retsd %*% (weightv/pricesi))
 # Or using percentage returns
 wealth_fsa2 <- cumprod(1+retsp) %*% weightv
@@ -1370,7 +1370,7 @@ all.equal(wealth_fsa, drop(wealth_fsa2))
 wealth_fda <- cumsum(retsp %*% weightv)
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(log(wealth_fsa), wealth_fda)
-wealthv <- xts::xts(wealthv, zoo::index(pricets))
+wealthv <- xts::xts(wealthv, zoo::index(pricev))
 colnames(wealthv) <- c("Fixed shares", "Fixed dollars")
 sqrt(252)*sapply(rutils::diffit(wealthv),
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1390,7 +1390,7 @@ costs <- bid_offer*cumsum(abs(retsp) %*% weightv)/2
 margin <- (margin - costs)
 # dygraph plot of margin and transaction costs
 datav <- cbind(margin, costs)
-datav <- xts::xts(datav, zoo::index(pricets))
+datav <- xts::xts(datav, zoo::index(pricev))
 colnamev <- c("Margin", "Cumulative Transaction Costs")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav[endp], main="Fixed Dollar Portfolio Transaction Costs") %>%
@@ -1407,7 +1407,7 @@ wealth_fsa <- cumprod(1+retsp) %*% weightv
 # Wealth of proportional allocations (with rebalancing)
 wealth_pda <- cumprod(1 + retsp %*% weightv)
 wealthv <- cbind(wealth_fsa, wealth_pda)
-wealthv <- xts::xts(wealthv, zoo::index(pricets))
+wealthv <- xts::xts(wealthv, zoo::index(pricev))
 colnames(wealthv) <- c("Fixed shares", "Prop dollars")
 wealthv <- log(wealthv)
 # Calculate the Sharpe and Sortino ratios
@@ -1435,7 +1435,7 @@ wealth_pda <- (wealth_pda - costs)
 
 # dygraph plot of wealth and transaction costs
 wealthv <- cbind(wealth_pda, costs)
-wealthv <- xts::xts(wealthv, zoo::index(pricets))
+wealthv <- xts::xts(wealthv, zoo::index(pricev))
 colnamev <- c("Wealth", "Cumulative Transaction Costs")
 colnames(wealthv) <- colnamev
 dygraphs::dygraph(wealthv[endp],
@@ -1467,7 +1467,7 @@ for (it in 2:NROW(retsp)) {
 } # end for
 wealthv <- rowSums(wealthv) - 1
 wealthv <- cbind(wealth_pda, wealthv)
-wealthv <- xts::xts(wealthv, zoo::index(pricets))
+wealthv <- xts::xts(wealthv, zoo::index(pricev))
 colnames(wealthv) <- c("Proportional Allocations", "Proportional Target")
 dygraphs::dygraph(wealthv, main="Wealth of Proportional Target Allocations") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -1708,10 +1708,10 @@ dygraphs::dygraph(datav[endp], main="CPPI strategy") %>%
   dyLegend(show="always", width=300)
 
 # Calculate dollar and percentage returns for VTI and IEF.
-pricets <- rutils::etfenv$prices[, c("VTI", "IEF")]
-pricets <- na.omit(pricets)
-retsd <- rutils::diffit(pricets)
-retsp <- retsd/rutils::lagit(pricets, lagg=1, pad_zeros=FALSE)
+pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
+pricev <- na.omit(pricev)
+retsd <- rutils::diffit(pricev)
+retsp <- retsd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Calculate wealth of proportional allocations.
 weightv <- c(0.5, 0.5)
 retsw <- retsp %*% weightv
@@ -1722,7 +1722,7 @@ volat <- HighFreq::roll_var(retsp, look_back=look_back)
 iszero <- (rowSums(volat) == 0)
 volat[iszero, ] <- 1
 # Calculate the risk parity portfolio allocations.
-alloc <- lapply(1:NCOL(pricets),
+alloc <- lapply(1:NCOL(pricev),
   function(x) weightv[x]/volat[, x])
 alloc <- do.call(cbind, alloc)
 # Scale allocations to 1 dollar total.
@@ -1735,7 +1735,7 @@ wealth_risk_parity <- cumprod(1 + retsw)
 
 # Calculate the log wealths.
 wealthv <- log(cbind(wealth_pda, wealth_risk_parity))
-wealthv <- xts::xts(wealthv, zoo::index(pricets))
+wealthv <- xts::xts(wealthv, zoo::index(pricev))
 colnames(wealthv) <- c("Fixed Ratio", "Risk Parity")
 # Calculate the Sharpe ratios.
 sqrt(252)*sapply(rutils::diffit(wealthv), function (x) mean(x)/sd(x))
