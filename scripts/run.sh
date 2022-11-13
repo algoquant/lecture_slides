@@ -83,7 +83,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/e_cho/echo/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ei_gen/eigend/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/en_d/endd/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/end_date/endd/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/end_p/endp/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/end_p/endd/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/en_ter/enter/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ex_it/exit/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/expo_nent/exponent/g' *.R*

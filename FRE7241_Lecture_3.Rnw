@@ -950,8 +950,8 @@ pnls <- retsp*posit
 # Plot dygraph of in-sample VTI strategy
 wealthv <- cbind(retsp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-endp <- rutils::calc_endpoints(wealthv, interval="months")
-dygraphs::dygraph(cumsum(wealthv)[endp],
+endd <- rutils::calc_endpoints(wealthv, interval="months")
+dygraphs::dygraph(cumsum(wealthv)[endd],
   main="VTI Strategy Using In-sample Labels") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
   dyAxis("y2", label="Strategy", independentTicks=TRUE) %>%
@@ -1624,14 +1624,14 @@ sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bid_offer=0.001,
       So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
       <<echo=TRUE,eval=FALSE>>=
 source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
-lambdas <- seq(from=0.98, to=0.99, by=0.001)
-# Perform lapply() loop over lambdas
-pnltrend <- lapply(lambdas, function(lambda) {
+lambdav <- seq(from=0.98, to=0.99, by=0.001)
+# Perform lapply() loop over lambdav
+pnltrend <- lapply(lambdav, function(lambda) {
   # Simulate EWMA strategy and calculate returns
   sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnltrend <- do.call(cbind, pnltrend)
-colnames(pnltrend) <- paste0("lambda=", lambdas)
+colnames(pnltrend) <- paste0("lambda=", lambdav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1677,21 +1677,21 @@ library(parallel)
 cluster <- makeCluster(detectCores()-1)
 clusterExport(cluster,
   varlist=c("ohlc", "look_back", "sim_ewma"))
-# Perform parallel loop over lambdas under Windows
-pnltrend <- parLapply(cluster, lambdas, function(lambda) {
+# Perform parallel loop over lambdav under Windows
+pnltrend <- parLapply(cluster, lambdav, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and calculate returns
   sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
 })  # end parLapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
-# Perform parallel loop over lambdas under Mac-OSX or Linux
-pnltrend <- mclapply(lambdas, function(lambda) {
+# Perform parallel loop over lambdav under Mac-OSX or Linux
+pnltrend <- mclapply(lambdav, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and calculate returns
   sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
 })  # end mclapply
 pnltrend <- do.call(cbind, pnltrend)
-colnames(pnltrend) <- paste0("lambda=", lambdas)
+colnames(pnltrend) <- paste0("lambda=", lambdav)
       @
   \end{columns}
 \end{block}
@@ -1722,7 +1722,7 @@ sharpetrend <- sqrt(252)*sapply(pnltrend, function(xtsv) {
 })  # end sapply
 # Plot Sharpe ratios
 dev.new(width=6, height=5, noRStudioGD=TRUE)
-plot(x=lambdas, y=sharpetrend, t="l",
+plot(x=lambdav, y=sharpetrend, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EWMA Trend Following Strategies
      as Function of the Decay Parameter Lambda")
@@ -1746,7 +1746,7 @@ plot(x=lambdas, y=sharpetrend, t="l",
       The best performing trend following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past prices), and producing less frequent trading.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate optimal lambda
-lambda <- lambdas[which.max(sharpetrend)]
+lambda <- lambdav[which.max(sharpetrend)]
 # Simulate best performing strategy
 ewmatrend <- sim_ewma(ohlc=ohlc, lambda=lambda, bid_offer=0, lagg=2)
 posit <- ewmatrend[, "positions"]
@@ -1798,16 +1798,16 @@ legend("top", legend=colnames(wealthv),
       The profitability of mean reverting strategies can be significantly improved by using limit orders, to reduce transaction costs.
       <<echo=TRUE,eval=FALSE>>=
 source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
-lambdas <- seq(0.6, 0.7, 0.01)
-# Perform lapply() loop over lambdas
-pnlrevert <- lapply(lambdas, function(lambda) {
+lambdav <- seq(0.6, 0.7, 0.01)
+# Perform lapply() loop over lambdav
+pnlrevert <- lapply(lambdav, function(lambda) {
   # Simulate EWMA strategy and calculate returns
   sim_ewma(ohlc=ohlc, lambda=lambda, bid_offer=0, trend=(-1))[, "pnls"]
 })  # end lapply
 pnlrevert <- do.call(cbind, pnlrevert)
-colnames(pnlrevert) <- paste0("lambda=", lambdas)
+colnames(pnlrevert) <- paste0("lambda=", lambdav)
 # Plot dygraph of mean reverting EWMA strategies
-colorv <- colorRampPalette(c("blue", "red"))(NROW(lambdas))
+colorv <- colorRampPalette(c("blue", "red"))(NROW(lambdav))
 dygraphs::dygraph(cumsum(pnlrevert)[endd], main="Cumulative Returns of Mean Reverting EWMA Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
@@ -1856,7 +1856,7 @@ legend("topleft", legend=colnames(pnlrevert),
 sharperevert <- sqrt(252)*sapply(pnlrevert, function(xtsv) {
   mean(xtsv)/sd(xtsv)
 })  # end sapply
-plot(x=lambdas, y=sharperevert, t="l",
+plot(x=lambdav, y=sharperevert, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EWMA Mean Reverting Strategies
      as Function of the Decay Parameter Lambda")
@@ -1881,7 +1881,7 @@ plot(x=lambdas, y=sharperevert, t="l",
       But a too large $\lambda$ parameter also causes very high trading frequency, and high transaction costs.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate optimal lambda
-lambda <- lambdas[which.max(sharperevert)]
+lambda <- lambdav[which.max(sharperevert)]
 # Simulate best performing strategy
 ewmarevert <- sim_ewma(ohlc=ohlc, bid_offer=0.0,
   lambda=lambda, trend=(-1))
@@ -2174,11 +2174,11 @@ sim_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
       The best \emph{Dual EWMA} strategy performs better than the best \emph{single EWMA} strategy, because it has an extra parameter that can be adjusted to improve in-sample performance.  But this doesn't guarantee better out-of-sample performance.
       <<echo=TRUE,eval=FALSE>>=
 source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
-lambdas1 <- seq(from=0.85, to=0.99, by=0.01)
-lambdas2 <- seq(from=0.85, to=0.99, by=0.01)
-# Perform sapply() loops over lambdas
-sharpem <- sapply(lambdas1, function(lambda1) {
-  sapply(lambdas2, function(lambda2) {
+lambdav1 <- seq(from=0.85, to=0.99, by=0.01)
+lambdav2 <- seq(from=0.85, to=0.99, by=0.01)
+# Perform sapply() loops over lambdav
+sharpem <- sapply(lambdav1, function(lambda1) {
+  sapply(lambdav2, function(lambda2) {
     if (lambda2 > lambda1) {
       # Simulate Dual EWMA strategy
       pnls <- sim_ewma2(ohlc=ohlc, lambda1=lambda1, lambda2=lambda2, 
@@ -2187,12 +2187,12 @@ sharpem <- sapply(lambdas1, function(lambda1) {
     } else NA
   })  # end sapply
 })  # end sapply
-colnames(sharpem) <- lambdas1
-rownames(sharpem) <- lambdas2
+colnames(sharpem) <- lambdav1
+rownames(sharpem) <- lambdav2
 # Calculate the PnLs for the optimal strategy
 whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
-lambda1 <- lambdas1[whichv[2]]
-lambda2 <- lambdas2[whichv[1]]
+lambda1 <- lambdav1[whichv[2]]
+lambda2 <- lambdav2[whichv[1]]
 pnls <- sim_ewma2(ohlc=ohlc, lambda1=lambda1, lambda2=lambda2, 
                     look_back=look_back, bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
 wealthv <- cbind(retsp, pnls)
@@ -2433,14 +2433,14 @@ sim_vwap <- function(ohlc, lambda=0.9, bid_offer=0.001, trend=1, lagg=1) {
       So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
       <<echo=TRUE,eval=FALSE>>=
 source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
-lambdas <- seq(from=0.97, to=0.995, by=0.002)
-# Perform lapply() loop over lambdas
-pnls <- lapply(lambdas, function(lambda) {
+lambdav <- seq(from=0.97, to=0.995, by=0.002)
+# Perform lapply() loop over lambdav
+pnls <- lapply(lambdav, function(lambda) {
   # Simulate VWAP strategy and calculate returns
   sim_vwap(ohlc=ohlc, lambda=lambda, bid_offer=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lambda=", lambdas)
+colnames(pnls) <- paste0("lambda=", lambdav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}

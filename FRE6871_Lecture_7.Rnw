@@ -892,7 +892,7 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
                     const arma::mat& returns, // Asset returns
                     Rcpp::List controlv, // List of portfolio optimization model parameters
                     arma::uvec startp, // Start points
-                    arma::uvec endp, // End points
+                    arma::uvec endd, // End points
                     double lambda = 0.0, // Decay factor for averaging the portfolio weights
                     double coeff = 1.0, // Multiplier of strategy returns
                     double bid_offer = 0.0) { // The bid-offer spread
@@ -904,16 +904,16 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
   arma::mat pnls = zeros(returns.n_rows, 1);
 
   // Perform loop over the end points
-  for (arma::uword it = 1; it < endp.size(); it++) {
+  for (arma::uword it = 1; it < endd.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate the portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), controlv);
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endd(it-1)), controlv);
     // Calculate the weights as the weighted sum with past weights
     weights = lambda1*weights + lambda*weights_past;
     // Calculate out-of-sample returns
-    pnls.rows(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
+    pnls.rows(endd(it-1)+1, endd(it)) = returns.rows(endd(it-1)+1, endd(it))*weights;
     // Add transaction costs
-    pnls.row(endp(it-1)+1) -= bid_offer*sum(abs(weights - weights_past))/2;
+    pnls.row(endd(it-1)+1) -= bid_offer*sum(abs(weights - weights_past))/2;
     // Copy the weights
     weights_past = weights;
   }  // end for
@@ -3892,10 +3892,10 @@ head(lag(pricev), 4)
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(rutils)  # Load package rutils
 # Indices of last observations in each hour
-endp <- xts::endpoints(pricev, on="hours")
-head(endp)
+endd <- xts::endpoints(pricev, on="hours")
+head(endd)
 # Extract the last observations in each hour
-head(pricev[endp, ])
+head(pricev[endd, ])
       @
   \end{columns}
 \end{block}

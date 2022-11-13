@@ -479,28 +479,28 @@ rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
 # Calculate XLP and VTI returns
 retsp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
-endp <- xts::endpoints(retsp, on="months")[-1]
+endd <- xts::endpoints(retsp, on="months")[-1]
 # Calculate start points from look-back interval
 look_back <- 12  # Look back 12 months
-startp <- c(rep(1, look_back), endp[1:(NROW(endp)-look_back)])
-head(cbind(endp, startp), look_back+2)
+startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
+head(cbind(endd, startp), look_back+2)
 # Calculate rolling beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
-betar <- sapply(1:NROW(endp), FUN=function(ep) {
-    datav <- retsp[startp[ep]:endp[ep], ]
+betar <- sapply(1:NROW(endd), FUN=function(ep) {
+    datav <- retsp[startp[ep]:endd[ep], ]
     # coef(lm(formulav, data=datav))[2]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
 # Calculate rolling betas using RcppArmadillo
-reg_stats <- HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endp=(endp-1), startp=(startp-1))
+reg_stats <- HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1))
 betas <- reg_stats$VTI
 all.equal(betas, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endp=(endp-1), startp=(startp-1)),
-  Rcode=sapply(1:NROW(endp), FUN=function(ep) {
-    datav <- retsp[startp[ep]:endp[ep], ]
+  Rcpp=HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1)),
+  Rcode=sapply(1:NROW(endd), FUN=function(ep) {
+    datav <- retsp[startp[ep]:endd[ep], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   }),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -510,7 +510,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of rolling XLP beta and VTI prices
-dates <- zoo::index(retsp[endp, ])
+dates <- zoo::index(retsp[endd, ])
 pricev <- rutils::etfenv$prices$VTI[dates]
 datav <- cbind(pricev, betas)
 colnamev <- colnames(datav)
@@ -520,55 +520,6 @@ dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Engle-Granger Two-step Procedure for Cointegration}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Use log prices?
-      \vskip1ex
-      The \emph{ADF} test can be applied to test for the cointegration of time series of prices.
-      \vskip1ex
-      The Engle-Granger two-step procedure for two time series consists of:
-      \begin{itemize}
-        \item Performing a regression to calculate the cointegrating factor $\beta$,
-        \item Applying the \emph{ADF} test to the residuals of the regression to determine that they don't have a unit root (they are mean reverting).
-      \end{itemize}
-      The regression of prices is not statistically valid because they are not stationary and not normally distributed.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate XLB and XLE prices
-pricev <- na.omit(rutils::etfenv$prices[, c("XLB", "XLE")])
-cor(rutils::diffit(log(pricev)))
-xlb <- drop(zoo::coredata(pricev$XLB))
-xle <- drop(zoo::coredata(pricev$XLE))
-# Calculate regression coefficients of XLB ~ XLE
-betav <- cov(xlb, xle)/var(xle)
-alpha <- (mean(xlb) - betav*mean(xle))
-# Calculate regression residuals
-fittedv <- (alpha + betav*xle)
-residuals <- (xlb - fittedv)
-# Perform ADF test on residuals
-tseries::adf.test(residuals, k=1)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/coint_prices.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot prices
-dygraphs::dygraph(pricev, main="XLB and XLE Prices") %>%
-  dyOptions(colors=c("blue", "red"))
-# Plot cointegration residuals
-residuals <- xts::xts(residuals, zoo::index(pricev))
-dygraphs::dygraph(residuals, main="XLB and XLE Cointegration Residuals")
       @
   \end{columns}
 \end{block}

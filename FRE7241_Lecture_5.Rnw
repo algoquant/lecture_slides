@@ -947,9 +947,9 @@ retsd[1] <- 0
 aggv <- seq.int(from=3, to=35, length.out=9)^2
 volv <- sapply(aggv, function(aggint) {
   naggs <- nrows %/% aggint
-  endp <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
-  # endp <- rutils::calc_endpoints(closep, interval=aggint)
-  sd(rutils::diffit(closep[endp]))
+  endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
+  # endd <- rutils::calc_endpoints(closep, interval=aggint)
+  sd(rutils::diffit(closep[endd]))
 })  # end sapply
 # Calculate the Hurst from single data point
 volog <- log(volv)
@@ -1010,11 +1010,11 @@ nrows <- NROW(closep)
 # Calculate the rescaled range
 aggint <- 500
 naggs <- nrows %/% aggint
-endp <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
+endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
 # Or
-# endp <- rutils::calc_endpoints(closep, interval=aggint)
-rrange <- sapply(2:NROW(endp), function(np) {
-  indeks <- (endp[np-1]+1):endp[np]
+# endd <- rutils::calc_endpoints(closep, interval=aggint)
+rrange <- sapply(2:NROW(endd), function(np) {
+  indeks <- (endd[np-1]+1):endd[np]
   diff(range(closep[indeks]))/sd(retsp[indeks])
 })  # end sapply
 mean(rrange)
@@ -1048,10 +1048,10 @@ log(mean(rrange))/log(aggint)
 rrange <- sapply(aggv, function(aggint) {
 # Calculate the end points
   naggs <- nrows %/% aggint
-  endp <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
+  endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
 # Calculate the rescaled ranges
-  rrange <- sapply(2:NROW(endp), function(np) {
-    indeks <- (endp[np-1]+1):endp[np]
+  rrange <- sapply(2:NROW(endd), function(np) {
+    indeks <- (endd[np-1]+1):endd[np]
     diff(range(closep[indeks]))/sd(retsp[indeks])
   })  # end sapply
   mean(na.omit(rrange))
@@ -2972,18 +2972,18 @@ predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
 predictor <- cbind(rep(1, nrows), predictor)
 # Perform rolling forecasting
 look_back <- 100
-forecastv <- sapply((look_back+1):nrows, function(endp) {
+forecastv <- sapply((look_back+1):nrows, function(endd) {
   # Define rolling look-back range
-  startp <- max(1, endp-look_back)
+  startp <- max(1, endd-look_back)
   # Or expanding look-back range
   # startp <- 1
-  rangev <- startp:(endp-1)
+  rangev <- startp:(endd-1)
   # Invert the predictor matrix
   predinv <- MASS::ginv(predictor[rangev, ])
   # Calculate fitted coefficients
   coeff <- drop(predinv %*% response[rangev])
   # Calculate forecast
-  drop(predictor[endp, ] %*% coeff)
+  drop(predictor[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
 forecastv <- c(rep(0, look_back), forecastv)
@@ -3068,20 +3068,20 @@ sim_forecasts <- function(response, nagg=5, ordern=5,
                        input=predictor)
   predictor <- cbind(rep(1, nrows), predictor)
   # Perform rolling forecasting
-  forecastv <- sapply((look_back+1):nrows, function(endp) {
+  forecastv <- sapply((look_back+1):nrows, function(endd) {
     # Define rolling look-back range
     if (rollp)
-      startp <- max(1, endp-look_back)
+      startp <- max(1, endd-look_back)
     else
     # Or expanding look-back range
     startp <- 1
-    rangev <- startp:(endp-1)
+    rangev <- startp:(endd-1)
     # Invert the predictor matrix
     designinv <- MASS::ginv(predictor[rangev, ])
     # Calculate fitted coefficients
     coeff <- drop(designinv %*% response[rangev])
     # Calculate forecast
-    drop(predictor[endp, ] %*% coeff)
+    drop(predictor[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
   forecastv <- c(rep(0, look_back), forecastv)
@@ -3456,18 +3456,18 @@ predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
 predictor <- cbind(rep(1, nrows), predictor)
 # Perform rolling forecasting
 look_back <- 100
-forecastv <- sapply((look_back+1):nrows, function(endp) {
+forecastv <- sapply((look_back+1):nrows, function(endd) {
   # Define rolling look-back range
-  startp <- max(1, endp-look_back)
+  startp <- max(1, endd-look_back)
   # Or expanding look-back range
   # startp <- 1
-  rangev <- startp:(endp-1)
+  rangev <- startp:(endd-1)
   # Invert the predictor matrix
   designinv <- MASS::ginv(predictor[rangev, ])
   # Calculate fitted coefficients
   coeff <- drop(designinv %*% retsp[rangev])
   # Calculate forecast
-  drop(predictor[endp, ] %*% coeff)
+  drop(predictor[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
 forecastv <- c(rep(0, look_back), forecastv)
@@ -3552,20 +3552,20 @@ sim_forecasts <- function(response, nagg=5, ordern=5,
                        input=predictor)
   predictor <- cbind(rep(1, nrows), predictor)
   # Perform rolling forecasting
-  forecastv <- sapply((look_back+1):nrows, function(endp) {
+  forecastv <- sapply((look_back+1):nrows, function(endd) {
     # Define rolling look-back range
     if (rollp)
-      startp <- max(1, endp-look_back)
+      startp <- max(1, endd-look_back)
     else
     # Or expanding look-back range
     startp <- 1
-    rangev <- startp:(endp-1)
+    rangev <- startp:(endd-1)
     # Invert the predictor matrix
     designinv <- MASS::ginv(predictor[rangev, ])
     # Calculate fitted coefficients
     coeff <- drop(designinv %*% response[rangev])
     # Calculate forecast
-    drop(predictor[endp, ] %*% coeff)
+    drop(predictor[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
   forecastv <- c(rep(0, look_back), forecastv)

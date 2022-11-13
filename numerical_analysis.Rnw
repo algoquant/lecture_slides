@@ -3195,16 +3195,16 @@ calc_quant <- function(lambda) {
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define vector of tilt parameters
-lambdas <- seq(-3.0, -1.2, by=0.2)
+lambdav <- seq(-3.0, -1.2, by=0.2)
 # Calculate vector of quantiles for tilt parameters
-quantiles <- sapply(lambdas, calc_quant)
+quantiles <- sapply(lambdav, calc_quant)
 # Calculate standard deviations of quantiles for tilt parameters
 stdevs <- apply(quantiles, MARGIN=2, sd)
 # Calculate the optimal tilt parameter
-lambdas[which.min(stdevs)]
+lambdav[which.min(stdevs)]
 # Plot the standard deviations
 x11(width=6, height=5)
-plot(x=lambdas, y=stdevs, 
+plot(x=lambdav, y=stdevs, 
      main="Standard Deviations of Simulated Quantiles",
      xlab="tilt parameter", ylab="standard deviation",
      type="l", col="blue", lwd=2)
@@ -4905,7 +4905,7 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
                     const arma::mat& returns, // Asset returns
                     Rcpp::List controlv, // List of portfolio optimization model parameters
                     arma::uvec startp, // Start points
-                    arma::uvec endp, // End points
+                    arma::uvec endd, // End points
                     double lambda = 0.0, // Decay factor for averaging the portfolio weights
                     double coeff = 1.0, // Multiplier of strategy returns
                     double bid_offer = 0.0) { // The bid-offer spread
@@ -4917,16 +4917,16 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
   arma::mat pnls = zeros(returns.n_rows, 1);
 
   // Perform loop over the end points
-  for (arma::uword it = 1; it < endp.size(); it++) {
+  for (arma::uword it = 1; it < endd.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate the portfolio weights
-    weights = coeff*calc_weights(excess.rows(startp(it-1), endp(it-1)), controlv);
+    weights = coeff*calc_weights(excess.rows(startp(it-1), endd(it-1)), controlv);
     // Calculate the weights as the weighted sum with past weights
     weights = lambda1*weights + lambda*weights_past;
     // Calculate out-of-sample returns
-    pnls.rows(endp(it-1)+1, endp(it)) = returns.rows(endp(it-1)+1, endp(it))*weights;
+    pnls.rows(endd(it-1)+1, endd(it)) = returns.rows(endd(it-1)+1, endd(it))*weights;
     // Add transaction costs
-    pnls.row(endp(it-1)+1) -= bid_offer*sum(abs(weights - weights_past))/2;
+    pnls.row(endd(it-1)+1) -= bid_offer*sum(abs(weights - weights_past))/2;
     // Copy the weights
     weights_past = weights;
   }  // end for

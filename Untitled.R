@@ -1,31 +1,3 @@
-# Calculate the 10 best performing stocks in-sample
-perfstat <- sort(drop(coredata(pricesn[cutoff, ])), decreasing=TRUE)
-symbolv <- names(head(perfstat, 10))
-# Calculate the in-sample portfolio
-pricis <- pricesn[insample, symbolv]
-# Normalize the prices so that they are 1 at cutoff+1
-pricesn <- lapply(prices, function(x) x/as.numeric(x[cutoff+1]))
-pricesn <- rutils::do_call(cbind, pricesn)
-# Calculate the out-of-sample portfolio
-pricos <- pricesn[outsample, symbolv]
-# Scale the prices to preserve the in-sample wealth
-pricos <- sum(pricis[cutoff, ])*pricos/sum(pricos[1, ])
-
-# Combine indeks with out-of-sample stock portfolio returns
-wealthv <- rbind(pricis, pricos)
-wealthv <- xts::xts(rowMeans(wealthv), datev)
-wealthv <- cbind(indeks, wealthv)
-colnames(wealthv)[2] <- "Portfolio"
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(rutils::diffit(wealthv[outsample, ]), 
-                 function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot out-of-sample stock portfolio returns
-dygraphs::dygraph(log(wealthv[endp]), main="Out-of-sample Log Prices of Stock Portfolio") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(datev[cutoff], label="in-sample", strokePattern="solid", color="green") %>%
-  dyLegend(width=500)
-
-
 ############## test
 # Summary: Rank the stocks according to their alpha.
 

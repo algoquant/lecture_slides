@@ -482,10 +482,10 @@ xvar <- seq(-5, 7, length=100)
 yvar <- dnorm(xvar, mean=1.0, sd=2.0)
 plot(xvar, yvar, type="l", lty="solid", xlab="", ylab="")
 title(main="Normal Density Function", line=0.5)
-startp <- 3; endp <- 5  # Set lower and upper bounds
+startp <- 3; endd <- 5  # Set lower and upper bounds
 # Set polygon base
-subv <- ((xvar >= startp) & (xvar <= endp))
-polygon(c(startp, xvar[subv], endp),  # Draw polygon
+subv <- ((xvar >= startp) & (xvar <= endd))
+polygon(c(startp, xvar[subv], endd),  # Draw polygon
         c(-1, yvar[subv], -1), col="red")
       @
     \column{0.5\textwidth}
@@ -2573,8 +2573,8 @@ eq_all <- exp(cumsum(sig_nals*retsp))
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot daily cumulative returns in panels
-endp <- endpoints(retsp, on="days")
-plot.zoo(cbind(eq_all, eq_up, eq_dn)[endp], lwd=c(2, 2, 2),
+endd <- endpoints(retsp, on="days")
+plot.zoo(cbind(eq_all, eq_up, eq_dn)[endd], lwd=c(2, 2, 2),
   ylab=c("Total","Long","Short"), col=c("red","green","blue"),
   main=paste("RSI(2) strategy for", colnames(closep), "from",
              format(start(retsp), "%B %Y"), "to",
@@ -3420,13 +3420,13 @@ quantmod::chart_Series(xtsv, name="VTI EWMA Volatility")
 retsp <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(retsp)
 # Define end points
-endp <- 1:NROW(retsp)
-# Start points are multi-period lag of endp
+endd <- 1:NROW(retsp)
+# Start points are multi-period lag of endd
 look_back <- 11
-startp <- c(rep_len(0, look_back), endp[1:(nrows-look_back)])
+startp <- c(rep_len(0, look_back), endd[1:(nrows-look_back)])
 # Calculate rolling variance in sapply() loop - takes long
 variance <- sapply(1:nrows, function(it) {
-  retsp <- retsp[startp[it]:endp[it]]
+  retsp <- retsp[startp[it]:endd[it]]
   sum((retsp - mean(retsp))^2)
 }) / (look_back)  # end sapply
 # Use only vectorized functions
@@ -3494,7 +3494,7 @@ variance[1:(look_back-1)] <- 0
 library(microbenchmark)
 summary(microbenchmark(
   sapply=sapply(1:nrows, function(it) {
-    var(retsp[startp[it]:endp[it]])
+    var(retsp[startp[it]:endd[it]])
   }),
   roll=roll::roll_var(retsp, width=look_back),
   times=10))[, c(1, 4, 5)]
@@ -3838,11 +3838,11 @@ colnames(variance) <- "VTI.variance"
 # Number of look_backs that fit over returns
 nrows <- NROW(retsp)
 nagg <- nrows %/% look_back
-# Define endp with beginning stub
-endp <- c(0, nrows-look_back*nagg + (0:nagg)*look_back)
-nrows <- NROW(endp)
-# Subset variance to endp
-variance <- variance[endp]
+# Define endd with beginning stub
+endd <- c(0, nrows-look_back*nagg + (0:nagg)*look_back)
+nrows <- NROW(endd)
+# Subset variance to endd
+variance <- variance[endd]
 # Plot autocorrelation function
 rutils::plot_acf(variance, lag=10, main="ACF of Variance")
 # Plot partial autocorrelation
@@ -4903,12 +4903,12 @@ title(main="VTI squared range partial autocorrelations")
 ohlc <- rutils::etfenv$VTI
 # Number of data points
 nrows <- NROW(ohlc["2018-06/"])
-# Define endp at each point in time
-endp <- 0:nrows
+# Define endd at each point in time
+endd <- 0:nrows
 # Number of data points in look_back interval
 look_back <- 22
-# startp are endp lagged by look_back
-startp <- c(rep_len(0, look_back), endp[1:(NROW(endp)-look_back)])
+# startp are endd lagged by look_back
+startp <- c(rep_len(0, look_back), endd[1:(NROW(endd)-look_back)])
 head(startp, 33)
       @
   \end{columns}
@@ -4940,13 +4940,13 @@ npoints <- 21
 # Number of npoints that fit over nrows
 nagg <- nrows %/% npoints
 # If(nrows==npoints*nagg then whole number
-endp <- (0:nagg)*npoints
+endd <- (0:nagg)*npoints
 # Stub interval at beginning
-endp <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
+endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
 # Else stub interval at end
-endp <- c((0:nagg)*npoints, nrows)
+endd <- c((0:nagg)*npoints, nrows)
 # Or use xts::endpoints()
-endp <- xts::endpoints(closep, on="months")
+endd <- xts::endpoints(closep, on="months")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4956,14 +4956,14 @@ endp <- xts::endpoints(closep, on="months")
 # Plot data and endpoints as vertical lines
 plot.xts(closep, col="blue", lwd=2, xlab="", ylab="",
          main="Prices with Endpoints as Vertical Lines")
-addEventLines(xts(rep("endpoint", NROW(endp)-1), zoo::index(closep)[endp]),
+addEventLines(xts(rep("endpoint", NROW(endd)-1), zoo::index(closep)[endd]),
               col="red", lwd=2, pos=4)
 # Or
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
 quantmod::chart_Series(closep, theme=plot_theme,
   name="prices with endpoints as vertical lines")
-abline(v=endp, col="red", lwd=2)
+abline(v=endd, col="red", lwd=2)
       @
   \end{columns}
 \end{block}
@@ -4988,21 +4988,21 @@ nrows <- NROW(rutils::etfenv$VTI["2019/"])
 npoints <- 21
 nagg <- nrows %/% npoints
 # Stub interval at beginning
-endp <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
+endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
       @
     \column{0.5\textwidth}
       The length of the \emph{look-back interval} can be defined either as the number of data points, or as the number of \emph{end points} to look back over.
       <<echo=TRUE,eval=FALSE>>=
 # look_back defined as number of data points
 look_back <- 252
-# startp are endp lagged by look_back
-startp <- (endp - look_back + 1)
+# startp are endd lagged by look_back
+startp <- (endd - look_back + 1)
 startp <- ifelse(startp < 0, 0, startp)
-# look_back defined as number of endp
+# look_back defined as number of endd
 look_back <- 12
-startp <- c(rep_len(0, look_back), endp[1:(NROW(endp)- look_back)])
-# Bind startp with endp
-cbind(startp, endp)
+startp <- c(rep_len(0, look_back), endd[1:(NROW(endd)- look_back)])
+# Bind startp with endd
+cbind(startp, endd)
       @
   \end{columns}
     \vspace{-1em}
@@ -5034,12 +5034,12 @@ nrows <- NROW(rutils::etfenv$VTI["2019/"])
 npoints <- 21
 # Number of npointss that fit over nrows
 nagg <- nrows %/% npoints
-# Define endp with beginning stub
-endp <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
+# Define endd with beginning stub
+endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
 # Define contiguous startp
-startp <- c(0, endp[1:(NROW(endp)-1)])
+startp <- c(0, endd[1:(NROW(endd)-1)])
 # Define exclusive startp
-startp <- c(0, endp[1:(NROW(endp)-1)]+1)
+startp <- c(0, endd[1:(NROW(endd)-1)]+1)
       @
   \end{columns}
     \vspace{-1em}
@@ -5070,14 +5070,14 @@ startp <- c(0, endp[1:(NROW(endp)-1)]+1)
       <<TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
-endp <- 0:NROW(closep)  # End points at each point
-npts <- NROW(endp)
+endd <- 0:NROW(closep)  # End points at each point
+npts <- NROW(endd)
 look_back <- 22  # Number of data points per look-back interval
-# startp are multi-period lag of endp
-startp <- c(rep_len(0, look_back), endp[1:(npts - look_back)])
+# startp are multi-period lag of endd
+startp <- c(rep_len(0, look_back), endd[1:(npts - look_back)])
 # Define list of look-back intervals for aggregations over past
 look_backs <- lapply(2:npts, function(it) {
-    startp[it]:endp[it]
+    startp[it]:endd[it]
 })  # end lapply
 # Define aggregation function
 aggfun <- function(xtsv) c(max=max(xtsv), min=min(xtsv))
@@ -5090,7 +5090,7 @@ if (is.vector(aggs))
   aggs <- t(aggs)
 aggs <- t(aggs)
 # Coerce aggs into xts series
-aggs <- xts(aggs, order.by=zoo::index(closep[endp]))
+aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
       @
   \end{columns}
 \end{block}
@@ -5176,13 +5176,13 @@ legend("top", legend=colnames(aggs),
 # Define functional for rolling aggregations
 roll_agg <- function(xtsv, look_back, FUN, ...) {
 # Define end points at every period
-  endp <- 0:NROW(xtsv)
-  npts <- NROW(endp)
-# Define starting points as lag of endp
-  startp <- c(rep_len(0, look_back), endp[1:(npts- look_back)])
+  endd <- 0:NROW(xtsv)
+  npts <- NROW(endd)
+# Define starting points as lag of endd
+  startp <- c(rep_len(0, look_back), endd[1:(npts- look_back)])
 # Perform aggregations over look_backs list
   aggs <- lapply(2:npts, function(it)
-    FUN(xtsv[startp[it]:endp[it]], ...)
+    FUN(xtsv[startp[it]:endd[it]], ...)
   )  # end lapply
 # rbind list into single xts or matrix
   aggs <- rutils::do_call(rbind, aggs)
@@ -5316,7 +5316,7 @@ roll_sum <- function(xtsv, look_back) {
 aggs <- roll_sum(closep, look_back=look_back)
 # Perform rolling aggregations using lapply loop
 aggs <- lapply(2:npts, function(it)
-    sum(closep[startp[it]:endp[it]])
+    sum(closep[startp[it]:endd[it]])
 )  # end lapply
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
@@ -5717,10 +5717,10 @@ legend(x="topright", title=NULL, legend=colnames(datav),
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Indices of last observations in each hour
-endp <- xts::endpoints(closep, on="hours")
-head(endp)
+endd <- xts::endpoints(closep, on="hours")
+head(endd)
 # extract the last observations in each hour
-head(closep[endp, ])
+head(closep[endd, ])
       @
   \end{columns}
 \end{block}
@@ -5759,13 +5759,13 @@ nrows <- NROW(closep)
 look_back <- 22
 # Number of look_backs that fit over nrows
 nagg <- nrows %/% look_back
-# Define endp with beginning stub
-endp <- c(0, nrows-look_back*nagg + (0:nagg)*look_back)
+# Define endd with beginning stub
+endd <- c(0, nrows-look_back*nagg + (0:nagg)*look_back)
 # Define contiguous startp
-startp <- c(0, endp[1:(NROW(endp)-1)])
+startp <- c(0, endd[1:(NROW(endd)-1)])
 # Define list of look-back intervals for aggregations over past
-look_backs <- lapply(2:NROW(endp), function(it) {
-    startp[it]:endp[it]
+look_backs <- lapply(2:NROW(endd), function(it) {
+    startp[it]:endd[it]
 })  # end lapply
 look_backs[[1]]
 look_backs[[2]]
@@ -5779,7 +5779,7 @@ if (is.vector(aggs))
   aggs <- t(aggs)
 aggs <- t(aggs)
 # Coerce aggs into xts series
-aggs <- xts(aggs, order.by=zoo::index(closep[endp]))
+aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
 head(aggs)
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
@@ -5820,7 +5820,7 @@ aggs <- lapply(look_backs, function(look_back) {
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
 # Coerce aggs into xts series
-aggs <- xts(aggs, order.by=zoo::index(closep[endp]))
+aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
 head(aggs)
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
@@ -5858,11 +5858,11 @@ legend("top", legend=colnames(aggs),
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(rutils)  # Load package rutils
-# Define functional for rolling aggregations over endp
-roll_agg <- function(xtsv, endp, FUN, ...) {
-  nrows <- NROW(endp)
-# startp are single-period lag of endp
-  startp <- c(1, endp[1:(nrows-1)])
+# Define functional for rolling aggregations over endd
+roll_agg <- function(xtsv, endd, FUN, ...) {
+  nrows <- NROW(endd)
+# startp are single-period lag of endd
+  startp <- c(1, endd[1:(nrows-1)])
 # Perform aggregations over look_backs list
   aggs <- lapply(look_backs,
     function(look_back) FUN(xtsv[look_back], ...))  # end lapply
@@ -5870,18 +5870,18 @@ roll_agg <- function(xtsv, endp, FUN, ...) {
   aggs <- rutils::do_call(rbind, aggs)
   if (!is.xts(aggs))
     aggs <-  # Coerce aggs into xts series
-    xts(aggs, order.by=zoo::index(xtsv[endp]))
+    xts(aggs, order.by=zoo::index(xtsv[endd]))
   aggs
 }  # end roll_agg
-# Apply sum() over endp
-aggs <- roll_agg(closep, endp=endp, FUN=sum)
-aggs <- period.apply(closep, INDEX=endp, FUN=sum)
+# Apply sum() over endd
+aggs <- roll_agg(closep, endd=endd, FUN=sum)
+aggs <- period.apply(closep, INDEX=endd, FUN=sum)
 # Benchmark the speed of aggregation functions
 summary(microbenchmark(
-  roll_agg=roll_agg(closep, endp=endp, FUN=sum),
-  period_apply=period.apply(closep, INDEX=endp, FUN=sum),
+  roll_agg=roll_agg(closep, endd=endd, FUN=sum),
+  period_apply=period.apply(closep, INDEX=endd, FUN=sum),
   times=10))[, c(1, 4, 5)]
-aggs <- period.sum(closep, INDEX=endp)
+aggs <- period.sum(closep, INDEX=endd)
 head(aggs)
       @
   \end{columns}
@@ -5943,25 +5943,25 @@ head(aggs)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Define endp with beginning stub
+# Define endd with beginning stub
 npoints <- 5
 nrows <- NROW(closep)
 nagg <- nrows %/% npoints
-endp <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
+endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
 # Number of data points in look_back interval
 look_back <- 22
-# startp are endp lagged by look_back
-startp <- (endp - look_back + 1)
+# startp are endd lagged by look_back
+startp <- (endd - look_back + 1)
 startp <- ifelse(startp < 0, 0, startp)
 # Perform lapply() loop over look_backs list
-aggs <- lapply(2:NROW(endp), function(it) {
-      xtsv <- closep[startp[it]:endp[it]]
+aggs <- lapply(2:NROW(endd), function(it) {
+      xtsv <- closep[startp[it]:endd[it]]
       c(max=max(xtsv), min=min(xtsv))
 })  # end lapply
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
 # Coerce aggs into xts series
-aggs <- xts(aggs, order.by=zoo::index(closep[endp]))
+aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
