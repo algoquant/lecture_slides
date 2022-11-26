@@ -931,14 +931,13 @@ x11(width=6, height=5)  # Open x11 for plotting
 # Plot last month of ESU8 and ESM8 volume data
 endd <- end(ESM8)
 startd <- (endd - 30)
-volumes <- cbind(Vo(ESU8),
-  Vo(ESM8))[paste0(startd, "/", endd)]
-colnames(volumes) <- c("ESU8", "ESM8")
+volum <- cbind(Vo(ESU8), Vo(ESM8))[paste0(startd, "/", endd)]
+colnames(volum) <- c("ESU8", "ESM8")
 colorv <- c("blue", "green")
-plot(volumes, col=colorv, lwd=3, major.ticks="days",
+plot(volum, col=colorv, lwd=3, major.ticks="days",
      format.labels="%b-%d", observation.based=TRUE,
      main="Volumes of ESU8 and ESM8 futures")
-legend("topleft", legend=colnames(volumes), col=colorv, y.intersp=0.5,
+legend("topleft", legend=colnames(volum), col=colorv, y.intersp=0.5,
        title=NULL, bty="n", lty=1, lwd=6, inset=0.1, cex=0.7)
       @
   \end{columns}
@@ -975,7 +974,7 @@ legend("topleft", legend=colnames(volumes), col=colorv, y.intersp=0.5,
       \includegraphics[width=0.45\paperwidth]{figure/sp500_futures_chained.png}
       <<echo=TRUE,eval=FALSE>>=
 # Find date when ESU8 volume exceeds ESM8
-exceeds <- (volumes[, "ESU8"] > volumes[, "ESM8"])
+exceeds <- (volum[, "ESU8"] > volum[, "ESM8"])
 indeks <- match(TRUE, exceeds)
 # indeks <- min(which(exceeds))
 # Scale the ESM8 prices
@@ -3001,13 +3000,13 @@ chart_Series(x=pricev, name="S&P500 Futures Bid-Ask Bounce")
 # Volatility of SPY
 sqrt(HighFreq::calcvar_ohlc(ohlc))
 # Daily SPY volatility and volume
-vol_daily <- sqrt(xts::apply.daily(ohlc, FUN=calcvar_ohlc))
-colnames(vol_daily) <- ("SPY_volatility")
-volumes <- quantmod::Vo(ohlc)
-volume_daily <- xts::apply.daily(volumes, FUN=sum)
-colnames(volume_daily) <- ("SPY_volume")
+volatd <- sqrt(xts::apply.daily(ohlc, FUN=calcvar_ohlc))
+colnames(volatd) <- ("SPY_volatility")
+volum <- quantmod::Vo(ohlc)
+volumd <- xts::apply.daily(volum, FUN=sum)
+colnames(volumd) <- ("SPY_volume")
 # Plot SPY volatility and volume
-datav <- cbind(vol_daily, volume_daily)["2008/2009"]
+datav <- cbind(volatd, volumd)["2008/2009"]
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav,
   main="SPY Daily Volatility and Trading Volume") %>%
@@ -3039,7 +3038,7 @@ dygraphs::dygraph(datav,
       But the regression of the \emph{differences} passes the \emph{Durbin-Watson test}.
       <<echo=TRUE,eval=FALSE>>=
 # Regress log of daily volume vs volatility
-datav <- log(cbind(volume_daily, vol_daily))
+datav <- log(cbind(volumd, volatd))
 colnamev <- colnames(datav)
 dframe <- as.data.frame(datav)
 formulav <- as.formula(paste(colnamev, collapse="~"))
@@ -3075,7 +3074,7 @@ mtext(paste("beta =", round(coef(model)[2], 3)), cex=1.2, lwd=3, side=2, las=2, 
       <<echo=TRUE,eval=FALSE>>=
 # 60 minutes of data in look_back interval
 look_back <- 60
-vol2013 <- volumes["2013"]
+vol2013 <- volum["2013"]
 ret2013 <- retsp["2013"]
 # Define end points with beginning stub
 nrows <- NROW(ret2013)
@@ -3084,9 +3083,9 @@ endd <- nrows-look_back*nagg + (0:nagg)*look_back
 startp <- c(1, endd[1:(NROW(endd)-1)])
 # Calculate SPY volatility and volume
 datav <- sapply(seq_along(endd), function(it) {
-  point_s <- startp[it]:endd[it]
-  c(volume=sum(vol2013[point_s]),
-    volatility=sd(ret2013[point_s]))
+  endp <- startp[it]:endd[it]
+  c(volume=sum(vol2013[endp]),
+    volatility=sd(ret2013[endp]))
 })  # end sapply
 datav <- t(datav)
 datav <- rutils::diffit(log(datav))
@@ -3122,18 +3121,18 @@ mtext(paste("beta =", round(coef(model)[2], 3)), cex=1.2, lwd=3, side=2, las=2, 
       \vskip1ex
       The time-dependent volatility of high frequency returns (\emph{heteroskedasticity}) produces their \emph{leptokurtosis} (large kurtosis, or fat tails).
       \vskip1ex
-      The returns can be divided by the \emph{trading volume} to obtain scaled returns over equal trading volumes.
+      The returns can be divided by the \emph{square root of the trading volumes} to obtain scaled returns over equal trading volumes.
       \vskip1ex
       But the returns should not be divided by very small volumes below a certain threshold.
       \vskip1ex
       The scaled returns have a smaller \emph{skewness} and \emph{kurtosis}, and they also have even higher autocorrelations than unscaled returns.
       <<echo=TRUE,eval=FALSE>>=
 # Scale returns using volume (volume clock)
-rets_scaled <- ifelse(volumes > 1e4, retsp/volumes, 0)
-rets_scaled <- rets_scaled/sd(rets_scaled)
+retsc <- ifelse(volum > 1e4, retsp/sqrt(volum), 0)
+retsc <- retsc/sd(retsc)
 # Calculate moments of scaled returns
 nrows <- NROW(retsp)
-sapply(list(retsp=retsp, rets_scaled=rets_scaled),
+sapply(list(retsp=retsp, retsc=retsc),
   function(rets) {sapply(c(skew=3, kurt=4),
            function(x) sum((rets/sd(rets))^x)/nrows)
 })  # end sapply
@@ -3149,7 +3148,7 @@ plot(density(retsp), xlim=c(-3, 3),
      lwd=3, mgp=c(2, 1, 0), col="blue",
      xlab="returns (standardized)", ylab="frequency",
      main="Density of Volume-scaled High Frequency SPY Returns")
-lines(density(rets_scaled, bw=0.4), lwd=3, col="red")
+lines(density(retsc, bw=0.4), lwd=3, col="red")
 curve(expr=dnorm, add=TRUE, lwd=3, col="green")
 # Add legend
 legend("topright", inset=0.05, bty="n", y.intersp=0.5,
@@ -3190,7 +3189,7 @@ Box.test(retsp, lag=10, type="Ljung")
 # Ljung-Box test for daily SPY returns
 Box.test(retsd, lag=10, type="Ljung")
 # Ljung-Box test statistics for scaled SPY returns
-sapply(list(retsp=retsp, rets_scaled=rets_scaled),
+sapply(list(retsp=retsp, retsc=retsc),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
@@ -3229,12 +3228,12 @@ pacfv <- pacf(as.numeric(retsp), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Minutely SPY Returns", line=1)
 # Plot the partial autocorrelations of scaled SPY returns
-pacf_scaled <- pacf(as.numeric(rets_scaled), lag=10,
+pacfs <- pacf(as.numeric(retsc), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Scaled SPY Returns", line=1)
 # Calculate the sums of partial autocorrelations
 sum(pacfv$acf)
-sum(pacf_scaled$acf)
+sum(pacfs$acf)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3264,15 +3263,15 @@ sum(pacf_scaled$acf)
       \href{http://papers.ssrn.com/sol3/papers.cfm?abstract_id=2583743}{\emph{Donier et al., Why Do Markets Crash?}}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate market illiquidity
-liquidi_ty <- sqrt(volume_daily)/vol_daily
+liquidv <- sqrt(volumd)/volatd
 # Plot market illiquidity
 x11(width=6, height=7) ; par(mfrow=c(2, 1))
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue")
-chart_Series(liquidi_ty["2010"], theme=plot_theme,
+chart_Series(liquidv["2010"], theme=plot_theme,
   name="SPY Liquidity in 2010", plot=FALSE)
 plot_theme$col$line.col <- c("red")
-chart_Series(vol_daily["2010"],
+chart_Series(volatd["2010"],
   theme=plot_theme, name="SPY Volatility in 2010")
 @
     \column{0.5\textwidth}
@@ -3296,23 +3295,23 @@ chart_Series(vol_daily["2010"],
 # Calculate intraday time index with hours and minutes
 dates <- format(zoo::index(retsp), "%H:%M")
 # Aggregate the mean volume
-volume_agg <- tapply(X=volumes, INDEX=dates, FUN=mean)
-volume_agg <- drop(volume_agg)
+volumagg <- tapply(X=volum, INDEX=dates, FUN=mean)
+volumagg <- drop(volumagg)
 # Aggregate the mean volatility
-vol_agg <- tapply(X=retsp^2, INDEX=dates, FUN=mean)
-vol_agg <- sqrt(drop(vol_agg))
+volagg <- tapply(X=retsp^2, INDEX=dates, FUN=mean)
+volagg <- sqrt(drop(volagg))
 # Coerce to xts
-intra_day <- as.POSIXct(paste(Sys.Date(), names(volume_agg)))
-volume_agg <- xts::xts(volume_agg, intra_day)
-vol_agg <- xts::xts(vol_agg, intra_day)
+datev <- as.POSIXct(paste(Sys.Date(), names(volumagg)))
+volumagg <- xts::xts(volumagg, datev)
+volagg <- xts::xts(volagg, datev)
 # Plot seasonality of volume and volatility
 x11(width=6, height=7) ; par(mfrow=c(2, 1))
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue")
-chart_Series(volume_agg[c(-1, -NROW(volume_agg))], theme=plot_theme,
+chart_Series(volumagg[c(-1, -NROW(volumagg))], theme=plot_theme,
   name="Daily Seasonality of SPY Volume", plot=FALSE)
 plot_theme$col$line.col <- c("red")
-chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
+chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
   name="Daily Seasonality of SPY Volatility")
       @
     \column{0.5\textwidth}
@@ -3336,15 +3335,15 @@ chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
       The end of day spike in trading volumes and liquidity is driven by computer-driven investors liquidating their positions.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate market liquidity
-liquidi_ty <- sqrt(volume_agg)/vol_agg
+liquidv <- sqrt(volumagg)/volagg
 # Plot daily seasonality of market liquidity
 x11(width=6, height=7) ; par(mfrow=c(2, 1))
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue")
-chart_Series(liquidi_ty[c(-1, -NROW(liquidi_ty))], theme=plot_theme,
+chart_Series(liquidv[c(-1, -NROW(liquidv))], theme=plot_theme,
   name="Daily Seasonality of SPY Liquidity", plot=FALSE)
 plot_theme$col$line.col <- c("red")
-chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
+chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
   name="Daily Seasonality of SPY Volatility")
       @
     \column{0.5\textwidth}
@@ -3367,7 +3366,7 @@ chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
       <<daily_volat_hurst,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 par(mfrow=c(2,1))  # set plot panels
 library(rutils)  # Load package rutils
-chart_Series(roll_sum(vol_daily, 10)[-(1:10)]/10,
+chart_Series(roll_sum(volatd, 10)[-(1:10)]/10,
              name=paste(symbol, "variance"))
 chart_Series(roll_sum(hurst_daily, 10)[-(1:10)]/10,
              name=paste(symbol, "Hurst"))
@@ -3474,15 +3473,15 @@ chart_Series(skew[interval],
 par(mfrow=c(2,1))  # set plot panels
 library(rutils)  # Load package rutils
 # Daily variance and skew
-vol_daily <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
+volatd <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
                         agg_fun="vol_ohlc")
-colnames(vol_daily) <- paste0(symbol, ".var")
+colnames(volatd) <- paste0(symbol, ".var")
 daily_skew <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
                         agg_fun="skew_ohlc")
-daily_skew <- daily_skew/(vol_daily)^(1.5)
+daily_skew <- daily_skew/(volatd)^(1.5)
 colnames(daily_skew) <- paste0(symbol, ".skew")
 interval <- "2013-06-01/"
-chart_Series(vol_daily[interval],
+chart_Series(volatd[interval],
              name=paste(symbol, "variance"))
 chart_Series(daily_skew[interval],
              name=paste(symbol, "skew"))

@@ -1554,18 +1554,18 @@ retsl <- rutils::diffit(log(pricev))
 # Set the initial dollar returns
 retsd[1, ] <- pricev[1, ]
 # Calculate prices from dollar returns
-pricesn <- cumsum(retsd)
-all.equal(pricesn, pricev)
+pricen <- cumsum(retsd)
+all.equal(pricen, pricev)
 # Compound the percentage returns
-pricesn <- cumprod(1+retsp)
+pricen <- cumprod(1+retsp)
 # Set the initial prices
 pricesi <- as.numeric(pricev[1, ])
-pricesn <- lapply(1:NCOL(pricesn), function (i)
-    pricesi[i]*pricesn[, i])
-pricesn <- rutils::do_call(cbind, pricesn)
+pricen <- lapply(1:NCOL(pricen), function (i)
+    pricesi[i]*pricen[, i])
+pricen <- rutils::do_call(cbind, pricen)
 # Or
-# pricesn <- t(t(pricesn)*pricesi)
-all.equal(pricesn, pricev, check.attributes=FALSE)
+# pricen <- t(t(pricen)*pricesi)
+all.equal(pricen, pricev, check.attributes=FALSE)
 # Plot log VTI prices
 endd <- rutils::calc_endpoints(rutils::etfenv$VTI, interval="months")
 dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endd]),
@@ -1993,7 +1993,7 @@ dygraphs::dygraph(wealthv, main="Wealth of Proportional Target Allocations") %>%
       \vskip1ex
       Equal-weighted index = Sum \{ (Stock Price * factor) / Index Divisor \}
       \vskip1ex
-      Cap-weighted indices are over-weight large-cap stocks, while equal-weighted indices are over-weight small-cap stocks.
+      Cap-weighted indices are overweight large-cap stocks, while equal-weighted indices are overweight small-cap stocks.
       \vskip1ex
       Cap-weighted indices are \emph{trend following}, while equal-weighted indices are \emph{mean reverting} (contrarian).
     \column{0.5\textwidth}
@@ -2528,7 +2528,7 @@ dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{Risk Parity} strategy the dollar portfolio allocations are rebalanced daily so that their dollar volatilities remain the same.
+      In the \emph{Risk Parity} strategy the dollar portfolio allocations are rebalanced daily so that their dollar volatilities remain equal.
       \vskip1ex
       This means that the allocations $a_i$ are proportional to the \emph{standardized prices} ($\frac{p_i}{\sigma^d_i}$ - the dollar amounts of stocks with unit dollar volatilities):
       $a_i \propto \frac{p_i}{\sigma^d_i}$, 
@@ -2713,66 +2713,6 @@ dygraphs::dygraph(wealthv, main="Transaction Costs With Proportional Allocations
 \end{block}
 
 \end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Risk Parity Strategy for Stocks}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In the \emph{Risk Parity} strategy the dollar portfolio allocations are rebalanced daily so that their dollar volatilities remain the same.
-      \vskip1ex
-      This means that the allocations $a_i$ are proportional to the \emph{standardized prices} ($\frac{p_i}{\sigma^d_i}$ - the dollar amounts of stocks with unit dollar volatilities):
-      $a_i \propto \frac{p_i}{\sigma^d_i}$, 
-      where $\sigma^d_i$ is the dollar volatility.
-      \vskip1ex
-      But the \emph{standardized prices} are equal to the inverse of the percentage volatilities $\sigma_i$:
-      $\frac{p_i}{\sigma^d_i} = \frac{1}{\sigma_i}$,
-      so the allocations $a_i$ are proportional to the inverse of the percentage volatilities $a_i \propto \frac{1}{\sigma_i}$.
-      \vskip1ex
-      In general, the dollar allocations $a_i$ may be set proportional to some target weights $\omega_i$:
-      \begin{displaymath}
-        a_i \propto \frac{\omega_i}{\sigma_i}
-      \end{displaymath}
-      The risk parity strategy performs better when the correlations are negative, and worse when the correlations are positive.
-      \vskip1ex
-      The risk parity strategy contradicts the \emph{CAPM} model because it avoids risk, while the \emph{CAPM} model says that higher returns can only be achieved by taking more risk.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate dollar and percentage returns for VTI and IEF.
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
-pricev <- na.omit(pricev)
-retsd <- rutils::diffit(pricev)
-retsp <- retsd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
-# Calculate wealth of proportional allocations.
-weightv <- c(0.5, 0.5)
-retsw <- retsp %*% weightv
-wealth_pda <- cumprod(1 + retsw)
-# Calculate rolling percentage volatility.
-look_back <- 21
-volat <- HighFreq::roll_var(retsp, look_back=look_back)
-iszero <- (rowSums(volat) == 0)
-volat[iszero, ] <- 1
-# Calculate the risk parity portfolio allocations.
-alloc <- lapply(1:NCOL(pricev), 
-  function(x) weightv[x]/volat[, x])
-alloc <- do.call(cbind, alloc)
-# Scale allocations to 1 dollar total.
-alloc <- alloc/rowSums(alloc)
-# Lag the allocations
-alloc <- rutils::lagit(alloc)
-# Calculate wealth of risk parity.
-retsw <- rowSums(retsp*alloc)
-wealth_risk_parity <- cumprod(1 + retsw)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
 
 
 
@@ -4369,7 +4309,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sa
     \column{0.5\textwidth}
       The Volume-Weighted Average Price (\emph{VWAP}) is defined as the sum of prices multiplied by trading volumes, divided by the sum of volumes:
       \begin{displaymath}
-        p^{VWAP}_i = \frac{\sum_{j=0}^{n} v_j p_{i-j}}{\sum_{j=0}^{n} v_j}
+        p^{VWAP}_t = \frac{\sum_{j=0}^{n} v_{t-j} p_{t-j}}{\sum_{j=0}^{n} v_{t-j}}
       \end{displaymath}
       The \emph{VWAP} applies more weight to prices with higher trading volumes, which allows it to react more quickly to recent market volatility.
       \vskip1ex
@@ -4381,16 +4321,16 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sa
 ohlc <- rutils::etfenv$VTI
 closep <- log(quantmod::Cl(ohlc))
 colnames(closep) <- "VTI"
-volumes <- quantmod::Vo(ohlc)
-colnames(volumes) <- "Volume"
+volum <- quantmod::Vo(ohlc)
+colnames(volum) <- "Volume"
 nrows <- NROW(closep)
 # Calculate the VWAP prices
-look_back <- 51
-vwap <- roll::roll_sum(closep*volumes, width=look_back, min_obs=1)
-volumeroll <- roll::roll_sum(volumes, width=look_back, min_obs=1)
-vwap <- vwap/volumeroll
+look_back <- 21
+vwap <- roll::roll_sum(closep*volum, width=look_back, min_obs=1)
+volumroll <- roll::roll_sum(volum, width=look_back, min_obs=1)
+vwap <- vwap/volumroll
 colnames(vwap) <- "VWAP"
-pricev <- cbind(closep, vwap)
+prices <- cbind(closep, vwap)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4398,15 +4338,15 @@ pricev <- cbind(closep, vwap)
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
 colorv <- c("blue", "red")
-dygraphs::dygraph(pricev["2008/2010"], main="VTI VWAP Prices") %>%
+dygraphs::dygraph(prices["2009"], main="VTI VWAP Prices") %>%
   dyOptions(colors=colorv, strokeWidth=2)
 # Plot VWAP prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
-plot_theme$col$line.col <- colorv
-quantmod::chart_Series(pricev["2008/2010"], theme=plot_theme,
+plot_theme$col$line.col <- colors
+quantmod::chart_Series(prices["2009"], theme=plot_theme,
              lwd=2, name="VTI VWAP Prices")
-legend("bottomright", legend=colnames(pricev),
+legend("bottomright", legend=colnames(prices),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
        col=plot_theme$col$line.col, bty="n")
       @
@@ -4427,29 +4367,29 @@ legend("bottomright", legend=colnames(pricev),
       \begin{displaymath}
         p^{VWAP} = \frac{\mu^{pv}}{\mu^v}
       \end{displaymath}
-      The volume weighted prices $\mu^{pv}$ and the mean trading volumes $\mu^v$ are both calculated recursively: 
+      The volume weighted prices $\mu^{pv}$ and the mean trading volumes $\mu^v$ are both calculated recursively:
       \begin{flalign*}
-        \mu^v_i = (1-\lambda) v_i + \lambda \mu^v_{i-1} \\
-        \mu^{pv}_i = (1-\lambda) v_i p_i + \lambda \mu^{pv}_{i-1}
+        \mu^v_t = \lambda \mu^v_{t-1} + (1-\lambda) v_t \\
+        \mu^{pv}_t = \lambda \mu^{pv}_{t-1} + (1-\lambda) v_t p_t
       \end{flalign*}
-      The recursive (running) \emph{VWAP} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
+      The recursive \emph{VWAP} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
       \vskip1ex
-      The advantage of the running \emph{VWAP} indicator is that it gradually "forgets" about large trading volumes far in the past.
+      The advantage of the recursive \emph{VWAP} indicator is that it gradually "forgets" about large trading volumes far in the past.
       \vskip1ex
-      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the weighted running values recursively.
+      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the trailing weighted values recursively.
       \vskip1ex
-      The function \texttt{HighFreq::run\_mean()} also calculates the weighted running values recursively.
+      The function \texttt{HighFreq::run\_mean()} also calculates the trailing weighted values recursively.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/vwap_recursive.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VWAP prices recursively using C++ code
-lambda <- 0.98
-volumer <- .Call(stats:::C_rfilter, volumes, lambda, c(as.numeric(volumes[1])/(1-lambda), double(NROW(volumes))))[-1]
-pricer <- .Call(stats:::C_rfilter, volumes*closep, lambda, c(as.numeric(volumes[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
+lambda <- 0.9
+volumer <- .Call(stats:::C_rfilter, volum, lambda, c(as.numeric(volum[1])/(1-lambda), double(NROW(volum))))[-1]
+pricer <- .Call(stats:::C_rfilter, volum*closep, lambda, c(as.numeric(volum[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
 vwapr <- pricer/volumer
 # Calculate VWAP prices recursively using RcppArmadillo
-vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weights=volumes)
+vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weights=volum)
 all.equal(vwapr, drop(vwapcpp))
 # Dygraphs plot the VWAP prices
 prices <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
@@ -4627,11 +4567,11 @@ text(x=0.0, y=0.8*max(residv), paste("Treynor test t-value =", tvalue))
       <<echo=TRUE,eval=FALSE>>=
 sim_vwap <- function(ohlc, lambda=0.9, bid_offer=0.001, trend=1, lagg=1) {
   closep <- log(quantmod::Cl(ohlc))
-  volumes <- quantmod::Vo(ohlc)
+  volum <- quantmod::Vo(ohlc)
   retsp <- rutils::diffit(closep)
   nrows <- NROW(ohlc)
   # Calculate VWAP prices
-  vwap <- HighFreq::run_mean(closep, lambda=lambda, weights=volumes)
+  vwap <- HighFreq::run_mean(closep, lambda=lambda, weights=volum)
   # Calculate the indicator
   indic <- trend*sign(closep - vwap)
   if (lagg > 1) {
@@ -4847,18 +4787,18 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
         <<echo=TRUE,eval=FALSE>>=
 # Calculate volatility z-scores
 volat <- HighFreq::roll_var_ohlc(ohlc=ohlc, look_back=look_back, scale=FALSE)
-meanv <- roll::roll_mean(volat, width=look_back, min_obs=1)
-stdev <- roll::roll_sd(rutils::diffit(volat), width=look_back, min_obs=1)
-stdev[1] <- 0
-volatz <- ifelse(stdev > 0, (volat - meanv)/stdev, 0)
+volatm <- roll::roll_mean(volat, width=look_back, min_obs=1)
+volatsd <- roll::roll_sd(rutils::diffit(volat), width=look_back, min_obs=1)
+volatsd[1] <- 0
+volatz <- ifelse(volatsd > 0, (volat - volatm)/volatsd, 0)
 colnames(volatz) <- "volat"
 # Calculate volume z-scores
-volumes <- quantmod::Vo(ohlc)
-meanv <- roll::roll_mean(volumes, width=look_back, min_obs=1)
-stdev <- roll::roll_sd(rutils::diffit(volumes), width=look_back, min_obs=1)
-stdev[1] <- 0
-volumez <- ifelse(stdev > 0, (volumes - meanv)/stdev, 0)
-colnames(volumez) <- "volume"
+volum <- quantmod::Vo(ohlc)
+volumean <- roll::roll_mean(volum, width=look_back, min_obs=1)
+volumsd <- roll::roll_sd(rutils::diffit(volum), width=look_back, min_obs=1)
+volumsd[1] <- 0
+volumz <- ifelse(volumsd > 0, (volum - volumean)/volumsd, 0)
+colnames(volumz) <- "volume"
       @
   \end{columns}
 \end{block}
@@ -4925,7 +4865,7 @@ dygraphs::dygraph(prices["2009"], main="VTI Price Z-Scores") %>%
       The residuals are not normally distributed, so the data is fitted using the \emph{maximum likelihood} method, instead of least squares.
       <<echo=TRUE,eval=FALSE>>=
 # Define design matrix for tops including intercept column
-predictor <- cbind(volatz, volumez, regz)
+predictor <- cbind(volatz, volumz, regz)
 predictor[1, ] <- 0
 predictor <- rutils::lagit(predictor)
 # Fit in-sample logistic regression for tops

@@ -2080,14 +2080,14 @@ retsd[1] <- 0
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volatilities for vector of aggregation intervals
 aggv <- seq.int(from=3, to=35, length.out=9)^2
-volv <- sapply(aggv, function(aggint) {
+volat <- sapply(aggv, function(aggint) {
   naggs <- nrows %/% aggint
   endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
   # endd <- rutils::calc_endpoints(closep, interval=aggint)
   sd(rutils::diffit(closep[endd]))
 })  # end sapply
 # Calculate the Hurst from single data point
-volog <- log(volv)
+volog <- log(volat)
 agglog <- log(aggv)
 (last(volog) - first(volog))/(last(agglog) - first(agglog))
 # Calculate the Hurst from regression slope using formula
@@ -2477,19 +2477,19 @@ text(x=mean(hurstis), y=max(hurstos),
       The relationship is dominated by a few stocks with very large trading volumes, like \emph{AAPL}, which also tend to be more volatile and therefore have larger Hurst exponents.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the stock trading volumes after the year 2000
-volumev <- eapply(sp500env, function(ohlc) {
+volum <- eapply(sp500env, function(ohlc) {
     sum(quantmod::Vo(ohlc)["2000/"])
 })  # end eapply
 # Remove NULL values
-volumev <- volumev[names(pricev)]
-volumev <- unlist(volumev)
-which.max(volumev)
+volum <- volum[names(pricev)]
+volum <- unlist(volum)
+which.max(volum)
 # Calculate the number of NULL prices
-sum(is.null(volumev))
+sum(is.null(volum))
 # Calculate the Hurst exponents of stocks
 hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
 # Calculate the regression of the Hurst exponents versus trading volumes
-model <- lm(hurstv ~ volumev)
+model <- lm(hurstv ~ volum)
 summary(model)
       @
     \column{0.5\textwidth}
@@ -2497,13 +2497,13 @@ summary(model)
       \includegraphics[width=0.45\paperwidth]{figure/hurst_stocks_volume.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot scatterplot of the Hurst exponents versus trading volumes
-plot(hurstv ~ volumev, xlab="Trading Volume", ylab="Hurst", 
+plot(hurstv ~ volum, xlab="Trading Volume", ylab="Hurst", 
      main="Hurst Exponents Versus Trading Volumes of Stocks")
 # Add regression line
 abline(model, col='red', lwd=3)
 tvalue <- summary(model)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
-text(x=quantile(volumev, 0.998), y=max(hurstv), 
+text(x=quantile(volum, 0.998), y=max(hurstv), 
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
       @
   \end{columns}
