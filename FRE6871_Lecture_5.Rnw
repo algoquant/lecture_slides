@@ -120,14 +120,14 @@ knit_theme$set(thm)
 nrows <- 100
 ncols <- 5
 set.seed(1121)  # initialize random number generator
-predictor <- matrix(rnorm(nrows*ncols), ncol=ncols)
+predv <- matrix(rnorm(nrows*ncols), ncol=ncols)
 # Add column names
-colnames(predictor) <- paste0("col", 1:ncols)
+colnames(predv) <- paste0("col", 1:ncols)
 # Define the predictor weights
 weights <- sample(3:(ncols+2))
 # Response equals weighted predictor plus random noise
 noise <- rnorm(nrows, sd=5)
-response <- (-3 + 2*predictor %*% weights + noise)
+respv <- (-3 + 2*predv %*% weights + noise)
       @
   \end{columns}
 \end{block}
@@ -166,16 +166,16 @@ response <- (-3 + 2*predictor %*% weights + noise)
       The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
         <<echo=TRUE,eval=TRUE>>=
 # Perform multivariate regression using lm()
-regmod <- lm(response ~ predictor)
+regmod <- lm(respv ~ predv)
 # Solve multivariate regression using matrix algebra
 # Calculate de-meaned predictor matrix and response vector
-predzm <- t(t(predictor) - colMeans(predictor))
-# predictor <- apply(predictor, 2, function(x) (x-mean(x)))
-respzm <- response - mean(response)
+predzm <- t(t(predv) - colMeans(predv))
+# predv <- apply(predv, 2, function(x) (x-mean(x)))
+respzm <- response - mean(respv)
 # Calculate the regression coefficients
 betas <- drop(MASS::ginv(predzm) %*% respzm)
 # Calculate the regression alpha
-alpha <- mean(response) - sum(colSums(predictor)*betas)/nrows
+alpha <- mean(respv) - sum(colSums(predv)*betas)/nrows
 # Compare with coefficients from lm()
 all.equal(coef(regmod), c(alpha, betas), check.attributes=FALSE)
 # Compare with actual coefficients
@@ -215,16 +215,16 @@ all.equal(c(-1, weights), c(alpha, betas), check.attributes=FALSE)
       The generalized inverse of the \emph{predictor matrix} $\mathbb{X}_{inv}$ maps the \emph{response vector} $y$ into the \emph{regression coefficients} $\beta$.
         <<echo=TRUE,eval=TRUE>>=
 # Add intercept column to predictor matrix
-predictor <- cbind(rep(1, NROW(predictor)), predictor)
-ncols <- NCOL(predictor)
+predv <- cbind(rep(1, NROW(predv)), predv)
+ncols <- NCOL(predv)
 # Add column name
-colnames(predictor)[1] <- "intercept"
+colnames(predv)[1] <- "intercept"
 # Calculate generalized inverse of the predictor matrix
-invpred <- MASS::ginv(predictor)
+invpred <- MASS::ginv(predv)
 # Calculate the regression coefficients
 betas <- invpred %*% response
 # Perform multivariate regression without intercept term
-regmod <- lm(response ~ predictor - 1)
+regmod <- lm(respv ~ predictor - 1)
 all.equal(drop(betas), coef(regmod), check.attributes=FALSE)
       @
   \end{columns}
@@ -261,13 +261,13 @@ all.equal(drop(betas), coef(regmod), check.attributes=FALSE)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate fitted values from regression coefficients
-fittedv <- drop(predictor %*% betas)
+fittedv <- drop(predv %*% betas)
 all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate the residuals
-residuals <- drop(response - fittedv)
+residuals <- drop(respv - fittedv)
 all.equal(residuals, regmod$residuals, check.attributes=FALSE)
-# Residuals are orthogonal to predictor columns (predictors)
-sapply(residuals %*% predictor, all.equal, target=0)
+# Residuals are orthogonal to predictor columns (predvs)
+sapply(residuals %*% predv, all.equal, target=0)
 # Residuals are orthogonal to the fitted values
 all.equal(sum(residuals*fittedv), target=0)
 # Sum of residuals is equal to zero
@@ -302,14 +302,14 @@ all.equal(sum(residuals), target=0)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the influence matrix
-influencem <- predictor %*% invpred
+influencem <- predv %*% invpred
 # The influence matrix is idempotent
 all.equal(influencem, influencem %*% influencem)
 # Calculate fitted values using influence matrix
-fittedv <- drop(influencem %*% response)
+fittedv <- drop(influencem %*% respv)
 all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate fitted values from regression coefficients
-fittedv <- drop(predictor %*% betas)
+fittedv <- drop(predv %*% betas)
 all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
       @
   \end{columns}
@@ -342,13 +342,13 @@ has the same influence matrix, and
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate zero mean fitted values
-predzm <- t(t(predictor) - colMeans(predictor))
+predzm <- t(t(predv) - colMeans(predv))
 fitted_zm <- drop(predzm %*% betas)
 all.equal(fitted_zm,
-  regmod$fitted.values - mean(response),
+  regmod$fitted.values - mean(respv),
   check.attributes=FALSE)
 # Calculate the residuals
-respzm <- response - mean(response)
+respzm <- response - mean(respv)
 residuals <- drop(respzm - fitted_zm)
 all.equal(residuals, regmod$residuals,
           check.attributes=FALSE)
@@ -380,12 +380,12 @@ all.equal(fitted_zm,
         <<echo=TRUE,eval=FALSE>>=
 library(lmtest)  # Load lmtest
 # Define predictor matrix
-predictor <- 1:30
+predv <- 1:30
 omitv <- sin(0.2*1:30)
 # Response depends on both predictors
-response <- 0.2*predictor + omitv + 0.2*rnorm(30)
+respv <- 0.2*predictor + omitv + 0.2*rnorm(30)
 # Mis-specified regression only one predictor
-model_ovb <- lm(response ~ predictor)
+model_ovb <- lm(respv ~ predv)
 modelsum <- summary(regmod_ovb)
 modelsum$coeff
 modelsum$r.squared
@@ -395,7 +395,7 @@ lmtest::dwtest(regmod_ovb)
 x11(width=5, height=7)
 par(mfrow=c(2,1))  # Set plot panels
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-plot(response ~ predictor)
+plot(respv ~ predv)
 abline(regmod_ovb, lwd=2, col="red")
 title(main="Omitted Variable Regression", line=-1)
 plot(regmod_ovb, which=2, ask=FALSE)  # Plot just Q-Q
@@ -444,8 +444,8 @@ plot(regmod_ovb, which=2, ask=FALSE)  # Plot just Q-Q
 # Regression model summary
 modelsum <- summary(regmod)
 # Degrees of freedom of residuals
-nrows <- NROW(predictor)
-ncols <- NCOL(predictor)
+nrows <- NROW(predv)
+ncols <- NCOL(predv)
 degf <- (nrows - ncols)
 all.equal(degf, modelsum$df[2])
 # Variance of residuals
@@ -481,8 +481,8 @@ residvar <- sum(residuals^2)/degf
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Inverse of predictor matrix squared
-predictor2 <- MASS::ginv(crossprod(predictor))
-# predictor2 <- t(predictor) %*% predictor
+predictor2 <- MASS::ginv(crossprod(predv))
+# predictor2 <- t(predv) %*% predictor
 # Variance of residuals
 residvar <- sum(residuals^2)/degf
 # Calculate covariance matrix of betas
@@ -498,7 +498,7 @@ beta_pvals <- 2*pt(-abs(beta_tvals), df=degf)
 all.equal(beta_pvals, modelsum$coeff[, 4], check.attributes=FALSE)
 # The square of the generalized inverse is equal
 # to the inverse of the square
-all.equal(MASS::ginv(crossprod(predictor)),
+all.equal(MASS::ginv(crossprod(predv)),
           invpred %*% t(invpred))
       @
   \end{columns}
@@ -528,7 +528,7 @@ all.equal(MASS::ginv(crossprod(predictor)),
       This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the influence matrix
-influencem <- predictor %*% invpred
+influencem <- predv %*% invpred
 # The influence matrix is idempotent
 all.equal(influencem, influencem %*% influencem)
       @
@@ -628,7 +628,7 @@ t(apply(bootd, MARGIN=1,
 # New data predictor is a data frame or row vector
 set.seed(1121)
 newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
-colnamev <- colnames(predictor)
+colnamev <- colnames(predv)
 colnames(newdata) <- colnamev
 newdatav <- as.matrix(newdata)
 prediction <- drop(newdatav %*% betas)
@@ -657,9 +657,9 @@ predsd <- drop(sqrt(newdatav %*% beta_covar %*% t(newdatav)))
         <<echo=TRUE,eval=FALSE>>=
 # Create formula from text string
 formulav <- paste0("response ~ ",
-  paste(colnames(predictor), collapse=" + "), " - 1")
+  paste(colnames(predv), collapse=" + "), " - 1")
 # Specify multivariate regression using formula
-regmod <- lm(formulav, data=data.frame(cbind(response, predictor)))
+regmod <- lm(formulav, data=data.frame(cbind(respv, predv)))
 modelsum <- summary(regmod)
 # Predict from lm object
 predictlm <- predict.lm(object=model, newdata=newdata,
@@ -707,7 +707,7 @@ all.equal(predictlm[1, "upr"], predicthigh)
       \includegraphics[width=0.45\paperwidth]{figure/reg_tss.png}
         <<echo=TRUE,eval=TRUE>>=
 # TSS = ESS + RSS
-tss <- sum((response-mean(response))^2)
+tss <- sum((respv-mean(respv))^2)
 ess <- sum((fittedv-mean(fittedv))^2)
 rss <- sum(residuals^2)
 all.equal(tss, ess + rss)
@@ -747,7 +747,7 @@ modelsum <- summary(regmod)
 rsquared <- ess/tss
 all.equal(rsquared, modelsum$r.squared)
 # Correlation between response and fitted values
-cor_fitted <- drop(cor(response, fittedv))
+cor_fitted <- drop(cor(respv, fittedv))
 # Squared correlation between response and fitted values
 all.equal(cor_fitted^2, rsquared)
       @
@@ -778,12 +778,12 @@ all.equal(cor_fitted^2, rsquared)
     \column{0.5\textwidth}
       The performance of two different models can be compared by comparing their \emph{adjusted R-squared}, since the model with the larger \emph{adjusted R-squared} has a smaller \emph{residual variance}, so it's better able to explain the \emph{response}.
       <<echo=TRUE,eval=TRUE>>=
-nrows <- NROW(predictor)
-ncols <- NCOL(predictor)
+nrows <- NROW(predv)
+ncols <- NCOL(predv)
 # Degrees of freedom of residuals
 degf <- (nrows - ncols)
 # Adjusted R-squared
-rsquared_adj <- (1-sum(residuals^2)/degf/var(response))
+rsquared_adj <- (1-sum(residuals^2)/degf/var(respv))
 # Compare adjusted R-squared from lm()
 all.equal(drop(rsquared_adj), modelsum$adj.r.squared)
       @
@@ -1023,10 +1023,10 @@ sample2 <- runif(100, min=0.4)
 # Perform Mann-Whitney test for data location
 wilcox.test(sample1, sample2)
 # Combine scores and add categorical variable
-predictor <- c(sample1, sample2)
-response <- c(logical(100), !logical(100))
+predv <- c(sample1, sample2)
+respv <- c(logical(100), !logical(100))
 # Perform logit regression
-logmod <- glm(response ~ predictor, family=binomial(logit))
+logmod <- glm(respv ~ predv, family=binomial(logit))
 class(logmod)
 summary(logmod)
       @
@@ -1036,15 +1036,15 @@ summary(logmod)
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
-ordern <- order(predictor)
-plot(x=predictor[ordern], y=logmod$fitted.values[ordern],
+ordern <- order(predv)
+plot(x=predv[ordern], y=logmod$fitted.values[ordern],
      main="Category Densities and Logistic Function",
      type="l", lwd=4, col="orange", xlab="predictor", ylab="density")
-densityv <- density(predictor[response])
+densityv <- density(predv[response])
 densityv$y <- densityv$y/max(densityv$y)
 lines(densityv, col="red")
 polygon(c(min(densityv$x), densityv$x, max(densityv$x)), c(min(densityv$y), densityv$y, min(densityv$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-densityv <- density(predictor[!response])
+densityv <- density(predv[!response])
 densityv$y <- densityv$y/max(densityv$y)
 lines(densityv, col="blue")
 polygon(c(min(densityv$x), densityv$x, max(densityv$x)), c(min(densityv$y), densityv$y, min(densityv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
@@ -1125,15 +1125,15 @@ legend(x="top", legend=c("b = 1", "b = 0"),
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Specify predictor matrix
-predictor=cbind(intercept=rep(1, NROW(response)), predictor)
+predictor=cbind(intercept=rep(1, NROW(respv)), predv)
 # Likelihood function of the logistic model
-likefun <- function(coeff, response, predictor) {
-  probs <- plogis(drop(predictor %*% coeff))
-  -sum(response*log(probs) + (1-response)*log((1-probs)))
+likefun <- function(coeff, respv, predv) {
+  probs <- plogis(drop(predv %*% coeff))
+  -sum(respv*log(probs) + (1-respv)*log((1-probs)))
 }  # end likefun
 # Run likelihood function
 coeff <- c(1, 1)
-likefun(coeff, response, predictor)
+likefun(coeff, respv, predv)
       @
   \end{columns}
 \end{block}
@@ -1227,8 +1227,8 @@ initp <- c(1, 1)
 optiml <- optim(par=initp,
                    fn=likefun, # Log-likelihood function
                    method="L-BFGS-B", # Quasi-Newton method
-                   response=response,
-                   predictor=predictor, 
+                   response=respv,
+                   predictor=predv, 
                    upper=c(20, 20), # Upper constraint
                    lower=c(-20, -20), # Lower constraint
                    hessian=TRUE)
@@ -1592,12 +1592,12 @@ boxplot(formula=balance ~ !student,
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Perform in-sample forecast from logistic regression model
-forecastv <- predict(logmod, type="response")
-all.equal(logmod$fitted.values, forecastv)
+fcast <- predict(logmod, type="response")
+all.equal(logmod$fitted.values, fcast)
 # Define discrimination threshold value
 threshold <- 0.7
 # Calculate confusion matrix in-sample
-table(actual=!default, forecast=(forecastv < threshold))
+table(actual=!default, forecast=(fcast < threshold))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
 nrows <- NROW(Default)
@@ -1606,9 +1606,9 @@ trainset <- Default[samplev, ]
 logmod <- glm(formulav, data=trainset, family=binomial(logit))
 # Forecast over test data out-of-sample
 testset <- Default[-samplev, ]
-forecastv <- predict(logmod, newdata=testset, type="response")
+fcast <- predict(logmod, newdata=testset, type="response")
 # Calculate confusion matrix out-of-sample
-table(actual=!testset$default, forecast=(forecastv < threshold))
+table(actual=!testset$default, forecast=(fcast < threshold))
       @
   \end{columns}
 \end{block}
@@ -1639,12 +1639,12 @@ table(actual=!testset$default, forecast=(forecastv < threshold))
       <<echo=TRUE,eval=TRUE>>=
 # Calculate confusion matrix out-of-sample
 confmat <- table(actual=!testset$default, 
-      forecast=(forecastv < threshold))
+      forecast=(fcast < threshold))
 confmat
 # Calculate FALSE positive (type I error)
-sum(!testset$default & (forecastv > threshold))
+sum(!testset$default & (fcast > threshold))
 # Calculate FALSE negative (type II error)
-sum(testset$default & (forecastv < threshold))
+sum(testset$default & (fcast < threshold))
       @
   \end{columns}
 \end{block}
@@ -1729,17 +1729,17 @@ print(xtable::xtable(confusion_matrix,
       The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-confun <- function(actualv, forecastv, threshold) {
-    confmat <- table(actualv, (forecastv < threshold))
+confun <- function(actualv, fcast, threshold) {
+    confmat <- table(actualv, (fcast < threshold))
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
   }  # end confun
-confun(!testset$default, forecastv, threshold=threshold)
+confun(!testset$default, fcast, threshold=threshold)
 # Define vector of discrimination thresholds
 threshv <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actualv=!testset$default, forecastv=forecastv)  # end sapply
+  actualv=!testset$default, fcast=fcast)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 error_rates <- rbind(c(1, 0), error_rates)
@@ -1846,7 +1846,7 @@ taq <- cbind(index=dates, taq)
       \vskip1ex
       The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
       \vskip1ex
-      The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in fact the mid price is constant.
+      The \emph{bid-ask bounce} creates an illusion of rapidly changing pricev, while in fact the mid price is constant.
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_dygraph.png}
       % \vspace{-1em}
@@ -1880,11 +1880,11 @@ quantmod::chart_Series(x=xtsv$XLK.Close,
     \column{0.5\textwidth}
       Microstructure noise can be removed from high frequency data by using a \emph{Hampel filter}.
       \vskip1ex
-      The \emph{z-scores} are equal to the prices minus the median prices, divided by the median absolute deviation (\emph{MAD}) of prices:
+      The \emph{z-scores} are equal to the prices minus the median pricev, divided by the median absolute deviation (\emph{MAD}) of prices:
       \begin{displaymath}
         z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
       \end{displaymath}
-      If the \emph{z-score} exceeds the \emph{threshold value} then it's classified as an \emph{outlier} (jump in prices).
+      If the \emph{z-score} exceeds the \emph{threshold value} then it's classified as an \emph{outlier} (jump in pricev).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate centered Hampel filter to remove price jumps
 look_back <- 111
@@ -2106,7 +2106,7 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
     \column{0.5\textwidth}
       The filtering of microstructure noise can be improved by calculating the median prices over an interval of only \texttt{3} data points.
       \vskip1ex
-      If the \emph{z-score} exceeds the \emph{threshold value} then it's classified as an \emph{outlier} (jump in prices).
+      If the \emph{z-score} exceeds the \emph{threshold value} then it's classified as an \emph{outlier} (jump in pricev).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate centered Hampel filter over 3 data points
 medianv <- roll::roll_median(taq$price, width=3)

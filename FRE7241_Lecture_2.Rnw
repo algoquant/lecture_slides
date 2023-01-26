@@ -221,7 +221,7 @@ print(xtable::xtable(etflist), comment=FALSE, size="tiny", include.rownames=FALS
       \vskip1ex
       \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo} and \emph{Alpha Vantage} as the only major providers of free daily \emph{OHLC} stock prices.
       \vskip1ex
-      But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} prices, leaving \emph{Alpha Vantage} as the best provider of free daily \emph{ETF} prices.
+      But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} pricev, leaving \emph{Alpha Vantage} as the best provider of free daily \emph{ETF} prices.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -387,11 +387,11 @@ tail(pricev[[1]])
 pricev <- lapply(pricev, quantmod::Cl)
 # Collapse list into time series the hard way
 prices2 <- cbind(pricev[[1]], pricev[[2]], pricev[[3]], pricev[[4]])
-class(prices2)
-dim(prices2)
+class(pricev2)
+dim(pricev2)
 # Collapse list into time series using do.call()
 pricev <- do.call(cbind, pricev)
-all.equal(prices2, pricev)
+all.equal(pricev2, pricev)
 class(pricev)
 dim(pricev)
 # Or extract and cbind in single step
@@ -478,7 +478,7 @@ save(etfenv, file="etf_data.RData")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract VTI prices
-pricev <- etfenv$prices[ ,"VTI"]
+pricev <- etfenv$pricev[ ,"VTI"]
 pricev <- na.omit(pricev)
 # Calculate percentage returns "by hand"
 pricel <- as.numeric(pricev)
@@ -490,7 +490,7 @@ retsd <- quantmod::dailyReturn(pricev)
 head(cbind(retsd, retsp))
 all.equal(retsd, retsp, check.attributes=FALSE)
 # Calculate returns for all prices in etfenv$prices
-retsp <- lapply(etfenv$prices, function(xtsv) {
+retsp <- lapply(etfenv$pricev, function(xtsv) {
   retsd <- quantmod::dailyReturn(na.omit(xtsv))
   colnames(retsd) <- names(xtsv)
   retsd
@@ -616,7 +616,7 @@ symbolv[which(symbolv=="BF.B")] <- "BF-B"
     \column{0.5\textwidth}
       \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \href{https://www.quandl.com/}{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
       \vskip1ex
-      But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Tiingo} does.
+      But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} pricev, while \emph{Tiingo} does.
       \vskip1ex
       The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Tiingo}, called \texttt{getSymbols.tiingo()}.
       \vskip1ex
@@ -673,7 +673,7 @@ symbolv[!isdownloaded]
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The date-time indices of the \emph{OHLC} stock prices are in the \texttt{POSIXct} format suitable for intraday prices, not daily prices.
+      The date-time indices of the \emph{OHLC} stock prices are in the \texttt{POSIXct} format suitable for intraday pricev, not daily prices.
       \vskip1ex
       The function \texttt{as.Date()} coerces \texttt{POSIXct} objects into \texttt{Date} objects.
       \vskip1ex
@@ -2715,11 +2715,11 @@ knitr::kable(risk_ret[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
       \includegraphics[width=0.45\paperwidth]{figure/vix_vxx_svxy.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of VXX versus SVXY
-prices <- na.omit(rutils::etfenv$prices[, c("VXX", "SVXY")])
-prices <- prices["2017/"]
+pricev <- na.omit(rutils::etfenv$pricev[, c("VXX", "SVXY")])
+pricev <- pricev["2017/"]
 colnamev <- c("VXX", "SVXY")
-colnames(prices) <- colnamev
-dygraphs::dygraph(prices, main="Prices of VXX and SVXY") %>%
+colnames(pricev) <- colnamev
+dygraphs::dygraph(pricev, main="Prices of VXX and SVXY") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
@@ -2973,17 +2973,17 @@ retsl <- rutils::diffit(log(pricev))
 retsd[1, ] <- pricev[1, ]
 # Calculate prices from dollar returns
 pricesn <- cumsum(retsd)
-all.equal(pricesn, pricev)
+all.equal(pricevn, pricev)
 # Compound the percentage returns
 pricesn <- cumprod(1+retsp)
 # Set the initial prices
 pricesi <- as.numeric(pricev[1, ])
-pricesn <- lapply(1:NCOL(pricesn), function (i)
+pricesn <- lapply(1:NCOL(pricevn), function (i)
     pricesi[i]*pricesn[, i])
 pricesn <- rutils::do_call(cbind, pricesn)
 # Or
-# pricesn <- t(t(pricesn)*pricesi)
-all.equal(pricesn, pricev, check.attributes=FALSE)
+# pricesn <- t(t(pricevn)*pricesi)
+all.equal(pricevn, pricev, check.attributes=FALSE)
 # Plot log VTI prices
 endd <- rutils::calc_endpoints(rutils::etfenv$VTI, interval="months")
 dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endd]),
@@ -3142,7 +3142,7 @@ dygraphs::dygraph(datav[endd], main="VTI Transaction Costs") %>%
       The portfolio with fixed dollar amounts has a slightly higher Sharpe ratio than the portfolio with a fixed number of shares.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI and IEF dollar returns
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
+pricev <- rutils::etfenv$pricev[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
 retsd <- rutils::diffit(pricev)
 # Calculate VTI and IEF percentage returns
@@ -3850,7 +3850,7 @@ dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate dollar and percentage returns for VTI and IEF.
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
+pricev <- rutils::etfenv$pricev[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
 retsd <- rutils::diffit(pricev)
 retsp <- retsd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
@@ -3932,14 +3932,14 @@ dygraphs::dygraph(wealthv[endd],
 # Test risk parity market timing of VTI using Treynor-Mazuy test
 retsrp <- rutils::diffit(wealthv)
 vti <- retsp$VTI
-design <- cbind(retsrp, vti, vti^2)
-design <- na.omit(design)
-colnames(design)[1:2] <- c("fixed", "risk_parity")
-colnames(design)[4] <- "treynor"
-model <- lm(risk_parity ~ VTI + treynor, data=design)
+desv <- cbind(retsrp, vti, vti^2)
+desv <- na.omit(desv)
+colnames(desv)[1:2] <- c("fixed", "risk_parity")
+colnames(desv)[4] <- "treynor"
+model <- lm(risk_parity ~ VTI + treynor, data=desv)
 summary(model)
 # Plot residual scatterplot
-residuals <- (design$risk_parity - model$coeff[2]*vti)
+residuals <- (desv$risk_parity - model$coeff[2]*vti)
 residuals <- model$residuals
 x11(width=6, height=5)
 plot.default(x=vti, y=residuals, xlab="VTI", ylab="residuals")
@@ -3954,7 +3954,7 @@ text(x=0.05, y=0.8*max(residuals), paste("Risk Parity t-value =", round(summary(
       \includegraphics[width=0.4\paperwidth]{figure/portf_risk_parity_timing_skill.png}
       <<echo=TRUE,eval=FALSE>>=
 # Test for fixed ratio market timing of VTI using Treynor-Mazuy test
-model <- lm(fixed ~ VTI + treynor, data=design)
+model <- lm(fixed ~ VTI + treynor, data=desv)
 summary(model)
 # Plot fitted (predicted) response values
 fittedv <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*vti^2)
@@ -4036,13 +4036,13 @@ legend("topleft", legend=colnames(wealthv),
       The \emph{Sell in May} strategy doesn't demonstrate any ability of \emph{timing} the \emph{VTI} ETF.
       <<echo=TRUE,eval=FALSE>>=
 # Test if Sell in May strategy can time VTI
-design <- cbind(wealth$sell_in_may, 0.5*(retsp+abs(retsp)), retsp^2)
-colnames(design) <- c("VTI", "merton", "treynor")
+desv <- cbind(wealth$sell_in_may, 0.5*(retsp+abs(retsp)), retsp^2)
+colnames(desv) <- c("VTI", "merton", "treynor")
 # Perform Merton-Henriksson test
-model <- lm(sell_inmay ~ VTI + merton, data=design)
+model <- lm(sell_inmay ~ VTI + merton, data=desv)
 summary(model)
 # Perform Treynor-Mazuy test
-model <- lm(sell_inmay ~ VTI + treynor, data=design)
+model <- lm(sell_inmay ~ VTI + treynor, data=desv)
 summary(model)
 # Plot Treynor-Mazuy residual scatterplot
 residuals <- (sell_inmay - model$coeff[2]*retsp)

@@ -113,8 +113,8 @@ knit_theme$set(thm)
 sigmav <- 0.01; drift <- 0.0; nrows <- 1000
 # Simulate geometric Brownian motion
 retsp <- sigmav*rnorm(nrows) + drift - sigmav^2/2
-prices <- exp(cumsum(retsp))
-plot(prices, type="l", xlab="time", ylab="prices",
+pricev <- exp(cumsum(retsp))
+plot(pricev, type="l", xlab="time", ylab="prices",
      main="geometric Brownian motion")
       @
   \end{columns}
@@ -142,12 +142,12 @@ drift <- 0.0
 nrows <- 1e4
 dates <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
   length.out=nrows, by="30 min")
-prices <- exp(cumsum(sigmav*rnorm(nrows) + drift - sigmav^2/2))
-prices <- xts(prices, order.by=dates)
-prices <- cbind(prices,
+pricev <- exp(cumsum(sigmav*rnorm(nrows) + drift - sigmav^2/2))
+pricev <- xts(pricev, order.by=dates)
+pricev <- cbind(pricev,
   volume=sample(x=10*(2:18), size=nrows, replace=TRUE))
 # Aggregate to daily OHLC data
-ohlc <- xts::to.daily(prices)
+ohlc <- xts::to.daily(pricev)
 quantmod::chart_Series(ohlc, name="random prices")
 # dygraphs candlestick plot using pipes syntax
 library(dygraphs)
@@ -300,16 +300,16 @@ curve(expr=pnorm(sigmav*sqrt(x)/2),
 sigmav <- 0.01; drift <- 0.0; nrows <- 5000
 npaths <- 10
 # Simulate multiple paths of geometric Brownian motion
-prices <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
-prices <- matrix(prices, nc=npaths)
-prices <- exp(matrixStats::colCumsums(prices))
+pricev <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+pricev <- matrix(pricev, nc=npaths)
+pricev <- exp(matrixStats::colCumsums(pricev))
 # Create xts time series
-prices <- xts(prices, order.by=seq.Date(Sys.Date()-NROW(prices)+1, Sys.Date(), by=1))
+pricev <- xts(pricev, order.by=seq.Date(Sys.Date()-NROW(pricev)+1, Sys.Date(), by=1))
 # Plot xts time series
-colorv <- colorRampPalette(c("red", "blue"))(NCOL(prices))
-colorv <- colorv[order(order(prices[NROW(prices), ]))]
+colorv <- colorRampPalette(c("red", "blue"))(NCOL(pricev))
+colorv <- colorv[order(order(pricev[NROW(pricev), ]))]
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(prices, main="Multiple paths of geometric Brownian motion",
+plot.zoo(pricev, main="Multiple paths of geometric Brownian motion",
          xlab=NA, ylab=NA, plot.type="single", col=colorv)
       @
     \column{0.5\textwidth}
@@ -327,7 +327,7 @@ plot.zoo(prices, main="Multiple paths of geometric Brownian motion",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value.
+      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high pricev, while the prices of the majority of paths are below their expected value.
       \vskip1ex
       For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
       <<echo=TRUE,eval=FALSE>>=
@@ -335,11 +335,11 @@ plot.zoo(prices, main="Multiple paths of geometric Brownian motion",
 sigmav <- 0.01; drift <- 0.0; nrows <- 10000
 npaths <- 100
 # Simulate multiple paths of geometric Brownian motion
-prices <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
-prices <- matrix(prices, nc=npaths)
-prices <- exp(matrixStats::colCumsums(prices))
+pricev <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+pricev <- matrix(pricev, nc=npaths)
+pricev <- exp(matrixStats::colCumsums(pricev))
 # Calculate fraction of paths below the expected value
-fractv <- rowSums(prices < 1.0) / npaths
+fractv <- rowSums(pricev < 1.0) / npaths
 # Create xts time series of percentage of paths below the expected value
 fractv <- xts(fractv, order.by=seq.Date(Sys.Date()-NROW(fractv)+1, Sys.Date(), by=1))
 # Plot xts time series of percentage of paths below the expected value
@@ -368,27 +368,27 @@ plot.zoo(fractv, main="Percentage of GBM paths below mean",
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 ls(sp500env)
 # Extract closing prices
-prices <- eapply(sp500env, quantmod::Cl)
+pricev <- eapply(sp500env, quantmod::Cl)
 # Flatten prices into a single xts series
-prices <- rutils::do_call(cbind, prices)
+pricev <- rutils::do_call(cbind, pricev)
 # Carry forward and backward non-NA prices
-prices <- zoo::na.locf(prices, na.rm=FALSE)
-prices <- zoo::na.locf(prices, fromLast=TRUE)
-sum(is.na(prices))
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+sum(is.na(pricev))
 # Drop ".Close" from column names
-colnames(prices[, 1:4])
-colnames(prices) <- rutils::get_name(colnames(prices))
+colnames(pricev[, 1:4])
+colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
-# colnames(prices) <- do.call(rbind,
-#   strsplit(colnames(prices), split="[.]"))[, 1]
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Normalize the columns so that prices start at 1
-pricesn <- lapply(prices, function(x) x/as.numeric(x[1]))
+pricesn <- lapply(pricev, function(x) x/as.numeric(x[1]))
 pricesn <- rutils::do_call(cbind, pricesn)
 # Calculate permutation index for sorting on the final prices
-nrows <- NROW(pricesn)
-ordern <- order(pricesn[nrows, ])
+nrows <- NROW(pricevn)
+ordern <- order(pricevn[nrows, ])
 # Sort the symbols according to the final prices
-symbolv <- colnames(pricesn)[ordern]
+symbolv <- colnames(pricevn)[ordern]
 # Select 20 symbols
 symbolv <- symbolv[seq.int(from=1, to=NROW(symbolv), length.out=20)]
       @
@@ -398,8 +398,8 @@ symbolv <- symbolv[seq.int(from=1, to=NROW(symbolv), length.out=20)]
       <<echo=TRUE,eval=FALSE>>=
 # Plot xts time series of prices
 colorv <- colorRampPalette(c("red", "blue"))(NROW(symbolv))
-colorv <- colorv[order(order(pricesn[nrows, symbolv]))]
-plot.zoo(pricesn["2000/", symbolv], main="20 S&P500 Stock Prices (normalized)",
+colorv <- colorv[order(order(pricevn[nrows, symbolv]))]
+plot.zoo(pricevn["2000/", symbolv], main="20 S&P500 Stock Prices (normalized)",
          xlab=NA, ylab=NA, plot.type="single", col=colorv)
 legend(x="topleft", inset=0.02, cex=0.6,
        legend=rev(symbolv), col=rev(colorv), lwd=6, lty=1)
@@ -422,29 +422,29 @@ legend(x="topleft", inset=0.02, cex=0.6,
       The \emph{mean} of the final stock prices is much greater than the \emph{median}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the final stock prices
-pricesf <- drop(zoo::coredata(pricesn[NROW(pricesn), ]))
+pricesf <- drop(zoo::coredata(pricevn[NROW(pricevn), ]))
 # Calculate the mean and median stock prices
-max(pricesf); min(pricesf)
-which.max(pricesf)
-which.min(pricesf)
-mean(pricesf)
-median(pricesf)
+max(pricevf); min(pricevf)
+which.max(pricevf)
+which.min(pricevf)
+mean(pricevf)
+median(pricevf)
 # Calculate the percentage of stock prices below the mean
-sum(pricesf < mean(pricesf))/NROW(pricesf)
+sum(pricevf < mean(pricevf))/NROW(pricevf)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/sp500_price_hist.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot a histogram of final stock prices
-hist(pricesf, breaks=1e3, xlim=c(0, 300), 
+hist(pricevf, breaks=1e3, xlim=c(0, 300), 
      xlab="Stock price", ylab="Count", 
      main="Histogram of Final Stock Prices")
 # Plot a histogram of final stock prices
-abline(v=median(pricesf), lwd=3, col="blue")
-text(x=median(pricesf), y=150, lab="median", pos=4)
-abline(v=mean(pricesf), lwd=3, col="red")
-text(x=mean(pricesf), y=100, lab="mean", pos=4)
+abline(v=median(pricevf), lwd=3, col="blue")
+text(x=median(pricevf), y=150, lab="median", pos=4)
+abline(v=mean(pricevf), lwd=3, col="red")
+text(x=mean(pricevf), y=100, lab="mean", pos=4)
       @
   \end{columns}
 \end{block}
@@ -459,7 +459,7 @@ text(x=mean(pricesf), y=100, lab="mean", pos=4)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Usually, a small number of stocks in an index reach very high prices, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
+      Usually, a small number of stocks in an index reach very high pricev, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
       \vskip1ex
       For example, the current prices of over \texttt{80\%} of the \emph{S\&P500} constituent stocks from \texttt{1990} are now below the average price of that portfolio.
       \vskip1ex
@@ -468,14 +468,14 @@ text(x=mean(pricesf), y=100, lab="mean", pos=4)
       Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate average of valid stock prices
-validp <- (pricesn != 1)  # Valid stocks
+validp <- (pricevn != 1)  # Valid stocks
 nstocks <- rowSums(validp)
-nstocks[1] <- NCOL(pricesn)
-indeks <- rowSums(pricesn*validp)/nstocks
+nstocks[1] <- NCOL(pricevn)
+indeks <- rowSums(pricevn*validp)/nstocks
 # Calculate fraction of stock prices below the average price
-fractv <- rowSums((pricesn < indeks) & validp)/nstocks
+fractv <- rowSums((pricevn < indeks) & validp)/nstocks
 # Create xts time series of average stock prices
-indeks <- xts(indeks, order.by=zoo::index(pricesn))
+indeks <- xts(indeks, order.by=zoo::index(pricevn))
       @
     \column{0.5\textwidth}
     % \vspace{-1em}
@@ -489,7 +489,7 @@ dev.new(width=6, height=4, noRStudioGD=TRUE)
 plot.zoo(indeks, main="Average S&P500 Stock Prices (normalized from 1990)",
          xlab=NA, ylab=NA, col="blue")
 # Create xts time series of percentage of stock prices below the average price
-fractv <- xts(fractv, order.by=zoo::index(pricesn))
+fractv <- xts(fractv, order.by=zoo::index(pricevn))
 # Plot percentage of stock prices below the average price
 plot.zoo(fractv[-(1:2),],
          main="Percentage of S&P500 Stock Prices 
@@ -1109,7 +1109,7 @@ pricev <- eapply(sp500env, function(ohlc) {
 })  # end eapply
 # Calculate the number of NULL prices
 sum(sapply(pricev, is.null))
-# Calculate the names of the stocks (remove NULL prices)
+# Calculate the names of the stocks (remove NULL pricev)
 namev <- sapply(pricev, is.null)
 namev <- namev[!namev]
 namev <- names(namev)
@@ -2012,14 +2012,14 @@ plot(variance, xlab="time steps", ylab="",
 # Define Brownian Motion parameters
 nrows <- 1000; sigmav <- 0.01
 # Simulate 5 paths of Brownian motion
-prices <- matrix(rnorm(5*nrows, sd=sigmav), nc=5)
-prices <- matrixStats::colCumsums(prices)
+pricev <- matrix(rnorm(5*nrows, sd=sigmav), nc=5)
+pricev <- matrixStats::colCumsums(pricev)
 # Open plot window on Mac
 dev.new(width=6, height=4, noRStudioGD=TRUE)
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(2, 2, 3, 1), oma=c(0, 0, 0, 0))
 # Plot 5 paths of Brownian motion
-matplot(y=prices, main="Brownian Motion Paths",
+matplot(y=pricev, main="Brownian Motion Paths",
         xlab="", ylab="", type="l", lty="solid", lwd=1, col="blue")
 # Save plot to png file on Mac
 quartz.save("figure/brown_paths.png", type="png", width=6, height=4)
@@ -2063,24 +2063,24 @@ sigmav <- 0.02; thetav <- 0.01; nrows <- 1000
 # Initialize the data
 innov <- rnorm(nrows)
 retsp <- numeric(nrows)
-prices <- numeric(nrows)
+pricev <- numeric(nrows)
 retsp[1] <- sigmav*innov[1]
-prices[1] <- init_price
+pricev[1] <- init_price
 # Simulate Ornstein-Uhlenbeck process in R
 for (i in 2:nrows) {
-  retsp[i] <- thetav*(priceq - prices[i-1]) + sigmav*innov[i]
-  prices[i] <- prices[i-1] + retsp[i]
+  retsp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
+  pricev[i] <- pricev[i-1] + retsp[i]
 }  # end for
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 prices_cpp <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
   theta=thetav, innov=matrix(innov))
-all.equal(prices, drop(prices_cpp))
+all.equal(pricev, drop(pricev_cpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
   Rcode={for (i in 2:nrows) {
-    retsp[i] <- thetav*(priceq - prices[i-1]) + sigmav*innov[i]
-    prices[i] <- prices[i-1] + retsp[i]}},
+    retsp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
+    pricev[i] <- pricev[i-1] + retsp[i]}},
   Rcpp=HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
     theta=thetav, innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -2121,7 +2121,7 @@ summary(microbenchmark(
       \includegraphics[width=0.45\paperwidth]{figure/ou_proc.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-plot(prices, type="l", xlab="time", ylab="prices",
+plot(pricev, type="l", xlab="time", ylab="prices",
      main="Ornstein-Uhlenbeck Process")
 legend("topright", title=paste(c(paste0("sigmav = ", sigmav),
                      paste0("eq_price = ", ),
@@ -2145,8 +2145,8 @@ abline(h=, col='red', lwd=2)
     \column{0.5\textwidth}
       Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices.
       <<echo=TRUE,eval=FALSE>>=
-retsp <- rutils::diffit(prices)
-pricelag <- rutils::lagit(prices)
+retsp <- rutils::diffit(pricev)
+pricelag <- rutils::lagit(pricev)
 formulav <- retsp ~ pricelag
 regmod <- lm(formulav)
 summary(regmod)
@@ -2222,7 +2222,7 @@ round(coeff, 4)
     \column{0.5\textwidth}
       The \emph{Ornstein-Uhlenbeck} prices can be negative, while actual prices are usually not negative.
       \vskip1ex
-      So the \emph{Ornstein-Uhlenbeck} process is better suited for simulating the logarithm of prices, which can be negative.
+      So the \emph{Ornstein-Uhlenbeck} process is better suited for simulating the logarithm of pricev, which can be negative.
       \vskip1ex
       The \emph{Schwartz} process is the exponential of the \emph{Ornstein-Uhlenbeck} process, so it avoids negative prices by compounding the percentage returns $r_i$ instead of summing them:
       \begin{align*}
@@ -2233,12 +2233,12 @@ round(coeff, 4)
       <<echo=TRUE,eval=FALSE>>=
 # Simulate Schwartz process
 retsp <- numeric(nrows)
-prices <- numeric(nrows)
-prices[1] <- exp(sigmav*innov[1])
+pricev <- numeric(nrows)
+pricev[1] <- exp(sigmav*innov[1])
 set.seed(1121)  # Reset random numbers
 for (i in 2:nrows) {
-  retsp[i] <- thetav*(priceq - prices[i-1]) + sigmav*innov[i]
-  prices[i] <- prices[i-1]*exp(retsp[i])
+  retsp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
+  pricev[i] <- pricev[i-1]*exp(retsp[i])
 }  # end for
       @
     \column{0.5\textwidth}
@@ -2246,7 +2246,7 @@ for (i in 2:nrows) {
       \includegraphics[width=0.45\paperwidth]{figure/ou_schwartz.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-plot(prices, type="l", xlab="time", ylab="prices",
+plot(pricev, type="l", xlab="time", ylab="prices",
      main="Schwartz Process")
 legend("topright",
        title=paste(c(paste0("sigmav = ", sigmav),
@@ -2295,28 +2295,28 @@ coeff <- c(0.1, 0.39, 0.5)
 # Initialize the data
 innov <- rnorm(nrows, sd=0.01)
 retsp <- numeric(nrows)
-prices <- numeric(nrows)
+pricev <- numeric(nrows)
 # Simulate Dickey-Fuller process using recursive loop in R
 retsp[1] <- innov[1]
-prices[1] <- init_price
-retsp[2] <- thetav*(priceq - prices[1]) + coeff[1]*retsp[1] + innov[2]
-prices[2] <- prices[1] + retsp[2]
-retsp[3] <- thetav*(priceq - prices[2]) + coeff[1]*retsp[2] + coeff[2]*retsp[1] + innov[3]
-prices[3] <- prices[2] + retsp[3]
+pricev[1] <- init_price
+retsp[2] <- thetav*(priceq - pricev[1]) + coeff[1]*retsp[1] + innov[2]
+pricev[2] <- pricev[1] + retsp[2]
+retsp[3] <- thetav*(priceq - pricev[2]) + coeff[1]*retsp[2] + coeff[2]*retsp[1] + innov[3]
+pricev[3] <- pricev[2] + retsp[3]
 for (it in 4:nrows) {
-  retsp[it] <- thetav*(priceq - prices[it-1]) + retsp[(it-1):(it-3)] %*% coeff + innov[it]
-  prices[it] <- prices[it-1] + retsp[it]
+  retsp[it] <- thetav*(priceq - pricev[it-1]) + retsp[(it-1):(it-3)] %*% coeff + innov[it]
+  pricev[it] <- pricev[it-1] + retsp[it]
 }  # end for
 # Simulate Dickey-Fuller process in Rcpp
 prices_cpp <- HighFreq::sim_df(init_price=init_price, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
 # Compare prices
-all.equal(prices, drop(prices_cpp))
+all.equal(pricev, drop(pricev_cpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
   Rcode={for (it in 4:nrows) {
-  retsp[it] <- thetav*(priceq - prices[it-1]) + retsp[(it-1):(it-3)] %*% coeff + innov[it]
-  prices[it] <- prices[it-1] + retsp[it]
+  retsp[it] <- thetav*(priceq - pricev[it-1]) + retsp[(it-1):(it-3)] %*% coeff + innov[it]
+  pricev[it] <- pricev[it-1] + retsp[it]
   }},
   Rcpp=HighFreq::sim_df(init_price=init_price, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -2369,16 +2369,16 @@ x11(); plot(arimav, t="l", main="AR(1) coefficient = 0.99")
 tseries::adf.test(arimav, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with mean reversion
 init_price <- 0.0; priceq <- 0.0; thetav <- 0.1
-prices <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
   theta=thetav, innov=innov)
-x11(); plot(prices, t="l", main=paste("OU coefficient =", thetav))
-tseries::adf.test(prices, k=1)
+x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
+tseries::adf.test(pricev, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with zero reversion
 thetav <- 0.0
-prices <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
   theta=thetav, innov=innov)
-x11(); plot(prices, t="l", main=paste("OU coefficient =", thetav))
-tseries::adf.test(prices, k=1)
+x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
+tseries::adf.test(pricev, k=1)
       @
       The common practice is to use a small number of lags in the \emph{ADF} test, and if the residuals are autocorrelated, then to increase them until the correlations are no longer significant.
       \vskip1ex
@@ -2404,7 +2404,7 @@ tseries::adf.test(prices, k=1)
       \vskip1ex
       Therefore the \emph{ADF} test often requires a lot of data before it's able to correctly identify \emph{stationary} time series with \emph{no unit root}.
       \vskip1ex
-      A \emph{true negative} test result is that the \emph{null hypothesis} is \texttt{TRUE} (prices have a unit root), while a \emph{true positive} result is that the \emph{null hypothesis} is \texttt{FALSE} (prices are stationary).
+      A \emph{true negative} test result is that the \emph{null hypothesis} is \texttt{TRUE} (pricev have a unit root), while a \emph{true positive} result is that the \emph{null hypothesis} is \texttt{FALSE} (pricev are stationary).
       \vskip1ex
       The function \texttt{tseries::adf.test()} assumes that the data is \emph{normally distributed}, which may underestimate the standard errors of the parameters, and produce \emph{false positives} (\emph{type I} errors) by incorrectly rejecting the null hypothesis of a unit root process.
     \column{0.5\textwidth}
@@ -2474,9 +2474,9 @@ class(arfit)
 is.list(arfit)
 drop(arfit$ar); drop(coeff)
 # Define predictor matrix without intercept column
-predictor <- sapply(1:ncoeff, rutils::lagit, input=arimav)
+predv <- sapply(1:ncoeff, rutils::lagit, input=arimav)
 # Fit AR model using regression
-predinv <- MASS::ginv(predictor)
+predinv <- MASS::ginv(predv)
 coeff <- drop(predinv %*% arimav)
 all.equal(drop(arfit$ar), coeff, check.attributes=FALSE)
       @
@@ -2500,14 +2500,14 @@ all.equal(drop(arfit$ar), coeff, check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the regression residuals
-fittedv <- drop(predictor %*% coeff)
+fittedv <- drop(predv %*% coeff)
 residuals <- drop(arimav - fittedv)
 # Variance of residuals
 residvar <- sum(residuals^2)/(nrows-NROW(coeff))
 # predictor matrix squared
-predictor2 <- crossprod(predictor)
+predictor2 <- crossprod(predv)
 # Calculate covariance matrix of AR coefficients
-covar <- residvar*MASS::ginv(predictor2)
+covar <- residvar*MASS::ginv(predv2)
 coeffsd <- sqrt(diag(covar))
 # Calculate t-values of AR coefficients
 coefftv <- drop(coeff)/coeffsd
@@ -2540,13 +2540,13 @@ coefftv <- drop(coeff)/coeffsd
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Fit AR(5) model into AR(3) process
-predictor <- sapply(1:5, rutils::lagit, input=arimav)
-predinv <- MASS::ginv(predictor)
+predv <- sapply(1:5, rutils::lagit, input=arimav)
+predinv <- MASS::ginv(predv)
 coeff <- drop(predinv %*% arimav)
 # Calculate t-values of AR(5) coefficients
-residuals <- drop(arimav - drop(predictor %*% coeff))
+residuals <- drop(arimav - drop(predv %*% coeff))
 residvar <- sum(residuals^2)/(nrows-NROW(coeff))
-covar <- residvar*MASS::ginv(crossprod(predictor))
+covar <- residvar*MASS::ginv(crossprod(predv))
 coeffsd <- sqrt(diag(covar))
 coefftv <- drop(coeff)/coeffsd
 # Fit AR(5) model using arima()
@@ -2557,13 +2557,13 @@ library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(arimav, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
 retsp <- drop(zoo::coredata(na.omit(rutils::etfenv$returns$VTI)))
-predictor <- sapply(1:5, rutils::lagit, input=retsp)
-predinv <- MASS::ginv(predictor)
+predv <- sapply(1:5, rutils::lagit, input=retsp)
+predinv <- MASS::ginv(predv)
 coeff <- drop(predinv %*% retsp)
 # Calculate t-values of AR(5) coefficients
-residuals <- drop(retsp - drop(predictor %*% coeff))
+residuals <- drop(retsp - drop(predv %*% coeff))
 residvar <- sum(residuals^2)/(nrows-NROW(coeff))
-covar <- residvar*MASS::ginv(crossprod(predictor))
+covar <- residvar*MASS::ginv(crossprod(predv))
 coeffsd <- sqrt(diag(covar))
 coefftv <- drop(coeff)/coeffsd
       @
@@ -2732,19 +2732,19 @@ all.equal(arimav, arimafast[-(1:ncoeff)],
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Forecast AR(3) process using loop in R
-forecastv <- numeric(NROW(arimav)+1)
-forecastv[1] <- 0
-forecastv[2] <- coeff[1]*arimav[1]
-forecastv[3] <- coeff[1]*arimav[2] + coeff[2]*arimav[1]
-for (it in 4:NROW(forecastv)) {
-  forecastv[it] <- arimav[(it-1):(it-3)] %*% coeff
+fcast <- numeric(NROW(arimav)+1)
+fcast[1] <- 0
+fcast[2] <- coeff[1]*arimav[1]
+fcast[3] <- coeff[1]*arimav[2] + coeff[2]*arimav[1]
+for (it in 4:NROW(fcast)) {
+  fcast[it] <- arimav[(it-1):(it-3)] %*% coeff
 }  # end for
 # Plot with legend
 x11(width=6, height=4)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(arimav, main="Forecasting Using AR(3) Model",
   xlab="", ylab="", type="l")
-lines(forecastv, col="red", lwd=2)
+lines(fcast, col="red", lwd=2)
 legend(x="topright", legend=c("series", "forecasts"),
        col=c("black", "red"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
@@ -2779,27 +2779,27 @@ filterfast <- filter(x=arimav, sides=1,
   filter=coeff, method="convolution")
 filterfast <- as.numeric(filterfast)
 # Compare excluding warmup period
-all.equal(forecastv[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
+all.equal(fcast[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Filter using C_cfilter() compiled C++ function directly
 filterfast <- .Call(stats:::C_cfilter, arimav, filter=coeff,
                      sides=1, circular=FALSE)
 # Compare excluding warmup period
-all.equal(forecastv[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
+all.equal(fcast[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Filter using HighFreq::roll_conv() Rcpp function
 filterfast <- HighFreq::roll_conv(matrix(arimav), matrix(coeff))
 # Compare excluding warmup period
-all.equal(forecastv[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
+all.equal(fcast[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Define predictor matrix for forecasting
-predictor <- sapply(0:(ncoeff-1), function(lagg) {
+predv <- sapply(0:(ncoeff-1), function(lagg) {
   rutils::lagit(arimav, lagg=lagg)
 })  # end sapply
 # Forecast using predictor matrix
-filterfast <- c(0, drop(predictor %*% coeff))
+filterfast <- c(0, drop(predv %*% coeff))
 # Compare with loop in R
-all.equal(forecastv, filterfast, check.attributes=FALSE)
+all.equal(fcast, filterfast, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -2831,18 +2831,18 @@ arima_fit <- arima(arimav, order=c(3,0,0), include.mean=FALSE)
 arima_fit$coef
 coeff
 # One-step-ahead forecast using predict.Arima()
-predictv <- predict(arima_fit, n.ahead=1)
+predv <- predict(arima_fit, n.ahead=1)
 # Or directly call predict.Arima()
-# predictv <- predict.Arima(arima_fit, n.ahead=1)
+# predv <- predict.Arima(arima_fit, n.ahead=1)
 # Inspect the prediction object
-class(predictv)
-names(predictv)
-class(predictv$pred)
-unlist(predictv)
+class(predv)
+names(predv)
+class(predv$pred)
+unlist(predv)
 # One-step-ahead forecast using matrix algebra
-forecastv <- drop(arimav[nrows:(nrows-2)] %*% arima_fit$coef)
+fcast <- drop(arimav[nrows:(nrows-2)] %*% arima_fit$coef)
 # Compare one-step-ahead forecasts
-all.equal(predictv$pred[[1]], forecastv)
+all.equal(predv$pred[[1]], fcast)
 # Get information about predict.Arima()
 ?stats:::predict.Arima
       @
@@ -2872,7 +2872,7 @@ all.equal(predictv$pred[[1]], forecastv)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample forecasting residuals
-residuals <- (arimav - forecastv[-NROW(forecastv)])
+residuals <- (arimav - fcast[-NROW(fcast)])
 # Compare residuals with innovations
 all.equal(innov, residuals, check.attributes=FALSE)
 plot(residuals, t="l", lwd=3, xlab="", ylab="",
@@ -2911,17 +2911,17 @@ arimav <- .Call(stats:::C_rfilter, innov, coeff,
 # Define order of the AR(n) forecasting model
 ordern <- 5
 # Define predictor matrix for forecasting
-predictor <- sapply(1:ordern, rutils::lagit, input=arimav)
-colnames(predictor) <- paste0("pred", 1:NCOL(predictor))
+predv <- sapply(1:ordern, rutils::lagit, input=arimav)
+colnames(predv) <- paste0("pred", 1:NCOL(predv))
 # Specify length of look-back interval
 look_back <- 100
 # Invert the predictor matrix
 rangev <- (nrows-look_back):(nrows-1)
-predinv <- MASS::ginv(predictor[rangev, ])
+predinv <- MASS::ginv(predv[rangev, ])
 # Calculate fitted coefficients
 coeff <- drop(predinv %*% arimav[rangev])
 # Calculate forecast
-drop(predictor[nrows, ] %*% coeff)
+drop(predv[nrows, ] %*% coeff)
       @
   \end{columns}
 \end{block}
@@ -2961,32 +2961,32 @@ dates <- zoo::index(retsp)
 retsp <- as.numeric(retsp)
 nrows <- NROW(retsp)
 # Define response equal to returns
-response <- retsp
+respv <- retsp
 # Define predictor as a rolling sum
 nagg <- 5
-predictor <- rutils::roll_sum(retsp, look_back=nagg)
+predv <- rutils::roll_sum(retsp, look_back=nagg)
 # Define predictor matrix for forecasting
-order_max <- 5
-predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
-                     input=predictor)
-predictor <- cbind(rep(1, nrows), predictor)
+ordmax <- 5
+predv <- sapply(1+nagg*(0:ordmax), rutils::lagit,
+                     input=predv)
+predv <- cbind(rep(1, nrows), predv)
 # Perform rolling forecasting
 look_back <- 100
-forecastv <- sapply((look_back+1):nrows, function(endd) {
+fcast <- sapply((look_back+1):nrows, function(endd) {
   # Define rolling look-back range
   startp <- max(1, endd-look_back)
   # Or expanding look-back range
   # startp <- 1
   rangev <- startp:(endd-1)
   # Invert the predictor matrix
-  predinv <- MASS::ginv(predictor[rangev, ])
+  predinv <- MASS::ginv(predv[rangev, ])
   # Calculate fitted coefficients
-  coeff <- drop(predinv %*% response[rangev])
+  coeff <- drop(predinv %*% respv[rangev])
   # Calculate forecast
-  drop(predictor[endd, ] %*% coeff)
+  drop(predv[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
-forecastv <- c(rep(0, look_back), forecastv)
+fcast <- c(rep(0, look_back), fcast)
       @
   \end{columns}
 \end{block}
@@ -3009,9 +3009,9 @@ forecastv <- c(rep(0, look_back), forecastv)
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 # Mean squared error
-mean((retsp - forecastv)^2)
+mean((retsp - fcast)^2)
 # Correlation
-cor(forecastv, retsp)
+cor(fcast, retsp)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3023,7 +3023,7 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 plot(retsp[(nrows-look_back):nrows], col="blue", 
      xlab="", ylab="", type="l", lwd=2,
      main="Rolling Forecasting Using AR Model")
-lines(forecastv[(nrows-look_back):nrows], col="red", lwd=2)
+lines(fcast[(nrows-look_back):nrows], col="red", lwd=2)
 legend(x="top", legend=c("returns", "forecasts"),
        col=c("blue", "red"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
@@ -3058,17 +3058,17 @@ legend(x="top", legend=c("returns", "forecasts"),
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
-sim_forecasts <- function(response, nagg=5, ordern=5, 
+sim_forecasts <- function(respv, nagg=5, ordern=5, 
                           look_back=100, rollp=TRUE) {
-  nrows <- NROW(response)
+  nrows <- NROW(respv)
   # Define predictor as a rolling sum
-  predictor <- rutils::roll_sum(response, look_back=nagg)
+  predv <- rutils::roll_sum(respv, look_back=nagg)
   # Define predictor matrix for forecasting
-  predictor <- sapply(1+nagg*(0:ordern), rutils::lagit,
-                       input=predictor)
-  predictor <- cbind(rep(1, nrows), predictor)
+  predv <- sapply(1+nagg*(0:ordern), rutils::lagit,
+                       input=predv)
+  predv <- cbind(rep(1, nrows), predv)
   # Perform rolling forecasting
-  forecastv <- sapply((look_back+1):nrows, function(endd) {
+  fcast <- sapply((look_back+1):nrows, function(endd) {
     # Define rolling look-back range
     if (rollp)
       startp <- max(1, endd-look_back)
@@ -3077,20 +3077,20 @@ sim_forecasts <- function(response, nagg=5, ordern=5,
     startp <- 1
     rangev <- startp:(endd-1)
     # Invert the predictor matrix
-    designinv <- MASS::ginv(predictor[rangev, ])
+    designinv <- MASS::ginv(predv[rangev, ])
     # Calculate fitted coefficients
-    coeff <- drop(designinv %*% response[rangev])
+    coeff <- drop(desvinv %*% respv[rangev])
     # Calculate forecast
-    drop(predictor[endd, ] %*% coeff)
+    drop(predv[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
-  forecastv <- c(rep(0, look_back), forecastv)
+  fcast <- c(rep(0, look_back), fcast)
   # Aggregate the forecasts
-  rutils::roll_sum(forecastv, look_back=nagg)
+  rutils::roll_sum(fcast, look_back=nagg)
 }  # end sim_forecasts
 # Simulate the rolling autoregressive forecasts
-forecastv <- sim_forecasts(response=vti, ordern=5, look_back=100)
-c(mse=mean((vti - forecastv)^2), cor=cor(vti, forecastv))
+fcast <- sim_forecasts(respv=vti, ordern=5, look_back=100)
+c(mse=mean((vti - fcast)^2), cor=cor(vti, fcast))
       @
   \end{columns}
 \end{block}
@@ -3112,9 +3112,9 @@ c(mse=mean((vti - forecastv)^2), cor=cor(vti, forecastv))
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       <<echo=TRUE,eval=FALSE>>=
 look_backs <- seq(20, 200, 20)
-forecastv <- sapply(look_backs, sim_forecasts, response=retsp, 
+fcast <- sapply(look_backs, sim_forecasts, response=retsp, 
                      nagg=nagg, ordern=ordern)
-colnames(forecastv) <- look_backs
+colnames(fcast) <- look_backs
 msev <- apply(forecasts, 2, function(x) mean((retsp - x)^2))
 # Plot forecasting series with legend
 plot(x=look_backs, y=msev,
@@ -3162,15 +3162,15 @@ retsp <- as.numeric(retsp)
 nrows <- NROW(retsp)
 # Define predictor matrix for forecasting
 orderp <- 5
-predictor <- sapply(1:orderp, rutils::lagit, input=retsp)
-predictor <- cbind(rep(1, nrows), predictor)
-colnames(predictor) <- paste0("pred", 1:NCOL(predictor))
-predinv <- MASS::ginv(predictor)
+predv <- sapply(1:orderp, rutils::lagit, input=retsp)
+predv <- cbind(rep(1, nrows), predv)
+colnames(predv) <- paste0("pred", 1:NCOL(predv))
+predinv <- MASS::ginv(predv)
 coeff <- drop(predinv %*% retsp)
 # Calculate in-sample forecasts of VTI
-forecastv <- drop(predictor %*% coeff)
+fcast <- drop(predv %*% coeff)
 # Calculate the residuals (forecast errors)
-residuals <- drop(retsp - forecastv)
+residuals <- drop(retsp - fcast)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3179,9 +3179,9 @@ residuals <- drop(retsp - forecastv)
 # Calculate the variance of the residuals
 residvar <- sum(residuals^2)/(nrows-NROW(coeff))
 # Calculate the predictor matrix squared
-predictor2 <- crossprod(predictor)
+predictor2 <- crossprod(predv)
 # Calculate covariance matrix of the AR coefficients
-covar <- residvar*MASS::ginv(predictor2)
+covar <- residvar*MASS::ginv(predv2)
 coeffsd <- sqrt(diag(covar))
 # Calculate the t-values of the AR coefficients
 coefftv <- coeff/coeffsd
@@ -3210,32 +3210,32 @@ barplot(coefftv, xlab="lag", ylab="t-value",
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor matrix for forecasting
-order_max <- 5
-predictor <- sapply(1:order_max, rutils::lagit, input=retsp)
-predictor <- cbind(rep(1, nrows), predictor)
-colnames(predictor) <- paste0("pred", 1:NCOL(predictor))
+ordmax <- 5
+predv <- sapply(1:ordmax, rutils::lagit, input=retsp)
+predv <- cbind(rep(1, nrows), predv)
+colnames(predv) <- paste0("pred", 1:NCOL(predv))
 # Calculate forecasts as function of the AR order
-forecastv <- lapply(2:NCOL(predictor), function(ordern) {
+fcast <- lapply(2:NCOL(predv), function(ordern) {
   # Calculate fitted coefficients
-  predinv <- MASS::ginv(predictor[, 1:ordern])
+  predinv <- MASS::ginv(predv[, 1:ordern])
   coeff <- drop(predinv %*% retsp)
   # Calculate in-sample forecasts of VTI
-  drop(predictor[, 1:ordern] %*% coeff)
+  drop(predv[, 1:ordern] %*% coeff)
 })  # end lapply
-names(forecastv) <- paste0("n=", 2:NCOL(predictor))
+names(fcast) <- paste0("n=", 2:NCOL(predv))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_insample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
-mse <- sapply(forecastv, function(x) {
+mse <- sapply(fcast, function(x) {
   c(mse=mean((retsp - x)^2), cor=cor(retsp, x))
 })  # end sapply
 mse <- t(mse)
-rownames(mse) <- names(forecastv)
+rownames(mse) <- names(fcast)
 # Plot forecasting MSE
-plot(x=2:NCOL(predictor), y=mse[, 1],
+plot(x=2:NCOL(predv), y=mse[, 1],
   xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
   main="MSE of In-sample AR(n) Forecasting Model for VTI")
       @
@@ -3263,27 +3263,27 @@ plot(x=2:NCOL(predictor), y=mse[, 1],
 insample <- 1:(nrows %/% 2)
 outsample <- (nrows %/% 2 + 1):nrows
 # Calculate forecasts as function of the AR order
-forecastv <- lapply(2:NCOL(predictor), function(ordern) {
+fcast <- lapply(2:NCOL(predv), function(ordern) {
   # Calculate fitted coefficients
-  predinv <- MASS::ginv(predictor[insample, 1:ordern])
-  coeff <- drop(predinv %*% response[insample])
+  predinv <- MASS::ginv(predv[insample, 1:ordern])
+  coeff <- drop(predinv %*% respv[insample])
   # Calculate out-of-sample forecasts of VTI
-  drop(predictor[outsample, 1:ordern] %*% coeff)
+  drop(predv[outsample, 1:ordern] %*% coeff)
 })  # end lapply
-names(forecastv) <- paste0("n=", 2:NCOL(predictor))
+names(fcast) <- paste0("n=", 2:NCOL(predv))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_outofsample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
-mse <- sapply(forecastv, function(x) {
+mse <- sapply(fcast, function(x) {
   c(mse=mean((retsp[outsample] - x)^2), cor=cor(retsp[outsample], x))
 })  # end sapply
 mse <- t(mse)
-rownames(mse) <- names(forecastv)
+rownames(mse) <- names(fcast)
 # Plot forecasting MSE
-plot(x=2:NCOL(predictor), y=mse[, 1],
+plot(x=2:NCOL(predv), y=mse[, 1],
   xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
   main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
       @
@@ -3307,10 +3307,10 @@ plot(x=2:NCOL(predictor), y=mse[, 1],
       Decreasing the order parameter of the autoregressive model is a form of \emph{shrinkage} because it reduces the number of predictive variables.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate out-of-sample PnLs
-pnls <- sapply(forecastv, function(x) {
+pnls <- sapply(fcast, function(x) {
   cumsum(sign(x)*retsp[outsample])
 })  # end sapply
-colnames(pnls) <- names(forecastv)
+colnames(pnls) <- names(fcast)
 pnls <- xts::xts(pnls, dates[outsample])
       @
     \column{0.5\textwidth}
@@ -3349,29 +3349,29 @@ dygraphs::dygraph(pnls[endd, 1:4],
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor as a rolling mean
 nagg <- 5
-predictor <- roll::roll_mean(retsp, width=nagg, min_obs=1)
-response <- retsp
+predv <- roll::roll_mean(retsp, width=nagg, min_obs=1)
+respv <- retsp
 # Define predictor matrix for forecasting
-predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
-                     input=predictor)
-predictor <- cbind(rep(1, nrows), predictor)
+predv <- sapply(1+nagg*(0:ordmax), rutils::lagit,
+                     input=predv)
+predv <- cbind(rep(1, nrows), predv)
 # Calculate forecasts as function of the AR order
-forecastv <- lapply(2:NCOL(predictor), function(ordern) {
-  predinv <- MASS::ginv(predictor[insample, 1:ordern])
-  coeff <- drop(predinv %*% response[insample])
-  drop(predictor[outsample, 1:ordern] %*% coeff)
+fcast <- lapply(2:NCOL(predv), function(ordern) {
+  predinv <- MASS::ginv(predv[insample, 1:ordern])
+  coeff <- drop(predinv %*% respv[insample])
+  drop(predv[outsample, 1:ordern] %*% coeff)
 })  # end lapply
-names(forecastv) <- paste0("n=", 2:NCOL(predictor))
+names(fcast) <- paste0("n=", 2:NCOL(predv))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_sum.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate out-of-sample PnLs
-pnls <- sapply(forecastv, function(x) {
+pnls <- sapply(fcast, function(x) {
   cumsum(sign(x)*retsp[outsample])
 })  # end sapply
-colnames(pnls) <- names(forecastv)
+colnames(pnls) <- names(fcast)
 pnls <- xts::xts(pnls, dates[outsample])
 # Plot dygraph of out-of-sample PnLs
 dygraphs::dygraph(pnls[endd, 1:4],
@@ -3402,11 +3402,11 @@ dygraphs::dygraph(pnls[endd, 1:4],
       <<echo=TRUE,eval=FALSE>>=
 # Calculate PnLs using the average of past forecasts
 nagg <- 5
-pnls <- sapply(forecastv, function(x) {
+pnls <- sapply(fcast, function(x) {
   x <- roll::roll_mean(x, width=nagg, min_obs=1)
   cumsum(sign(x)*retsp[outsample])
 })  # end sapply
-colnames(pnls) <- names(forecastv)
+colnames(pnls) <- names(fcast)
 pnls <- xts::xts(pnls, dates[outsample])
       @
     \column{0.5\textwidth}
@@ -3448,29 +3448,29 @@ dygraphs::dygraph(pnls[endd, 1:4],
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor as a rolling sum
 nagg <- 5
-predictor <- rutils::roll_sum(retsp, look_back=nagg)
+predv <- rutils::roll_sum(retsp, look_back=nagg)
 # Define predictor matrix for forecasting
-order_max <- 5
-predictor <- sapply(1+nagg*(0:order_max), rutils::lagit,
-                     input=predictor)
-predictor <- cbind(rep(1, nrows), predictor)
+ordmax <- 5
+predv <- sapply(1+nagg*(0:ordmax), rutils::lagit,
+                     input=predv)
+predv <- cbind(rep(1, nrows), predv)
 # Perform rolling forecasting
 look_back <- 100
-forecastv <- sapply((look_back+1):nrows, function(endd) {
+fcast <- sapply((look_back+1):nrows, function(endd) {
   # Define rolling look-back range
   startp <- max(1, endd-look_back)
   # Or expanding look-back range
   # startp <- 1
   rangev <- startp:(endd-1)
   # Invert the predictor matrix
-  designinv <- MASS::ginv(predictor[rangev, ])
+  designinv <- MASS::ginv(predv[rangev, ])
   # Calculate fitted coefficients
-  coeff <- drop(designinv %*% retsp[rangev])
+  coeff <- drop(desvinv %*% retsp[rangev])
   # Calculate forecast
-  drop(predictor[endd, ] %*% coeff)
+  drop(predv[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
-forecastv <- c(rep(0, look_back), forecastv)
+fcast <- c(rep(0, look_back), fcast)
       @
   \end{columns}
 \end{block}
@@ -3493,9 +3493,9 @@ forecastv <- c(rep(0, look_back), forecastv)
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 # Mean squared error
-mean((retsp - forecastv)^2)
+mean((retsp - fcast)^2)
 # Correlation
-cor(forecastv, retsp)
+cor(fcast, retsp)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3507,7 +3507,7 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 plot(retsp[(nrows-look_back):nrows], col="blue", 
      xlab="", ylab="", type="l", lwd=2,
      main="Rolling Forecasting Using AR Model")
-lines(forecastv[(nrows-look_back):nrows], col="red", lwd=2)
+lines(fcast[(nrows-look_back):nrows], col="red", lwd=2)
 legend(x="topleft", legend=c("returns", "forecasts"),
        col=c("blue", "red"), lty=1, lwd=6,
        cex=0.8, bg="white", bty="n")
@@ -3542,17 +3542,17 @@ legend(x="topleft", legend=c("returns", "forecasts"),
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
-sim_forecasts <- function(response, nagg=5, ordern=5, 
+sim_forecasts <- function(respv, nagg=5, ordern=5, 
                           look_back=100, rollp=TRUE) {
-  nrows <- NROW(response)
+  nrows <- NROW(respv)
   # Define predictor as a rolling sum
-  predictor <- rutils::roll_sum(response, look_back=nagg)
+  predv <- rutils::roll_sum(respv, look_back=nagg)
   # Define predictor matrix for forecasting
-  predictor <- sapply(1+nagg*(0:ordern), rutils::lagit,
-                       input=predictor)
-  predictor <- cbind(rep(1, nrows), predictor)
+  predv <- sapply(1+nagg*(0:ordern), rutils::lagit,
+                       input=predv)
+  predv <- cbind(rep(1, nrows), predv)
   # Perform rolling forecasting
-  forecastv <- sapply((look_back+1):nrows, function(endd) {
+  fcast <- sapply((look_back+1):nrows, function(endd) {
     # Define rolling look-back range
     if (rollp)
       startp <- max(1, endd-look_back)
@@ -3561,20 +3561,20 @@ sim_forecasts <- function(response, nagg=5, ordern=5,
     startp <- 1
     rangev <- startp:(endd-1)
     # Invert the predictor matrix
-    designinv <- MASS::ginv(predictor[rangev, ])
+    designinv <- MASS::ginv(predv[rangev, ])
     # Calculate fitted coefficients
-    coeff <- drop(designinv %*% response[rangev])
+    coeff <- drop(desvinv %*% respv[rangev])
     # Calculate forecast
-    drop(predictor[endd, ] %*% coeff)
+    drop(predv[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
-  forecastv <- c(rep(0, look_back), forecastv)
+  fcast <- c(rep(0, look_back), fcast)
   # Aggregate the forecasts
-  rutils::roll_sum(forecastv, look_back=nagg)
+  rutils::roll_sum(fcast, look_back=nagg)
 }  # end sim_forecasts
 # Simulate the rolling autoregressive forecasts
-forecastv <- sim_forecasts(response=retsp, ordern=5, look_back=100)
-c(mse=mean((retsp - forecastv)^2), cor=cor(retsp, forecastv))
+fcast <- sim_forecasts(respv=retsp, ordern=5, look_back=100)
+c(mse=mean((retsp - fcast)^2), cor=cor(retsp, fcast))
       @
   \end{columns}
 \end{block}
@@ -3604,10 +3604,10 @@ ncores <- detectCores() - 1
 cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
 look_backs <- seq(20, 600, 40)
-forecastv <- parLapply(cluster, look_backs, sim_forecasts, 
+fcast <- parLapply(cluster, look_backs, sim_forecasts, 
   response=retsp, nagg=5, ordern=5)
 # Perform parallel bootstrap under Mac-OSX or Linux
-forecastv <- mclapply(look_backs, sim_forecasts, response=retsp, 
+fcast <- mclapply(look_backs, sim_forecasts, response=retsp, 
   nagg=5, ordern=5, mc.cores=ncores)
       @
     \column{0.5\textwidth}
@@ -3615,7 +3615,7 @@ forecastv <- mclapply(look_backs, sim_forecasts, response=retsp,
       \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_mse.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
-mse <- sapply(forecastv, function(x) {
+mse <- sapply(fcast, function(x) {
   c(mse=mean((retsp - x)^2), cor=cor(retsp, x))
 })  # end sapply
 mse <- t(mse)
@@ -3655,11 +3655,11 @@ ncores <- detectCores() - 1
 cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
 orderv <- 2:6
-forecastv <- parLapply(cluster, orderv, sim_forecasts, response=retsp, 
+fcast <- parLapply(cluster, orderv, sim_forecasts, response=retsp, 
   nagg=5, look_back=look_back)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
-forecastv <- mclapply(orderv, sim_forecasts, response=retsp, 
+fcast <- mclapply(orderv, sim_forecasts, response=retsp, 
   nagg=5, look_back=look_back, mc.cores=ncores)
       @
     \column{0.5\textwidth}
@@ -3667,7 +3667,7 @@ forecastv <- mclapply(orderv, sim_forecasts, response=retsp,
       \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_mse_order.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate mean squared errors
-mse <- sapply(forecastv, function(x) {
+mse <- sapply(fcast, function(x) {
   c(mse=mean((retsp - x)^2), cor=cor(retsp, x))
 })  # end sapply
 mse <- t(mse)
@@ -3701,9 +3701,9 @@ plot(x=orderv, y=mse[, 1],
       To reduce excessive risk, a binary strategy uses portfolio weights equaly to the sign of the forecasts.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the rolling autoregressive forecasts
-forecastv <- sim_forecasts(retsp, ordern=ordern, look_back=look_back)
+fcast <- sim_forecasts(retsp, ordern=ordern, look_back=look_back)
 # Calculate strategy PnLs
-pnls <- sign(forecastv)*retsp
+pnls <- sign(fcast)*retsp
 pnls <- cbind(retsp, pnls, (retsp+pnls)/2)
 colnames(pnls) <- c("VTI", "AR_Strategy", "Combined")
 cor(pnls)

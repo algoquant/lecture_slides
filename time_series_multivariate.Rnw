@@ -492,13 +492,13 @@ betar <- sapply(1:NROW(endd), FUN=function(ep) {
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
 # Calculate rolling betas using RcppArmadillo
-reg_stats <- HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1))
-betas <- reg_stats$VTI
-all.equal(betas, betar)
+reg_stats <- HighFreq::roll_reg(respv=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1))
+betav <- reg_stats$VTI
+all.equal(betav, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1)),
+  Rcpp=HighFreq::roll_reg(respv=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1)),
   Rcode=sapply(1:NROW(endd), FUN=function(ep) {
     datav <- retsp[startp[ep]:endd[ep], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
@@ -512,7 +512,7 @@ summary(microbenchmark(
 # dygraph plot of rolling XLP beta and VTI prices
 dates <- zoo::index(retsp[endd, ])
 pricev <- rutils::etfenv$prices$VTI[dates]
-datav <- cbind(pricev, betas)
+datav <- cbind(pricev, betav)
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
@@ -619,8 +619,7 @@ for (ordern in 2:ncomps) {
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate principal component time series
-retspca <- xts(retsp %*% pcad$rotation[, 1:ncomps], 
-                order.by=dates)
+retspca <- xts(retsp %*% pcad$rotation[, 1:ncomps], order.by=dates)
 round(cov(retspca), 3)
 pcacum <- cumsum(retspca)
 # Plot principal component time series in multiple panels

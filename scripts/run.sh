@@ -53,6 +53,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/cov_mat/covmat/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/cross_ed/crossi/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/cro_ss/crossp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/cum_sum/cumsumv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/cum_rets/retsum/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/cut_off/cutoff/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/cusip_s/cusips/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/c_var/cvar/g' *.R*
@@ -61,11 +62,11 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/fram_e/dframe/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/da_ta/datav/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/date time/datev/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/date_s/datev/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/de_sign/design/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/de_sign/desv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/design_p/desv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/deg_free/degf/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/den_sity/densityv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/densi_ty/densv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/design_p/designp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/de_tach/detachp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/def_distr/defdistr/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/def_prob/defprob/g' *.R*
@@ -109,8 +110,8 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/fir_st/firstv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fit_ted/fittedv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/for_mat/formatv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/for_mula/formulav/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/fore_cast/forecastv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/forecast_s/forecasts/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fore_cast/fcast/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/forecast_s/fcasts/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fu_ture/future/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/func_tion/func/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fun_c/func/g' *.R*
@@ -198,6 +199,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/op_en/openp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/op_tim/optimd/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/or_der/orderp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/order_s/orderv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/order_max/ordmax/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/out_put/output/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/pa_ram/param/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/p_acf/pacfv/g' *.R*
@@ -225,9 +227,9 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/po_s/posit/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/position_s/posit/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/po_sit/posit/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/portf_loss/lossdistr/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/pre_dict/predictv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/predic_tion/predictv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/predic_tor/predictor/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/pre_dict/predv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/predic_tion/predv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/predic_tor/predv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/price_s/pricev/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/prices_100/prices100/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/pro_b/probv/g' *.R*
@@ -245,13 +247,12 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/rank_s/ranks/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/rate_s/ratets/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/re_balance/rfreq/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/re_duce/reducit/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/res_ponse/respv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/resid_uals/residv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/residual_s/residv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/re_turn/retv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/return_s/retv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/re_turns/retv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/cum_rets/retsum/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/res_ponse/response/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/resid_uals/residv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/residual_s/residv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ret_aw/retsaw/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ret_mom/retsmom/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/returns_100/returns100/g' *.R*

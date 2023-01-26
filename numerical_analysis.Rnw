@@ -2470,22 +2470,22 @@ stderrors[2, ]/stderrors[1, ]
 set.seed(1121)
 # Define explanatory and response variables
 nrows <- 100
-predictor <- rnorm(nrows, mean=2)
+predv <- rnorm(nrows, mean=2)
 noise <- rnorm(nrows)
-response <- (-3 + 2*predictor + noise)
-design <- cbind(response, predictor)
+respv <- (-3 + 2*predictor + noise)
+desv <- cbind(respv, predv)
 # Calculate alpha and beta regression coefficients
-betav <- cov(design[, 1], design[, 2])/var(design[, 2])
-alpha <- mean(design[, 1]) - betav*mean(design[, 2])
+betav <- cov(desv[, 1], desv[, 2])/var(desv[, 2])
+alpha <- mean(desv[, 1]) - betav*mean(desv[, 2])
 x11(width=6, height=5)
-plot(response ~ predictor, data=design)
+plot(respv ~ predv, data=desv)
 abline(a=alpha, b=betav, lwd=3, col="blue")
 # Bootstrap of beta regression coefficient
 nboot <- 100
 bootd <- sapply(1:nboot, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
-  design <- design[samplev, ]
-  cov(design[, 1], design[, 2])/var(design[, 2])
+  desv <- desv[samplev, ]
+  cov(desv[, 1], desv[, 2])/var(desv[, 2])
 })  # end sapply
       @
   \end{columns}
@@ -2560,17 +2560,17 @@ ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 # Bootstrap of regression under Windows
 bootd <- parLapply(cluster, 1:1000,
-  function(x, design) {
+  function(x, desv) {
     samplev <- sample.int(nrows, replace=TRUE)
-    design <- design[samplev, ]
-    cov(design[, 1], design[, 2])/var(design[, 2])
-  }, design=design)  # end parLapply
+    desv <- desv[samplev, ]
+    cov(desv[, 1], desv[, 2])/var(desv[, 2])
+  }, design=desv)  # end parLapply
 # Bootstrap of regression under Mac-OSX or Linux
 bootd <- mclapply(1:1000,
   function(x) {
     samplev <- sample.int(nrows, replace=TRUE)
-    design <- design[samplev, ]
-    cov(design[, 1], design[, 2])/var(design[, 2])
+    desv <- desv[samplev, ]
+    cov(desv[, 1], desv[, 2])/var(desv[, 2])
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
       @
@@ -2846,9 +2846,9 @@ ohlc_diff <- ohlc[, 1:3] - pricev
 class(retsp); head(retsp)
 # Calculate bootstrap prices from percentage returns
 datav <- sample.int(nrows, replace=TRUE)
-boot_prices <- startd*exp(cumsum(retsp[datav]))
+boot_pricev <- startd*exp(cumsum(retsp[datav]))
 boot_ohlc <- ohlc_diff + boot_prices
-boot_ohlc <- cbind(boot_ohlc, boot_prices)
+boot_ohlc <- cbind(boot_ohlc, boot_pricev)
 # Define barrier level with respect to prices
 barl <- 1.5*max(pricev)
 # Calculate if High bootstrapped prices crossed barrier level
@@ -2868,9 +2868,9 @@ bootd <- parLapply(cluster, 1:nboot,
   function(x, retsp, nrows) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
-    boot_prices <- startd*exp(cumsum(retsp[datav]))
+    boot_pricev <- startd*exp(cumsum(retsp[datav]))
     boot_ohlc <- ohlc_diff + boot_prices
-    boot_ohlc <- cbind(boot_ohlc, boot_prices)
+    boot_ohlc <- cbind(boot_ohlc, boot_pricev)
     # Calculate statistic
     sum(boot_ohlc[, 2] > barl) > 0
   }, retsp=retsp, nrows*nrows)  # end parLapply
@@ -2878,9 +2878,9 @@ bootd <- parLapply(cluster, 1:nboot,
 bootd <- mclapply(1:nboot, function(x) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
-    boot_prices <- startd*exp(cumsum(retsp[datav]))
+    boot_pricev <- startd*exp(cumsum(retsp[datav]))
     boot_ohlc <- ohlc_diff + boot_prices
-    boot_ohlc <- cbind(boot_ohlc, boot_prices)
+    boot_ohlc <- cbind(boot_ohlc, boot_pricev)
     # Calculate statistic
     sum(boot_ohlc[, 2] > barl) > 0
   }, mc.cores=ncores)  # end mclapply
@@ -3854,7 +3854,7 @@ plot(optiml)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{Rcpp} allows calling \texttt{C++} programs from \texttt{R}, by compiling the \texttt{C++} code and creating \texttt{R} functions.
+      The package \emph{Rcpp} allows calling \texttt{C++} functions from \texttt{R}, by compiling the \texttt{C++} code and creating \texttt{R} functions.
       \vskip1ex
       \emph{Rcpp} functions are \texttt{R} functions that were compiled from \texttt{C++} code using package \emph{Rcpp}.
       \vskip1ex
@@ -4042,7 +4042,7 @@ bootd <- function(datav, nboot=nboot) {
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
 #include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namesvpace
+using namespace Rcpp; // use Rcpp C++ namespace
 
 // This is a simple example of exporting a C++ function to R.
 // You can source this function into an R session using the
@@ -4117,10 +4117,10 @@ NumericVector sim_oucpp(double eq_price,
   int nrows = innov.size();
   NumericVector prices(nrows);
   NumericVector returns(nrows);
-  prices[0] = eq_price;
+  pricev[0] = eq_price;
   for (int it = 1; it < nrows; it++) {
-    returns[it] = thetav*(eq_price - prices[it-1]) + volat*innov[it-1];
-    prices[it] = prices[it-1] + returns[it];
+    returns[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
+    pricev[it] = pricev[it-1] + returns[it];
   }  // end for
   return prices;
 }")  # end cppFunction
@@ -4180,7 +4180,7 @@ summary(microbenchmark(
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
 #include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namesvpace
+using namespace Rcpp; // use Rcpp C++ namespace
 
 // The function sim_oucpp() simulates an Ornstein-Uhlenbeck process
 // export the function roll_maxmin() to R
@@ -4240,7 +4240,7 @@ summary(microbenchmark(
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
 #include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namesvpace
+using namespace Rcpp; // use Rcpp C++ namespace
 
 // This is a simple example of exporting a C++ function to R.
 // You can source this function into an R session using the
@@ -4319,7 +4319,7 @@ ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
 #include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namesvpace
+using namespace Rcpp; // use Rcpp C++ namespace
 
 // This is a simple example of exporting a C++ function to R.
 // You can source this function into an R session using the
@@ -4409,7 +4409,7 @@ ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
 #include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namesvpace
+using namespace Rcpp; // use Rcpp C++ namespace
 
 // This is a simple example of exporting a C++ function to R.
 // You can source this function into an R session using the
@@ -4452,7 +4452,7 @@ static const double pi = 3.14159265;
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{RcppArmadillo} allows calling the high-level \emph{Armadillo} \texttt{C++} linear algebra library.
+      The package \emph{RcppArmadillo} allows calling from \texttt{R} the high-level \emph{Armadillo} \texttt{C++} linear algebra library.
       \vskip1ex
       \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab}.
       \vskip1ex
@@ -4477,10 +4477,10 @@ vec1 %*% vec2
       \vspace{-2em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-#include <\emph{RcppArmadillo}.h>
+#include <RcppArmadillo.h>
 using namespace Rcpp;
 using namespace arma;
-// [[Rcpp::depends(\emph{RcppArmadillo})]]
+// [[Rcpp::depends(RcppArmadillo)]]
 
 // The function inner_vec() calculates the inner (dot) product of two vectors.
 // It uses \emph{RcppArmadillo}.
@@ -4552,10 +4552,10 @@ summary(microbenchmark(
       % \vspace{-2em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-#include <\emph{RcppArmadillo}.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namesvpace from Armadillo library
-// declare dependency on \emph{RcppArmadillo}
-// [[Rcpp::depends(\emph{RcppArmadillo})]]
+#include <RcppArmadillo.h> // include C++ header file from Armadillo library
+using namespace arma; // use C++ namespace from Armadillo library
+// declare dependency on RcppArmadillo
+// [[Rcpp::depends(RcppArmadillo)]]
 
 //' @export
 // [[Rcpp::export]]
@@ -4630,10 +4630,10 @@ summary(microbenchmark(
       \vspace{-1em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-#include <\emph{RcppArmadillo}.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namesvpace from Armadillo library
-// declare dependency on \emph{RcppArmadillo}
-// [[Rcpp::depends(\emph{RcppArmadillo})]]
+#include <RcppArmadillo.h> // include C++ header file from Armadillo library
+using namespace arma; // use C++ namespace from Armadillo library
+// declare dependency on RcppArmadillo
+// [[Rcpp::depends(RcppArmadillo)]]
 
 // Examples of \emph{RcppArmadillo} functions below
 
@@ -4703,10 +4703,10 @@ summary(microbenchmark(
       \vspace{-1em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-// [[Rcpp::depends(\emph{RcppArmadillo})]]
-#include <\emph{RcppArmadillo}.h>  // include Rcpp C++ header files
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>  // include Rcpp C++ header files
 using namespace std;
-using namespace Rcpp; // use Rcpp C++ namesvpace
+using namespace Rcpp; // use Rcpp C++ namespace
 using namespace arma;
 
 //' @export

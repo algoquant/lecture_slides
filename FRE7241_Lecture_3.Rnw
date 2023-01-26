@@ -117,20 +117,20 @@ knit_theme$set(thm)
 # Test if IEF can time VTI
 retsp <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
 vti <- retsp$VTI
-design <- cbind(retsp, 0.5*(vti+abs(vti)), vti^2)
-colnames(design)[3:4] <- c("merton", "treynor")
+desv <- cbind(retsp, 0.5*(vti+abs(vti)), vti^2)
+colnames(desv)[3:4] <- c("merton", "treynor")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/timing_skill_ief_vti.png}
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
-model <- lm(IEF ~ VTI + merton, data=design); summary(model)
+model <- lm(IEF ~ VTI + merton, data=desv); summary(model)
 # Treynor-Mazuy test
-model <- lm(IEF ~ VTI + treynor, data=design); summary(model)
+model <- lm(IEF ~ VTI + treynor, data=desv); summary(model)
 # Plot residual scatterplot
 x11(width=6, height=5)
-residuals <- (design$IEF - model$coeff["VTI"]*vti)
+residuals <- (desv$IEF - model$coeff["VTI"]*vti)
 plot.default(x=vti, y=residuals, xlab="VTI", ylab="IEF")
 title(main="Treynor-Mazuy Market Timing Test\n for IEF vs VTI", line=0.5)
 # Plot fitted (predicted) response values
@@ -285,12 +285,12 @@ filtered <- roll::roll_sum(closep, width=NROW(weightv), weights=weightrev)
 # Copy warmup period
 filtered[1:look_back] <- closep[1:look_back]
 # Combine prices with smoothed prices
-prices <- cbind(closep, filtered)
-colnames(prices)[2] <- "VTI Smooth"
+pricev <- cbind(closep, filtered)
+colnames(pricev)[2] <- "VTI Smooth"
 # Calculate standard deviations of returns
-sapply(rutils::diffit(prices), sd)
+sapply(rutils::diffit(pricev), sd)
 # Plot dygraph
-dygraphs::dygraph(prices["2009"], main="VTI Prices and Trailing Smoothed Prices") %>%
+dygraphs::dygraph(pricev["2009"], main="VTI Prices and Trailing Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
       @
     \column{0.5\textwidth}
@@ -306,12 +306,12 @@ filtered[1:(2*look_back)] <- closep[1:(2*look_back)]
 # Center the data
 filtered <- rutils::lagit(filtered, -(look_back-1), pad_zeros=FALSE)
 # Combine prices with smoothed prices
-prices <- cbind(closep, filtered)
-colnames(prices)[2] <- "VTI Smooth"
+pricev <- cbind(closep, filtered)
+colnames(pricev)[2] <- "VTI Smooth"
 # Calculate standard deviations of returns
-sapply(rutils::diffit(prices), sd)
+sapply(rutils::diffit(pricev), sd)
 # Plot dygraph
-dygraphs::dygraph(prices["2009"], main="VTI Prices and Centered Smoothed Prices") %>%
+dygraphs::dygraph(pricev["2009"], main="VTI Prices and Centered Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
       @
   \end{columns}
@@ -330,7 +330,7 @@ dygraphs::dygraph(prices["2009"], main="VTI Prices and Centered Smoothed Prices"
       Smoothing a time series of prices produces autocorrelations of their returns.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI log returns
-retsp <- rutils::diffit(prices)
+retsp <- rutils::diffit(pricev)
 # Open plot window
 x11(width=6, height=7)
 # Set plot parameters
@@ -365,7 +365,7 @@ title(main="ACF of Smoothed VTI Returns", line=-1)
       \begin{displaymath}
         p^{EWMA}_i = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weightv, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weightv, with smaller values of $\lambda$ producing faster decay, giving more weight to recent pricev, and vice versa.
       \vskip1ex
       The function \texttt{HighFreq::roll\_wsum()} calculates the convolution of a time series with a vector of weights.
       <<echo=TRUE,eval=FALSE>>=
@@ -381,16 +381,16 @@ weightv <- lambda^(1:look_back)
 weightv <- weightv/sum(weightv)
 # Calculate EWMA prices as the convolution
 ewmacpp <- HighFreq::roll_wsum(closep, weights=weightv)
-prices <- cbind(closep, ewmacpp)
-colnames(prices) <- c("VTI", "VTI EWMA")
+pricev <- cbind(closep, ewmacpp)
+colnames(pricev) <- c("VTI", "VTI EWMA")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ewma_feature.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
-colnamev <- colnames(prices)
-dygraphs::dygraph(prices["2009"], main="VTI EWMA Prices") %>%
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI EWMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
@@ -399,9 +399,9 @@ x11(width=6, height=5)
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
 plot_theme$col$line.col <- colorv
-quantmod::chart_Series(prices["2009"], theme=plot_theme,
+quantmod::chart_Series(pricev["2009"], theme=plot_theme,
              lwd=2, name="VTI EWMA Prices")
-legend("topleft", legend=colnames(prices),
+legend("topleft", legend=colnames(pricev),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
        col=plot_theme$col$line.col, bty="n")
       @
@@ -422,7 +422,7 @@ legend("topleft", legend=colnames(prices),
       \begin{displaymath}
         p^{EWMA}_i = (1-\lambda) p_i + \lambda p^{EWMA}_{i-1}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weightv, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weightv, with smaller values of $\lambda$ producing faster decay, giving more weight to recent pricev, and vice versa.
       \vskip1ex
       The recursive \emph{EWMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
       \vskip1ex
@@ -450,10 +450,10 @@ summary(microbenchmark(
       \includegraphics[width=0.45\paperwidth]{figure/ewma_recursive.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
-prices <- cbind(closep, ewmacpp)
-colnames(prices) <- c("VTI", "VTI EWMA")
-colnamev <- colnames(prices)
-dygraphs::dygraph(prices["2009"], main="Recursive VTI EWMA Prices") %>%
+pricev <- cbind(closep, ewmacpp)
+colnames(pricev) <- c("VTI", "VTI EWMA")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="Recursive VTI EWMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
@@ -462,9 +462,9 @@ x11(width=6, height=5)
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
 plot_theme$col$line.col <- colorv
-quantmod::chart_Series(prices["2009"], theme=plot_theme,
+quantmod::chart_Series(pricev["2009"], theme=plot_theme,
              lwd=2, name="VTI EWMA Prices")
-legend("topleft", legend=colnames(prices),
+legend("topleft", legend=colnames(pricev),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
        col=plot_theme$col$line.col, bty="n")
       @
@@ -504,7 +504,7 @@ vwap <- roll::roll_sum(closep*volumes, width=look_back, min_obs=1)
 volume_roll <- roll::roll_sum(volumes, width=look_back, min_obs=1)
 vwap <- vwap/volume_roll
 colnames(vwap) <- "VWAP"
-prices <- cbind(closep, vwap)
+pricev <- cbind(closep, vwap)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -512,15 +512,15 @@ prices <- cbind(closep, vwap)
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
 colorv <- c("blue", "red")
-dygraphs::dygraph(prices["2009"], main="VTI VWAP Prices") %>%
+dygraphs::dygraph(pricev["2009"], main="VTI VWAP Prices") %>%
   dyOptions(colors=colorv, strokeWidth=2)
 # Plot VWAP prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorv
-quantmod::chart_Series(prices["2009"], theme=plot_theme,
+quantmod::chart_Series(pricev["2009"], theme=plot_theme,
              lwd=2, name="VTI VWAP Prices")
-legend("bottomright", legend=colnames(prices),
+legend("bottomright", legend=colnames(pricev),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
        col=plot_theme$col$line.col, bty="n")
       @
@@ -566,9 +566,9 @@ vwapr <- pricer/volumer
 vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weights=volumes)
 all.equal(vwapr, drop(vwapcpp))
 # Dygraphs plot the VWAP prices
-prices <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
-colnames(prices) <- c("VWAP rolling", "VWAP recursive")
-dygraphs::dygraph(prices["2009"], main="VWAP Prices") %>%
+pricev <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
+colnames(pricev) <- c("VWAP rolling", "VWAP recursive")
+dygraphs::dygraph(pricev["2009"], main="VWAP Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
@@ -613,12 +613,12 @@ ewma_slow <- roll::roll_sum(closep, width=look_back, weights=weightv, min_obs=1)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI prices
 ewmadiff <- (ewma_fast - ewma_slow)
-prices <- cbind(closep, ewmadiff)
+pricev <- cbind(closep, ewmadiff)
 symbol <- "VTI"
-colnames(prices) <- c(symbol, paste(symbol, "Returns"))
+colnames(pricev) <- c(symbol, paste(symbol, "Returns"))
 # Plot dygraph of VTI Returns
-colnamev <- colnames(prices)
-dygraphs::dygraph(prices["2009"], main=paste(symbol, "EWMA Returns")) %>%
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main=paste(symbol, "EWMA Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -661,12 +661,12 @@ weightv <- (weightv - mean(weightv))
 weightv <- rev(weightv)
 # Calculate fractional VTI returns
 retsp <- roll::roll_sum(closep, width=look_back, weights=weightv, min_obs=1, online=FALSE)
-prices <- cbind(closep, retsp)
+pricev <- cbind(closep, retsp)
 symbol <- "VTI"
-colnames(prices) <- c(symbol, paste(symbol, "Returns"))
+colnames(pricev) <- c(symbol, paste(symbol, "Returns"))
 # Plot dygraph of VTI Returns
-colnamev <- colnames(prices)
-dygraphs::dygraph(prices["2009"], main=paste(symbol, "Fractional Returns")) %>%
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main=paste(symbol, "Fractional Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -791,10 +791,10 @@ hist(volumez, breaks=1e2)
       \includegraphics[width=0.45\paperwidth]{figure/features_volume_zscores.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of volume z-scores of VTI prices
-prices <- cbind(closep, volumez)
-colnames(prices) <- c("VTI", "Z-scores")
-colnamev <- colnames(prices)
-dygraphs::dygraph(prices["2009"], main="VTI Volume Z-Scores") %>%
+pricev <- cbind(closep, volumez)
+colnames(pricev) <- c("VTI", "Z-scores")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI Volume Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -847,10 +847,10 @@ abline(regmod, col="red", lwd=3)
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of VTI volatility z-scores
 closep <- quantmod::Cl(ohlc)
-prices <- cbind(closep, volatz)
-colnames(prices) <- c("VTI", "Z-scores")
-colnamev <- colnames(prices)
-dygraphs::dygraph(prices["2009"], main="VTI Volatility Z-Scores") %>%
+pricev <- cbind(closep, volatz)
+colnames(pricev) <- c("VTI", "Z-scores")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI Volatility Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -877,7 +877,7 @@ dygraphs::dygraph(prices["2009"], main="VTI Volatility Z-Scores") %>%
       \end{displaymath}
       Where $p_{i-k}$ and $p_{i+k}$ are the lagged and advanced prices.
       \vskip1ex
-      The lag parameter $k$ determines the scale of the extreme local prices, with smaller $k$ producing larger z-scores for more local price extremes.
+      The lag parameter $k$ determines the scale of the extreme local pricev, with smaller $k$ producing larger z-scores for more local price extremes.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the centered volatility
 look_back <- 21
@@ -896,10 +896,10 @@ pricez <- ifelse(volat > 0, pricez/volat, 0)
       \includegraphics[width=0.45\paperwidth]{figure/features_price_zscores.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of z-scores of VTI prices
-prices <- cbind(closep, pricez)
-colnames(prices) <- c("VTI", "Z-scores")
-colnamev <- colnames(prices)
-dygraphs::dygraph(prices["2009"], main="VTI Price Z-Scores") %>%
+pricev <- cbind(closep, pricez)
+colnames(pricev) <- c("VTI", "Z-scores")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI Price Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -977,7 +977,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \end{displaymath}
       Where $\alpha$ and $\beta$ are the \emph{regression coefficients}, and $\sigma_i$ is the standard deviation of the residuals.
       \vskip1ex
-      The regression \emph{z-scores} can be used as rich or cheap indicators, either relative to past prices, or relative to prices in a stock pair.
+      The regression \emph{z-scores} can be used as rich or cheap indicators, either relative to past pricev, or relative to prices in a stock pair.
       \vskip1ex
       The regression residuals must be calculated in a loop, so it's much faster to calculate them using functions written in \texttt{C++} code.
       \vskip1ex
@@ -986,7 +986,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 # Calculate trailing price z-scores
 dates <- matrix(as.numeric(zoo::index(closep)))
 look_back <- 21
-pricez <- drop(HighFreq::roll_zscores(response=closep, design=dates, look_back=look_back))
+pricez <- drop(HighFreq::roll_zscores(respv=closep, design=dates, look_back=look_back))
 pricez[1:look_back] <- 0
       @
     \column{0.5\textwidth}
@@ -994,10 +994,10 @@ pricez[1:look_back] <- 0
       \includegraphics[width=0.45\paperwidth]{figure/features_regr_zscores.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of z-scores of VTI prices
-prices <- cbind(closep, pricez)
-colnames(prices) <- c("VTI", "Z-scores")
-colnamev <- colnames(prices)
-dygraphs::dygraph(prices["2009"], main="VTI Price Z-Scores") %>%
+pricev <- cbind(closep, pricez)
+colnames(pricev) <- c("VTI", "Z-scores")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI Price Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -1126,7 +1126,7 @@ range(zscores)
       \begin{displaymath}
         p^{EWMA}_i = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent pricev, and vice versa.
       \vskip1ex
       The function \texttt{HighFreq::roll\_wsum()} calculates the convolution of a time series with a vector of weights.
       <<echo=TRUE,eval=FALSE>>=
@@ -1183,7 +1183,7 @@ legend("topleft", legend=colnames(pricev),
       \begin{displaymath}
         p^{EWMA}_i = (1-\lambda) p_i + \lambda p^{EWMA}_{i-1}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent pricev, and vice versa.
       \vskip1ex
       The recursive \emph{EWMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
       \vskip1ex
@@ -1378,13 +1378,13 @@ legend("top", legend=colnames(wealthv),
       The t-value of the \emph{Treynor-Mazuy} test is negative, but not statistically significant. 
       <<echo=TRUE,eval=FALSE>>=
 # Test EWMA crossover market timing of VTI using Treynor-Mazuy test
-design <- cbind(pnls, retsp, retsp^2)
-design <- na.omit(design)
-colnames(design) <- c("EWMA", "VTI", "treynor")
-model <- lm(EWMA ~ VTI + treynor, data=design)
+desv <- cbind(pnls, retsp, retsp^2)
+desv <- na.omit(desv)
+colnames(desv) <- c("EWMA", "VTI", "treynor")
+model <- lm(EWMA ~ VTI + treynor, data=desv)
 summary(model)
 # Plot residual scatterplot
-residuals <- (design$EWMA - model$coeff["VTI"]*retsp)
+residuals <- (desv$EWMA - model$coeff["VTI"]*retsp)
 residuals <- model$residuals
 x11(width=6, height=6)
 plot.default(x=retsp, y=residuals, xlab="VTI", ylab="residuals")
@@ -1566,7 +1566,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="EWMA Strategy With Transaction Co
     \column{0.5\textwidth}
       The \emph{EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{sim\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay parameter $\lambda$.
+      The function \texttt{sim\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of pricev, and a decay parameter $\lambda$.
       \vskip1ex
       The function \texttt{sim\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
@@ -1743,7 +1743,7 @@ plot(x=lambdav, y=sharpetrend, t="l",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The best performing trend following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past prices), and producing less frequent trading.
+      The best performing trend following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past pricev), and producing less frequent trading.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate optimal lambda
 lambda <- lambdav[which.max(sharpetrend)]
@@ -1876,7 +1876,7 @@ plot(x=lambdav, y=sharperevert, t="l",
     \column{0.5\textwidth}
       Reverting the direction of the trend following \emph{EWMA} strategy creates a mean reverting strategy.
       \vskip1ex
-      The best performing mean reverting \emph{EWMA} strategy has a relatively large $\lambda$ parameter, corresponding to faster weight decay (giving more weight to recent prices), and producing more frequent trading.
+      The best performing mean reverting \emph{EWMA} strategy has a relatively large $\lambda$ parameter, corresponding to faster weight decay (giving more weight to recent pricev), and producing more frequent trading.
       \vskip1ex
       But a too large $\lambda$ parameter also causes very high trading frequency, and high transaction costs.
       <<echo=TRUE,eval=FALSE>>=
@@ -2118,7 +2118,7 @@ dyplot
     \column{0.5\textwidth}
       The \emph{Dual EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{sim\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of prices, and two decay parameters $\lambda_1$ and $\lambda_2$.
+      The function \texttt{sim\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of pricev, and two decay parameters $\lambda_1$ and $\lambda_2$.
       \vskip1ex
       The function \texttt{sim\_ewma2()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
@@ -2341,13 +2341,13 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The t-value of the \emph{Treynor-Mazuy} test is negative, but not statistically significant. 
       <<echo=TRUE,eval=FALSE>>=
 # Test VWAP crossover market timing of VTI using Treynor-Mazuy test
-design <- cbind(pnls, retsp, retsp^2)
-design <- na.omit(design)
-colnames(design) <- c("VWAP", "VTI", "treynor")
-model <- lm(VWAP ~ VTI + treynor, data=design)
+desv <- cbind(pnls, retsp, retsp^2)
+desv <- na.omit(desv)
+colnames(desv) <- c("VWAP", "VTI", "treynor")
+model <- lm(VWAP ~ VTI + treynor, data=desv)
 summary(model)
 # Plot residual scatterplot
-residuals <- (design$VWAP - model$coeff["VTI"]*retsp)
+residuals <- (desv$VWAP - model$coeff["VTI"]*retsp)
 residuals <- model$residuals
 # x11(width=6, height=6)
 plot.default(x=retsp, y=residuals, xlab="VTI", ylab="residuals")
@@ -2375,7 +2375,7 @@ text(x=0.05, y=0.8*max(residuals), paste("VWAP crossover t-value =", round(summa
     \column{0.5\textwidth}
       The \emph{VWAP} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{sim\_vwap()} performs a simulation of the \emph{VWAP} strategy, given an \emph{OHLC} time series of prices, and the length of the look-back interval (\texttt{look\_back}).
+      The function \texttt{sim\_vwap()} performs a simulation of the \emph{VWAP} strategy, given an \emph{OHLC} time series of pricev, and the length of the look-back interval (\texttt{look\_back}).
       \vskip1ex
       The function \texttt{sim\_vwap()} returns the \emph{VWAP} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}

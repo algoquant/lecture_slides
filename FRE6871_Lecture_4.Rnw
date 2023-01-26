@@ -1178,7 +1178,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
       \vskip1ex
       The input time series are often scaled by their standard deviations, to improve the accuracy of \emph{PCA dimension reduction}, so that more information is retained by the first few \emph{principal component} time series.
       \vskip1ex
-      If the input time series are not scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the correlation matrix.
+      If the input time series are not scaled, then \emph{PCA} analysis is equivalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equivalent to the \emph{eigen decomposition} of the correlation matrix.
       \vskip1ex
       The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data (with the time series as columns), and returns the results as a list of class \texttt{prcomp}.
       \vskip1ex
@@ -1512,13 +1512,13 @@ update(formulav, log(.) ~ . + beta)
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/reg_scatter_plot.png}
         <<echo=TRUE,eval=TRUE>>=
-# Define explanatory (predictor) variable
+# Define explanatory (predv) variable
 nrows <- 100
 set.seed(1121)  # Initialize random number generator
-predictor <- runif(nrows)
+predv <- runif(nrows)
 noise <- rnorm(nrows)
 # Response equals linear form plus random noise
-response <- (-3 + 2*predictor + noise)
+respv <- (-3 + 2*predictor + noise)
       @
       \vspace{-1em}
       The \emph{response vector} and the \emph{predictor matrix} don't have to be normally distributed.
@@ -1565,13 +1565,13 @@ response <- (-3 + 2*predictor + noise)
       \vskip1ex
       The expected value of the \emph{RSS} is equal to the \emph{degrees of freedom} $(n-2)$ times the variance $\sigma^2_\varepsilon$ of the \emph{residuals} $\varepsilon_i$: $\mathbb{E}[RSS] = (n-2) \sigma^2_\varepsilon$.
         <<echo=TRUE,eval=TRUE>>=
-# Calculate de-meaned explanatory (predictor) and response vectors
-predzm <- predictor - mean(predictor)
-respzm <- response - mean(response)
+# Calculate de-meaned explanatory (predv) and response vectors
+predzm <- predictor - mean(predv)
+respzm <- response - mean(respv)
 # Calculate the regression beta
-betav <- cov(predictor, response)/var(predictor)
+betav <- cov(predv, respv)/var(predv)
 # Calculate the regression alpha
-alpha <- mean(response) - betav*mean(predictor)
+alpha <- mean(respv) - betav*mean(predv)
       @
   \end{columns}
 \end{block}
@@ -1596,7 +1596,7 @@ alpha <- mean(response) - betav*mean(predictor)
       \begin{itemize}
         \item call - the model formula,
         \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
-        \item residuals - the model residuals (response minus fitted values),
+        \item residuals - the model residuals (respv minus fitted values),
       \end{itemize}
       The regression \emph{residuals} are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process.
     \column{0.5\textwidth}
@@ -1634,7 +1634,7 @@ all.equal(coef(model), c(alpha, betav),
       \vskip1ex
       \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object.
         <<echo=TRUE,eval=FALSE>>=
-fittedv <- (alpha + betav*predictor)
+fittedv <- (alpha + betav*predv)
 all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
 x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
@@ -1645,13 +1645,13 @@ title(main="Simple Regression", line=0.5)
 # Add regression line
 abline(model, lwd=3, col="blue")
 # Plot fitted (predicted) response values
-points(x=predictor, y=model$fitted.values, pch=16, col="blue")
+points(x=predv, y=model$fitted.values, pch=16, col="blue")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/reg_scatter_plot.png}
         <<echo=TRUE,eval=FALSE>>=
 # Plot response without noise
-lines(x=predictor, y=(response-noise), col="red", lwd=3)
+lines(x=predv, y=(respv-noise), col="red", lwd=3)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.08, cex=0.8, lwd=6,
@@ -1676,11 +1676,11 @@ legend(x="topleft", # Add legend
       \end{displaymath}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the residuals
-fittedv <- (alpha + betav*predictor)
-residuals <- (response - fittedv)
+fittedv <- (alpha + betav*predv)
+residuals <- (respv - fittedv)
 all.equal(residuals, model$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to the predictor
-all.equal(sum(residuals*predictor), target=0)
+all.equal(sum(residuals*predv), target=0)
 # Residuals are orthogonal to the fitted values
 all.equal(sum(residuals*fittedv), target=0)
 # Sum of residuals is equal to zero
@@ -1693,7 +1693,7 @@ x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
 # Extract residuals
-datav <- cbind(predictor, model$residuals)
+datav <- cbind(predv, model$residuals)
 colnames(datav) <- c("predictor", "residuals")
 # Plot residuals
 plot(datav)
@@ -1736,7 +1736,7 @@ residsd <- sqrt(sum(residuals^2)/degf)
 betasd <- residsd/sqrt(sum(predzm^2))
 # Standard error of alpha
 alphasd <- residsd*
-  sqrt(1/nrows + mean(predictor)^2/sum(predzm^2))
+  sqrt(1/nrows + mean(predv)^2/sum(predzm^2))
       @
   \end{columns}
 \end{block}
@@ -1829,7 +1829,7 @@ anova(model)
         <<echo=(-(1:1)),eval=TRUE>>=
 set.seed(1121)  # initialize random number generator
 # High noise compared to coefficient
-response <- (-3 + 2*predictor + rnorm(nrows, sd=8))
+respv <- (-3 + 2*predictor + rnorm(nrows, sd=8))
 model <- lm(formulav)  # Perform regression
 # Values of regression coefficients are not
 # Statistically significant
@@ -1853,10 +1853,10 @@ summary(model)
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 reg_stats <- function(stdev) {  # Noisy regression
   set.seed(1121)  # initialize number generator
-# Define explanatory (predictor) and response variables
-  predictor <- rnorm(100, mean=2)
-  response <- (1 + 0.2*predictor + 
-  rnorm(NROW(predictor), sd=stdev))
+# Define explanatory (predv) and response variables
+  predv <- rnorm(100, mean=2)
+  respv <- (1 + 0.2*predictor + 
+  rnorm(NROW(predv), sd=stdev))
 # Specify regression formula
   formulav <- response ~ predictor
 # Perform regression and get summary
@@ -1912,11 +1912,11 @@ vecsd <- seq(from=0.1, to=0.5, by=0.1)
 names(vecsd) <- paste0("sd=", vecsd)
 statsmat <- t(sapply(vecsd, function(stdev) {
     set.seed(1121)  # initialize number generator
-# Define explanatory (predictor) and response variables
-    predictor <- rnorm(100, mean=2)
-    response <- (1 + 0.2*predictor +
-      rnorm(NROW(predictor), sd=stdev))
-    reg_stats(data.frame(predictor, response))
+# Define explanatory (predv) and response variables
+    predv <- rnorm(100, mean=2)
+    respv <- (1 + 0.2*predictor +
+      rnorm(NROW(predv), sd=stdev))
+    reg_stats(data.frame(predv, respv))
     }))
 # Plot in loop
 par(mfrow=c(NCOL(statsmat), 1))
@@ -2060,14 +2060,14 @@ x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 # Add unit column to the predictor matrix
-predictor <- cbind(rep(1, nrows), predictor)
+predv <- cbind(rep(1, nrows), predv)
 # Calculate generalized inverse of the predictor matrix
-invpred <- MASS::ginv(predictor)
+invpred <- MASS::ginv(predv)
 # Calculate the influence matrix
-influencem <- predictor %*% invpred
+influencem <- predv %*% invpred
 # Plot the leverage vector
-ordern <- order(predictor[, 2])
-plot(x=predictor[ordern, 2], y=diag(influencem)[ordern],
+ordern <- order(predv[, 2])
+plot(x=predv[ordern, 2], y=diag(influencem)[ordern],
      type="l", lwd=3, col="blue",
      xlab="predictor", ylab="leverage",
      main="Leverage as Function of Predictor")
@@ -2101,7 +2101,7 @@ plot(x=predictor[ordern, 2], y=diag(influencem)[ordern],
       This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the influence matrix
-influencem <- predictor %*% invpred
+influencem <- predv %*% invpred
 # The influence matrix is idempotent
 all.equal(influencem, influencem %*% influencem)
       @
@@ -2111,9 +2111,9 @@ all.equal(influencem, influencem %*% influencem)
         <<echo=TRUE,eval=FALSE>>=
 # Calculate covariance and standard deviations of fitted values
 betas <- invpred %*% response
-fittedv <- drop(predictor %*% betas)
-residuals <- drop(response - fittedv)
-degf <- (NROW(predictor) - NCOL(predictor))
+fittedv <- drop(predv %*% betas)
+residuals <- drop(respv - fittedv)
+degf <- (NROW(predv) - NCOL(predv))
 residvar <- sqrt(sum(residuals^2)/degf)
 fitcovar <- residvar*influencem
 fitsd <- sqrt(diag(fitcovar))
@@ -2146,11 +2146,11 @@ plot(fitsd, type="l", lwd=3, col="blue",
 # Calculate response without random noise for univariate regression,
 # equal to weighted sum over columns of predictor.
 betas <- c(-1, 1)
-response <- predictor %*% betas
+respv <- predv %*% betas
 # Perform loop over different realizations of random noise
 fittedv <- lapply(1:50, function(it) {
   # Add random noise to response
-  response <- response + rnorm(nrows, sd=1.0)
+  respv <- response + rnorm(nrows, sd=1.0)
   # Calculate fitted values using influence matrix
   influencem %*% response
 })  # end lapply
@@ -2164,12 +2164,12 @@ x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 # Plot fitted values
-matplot(x=predictor[,2], y=fittedv,
+matplot(x=predv[,2], y=fittedv,
         type="l", lty="solid", lwd=1, col="blue",
         xlab="predictor", ylab="fitted",
         main="Fitted Values for Different Realizations
         of Random Noise")
-lines(x=predictor[,2], y=response, col="red", lwd=4)
+lines(x=predv[,2], y=respv, col="red", lwd=4)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
@@ -2205,25 +2205,25 @@ legend(x="topleft", # Add legend
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Inverse of predictor matrix squared
-predictor2 <- MASS::ginv(crossprod(predictor))
+predictor2 <- MASS::ginv(crossprod(predv))
 # Define new predictors
-newdata <- (max(predictor[, 2]) + 10*(1:5)/nrows)
+newdata <- (max(predv[, 2]) + 10*(1:5)/nrows)
 # Calculate the predicted values and standard errors
 predictorn <- cbind(rep(1, NROW(newdata)), newdata)
-predsd <- sqrt(predictorn %*% predictor2 %*% t(predictorn))
-predictv <- cbind(
-  prediction=drop(predictorn %*% betas),
+predsd <- sqrt(predvn %*% predictor2 %*% t(predvn))
+predv <- cbind(
+  prediction=drop(predvn %*% betas),
   stddev=diag(residvar*predsd))
 # Or: Perform loop over predictorn
-predictv <- apply(predictorn, MARGIN=1, function(predictor) {
+predv <- apply(predvn, MARGIN=1, function(predv) {
   # Calculate predicted values
-  prediction <- predictor %*% betas
+  prediction <- predv %*% betas
   # Calculate standard deviation
-  predsd <- sqrt(t(predictor) %*% predictor2 %*% predictor)
+  predsd <- sqrt(t(predv) %*% predictor2 %*% predv)
   predictsd <- residvar*predsd
   c(prediction=prediction, stddev=predictsd)
 })  # end sapply
-predictv <- t(predictv)
+predv <- t(predv)
       @
   \end{columns}
 \end{block}
@@ -2241,21 +2241,21 @@ predictv <- t(predictv)
       The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}.
         <<echo=TRUE,eval=FALSE>>=
 # Prepare plot data
-xdata <- c(predictor[,2], newdata)
+xdata <- c(predv[,2], newdata)
 xlim <- range(xdata)
-ydata <- c(fittedv, predictv[, 1])
+ydata <- c(fittedv, predv[, 1])
 # Calculate t-quantile
 tquant <- qt(pnorm(2), df=degf)
-predictlow <- predictv[, 1]-tquant*predictv[, 2]
-predicthigh <- predictv[, 1]+tquant*predictv[, 2]
-ylim <- range(c(response, ydata, predictlow, predicthigh))
+predictlow <- predv[, 1]-tquant*predv[, 2]
+predicthigh <- predv[, 1]+tquant*predv[, 2]
+ylim <- range(c(respv, ydata, predictlow, predicthigh))
 # Plot the regression predictions
 plot(x=xdata, y=ydata, xlim=xlim, ylim=ylim,
      type="l", lwd=3, col="blue",
      xlab="predictor", ylab="fitted or predicted",
      main="Predictions from Linear Regression")
-points(x=predictor[,2], y=response, col="blue")
-points(x=newdata, y=predictv[, 1], pch=16, col="blue")
+points(x=predv[,2], y=respv, col="blue")
+points(x=newdata, y=predv[, 1], pch=16, col="blue")
 lines(x=newdata, y=predicthigh, lwd=3, col="red")
 lines(x=newdata, y=predictlow, lwd=3, col="green")
 legend(x="topleft", # Add legend
@@ -2284,20 +2284,20 @@ legend(x="topleft", # Add legend
       \texttt{predict.lm()} is the predict method for linear models (regressions) produced by the function \texttt{lm()}.
         <<echo=TRUE,eval=FALSE>>=
 # Perform univariate regression
-predictor <- predictor[, 2]
-model <- lm(response ~ predictor)
+predv <- predv[, 2]
+model <- lm(respv ~ predv)
 # Perform prediction from regression
-newdata <- data.frame(predictor=newdata)
+newdata <- data.frame(predv=newdata)
 predictlm <- predict(object=model,
   newdata=newdata, confl=1-2*(1-pnorm(2)),
   interval="confidence")
 predictlm <- as.data.frame(predictlm)
-all.equal(predictlm$fit, predictv[, 1])
+all.equal(predictlm$fit, predv[, 1])
 all.equal(predictlm$lwr, predictlow)
 all.equal(predictlm$upr, predicthigh)
-plot(response ~ predictor,
-     xlim=range(predictor, newdata),
-     ylim=range(response, predictlm),
+plot(respv ~ predv,
+     xlim=range(predv, newdata),
+     ylim=range(respv, predictlm),
      xlab="predictor", ylab="fitted or predicted",
      main="Predictions from lm() Regression")
       @
@@ -2306,9 +2306,9 @@ plot(response ~ predictor,
         <<echo=TRUE,eval=FALSE>>=
 abline(model, col="blue", lwd=3)
 with(predictlm, {
-  points(x=newdata$predictor, y=fit, pch=16, col="blue")
-  lines(x=newdata$predictor, y=lwr, lwd=3, col="green")
-  lines(x=newdata$predictor, y=upr, lwd=3, col="red")
+  points(x=newdata$predv, y=fit, pch=16, col="blue")
+  lines(x=newdata$predv, y=lwr, lwd=3, col="green")
+  lines(x=newdata$predv, y=upr, lwd=3, col="red")
 })  # end with
 legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),

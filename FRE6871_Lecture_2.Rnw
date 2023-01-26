@@ -1953,22 +1953,22 @@ stderrors[2, ]/stderrors[1, ]
 # Initialize random number generator
 set.seed(1121)
 # Define explanatory and response variables
-predictor <- rnorm(100, mean=2)
+predv <- rnorm(100, mean=2)
 noise <- rnorm(100)
-response <- (-3 + 2*predictor + noise)
-design <- cbind(response, predictor)
+respv <- (-3 + 2*predictor + noise)
+desv <- cbind(respv, predv)
 # Calculate alpha and beta regression coefficients
-betav <- cov(design[, 1], design[, 2])/var(design[, 2])
-alpha <- mean(design[, 1]) - betav*mean(design[, 2])
+betav <- cov(desv[, 1], desv[, 2])/var(desv[, 2])
+alpha <- mean(desv[, 1]) - betav*mean(desv[, 2])
 x11(width=6, height=5)
-plot(response ~ predictor, data=design)
+plot(respv ~ predv, data=desv)
 abline(a=alpha, b=betav, lwd=3, col="blue")
 # Bootstrap of beta regression coefficient
 nboot <- 100
 bootd <- sapply(1:nboot, function(x) {
-  samplev <- sample.int(NROW(design), replace=TRUE)
-  design <- design[samplev, ]
-  cov(design[, 1], design[, 2])/var(design[, 2])
+  samplev <- sample.int(NROW(desv), replace=TRUE)
+  desv <- desv[samplev, ]
+  cov(desv[, 1], desv[, 2])/var(desv[, 2])
 })  # end sapply
       @
   \end{columns}
@@ -2043,17 +2043,17 @@ ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 # Bootstrap of regression under Windows
 bootd <- parLapply(cluster, 1:1000,
-  function(x, design) {
-    samplev <- sample.int(NROW(design), replace=TRUE)
-    design <- design[samplev, ]
-    cov(design[, 1], design[, 2])/var(design[, 2])
-  }, design=design)  # end parLapply
+  function(x, desv) {
+    samplev <- sample.int(NROW(desv), replace=TRUE)
+    desv <- desv[samplev, ]
+    cov(desv[, 1], desv[, 2])/var(desv[, 2])
+  }, design=desv)  # end parLapply
 # Bootstrap of regression under Mac-OSX or Linux
 bootd <- mclapply(1:1000,
   function(x) {
-    samplev <- sample.int(NROW(design), replace=TRUE)
-    design <- design[samplev, ]
-    cov(design[, 1], design[, 2])/var(design[, 2])
+    samplev <- sample.int(NROW(desv), replace=TRUE)
+    desv <- desv[samplev, ]
+    cov(desv[, 1], desv[, 2])/var(desv[, 2])
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
       @
@@ -2252,14 +2252,14 @@ text(x=(nrows-60), y=strikep, labels="strike price", pos=3, cex=1)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate percentage returns from VTI prices
 library(rutils)
-prices <- quantmod::Cl(rutils::etfenv$VTI)
-startd <- as.numeric(prices[1, ])
-returns <- rutils::diffit(log(prices))
+pricev <- quantmod::Cl(rutils::etfenv$VTI)
+startd <- as.numeric(pricev[1, ])
+returns <- rutils::diffit(log(pricev))
 class(returns); head(returns)
 sum(is.na(returns))
 nrows <- NROW(returns)
 # Define barrier level with respect to prices
-barl <- 1.5*max(prices)
+barl <- 1.5*max(pricev)
 # Calculate single bootstrap sample
 samplev <- returns[sample.int(nrows, replace=TRUE)]
 # Calculate prices from percentage returns

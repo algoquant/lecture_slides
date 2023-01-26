@@ -108,7 +108,7 @@ knit_theme$set(thm)
       \end{displaymath}
       Where $p_{i-k}$ and $p_{i+k}$ are the lagged and advanced prices.
       \vskip1ex
-      The lag parameter $k$ determines the scale of the extreme local prices, with smaller $k$ producing larger z-scores for more local price extremes.
+      The lag parameter $k$ determines the scale of the extreme local pricev, with smaller $k$ producing larger z-scores for more local price extremes.
       <<echo=TRUE,eval=FALSE>>=
 # Extract VTI log OHLC prices
 ohlc <- log(rutils::etfenv$VTI)
@@ -257,29 +257,29 @@ colnames(volumez) <- "volume"
       The residuals are not normally distributed, so the data is fitted using the \emph{maximum likelihood} method, instead of least squares.
       <<echo=TRUE,eval=FALSE>>=
 # Define design matrix for tops including intercept column
-predictor <- cbind(volatz, volumez)
-predictor[1, ] <- 0
-predictor <- rutils::lagit(predictor)
+predv <- cbind(volatz, volumez)
+predv[1, ] <- 0
+predv <- rutils::lagit(predv)
 # Fit in-sample logistic regression for tops
-logmod <- glm(tops ~ predictor, family=binomial(logit))
+logmod <- glm(tops ~ predv, family=binomial(logit))
 summary(logmod)
 coeff <- logmod$coefficients
-forecastv <- drop(cbind(rep(1, nrows), predictor) %*% coeff)
-ordern <- order(forecastv)
+fcast <- drop(cbind(rep(1, nrows), predv) %*% coeff)
+ordern <- order(fcast)
 # Calculate in-sample forecasts from logistic regression model
-forecastv <- 1/(1+exp(-forecastv))
-all.equal(logmod$fitted.values, forecastv, check.attributes=FALSE)
-hist(forecastv)
+fcast <- 1/(1+exp(-fcast))
+all.equal(logmod$fitted.values, fcast, check.attributes=FALSE)
+hist(fcast)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/logistic_stocktops.png}
       <<echo=TRUE,eval=FALSE>>=
 x11(width=6, height=5)
-plot(x=forecastv[ordern], y=tops[ordern],
+plot(x=fcast[ordern], y=tops[ordern],
      main="Logistic Regression of Stock Tops", 
      col="orange", xlab="predictor", ylab="top")
-lines(x=forecastv[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
+lines(x=fcast[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n", lwd=6,
        legend=c("tops", "logit fitted values"),
        col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
@@ -313,14 +313,14 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-threshold <- quantile(forecastv, confl[2])
+threshold <- quantile(fcast, confl[2])
 # Calculate confusion matrix in-sample
-confmat <- table(actual=!tops, forecast=(forecastv < threshold))
+confmat <- table(actual=!tops, forecast=(fcast < threshold))
 confmat
 # Calculate FALSE positive (type I error)
-sum(tops & (forecastv < threshold))
+sum(tops & (fcast < threshold))
 # Calculate FALSE negative (type II error)
-sum(!tops & (forecastv > threshold))
+sum(!tops & (fcast > threshold))
       @
   \end{columns}
 \end{block}
@@ -406,17 +406,17 @@ print(xtable::xtable(confusion_matrix,
       The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-confun <- function(actual, forecastv, threshold) {
-    conf <- table(actual, (forecastv < threshold))
+confun <- function(actual, fcast, threshold) {
+    conf <- table(actual, (fcast < threshold))
     conf <- conf / rowSums(conf)
     c(typeI=conf[2, 1], typeII=conf[1, 2])
   }  # end confun
-confun(!tops, forecastv, threshold=threshold)
+confun(!tops, fcast, threshold=threshold)
 # Define vector of discrimination thresholds
-threshv <- quantile(forecastv, seq(0.01, 0.99, by=0.01))
+threshv <- quantile(fcast, seq(0.01, 0.99, by=0.01))
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actual=!tops, forecastv=forecastv)  # end sapply
+  actual=!tops, fcast=fcast)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 # Calculate the informedness
@@ -424,7 +424,7 @@ informv <- 2 - rowSums(error_rates)
 plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
 threshm <- threshv[which.max(informv)]
-forecastops <- (forecastv > threshm)
+forecastops <- (fcast > threshm)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -464,15 +464,15 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
       <<echo=TRUE,eval=FALSE>>=
 # Fit in-sample logistic regression for bottoms
-logmod <- glm(bottoms ~ predictor, family=binomial(logit))
+logmod <- glm(bottoms ~ predv, family=binomial(logit))
 summary(logmod)
 # Calculate in-sample forecast from logistic regression model
 coeff <- logmod$coefficients
-forecastv <- drop(cbind(rep(1, nrows), predictor) %*% coeff)
-forecastv <- 1/(1+exp(-forecastv))
+fcast <- drop(cbind(rep(1, nrows), predv) %*% coeff)
+fcast <- 1/(1+exp(-fcast))
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actual=!bottoms, forecastv=forecastv)  # end sapply
+  actual=!bottoms, fcast=fcast)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshv
 # Calculate the informedness
@@ -480,7 +480,7 @@ informv <- 2 - rowSums(error_rates)
 plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
 threshm <- threshv[which.max(informv)]
-forecastbot <- (forecastv > threshm)
+forecastbot <- (fcast > threshm)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -513,7 +513,7 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The logistic strategy forecasts the tops and bottoms of prices, using a logistic regression model with the volatility and trading volumes as predictors.
+      The logistic strategy forecasts the tops and bottoms of pricev, using a logistic regression model with the volatility and trading volumes as predictors.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Simulate in-sample VTI strategy
@@ -554,39 +554,39 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The logistic strategy forecasts the tops and bottoms of prices, using a logistic regression model with the volatility and trading volumes as predictors.
+      The logistic strategy forecasts the tops and bottoms of pricev, using a logistic regression model with the volatility and trading volumes as predictors.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 insample <- 1:(nrows %/% 2)
 outsample <- (nrows %/% 2 + 1):nrows
 # Fit in-sample logistic regression for tops
-logmod <- glm(tops[insample] ~ predictor[insample, ], family=binomial(logit))
+logmod <- glm(tops[insample] ~ predv[insample, ], family=binomial(logit))
 fittedv <- logmod$fitted.values
 coefftop <- logmod$coefficients
 # Calculate error rates and best threshold value
 error_rates <- sapply(threshv, confun,
-  actual=!tops[insample], forecastv=fittedv)  # end sapply
+  actual=!tops[insample], fcast=fittedv)  # end sapply
 error_rates <- t(error_rates)
 informv <- 2 - rowSums(error_rates)
 threshtop <- threshv[which.max(informv)]
 # Fit in-sample logistic regression for bottoms
-logmod <- glm(bottoms[insample] ~ predictor[insample, ], family=binomial(logit))
+logmod <- glm(bottoms[insample] ~ predv[insample, ], family=binomial(logit))
 fittedv <- logmod$fitted.values
 coeffbot <- logmod$coefficients
 # Calculate error rates and best threshold value
 error_rates <- sapply(threshv, confun,
-  actual=!bottoms[insample], forecastv=fittedv)  # end sapply
+  actual=!bottoms[insample], fcast=fittedv)  # end sapply
 error_rates <- t(error_rates)
 informv <- 2 - rowSums(error_rates)
 threshbot <- threshv[which.max(informv)]
 # Calculate out-of-sample forecasts from logistic regression model
-predictout <- cbind(rep(1, NROW(outsample)), predictor[outsample, ])
-forecastv <- drop(predictout %*% coefftop)
-forecastv <- 1/(1+exp(-forecastv))
-forecastops <- (forecastv > threshtop)
-forecastv <- drop(predictout %*% coeffbot)
-forecastv <- 1/(1+exp(-forecastv))
-forecastbot <- (forecastv > threshbot)
+predictout <- cbind(rep(1, NROW(outsample)), predv[outsample, ])
+fcast <- drop(predictout %*% coefftop)
+fcast <- 1/(1+exp(-fcast))
+forecastops <- (fcast > threshtop)
+fcast <- drop(predictout %*% coeffbot)
+fcast <- 1/(1+exp(-fcast))
+forecastbot <- (fcast > threshbot)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -647,10 +647,10 @@ trainset <- Default[samplev, ]
 logmod <- glm(formulav, data=trainset, family=binomial(logit))
 # Forecast over test data out-of-sample
 testset <- Default[-samplev, ]
-forecastv <- predict(logmod, newdata=testset, type="response")
+fcast <- predict(logmod, newdata=testset, type="response")
 # Calculate confusion matrix out-of-sample
 table(actual=!testset$default, 
-      forecast=(forecastv < threshold))
+      forecast=(fcast < threshold))
       @
   \end{columns}
 \end{block}
@@ -681,36 +681,36 @@ retspos <- (retsf > 0)
 logmod <- glm(retspos ~ predictor - 1, family=binomial(logit))
 summary(logmod)
 coeff <- logmod$coefficients
-forecastv <- drop(predictor %*% coeff)
-forecastv <- 1/(1+exp(-forecastv))
+fcast <- drop(predv %*% coeff)
+fcast <- 1/(1+exp(-fcast))
 # Calculate error rates
-threshv <- quantile(forecastv, seq(0.01, 0.99, by=0.01))
+threshv <- quantile(fcast, seq(0.01, 0.99, by=0.01))
 error_rates <- sapply(threshv, confun,
-  actual=!retspos, forecastv=forecastv)  # end sapply
+  actual=!retspos, fcast=fcast)  # end sapply
 error_rates <- t(error_rates)
 # Calculate the informedness
 informv <- 2 - rowSums(error_rates)
 plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
 threshm <- threshv[which.max(informv)]
-forecastpos <- (forecastv > threshm)
+forecastpos <- (fcast > threshm)
 # Fit in-sample logistic regression for negative returns
 retsneg <- (retsf < 0)
 logmod <- glm(retsneg ~ predictor - 1, family=binomial(logit))
 summary(logmod)
 coeff <- logmod$coefficients
-forecastv <- drop(predictor %*% coeff)
-forecastv <- 1/(1+exp(-forecastv))
+fcast <- drop(predv %*% coeff)
+fcast <- 1/(1+exp(-fcast))
 # Calculate error rates
 error_rates <- sapply(threshv, confun,
-  actual=!retsneg, forecastv=forecastv)  # end sapply
+  actual=!retsneg, fcast=fcast)  # end sapply
 error_rates <- t(error_rates)
 # Calculate the informedness
 informv <- 2 - rowSums(error_rates)
 plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
 threshm <- threshv[which.max(informv)]
-forecastneg <- (forecastv > threshm)
+forecastneg <- (fcast > threshm)
       @
   \end{columns}
 \end{block}
@@ -762,39 +762,39 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The logistic strategy forecasts the tops and bottoms of prices, using a logistic regression model with the volatility and trading volumes as predictors.
+      The logistic strategy forecasts the tops and bottoms of pricev, using a logistic regression model with the volatility and trading volumes as predictors.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 insample <- 1:(nrows %/% 2)
 outsample <- (nrows %/% 2 + 1):nrows
 # Fit in-sample logistic regression for tops
-logmod <- glm(tops[insample] ~ predictor[insample, ], family=binomial(logit))
+logmod <- glm(tops[insample] ~ predv[insample, ], family=binomial(logit))
 fittedv <- logmod$fitted.values
 coefftop <- logmod$coefficients
 # Calculate error rates and best threshold value
 error_rates <- sapply(threshv, confun,
-  actual=!tops[insample], forecastv=fittedv)  # end sapply
+  actual=!tops[insample], fcast=fittedv)  # end sapply
 error_rates <- t(error_rates)
 informv <- 2 - rowSums(error_rates)
 threshtop <- threshv[which.max(informv)]
 # Fit in-sample logistic regression for bottoms
-logmod <- glm(bottoms[insample] ~ predictor[insample, ], family=binomial(logit))
+logmod <- glm(bottoms[insample] ~ predv[insample, ], family=binomial(logit))
 fittedv <- logmod$fitted.values
 coeffbot <- logmod$coefficients
 # Calculate error rates and best threshold value
 error_rates <- sapply(threshv, confun,
-  actual=!bottoms[insample], forecastv=fittedv)  # end sapply
+  actual=!bottoms[insample], fcast=fittedv)  # end sapply
 error_rates <- t(error_rates)
 informv <- 2 - rowSums(error_rates)
 threshbot <- threshv[which.max(informv)]
 # Calculate out-of-sample forecasts from logistic regression model
-predictout <- cbind(rep(1, NROW(outsample)), predictor[outsample, ])
-forecastv <- drop(predictout %*% coefftop)
-forecastv <- 1/(1+exp(-forecastv))
-forecastops <- (forecastv > threshtop)
-forecastv <- drop(predictout %*% coeffbot)
-forecastv <- 1/(1+exp(-forecastv))
-forecastbot <- (forecastv > threshbot)
+predictout <- cbind(rep(1, NROW(outsample)), predv[outsample, ])
+fcast <- drop(predictout %*% coefftop)
+fcast <- 1/(1+exp(-fcast))
+forecastops <- (fcast > threshtop)
+fcast <- drop(predictout %*% coeffbot)
+fcast <- 1/(1+exp(-fcast))
+forecastbot <- (fcast > threshbot)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1707,7 +1707,7 @@ library(rutils)
 # Select ETF symbols
 symbolv <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # Calculate ETF prices and percentage returns
-pricev <- rutils::etfenv$prices[, symbolv]
+pricev <- rutils::etfenv$pricev[, symbolv]
 pricev <- zoo::na.locf(pricev, na.rm=FALSE)
 pricev <- zoo::na.locf(pricev, fromLast=TRUE)
 # Calculate log returns without standardizing
@@ -2019,7 +2019,7 @@ barplot(weights6, names.arg=names(weights2), xlab="", ylab="",
       \vskip1ex
       The input time series are often scaled by their standard deviations, to improve the accuracy of \emph{PCA dimension reduction}, so that more information is retained by the first few \emph{principal component} time series.
       \vskip1ex
-      If the input time series are not scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the correlation matrix.
+      If the input time series are not scaled, then \emph{PCA} analysis is equivalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equivalent to the \emph{eigen decomposition} of the correlation matrix.
       \vskip1ex
       The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data (with the time series as columns), and returns the results as a list of class \texttt{prcomp}.
       \vskip1ex
@@ -2232,13 +2232,13 @@ update(formulav, log(.) ~ . + beta)
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/reg_scatter_plot.png}
         <<echo=TRUE,eval=TRUE>>=
-# Define explanatory (predictor) variable
+# Define explanatory (predv) variable
 nrows <- 100
 set.seed(1121)  # Initialize random number generator
-predictor <- runif(nrows)
+predv <- runif(nrows)
 noise <- rnorm(nrows)
 # Response equals linear form plus random noise
-response <- (-3 + 2*predictor + noise)
+respv <- (-3 + 2*predictor + noise)
       @
       \vspace{-1em}
       The \emph{response vector} and the \emph{predictor matrix} don't have to be normally distributed.
@@ -2285,13 +2285,13 @@ response <- (-3 + 2*predictor + noise)
       \vskip1ex
       The expected value of the \emph{RSS} is equal to the \emph{degrees of freedom} $(n-2)$ times the variance $\sigma^2_\varepsilon$ of the \emph{residuals} $\varepsilon_i$: $\mathbb{E}[RSS] = (n-2) \sigma^2_\varepsilon$.
         <<echo=TRUE,eval=TRUE>>=
-# Calculate de-meaned explanatory (predictor) and response vectors
-predzm <- predictor - mean(predictor)
-respzm <- response - mean(response)
+# Calculate de-meaned explanatory (predv) and response vectors
+predzm <- predictor - mean(predv)
+respzm <- response - mean(respv)
 # Calculate the regression beta
-betav <- cov(predictor, response)/var(predictor)
+betav <- cov(predv, respv)/var(predv)
 # Calculate the regression alpha
-alpha <- mean(response) - betav*mean(predictor)
+alpha <- mean(respv) - betav*mean(predv)
       @
   \end{columns}
 \end{block}
@@ -2316,7 +2316,7 @@ alpha <- mean(response) - betav*mean(predictor)
       \begin{itemize}
         \item call - the model formula,
         \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
-        \item residuals - the model residuals (response minus fitted values),
+        \item residuals - the model residuals (respv minus fitted values),
       \end{itemize}
       The regression \emph{residuals} are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process.
     \column{0.5\textwidth}
@@ -2354,7 +2354,7 @@ all.equal(coef(model), c(alpha, betav),
       \vskip1ex
       \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object.
         <<echo=TRUE,eval=FALSE>>=
-fittedv <- (alpha + betav*predictor)
+fittedv <- (alpha + betav*predv)
 all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
 x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
@@ -2365,13 +2365,13 @@ title(main="Simple Regression", line=0.5)
 # Add regression line
 abline(model, lwd=3, col="blue")
 # Plot fitted (predicted) response values
-points(x=predictor, y=model$fitted.values, pch=16, col="blue")
+points(x=predv, y=model$fitted.values, pch=16, col="blue")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/reg_scatter_plot.png}
         <<echo=TRUE,eval=FALSE>>=
 # Plot response without noise
-lines(x=predictor, y=(response-noise), col="red", lwd=3)
+lines(x=predv, y=(respv-noise), col="red", lwd=3)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.08, cex=0.8, lwd=6,
@@ -2396,11 +2396,11 @@ legend(x="topleft", # Add legend
       \end{displaymath}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the residuals
-fittedv <- (alpha + betav*predictor)
-residuals <- (response - fittedv)
+fittedv <- (alpha + betav*predv)
+residuals <- (respv - fittedv)
 all.equal(residuals, model$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to the predictor
-all.equal(sum(residuals*predictor), target=0)
+all.equal(sum(residuals*predv), target=0)
 # Residuals are orthogonal to the fitted values
 all.equal(sum(residuals*fittedv), target=0)
 # Sum of residuals is equal to zero
@@ -2413,7 +2413,7 @@ x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
 # Extract residuals
-datav <- cbind(predictor, model$residuals)
+datav <- cbind(predv, model$residuals)
 colnames(datav) <- c("predictor", "residuals")
 # Plot residuals
 plot(datav)
@@ -2456,7 +2456,7 @@ residsd <- sqrt(sum(residuals^2)/degf)
 betasd <- residsd/sqrt(sum(predzm^2))
 # Standard error of alpha
 alphasd <- residsd*
-  sqrt(1/nrows + mean(predictor)^2/sum(predzm^2))
+  sqrt(1/nrows + mean(predv)^2/sum(predzm^2))
       @
   \end{columns}
 \end{block}
@@ -2549,7 +2549,7 @@ anova(model)
         <<echo=(-(1:1)),eval=TRUE>>=
 set.seed(1121)  # initialize random number generator
 # High noise compared to coefficient
-response <- (-3 + 2*predictor + rnorm(nrows, sd=8))
+respv <- (-3 + 2*predictor + rnorm(nrows, sd=8))
 model <- lm(formulav)  # Perform regression
 # Values of regression coefficients are not
 # Statistically significant
@@ -2573,10 +2573,10 @@ summary(model)
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 reg_stats <- function(stdev) {  # Noisy regression
   set.seed(1121)  # initialize number generator
-# Define explanatory (predictor) and response variables
-  predictor <- rnorm(100, mean=2)
-  response <- (1 + 0.2*predictor + 
-  rnorm(NROW(predictor), sd=stdev))
+# Define explanatory (predv) and response variables
+  predv <- rnorm(100, mean=2)
+  respv <- (1 + 0.2*predictor + 
+  rnorm(NROW(predv), sd=stdev))
 # Specify regression formula
   formulav <- response ~ predictor
 # Perform regression and get summary
@@ -2632,11 +2632,11 @@ vecsd <- seq(from=0.1, to=0.5, by=0.1)
 names(vecsd) <- paste0("sd=", vecsd)
 statsmat <- t(sapply(vecsd, function(stdev) {
     set.seed(1121)  # initialize number generator
-# Define explanatory (predictor) and response variables
-    predictor <- rnorm(100, mean=2)
-    response <- (1 + 0.2*predictor +
-      rnorm(NROW(predictor), sd=stdev))
-    reg_stats(data.frame(predictor, response))
+# Define explanatory (predv) and response variables
+    predv <- rnorm(100, mean=2)
+    respv <- (1 + 0.2*predictor +
+      rnorm(NROW(predv), sd=stdev))
+    reg_stats(data.frame(predv, respv))
     }))
 # Plot in loop
 par(mfrow=c(NCOL(statsmat), 1))
@@ -2780,14 +2780,14 @@ x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 # Add unit column to the predictor matrix
-predictor <- cbind(rep(1, nrows), predictor)
+predv <- cbind(rep(1, nrows), predv)
 # Calculate generalized inverse of the predictor matrix
-invpred <- MASS::ginv(predictor)
+invpred <- MASS::ginv(predv)
 # Calculate the influence matrix
-influencem <- predictor %*% invpred
+influencem <- predv %*% invpred
 # Plot the leverage vector
-ordern <- order(predictor[, 2])
-plot(x=predictor[ordern, 2], y=diag(influencem)[ordern],
+ordern <- order(predv[, 2])
+plot(x=predv[ordern, 2], y=diag(influencem)[ordern],
      type="l", lwd=3, col="blue",
      xlab="predictor", ylab="leverage",
      main="Leverage as Function of Predictor")
@@ -2821,7 +2821,7 @@ plot(x=predictor[ordern, 2], y=diag(influencem)[ordern],
       This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the influence matrix
-influencem <- predictor %*% invpred
+influencem <- predv %*% invpred
 # The influence matrix is idempotent
 all.equal(influencem, influencem %*% influencem)
       @
@@ -2831,9 +2831,9 @@ all.equal(influencem, influencem %*% influencem)
         <<echo=TRUE,eval=FALSE>>=
 # Calculate covariance and standard deviations of fitted values
 betas <- invpred %*% response
-fittedv <- drop(predictor %*% betas)
-residuals <- drop(response - fittedv)
-degf <- (NROW(predictor) - NCOL(predictor))
+fittedv <- drop(predv %*% betas)
+residuals <- drop(respv - fittedv)
+degf <- (NROW(predv) - NCOL(predv))
 residvar <- sqrt(sum(residuals^2)/degf)
 fitcovar <- residvar*influencem
 fitsd <- sqrt(diag(fitcovar))
@@ -2866,11 +2866,11 @@ plot(fitsd, type="l", lwd=3, col="blue",
 # Calculate response without random noise for univariate regression,
 # equal to weighted sum over columns of predictor.
 betas <- c(-1, 1)
-response <- predictor %*% betas
+respv <- predv %*% betas
 # Perform loop over different realizations of random noise
 fittedv <- lapply(1:50, function(it) {
   # Add random noise to response
-  response <- response + rnorm(nrows, sd=1.0)
+  respv <- response + rnorm(nrows, sd=1.0)
   # Calculate fitted values using influence matrix
   influencem %*% response
 })  # end lapply
@@ -2884,12 +2884,12 @@ x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 # Plot fitted values
-matplot(x=predictor[,2], y=fittedv,
+matplot(x=predv[,2], y=fittedv,
         type="l", lty="solid", lwd=1, col="blue",
         xlab="predictor", ylab="fitted",
         main="Fitted Values for Different Realizations
         of Random Noise")
-lines(x=predictor[,2], y=response, col="red", lwd=4)
+lines(x=predv[,2], y=respv, col="red", lwd=4)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
@@ -2925,25 +2925,25 @@ legend(x="topleft", # Add legend
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Inverse of predictor matrix squared
-predictor2 <- MASS::ginv(crossprod(predictor))
+predictor2 <- MASS::ginv(crossprod(predv))
 # Define new predictors
-newdata <- (max(predictor[, 2]) + 10*(1:5)/nrows)
+newdata <- (max(predv[, 2]) + 10*(1:5)/nrows)
 # Calculate the predicted values and standard errors
 predictorn <- cbind(rep(1, NROW(newdata)), newdata)
-predsd <- sqrt(predictorn %*% predictor2 %*% t(predictorn))
-predictv <- cbind(
-  prediction=drop(predictorn %*% betas),
+predsd <- sqrt(predvn %*% predictor2 %*% t(predvn))
+predv <- cbind(
+  prediction=drop(predvn %*% betas),
   stddev=diag(residvar*predsd))
 # Or: Perform loop over predictorn
-predictv <- apply(predictorn, MARGIN=1, function(predictor) {
+predv <- apply(predvn, MARGIN=1, function(predv) {
   # Calculate predicted values
-  prediction <- predictor %*% betas
+  prediction <- predv %*% betas
   # Calculate standard deviation
-  predsd <- sqrt(t(predictor) %*% predictor2 %*% predictor)
+  predsd <- sqrt(t(predv) %*% predictor2 %*% predv)
   predictsd <- residvar*predsd
   c(prediction=prediction, stddev=predictsd)
 })  # end sapply
-predictv <- t(predictv)
+predv <- t(predv)
       @
   \end{columns}
 \end{block}
@@ -2961,21 +2961,21 @@ predictv <- t(predictv)
       The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}.
         <<echo=TRUE,eval=FALSE>>=
 # Prepare plot data
-xdata <- c(predictor[,2], newdata)
+xdata <- c(predv[,2], newdata)
 xlim <- range(xdata)
-ydata <- c(fittedv, predictv[, 1])
+ydata <- c(fittedv, predv[, 1])
 # Calculate t-quantile
 tquant <- qt(pnorm(2), df=degf)
-predictlow <- predictv[, 1]-tquant*predictv[, 2]
-predicthigh <- predictv[, 1]+tquant*predictv[, 2]
-ylim <- range(c(response, ydata, predictlow, predicthigh))
+predictlow <- predv[, 1]-tquant*predv[, 2]
+predicthigh <- predv[, 1]+tquant*predv[, 2]
+ylim <- range(c(respv, ydata, predictlow, predicthigh))
 # Plot the regression predictions
 plot(x=xdata, y=ydata, xlim=xlim, ylim=ylim,
      type="l", lwd=3, col="blue",
      xlab="predictor", ylab="fitted or predicted",
      main="Predictions from Linear Regression")
-points(x=predictor[,2], y=response, col="blue")
-points(x=newdata, y=predictv[, 1], pch=16, col="blue")
+points(x=predv[,2], y=respv, col="blue")
+points(x=newdata, y=predv[, 1], pch=16, col="blue")
 lines(x=newdata, y=predicthigh, lwd=3, col="red")
 lines(x=newdata, y=predictlow, lwd=3, col="green")
 legend(x="topleft", # Add legend
@@ -3004,20 +3004,20 @@ legend(x="topleft", # Add legend
       \texttt{predict.lm()} is the predict method for linear models (regressions) produced by the function \texttt{lm()}.
         <<echo=TRUE,eval=FALSE>>=
 # Perform univariate regression
-predictor <- predictor[, 2]
-model <- lm(response ~ predictor)
+predv <- predv[, 2]
+model <- lm(respv ~ predv)
 # Perform prediction from regression
-newdata <- data.frame(predictor=newdata)
+newdata <- data.frame(predv=newdata)
 predictlm <- predict(object=model,
   newdata=newdata, confl=1-2*(1-pnorm(2)),
   interval="confidence")
 predictlm <- as.data.frame(predictlm)
-all.equal(predictlm$fit, predictv[, 1])
+all.equal(predictlm$fit, predv[, 1])
 all.equal(predictlm$lwr, predictlow)
 all.equal(predictlm$upr, predicthigh)
-plot(response ~ predictor,
-     xlim=range(predictor, newdata),
-     ylim=range(response, predictlm),
+plot(respv ~ predv,
+     xlim=range(predv, newdata),
+     ylim=range(respv, predictlm),
      xlab="predictor", ylab="fitted or predicted",
      main="Predictions from lm() Regression")
       @
@@ -3026,9 +3026,9 @@ plot(response ~ predictor,
         <<echo=TRUE,eval=FALSE>>=
 abline(model, col="blue", lwd=3)
 with(predictlm, {
-  points(x=newdata$predictor, y=fit, pch=16, col="blue")
-  lines(x=newdata$predictor, y=lwr, lwd=3, col="green")
-  lines(x=newdata$predictor, y=upr, lwd=3, col="red")
+  points(x=newdata$predv, y=fit, pch=16, col="blue")
+  lines(x=newdata$predv, y=lwr, lwd=3, col="green")
+  lines(x=newdata$predv, y=upr, lwd=3, col="red")
 })  # end with
 legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),
@@ -3059,8 +3059,8 @@ legend(x="topleft", # Add legend
 set.seed(1121)
 library(lmtest)
 # Spurious regression in unit root time series
-predictor <- cumsum(rnorm(100))  # Unit root time series
-response <- cumsum(rnorm(100))
+predv <- cumsum(rnorm(100))  # Unit root time series
+respv <- cumsum(rnorm(100))
 formulav <- response ~ predictor
 model <- lm(formulav)  # Perform regression
 # Summary indicates statistically significant regression
@@ -3128,14 +3128,14 @@ plot(model, which=2, ask=FALSE)  # Plot just Q-Q
 nrows <- 100
 ncols <- 5
 set.seed(1121)  # initialize random number generator
-predictor <- matrix(rnorm(nrows*ncols), ncol=ncols)
+predv <- matrix(rnorm(nrows*ncols), ncol=ncols)
 # Add column names
-colnames(predictor) <- paste0("col", 1:ncols)
+colnames(predv) <- paste0("col", 1:ncols)
 # Define the predictor weights
 weights <- sample(3:(ncols+2))
 # Response equals weighted predictor plus random noise
 noise <- rnorm(nrows, sd=5)
-response <- (-3 + 2*predictor %*% weights + noise)
+respv <- (-3 + 2*predv %*% weights + noise)
       @
   \end{columns}
 \end{block}
@@ -3174,16 +3174,16 @@ response <- (-3 + 2*predictor %*% weights + noise)
       The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
         <<echo=TRUE,eval=TRUE>>=
 # Perform multivariate regression using lm()
-model <- lm(response ~ predictor)
+model <- lm(respv ~ predv)
 # Solve multivariate regression using matrix algebra
 # Calculate de-meaned predictor matrix and response vector
-predzm <- t(t(predictor) - colMeans(predictor))
-# predictor <- apply(predictor, 2, function(x) (x-mean(x)))
-respzm <- response - mean(response)
+predzm <- t(t(predv) - colMeans(predv))
+# predv <- apply(predv, 2, function(x) (x-mean(x)))
+respzm <- response - mean(respv)
 # Calculate the regression coefficients
 betas <- drop(MASS::ginv(predzm) %*% respzm)
 # Calculate the regression alpha
-alpha <- mean(response) - sum(colSums(predictor)*betas)/nrows
+alpha <- mean(respv) - sum(colSums(predv)*betas)/nrows
 # Compare with coefficients from lm()
 all.equal(coef(model), c(alpha, betas), check.attributes=FALSE)
 # Compare with actual coefficients
@@ -3223,16 +3223,16 @@ all.equal(c(-1, weights), c(alpha, betas), check.attributes=FALSE)
       The generalized inverse of the \emph{predictor matrix} $\mathbb{X}_{inv}$ maps the \emph{response vector} $y$ into the \emph{regression coefficients} $\beta$.
         <<echo=TRUE,eval=TRUE>>=
 # Add intercept column to predictor matrix
-predictor <- cbind(rep(1, NROW(predictor)), predictor)
-ncols <- NCOL(predictor)
+predv <- cbind(rep(1, NROW(predv)), predv)
+ncols <- NCOL(predv)
 # Add column name
-colnames(predictor)[1] <- "intercept"
+colnames(predv)[1] <- "intercept"
 # Calculate generalized inverse of the predictor matrix
-invpred <- MASS::ginv(predictor)
+invpred <- MASS::ginv(predv)
 # Calculate the regression coefficients
 betas <- invpred %*% response
 # Perform multivariate regression without intercept term
-model <- lm(response ~ predictor - 1)
+model <- lm(respv ~ predictor - 1)
 all.equal(drop(betas), coef(model), check.attributes=FALSE)
       @
   \end{columns}
@@ -3269,13 +3269,13 @@ all.equal(drop(betas), coef(model), check.attributes=FALSE)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate fitted values from regression coefficients
-fittedv <- drop(predictor %*% betas)
+fittedv <- drop(predv %*% betas)
 all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
 # Calculate the residuals
-residuals <- drop(response - fittedv)
+residuals <- drop(respv - fittedv)
 all.equal(residuals, model$residuals, check.attributes=FALSE)
-# Residuals are orthogonal to predictor columns (predictors)
-sapply(residuals %*% predictor, all.equal, target=0)
+# Residuals are orthogonal to predictor columns (predvs)
+sapply(residuals %*% predv, all.equal, target=0)
 # Residuals are orthogonal to the fitted values
 all.equal(sum(residuals*fittedv), target=0)
 # Sum of residuals is equal to zero
@@ -3310,14 +3310,14 @@ all.equal(sum(residuals), target=0)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the influence matrix
-influencem <- predictor %*% invpred
+influencem <- predv %*% invpred
 # The influence matrix is idempotent
 all.equal(influencem, influencem %*% influencem)
 # Calculate fitted values using influence matrix
-fittedv <- drop(influencem %*% response)
+fittedv <- drop(influencem %*% respv)
 all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
 # Calculate fitted values from regression coefficients
-fittedv <- drop(predictor %*% betas)
+fittedv <- drop(predv %*% betas)
 all.equal(fittedv, model$fitted.values, check.attributes=FALSE)
       @
   \end{columns}
@@ -3350,13 +3350,13 @@ has the same influence matrix, and
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate zero mean fitted values
-predzm <- t(t(predictor) - colMeans(predictor))
+predzm <- t(t(predv) - colMeans(predv))
 fitted_zm <- drop(predzm %*% betas)
 all.equal(fitted_zm,
-  model$fitted.values - mean(response),
+  model$fitted.values - mean(respv),
   check.attributes=FALSE)
 # Calculate the residuals
-respzm <- response - mean(response)
+respzm <- response - mean(respv)
 residuals <- drop(respzm - fitted_zm)
 all.equal(residuals, model$residuals,
           check.attributes=FALSE)
@@ -3388,12 +3388,12 @@ all.equal(fitted_zm,
         <<echo=TRUE,eval=FALSE>>=
 library(lmtest)  # Load lmtest
 # Define predictor matrix
-predictor <- 1:30
+predv <- 1:30
 omitv <- sin(0.2*1:30)
 # Response depends on both predictors
-response <- 0.2*predictor + omitv + 0.2*rnorm(30)
+respv <- 0.2*predictor + omitv + 0.2*rnorm(30)
 # Mis-specified regression only one predictor
-model_ovb <- lm(response ~ predictor)
+model_ovb <- lm(respv ~ predv)
 modelsum <- summary(model_ovb)
 modelsum$coeff
 modelsum$r.squared
@@ -3403,7 +3403,7 @@ lmtest::dwtest(model_ovb)
 x11(width=5, height=7)
 par(mfrow=c(2,1))  # Set plot panels
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-plot(response ~ predictor)
+plot(respv ~ predv)
 abline(model_ovb, lwd=2, col="red")
 title(main="Omitted Variable Regression", line=-1)
 plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
@@ -3452,8 +3452,8 @@ plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
 # Regression model summary
 modelsum <- summary(model)
 # Degrees of freedom of residuals
-nrows <- NROW(predictor)
-ncols <- NCOL(predictor)
+nrows <- NROW(predv)
+ncols <- NCOL(predv)
 degf <- (nrows - ncols)
 all.equal(degf, modelsum$df[2])
 # Variance of residuals
@@ -3489,8 +3489,8 @@ residvar <- sum(residuals^2)/degf
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Inverse of predictor matrix squared
-predictor2 <- MASS::ginv(crossprod(predictor))
-# predictor2 <- t(predictor) %*% predictor
+predictor2 <- MASS::ginv(crossprod(predv))
+# predictor2 <- t(predv) %*% predictor
 # Variance of residuals
 residvar <- sum(residuals^2)/degf
 # Calculate covariance matrix of betas
@@ -3506,7 +3506,7 @@ beta_pvals <- 2*pt(-abs(beta_tvals), df=degf)
 all.equal(beta_pvals, modelsum$coeff[, 4], check.attributes=FALSE)
 # The square of the generalized inverse is equal
 # to the inverse of the square
-all.equal(MASS::ginv(crossprod(predictor)),
+all.equal(MASS::ginv(crossprod(predv)),
           invpred %*% t(invpred))
       @
   \end{columns}
@@ -3536,7 +3536,7 @@ all.equal(MASS::ginv(crossprod(predictor)),
       This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the influence matrix
-influencem <- predictor %*% invpred
+influencem <- predv %*% invpred
 # The influence matrix is idempotent
 all.equal(influencem, influencem %*% influencem)
       @
@@ -3636,7 +3636,7 @@ t(apply(bootd, MARGIN=1,
 # New data predictor is a data frame or row vector
 set.seed(1121)
 newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
-colnamev <- colnames(predictor)
+colnamev <- colnames(predv)
 colnames(newdata) <- colnamev
 newdatav <- as.matrix(newdata)
 prediction <- drop(newdatav %*% betas)
@@ -3665,9 +3665,9 @@ predsd <- drop(sqrt(newdatav %*% beta_covar %*% t(newdatav)))
         <<echo=TRUE,eval=TRUE>>=
 # Create formula from text string
 formulav <- paste0("response ~ ",
-  paste(colnames(predictor), collapse=" + "), " - 1")
+  paste(colnames(predv), collapse=" + "), " - 1")
 # Specify multivariate regression using formula
-model <- lm(formulav, data=data.frame(cbind(response, predictor)))
+model <- lm(formulav, data=data.frame(cbind(respv, predv)))
 modelsum <- summary(model)
 # Predict from lm object
 predictlm <- predict.lm(object=model, newdata=newdata,
@@ -3715,7 +3715,7 @@ all.equal(predictlm[1, "upr"], predicthigh)
       \includegraphics[width=0.45\paperwidth]{figure/reg_tss.png}
         <<echo=TRUE,eval=TRUE>>=
 # TSS = ESS + RSS
-tss <- sum((response-mean(response))^2)
+tss <- sum((respv-mean(respv))^2)
 ess <- sum((fittedv-mean(fittedv))^2)
 rss <- sum(residuals^2)
 all.equal(tss, ess + rss)
@@ -3755,7 +3755,7 @@ modelsum <- summary(model)
 rsquared <- ess/tss
 all.equal(rsquared, modelsum$r.squared)
 # Correlation between response and fitted values
-cor_fitted <- drop(cor(response, fittedv))
+cor_fitted <- drop(cor(respv, fittedv))
 # Squared correlation between response and fitted values
 all.equal(cor_fitted^2, rsquared)
       @
@@ -3786,12 +3786,12 @@ all.equal(cor_fitted^2, rsquared)
     \column{0.5\textwidth}
       The performance of two different models can be compared by comparing their \emph{adjusted R-squared}, since the model with the larger \emph{adjusted R-squared} has a smaller \emph{residual variance}, so it's better able to explain the \emph{response}.
       <<echo=TRUE,eval=TRUE>>=
-nrows <- NROW(predictor)
-ncols <- NCOL(predictor)
+nrows <- NROW(predv)
+ncols <- NCOL(predv)
 # Degrees of freedom of residuals
 degf <- (nrows - ncols)
 # Adjusted R-squared
-rsquared_adj <- (1-sum(residuals^2)/degf/var(response))
+rsquared_adj <- (1-sum(residuals^2)/degf/var(respv))
 # Compare adjusted R-squared from lm()
 all.equal(drop(rsquared_adj), modelsum$adj.r.squared)
       @
@@ -4052,9 +4052,9 @@ all.equal(invreg, invmp, check.attributes=FALSE)
 # Define transformation matrix
 trans_mat <- matrix(runif(ncols^2, min=(-1), max=1), ncol=ncols)
 # Calculate linear combinations of predictor columns
-predictor_trans <- predictor %*% trans_mat
+predictor_trans <- predv %*% trans_mat
 # Calculate the influence matrix
-influence_trans <- predictor_trans %*% MASS::ginv(predictor_trans)
+influence_trans <- predictor_trans %*% MASS::ginv(predv_trans)
 # Compare the influence matrices
 all.equal(influencem, influence_trans)
       @

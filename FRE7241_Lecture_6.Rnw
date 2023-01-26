@@ -482,28 +482,28 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 # Subset (select) the prices after the start date of VTI
 retvti <- na.omit(rutils::etfenv$returns$VTI)
 colnames(retvti) <- "VTI"
-prices <- prices[zoo::index(retvti)]
+pricev <- pricev[zoo::index(retvti)]
 # Select columns with non-NA prices at start
-prices <- prices[, !is.na(prices[1, ])]
-dim(prices)
+pricev <- pricev[, !is.na(pricev[1, ])]
+dim(pricev)
 # Copy over NA prices using the function zoo::na.locf()
-prices <- zoo::na.locf(prices, na.rm=FALSE)
-sum(is.na(prices))
-datev <- zoo::index(prices)
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+sum(is.na(pricev))
+datev <- zoo::index(pricev)
 retvti <- retvti[datev]
-nrows <- NROW(prices)
-nstocks <- NCOL(prices)
+nrows <- NROW(pricev)
+nstocks <- NCOL(pricev)
 # Normalize the prices so that they start at 1
-pricesn <- lapply(prices, function(x) x/as.numeric(x[1]))
+pricesn <- lapply(pricev, function(x) x/as.numeric(x[1]))
 pricesn <- rutils::do_call(cbind, pricesn)
-head(pricesn[, 1:5])
+head(pricevn[, 1:5])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/portf_random.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the equal dollar-weighted average of all stock prices
-indeks <- rowMeans(pricesn)
+indeks <- rowMeans(pricevn)
 indeks <- xts::xts(indeks, order.by=datev)
 colnames(indeks) <- "Index"
 # Select a random, equal dollar-weighted portfolio of 5 stocks
@@ -516,7 +516,7 @@ colnames(portf) <- "Random"
 # Plot dygraph of stock index and random portfolio
 wealthv <- cbind(indeks, portf)
 colorv <- c("blue", "red")
-endd <- rutils::calc_endpoints(prices, interval="months")
+endd <- rutils::calc_endpoints(pricev, interval="months")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Stock Index and Random Portfolio") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
@@ -546,8 +546,8 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Stock Index and Random Portfolio"
 set.seed(1121)
 nportf <- 10
 portfs <- sapply(1:nportf, function(x) {
-  prices <- pricesn[, sample.int(n=nstocks, size=5, replace=FALSE)]
-  rowMeans(prices)
+  pricev <- pricesn[, sample.int(n=nstocks, size=5, replace=FALSE)]
+  rowMeans(pricev)
 })  # end sapply
 portfs <- xts::xts(portfs, order.by=datev)
 colnames(portfs) <- paste0("portf", 1:nportf)
@@ -594,12 +594,12 @@ datev[cutoff]
 insample <- 1:cutoff
 outsample <- (cutoff + 1):nrows
 # Calculate the 10 best performing stocks in-sample
-perfstat <- sort(drop(coredata(pricesn[cutoff, ])), decreasing=TRUE)
+perfstat <- sort(drop(coredata(pricevn[cutoff, ])), decreasing=TRUE)
 symbolv <- names(head(perfstat, 10))
 # Calculate the in-sample portfolio
 pricis <- pricesn[insample, symbolv]
 # Normalize the prices so that they are 1 at cutoff+1
-pricesn <- lapply(prices, function(x) x/as.numeric(x[cutoff+1]))
+pricesn <- lapply(pricev, function(x) x/as.numeric(x[cutoff+1]))
 pricesn <- rutils::do_call(cbind, pricesn)
 # Calculate the out-of-sample portfolio
 pricos <- pricesn[outsample, symbolv]
@@ -644,7 +644,7 @@ dygraphs::dygraph(log(wealthv[endd]), main="Out-of-sample Log Prices of Stock Po
       \emph{USMV} is an \emph{ETF} that holds low volatility stocks, although it hasn't met expectations. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the stock volatilities, betas, and alphas
-retsp <- rutils::diffit(log(prices))
+retsp <- rutils::diffit(log(pricev))
 varvti <- drop(var(retvti))
 meanvti <- mean(retvti)
 riskret <- sapply(retsp, function(rets) {
@@ -696,11 +696,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks In
       The \emph{Treynor-Mazuy} test shows that the \emph{betting against volatility} strategy has some \emph{market timing} skill.
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
-predictor <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(predictor)[2:3] <- c("merton", "treynor")
-regmod <- lm(wealthv$long_short ~ VTI + merton, data=predictor); summary(regmod)
+predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(predv)[2:3] <- c("merton", "treynor")
+regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
-regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predictor); summary(regmod)
+regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
 residv <- regmod$residuals
 plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Volatility")
@@ -823,11 +823,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volati
       The \emph{Treynor-Mazuy} test shows that the \emph{betting against idiosyncratic volatility} strategy has some \emph{market timing} skill.
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
-predictor <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(predictor)[2:3] <- c("merton", "treynor")
-regmod <- lm(wealthv$long_short ~ VTI + merton, data=predictor); summary(regmod)
+predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(predv)[2:3] <- c("merton", "treynor")
+regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
-regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predictor); summary(regmod)
+regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
 residv <- regmod$residuals
 plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Volatility")
@@ -943,11 +943,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks In-Sampl
       The \emph{Treynor-Mazuy} test shows that the \emph{betting against beta} strategy does not have significant \emph{market timing} skill.
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
-predictor <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(predictor)[2:3] <- c("merton", "treynor")
-regmod <- lm(wealthv$long_short ~ VTI + merton, data=predictor); summary(regmod)
+predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(predv)[2:3] <- c("merton", "treynor")
+regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
-regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predictor); summary(regmod)
+regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
 residv <- regmod$residuals
 plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Beta")
@@ -1034,7 +1034,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-S
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the log percentage returns
-retsp <- rutils::diffit(log(prices))
+retsp <- rutils::diffit(log(pricev))
 # Define performance objective function as sum of returns
 objfun <- function(retsp) sum(retsp)
 # Define performance objective function as Sharpe ratio
@@ -1617,11 +1617,11 @@ zoo::plot.zoo(datav, main="Momentum Beta & VTI Price", xlab="")
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
 retvti <- retsp$VTI
-predictor <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(predictor)[2:3] <- c("merton", "treynor")
-regmod <- lm(pnls ~ VTI + merton, data=predictor); summary(regmod)
+predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(predv)[2:3] <- c("merton", "treynor")
+regmod <- lm(pnls ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
-regmod <- lm(pnls ~ VTI + treynor, data=predictor); summary(regmod)
+regmod <- lm(pnls ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
 residv <- regmod$residuals
 plot.default(x=retvti, y=residv, xlab="VTI", ylab="momentum")
@@ -2120,13 +2120,13 @@ betar <- sapply(1:NROW(endd), FUN=function(ep) {
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
 # Calculate rolling betas using RcppArmadillo
-reg_stats <- HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1))
+reg_stats <- HighFreq::roll_reg(respv=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1))
 betas <- reg_stats$VTI
 all.equal(betas, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(response=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1)),
+  Rcpp=HighFreq::roll_reg(respv=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1)),
   Rcode=sapply(1:NROW(endd), FUN=function(ep) {
     datav <- retsp[startp[ep]:endd[ep], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
@@ -2172,7 +2172,7 @@ dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
       The regression of prices is not statistically valid because they are not normally distributed.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate XLB and XLE prices
-pricev <- na.omit(rutils::etfenv$prices[, c("XLB", "XLE")])
+pricev <- na.omit(rutils::etfenv$pricev[, c("XLB", "XLE")])
 cor(rutils::diffit(log(pricev)))
 xlb <- drop(zoo::coredata(pricev$XLB))
 xle <- drop(zoo::coredata(pricev$XLE))
