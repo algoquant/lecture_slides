@@ -184,13 +184,13 @@ barplot(eigend$values, xlab="", ylab="", las=3,
       \vskip1ex
       The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal:
       \begin{displaymath}
-        \mathbb{D} = \mathbb{O}^T \mathbb{A} \, \mathbb{O}
+        \Sigma = \mathbb{O}^T \mathbb{A} \, \mathbb{O}
       \end{displaymath}
-      Where $\mathbb{D}$ is a \emph{diagonal} matrix containing the \emph{eigenvalues} of matrix $\mathbb{A}$, and $\mathbb{O}$ is an \emph{orthogonal} matrix of its \emph{eigenvectors}, with $\mathbb{O}^T \mathbb{O} = \mathbbm{1}$.
+      Where $\Sigma$ is a \emph{diagonal} matrix containing the \emph{eigenvalues} of matrix $\mathbb{A}$, and $\mathbb{O}$ is an \emph{orthogonal} matrix of its \emph{eigenvectors}, with $\mathbb{O}^T \mathbb{O} = \mathbbm{1}$.
       \vskip1ex
       Any real symmetric matrix $\mathbb{A}$ can be decomposed into a product of its \emph{eigenvalues} and its \emph{eigenvectors} (the \emph{eigen decomposition}):
       \begin{displaymath}
-        \mathbb{A} = \mathbb{O} \, \mathbb{D} \, \mathbb{O}^T
+        \mathbb{A} = \mathbb{O} \, \Sigma \, \mathbb{O}^T
       \end{displaymath}
       The \emph{eigen decomposition} expresses a matrix as the product of a rotation, followed by a scaling, followed by the inverse rotation.
     \column{0.5\textwidth}
@@ -210,7 +210,7 @@ all.equal(matrixv, matrixe)
       @
       \emph{Orthogonal} matrices represent rotations in \emph{hyperspace}, and their inverse is equal to their transpose: $\mathbb{O}^{-1} = \mathbb{O}^T$.
       \vskip1ex
-      The \emph{diagonal} matrix $\mathbb{D}$ represents a scaling (stretching) transformation proportional to the \emph{eigenvalues}.
+      The \emph{diagonal} matrix $\Sigma$ represents a scaling (stretching) transformation proportional to the \emph{eigenvalues}.
       \vskip1ex
       The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices.
       \vskip1ex
@@ -370,9 +370,9 @@ all.equal(abs(eigend$vectors), abs(rightmat))
       \end{displaymath}
       Where $\mathbbm{1}$ is the identity matrix.
       \vskip1ex
-      The inverse $\mathbb{A}^{-1}$ of a \emph{symmetric} square matrix $\mathbb{A}$ can also be expressed as the product of the inverse of its \emph{eigenvalues} ($\mathbb{D}$) and its \emph{eigenvectors} ($\mathbb{O}$):
+      The inverse $\mathbb{A}^{-1}$ of a \emph{symmetric} square matrix $\mathbb{A}$ can also be expressed as the product of the inverse of its \emph{eigenvalues} ($\Sigma$) and its \emph{eigenvectors} ($\mathbb{O}$):
       \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{O} \, \mathbb{D}^{-1} \, \mathbb{O}^T
+        \mathbb{A}^{-1} = \mathbb{O} \, \Sigma^{-1} \, \mathbb{O}^T
       \end{displaymath}
       But \emph{singular} (degenerate) matrices (which have some \emph{eigenvalues} equal to zero) don't have an inverse.
       \vskip1ex
@@ -732,9 +732,9 @@ cholmat
 # Simulate random uncorrelated returns
 nassets <- 5
 nrows <- 10000
-retsp <- matrix(rnorm(nassets*nrows), nc=nassets)
+retp <- matrix(rnorm(nassets*nrows), nc=nassets)
 # Calculate correlated returns by applying Cholesky
-retscorr <- retsp %*% cholmat
+retscorr <- retp %*% cholmat
 # Calculate covariance matrix
 covmat2 <- crossprod(retscorr) /(nrows-1)
 all.equal(covmat, covmat2)
@@ -764,13 +764,13 @@ all.equal(covmat, covmat2)
 nassets <- 10
 nrows <- 100
 set.seed(1121)  # Initialize random number generator
-retsp <- matrix(rnorm(nassets*nrows), nc=nassets)
+retp <- matrix(rnorm(nassets*nrows), nc=nassets)
 # Calculate de-meaned returns matrix
-retsp <- t(t(retsp) - colMeans(retsp))
+retp <- t(t(retp) - colMeans(retp))
 # Or
-retsp <- apply(retsp, MARGIN=2, function(x) (x-mean(x)))
+retp <- apply(retp, MARGIN=2, function(x) (x-mean(x)))
 # Calculate covariance matrix
-covmat <- crossprod(retsp) /(nrows-1)
+covmat <- crossprod(retp) /(nrows-1)
 # Calculate the eigenvalues and eigenvectors
 eigend <- eigen(covmat)
 eigend$values
@@ -787,9 +787,9 @@ barplot(eigend$values, # Plot eigenvalues
 # as function of number of returns
 ndata <- ((nassets/2):(2*nassets))
 eigenval <- sapply(ndata, function(x) {
-  retsp <- retsp[1:x, ]
-  retsp <- apply(retsp, MARGIN=2, function(y) (y - mean(y)))
-  covmat <- crossprod(retsp) / (x-1)
+  retp <- retp[1:x, ]
+  retp <- apply(retp, MARGIN=2, function(y) (y - mean(y)))
+  covmat <- crossprod(retp) / (x-1)
   min(eigen(covmat)$values)
 })  # end sapply
 plot(y=eigenval, x=ndata, t="l", xlab="", ylab="", lwd=3, col="blue",
@@ -815,9 +815,9 @@ plot(y=eigenval, x=ndata, t="l", xlab="", ylab="", lwd=3, col="blue",
       \vskip1ex
       The \emph{regularized} inverse $\mathbb{C}_n^{-1}$ is calculated by removing the higher order eigenvalues that are almost zero, and keeping only the first $n$ \emph{eigenvalues}:
       \begin{displaymath}
-        \mathbb{C}_n^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
+        \mathbb{C}_n^{-1} = \mathbb{O}_n \, \Sigma_n^{-1} \, \mathbb{O}_n^T
       \end{displaymath}
-      Where $\mathbb{D}_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
+      Where $\Sigma_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
       \vskip1ex
       The function \texttt{MASS::ginv()} calculates the \emph{regularized} inverse of a matrix.
     \column{0.5\textwidth}
@@ -1001,50 +1001,50 @@ plot(x=1:5, y=iterv, t="l", xlab="iterations", ylab="error",
       returns of \emph{XLP} and \emph{VTI} are highly correlated because they both share a common factor of market returns.
       <<echo=TRUE,eval=FALSE>>=
 # Perform PCA for two stocks
-retsp <- scale(na.omit(rutils::etfenv$returns
+retp <- scale(na.omit(rutils::etfenv$returns
                 [, as.character(formulav)[-1]]))
-crossprod(retsp) / NROW(retsp)
+crossprod(retp) / NROW(retp)
 w1 <- sqrt(0.5); w2 <- w1
 foo <- matrix(c(w1, w2, -w2, w1), nc=2)
 t(foo) %*% foo
-# bar <- retsp %*% t(solve(foo))
+# bar <- retp %*% t(solve(foo))
 (t(bar) %*% bar) / NROW(bar)
 
-covmat <- function(retsp, anglev=0) {
+covmat <- function(retp, anglev=0) {
   w1 <- cos(anglev)
   w2 <- sin(anglev)
   matrixv <- matrix(c(w1, -w2, w2, w1), nc=2)
-  pcav <- retsp %*% t(matrixv)
+  pcav <- retp %*% t(matrixv)
   (t(pcav) %*% pcav) / NROW(pcav)
 }  # end covmat
 
-bar <- covmat(retsp, anglev=pi/4)
-crossprod(retsp) / NROW(retsp)
+bar <- covmat(retp, anglev=pi/4)
+crossprod(retp) / NROW(retp)
 (t(bar) %*% bar) / NROW(bar)
 
 angles <- seq(0, pi/2, by=pi/24)
 covmat <- sapply(angles, function(anglev)
-  covmat(retsp, anglev=anglev)[1, 1])
+  covmat(retp, anglev=anglev)[1, 1])
 plot(x=angles, y=covmat, t="l")
 
 optiml <- optimize(
   f=function(anglev)
-    -covmat(retsp, anglev=anglev)[1, 1],
+    -covmat(retp, anglev=anglev)[1, 1],
   interval=range(angles))
 anglev <- optiml$minimum
-bar <- covmat(retsp, anglev=anglev)
+bar <- covmat(retp, anglev=anglev)
 tan(anglev)
 
 w1 <- cos(anglev)
 w2 <- sin(anglev)
 matrixv <- matrix(c(w1, -w2, w2, w1), nc=2)
-pcav <- retsp %*% t(matrixv)
+pcav <- retp %*% t(matrixv)
 (t(pcav) %*% pcav) / NROW(pcav)
 
 plot(x=pcav[, 1], y=pcav[, 2],
      xlim=c(-10, 10), ylim=c(-10, 10))
 
-regmod <- lm(formulav, data=retsp)
+regmod <- lm(formulav, data=retp)
 # Get regression coefficients
 coef(summary(regmod))
 
@@ -1107,32 +1107,32 @@ symbolv <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 pricev <- rutils::etfenv$pricev[, symbolv]
 pricev <- zoo::na.locf(pricev, na.rm=FALSE)
 pricev <- zoo::na.locf(pricev, fromLast=TRUE)
-retsp <- rutils::diffit(log(pricev))
+retp <- rutils::diffit(log(pricev))
 # Calculate covariance matrix
-covmat <- cov(retsp)
+covmat <- cov(retp)
 # Standardize (de-mean and scale) the returns
-retsp <- lapply(retsp, function(x) {(x - mean(x))/sd(x)})
-retsp <- rutils::do_call(cbind, retsp)
-round(sapply(retsp, mean), 6)
-sapply(retsp, sd)
+retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
+retp <- rutils::do_call(cbind, retp)
+round(sapply(retp, mean), 6)
+sapply(retp, sd)
 # Alternative (much slower) center (de-mean) and scale the returns
-# retsp <- apply(retsp, 2, scale)
-# retsp <- xts::xts(retsp, zoo::index(pricev))
+# retp <- apply(retp, 2, scale)
+# retp <- xts::xts(retp, zoo::index(pricev))
 # Alternative (much slower) center (de-mean) and scale the returns
-# retsp <- scale(retsp, center=TRUE, scale=TRUE)
-# retsp <- xts::xts(retsp, zoo::index(pricev))
+# retp <- scale(retp, center=TRUE, scale=TRUE)
+# retp <- xts::xts(retp, zoo::index(pricev))
 # Alternative (much slower) center (de-mean) and scale the returns
-# retsp <- t(retsp) - colMeans(retsp)
-# retsp <- retsp/sqrt(rowSums(retsp^2)/(NCOL(retsp)-1))
-# retsp <- t(retsp)
-# retsp <- xts::xts(retsp, zoo::index(pricev))
+# retp <- t(retp) - colMeans(retp)
+# retp <- retp/sqrt(rowSums(retp^2)/(NCOL(retp)-1))
+# retp <- t(retp)
+# retp <- xts::xts(retp, zoo::index(pricev))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/corr_etf.png}
             <<echo=TRUE,eval=FALSE>>=
 # Calculate correlation matrix
-cormat <- cor(retsp)
+cormat <- cor(retp)
 # Reorder correlation matrix based on clusters
 library(corrplot)
 ordern <- corrMatOrder(cormat, order="hclust", 
@@ -1181,16 +1181,16 @@ nweights <- NROW(symbolv)
 weightv <- rep(1/sqrt(nweights), nweights)
 names(weightv) <- symbolv
 # Objective function equal to minus portfolio variance
-objfun <- function(weightv, retsp) {
-  retsp <- retsp %*% weightv
-  -sum(retsp^2) + 1e7*(1 - sum(weightv^2))^2
+objfun <- function(weightv, retp) {
+  retp <- retp %*% weightv
+  -sum(retp^2) + 1e7*(1 - sum(weightv^2))^2
 }  # end objfun
 # Objective for equal weight portfolio
-objfun(weightv, retsp)
+objfun(weightv, retp)
 # Compare speed of vector multiplication methods
 summary(microbenchmark(
-  transp=(t(retsp[, 1]) %*% retsp[, 1]),
-  sumv=sum(retsp[, 1]^2),
+  transp=(t(retp[, 1]) %*% retp[, 1]),
+  sumv=sum(retp[, 1]^2),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -1200,13 +1200,13 @@ summary(microbenchmark(
 # Find weights with maximum variance
 optiml <- optim(par=weightv,
   fn=objfun,
-  retsp=retsp,
+  retp=retp,
   method="L-BFGS-B",
   upper=rep(10.0, nweights),
   lower=rep(-10.0, nweights))
 # Optimal weights and maximum variance
 weights1 <- optiml$par
--objfun(weights1, retsp)
+-objfun(weights1, retp)
 # Plot first principal component weights
 barplot(weights1, names.arg=names(weights1), xlab="", ylab="",
         main="First Principal Component Weights")
@@ -1229,18 +1229,18 @@ barplot(weights1, names.arg=names(weights1), xlab="", ylab="",
       Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # PC1 returns
-pc1 <- drop(retsp %*% weights1)
+pc1 <- drop(retp %*% weights1)
 # Redefine objective function
-objfun <- function(weightv, retsp) {
-  retsp <- retsp %*% weightv
-  -sum(retsp^2) + 1e7*(1 - sum(weightv^2))^2 +
+objfun <- function(weightv, retp) {
+  retp <- retp %*% weightv
+  -sum(retp^2) + 1e7*(1 - sum(weightv^2))^2 +
     1e7*(sum(weights1*weightv))^2
 }  # end objfun
 # Find second PC weights using parallel DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retsp)),
-  lower=rep(-10, NCOL(retsp)),
-  retsp=retsp, control=list(parVar="weights1",
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp, control=list(parVar="weights1",
     trace=FALSE, itermax=1000, parallelType=1))
       @
     \column{0.5\textwidth}
@@ -1249,11 +1249,11 @@ optiml <- DEoptim::DEoptim(fn=objfun,
       <<echo=TRUE,eval=FALSE>>=
 # PC2 weights
 weights2 <- optiml$optim$bestmem
-names(weights2) <- colnames(retsp)
+names(weights2) <- colnames(retp)
 sum(weights2^2)
 sum(weights1*weights2)
 # PC2 returns
-pc2 <- drop(retsp %*% weights2)
+pc2 <- drop(retp %*% weights2)
 # Plot second principal component loadings
 barplot(weights2, names.arg=names(weights2), xlab="", ylab="",
         main="Second Principal Component Loadings")
@@ -1335,7 +1335,7 @@ barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
 # Calculate the eigen decomposition of the correlation matrix
 eigend <- eigen(cormat)
 # Perform PCA with scaling
-pcad <- prcomp(retsp, scale=TRUE)
+pcad <- prcomp(retp, scale=TRUE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -1343,7 +1343,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
 # Eigen decomposition of covariance matrix
 eigend <- eigen(covmat)
 # Perform PCA without scaling
-pcad <- prcomp(retsp, scale=FALSE)
+pcad <- prcomp(retp, scale=FALSE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -1367,27 +1367,27 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
       So the highest order \emph{principal component} is equal to the \emph{Minimum Variance Portfolio}.
       <<echo=TRUE,eval=FALSE>>=
 # Redefine objective function to minimize variance
-objfun <- function(weightv, retsp) {
-  retsp <- retsp %*% weightv
-  sum(retsp^2) + 1e7*(1 - sum(weightv^2))^2
+objfun <- function(weightv, retp) {
+  retp <- retp %*% weightv
+  sum(retp^2) + 1e7*(1 - sum(weightv^2))^2
 }  # end objfun
 # Find highest order PC weights using parallel DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retsp)),
-  lower=rep(-10, NCOL(retsp)),
-  retsp=retsp, control=list(trace=FALSE,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp, control=list(trace=FALSE,
     itermax=1000, parallelType=1))
 # PC6 weights and returns
 weights6 <- optiml$optim$bestmem
-names(weights6) <- colnames(retsp)
+names(weights6) <- colnames(retp)
 sum(weights6^2)
 sum(weights1*weights6)
 # Compare with eigend vector
 weights6
 eigend$vectors[, 6]
 # Calculate objective function
-objfun(weights6, retsp)
-objfun(eigend$vectors[, 6], retsp)
+objfun(weights6, retp)
+objfun(eigend$vectors[, 6], retp)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1431,7 +1431,7 @@ barplot(weights6, names.arg=names(weights2), xlab="", ylab="",
       A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # Perform principal component analysis PCA
-pcad <- prcomp(retsp, scale=TRUE)
+pcad <- prcomp(retp, scale=TRUE)
 # Plot standard deviations of principal components
 barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
   las=3, xlab="", ylab="",
@@ -1495,7 +1495,7 @@ for (ordern in 1:nweights) {
 round(t(pcad$x) %*% pcad$x, 2)
 # Calculate principal component time series from returns
 datev <- zoo::index(pricev)
-retspca <- xts::xts(retsp %*% pcad$rotation, order.by=datev)
+retspca <- xts::xts(retp %*% pcad$rotation, order.by=datev)
 round(cov(retspca), 3)
 all.equal(coredata(retspca), pcad$x, check.attributes=FALSE)
 pcacum <- cumsum(retspca)
@@ -1529,14 +1529,14 @@ for (ordern in 1:nweights) {
       The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
       <<echo=TRUE,eval=FALSE>>=
 # Invert all the principal component time series
-retspca <- retsp %*% pcad$rotation
+retspca <- retp %*% pcad$rotation
 solved <- retspca %*% solve(pcad$rotation)
-all.equal(coredata(retsp), solved)
+all.equal(coredata(retp), solved)
 # Invert first 3 principal component time series
 solved <- retspca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
 solved <- xts::xts(solved, datev)
 solved <- cumsum(solved)
-retc <- cumsum(retsp)
+retc <- cumsum(retp)
 # Plot the solved returns
 for (symbol in symbolv) {
   plot.zoo(cbind(retc[, symbol], solved[, symbol]),
@@ -1634,11 +1634,11 @@ plot(x=corvec, y=condvec, t="l",
 nstocks <- 10
 nrows <- 100
 set.seed(1121)  # Initialize random number generator
-retsp <- matrix(rnorm(nstocks*nrows), nc=nstocks)
+retp <- matrix(rnorm(nstocks*nrows), nc=nstocks)
 # Calculate the condition numbers as function of number of observations
 obsvec <- seq(20, nrows, 10)
 condvec <- sapply(obsvec, function(nobs) {
-  cormat <- cor(retsp[1:nobs, ])
+  cormat <- cor(retp[1:nobs, ])
   eigend <- eigen(cormat)
   eigenval <- eigend$values
   max(eigenval)/min(eigenval)
@@ -1679,12 +1679,12 @@ plot(x=obsvec, y=condvec, t="l",
 # Load daily S&P500 log percentage stock returns
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Calculate the number of NA values in returns
-retsp <- returns100["2000/"]
-colSums(is.na(retsp))
+retp <- returns100["2000/"]
+colSums(is.na(retp))
 # Calculate the correlations ignoring NA values
-cor(retsp$DAL, retsp$FOXA, use="pairwise.complete.obs")
-cor(na.omit(retsp[, c("DAL", "FOXA")]))[2]
-cormat <- cor(retsp, use="pairwise.complete.obs")
+cor(retp$DAL, retp$FOXA, use="pairwise.complete.obs")
+cor(na.omit(retp[, c("DAL", "FOXA")]))[2]
+cormat <- cor(retp, use="pairwise.complete.obs")
 sum(is.na(cormat))
 cormat[is.na(cormat)] <- 0
       @
@@ -1708,7 +1708,7 @@ cormat[is.na(cormat)] <- 0
       If some of the eigenvalues are negative, then the condition number is calculated using the eigenvalue with the smallest absolute value. 
       <<echo=TRUE,eval=FALSE>>=
 # Perform principal component analysis PCA - produces error
-pcad <- prcomp(retsp, scale=TRUE)
+pcad <- prcomp(retp, scale=TRUE)
 # Calculate the eigen decomposition of the correlation matrix
 eigend <- eigen(cormat)
 # Calculate the eigenvalues and eigenvectors
@@ -1754,12 +1754,12 @@ barplot(eigenval, xlab="", ylab="", las=3,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the stock volatilities
-stdevs <- sapply(retsp, var, na.rm=TRUE)
+stdevs <- sapply(retp, var, na.rm=TRUE)
 # Calculate the returns of low and high volatility stocks
-nstocks <- NCOL(retsp)
+nstocks <- NCOL(retp)
 medianv <- median(stdevs)
-retlow <- retsp[, names(stdevs[stdevs<=medianv])]
-rethigh <- retsp[, names(stdevs[stdevs>medianv])]
+retlow <- retp[, names(stdevs[stdevs<=medianv])]
+rethigh <- retp[, names(stdevs[stdevs>medianv])]
 # Calculate the correlations of low volatility stocks
 cormat <- cor(retlow, use="pairwise.complete.obs")
 cormat[is.na(cormat)] <- 0
@@ -1809,12 +1809,12 @@ max(eigenval)/min(abs(eigenval))
 # Subset (select) the stock returns after the start date of VTI
 retvti <- na.omit(rutils::etfenv$returns$VTI)
 colnames(retvti) <- "VTI"
-retsp <- returns[zoo::index(retvti)]
-datev <- zoo::index(retsp)
+retp <- returns[zoo::index(retvti)]
+datev <- zoo::index(retp)
 retvti <- retvti[datev]
-nrows <- NROW(retsp)
-nstocks <- NCOL(retsp)
-head(retsp[, 1:5])
+nrows <- NROW(retp)
+nstocks <- NCOL(retp)
+head(retp[, 1:5])
 # Calculate the monthly end points
 endd <- rutils::calc_endpoints(retvti, interval="months")
 retvti[head(endd)]
@@ -1825,8 +1825,8 @@ npts <- NROW(endd)
 # Calculate the monthly stock volatilities and correlations
 stdcor <- sapply(2:npts, function(endp) {
   # cat("endp = ", endp, "\n")
-  retsp <- retsp[endd[endp-1]:endd[endp]]
-  cormat <- cor(retsp, use="pairwise.complete.obs")
+  retp <- retp[endd[endp-1]:endd[endp]]
+  cormat <- cor(retp, use="pairwise.complete.obs")
   cormat[is.na(cormat)] <- 0
   c(std=sd(retvti[endd[endp-1]:endd[endp]]), 
     cor=mean(cormat[upper.tri(cormat)]))
@@ -1874,13 +1874,13 @@ medianv <- median(stdcor[, "std"])
 # Calculate the stock returns of low volatility intervals
 retlow <- lapply(2:npts, function(endp) {
   if (stdcor[endp-1, "std"] <= medianv)
-    retsp[endd[endp-1]:endd[endp]]
+    retp[endd[endp-1]:endd[endp]]
 })  # end lapply
 retlow <- rutils::do_call(rbind, retlow)
 # Calculate the stock returns of high volatility intervals
 rethigh <- lapply(2:npts, function(endp) {
   if (stdcor[endp-1, "std"] > medianv)
-    retsp[endd[endp-1]:endd[endp]]
+    retp[endd[endp-1]:endd[endp]]
 })  # end lapply
 rethigh <- rutils::do_call(rbind, rethigh)
       @
@@ -1935,19 +1935,19 @@ max(eigenval)/min(abs(eigenval))
       \end{flalign*}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate AAPL and XLK returns
-retsp <- na.omit(cbind(returns$AAPL, rutils::etfenv$returns$XLK))
+retp <- na.omit(cbind(returns$AAPL, rutils::etfenv$returns$XLK))
 # Calculate the trailing correlations
 lambda <- 0.99
-covarv <- HighFreq::run_covar(retsp, lambda)
+covarv <- HighFreq::run_covar(retp, lambda)
 correlv <- covarv[, 1, drop=FALSE]/sqrt(covarv[, 2]*covarv[, 3])
 volaapl <- sqrt(covarv[, 2])
 # Scatterplot of trailing stock volatilities and correlations
-endd <- rutils::calc_endpoints(retsp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="months")
 plot(x=volaapl[endd], y=correlv[endd, ], 
  xlab="volatility", ylab="correlation",
  main="Trailing Stock Volatilities and Correlations")
 # Plot trailing stock volatilities and correlations
-datav <- xts(cbind(volaapl, correlv), zoo::index(retsp))
+datav <- xts(cbind(volaapl, correlv), zoo::index(retp))
 colnames(datav) <- c("volatility", "correlation")
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav[endd], 
@@ -1963,7 +1963,7 @@ dygraphs::dygraph(datav[endd],
       \includegraphics[width=0.45\paperwidth]{figure/stock_cor_trailing_single.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of XLK returns and AAPL correlations
-datav <- cbind(cumsum(retsp$XLK), correlv)
+datav <- cbind(cumsum(retp$XLK), correlv)
 colnames(datav)[2] <- "correlation"
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
@@ -1992,16 +1992,16 @@ dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
 retvti <- na.omit(rutils::etfenv$returns$VTI)
 colnames(retvti) <- "VTI"
 datev <- zoo::index(retvti)
-retsp <- returns100
-retsp[is.na(retsp)] <- 0
-retsp <- retsp[datev]
-nrows <- NROW(retsp)
-nstocks <- NCOL(retsp)
-head(retsp[, 1:5])
+retp <- returns100
+retp[is.na(retp)] <- 0
+retp <- retp[datev]
+nrows <- NROW(retp)
+nstocks <- NCOL(retp)
+head(retp[, 1:5])
 # Calculate the average trailing portfolio correlations
 lambda <- 0.9
-correlv <- sapply(retsp, function(retsp) {
-  covarv <- HighFreq::run_covar(cbind(retvti, retsp), lambda)
+correlv <- sapply(retp, function(retp) {
+  covarv <- HighFreq::run_covar(cbind(retvti, retp), lambda)
   covarv[, 1, drop=FALSE]/sqrt(covarv[, 2]*covarv[, 3])
 })  # end sapply
 correlv[is.na(correlv)] <- 0
@@ -3641,22 +3641,22 @@ plot(fitsd, type="l", lwd=3, col="blue",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load time series of ETF percentage returns
-retsp <- rutils::etfenv$returns[, c("XLF", "XLE")]
-retsp <- na.omit(retsp)
-nrows <- NROW(retsp)
-head(retsp)
+retp <- rutils::etfenv$returns[, c("XLF", "XLE")]
+retp <- na.omit(retp)
+nrows <- NROW(retp)
+head(retp)
 # Define regression formula
-formulav <- paste(colnames(retsp)[1],
-  paste(colnames(retsp)[-1], collapse="+"),
+formulav <- paste(colnames(retp)[1],
+  paste(colnames(retp)[-1], collapse="+"),
   sep=" ~ ")
 # Standard regression
-regmod <- lm(formulav, data=retsp)
+regmod <- lm(formulav, data=retp)
 regsum <- summary(regmod)
 # Bootstrap of regression
 set.seed(1121)  # initialize random number generator
 bootd <- sapply(1:100, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
-  regmod <- lm(formulav, data=retsp[samplev, ])
+  regmod <- lm(formulav, data=retp[samplev, ])
   regmod$coefficients
 })  # end sapply
 # Means and standard errors from regression
@@ -4057,9 +4057,9 @@ all.equal(fstat, regsum$fstatistic[1], check.attributes=FALSE)
       The regularized inverse satisfies the inverse equation only approximately (it has \emph{bias}), but it's often used in machine learning because it has lower \emph{variance} than the exact inverse.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate ETF returns
-retsp <- na.omit(rutils::etfenv$returns)
+retp <- na.omit(rutils::etfenv$returns)
 # Perform singular value decomposition
-svdec <- svd(retsp)
+svdec <- svd(retp)
 barplot(svdec$d, main="Singular Values of ETF Returns")
       @
     \column{0.5\textwidth}
@@ -4069,20 +4069,20 @@ barplot(svdec$d, main="Singular Values of ETF Returns")
 # Calculate generalized inverse from SVD
 invmat <- svdec$v %*% (t(svdec$u) / svdec$d)
 # Verify inverse property of inverse
-all.equal(zoo::coredata(retsp), retsp %*% invmat %*% retsp)
+all.equal(zoo::coredata(retp), retp %*% invmat %*% retp)
 # Calculate regularized inverse from SVD
 dimax <- 1:3
 invreg <- svdec$v[, dimax] %*%
   (t(svdec$u[, dimax]) / svdec$d[dimax])
 # Calculate regularized inverse using RcppArmadillo
-invcpp <- HighFreq::calc_inv(retsp, dimax=3)
+invcpp <- HighFreq::calc_inv(retp, dimax=3)
 all.equal(invreg, invcpp, check.attributes=FALSE)
 # Calculate regularized inverse from Moore-Penrose pseudo-inverse
-retsq <- t(retsp) %*% retsp
+retsq <- t(retp) %*% retp
 eigend <- eigen(retsq)
 inv2 <- eigend$vectors[, dimax] %*% 
   (t(eigend$vectors[, dimax]) / eigend$values[dimax])
-invmp <- inv2 %*% t(retsp)
+invmp <- inv2 %*% t(retp)
 all.equal(invreg, invmp, check.attributes=FALSE)
       @
   \end{columns}

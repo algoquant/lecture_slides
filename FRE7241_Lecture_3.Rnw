@@ -115,9 +115,9 @@ knit_theme$set(thm)
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 # Test if IEF can time VTI
-retsp <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
-vti <- retsp$VTI
-desv <- cbind(retsp, 0.5*(vti+abs(vti)), vti^2)
+retp <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
+vti <- retp$VTI
+desv <- cbind(retp, 0.5*(vti+abs(vti)), vti^2)
 colnames(desv)[3:4] <- c("merton", "treynor")
       @
     \column{0.5\textwidth}
@@ -330,7 +330,7 @@ dygraphs::dygraph(pricev["2009"], main="VTI Prices and Centered Smoothed Prices"
       Smoothing a time series of prices produces autocorrelations of their returns.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI log returns
-retsp <- rutils::diffit(pricev)
+retp <- rutils::diffit(pricev)
 # Open plot window
 x11(width=6, height=7)
 # Set plot parameters
@@ -339,10 +339,10 @@ par(oma=c(1, 1, 0, 1), mar=c(1, 1, 1, 1), mgp=c(0, 0.5, 0),
 # Set two plot panels
 par(mfrow=c(2,1))
 # Plot ACF of VTI returns
-rutils::plot_acf(retsp[, 1], lag=10, xlab="")
+rutils::plot_acf(retp[, 1], lag=10, xlab="")
 title(main="ACF of VTI Returns", line=-1)
 # Plot ACF of smoothed VTI returns
-rutils::plot_acf(retsp[, 2], lag=10, xlab="")
+rutils::plot_acf(retp[, 2], lag=10, xlab="")
 title(main="ACF of Smoothed VTI Returns", line=-1)
       @
     \column{0.5\textwidth}
@@ -660,8 +660,8 @@ weightv <- c(1, weightv)
 weightv <- (weightv - mean(weightv))
 weightv <- rev(weightv)
 # Calculate fractional VTI returns
-retsp <- roll::roll_sum(closep, width=look_back, weights=weightv, min_obs=1, online=FALSE)
-pricev <- cbind(closep, retsp)
+retp <- roll::roll_sum(closep, width=look_back, weights=weightv, min_obs=1, online=FALSE)
+pricev <- cbind(closep, retp)
 symbol <- "VTI"
 colnames(pricev) <- c(symbol, paste(symbol, "Returns"))
 # Plot dygraph of VTI Returns
@@ -699,11 +699,11 @@ dygraphs::dygraph(pricev["2009"], main=paste(symbol, "Fractional Returns")) %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI log returns
 closep <- log(quantmod::Cl(rutils::etfenv$VTI))
-retsp <- rutils::diffit(closep)
+retp <- rutils::diffit(closep)
 # Perform ADF test for prices
 tseries::adf.test(closep)
 # Perform ADF test for returns
-tseries::adf.test(retsp)
+tseries::adf.test(retp)
       @
   \end{columns}
 \end{block}
@@ -722,29 +722,29 @@ tseries::adf.test(retsp)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate fractional VTI returns
 deltav <- 0.1*c(1, 3, 5, 7, 9)
-retsp <- lapply(deltav, function(deltav) {
+retp <- lapply(deltav, function(deltav) {
   weightv <- (deltav - 0:(look_back-2)) / 1:(look_back-1)
   weightv <- c(1, (-1)^(1:(look_back-1))*cumprod(weightv))
   weightv <- rev(weightv - mean(weightv))
   roll::roll_sum(closep, width=look_back, weights=weightv, min_obs=1, online=FALSE)
 })  # end lapply
-retsp <- do.call(cbind, retsp)
-retsp <- cbind(closep, retsp)
-colnames(retsp) <- c("VTI", paste0("frac_", deltav))
+retp <- do.call(cbind, retp)
+retp <- cbind(closep, retp)
+colnames(retp) <- c("VTI", paste0("frac_", deltav))
 # Calculate ADF test statistics
-adfstats <- sapply(retsp, function(x)
+adfstats <- sapply(retp, function(x)
   suppressWarnings(tseries::adf.test(x)$statistic)
 )  # end sapply
-names(adfstats) <- colnames(retsp)
+names(adfstats) <- colnames(retp)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/features_fracrets.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of fractional VTI returns
-colorv <- colorRampPalette(c("blue", "red"))(NCOL(retsp))
-colnamev <- colnames(retsp)
-dyplot <- dygraphs::dygraph(retsp["2019"], main="Fractional Returns") %>%
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(retp))
+colnamev <- colnames(retp)
+dyplot <- dygraphs::dygraph(retp["2019"], main="Fractional Returns") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col=colorv[1])
 for (i in 2:NROW(colnamev))
@@ -882,8 +882,8 @@ dygraphs::dygraph(pricev["2009"], main="VTI Volatility Z-Scores") %>%
 # Calculate the centered volatility
 look_back <- 21
 half_back <- look_back %/% 2
-retsp <- rutils::diffit(closep)
-volat <- roll::roll_sd(retsp, width=look_back, min_obs=1)
+retp <- rutils::diffit(closep)
+volat <- roll::roll_sd(retp, width=look_back, min_obs=1)
 volat <- rutils::lagit(volat, lagg=(-half_back))
 # Calculate the z-scores of prices
 pricez <- (2*closep - 
@@ -941,14 +941,14 @@ posit[tops] <- (-1)
 posit[bottoms] <- 1
 posit <- zoo::na.locf(posit)
 posit <- rutils::lagit(posit)
-pnls <- retsp*posit
+pnls <- retp*posit
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_features_labels.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of in-sample VTI strategy
-wealthv <- cbind(retsp, pnls)
+wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 endd <- rutils::calc_endpoints(wealthv, interval="months")
 dygraphs::dygraph(cumsum(wealthv)[endd],
@@ -1321,10 +1321,10 @@ legend("topleft", legend=colnames(pricev),
       The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate daily profits and losses of EWMA strategy
-retsp <- rutils::diffit(closep)  # VTI returns
-pnls <- retsp*posit
+retp <- rutils::diffit(closep)  # VTI returns
+pnls <- retp*posit
 colnames(pnls) <- "EWMA"
-wealthv <- cbind(retsp, pnls)
+wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "EWMA PnL")
 # Annualized Sharpe ratio of EWMA strategy
 sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
@@ -1378,21 +1378,21 @@ legend("top", legend=colnames(wealthv),
       The t-value of the \emph{Treynor-Mazuy} test is negative, but not statistically significant. 
       <<echo=TRUE,eval=FALSE>>=
 # Test EWMA crossover market timing of VTI using Treynor-Mazuy test
-desv <- cbind(pnls, retsp, retsp^2)
+desv <- cbind(pnls, retp, retp^2)
 desv <- na.omit(desv)
 colnames(desv) <- c("EWMA", "VTI", "treynor")
 model <- lm(EWMA ~ VTI + treynor, data=desv)
 summary(model)
 # Plot residual scatterplot
-residuals <- (desv$EWMA - model$coeff["VTI"]*retsp)
+residuals <- (desv$EWMA - model$coeff["VTI"]*retp)
 residuals <- model$residuals
 x11(width=6, height=6)
-plot.default(x=retsp, y=residuals, xlab="VTI", ylab="residuals")
+plot.default(x=retp, y=residuals, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for EWMA Crossover vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 fittedv <- (model$coeff["(Intercept)"] + 
-              model$coeff["treynor"]*retsp^2)
-points.default(x=retsp, y=fittedv, pch=16, col="red")
+              model$coeff["treynor"]*retp^2)
+points.default(x=retp, y=fittedv, pch=16, col="red")
 text(x=0.05, y=0.8*max(residuals), paste("EWMA crossover t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
       @
     \column{0.5\textwidth}
@@ -1432,7 +1432,7 @@ posit <- xts::xts(posit, order.by=zoo::index(closep))
 # Lag the positions to trade in next period
 posit <- rutils::lagit(posit, lagg=1)
 # Calculate PnLs of lagged strategy
-pnlslag <- retsp*posit
+pnlslag <- retp*posit
 colnames(pnlslag) <- "Lagged Strategy"
       @
     \column{0.5\textwidth}
@@ -1471,7 +1471,7 @@ dygraphs::dygraph(cumsum(wealthv), main=paste("EWMA Crossover Strategy", paste(p
 indic <- sign(closep - ewmacpp)
 posit <- rutils::lagit(indic, lagg=1)
 # Calculate daily pnl for days without trades
-pnls <- retsp*posit
+pnls <- retp*posit
 # Determine trade dates right after EWMA has crossed prices
 crossd <- which(rutils::diffit(posit) != 0)
 # Calculate realized pnl for days with trades
@@ -1483,7 +1483,7 @@ pnls[crossd] <- poslag[crossd]*(openp[crossd] - closelag[crossd])
 pnls[crossd] <- pnls[crossd] + 
   posit[crossd]*(closep[crossd] - openp[crossd])
 # Calculate the wealth
-wealthv <- cbind(retsp, pnls)
+wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "EWMA PnL")
 # Annualized Sharpe ratio of EWMA strategy
 sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
@@ -1575,7 +1575,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="EWMA Strategy With Transaction Co
 sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bid_offer=0.001, 
                       trend=1, lagg=1) {
   closep <- quantmod::Cl(ohlc)
-  retsp <- rutils::diffit(closep)
+  retp <- rutils::diffit(closep)
   nrows <- NROW(ohlc)
   # Calculate EWMA prices
   ewmacpp <- HighFreq::run_mean(closep, lambda=lambda, weights=0)
@@ -1595,7 +1595,7 @@ sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bid_offer=0.001,
   # Lag the positions to trade on next day
   posit <- rutils::lagit(posit, lagg=1)
   # Calculate PnLs of strategy
-  pnls <- retsp*posit
+  pnls <- retp*posit
   costs <- 0.5*bid_offer*abs(rutils::diffit(posit))
   pnls <- (pnls - costs)
   # Calculate strategy returns
@@ -1751,7 +1751,7 @@ lambda <- lambdav[which.max(sharpetrend)]
 ewmatrend <- sim_ewma(ohlc=ohlc, lambda=lambda, bid_offer=0, lagg=2)
 posit <- ewmatrend[, "positions"]
 trendopt <- ewmatrend[, "pnls"]
-wealthv <- cbind(retsp, trendopt)
+wealthv <- cbind(retp, trendopt)
 colnames(wealthv) <- c("VTI", "EWMA PnL")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, 
@@ -1887,7 +1887,7 @@ ewmarevert <- sim_ewma(ohlc=ohlc, bid_offer=0.0,
   lambda=lambda, trend=(-1))
 posit <- ewmarevert[, "positions"]
 revertopt <- ewmarevert[, "pnls"]
-wealthv <- cbind(retsp, revertopt)
+wealthv <- cbind(retp, revertopt)
 colnames(wealthv) <- c("VTI", "EWMA PnL")
 # Plot dygraph of EWMA strategy wealth
 colorv <- c("blue", "red")
@@ -1933,14 +1933,14 @@ trendopt <- ewmatrend[, "pnls"]
 colnames(trendopt) <- "trend"
 revertopt <- ewmarevert[, "pnls"]
 colnames(revertopt) <- "revert"
-cor(cbind(retsp, trendopt, revertopt))
+cor(cbind(retp, trendopt, revertopt))
 # Calculate combined strategy
-combstrat <- (retsp + trendopt + revertopt)/3
+combstrat <- (retp + trendopt + revertopt)/3
 colnames(combstrat) <- "combined"
 # Calculate annualized Sharpe ratio of strategy returns
-retsp <- cbind(retsp, trendopt, revertopt, combstrat)
-colnames(retsp) <- c("VTI", "Trending", "Reverting", "EWMA combined")
-sqrt(252)*sapply(retsp, function(xtsv) mean(xtsv)/sd(xtsv))
+retp <- cbind(retp, trendopt, revertopt, combstrat)
+colnames(retp) <- c("VTI", "Trending", "Reverting", "EWMA combined")
+sqrt(252)*sapply(retp, function(xtsv) mean(xtsv)/sd(xtsv))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1948,7 +1948,7 @@ sqrt(252)*sapply(retsp, function(xtsv) mean(xtsv)/sd(xtsv))
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of EWMA strategy wealth
 colorv <- c("blue", "red", "green", "purple")
-dygraphs::dygraph(cumsum(retsp)[endd], main="Performance of Combined EWMA Strategies") %>%
+dygraphs::dygraph(cumsum(retp)[endd], main="Performance of Combined EWMA Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Standard plot of EWMA strategy wealth
@@ -1981,20 +1981,20 @@ legend("topleft", legend=colnames(pnls),
 weightv <- c(sharpetrend, sharperevert)
 weightv[weightv<0] <- 0
 weightv <- weightv/sum(weightv)
-retsp <- cbind(pnltrend, pnlrevert)
-retsp <- retsp %*% weightv
-retsp <- xts::xts(retsp, order.by=zoo::index(retsp))
-retsp <- cbind(retsp, retsp)
-colnames(retsp) <- c("VTI", "EWMA PnL")
+retp <- cbind(pnltrend, pnlrevert)
+retp <- retp %*% weightv
+retp <- xts::xts(retp, order.by=zoo::index(retp))
+retp <- cbind(retp, retp)
+colnames(retp) <- c("VTI", "EWMA PnL")
 # Plot dygraph of EWMA strategy wealth
 colorv <- c("blue", "red")
-dygraphs::dygraph(cumsum(retsp)[endd], main="Performance of Ensemble of EWMA Strategies") %>%
+dygraphs::dygraph(cumsum(retp)[endd], main="Performance of Ensemble of EWMA Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Standard plot of EWMA strategy wealth
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorv
-quantmod::chart_Series(cumsum(retsp), theme=plot_theme,
+quantmod::chart_Series(cumsum(retp), theme=plot_theme,
              name="Performance of Ensemble of EWMA Strategies")
 legend("topleft", legend=colnames(pnls),
        inset=0.05, bg="white", lty=1, lwd=6,
@@ -2081,9 +2081,9 @@ dyplot
       The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate daily profits and losses of strategy
-pnls <- retsp*posit
+pnls <- retp*posit
 colnames(pnls) <- "Strategy"
-wealthv <- cbind(retsp, pnls)
+wealthv <- cbind(retp, pnls)
 # Annualized Sharpe ratio of Dual EWMA strategy
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
@@ -2127,7 +2127,7 @@ dyplot
 sim_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333, 
                       bid_offer=0.001, trend=1, lagg=1) {
   closep <- quantmod::Cl(ohlc)
-  retsp <- rutils::diffit(closep)
+  retp <- rutils::diffit(closep)
   nrows <- NROW(ohlc)
   # Calculate EWMA prices
   ewma1 <- HighFreq::run_mean(closep, lambda=lambda1, weights=0)
@@ -2147,7 +2147,7 @@ sim_ewma2 <- function(ohlc, lambda1=0.1, lambda2=0.01, look_back=333,
   # Lag the positions to trade on next day
   posit <- rutils::lagit(posit, lagg=1)
   # Calculate PnLs of strategy
-  pnls <- retsp*posit
+  pnls <- retp*posit
   costs <- 0.5*bid_offer*abs(rutils::diffit(posit))
   pnls <- (pnls - costs)
   # Calculate strategy returns
@@ -2195,7 +2195,7 @@ lambda1 <- lambdav1[whichv[2]]
 lambda2 <- lambdav2[whichv[1]]
 pnls <- sim_ewma2(ohlc=ohlc, lambda1=lambda1, lambda2=lambda2, 
                     look_back=look_back, bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
-wealthv <- cbind(retsp, pnls)
+wealthv <- cbind(retp, pnls)
 colnames(wealthv)[2] <- "EWMA"
       @
     \column{0.5\textwidth}
@@ -2249,10 +2249,10 @@ posit <- xts::xts(posit, order.by=zoo::index(closep))
 # Lag the positions to trade in next period
 posit <- rutils::lagit(posit, lagg=1)
 # Calculate PnLs of VWAP strategy
-retsp <- rutils::diffit(closep)  # VTI returns
-pnls <- retsp*posit
+retp <- rutils::diffit(closep)  # VTI returns
+pnls <- retp*posit
 colnames(pnls) <- "VWAP"
-wealthv <- cbind(retsp, pnls)
+wealthv <- cbind(retp, pnls)
 colnamev <- colnames(wealthv)
 # Annualized Sharpe ratios of VTI and VWAP strategy
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
@@ -2300,9 +2300,9 @@ dyplot
       The \emph{VWAP} strategy serves as a dynamic put option in periods of extreme market selloffs.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate correlation of VWAP strategy with VTI
-cor(retsp, pnls)
+cor(retp, pnls)
 # Combine VWAP strategy with VTI
-wealthv <- cbind(retsp, pnls, 0.5*(retsp+pnls))
+wealthv <- cbind(retp, pnls, 0.5*(retp+pnls))
 colnames(wealthv) <- c("VTI", "VWAP", "Combined")
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
       @
@@ -2341,20 +2341,20 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The t-value of the \emph{Treynor-Mazuy} test is negative, but not statistically significant. 
       <<echo=TRUE,eval=FALSE>>=
 # Test VWAP crossover market timing of VTI using Treynor-Mazuy test
-desv <- cbind(pnls, retsp, retsp^2)
+desv <- cbind(pnls, retp, retp^2)
 desv <- na.omit(desv)
 colnames(desv) <- c("VWAP", "VTI", "treynor")
 model <- lm(VWAP ~ VTI + treynor, data=desv)
 summary(model)
 # Plot residual scatterplot
-residuals <- (desv$VWAP - model$coeff["VTI"]*retsp)
+residuals <- (desv$VWAP - model$coeff["VTI"]*retp)
 residuals <- model$residuals
 # x11(width=6, height=6)
-plot.default(x=retsp, y=residuals, xlab="VTI", ylab="residuals")
+plot.default(x=retp, y=residuals, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for VWAP Crossover vs VTI", line=0.5)
 # Plot fitted (predicted) response values
-fittedv <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*retsp^2)
-points.default(x=retsp, y=fittedv, pch=16, col="red")
+fittedv <- (model$coeff["(Intercept)"] + model$coeff["treynor"]*retp^2)
+points.default(x=retp, y=fittedv, pch=16, col="red")
 text(x=0.05, y=0.8*max(residuals), paste("VWAP crossover t-value =", round(summary(model)$coeff["treynor", "t value"], 2)))
       @
     \column{0.5\textwidth}
@@ -2384,7 +2384,7 @@ text(x=0.05, y=0.8*max(residuals), paste("VWAP crossover t-value =", round(summa
 sim_vwap <- function(ohlc, lambda=0.9, bid_offer=0.001, trend=1, lagg=1) {
   closep <- log(quantmod::Cl(ohlc))
   volumes <- quantmod::Vo(ohlc)
-  retsp <- rutils::diffit(closep)
+  retp <- rutils::diffit(closep)
   nrows <- NROW(ohlc)
   # Calculate VWAP prices
   vwap <- HighFreq::run_mean(closep, lambda=lambda, weights=volumes)
@@ -2404,7 +2404,7 @@ sim_vwap <- function(ohlc, lambda=0.9, bid_offer=0.001, trend=1, lagg=1) {
   # Lag the positions to trade on next day
   posit <- rutils::lagit(posit, lagg=1)
   # Calculate PnLs of strategy
-  pnls <- retsp*posit
+  pnls <- retp*posit
   costs <- 0.5*bid_offer*abs(rutils::diffit(posit))
   pnls <- (pnls - costs)
   # Calculate strategy returns

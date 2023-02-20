@@ -94,10 +94,10 @@ knit_theme$set(thm)
       The \emph{idiosyncratic} risk (equal to $\varepsilon_i$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
       <<echo=TRUE,eval=TRUE>>=
 # Perform regression using formula
-retsp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
+retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 riskfree <- 0.03/252
-retsp <- (retsp - riskfree)
-regmod <- lm(XLP ~ VTI, data=retsp)
+retp <- (retp - riskfree)
+regmod <- lm(XLP ~ VTI, data=retp)
 regmodsum <- summary(regmod)
 # Get regression coefficients
 coef(regmodsum)
@@ -151,18 +151,18 @@ abline(a=0, b=-1/coef(regmodsum)[2, 1], lwd=2, col="blue")
 # Get regression coefficients
 coef(regmodsum)
 # Calculate regression coefficients from scratch
-betav <- drop(cov(retsp$XLP, retsp$VTI)/var(retsp$VTI))
-alpha <- drop(mean(retsp$XLP) - betav*mean(retsp$VTI))
+betav <- drop(cov(retp$XLP, retp$VTI)/var(retp$VTI))
+alpha <- drop(mean(retp$XLP) - betav*mean(retp$VTI))
 c(alpha, betav)
 # Calculate the residuals
-residuals <- (retsp$XLP - (alpha + betav*retsp$VTI))
+residuals <- (retp$XLP - (alpha + betav*retp$VTI))
 # Calculate the standard deviation of residuals
 nrows <- NROW(residuals)
 residsd <- sqrt(sum(residuals^2)/(nrows - 2))
 # Calculate the standard errors of beta and alpha
-sum2 <- sum((retsp$VTI - mean(retsp$VTI))^2)
+sum2 <- sum((retp$VTI - mean(retp$VTI))^2)
 betasd <- residsd/sqrt(sum2)
-alphasd <- residsd*sqrt(1/nrows + mean(retsp$VTI)^2/sum2)
+alphasd <- residsd*sqrt(1/nrows + mean(retp$VTI)^2/sum2)
 c(alphasd, betasd)
 # Perform the Durbin-Watson test of autocorrelation of residuals
 lmtest::dwtest(regmod)
@@ -184,15 +184,15 @@ lmtest::dwtest(regmod)
       \vskip1ex
       Some of the ETFs with significant \emph{alpha} $\alpha$ values are the bond ETFs \emph{IEF} and \emph{TLT} (which have performed very well), and the natural resource ETFs \emph{USO} and \emph{DBC} (which have performed very poorly).
       <<echo=TRUE,eval=TRUE>>=
-retsp <- rutils::etfenv$returns
-symbolv <- colnames(retsp)
+retp <- rutils::etfenv$returns
+symbolv <- colnames(retp)
 symbolv <- symbolv[symbolv != "VTI"]
 # Perform regressions and collect statistics
 betam <- sapply(symbolv, function(symbol) {
 # Specify regression formula
   formulav <- as.formula(paste(symbol, "~ VTI"))
 # Perform regression
-  regmod <- lm(formulav, data=retsp)
+  regmod <- lm(formulav, data=retp)
 # Get regression summary
   regmodsum <- summary(regmod)
 # Collect regression statistics
@@ -241,19 +241,19 @@ betam
       <<echo=TRUE,eval=TRUE>>=
 library(PerformanceAnalytics)
 # Calculate XLP beta
-PerformanceAnalytics::CAPM.beta(Ra=retsp$XLP, Rb=retsp$VTI)
+PerformanceAnalytics::CAPM.beta(Ra=retp$XLP, Rb=retp$VTI)
 # Or
-retsxlp <- na.omit(retsp[, c("XLP", "VTI")])
+retsxlp <- na.omit(retp[, c("XLP", "VTI")])
 betav <- drop(cov(retsxlp$XLP, retsxlp$VTI)/var(retsxlp$VTI))
 betav
 # Calculate XLP alpha
-PerformanceAnalytics::CAPM.alpha(Ra=retsp$XLP, Rb=retsp$VTI)
+PerformanceAnalytics::CAPM.alpha(Ra=retp$XLP, Rb=retp$VTI)
 # Or
-mean(retsp$XLP - betav*retsp$VTI)
+mean(retp$XLP - betav*retp$VTI)
 # Calculate XLP bull beta
-PerformanceAnalytics::CAPM.beta.bull(Ra=retsp$XLP, Rb=retsp$VTI)
+PerformanceAnalytics::CAPM.beta.bull(Ra=retp$XLP, Rb=retp$VTI)
 # Calculate XLP bear beta
-PerformanceAnalytics::CAPM.beta.bear(Ra=retsp$XLP, Rb=retsp$VTI)
+PerformanceAnalytics::CAPM.beta.bear(Ra=retp$XLP, Rb=retp$VTI)
       @
   \end{columns}
 \end{block}
@@ -284,7 +284,7 @@ symbolv <- rownames(betam)
 betav <- betam[-match(c("VXX", "SVXY", "MTUM", "USMV", "QUAL"), symbolv), 1]
 betav <- c(1, betav)
 names(betav)[1] <- "VTI"
-retsann <- sapply(retsp[, names(betav)], PerformanceAnalytics::Return.annualized)
+retsann <- sapply(retp[, names(betav)], PerformanceAnalytics::Return.annualized)
 # Plot scatterplot of returns vs betas
 minrets <- min(retsann)
 plot(retsann ~ betav, xlab="betas", ylab="returns", 
@@ -337,16 +337,16 @@ legend(x="topleft", bty="n", title="Security Market Line",
 # Load S&P500 constituent stock returns
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retvti <- na.omit(rutils::etfenv$returns$VTI)
-retsp <- returns[index(retvti), ]
-nrows <- NROW(retsp)
+retp <- returns[index(retvti), ]
+nrows <- NROW(retp)
 # Calculate stock betas
-betav <- sapply(retsp, function(x) {
-  retsp <- na.omit(cbind(x, retvti))
-  drop(cov(retsp[, 1], retsp[, 2])/var(retsp[, 2]))
+betav <- sapply(retp, function(x) {
+  retp <- na.omit(cbind(x, retvti))
+  drop(cov(retp[, 1], retp[, 2])/var(retp[, 2]))
 })  # end sapply
 mean(betav)
 # Calculate annual stock returns
-retsann <- retsp
+retsann <- retp
 retsann[1, ] <- 0
 retsann <- zoo::na.locf(retsann, na.rm=FALSE)
 retsann <- 252*sapply(retsann, sum)/nrows
@@ -407,9 +407,9 @@ legend(x="topleft", bty="n", title="Security Market Line",
       <<echo=TRUE,eval=TRUE>>=
 library(PerformanceAnalytics)
 # Calculate XLP Treynor ratio
-TreynorRatio(Ra=retsp$XLP, Rb=retsp$VTI)
+TreynorRatio(Ra=retp$XLP, Rb=retp$VTI)
 # Calculate XLP Information ratio
-InformationRatio(Ra=retsp$XLP, Rb=retsp$VTI)
+InformationRatio(Ra=retp$XLP, Rb=retp$VTI)
       @
   \end{columns}
 \end{block}
@@ -427,13 +427,13 @@ InformationRatio(Ra=retsp$XLP, Rb=retsp$VTI)
       \texttt{PerformanceAnalytics::table.CAPM()} calculates the \emph{beta} $\beta$ and \emph{alpha} $\alpha$ values, the \emph{Treynor} ratio, and other performance statistics.
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-PerformanceAnalytics::table.CAPM(Ra=retsp[, c("XLP", "XLF")], 
-                                 Rb=retsp$VTI, scale=252)
+PerformanceAnalytics::table.CAPM(Ra=retp[, c("XLP", "XLF")], 
+                                 Rb=retp$VTI, scale=252)
       @
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-capmstats <- table.CAPM(Ra=retsp[, symbolv], 
-              Rb=retsp$VTI, scale=252)
+capmstats <- table.CAPM(Ra=retp[, symbolv], 
+              Rb=retp$VTI, scale=252)
 colnamev <- strsplit(colnames(capmstats), split=" ")
 colnamev <- do.call(cbind, colnamev)[1, ]
 colnames(capmstats) <- colnamev
@@ -477,9 +477,9 @@ rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
       The function \texttt{roll\_reg()} from package \emph{HighFreq} performs rolling regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate XLP and VTI returns
-retsp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
+retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
-endd <- xts::endpoints(retsp, on="months")[-1]
+endd <- xts::endpoints(retp, on="months")[-1]
 # Calculate start points from look-back interval
 look_back <- 12  # Look back 12 months
 startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
@@ -487,20 +487,20 @@ head(cbind(endd, startp), look_back+2)
 # Calculate rolling beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
 betar <- sapply(1:NROW(endd), FUN=function(ep) {
-    datav <- retsp[startp[ep]:endd[ep], ]
+    datav <- retp[startp[ep]:endd[ep], ]
     # coef(lm(formulav, data=datav))[2]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
 # Calculate rolling betas using RcppArmadillo
-reg_stats <- HighFreq::roll_reg(respv=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1))
+reg_stats <- HighFreq::roll_reg(respv=retp$XLP, retp=retp$VTI, endd=(endd-1), startp=(startp-1))
 betav <- reg_stats$VTI
 all.equal(betav, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(respv=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1)),
+  Rcpp=HighFreq::roll_reg(respv=retp$XLP, retp=retp$VTI, endd=(endd-1), startp=(startp-1)),
   Rcode=sapply(1:NROW(endd), FUN=function(ep) {
-    datav <- retsp[startp[ep]:endd[ep], ]
+    datav <- retp[startp[ep]:endd[ep], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   }),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -510,7 +510,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of rolling XLP beta and VTI prices
-dates <- zoo::index(retsp[endd, ])
+dates <- zoo::index(retp[endd, ])
 pricev <- rutils::etfenv$prices$VTI[dates]
 datav <- cbind(pricev, betav)
 colnamev <- colnames(datav)
@@ -547,12 +547,12 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 # Calculate stock prices and percentage returns
 pricets <- zoo::na.locf(pricets, na.rm=FALSE)
 pricets <- zoo::na.locf(pricets, fromLast=TRUE)
-retsp <- rutils::diffit(log(pricev))
+retp <- rutils::diffit(log(pricev))
 # Standardize (de-mean and scale) the returns
-retsp <- lapply(retsp, function(x) {(x - mean(x))/sd(x)})
-retsp <- rutils::do_call(cbind, retsp)
+retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
+retp <- rutils::do_call(cbind, retp)
 # Perform principal component analysis PCA
-pcad <- prcomp(retsp, scale=TRUE)
+pcad <- prcomp(retp, scale=TRUE)
 # Find number of components with variance greater than 2
 ncomp <- which(pcad$sdev^2 < 2)[1]
       @
@@ -619,7 +619,7 @@ for (ordern in 2:ncomps) {
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate principal component time series
-retspca <- xts(retsp %*% pcad$rotation[, 1:ncomps], order.by=dates)
+retspca <- xts(retp %*% pcad$rotation[, 1:ncomps], order.by=dates)
 round(cov(retspca), 3)
 pcacum <- cumsum(retspca)
 # Plot principal component time series in multiple panels
@@ -664,7 +664,7 @@ all.equal(invmat, t(pcad$rotation))
 solved <- retspca %*% invmat[1:ncomps, ]
 solved <- xts::xts(solved, dates)
 solved <- cumsum(solved)
-retc <- cumsum(retsp)
+retc <- cumsum(retp)
 # Plot the solved returns
 symbolv <- c("MSFT", "XOM", "JPM", "AAPL", "BRK_B", "JNJ")
 for (symbol in symbolv) {
@@ -712,7 +712,7 @@ for (symbol in symbolv) {
          title=NULL, inset=0.05, cex=1.0, lwd=6, lty=1, col="blue")
 }  # end for
 # Perform ADF unit root test on principal component time series
-retspca <- xts(retsp %*% pcad$rotation, order.by=dates)
+retspca <- xts(retp %*% pcad$rotation, order.by=dates)
 pcacum <- cumsum(retspca)
 adf_pvalues <- sapply(1:NCOL(pcacum), function(ordern)
   tseries::adf.test(pcacum[, ordern])$p.value)
@@ -740,9 +740,9 @@ tseries::adf.test(rnorm(1e5))
 library(quantmod)
 ### Perform pair-wise correlation analysis
 # Calculate correlation matrix
-cormat <- cor(retsp)
-colnames(cormat) <- colnames(retsp)
-rownames(cormat) <- colnames(retsp)
+cormat <- cor(retp)
+colnames(cormat) <- colnames(retp)
+rownames(cormat) <- colnames(retp)
 # Reorder correlation matrix based on clusters
 # Calculate permutation vector
 library(corrplot)
@@ -822,14 +822,14 @@ title("Dendrogram representing hierarchical clustering
       <<echo=(-(1:1)),eval=FALSE>>=
 library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"
 # PC returns from rotation and scaled returns
-retscaled <- apply(retsp, 2, scale)
+retscaled <- apply(retp, 2, scale)
 retspca <- retscaled %*% pcad$rotation
 # "x" matrix contains time series of PC returns
 dim(pcad$x)
 class(pcad$x)
 head(pcad$x[, 1:3], 3)
 # Convert PC matrix to xts and rescale to decimals
-retspca <- xts(pcad$x/100, order.by=zoo::index(retsp))
+retspca <- xts(pcad$x/100, order.by=zoo::index(retp))
       @
 \vspace{-1em}
       <<pca_retc,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
@@ -864,7 +864,7 @@ cormat <- cor(retspca)
 colnames(cormat) <- colnames(retspca)
 rownames(cormat) <- colnames(retspca)
 cormat[1:3, 1:3]
-table.CAPM(Ra=retspca[, 1:3], Rb=retsp$VTI, scale=252)
+table.CAPM(Ra=retspca[, 1:3], Rb=retp$VTI, scale=252)
       @
     \column{0.5\textwidth}
   \end{columns}
@@ -885,8 +885,8 @@ table.CAPM(Ra=retspca[, 1:3], Rb=retsp$VTI, scale=252)
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 ### Perform principal component analysis PCA
-retsp <- na.omit(rutils::etfenv$returns)
-pcad <- prcomp(retsp, center=TRUE, scale=TRUE)
+retp <- na.omit(rutils::etfenv$returns)
+pcad <- prcomp(retp, center=TRUE, scale=TRUE)
 barplot(pcad$sdev[1:10], 
         names.arg=colnames(pcad$rotation)[1:10], 
         las=3, ylab="STDEV", xlab="PCVec", 

@@ -100,10 +100,10 @@ knit_theme$set(thm)
       The \emph{idiosyncratic} risk (equal to $\varepsilon_i$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
       <<echo=TRUE,eval=TRUE>>=
 # Perform regression using formula
-retsp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
+retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 riskfree <- 0.03/252
-retsp <- (retsp - riskfree)
-regmod <- lm(XLP ~ VTI, data=retsp)
+retp <- (retp - riskfree)
+regmod <- lm(XLP ~ VTI, data=retp)
 regmodsum <- summary(regmod)
 # Get regression coefficients
 coef(regmodsum)
@@ -156,18 +156,18 @@ abline(a=0, b=-1/coef(regmodsum)[2, 1], lwd=2, col="blue")
 # Get regression coefficients
 coef(regmodsum)
 # Calculate regression coefficients from scratch
-betav <- drop(cov(retsp$XLP, retsp$VTI)/var(retsp$VTI))
-alpha <- drop(mean(retsp$XLP) - betav*mean(retsp$VTI))
+betav <- drop(cov(retp$XLP, retp$VTI)/var(retp$VTI))
+alpha <- drop(mean(retp$XLP) - betav*mean(retp$VTI))
 c(alpha, betav)
 # Calculate the residuals
-residuals <- (retsp$XLP - (alpha + betav*retsp$VTI))
+residuals <- (retp$XLP - (alpha + betav*retp$VTI))
 # Calculate the standard deviation of residuals
 nrows <- NROW(residuals)
 residsd <- sqrt(sum(residuals^2)/(nrows - 2))
 # Calculate the standard errors of beta and alpha
-sum2 <- sum((retsp$VTI - mean(retsp$VTI))^2)
+sum2 <- sum((retp$VTI - mean(retp$VTI))^2)
 betasd <- residsd/sqrt(sum2)
-alphasd <- residsd*sqrt(1/nrows + mean(retsp$VTI)^2/sum2)
+alphasd <- residsd*sqrt(1/nrows + mean(retp$VTI)^2/sum2)
 c(alphasd, betasd)
 # Perform the Durbin-Watson test of autocorrelation of residuals
 lmtest::dwtest(regmod)
@@ -189,15 +189,15 @@ lmtest::dwtest(regmod)
       \vskip1ex
       Some of the ETFs with significant \emph{alpha} $\alpha$ values are the bond ETFs \emph{IEF} and \emph{TLT} (which have performed very well), and the natural resource ETFs \emph{USO} and \emph{DBC} (which have performed very poorly).
       <<echo=TRUE,eval=TRUE>>=
-retsp <- rutils::etfenv$returns
-symbolv <- colnames(retsp)
+retp <- rutils::etfenv$returns
+symbolv <- colnames(retp)
 symbolv <- symbolv[symbolv != "VTI"]
 # Perform regressions and collect statistics
 betam <- sapply(symbolv, function(symbol) {
 # Specify regression formula
   formulav <- as.formula(paste(symbol, "~ VTI"))
 # Perform regression
-  regmod <- lm(formulav, data=retsp)
+  regmod <- lm(formulav, data=retp)
 # Get regression summary
   regmodsum <- summary(regmod)
 # Collect regression statistics
@@ -246,19 +246,19 @@ betam
       <<echo=TRUE,eval=TRUE>>=
 library(PerformanceAnalytics)
 # Calculate XLP beta
-PerformanceAnalytics::CAPM.beta(Ra=retsp$XLP, Rb=retsp$VTI)
+PerformanceAnalytics::CAPM.beta(Ra=retp$XLP, Rb=retp$VTI)
 # Or
-retsxlp <- na.omit(retsp[, c("XLP", "VTI")])
+retsxlp <- na.omit(retp[, c("XLP", "VTI")])
 betav <- drop(cov(retsxlp$XLP, retsxlp$VTI)/var(retsxlp$VTI))
 betav
 # Calculate XLP alpha
-PerformanceAnalytics::CAPM.alpha(Ra=retsp$XLP, Rb=retsp$VTI)
+PerformanceAnalytics::CAPM.alpha(Ra=retp$XLP, Rb=retp$VTI)
 # Or
-mean(retsp$XLP - betav*retsp$VTI)
+mean(retp$XLP - betav*retp$VTI)
 # Calculate XLP bull beta
-PerformanceAnalytics::CAPM.beta.bull(Ra=retsp$XLP, Rb=retsp$VTI)
+PerformanceAnalytics::CAPM.beta.bull(Ra=retp$XLP, Rb=retp$VTI)
 # Calculate XLP bear beta
-PerformanceAnalytics::CAPM.beta.bear(Ra=retsp$XLP, Rb=retsp$VTI)
+PerformanceAnalytics::CAPM.beta.bear(Ra=retp$XLP, Rb=retp$VTI)
       @
   \end{columns}
 \end{block}
@@ -285,7 +285,7 @@ symbolv <- rownames(betam)
 betav <- betam[-match(c("VXX", "SVXY", "MTUM", "USMV", "QUAL"), symbolv), 1]
 betav <- c(1, betav)
 names(betav)[1] <- "VTI"
-retsann <- sapply(retsp[, names(betav)], PerformanceAnalytics::Return.annualized)
+retsann <- sapply(retp[, names(betav)], PerformanceAnalytics::Return.annualized)
 # Plot scatterplot of returns vs betas
 minrets <- min(retsann)
 plot(retsann ~ betav, xlab="betas", ylab="returns", 
@@ -334,16 +334,16 @@ legend(x="top", bty="n", title="Security Market Line",
 # Load S&P500 constituent stock returns
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retsvti <- na.omit(rutils::etfenv$returns$VTI)
-retsp <- returns[index(retsvti), ]
-nrows <- NROW(retsp)
+retp <- returns[index(retsvti), ]
+nrows <- NROW(retp)
 # Calculate stock betas
-betav <- sapply(retsp, function(x) {
-  retsp <- na.omit(cbind(x, retsvti))
-  drop(cov(retsp[, 1], retsp[, 2])/var(retsp[, 2]))
+betav <- sapply(retp, function(x) {
+  retp <- na.omit(cbind(x, retsvti))
+  drop(cov(retp[, 1], retp[, 2])/var(retp[, 2]))
 })  # end sapply
 mean(betav)
 # Calculate annual stock returns
-retsann <- retsp
+retsann <- retp
 retsann[1, ] <- 0
 retsann <- zoo::na.locf(retsann, na.rm=FALSE)
 retsann <- 252*sapply(retsann, sum)/nrows
@@ -406,9 +406,9 @@ legend(x="top", bty="n", title="Security Market Line",
       <<echo=TRUE,eval=TRUE>>=
 library(PerformanceAnalytics)
 # Calculate XLP Treynor ratio
-TreynorRatio(Ra=retsp$XLP, Rb=retsp$VTI)
+TreynorRatio(Ra=retp$XLP, Rb=retp$VTI)
 # Calculate XLP Information ratio
-InformationRatio(Ra=retsp$XLP, Rb=retsp$VTI)
+InformationRatio(Ra=retp$XLP, Rb=retp$VTI)
       @
   \end{columns}
 \end{block}
@@ -426,13 +426,13 @@ InformationRatio(Ra=retsp$XLP, Rb=retsp$VTI)
       \texttt{PerformanceAnalytics::table.CAPM()} calculates the \emph{beta} $\beta$ and \emph{alpha} $\alpha$ values, the \emph{Treynor} ratio, and other performance statistics.
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-PerformanceAnalytics::table.CAPM(Ra=retsp[, c("XLP", "XLF")], 
-                                 Rb=retsp$VTI, scale=252)
+PerformanceAnalytics::table.CAPM(Ra=retp[, c("XLP", "XLF")], 
+                                 Rb=retp$VTI, scale=252)
       @
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-capmstats <- table.CAPM(Ra=retsp[, symbolv], 
-              Rb=retsp$VTI, scale=252)
+capmstats <- table.CAPM(Ra=retp[, symbolv], 
+              Rb=retp$VTI, scale=252)
 colnamev <- strsplit(colnames(capmstats), split=" ")
 colnamev <- do.call(cbind, colnamev)[1, ]
 colnames(capmstats) <- colnamev
@@ -644,10 +644,10 @@ dygraphs::dygraph(log(wealthv[endd]), main="Out-of-sample Log Prices of Stock Po
       \emph{USMV} is an \emph{ETF} that holds low volatility stocks, although it hasn't met expectations. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the stock volatilities, betas, and alphas
-retsp <- rutils::diffit(log(pricev))
+retp <- rutils::diffit(log(pricev))
 varvti <- drop(var(retvti))
 meanvti <- mean(retvti)
-riskret <- sapply(retsp, function(rets) {
+riskret <- sapply(retp, function(rets) {
   betav <- drop(cov(rets, retvti))/varvti
   resid <- rets - betav*retvti
   alphav <- mean(rets) - betav*meanvti
@@ -659,8 +659,8 @@ tail(riskret)
 riskret <- riskret[order(riskret[, "vol"]), ]
 symbolv <- rownames(riskret)
 # Calculate the cumulative returns of low and high volatility stocks
-volow <- rowMeans(retsp[, symbolv[1:(nstocks %/% 2)]])
-volhigh <- rowMeans(retsp[, symbolv[(nstocks %/% 2):nstocks]])
+volow <- rowMeans(retp[, symbolv[1:(nstocks %/% 2)]])
+volhigh <- rowMeans(retp[, symbolv[(nstocks %/% 2):nstocks]])
 wealthv <- cbind(volow, volhigh, volow - 0.3*volhigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
@@ -733,7 +733,7 @@ text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
 # Calculate the in-sample stock volatilities, betas, and alphas
 varvti <- drop(var(retvti[insample]))
 meanvti <- mean(retvti[insample])
-riskretis <- sapply(retsp[insample], function(rets) {
+riskretis <- sapply(retp[insample], function(rets) {
   betav <- drop(cov(rets[insample], retvti[insample]))/varvti
   resid <- rets - betav*retvti[insample]
   alphav <- mean(rets[insample]) - betav*meanvti
@@ -746,8 +746,8 @@ riskretis <- riskretis[order(riskretis[, "vol"]), ]
 head(riskretis)
 symbolv <- rownames(riskretis)
 # Calculate the out-of-sample returns of low and high volatility stocks
-volow <- rowMeans(retsp[outsample, symbolv[1:(nstocks %/% 2)]])
-volhigh <- rowMeans(retsp[outsample, symbolv[(nstocks %/% 2):nstocks]])
+volow <- rowMeans(retp[outsample, symbolv[1:(nstocks %/% 2)]])
+volhigh <- rowMeans(retp[outsample, symbolv[(nstocks %/% 2):nstocks]])
 wealthv <- cbind(volow, volhigh, volow - 0.3*volhigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
@@ -786,8 +786,8 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks Ou
 riskret <- riskret[order(riskret[, "ivol"]), ]
 symbolv <- rownames(riskret)
 # Calculate the cumulative returns of low and high volatility stocks
-volow <- rowMeans(retsp[, symbolv[1:(nstocks %/% 2)]])
-volhigh <- rowMeans(retsp[, symbolv[(nstocks %/% 2):nstocks]])
+volow <- rowMeans(retp[, symbolv[1:(nstocks %/% 2)]])
+volhigh <- rowMeans(retp[, symbolv[(nstocks %/% 2):nstocks]])
 wealthv <- cbind(volow, volhigh, volow - 0.3*volhigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
@@ -862,8 +862,8 @@ riskretis <- riskretis[order(riskretis[, "ivol"]), ]
 head(riskretis)
 symbolv <- rownames(riskretis)
 # Calculate the out-of-sample returns of low and high volatility stocks
-volow <- rowMeans(retsp[outsample, symbolv[1:(nstocks %/% 2)]])
-volhigh <- rowMeans(retsp[outsample, symbolv[(nstocks %/% 2):nstocks]])
+volow <- rowMeans(retp[outsample, symbolv[1:(nstocks %/% 2)]])
+volhigh <- rowMeans(retp[outsample, symbolv[(nstocks %/% 2):nstocks]])
 wealthv <- cbind(volow, volhigh, volow - 0.3*volhigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
@@ -906,8 +906,8 @@ riskret <- riskret[order(riskret[, "beta"]), ]
 head(riskret)
 symbolv <- rownames(riskret)
 # Calculate the cumulative returns of low and high beta stocks
-betalow <- rowMeans(retsp[, symbolv[1:(nstocks %/% 2)]])
-betahigh <- rowMeans(retsp[, symbolv[(nstocks %/% 2):nstocks]])
+betalow <- rowMeans(retp[, symbolv[1:(nstocks %/% 2)]])
+betahigh <- rowMeans(retp[, symbolv[(nstocks %/% 2):nstocks]])
 wealthv <- cbind(betalow, betahigh, betalow - 0.3*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
@@ -982,8 +982,8 @@ riskretis <- riskretis[order(riskretis[, "beta"]), ]
 head(riskretis)
 symbolv <- rownames(riskretis)
 # Calculate the out-of-sample returns of low and high beta stocks
-betalow <- rowMeans(retsp[outsample, symbolv[1:(nstocks %/% 2)]])
-betahigh <- rowMeans(retsp[outsample, symbolv[(nstocks %/% 2):nstocks]])
+betalow <- rowMeans(retp[outsample, symbolv[1:(nstocks %/% 2)]])
+betahigh <- rowMeans(retp[outsample, symbolv[(nstocks %/% 2):nstocks]])
 wealthv <- cbind(betalow, betahigh, betalow - 0.3*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
@@ -1034,13 +1034,13 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-S
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the log percentage returns
-retsp <- rutils::diffit(log(pricev))
+retp <- rutils::diffit(log(pricev))
 # Define performance objective function as sum of returns
-objfun <- function(retsp) sum(retsp)
+objfun <- function(retp) sum(retp)
 # Define performance objective function as Sharpe ratio
 objfun <- function(rets) sum(rets)/sd(rets)
 # Calculate performance statistics over look-back intervals
-retsis <- retsp[endd[1]:endd[2]]
+retsis <- retp[endd[1]:endd[2]]
 perfstat <- sapply(retsis, objfun)
 perfstat[!is.finite(perfstat)] <- 0
 sum(is.na(perfstat))
@@ -1050,8 +1050,8 @@ nstocks <- 10
 symbolb <- names(head(perfstat, nstocks))
 symbolw <- names(tail(perfstat, nstocks))
 # Calculate equal weights for the best and worst performing stocks
-weightv <- numeric(NCOL(retsp))
-names(weightv) <- colnames(retsp)
+weightv <- numeric(NCOL(retp))
+names(weightv) <- colnames(retp)
 weightv[symbolb] <- 1
 weightv[symbolw] <- (-1)
 # Calculate weights proportional to performance statistic
@@ -1061,7 +1061,7 @@ weightv <- weightv - mean(weightv)
 # Scale weights so sum of squares is equal to 1
 weightv <- weightv/sqrt(sum(weightv^2))
 # Calculate the momentum portfolio returns
-retsportf <- retsp %*% weightv
+retsportf <- retp %*% weightv
 # Scale weights so in-sample portfolio volatility is same as equal weight
 scalef <- sd(rowMeans(retsis))/sd(retsportf)
 weightv <- scalef*weightv
@@ -1097,7 +1097,7 @@ weightv <- scalef*weightv
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retsp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="months")
 npts <- NROW(endd)
 # Perform loop over the end points
 nstocks <- 10
@@ -1105,7 +1105,7 @@ look_back <- 8
 pnls <- lapply(2:(npts-1), function(ep) {
   # Select the look-back returns
   startp <- endd[max(1, ep-look_back)]
-  retsis <- retsp[startp:endd[ep], ]
+  retsis <- retp[startp:endd[ep], ]
   # Calculate the best and worst performing stocks in-sample
   perfstat <- sapply(retsis, objfun)
   perfstat[!is.finite(perfstat)] <- 0
@@ -1113,8 +1113,8 @@ pnls <- lapply(2:(npts-1), function(ep) {
   symbolb <- names(head(perfstat, nstocks))
   symbolw <- names(tail(perfstat, nstocks))
   # Calculate the momentum weights
-  weightv <- numeric(NCOL(retsp))
-  names(weightv) <- colnames(retsp)
+  weightv <- numeric(NCOL(retp))
+  names(weightv) <- colnames(retp)
   weightv[symbolb] <- 1
   # weightv[symbolw] <- (-1)
   # Calculate the in-sample portfolio returns
@@ -1122,7 +1122,7 @@ pnls <- lapply(2:(npts-1), function(ep) {
   # Scale weights so in-sample portfolio volatility is same as equal weight
   weightv <- weightv*sd(rowMeans(retsis))/sd(retsportf)
   # Calculate the momentum portfolio returns
-  retsportf <- retsp[(endd[ep]+1):endd[ep+1], ] %*% weightv
+  retsportf <- retp[(endd[ep]+1):endd[ep+1], ] %*% weightv
   rowMeans(retsportf)
 })  # end lapply
 pnls <- rutils::do_call(c, pnls)
@@ -1145,11 +1145,11 @@ pnls <- rutils::do_call(c, pnls)
       The momentum strategy may be improved by a better choice of the model parameters: the length of look-back interval and the number of stocks.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the average of all stock returns
-indeks <- rowMeans(retsp)
+indeks <- rowMeans(retp)
 indeks <- xts::xts(indeks, order.by=datev)
 colnames(indeks) <- "Index"
 # Add initial startup interval returns
-pnls <- c(rowMeans(retsp[endd[1]:endd[2], ]), pnls)
+pnls <- c(rowMeans(retp[endd[1]:endd[2], ]), pnls)
 pnls <- xts::xts(pnls, order.by=datev)
 colnames(pnls) <- "Strategy"
 # Calculate the Sharpe and Sortino ratios
@@ -1198,7 +1198,7 @@ btmomtop <- function(rets,
   pnls <- lapply(2:(npts-1), function(ep) {
     # Select the look-back returns
     startp <- endd[max(1, ep-look_back)]
-    retsis <- retsp[startp:endd[ep], ]
+    retsis <- retp[startp:endd[ep], ]
     # Calculate the best and worst performing stocks in-sample
     perfstat <- sapply(retsis, objfun)
     perfstat[!is.finite(perfstat)] <- 0
@@ -1206,8 +1206,8 @@ btmomtop <- function(rets,
     symbolb <- names(head(perfstat, nstocks))
     symbolw <- names(tail(perfstat, nstocks))
     # Calculate the momentum weights
-    weightv <- numeric(NCOL(retsp))
-    names(weightv) <- colnames(retsp)
+    weightv <- numeric(NCOL(retp))
+    names(weightv) <- colnames(retp)
     weightv[symbolb] <- 1
     # weightv[symbolw] <- (-1)
     # Calculate the in-sample portfolio returns
@@ -1215,7 +1215,7 @@ btmomtop <- function(rets,
     # Scale weights so in-sample portfolio volatility is same as equal weight
     weightv <- weightv*sd(rowMeans(retsis))/sd(retsportf)
     # Calculate the momentum portfolio returns
-    retsportf <- retsp[(endd[ep]+1):endd[ep+1], ] %*% weightv
+    retsportf <- retp[(endd[ep]+1):endd[ep+1], ] %*% weightv
     rowMeans(retsportf)
   })  # end lapply
   pnls <- rutils::do_call(c, pnls)
@@ -1245,12 +1245,12 @@ btmomtop <- function(rets,
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtests for vector of look-back intervals
 look_backs <- seq(3, 15, by=1)
-endd <- rutils::calc_endpoints(retsp, interval="months")
-pnlsl <- lapply(look_backs, btmomtop, rets=retsp, endd=endd, objfun=objfun)
+endd <- rutils::calc_endpoints(retp, interval="months")
+pnlsl <- lapply(look_backs, btmomtop, rets=retp, endd=endd, objfun=objfun)
 # Or perform parallel loop under Mac-OSX or Linux
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
-pnlsl <- mclapply(look_backs, btmomtop, rets=retsp, endd=endd, objfun=objfun, mc.cores=ncores)
+pnlsl <- mclapply(look_backs, btmomtop, rets=retp, endd=endd, objfun=objfun, mc.cores=ncores)
 profilev <- sapply(pnlsl, function(pnl) sum(pnl)/sd(pnl))
       @
     \column{0.5\textwidth}
@@ -1287,7 +1287,7 @@ plot(x=look_backs, y=profilev, t="l",
 whichmax <- which.max(profilev)
 look_backs[whichmax]
 pnls <- pnlsl[[whichmax]]
-pnls <- c(rowMeans(retsp[endd[1]:endd[2], ]), pnls)
+pnls <- c(rowMeans(retp[endd[1]:endd[2], ]), pnls)
 pnls <- xts::xts(pnls, order.by=datev)
 colnames(pnls) <- "Strategy"
 # Calculate the Sharpe and Sortino ratios
@@ -1373,11 +1373,11 @@ btmomweight <- function(rets,
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtests for vector of look-back intervals
 look_backs <- seq(3, 15, by=1)
-pnlsl <- lapply(look_backs, btmomweight, rets=retsp, endd=endd, objfun=objfun)
+pnlsl <- lapply(look_backs, btmomweight, rets=retp, endd=endd, objfun=objfun)
 # Or perform parallel loop under Mac-OSX or Linux
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
-pnlsl <- mclapply(look_backs, btmomweight, rets=retsp, endd=endd, objfun=objfun, mc.cores=ncores)
+pnlsl <- mclapply(look_backs, btmomweight, rets=retp, endd=endd, objfun=objfun, mc.cores=ncores)
 profilev <- sapply(pnlsl, function(pnl) sum(pnl)/sd(pnl))
 # Plot Momentum profile
 plot(x=look_backs, y=profilev, t="l",
@@ -1387,7 +1387,7 @@ plot(x=look_backs, y=profilev, t="l",
 whichmax <- which.max(profilev)
 look_backs[whichmax]
 pnls <- pnlsl[[whichmax]]
-pnls <- c(rowMeans(retsp[endd[1]:endd[2], ]), pnls)
+pnls <- c(rowMeans(retp[endd[1]:endd[2], ]), pnls)
 pnls <- xts::xts(pnls, order.by=datev)
 colnames(pnls) <- "Strategy"
 # Calculate the Sharpe and Sortino ratios
@@ -1469,16 +1469,16 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="VTI vs MTUM ETF") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Extract ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
-retsp <- rutils::etfenv$returns[, symbolv]
-retsp <- na.omit(retsp)
-datev <- zoo::index(retsp)
+retp <- rutils::etfenv$returns[, symbolv]
+retp <- na.omit(retp)
+datev <- zoo::index(retp)
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retsp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="months")
 npts <- NROW(endd)
 # Perform backtests for vector of look-back intervals
 look_backs <- seq(3, 15, by=1)
-objfun <- function(retsp) sum(retsp)/sd(retsp)
-pnlsl <- lapply(look_backs, btmomweight, rets=retsp, endd=endd, objfun=objfun)
+objfun <- function(retp) sum(retp)/sd(retp)
+pnlsl <- lapply(look_backs, btmomweight, rets=retp, endd=endd, objfun=objfun)
 profilev <- sapply(pnlsl, function(pnl) sum(pnl)/sd(pnl))
 # Plot Momentum PnLs
 plot(x=look_backs, y=profilev, t="l",
@@ -1506,10 +1506,10 @@ plot(x=look_backs, y=profilev, t="l",
 whichmax <- which.max(profilev)
 look_backs[whichmax]
 pnls <- pnlsl[[whichmax]]
-pnls <- c(rowMeans(retsp[endd[1]:endd[2], ]), pnls)
+pnls <- c(rowMeans(retp[endd[1]:endd[2], ]), pnls)
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
-all_weather <- retsp %*% weightsaw
+all_weather <- retp %*% weightsaw
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(all_weather, pnls)
 cor(wealthv)
@@ -1552,7 +1552,7 @@ look_back <- look_backs[whichmax]
 weightv <- lapply(1:(npts-1), function(ep) {
   # Select the look-back returns
   startp <- endd[max(1, ep-look_back)]
-  retsis <- retsp[startp:endd[ep], ]
+  retsis <- retp[startp:endd[ep], ]
   # Calculate weights proportional to performance
   perfstat <- sapply(retsis, objfun)
   weightv <- drop(perfstat)
@@ -1562,9 +1562,9 @@ weightv <- lapply(1:(npts-1), function(ep) {
 })  # end lapply
 weightv <- rutils::do_call(rbind, weightv)
 # Plot the momentum weights
-retvti <- cumsum(retsp$VTI)
+retvti <- cumsum(retp$VTI)
 datav <- cbind(retvti[endd], weightv)
-colnames(datav) <- c("VTI", paste0(colnames(retsp), "weight"))
+colnames(datav) <- c("VTI", paste0(colnames(retp), "weight"))
 zoo::plot.zoo(datav, xlab=NULL, main="Momentum Weights")
       @
     \column{0.5\textwidth}
@@ -1586,8 +1586,8 @@ zoo::plot.zoo(datav, xlab=NULL, main="Momentum Weights")
       The \emph{momentum} strategy market beta can be calculated by multiplying the \emph{ETF} betas by the \emph{ETF} portfolio weights.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate ETF betas
-betas_etf <- sapply(retsp, function(x)
-  cov(retsp$VTI, x)/var(retsp$VTI))
+betas_etf <- sapply(retp, function(x)
+  cov(retp$VTI, x)/var(retp$VTI))
 # Momentum beta is equal weights times ETF betas
 betas <- weightv %*% betas_etf
 betas <- xts::xts(betas, order.by=datev[endd])
@@ -1616,7 +1616,7 @@ zoo::plot.zoo(datav, main="Momentum Beta & VTI Price", xlab="")
       The \emph{Treynor-Mazuy} test shows that the \emph{momentum} strategy has some \emph{market timing} skill.
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
-retvti <- retsp$VTI
+retvti <- retp$VTI
 predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
 colnames(predv)[2:3] <- c("merton", "treynor")
 regmod <- lm(pnls ~ VTI + merton, data=predv); summary(regmod)
@@ -1749,17 +1749,17 @@ legend("topleft", legend=colnames(wealthv),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate rolling variance
 look_back <- 152
-variance <- roll::roll_var(retsp, width=look_back, min_obs=1)
+variance <- roll::roll_var(retp, width=look_back, min_obs=1)
 variance[1, ] <- variance[2, ]
 variance[variance <= 0] <- 0
 # Calculate rolling Sharpe
-perfstat <- roll::roll_mean(retsp, width=look_back, min_obs=1)
+perfstat <- roll::roll_mean(retp, width=look_back, min_obs=1)
 weightv <- perfstat/sqrt(variance)
 weightv <- weightv/sqrt(rowSums(weightv^2))
 weightv <- rutils::lagit(weightv)
 sum(is.na(weightv))
 # Calculate momentum profits and losses
-pnls <- rowSums(weightv*retsp)
+pnls <- rowSums(weightv*retp)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -1771,7 +1771,7 @@ costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
 pnls <- (pnls - costs)
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
-all_weather <- retsp %*% weightsaw
+all_weather <- retp %*% weightsaw
 # Scale the momentum volatility to all_weather
 pnls <- sd(all_weather)*pnls/sd(pnls)
 # Calculate the wealth of momentum returns
@@ -1854,17 +1854,17 @@ btmomdaily <- function(rets, look_back=252, bid_offer=0.001, trend=1, ...) {
       <<echo=TRUE,eval=FALSE>>=
 # Simulate a daily ETF momentum strategy
 source("/Users/jerzy/Develop/lecture_slides/scripts/back_test.R")
-pnls <- btmomdaily(rets=retsp, look_back=152,
+pnls <- btmomdaily(rets=retp, look_back=152,
   bid_offer=bid_offer)
 # Perform sapply loop over look_backs
 look_backs <- seq(90, 190, by=10)
 pnls <- sapply(look_backs, btmomdaily,
-  rets=retsp, bid_offer=bid_offer)
+  rets=retp, bid_offer=bid_offer)
 # Scale the momentum volatility to all_weather
 pnls <- apply(pnls, MARGIN=2, 
   function(pnl) sd(all_weather)*pnl/sd(pnl))
 colnames(pnls) <- paste0("look_back=", look_backs)
-pnls <- xts::xts(pnls, zoo::index(retsp))
+pnls <- xts::xts(pnls, zoo::index(retp))
 tail(pnls)
       @
     \column{0.5\textwidth}
@@ -1883,7 +1883,7 @@ plot_theme$col$line.col <-
 quantmod::chart_Series(cumsum(pnls)[endd],
   theme=plot_theme, name="Cumulative Returns of Daily ETF Momentum Strategies")
 legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -1959,12 +1959,12 @@ btmomdailyhold <- function(rets, look_back=252, holdp=5, bid_offer=0.001, trend=
 # Perform sapply loop over holding periods
 holdpv <- seq(2, 11, by=2)
 pnls <- sapply(holdpv, btmomdailyhold, look_back=100,
-                  rets=retsp, bid_offer=bid_offer)
+                  rets=retp, bid_offer=bid_offer)
 # Scale the momentum volatility to all_weather
 pnls <- apply(pnls, MARGIN=2, 
   function(pnl) sd(all_weather)*pnl/sd(pnl))
 colnames(pnls) <- paste0("holding=", holdpv)
-pnls <- xts::xts(pnls, zoo::index(retsp))
+pnls <- xts::xts(pnls, zoo::index(retp))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1982,7 +1982,7 @@ plot_theme$col$line.col <-
 quantmod::chart_Series(cumsum(pnls)[endd],
   theme=plot_theme, name="Cumulative Returns of Daily ETF Momentum Strategies")
 legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -2007,23 +2007,23 @@ legend("bottomleft", legend=colnames(pnls),
 # Load daily S&P500 percentage stock returns.
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns100
-retsp <- returns100["2000/"]
-retsp[1, is.na(retsp[1, ])] <- 0
-retsp <- zoo::na.locf(retsp, na.rm=FALSE)
+retp <- returns100["2000/"]
+retp[1, is.na(retp[1, ])] <- 0
+retp <- zoo::na.locf(retp, na.rm=FALSE)
 # Simulate a daily S&P500 momentum strategy.
 # Perform sapply loop over look_backs
 look_backs <- seq(100, 170, by=10)
 pnls <- sapply(look_backs, btmomdailyhold,
-  holdp=5, rets=retsp, bid_offer=0)
+  holdp=5, rets=retp, bid_offer=0)
 colnames(pnls) <- paste0("look_back=", look_backs)
-pnls <- xts::xts(pnls, zoo::index(retsp))
+pnls <- xts::xts(pnls, zoo::index(retp))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/momentum_sp500_mult.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retsp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="months")
 # Plot dygraph of daily S&P500 momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], main="Daily S&P500 Momentum Strategies") %>%
@@ -2035,7 +2035,7 @@ plot_theme$col$line.col <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 quantmod::chart_Series(cumsum(pnls)[endd],
   theme=plot_theme, name="Daily S&P500 Momentum Strategies")
 legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -2060,9 +2060,9 @@ legend("bottomleft", legend=colnames(pnls),
 # Perform sapply loop over look_backs
 look_backs <- seq(3, 20, by=2)
 pnls <- sapply(look_backs, btmomdaily,
-  rets=retsp, bid_offer=0, trend=(-1))
+  rets=retp, bid_offer=0, trend=(-1))
 colnames(pnls) <- paste0("look_back=", look_backs)
-pnls <- xts::xts(pnls, zoo::index(retsp))
+pnls <- xts::xts(pnls, zoo::index(retp))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2079,7 +2079,7 @@ plot_theme$col$line.col <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 quantmod::chart_Series(cumsum(pnls)[endd],
   theme=plot_theme, name="Cumulative Returns of S&P500 Mean Reverting Strategies")
 legend("topleft", legend=colnames(pnls),
-  inset=0.05, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  inset=0.05, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -2105,9 +2105,9 @@ legend("topleft", legend=colnames(pnls),
       The function \texttt{roll\_reg()} from package \emph{HighFreq} performs rolling regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate XLP and VTI returns
-retsp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
+retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
-endd <- xts::endpoints(retsp, on="months")[-1]
+endd <- xts::endpoints(retp, on="months")[-1]
 # Calculate start points from look-back interval
 look_back <- 12  # Look back 12 months
 startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
@@ -2115,20 +2115,20 @@ head(cbind(endd, startp), look_back+2)
 # Calculate rolling beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
 betar <- sapply(1:NROW(endd), FUN=function(ep) {
-    datav <- retsp[startp[ep]:endd[ep], ]
+    datav <- retp[startp[ep]:endd[ep], ]
     # coef(lm(formulav, data=datav))[2]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
 # Calculate rolling betas using RcppArmadillo
-reg_stats <- HighFreq::roll_reg(respv=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1))
+reg_stats <- HighFreq::roll_reg(respv=retp$XLP, retp=retp$VTI, endd=(endd-1), startp=(startp-1))
 betas <- reg_stats$VTI
 all.equal(betas, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(respv=retsp$XLP, retsp=retsp$VTI, endd=(endd-1), startp=(startp-1)),
+  Rcpp=HighFreq::roll_reg(respv=retp$XLP, retp=retp$VTI, endd=(endd-1), startp=(startp-1)),
   Rcode=sapply(1:NROW(endd), FUN=function(ep) {
-    datav <- retsp[startp[ep]:endd[ep], ]
+    datav <- retp[startp[ep]:endd[ep], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   }),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -2138,7 +2138,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of rolling XLP beta and VTI prices
-dates <- zoo::index(retsp[endd, ])
+dates <- zoo::index(retp[endd, ])
 pricev <- rutils::etfenv$prices$VTI[dates]
 datav <- cbind(pricev, betas)
 colnamev <- colnames(datav)
@@ -2222,12 +2222,12 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 # Calculate stock prices and percentage returns
 pricets <- zoo::na.locf(pricets, na.rm=FALSE)
 pricets <- zoo::na.locf(pricets, fromLast=TRUE)
-retsp <- rutils::diffit(log(pricev))
+retp <- rutils::diffit(log(pricev))
 # Standardize (de-mean and scale) the returns
-retsp <- lapply(retsp, function(x) {(x - mean(x))/sd(x)})
-retsp <- rutils::do_call(cbind, retsp)
+retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
+retp <- rutils::do_call(cbind, retp)
 # Perform principal component analysis PCA
-pcad <- prcomp(retsp, scale=TRUE)
+pcad <- prcomp(retp, scale=TRUE)
 # Find number of components with variance greater than 2
 ncomp <- which(pcad$sdev^2 < 2)[1]
       @
@@ -2294,7 +2294,7 @@ for (ordern in 2:ncomps) {
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate principal component time series
-retspca <- xts(retsp %*% pcad$rotation[, 1:ncomps], 
+retspca <- xts(retp %*% pcad$rotation[, 1:ncomps], 
                 order.by=dates)
 round(cov(retspca), 3)
 pcacum <- cumsum(retspca)
@@ -2340,7 +2340,7 @@ all.equal(invmat, t(pcad$rotation))
 solved <- retspca %*% invmat[1:ncomps, ]
 solved <- xts::xts(solved, dates)
 solved <- cumsum(solved)
-retc <- cumsum(retsp)
+retc <- cumsum(retp)
 # Plot the solved returns
 symbolv <- c("MSFT", "XOM", "JPM", "AAPL", "BRK_B", "JNJ")
 for (symbol in symbolv) {
@@ -2388,7 +2388,7 @@ for (symbol in symbolv) {
          title=NULL, inset=0.05, cex=1.0, lwd=6, lty=1, col="blue")
 }  # end for
 # Perform ADF unit root test on principal component time series
-retspca <- xts(retsp %*% pcad$rotation, order.by=dates)
+retspca <- xts(retp %*% pcad$rotation, order.by=dates)
 pcacum <- cumsum(retspca)
 adf_pvalues <- sapply(1:NCOL(pcacum), function(ordern)
   tseries::adf.test(pcacum[, ordern])$p.value)
@@ -2416,9 +2416,9 @@ tseries::adf.test(rnorm(1e5))
 library(quantmod)
 ### Perform pair-wise correlation analysis
 # Calculate correlation matrix
-cormat <- cor(retsp)
-colnames(cormat) <- colnames(retsp)
-rownames(cormat) <- colnames(retsp)
+cormat <- cor(retp)
+colnames(cormat) <- colnames(retp)
+rownames(cormat) <- colnames(retp)
 # Reorder correlation matrix based on clusters
 # Calculate permutation vector
 library(corrplot)

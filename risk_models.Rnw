@@ -390,22 +390,22 @@ nrows*(nrows+1)/((nrows-1)^3)*sum(((retvti - retsm)/sdrets)^4)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # calc_skew() calculates skew of returns
-calc_skew <- function(retsp) {
-  retsp <- na.omit(retsp)
-  sum(((retsp - mean(retsp))/sd(retsp))^3)/NROW(retsp)
+calc_skew <- function(retp) {
+  retp <- na.omit(retp)
+  sum(((retp - mean(retp))/sd(retp))^3)/NROW(retp)
 }  # end calc_skew
 # calc_kurt() calculates kurtosis of returns
-calc_kurt <- function(retsp) {
-  retsp <- na.omit(retsp)
-  sum(((retsp - mean(retsp))/sd(retsp))^4)/NROW(retsp)
+calc_kurt <- function(retp) {
+  retp <- na.omit(retp)
+  sum(((retp - mean(retp))/sd(retp))^4)/NROW(retp)
 }  # end calc_kurt
 # Calculate skew and kurtosis of VTI returns
 calc_skew(retvti)
 calc_kurt(retvti)
 # calcmom() calculates the moments of returns
-calcmom <- function(retsp, moment=3) {
-  retsp <- na.omit(retsp)
-  sum(((retsp - mean(retsp))/sd(retsp))^moment)/NROW(retsp)
+calcmom <- function(retp, moment=3) {
+  retp <- na.omit(retp)
+  sum(((retp - mean(retp))/sd(retp))^moment)/NROW(retp)
 }  # end calcmom
 # Calculate skew and kurtosis of VTI returns
 calcmom(retvti, moment=3)
@@ -596,14 +596,14 @@ legend("topright", inset=0.05, bty="n",
       <<echo=TRUE,eval=FALSE>>=
 # Mixture of two normal distributions with sd=1 and sd=2
 nrows <- 1e5
-retsp <- c(rnorm(nrows/2), 2*rnorm(nrows/2))
-retsp <- (retsp-mean(retsp))/sd(retsp)
+retp <- c(rnorm(nrows/2), 2*rnorm(nrows/2))
+retp <- (retp-mean(retp))/sd(retp)
 # Kurtosis of normal
 calc_kurt(rnorm(nrows))
 # Kurtosis of mixture
-calc_kurt(retsp)
+calc_kurt(retp)
 # Or
-nrows*sum(retsp^4)/(nrows-1)^2
+nrows*sum(retp^4)/(nrows-1)^2
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -613,7 +613,7 @@ nrows*sum(retsp^4)/(nrows-1)^2
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot the distributions
-plot(density(retsp), xlab="", ylab="",
+plot(density(retp), xlab="", ylab="",
   main="Mixture of Normal Returns",
   xlim=c(-3, 3), type="l", lwd=3, col="red")
 curve(expr=dnorm, lwd=2, col="blue", add=TRUE)
@@ -1349,11 +1349,11 @@ head(managers, 3)
 # Load package "PerformanceAnalytics"
 library(PerformanceAnalytics)
 # Calculate ETF returns
-retsp <- rutils::etfenv$returns[, c("VTI", "DBC", "IEF")]
-retsp <- na.omit(retsp)
+retp <- rutils::etfenv$returns[, c("VTI", "DBC", "IEF")]
+retp <- na.omit(retp)
 # Plot cumulative ETF returns
 x11(width=6, height=5)
-chart.CumReturns(retsp, lwd=2, ylab="",
+chart.CumReturns(retp, lwd=2, ylab="",
   legend.loc="topleft", main="ETF Cumulative Returns")
       @
     \column{0.5\textwidth}
@@ -1408,12 +1408,12 @@ legend("topright", inset=0.05, bty="n",
       The vertical lines (whiskers) represent values beyond the quartiles, \\
       Open circles represent values beyond the nominal range (outliers).
       <<echo=TRUE,eval=FALSE>>=
-retsp <- rutils::etfenv$returns[,
+retp <- rutils::etfenv$returns[,
   c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")]
 x11(width=6, height=5)
-chart.Boxplot(names=FALSE, retsp)
+chart.Boxplot(names=FALSE, retp)
 par(cex.lab=0.8, cex.axis=0.8)
-axis(side=2, at=(1:NCOL(retsp))/7.5-0.05,labels=colnames(retsp))
+axis(side=2, at=(1:NCOL(retp))/7.5-0.05,labels=colnames(retp))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -2002,14 +2002,14 @@ cutoff <- (NROW(risk_ret) %/% 2)
 high_skew <- risk_ret$Name[1:cutoff]
 low_skew <- risk_ret$Name[(cutoff+1):NROW(risk_ret)]
 # Calculate returns and log prices
-retsp <- rutils::etfenv$returns
-retsp <- zoo::na.locf(retsp, na.rm=FALSE)
-retsp[is.na(retsp)] <- 0
-sum(is.na(retsp))
-high_skew <- rowMeans(retsp[, high_skew])
-low_skew <- rowMeans(retsp[, low_skew])
+retp <- rutils::etfenv$returns
+retp <- zoo::na.locf(retp, na.rm=FALSE)
+retp[is.na(retp)] <- 0
+sum(is.na(retp))
+high_skew <- rowMeans(retp[, high_skew])
+low_skew <- rowMeans(retp[, low_skew])
 wealthv <- cbind(high_skew, low_skew)
-wealthv <- xts::xts(wealthv, zoo::index(retsp))
+wealthv <- xts::xts(wealthv, zoo::index(retp))
 wealthv <- cumsum(wealthv)
 # dygraph plot of high skew and low skew ETFs
 colnamev <- colnames(wealthv)
@@ -2022,21 +2022,21 @@ dygraphs::dygraph(wealthv, main="Log Wealth of High and Low Skew ETFs") %>%
 
 ### Below is for S&P500 constituent stocks
 # calcmom() calculates the moments of returns
-calcmom <- function(retsp, moment=3) {
-  retsp <- na.omit(retsp)
-  sum(((retsp - mean(retsp))/sd(retsp))^moment)/NROW(retsp)
+calcmom <- function(retp, moment=3) {
+  retp <- na.omit(retp)
+  sum(((retp - mean(retp))/sd(retp))^moment)/NROW(retp)
 }  # end calcmom
 # Calculate skew and kurtosis of VTI returns
-calcmom(retsp, moment=3)
-calcmom(retsp, moment=4)
+calcmom(retp, moment=3)
+calcmom(retp, moment=4)
 # Load the S&P500 constituent stock returns
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-dim(retsp)
-sum(is.na(retsp))
-# retsp <- retsp["2000/"]
-skews <- sapply(retsp, calcmom, moment=3)
-# skews <- sapply(retsp, calcmom, moment=4)
-# skews <- sapply(retsp, sd, na.rm=TRUE)
+dim(retp)
+sum(is.na(retp))
+# retp <- retp["2000/"]
+skews <- sapply(retp, calcmom, moment=3)
+# skews <- sapply(retp, calcmom, moment=4)
+# skews <- sapply(retp, sd, na.rm=TRUE)
 skews <- sort(skews)
 namesv <- names(skews)
 nrows <- NROW(namesv)
@@ -2047,12 +2047,12 @@ high_skew <- namesv[(cutoff+1):nrows]
 
 # low_skew <- namesv[1:50]
 # Calculate returns and log prices
-low_skew <- rowMeans(retsp[, low_skew], na.rm=TRUE)
+low_skew <- rowMeans(retp[, low_skew], na.rm=TRUE)
 low_skew[1] <- 0
-high_skew <- rowMeans(retsp[, high_skew], na.rm=TRUE)
+high_skew <- rowMeans(retp[, high_skew], na.rm=TRUE)
 high_skew[1] <- 0
 wealthv <- cbind(high_skew, low_skew)
-wealthv <- xts::xts(wealthv, zoo::index(retsp))
+wealthv <- xts::xts(wealthv, zoo::index(retp))
 wealthv <- cumsum(wealthv)
 # dygraph plot of high skew and low skew ETFs
 colnamev <- colnames(wealthv)
@@ -2100,30 +2100,30 @@ dygraphs::dygraph(wealthv, main="Log Wealth of High and Low Skew Stocks") %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(PerformanceAnalytics)
-retsp <- rutils::etfenv$returns[, c("VTI", "IEF")]
-retsp <- na.omit(retsp)
+retp <- rutils::etfenv$returns[, c("VTI", "IEF")]
+retp <- na.omit(retp)
 # Calculate the Sharpe ratio
 confl <- 0.05
-PerformanceAnalytics::SharpeRatio(retsp, p=(1-confl), 
+PerformanceAnalytics::SharpeRatio(retp, p=(1-confl), 
   method="historical")
 # Calculate the Sortino ratio
-PerformanceAnalytics::SortinoRatio(retsp)
+PerformanceAnalytics::SortinoRatio(retp)
 # Calculate the Calmar ratio
-PerformanceAnalytics::CalmarRatio(retsp)
+PerformanceAnalytics::CalmarRatio(retp)
 # Calculate the Dowd ratio
-PerformanceAnalytics::SharpeRatio(retsp, FUN="VaR", 
+PerformanceAnalytics::SharpeRatio(retp, FUN="VaR", 
   p=(1-confl), method="historical")
 # Calculate the Dowd ratio from scratch
-varisk <- sapply(retsp, quantile, probs=confl)
--sapply(retsp, mean)/varisk
+varisk <- sapply(retp, quantile, probs=confl)
+-sapply(retp, mean)/varisk
 # Calculate the Conditional Dowd ratio
-PerformanceAnalytics::SharpeRatio(retsp, FUN="ES", 
+PerformanceAnalytics::SharpeRatio(retp, FUN="ES", 
   p=(1-confl), method="historical")
 # Calculate the Conditional Dowd ratio from scratch
-cvar <- sapply(retsp, function(x) {
+cvar <- sapply(retp, function(x) {
   mean(x[x < quantile(x, confl)])
 })
--sapply(retsp, mean)/cvar
+-sapply(retp, mean)/cvar
       @
   \end{columns}
 \end{block}
@@ -2501,7 +2501,7 @@ theme(  # Modify plot theme
       Smoothing a time series of prices produces autocorrelations of their returns.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI log returns
-retsp <- rutils::diffit(closef)
+retp <- rutils::diffit(closef)
 # Open plot window
 x11(width=6, height=7)
 # Set plot parameters
@@ -2510,10 +2510,10 @@ par(oma=c(1, 1, 0, 1), mar=c(1, 1, 1, 1), mgp=c(0, 0.5, 0),
 # Set two plot panels
 par(mfrow=c(2,1))
 # Plot ACF of VTI returns
-rutils::plot_acf(retsp[, 1], lag=10, xlab="")
+rutils::plot_acf(retp[, 1], lag=10, xlab="")
 title(main="ACF of VTI Returns", line=-1)
 # Plot ACF of smoothed VTI returns
-rutils::plot_acf(retsp[, 2], lag=10, xlab="")
+rutils::plot_acf(retp[, 2], lag=10, xlab="")
 title(main="ACF of Smoothed VTI Returns", line=-1)
       @
     \column{0.5\textwidth}
@@ -2665,12 +2665,12 @@ ewmar <- .Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lam
 # ewmar <- filter(closep, filter=lambda, init=as.numeric(closep[1, 1])/(1-lambda), method="recursive")
 ewmar <- (1-lambda)*ewmar
 # Calculate EWMA prices recursively using RcppArmadillo
-ewmacpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=0)
+ewmacpp <- HighFreq::run_mean(closep, lambda=lambda)
 all.equal(drop(ewmacpp), ewmar)
 # Compare the speed of C++ code with RcppArmadillo
 library(microbenchmark)
 summary(microbenchmark(
-  filtercpp=HighFreq::run_mean(closep, lambda=lambda, weightv=0),
+  filtercpp=HighFreq::run_mean(closep, lambda=lambda),
   rfilter=.Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep)))),
   times=10))[, c(1, 4, 5)]
       @
@@ -3135,7 +3135,7 @@ abline(regmod, col="red", lwd=3)
 pricev <- cbind(closep, volatz)
 colnames(pricev) <- c("VTI", "Z-Scores")
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main="VTI Recursive Volatility Z-Scores") %>%
+dygraphs::dygraph(pricev["2008/2009"], main="VTI Online Volatility Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -3322,13 +3322,13 @@ lambda <- 0.9
 volat <- HighFreq::run_var(retvti, lambda=lambda)
 volat <- sqrt(volat)
 # Calculate the recursive trailing z-scores of VTI prices
-pricer <- (closep - HighFreq::run_mean(closep, lambda=lambda, weightv=0))
+pricer <- (closep - HighFreq::run_mean(closep, lambda=lambda))
 pricer <- ifelse(volat > 0, pricer/volat, 0)
 # Plot dygraph of the trailing z-scores of VTI prices
 pricev <- xts::xts(cbind(pricez, pricer), datev)
 colnames(pricev) <- c("Z-Scores", "Recursive")
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main="VTI Recursive Trailing Price Z-Scores") %>%
+dygraphs::dygraph(pricev["2008/2009"], main="VTI Online Trailing Price Z-Scores") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>% 
   dyLegend(show="always", width=500)
       @
@@ -3395,14 +3395,14 @@ dygraphs::dygraph(datav["2008/2009"], main="VTI Regression Z-Scores") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The trailing regressions of the stock price $p_t$ with respect to the predictor (explanatory) variables $\varkappa_t$ can be calculated using the following recursive formulas:
+      The trailing regressions of the stock price $p_t$ with respect to the predictor (explanatory) variables $X_t$ can be calculated using the following recursive (online) formulas:
       \begin{flalign*}
         & \bar{p}_t = \lambda \bar{p}_{t-1} + (1-\lambda) p_t \\
-        & \bar{\varkappa}_t = \lambda \bar{\varkappa}_{t-1} + (1-\lambda) \varkappa_t \\
-        & \sigma^{cov}_t = \lambda \sigma^{cov}_{t-1} + (1-\lambda) (p_t - \bar{p}_t)^T (\varkappa_t - \bar{\varkappa}_t) \\
-        & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (\varkappa_t - \bar{\varkappa}_t)^T (\varkappa_t - \bar{\varkappa}_t) \\
+        & \bar{X}_t = \lambda \bar{X}_{t-1} + (1-\lambda) X_t \\
+        & \sigma^{cov}_t = \lambda \sigma^{cov}_{t-1} + (1-\lambda) (p_t - \bar{p}_t)^T (X_t - \bar{X}_t) \\
+        & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (X_t - \bar{X}_t)^T (X_t - \bar{X}_t) \\
         & \beta_t = \lambda \beta_{t-1} + (1-\lambda) \sigma^{-2}_t \sigma^{cov}_t \\
-        & \alpha_t = \bar{p}_t - \beta_t \bar{\varkappa}_t
+        & \alpha_t = \bar{p}_t - \beta_t \bar{X}_t
       \end{flalign*}
       Where $\alpha_t$ and $\beta_t$ are the \emph{regression coefficients}, 
       $\sigma^{cov}_t$ is the covariance matrix between the response and the predictor data, 
@@ -3411,9 +3411,10 @@ dygraphs::dygraph(datav["2008/2009"], main="VTI Regression Z-Scores") %>%
       The function \texttt{HighFreq::run\_reg()} recursively calculates trailing regressions and their residuals.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate recursive trailing price regression versus time
-lambda <- 0.5
+lambda <- 0.9
 regz <- HighFreq::run_reg(closep, datev, lambda=lambda, 
   method="scale")
+colnames(regz) <- c("zscores", "alphas", "betas")
 tail(regz)
       @
     \column{0.5\textwidth}
@@ -3421,10 +3422,10 @@ tail(regz)
       \includegraphics[width=0.45\paperwidth]{figure/features_regr_betas_rec.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of regression betas
-datav <- cbind(closep, regz[, NCOL(regz)])
-colnames(datav) <- c("VTI", "Betas")
+datav <- cbind(closep, regz[, "betas"])
+colnames(datav) <- c("VTI", "Beta")
 colnamev <- colnames(datav)
-dygraphs::dygraph(datav["2008/2009"], main="VTI Recursive Regression Betas") %>%
+dygraphs::dygraph(datav["2008/2009"], main="VTI Online Regression Beta") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -3448,7 +3449,7 @@ dygraphs::dygraph(datav["2008/2009"], main="VTI Recursive Regression Betas") %>%
       \begin{flalign*}
         & \epsilon_t = \lambda \epsilon_{t-1} + (1-\lambda) (p_t - \beta_t p_t) \\
         & \bar{\epsilon}_t = \lambda \bar{\epsilon}_{t-1} + (1-\lambda) \epsilon_t \\
-        & \varsigma^2_t = \lambda \varsigma^2_{t-1} + (1-\lambda) \epsilon^2_t \\
+        & \varsigma^2_t = \lambda \varsigma^2_{t-1} + (1-\lambda) (\epsilon_t - \bar{\epsilon}_t)^2 \\
         & z_t = \frac{\epsilon_t}{\varsigma_t}
       \end{flalign*}
       Where $\varsigma^2_t$ is the variance of the residuals $\epsilon_t$.
@@ -3457,10 +3458,10 @@ dygraphs::dygraph(datav["2008/2009"], main="VTI Recursive Regression Betas") %>%
       \includegraphics[width=0.45\paperwidth]{figure/features_regr_zscores_rec.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of z-scores of VTI prices
-datav <- cbind(closep, regz[, 1])
+datav <- cbind(closep, regz[, "zscores"])
 colnames(datav) <- c("VTI", "Z-Scores")
 colnamev <- colnames(datav)
-dygraphs::dygraph(datav["2008/2009"], main="VTI Recursive Regression Z-Scores") %>%
+dygraphs::dygraph(datav["2008/2009"], main="VTI Online Regression Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -3660,8 +3661,8 @@ look_back <- 11
 startp <- c(rep_len(0, look_back-1), endd[1:(nrows-look_back+1)])
 # Calculate rolling variance in sapply() loop - takes long
 varv <- sapply(1:nrows, function(it) {
-  retsp <- retvti[startp[it]:endd[it]]
-  sum((retsp - mean(retsp))^2)/look_back
+  retp <- retvti[startp[it]:endd[it]]
+  sum((retp - mean(retp))^2)/look_back
 })  # end sapply
 # Use only vectorized functions
 retc <- cumsum(retvti)
@@ -4154,20 +4155,19 @@ nrows <- 1000
 # Calculate matrix of standard normal innovations
 set.seed(1121)  # Reset random numbers
 innov <- rnorm(nrows)
-retsp <- numeric(nrows)
+retp <- numeric(nrows)
 varv <- numeric(nrows)
 varv[1] <- omega/(1-alpha-betav)
-retsp[1] <- sqrt(varv[1])*innov[1]
+retp[1] <- sqrt(varv[1])*innov[1]
 # Simulate GARCH model
 for (i in 2:nrows) {
-  retsp[i] <- sqrt(varv[i-1])*innov[i]
-  varv[i] <- omega + alpha*retsp[i]^2 +
-    betav*varv[i-1]
+  retp[i] <- sqrt(varv[i-1])*innov[i]
+  varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
 }  # end for
 # Simulate the GARCH process using Rcpp
 garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,  
   beta=betav, innov=matrix(innov))
-all.equal(garch_data, cbind(retsp, varv), check.attributes=FALSE)
+all.equal(garch_data, cbind(retp, varv), check.attributes=FALSE)
       @
       The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
   \end{columns}
@@ -4186,7 +4186,7 @@ all.equal(garch_data, cbind(retsp, varv), check.attributes=FALSE)
       The \emph{GARCH(1,1)} is a volatility model defined by two coupled equations:
       \begin{flalign*}
         r_t &= \sigma_{t-1} \xi_t \\
-        \sigma^2_t &= \omega + \alpha r_t^2 + \beta \sigma^2_{t-1}
+        \sigma^2_t &= \omega + \beta \sigma^2_{t-1} + \alpha r_t^2
       \end{flalign*}
       Where $\sigma^2_t$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance $r_t^2$ and the past variance $\sigma^2_{t-1}$, and $\xi_t$ are standard normal \emph{innovations}.
       \vskip1ex
@@ -4211,19 +4211,19 @@ nrows <- 1000
 # Calculate matrix of standard normal innovations
 set.seed(1121)  # Reset random numbers
 innov <- rnorm(nrows)
-retsp <- numeric(nrows)
+retp <- numeric(nrows)
 varv <- numeric(nrows)
 varv[1] <- omega/(1-alpha-betav)
-retsp[1] <- sqrt(varv[1])*innov[1]
+retp[1] <- sqrt(varv[1])*innov[1]
 # Simulate GARCH model
 for (i in 2:nrows) {
-  retsp[i] <- sqrt(varv[i-1])*innov[i]
-  varv[i] <- omega + alpha*retsp[i]^2 + betav*varv[i-1]
+  retp[i] <- sqrt(varv[i-1])*innov[i]
+  varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
 }  # end for
 # Simulate the GARCH process using Rcpp
 garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,  
   beta=betav, innov=matrix(innov))
-all.equal(garch_data, cbind(retsp, varv), check.attributes=FALSE)
+all.equal(garch_data, cbind(retp, varv), check.attributes=FALSE)
       @
       The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
   \end{columns}
@@ -4252,7 +4252,7 @@ dev.new(width=6, height=5, noRStudioGD=TRUE)
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(2, 2, 3, 1), oma=c(0, 0, 0, 0))
 # Plot GARCH cumulative returns
-plot(cumsum(retsp), t="l", col="blue", xlab="", ylab="",
+plot(cumsum(retp), t="l", col="blue", xlab="", ylab="",
   main="GARCH Cumulative Returns")
 quartz.save("figure/garch_returns.png", type="png", 
   width=6, height=5)
@@ -4290,11 +4290,11 @@ quartz.save("figure/garch_volat.png", type="png",
       The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate kurtosis of GARCH returns
-mean(((retsp-mean(retsp))/sd(retsp))^4)
+mean(((retp-mean(retp))/sd(retp))^4)
 # Perform Jarque-Bera test of normality
-tseries::jarque.bera.test(retsp)
+tseries::jarque.bera.test(retp)
 # Fit t-distribution into GARCH returns
-fitobj <- MASS::fitdistr(retsp, densfun="t", df=2)
+fitobj <- MASS::fitdistr(retp, densfun="t", df=2)
 locv <- fitobj$estimate[1]
 scalev <- fitobj$estimate[2]
       @
@@ -4303,10 +4303,10 @@ scalev <- fitobj$estimate[2]
       \includegraphics[width=0.45\paperwidth]{figure/garch_hist.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram of GARCH returns
-histp <- hist(retsp, col="lightgrey",
+histp <- hist(retp, col="lightgrey",
   xlab="returns", breaks=200, xlim=c(-0.03, 0.03),
   ylab="frequency", freq=FALSE, main="GARCH Returns Histogram")
-lines(density(retsp, adjust=1.5), lwd=2, col="blue")
+lines(density(retp, adjust=1.5), lwd=2, col="blue")
 curve(expr=dt((x-locv)/scalev, df=2)/scalev,
   type="l", xlab="", ylab="", lwd=2,
   col="red", add=TRUE)
@@ -4341,25 +4341,25 @@ garch_spec <- fGarch::garchSpec(model=list(ar=c(0, 0), omega=omega,
   alpha=alpha, beta=betav))
 # Simulate GARCH model
 garch_sim <- fGarch::garchSim(spec=garch_spec, n=nrows)
-retsp <- as.numeric(garch_sim)
+retp <- as.numeric(garch_sim)
 # Calculate kurtosis of GARCH returns
-moments::moment(retsp, order=4) /
-  moments::moment(retsp, order=2)^2
+moments::moment(retp, order=4) /
+  moments::moment(retp, order=2)^2
 # Perform Jarque-Bera test of normality
-tseries::jarque.bera.test(retsp)
+tseries::jarque.bera.test(retp)
 # Plot histogram of GARCH returns
-histp <- hist(retsp, col="lightgrey",
+histp <- hist(retp, col="lightgrey",
   xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
   ylab="frequency", freq=FALSE,
   main="GARCH Returns Histogram")
-lines(density(retsp, adjust=1.5), lwd=3, col="blue")
+lines(density(retp, adjust=1.5), lwd=3, col="blue")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/garch_fGarch_hist.png}
       <<echo=TRUE,eval=FALSE>>=
 # Fit t-distribution into GARCH returns
-fitobj <- MASS::fitdistr(retsp, densfun="t", df=2, lower=c(-1, 1e-7))
+fitobj <- MASS::fitdistr(retp, densfun="t", df=2, lower=c(-1, 1e-7))
 locv <- fitobj$estimate[1]
 scalev <- fitobj$estimate[2]
 curve(expr=dt((x-locv)/scalev, df=2)/scalev,
@@ -4395,11 +4395,11 @@ legend("topright", inset=0.05, bty="n",
       The distribution of kurtosis is highly positively skewed, especially for short returns samples, so most kurtosis values will be significantly below their expected value. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate variance of GARCH returns
-var(retsp)
+var(retp)
 # Calculate expected value of variance
 omega/(1-alpha-betav)
 # Calculate kurtosis of GARCH returns
-mean(((retsp-mean(retsp))/sd(retsp))^4)
+mean(((retp-mean(retp))/sd(retp))^4)
 # Calculate expected value of kurtosis
 3 + 6*alpha^2/(1-2*alpha^2-(alpha+betav)^2)
       @
@@ -4411,8 +4411,8 @@ mean(((retsp-mean(retsp))/sd(retsp))^4)
 kurt <- sapply(1:1e4, function(x) {
   garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha, 
     beta=betav, innov=matrix(rnorm(nrows)))
-  retsp <- garch_data[, 1]
-  c(var(retsp), mean(((retsp-mean(retsp))/sd(retsp))^4))
+  retp <- garch_data[, 1]
+  c(var(retp), mean(((retp-mean(retp))/sd(retp))^4))
 })  # end sapply
 kurt <- t(kurt)
 apply(kurt, 2, mean)
@@ -4444,7 +4444,7 @@ quartz.save("figure/garch_kurtosis.png", type="png", width=6, height=5)
       \vskip1ex
       If the time series of returns $r_t$ is given, then it can be used in the \emph{GARCH(1,1)} formula to estimate the trailing variance $\sigma^2_t$: 
       \begin{displaymath}
-        \sigma^2_t = \omega + \alpha r_t^2 + \beta \sigma^2_{t-1}
+        \sigma^2_t = \omega + \beta \sigma^2_{t-1} + \alpha r_t^2
       \end{displaymath}
       If the returns from the \emph{GARCH(1,1)} simulation are used in the above formula, then it produces the simulated \emph{GARCH(1,1)} variance.
       \vskip1ex
@@ -4456,15 +4456,15 @@ quartz.save("figure/garch_kurtosis.png", type="png", width=6, height=5)
 garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,  
   beta=betav, innov=matrix(innov))
 # Extract the returns
-retsp <- garch_data[, 1]
+retp <- garch_data[, 1]
 # Estimate the trailing variance from the returns
 varv <- numeric(nrows)
 varv[1] <- omega/(1-alpha-betav)
 for (i in 2:nrows) {
-  varv[i] <- omega + alpha*retsp[i]^2 +
+  varv[i] <- omega + alpha*retp[i]^2 +
     betav*varv[i-1]
 }  # end for
-all.equal(garch_data[, 2], variance, check.attributes=FALSE)
+all.equal(garch_data[, 2], varv, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -4489,11 +4489,11 @@ all.equal(garch_data[, 2], variance, check.attributes=FALSE)
       <<echo=TRUE,eval=FALSE>>=
 library(fGarch)
 # Fit returns into GARCH
-garch_fit <- fGarch::garchFit(data=retsp)
+garch_fit <- fGarch::garchFit(data=retp)
 # Fitted GARCH parameters
 garch_fit@fit$coef
 # Actual GARCH parameters
-c(mu=mean(retsp), omega=omega,alpha=alpha, beta=betav)
+c(mu=mean(retp), omega=omega,alpha=alpha, beta=betav)
 # Plot GARCH fitted volatility
 plot(sqrt(garch_fit@fit$series$h), t="l",
   col="blue", xlab="", ylab="",
@@ -4530,7 +4530,7 @@ quartz.save("figure/garch_fGarch_fitted.png",
       \end{displaymath}
       The \emph{log-likelihood} depends on the \emph{GARCH(1,1)} parameters $\omega$, $\alpha$, and $\beta$ because the trailing variance $\sigma^2_t$ depends on the \emph{GARCH(1,1)} parameters:
       \begin{displaymath}
-        \sigma^2_t = \omega + \alpha r^2_t + \beta \sigma^2_{t-1}
+        \sigma^2_t = \omega + \beta \sigma^2_{t-1} + \alpha r^2_t
       \end{displaymath}
       The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
     \column{0.5\textwidth}
@@ -4542,24 +4542,24 @@ likefun <- function(omega, alpha, betav) {
   varv <- numeric(nrows)
   varv[1] <- omega/(1-alpha-betav)
   for (i in 2:nrows) {
-    varv[i] <- omega + alpha*retsp[i]^2 + betav*varv[i-1]
+    varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
   }  # end for
-  varv <- ifelse(varv > 0, variance, 0.000001)
+  varv <- ifelse(varv > 0, varv, 0.000001)
   # Lag the variance
   varv <- rutils::lagit(varv, pad_zeros=FALSE)
   # Calculate the likelihood
-  -sum(retsp^2/variance + log(varv))
+  -sum(retp^2/varv + log(varv))
 }  # end likefun
 # Calculate the likelihood in R
 likefun(omega, alpha, betav)
 # Calculate the likelihood in Rcpp
 HighFreq::lik_garch(omega=omega, alpha=alpha,
-  beta=betav, returns=matrix(retsp))
+  beta=betav, returns=matrix(retp))
 # Benchmark speed of likelihood calculations
 library(microbenchmark)
 summary(microbenchmark(
   Rcode=likefun(omega, alpha, betav),
-  Rcpp=HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=matrix(retsp))
+  Rcpp=HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=matrix(retp))
   ), times=10)[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4588,13 +4588,13 @@ summary(microbenchmark(
       \vspace{-1em}
       <<eval=FALSE,echo=TRUE>>=
 # Calculate the variance of returns
-retsp <- garch_data[, 1, drop=FALSE]
-varv <- var(retsp)
-retsp <- (retsp - mean(retsp))
+retp <- garch_data[, 1, drop=FALSE]
+varv <- var(retp)
+retp <- (retp - mean(retp))
 # Calculate likelihood as function of alpha and betav parameters
 likefun <- function(alpha, betav) {
   omega <- variance*(1 - alpha - betav)
-  -HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=retsp)
+  -HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=retp)
 }  # end likefun
 # Calculate matrix of likelihood values
 alphas <- seq(from=0.15, to=0.35, len=50)
@@ -4674,9 +4674,9 @@ cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
       \vspace{-1em}
       <<eval=FALSE,echo=TRUE>>=
 # Define vectorized likelihood function
-likefun <- function(x, retsp) {
+likefun <- function(x, retp) {
   alpha <- x[1]; betav <- x[2]; omega <- x[3]
-  -HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=retsp)
+  -HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=retp)
 }  # end likefun
 # Initial parameters
 initp <- c(alpha=0.2, beta=0.4, omega=varv/0.2)
@@ -4684,7 +4684,7 @@ initp <- c(alpha=0.2, beta=0.4, omega=varv/0.2)
 fitobj <- optim(par=initp,
   fn=likefun, # Log-likelihood function
   method="L-BFGS-B", # Quasi-Newton method
-  returns=retsp, 
+  returns=retp, 
   upper=c(0.35, 0.55, varv), # Upper constraint
   lower=c(0.15, 0.35, varv/100)) # Lower constraint
 # Optimal and actual parameters
@@ -4694,7 +4694,7 @@ cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
 optiml <- DEoptim::DEoptim(fn=likefun,
   upper=c(0.35, 0.55, varv), # Upper constraint
   lower=c(0.15, 0.35, varv/100), # Lower constraint
-  returns=retsp, 
+  returns=retp, 
   control=list(trace=FALSE, itermax=1000, parallelType=1))
 # Optimal and actual parameters
 cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
@@ -4717,7 +4717,7 @@ cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
       \vskip1ex
       If the time series of returns $r_t$ is given, then it can be used in the \emph{GARCH(1,1)} formula to estimate the trailing variance $\sigma^2_t$: 
       \begin{displaymath}
-        \sigma^2_t = \omega + \alpha r_t^2 + \beta \sigma^2_{t-1}
+        \sigma^2_t = \omega + \beta \sigma^2_{t-1} + \alpha r_t^2
       \end{displaymath}
       The \emph{GARCH} formula can be viewed as a generalization of the \emph{EWMA} trailing variance.
       <<eval=FALSE,echo=TRUE>>=
@@ -4751,7 +4751,7 @@ for (i in 2:nrows) {
 # Estimate the GARCH volatility using Rcpp
 garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha, 
   beta=betav, innov=retvti, is_random=FALSE)
-all.equal(garch_data[, 2], variance, check.attributes=FALSE)
+all.equal(garch_data[, 2], varv, check.attributes=FALSE)
 # Plot dygraph of the estimated GARCH volatility
 dygraphs::dygraph(xts::xts(sqrt(varv), zoo::index(retvti)), 
   main="Estimated GARCH Volatility of VTI") %>%
@@ -4964,21 +4964,21 @@ lines(density(foo[, 2]), col='red', lwd=2)
       The range logarithm fits better into the normal distribution than the range percentage.
       <<echo=TRUE,eval=FALSE>>=
 ohlc <- rutils::etfenv$VTI
-retsp <- log((ohlc[, 2] - ohlc[, 3]) / (ohlc[, 2] + ohlc[, 3]))
+retp <- log((ohlc[, 2] - ohlc[, 3]) / (ohlc[, 2] + ohlc[, 3]))
 foo <- rutils::diffit(log(ohlc[, 4]))
-plot(as.numeric(foo)^2, as.numeric(retsp)^2)
-bar <- lm(retsp ~ foo)
+plot(as.numeric(foo)^2, as.numeric(retp)^2)
+bar <- lm(retp ~ foo)
 summary(bar)
 
 
 # Perform normality tests
-shapiro.test(coredata(retsp))
-tseries::jarque.bera.test(retsp)
+shapiro.test(coredata(retp))
+tseries::jarque.bera.test(retp)
 # Fit VTI returns using MASS::fitdistr()
-fitobj <- MASS::fitdistr(retsp, densfun="t", df=2)
+fitobj <- MASS::fitdistr(retp, densfun="t", df=2)
 fitobj$estimate; fitobj$sd
 # Calculate moments of standardized returns
-sapply(3:4, moments::moment, x=(retsp - mean(retsp))/sd(retsp))
+sapply(3:4, moments::moment, x=(retp - mean(retp))/sd(retp))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4987,7 +4987,7 @@ sapply(3:4, moments::moment, x=(retsp - mean(retsp))/sd(retsp))
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram of VTI returns
 colorv <- c("lightgray", "blue", "green", "red")
-PerformanceAnalytics::chart.Histogram(retsp,
+PerformanceAnalytics::chart.Histogram(retp,
   main="", xlim=c(-7, -3), col=colorv[1:3],
   methods = c("add.density", "add.normal"))
 curve(expr=dt((x-fitobj$estimate[1])/
@@ -5017,9 +5017,9 @@ legend("topright", inset=0.05,
       The logarithm of the range exhibits very significant autocorrelations, unlike the range percentage.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI range variance partial autocorrelations
-pacf(retsp^2, lag=10, xlab=NA, ylab=NA,
+pacf(retp^2, lag=10, xlab=NA, ylab=NA,
      main="PACF of VTI log range")
-quantmod::chart_Series(retsp^2, name="VTI log of range squared")
+quantmod::chart_Series(retp^2, name="VTI log of range squared")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/pacf_log_range.png}
@@ -5092,9 +5092,9 @@ pacf(var_yang_zhang, lag=10, xlab=NA, ylab=NA)
 title(main="VTI YZ variance partial autocorrelations")
 
 # Squared range partial autocorrelations
-retsp <- log(rutils::etfenv$VTI[,2] /
+retp <- log(rutils::etfenv$VTI[,2] /
                   rutils::etfenv$VTI[,3])
-pacf(retsp^2, lag=10, xlab=NA, ylab=NA)
+pacf(retp^2, lag=10, xlab=NA, ylab=NA)
 title(main="VTI squared range partial autocorrelations")
       @
     \column{0.5\textwidth}

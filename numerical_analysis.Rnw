@@ -333,33 +333,33 @@ integrate(function(x) x*dnorm(x),
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
-retsp <- rutils::etfenv$returns$VTI
-retsp <- drop(coredata(na.omit(retsp)))
-nrows <- NROW(retsp)
+retp <- rutils::etfenv$returns$VTI
+retp <- drop(coredata(na.omit(retp)))
+nrows <- NROW(retp)
 # Mean and standard deviation of returns
-c(mean(retsp), sd(retsp))
+c(mean(retp), sd(retp))
 # Calculate the MAD of returns 10 points apart
-retsp <- sort(retsp)
-bwidth <- 10*mad(rutils::diffit(retsp, lagg=10))
+retp <- sort(retp)
+bwidth <- 10*mad(rutils::diffit(retp, lagg=10))
 # Calculate the kernel density
 densityv <- sapply(1:nrows, function(it) {
-  sum(dnorm(retsp-retsp[it], sd=bwidth))
+  sum(dnorm(retp-retp[it], sd=bwidth))
 })  # end sapply
-madv <- mad(retsp)
-plot(retsp, densityv, xlim=c(-5*madv, 5*madv), 
+madv <- mad(retp)
+plot(retp, densityv, xlim=c(-5*madv, 5*madv), 
      t="l", col="blue", lwd=3, 
      xlab="returns", ylab="density",
      main="Density of VTI Returns")
 # Calculate the kernel density using density()
-densityv <- density(retsp, bw=bwidth)
+densityv <- density(retp, bw=bwidth)
 NROW(densityv$y)
 x11(width=6, height=5)
 plot(densityv, xlim=c(-5*madv, 5*madv), 
      xlab="returns", ylab="density",
      col="blue", lwd=3, main="Density of VTI Returns")
 # Interpolate the densityv vector into returns
-densityv <- approx(densityv$x, densityv$y, xout=retsp)
-all.equal(densityv$x, retsp)
+densityv <- approx(densityv$x, densityv$y, xout=retp)
+all.equal(densityv$x, retp)
 plot(densityv, xlim=c(-5*madv, 5*madv), 
      xlab="returns", ylab="density",
      t="l", col="blue", lwd=3, 
@@ -391,13 +391,13 @@ plot(densityv, xlim=c(-5*madv, 5*madv),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
-histp <- hist(retsp, breaks=100, freq=FALSE,
+histp <- hist(retp, breaks=100, freq=FALSE,
   xlim=c(-5*madv, 5*madv), xlab="", ylab="", 
   main="VTI Return Distribution")
 # Draw kernel density of histogram
 lines(densityv, col="red", lwd=2)
 # Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(retsp), sd=sd(retsp)),
+curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)),
       add=TRUE, type="l", lwd=2, col="blue")
 # Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
@@ -2371,11 +2371,11 @@ apply(bootd, MARGIN=2, function(x)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI returns
 library(rutils)
-retsp <- rutils::etfenv$returns$VTI
-retsp <- na.omit(retsp)
-nrows <- NROW(retsp)
+retp <- rutils::etfenv$returns$VTI
+retp <- na.omit(retp)
+nrows <- NROW(retp)
 # Sample from VTI returns
-samplev <- retsp[sample.int(nrows, replace=TRUE)]
+samplev <- retp[sample.int(nrows, replace=TRUE)]
 c(sd=sd(samplev), mad=mad(samplev))
 # sample.int() is a little faster than sample()
 library(microbenchmark)
@@ -2415,9 +2415,9 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Sample from time series of VTI returns
 library(rutils)
-retsp <- rutils::etfenv$returns$VTI
-retsp <- na.omit(retsp)
-nrows <- NROW(retsp)
+retp <- rutils::etfenv$returns$VTI
+retp <- na.omit(retp)
+nrows <- NROW(retp)
 # Bootstrap sd and MAD under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
@@ -2425,19 +2425,19 @@ cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 nboot <- 10000
 bootd <- parLapply(cluster, 1:nboot,
-  function(x, retsp, nrows) {
-    samplev <- retsp[sample.int(nrows, replace=TRUE)]
+  function(x, retp, nrows) {
+    samplev <- retp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
-  }, retsp=retsp, nrows*nrows)  # end parLapply
+  }, retp=retp, nrows*nrows)  # end parLapply
 # Bootstrap sd and MAD under Mac-OSX or Linux
 bootd <- mclapply(1:nboot, function(x) {
-    samplev <- retsp[sample.int(nrows, replace=TRUE)]
+    samplev <- retp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 bootd <- rutils::do_call(rbind, bootd)
 # Standard error assuming normal distribution of returns
-sd(retsp)/sqrt(nboot)
+sd(retp)/sqrt(nboot)
 # Means and standard errors from bootstrap
 stderrors <- apply(bootd, MARGIN=2,
   function(x) c(mean=mean(x), stderror=sd(x)))
@@ -2771,14 +2771,14 @@ text(x=(nrows-60), y=strikep, labels="strike price", pos=3, cex=1)
 library(rutils)
 pricev <- quantmod::Cl(rutils::etfenv$VTI)
 startd <- as.numeric(pricev[1, ])
-retsp <- rutils::diffit(log(pricev))
-class(retsp); head(retsp)
-sum(is.na(retsp))
-nrows <- NROW(retsp)
+retp <- rutils::diffit(log(pricev))
+class(retp); head(retp)
+sum(is.na(retp))
+nrows <- NROW(retp)
 # Define barrier level with respect to prices
 barl <- 1.5*max(pricev)
 # Calculate single bootstrap sample
-samplev <- retsp[sample.int(nrows, replace=TRUE)]
+samplev <- retp[sample.int(nrows, replace=TRUE)]
 # Calculate prices from percentage returns
 samplev <- startd*exp(cumsum(samplev))
 # Calculate if prices crossed barrier
@@ -2795,16 +2795,16 @@ clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl"))
 nboot <- 10000
 bootd <- parLapply(cluster, 1:nboot,
-  function(x, retsp, nrows) {
-    samplev <- retsp[sample.int(nrows, replace=TRUE)]
+  function(x, retp, nrows) {
+    samplev <- retp[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
     samplev <- startd*exp(cumsum(samplev))
     # Calculate if prices crossed barrier
     sum(samplev > barl) > 0
-  }, retsp=retsp, nrows*nrows)  # end parLapply
+  }, retp=retp, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:nboot, function(x) {
-    samplev <- retsp[sample.int(nrows, replace=TRUE)]
+    samplev <- retp[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
     samplev <- startd*exp(cumsum(samplev))
     # Calculate if prices crossed barrier
@@ -2839,14 +2839,14 @@ library(rutils)
 ohlc <- rutils::etfenv$VTI
 pricev <- as.numeric(ohlc[, 4])
 startd <- pricev[1]
-retsp <- rutils::diffit(log(pricev))
-nrows <- NROW(retsp)
+retp <- rutils::diffit(log(pricev))
+nrows <- NROW(retp)
 # Calculate difference of OHLC price columns
 ohlc_diff <- ohlc[, 1:3] - pricev
-class(retsp); head(retsp)
+class(retp); head(retp)
 # Calculate bootstrap prices from percentage returns
 datav <- sample.int(nrows, replace=TRUE)
-boot_pricev <- startd*exp(cumsum(retsp[datav]))
+boot_pricev <- startd*exp(cumsum(retp[datav]))
 boot_ohlc <- ohlc_diff + boot_prices
 boot_ohlc <- cbind(boot_ohlc, boot_pricev)
 # Define barrier level with respect to prices
@@ -2865,20 +2865,20 @@ clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl", "ohlc_diff"))
 nboot <- 10000
 bootd <- parLapply(cluster, 1:nboot,
-  function(x, retsp, nrows) {
+  function(x, retp, nrows) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
-    boot_pricev <- startd*exp(cumsum(retsp[datav]))
+    boot_pricev <- startd*exp(cumsum(retp[datav]))
     boot_ohlc <- ohlc_diff + boot_prices
     boot_ohlc <- cbind(boot_ohlc, boot_pricev)
     # Calculate statistic
     sum(boot_ohlc[, 2] > barl) > 0
-  }, retsp=retsp, nrows*nrows)  # end parLapply
+  }, retp=retp, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:nboot, function(x) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
-    boot_pricev <- startd*exp(cumsum(retsp[datav]))
+    boot_pricev <- startd*exp(cumsum(retp[datav]))
     boot_ohlc <- ohlc_diff + boot_prices
     boot_ohlc <- cbind(boot_ohlc, boot_pricev)
     # Calculate statistic
@@ -4027,12 +4027,12 @@ bootd <- function(datav, nboot=nboot) {
   apply(bootd, MARGIN=2,
     function(x) c(mean=mean(x), stderror=sd(x)))
 
-  retsp <- numeric(nrows)
+  retp <- numeric(nrows)
   pricev <- numeric(nrows)
   pricev[1] <- eq_price
   for (i in 2:nrows) {
-    retsp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
-    pricev[i] <- pricev[i-1] + retsp[i]
+    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end bootd
@@ -4090,12 +4090,12 @@ static const double pi = 3.14159265;
 # Define Ornstein-Uhlenbeck function in R
 sim_our <- function(nrows=1000, eq_price=5.0,
                     volat=0.01, theta=0.01) {
-  retsp <- numeric(nrows)
+  retp <- numeric(nrows)
   pricev <- numeric(nrows)
   pricev[1] <- eq_price
   for (i in 2:nrows) {
-    retsp[i] <- theta*(eq_price - pricev[i-1]) + volat*rnorm(1)
-    pricev[i] <- pricev[i-1] + retsp[i]
+    retp[i] <- theta*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end sim_our
@@ -4191,11 +4191,11 @@ NumericVector sim_oucpp(double eq_price,
                           NumericVector innov) {
   int(nrows = innov.size();
   NumericVector pricev*nrows);
-  NumericVector retsp*nrows);
+  NumericVector retp*nrows);
   pricev[0] = eq_price;
   for (int it = 1; it < nrows; it++) {
-    retsp[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
-    pricev[it] = pricev[it-1] + retsp[it];
+    retp[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
+    pricev[it] = pricev[it-1] + retp[it];
   }  // end for
   return pricev;
 }  // end sim_oucpp
@@ -4299,12 +4299,12 @@ bootd <- function(datav, nboot=1000) {
   apply(bootd, MARGIN=2,
     function(x) c(mean=mean(x), stderror=sd(x)))
 
-  retsp <- numeric(nrows)
+  retp <- numeric(nrows)
   pricev <- numeric(nrows)
   pricev[1] <- eq_price
   for (i in 2:nrows) {
-    retsp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
-    pricev[i] <- pricev[i-1] + retsp[i]
+    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end bootd
@@ -4389,12 +4389,12 @@ bootd <- function(datav, nboot=1000) {
   apply(bootd, MARGIN=2,
         function(x) c(mean=mean(x), stderror=sd(x)))
 
-  retsp <- numeric(nrows)
+  retp <- numeric(nrows)
   pricev <- numeric(nrows)
   pricev[1] <- eq_price
   for (i in 2:nrows) {
-    retsp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
-    pricev[i] <- pricev[i-1] + retsp[i]
+    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end bootd
@@ -4711,10 +4711,10 @@ using namespace arma;
 
 //' @export
 // [[Rcpp::export]]
-arma::mat calc_inv(const arma::mat& tseries,
-                   double eigen_thresh = 0.01, 
-                   arma::uword dimax = 0) {
-  
+arma::mat calc_inv(const arma::mat& matrixv, 
+                   arma::uword dimax = 0, // Max number of PCA for dimension reduction
+                   double eigen_thresh = 0.01) { // Threshold for discarding small singular values
+
   // Allocate SVD variables
   arma::vec svdval;  // Singular values
   arma::mat svdu, svdv;  // Singular matrices
@@ -4770,7 +4770,7 @@ arma::vec calc_weights(const arma::mat& returns, // Asset returns
     // Shrink colmeans to the mean of returns
     colmeans = ((1-alpha)*colmeans + alpha*arma::mean(colmeans));
     // Calculate weights using regularized inverse
-    weights = calc_inv(covmat, eigen_thresh, dimax)*colmeans;
+    weights = calc_inv(covmat, dimax, eigen_thresh)*colmeans;
     break;
   }  // end maxsharpe
   case methodenum::maxsharpemed: {
@@ -4779,13 +4779,13 @@ arma::vec calc_weights(const arma::mat& returns, // Asset returns
     // Shrink colmeans to the median of returns
     colmeans = ((1-alpha)*colmeans + alpha*arma::median(colmeans));
     // Calculate weights using regularized inverse
-    weights = calc_inv(covmat, eigen_thresh, dimax)*colmeans;
+    weights = calc_inv(covmat, dimax, eigen_thresh)*colmeans;
     break;
   }  // end maxsharpemed
   case methodenum::minvarlin: {
     // Minimum variance weights under linear constraint
     // Multiply regularized inverse times unit vector
-    weights = calc_inv(covmat, eigen_thresh, dimax)*arma::ones(ncols);
+    weights = calc_inv(covmat, dimax, eigen_thresh)*arma::ones(ncols);
     break;
   }  // end minvarlin
   case methodenum::minvarquad: {

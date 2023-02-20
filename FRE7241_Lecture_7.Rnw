@@ -110,26 +110,26 @@ knit_theme$set(thm)
 symbolv <- colnames(rutils::etfenv$returns)
 symbolv <- symbolv[!(symbolv %in% c("VXX", "SVXY", "MTUM", "QUAL", "VLUE", "USMV"))]
 # Extract columns of rutils::etfenv$returns and overwrite NA values
-retsp <- rutils::etfenv$returns[, symbolv]
-nstocks <- NCOL(retsp)
-# retsp <- na.omit(retsp)
-retsp[1, is.na(retsp[1, ])] <- 0
-retsp <- zoo::na.locf(retsp, na.rm=FALSE)
-datev <- zoo::index(retsp)
+retp <- rutils::etfenv$returns[, symbolv]
+nstocks <- NCOL(retp)
+# retp <- na.omit(retp)
+retp[1, is.na(retp[1, ])] <- 0
+retp <- zoo::na.locf(retp, na.rm=FALSE)
+datev <- zoo::index(retp)
 # Returns in excess of risk-free rate
 riskf <- 0.03/252
-retsx <- (retsp - riskf)
+retsx <- (retp - riskf)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/portf_etf_weights_in_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Maximum Sharpe weights in-sample interval
-retsis <- retsp["/2014"]
+retsis <- retp["/2014"]
 invmat <- MASS::ginv(cov(retsis))
 weightv <- invmat %*% colMeans(retsx["/2014"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retsp)
+names(weightv) <- colnames(retp)
 # Plot portfolio weights
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -185,7 +185,7 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="In-sample Optimal Portfolio Returns"
       Combining the optimal portfolio with the equal weight portfolio produces and even better performing portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate out-of-sample portfolio returns
-retsos <- retsp["2015/"]
+retsos <- retp["2015/"]
 outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
 indeks <- xts::xts(rowMeans(retsos), zoo::index(retsos))
 outsample <- outsample*sd(indeks)/sd(outsample)
@@ -224,11 +224,11 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Optimal Portfolio Retu
 invmat <- MASS::ginv(cov(retsis))
 weightv <- invmat %*% colMeans(retsx["/2014"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retsp)
+names(weightv) <- colnames(retp)
 # Calculate in-sample portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 # Calculate out-of-sample portfolio returns
-retsos <- retsp["2015/"]
+retsos <- retp["2015/"]
 outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
       @
     \column{0.5\textwidth}
@@ -237,7 +237,7 @@ outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
 pnls <- rbind(insample, outsample)
-indeks <- xts::xts(rowMeans(retsp), datev)
+indeks <- xts::xts(rowMeans(retp), datev)
 pnls <- pnls*sd(indeks)/sd(pnls)
 pnls <- cbind(indeks, pnls)
 colnames(pnls) <- c("Equal Weight", "Optimal")
@@ -360,7 +360,7 @@ all.equal(covmat, covmat %*% covinv %*% covmat)
 # Calculate portfolio weights
 weightv <- invmat %*% colMeans(retsis)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retsp)
+names(weightv) <- colnames(retp)
 # Calculate portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
@@ -450,7 +450,7 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="Optimal Portfolio Returns With Eigen
       \end{itemize}
       <<echo=TRUE,eval=FALSE>>=
 # Define monthly end points
-endd <- rutils::calc_endpoints(retsp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="months")
 endd <- endd[endd > (nstocks+1)]
 npts <- NROW(endd)
 look_back <- 3
@@ -463,7 +463,7 @@ pnls <- lapply(2:npts, function(ep) {
     weightv <- invmat %*% colMeans(insample)
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
     # Calculate the out-of-sample portfolio returns
-    outsample <- retsp[(endd[ep-1]+1):endd[ep], ]
+    outsample <- retp[(endd[ep-1]+1):endd[ep], ]
     xts::xts(outsample %*% weightv, zoo::index(outsample))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -517,7 +517,7 @@ pnls <- lapply(2:npts, function(ep) {
     weightv <- invmat %*% colMeans(insample)
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
     # Calculate the out-of-sample portfolio returns
-    outsample <- retsp[(endd[ep-1]+1):endd[ep], ]
+    outsample <- retp[(endd[ep-1]+1):endd[ep], ]
     xts::xts(outsample %*% weightv, zoo::index(outsample))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -572,7 +572,7 @@ pnls <- lapply(2:npts, function(ep) {
     weightv <- invmat %*% colMeans(insample)
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
     # Calculate the out-of-sample portfolio returns
-    outsample <- retsp[(endd[ep-1]+1):endd[ep], ]
+    outsample <- retp[(endd[ep-1]+1):endd[ep], ]
     xts::xts(outsample %*% weightv, zoo::index(outsample))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -658,12 +658,12 @@ roll_portf <- function(excess, # Excess returns
       Multiple \emph{rolling portfolio optimization} strategies can be backtested by calling the function \texttt{roll\_portf()} in a loop over a vector of \emph{look-back} parameters.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate a monthly ETF momentum strategy
-pnls <- roll_portf(excess=retsx, returns=retsp, endd=endd, 
+pnls <- roll_portf(excess=retsx, returns=retp, endd=endd, 
   look_back=look_back, dimax=dimax)
 # Perform sapply loop over look_backs
 look_backs <- seq(2, 15, by=1)
 pnls <- lapply(look_backs, roll_portf,
-  returns=retsp, excess=retsx, endd=endd, dimax=dimax)
+  returns=retp, excess=retsx, endd=endd, dimax=dimax)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("look_back=", look_backs)
 pnlsums <- sapply(pnls, sum)
@@ -685,7 +685,7 @@ plot_theme$col$line.col <-
 quantmod::chart_Series(cumsum(pnls),
   theme=plot_theme, name="Rolling Portfolio Strategies")
 legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -706,7 +706,7 @@ legend("bottomleft", legend=colnames(pnls),
 # Perform backtest for different dimax values
 eigenvals <- 2:11
 pnls <- lapply(eigenvals, roll_portf, excess=retsx, 
-  returns=retsp, endd=endd, look_back=look_back)
+  returns=retp, endd=endd, look_back=look_back)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("eigenval=", eigenvals)
 pnlsums <- sapply(pnls, sum)
@@ -728,7 +728,7 @@ plot_theme$col$line.col <-
 quantmod::chart_Series(cumsum(pnls),
   theme=plot_theme, name="Rolling Portfolio Strategies")
 legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -750,7 +750,7 @@ legend("bottomleft", legend=colnames(pnls),
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.0, to=0.9, by=0.1)
 pnls <- lapply(alphav, roll_portf, excess=retsx, 
-  returns=retsp, endd=endd, look_back=look_back, dimax=dimax)
+  returns=retp, endd=endd, look_back=look_back, dimax=dimax)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("alpha=", alphav)
 pnlsums <- sapply(pnls, sum)
@@ -772,7 +772,7 @@ plot_theme$col$line.col <-
 quantmod::chart_Series(cumsum(pnls),
   theme=plot_theme, name="Rolling Portfolio Strategies")
 legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retsp)),
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -794,25 +794,25 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns
-retsp <- returns["2000/"]
-nstocks <- NCOL(retsp)
-retsp[1, is.na(retsp[1, ])] <- 0
-retsp <- zoo::na.locf(retsp, na.rm=FALSE)
-datev <- zoo::index(retsp)
+retp <- returns["2000/"]
+nstocks <- NCOL(retp)
+retp[1, is.na(retp[1, ])] <- 0
+retp <- zoo::na.locf(retp, na.rm=FALSE)
+datev <- zoo::index(retp)
 riskf <- 0.03/252
-retsx <- (retsp - riskf)
-retsis <- retsp["/2010"]
-retsos <- retsp["2011/"]
+retsx <- (retp - riskf)
+retsis <- retp["/2010"]
+retsos <- retp["2011/"]
 # Maximum Sharpe weights in-sample interval
 covmat <- cov(retsis)
 invmat <- MASS::ginv(covmat)
 weightv <- invmat %*% colMeans(retsx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retsp)
+names(weightv) <- colnames(retp)
 # Calculate portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-indeks <- xts::xts(rowMeans(retsp), datev)
+indeks <- xts::xts(rowMeans(retp), datev)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -860,11 +860,11 @@ invmat <- eigenvec[, 1:dimax] %*%
 # Calculate portfolio weights
 weightv <- invmat %*% colMeans(retsx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retsp)
+names(weightv) <- colnames(retp)
 # Calculate portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-indeks <- xts::xts(rowMeans(retsp), datev)
+indeks <- xts::xts(rowMeans(retp), datev)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1229,13 +1229,13 @@ arma::mat back_test(const arma::mat& retsx, // Portfolio excess returns
       The strategy parameters are: the rebalancing frequency (annual, monthly, etc.), and the length of look-back interval.
       <<echo=TRUE,eval=FALSE>>=
 # Overwrite NA values in returns100
-retsp <- returns100
-retsp[1, is.na(retsp[1, ])] <- 0
-retsp <- zoo::na.locf(retsp, na.rm=FALSE)
-retsx <- (retsp - riskf)
-nstocks <- NCOL(retsp) ; datev <- zoo::index(retsp)
+retp <- returns100
+retp[1, is.na(retp[1, ])] <- 0
+retp <- zoo::na.locf(retp, na.rm=FALSE)
+retsx <- (retp - riskf)
+nstocks <- NCOL(retp) ; datev <- zoo::index(retp)
 # Define monthly end points
-endd <- rutils::calc_endpoints(retsp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="months")
 endd <- endd[endd > (nstocks+1)]
 npts <- NROW(endd) ; look_back <- 12
 startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
@@ -1248,7 +1248,7 @@ pnls <- lapply(2:npts, function(ep) {
     weightv <- invmat %*% colMeans(insample)
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
     # Calculate the out-of-sample portfolio returns
-    outsample <- retsp[(endd[ep-1]+1):endd[ep], ]
+    outsample <- retp[(endd[ep-1]+1):endd[ep], ]
     xts::xts(outsample %*% weightv, zoo::index(outsample))
 })  # end lapply
 pnls <- rutils::do_call(rbind, pnls)
@@ -1258,7 +1258,7 @@ pnls <- rutils::do_call(rbind, pnls)
       \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate returns of equal weight portfolio
-indeks <- xts::xts(rowMeans(retsp), datev)
+indeks <- xts::xts(rowMeans(retp), datev)
 pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(indeks, pnls)
@@ -1293,7 +1293,7 @@ startp[startp < 0] <- 0
 # Specify dimension reduction and return shrinkage using list of portfolio optimization parameters
 controlv <- HighFreq::param_portf(method="maxsharpe", dimax=21, alpha=0.7)
 # Perform backtest in Rcpp
-pnls <- HighFreq::back_test(excess=retsx, returns=retsp,
+pnls <- HighFreq::back_test(excess=retsx, returns=retp,
   startp=startp, endd=endd, controlv=controlv)
 pnls <- pnls*sd(indeks)/sd(pnls)
       @
@@ -1333,7 +1333,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling S&P500 Portfolio Optimiza
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.01, to=0.91, by=0.1)
 pnls <- lapply(alphav, function(alpha) {
-  HighFreq::back_test(excess=retsx, returns=retsp,
+  HighFreq::back_test(excess=retsx, returns=retp,
   startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
@@ -1345,7 +1345,7 @@ pnls <- pnls[[whichmax]]
 # Perform backtest over vector of dimension reduction eigenvals
 eigenvals <- seq(from=3, to=40, by=2)
 pnls <- lapply(eigenvals, function(dimax) {
-  HighFreq::back_test(excess=retsx, returns=retsp,
+  HighFreq::back_test(excess=retsx, returns=retp,
     startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
@@ -1393,7 +1393,7 @@ pnls <- lapply(look_backs, function(look_back) {
   startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
   startp <- (startp - 1)
   startp[startp < 0] <- 0
-  HighFreq::back_test(excess=retsx, returns=retsp,
+  HighFreq::back_test(excess=retsx, returns=retp,
     startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
@@ -1535,8 +1535,8 @@ library(Rglpk)
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
 # Calculate mean returns
-retsp <- na.omit(rutils::etfenv$returns[, symbolv])
-retsm <- colMeans(retsp)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+retsm <- colMeans(retp)
 # Specify linear constraint coefficients
 lincon <- matrix(c(rep(1, nstocks), 1, 1, 0),
                        nc=nstocks, byrow=TRUE)
@@ -1633,7 +1633,7 @@ unlist(optiml[1:2])
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate covariance matrix of returns and its inverse
-covmat <- cov(retsp)
+covmat <- cov(retp)
 covinv <- solve(a=covmat)
 unitv <- rep(1, NCOL(covmat))
 # Minimum variance weights with constraint
@@ -1782,9 +1782,9 @@ t(weightv) %*% covmat %*% weightv
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate vector of mean returns
-retsm <- colMeans(retsp)
+retsm <- colMeans(retp)
 # Specify the target return
-rett <- 1.5*mean(retsp)
+rett <- 1.5*mean(retp)
 # Products of inverse with mean returns and unit vector
 fmat <- matrix(c(
   t(unitv) %*% covinv %*% unitv,
@@ -1837,22 +1837,22 @@ all.equal(rett, sum(retsm*weightv))
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate portfolio return and standard deviation
-retsp <- drop(retsp %*% weightv)
-c(return=mean(retsp), sd=sd(retsp))
-all.equal(mean(retsp), rett)
+retp <- drop(retp %*% weightv)
+c(return=mean(retp), sd=sd(retp))
+all.equal(mean(retp), rett)
 # Calculate portfolio variance
 uu <- c(1, rett)
 finv <- solve(fmat)
-all.equal(var(retsp), drop(t(uu) %*% finv %*% uu))
+all.equal(var(retp), drop(t(uu) %*% finv %*% uu))
 # Calculate vertex of variance parabola
 weightv <- drop(covinv %*% unitv /
   drop(t(unitv) %*% covinv %*% unitv))
-retsp <- drop(retsp %*% weightv)
+retp <- drop(retp %*% weightv)
 retsv <- drop(t(unitv) %*% covinv %*% retsm /
   t(unitv) %*% covinv %*% unitv)
-all.equal(mean(retsp), retsv)
+all.equal(mean(retp), retsv)
 varmin <- drop(1/t(unitv) %*% covinv %*% unitv)
-all.equal(var(retsp), varmin)
+all.equal(var(retp), varmin)
       @
   \end{columns}
 \end{block}
@@ -2048,9 +2048,9 @@ abline(a=riskf, b=slopev, lwd=2, col="green")
       <<echo=TRUE,eval=FALSE>>=
 # Calculate excess returns
 riskf <- 0.03/252
-retsx <- (retsp - riskf)
+retsx <- (retp - riskf)
 # Calculate covariance and inverse matrix
-covmat <- cov(retsp)
+covmat <- cov(retp)
 unitv <- rep(1, NCOL(covmat))
 covinv <- solve(a=covmat)
 # Calculate mean excess returns
@@ -2062,7 +2062,7 @@ weightv <- weightv/drop(t(unitv) %*% weightv)
 # Sharpe ratios
 sqrt(252)*sum(weightv*retsx) /
   sqrt(drop(weightv %*% covmat %*% weightv))
-sapply(retsp - riskf, function(x) sqrt(252)*mean(x)/sd(x))
+sapply(retp - riskf, function(x) sqrt(252)*mean(x)/sd(x))
 maxsharpe <- weightv
       @
   \end{columns}
@@ -2128,9 +2128,9 @@ weightv <- covinv %*% unitv
 minvar <- weightv/drop(t(unitv) %*% weightv)
 # Calculate optimal portfolio returns
 retsoptim <- xts(
-  x=cbind(exp(cumsum(retsp %*% maxsharpe)),
-          exp(cumsum(retsp %*% minvar))),
-  order.by=zoo::index(retsp))
+  x=cbind(exp(cumsum(retp %*% maxsharpe)),
+          exp(cumsum(retp %*% minvar))),
+  order.by=zoo::index(retp))
 colnames(retsoptim) <- c("maxsharpe", "minvar")
 # Plot optimal portfolio returns, with custom line colors
 plot_theme <- chart_theme()
@@ -2195,9 +2195,9 @@ weightv <- covinv %*% unitv
 weightv <- weightv/drop(t(unitv) %*% weightv)
 # Minimum standard deviation and return
 stdev <- sqrt(252*drop(weightv %*% covmat %*% weightv))
-retsp <- 252*sum(weightv*retsm)
+retp <- 252*sum(weightv*retsm)
 # Calculate maximum Sharpe portfolios
-riskf <- (retsp * seq(-10, 10, by=0.1)^3)/252
+riskf <- (retp * seq(-10, 10, by=0.1)^3)/252
 effront <- sapply(riskf, function(riskf) {
   weightv <- covinv %*% (retsm - riskf)
   weightv <- weightv/drop(t(unitv) %*% weightv)
@@ -2213,7 +2213,7 @@ effront <- effront[order(effront[, "return"]), ]
 plot(x=effront[, "stddev"],
      y=effront[, "return"], t="l",
      xlim=c(0.0*stdev, 3.0*stdev),
-     ylim=c(0.0*retsp, 2.0*retsp),
+     ylim=c(0.0*retp, 2.0*retp),
      main="Efficient Frontier and Capital Market Line",
      xlab="standard deviation", ylab="return")
 points(x=effront[, "stddev"], y=effront[, "return"],
@@ -2238,12 +2238,12 @@ points(x=effront[, "stddev"], y=effront[, "return"],
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot minimum variance portfolio
-points(x=stdev, y=retsp, col="green", lwd=6)
-text(stdev, retsp, labels="minimum \nvariance",
+points(x=stdev, y=retp, col="green", lwd=6)
+text(stdev, retp, labels="minimum \nvariance",
      pos=4, cex=0.8)
 # Draw Capital Market Line
 sortv <- sort(effront[, 1])
-riskf <- sortv[findInterval(x=0.5*retsp, vec=sortv)]
+riskf <- sortv[findInterval(x=0.5*retp, vec=sortv)]
 points(x=0, y=riskf, col="blue", lwd=6)
 text(x=0, y=riskf, labels="risk-free",
      pos=4, cex=0.8)
@@ -2303,8 +2303,8 @@ lines(x=effront[, "stddev"],
 points(x=effront[, "stddev"], y=effront[, "return"],
        col="red", lwd=3)
 # Plot minimum variance portfolio
-points(x=stdev, y=retsp, col="green", lwd=6)
-text(stdev, retsp, labels="minimum\nvariance",
+points(x=stdev, y=retp, col="green", lwd=6)
+text(stdev, retp, labels="minimum\nvariance",
      pos=2, cex=0.8)
 # Plot market portfolio
 points(x=effront[marketp, "stddev"],
@@ -2342,34 +2342,34 @@ text(x=sqrt(252*diag(covmat)), y=252*retsm,
       \vspace{-1em}
       <<corr_two_assets,echo=TRUE,eval=FALSE>>=
 riskf <- 0.03
-retsp <- c(asset1=0.05, asset2=0.06)
+retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
 corrp <- 0.6
 covmat <- matrix(c(1, corrp, corrp, 1), nc=2)
 covmat <- t(t(stdevs*covmat)*stdevs)
 weightv <- seq(from=(-1), to=2, length.out=31)
 weightv <- cbind(weightv, 1-weightv)
-retsp <- weightv %*% retsp
+retp <- weightv %*% retp
 portfsd <- sqrt(rowSums(weightv*(weightv %*% covmat)))
-sharper <- (retsp-riskf)/portfsd
+sharper <- (retp-riskf)/portfsd
 whichmax <- which.max(sharper)
 sharpem <- max(sharper)
 # Plot efficient frontier
 x11(widthp <- 6, heightp <- 5)
 par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(portfsd, retsp, t="l",
+plot(portfsd, retp, t="l",
  main=paste0("Efficient frontier and CML for two assets\ncorrelation = ", 100*corrp, "%"),
  xlab="standard deviation", ylab="return",
  lwd=2, col="orange",
  xlim=c(0, max(portfsd)),
- ylim=c(0.02, max(retsp)))
+ ylim=c(0.02, max(retp)))
 # Add Market Portfolio (maximum Sharpe ratio portfolio)
-points(portfsd[whichmax], retsp[whichmax],
+points(portfsd[whichmax], retp[whichmax],
        col="blue", lwd=3)
-text(x=portfsd[whichmax], y=retsp[whichmax],
+text(x=portfsd[whichmax], y=retp[whichmax],
      labels=paste(c("market portfolio\n",
        structure(c(weightv[whichmax], 1-weightv[whichmax]),
-               names=names(retsp))), collapse=" "),
+               names=names(retp))), collapse=" "),
      pos=2, cex=0.8)
       @
     \column{0.5\textwidth}
@@ -2378,14 +2378,14 @@ text(x=portfsd[whichmax], y=retsp[whichmax],
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot individual assets
-points(stdevs, retsp, col="green", lwd=3)
-text(stdevs, retsp, labels=names(retsp), pos=4, cex=0.8)
+points(stdevs, retp, col="green", lwd=3)
+text(stdevs, retp, labels=names(retp), pos=4, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
 points(x=0, y=riskf, col="blue", lwd=3)
 text(0, riskf, labels="risk-free\nrate", pos=4, cex=0.8)
 abline(a=riskf, b=sharpem, lwd=2, col="blue")
 range_s <- par("usr")
-text(portfsd[whichmax]/2, (retsp[whichmax]+riskf)/2,
+text(portfsd[whichmax]/2, (retp[whichmax]+riskf)/2,
      labels="Capital Market Line", cex=0.8, , pos=3,
      srt=45*atan(sharpem*(range_s[2]-range_s[1])/
                    (range_s[4]-range_s[3])*
@@ -2415,10 +2415,10 @@ symbolv <- c("VTI", "IEF")
 weightv <- seq(from=(-1), to=2, length.out=31)
 weightv <- cbind(weightv, 1-weightv)
 # Calculate portfolio returns and volatilities
-retsp <- rutils::etfenv$returns[, symbolv]
-retsp <- retsp %*% t(weightv)
-portfv <- cbind(252*colMeans(retsp),
-  sqrt(252)*matrixStats::colSds(retsp))
+retp <- rutils::etfenv$returns[, symbolv]
+retp <- retp %*% t(weightv)
+portfv <- cbind(252*colMeans(retp),
+  sqrt(252)*matrixStats::colSds(retp))
 colnames(portfv) <- c("returns", "stddev")
 riskf <- 0.06
 portfv <- cbind(portfv,
@@ -2443,10 +2443,10 @@ text(x=portfv[whichmax, "stddev"], y=portfv[whichmax, "returns"],
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot individual assets
-retsm <- 252*sapply(retsp, mean)
-stdevs <- sqrt(252)*sapply(retsp, sd)
+retsm <- 252*sapply(retp, mean)
+stdevs <- sqrt(252)*sapply(retp, sd)
 points(stdevs, retsm, col="green", lwd=6)
-text(stdevs, retsm, labels=names(retsp), pos=2, cex=0.8)
+text(stdevs, retsm, labels=names(retp), pos=2, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
 points(x=0, y=riskf, col="blue", lwd=6)
 text(0, riskf, labels="risk-free", pos=4, cex=0.8)
@@ -2476,11 +2476,11 @@ text(max(portfv[, "stddev"])/3, 0.75*max(portfv[, "returns"]),
 # Plot portfolios in x11() window
 x11(widthp <- 6, heightp <- 5)
 # Calculate cumulative returns of VTI and IEF
-retsoptim <- lapply(retsp,
-  function(retsp) exp(cumsum(retsp)))
+retsoptim <- lapply(retp,
+  function(retp) exp(cumsum(retp)))
 retsoptim <- rutils::do_call(cbind, retsoptim)
 # Calculate market portfolio returns
-retsoptim <- cbind(exp(cumsum(retsp %*%
+retsoptim <- cbind(exp(cumsum(retp %*%
     c(weightv[whichmax], 1-weightv[whichmax]))),
   retsoptim)
 colnames(retsoptim)[1] <- "market"
@@ -2525,18 +2525,18 @@ legend("top", legend=colnames(retsoptim),
 x11(width=6, height=4)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 # VTI percentage returns
-retsp <- rutils::diffit(log(quantmod::Cl(rutils::etfenv$VTI)))
+retp <- rutils::diffit(log(quantmod::Cl(rutils::etfenv$VTI)))
 confl <- 0.1
-varisk <- quantile(retsp, confl)
-cvar <- mean(retsp[retsp < varisk])
+varisk <- quantile(retp, confl)
+cvar <- mean(retp[retp < varisk])
 # Or
-sortv <- sort(as.numeric(retsp))
-varind <- round(confl*NROW(retsp))
+sortv <- sort(as.numeric(retp))
+varind <- round(confl*NROW(retp))
 varisk <- sortv[varind]
 cvar <- mean(sortv[1:varind])
 # Plot histogram of VTI returns
 varmin <- (-0.05)
-histp <- hist(retsp, col="lightgrey",
+histp <- hist(retp, col="lightgrey",
   xlab="returns", breaks=100, xlim=c(varmin, 0.01),
   ylab="frequency", freq=FALSE, main="VTI Returns Histogram")
       @
@@ -2546,7 +2546,7 @@ histp <- hist(retsp, col="lightgrey",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot density of losses
-densv <- density(retsp, adjust=1.5)
+densv <- density(retp, adjust=1.5)
 lines(densv, lwd=3, col="blue")
 # Add line for VaR
 abline(v=varisk, col="red", lwd=3)
@@ -2594,19 +2594,19 @@ library(Rglpk)
 # Vector of symbol names and returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
-retsp <- na.omit(rutils::etfenv$returns[, symbolv])
-retsm <- colMeans(retsp)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+retsm <- colMeans(retp)
 confl <- 0.05
 rmin <- 0 ; wmin <- 0 ; wmax <- 1
 weightsum <- 1
-ncols <- NCOL(retsp) # number of assets
-nrows <- NROW(retsp) # number of rows
+ncols <- NCOL(retp) # number of assets
+nrows <- NROW(retp) # number of rows
 # Create objective vector
 objvec <- c(numeric(ncols), rep(-1/(confl/nrows), nrows), -1)
 # Specify linear constraint coefficients
 lincon <- rbind(cbind(rbind(1, retsm),
                       matrix(data=0, nrow=2, ncol=(nrows+1))),
-                cbind(coredata(retsp), diag(nrows), 1))
+                cbind(coredata(retp), diag(nrows), 1))
 rhs <- c(weightsum, rmin, rep(0, nrows))
 directs <- c("==", ">=", rep(">=", nrows))
 # Specify box constraints (wmin, wmax) (default is c(0, Inf))
@@ -2639,31 +2639,31 @@ as.numeric(optiml$solution[1:ncols])
         <<echo=(-(1:3)),eval=FALSE>>=
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
-retsp <- rutils::etfenv$returns[, symbolv]
+retp <- rutils::etfenv$returns[, symbolv]
 # Create initial vector of portfolio weights
 weightv <- rep(1, NROW(symbolv))
 names(weightv) <- symbolv
 # Objective equal to minus Sharpe ratio
-objfun <- function(weightv, retsp) {
-  retsp <- retsp %*% weightv
-  if (sd(retsp) == 0)
+objfun <- function(weightv, retp) {
+  retp <- retp %*% weightv
+  if (sd(retp) == 0)
     return(0)
   else
-    -return(mean(retsp)/sd(retsp))
+    -return(mean(retp)/sd(retp))
 }  # end objfun
 # Objective for equal weight portfolio
-objfun(weightv, retsp=retsp)
+objfun(weightv, retp=retp)
 optiml <- unlist(optimize(
   f=function(weight)
-    objfun(c(1, 1, weight), retsp=retsp),
+    objfun(c(1, 1, weight), retp=retp),
   interval=c(-4, 1)))
 # Vectorize objective function with respect to third weight
 objvec <- function(weightv) sapply(weightv,
   function(weight) objfun(c(1, 1, weight),
-    retsp=retsp))
+    retp=retp))
 # Or
 objvec <- Vectorize(FUN=function(weight)
-    objfun(c(1, 1, weight), retsp=retsp),
+    objfun(c(1, 1, weight), retp=retp),
   vectorize.args="weight")  # end Vectorize
 objvec(1)
 objvec(1:3)
@@ -2780,7 +2780,7 @@ rgl::persp3d(
 # Optimization to find weights with maximum Sharpe ratio
 optiml <- optim(par=weightv,
                    fn=objfun,
-                   retsp=retsp,
+                   retp=retp,
                    method="L-BFGS-B",
                    upper=c(1.1, 10, 10),
                    lower=c(0.9, -10, -10))
@@ -2815,12 +2815,12 @@ layout(matrix(c(1,2), 2),
 barplot(optiml$par, col=c("red", "green", "blue"),
         main="Optimized portfolio weights")
 # Calculate cumulative returns of VTI, IEF, DBC
-retc <- lapply(retsp,
-  function(retsp) exp(cumsum(retsp)))
+retc <- lapply(retp,
+  function(retp) exp(cumsum(retp)))
 retc <- rutils::do_call(cbind, retc)
 # Calculate optimal portfolio returns with VTI, IEF, DBC
 retsoptim <- cbind(
-  exp(cumsum(retsp %*% optiml$par)),
+  exp(cumsum(retp %*% optiml$par)),
   retc)
 colnames(retsoptim)[1] <- "retsoptim"
 # Plot optimal returns with VTI, IEF, DBC
@@ -2833,7 +2833,7 @@ legend("top", legend=colnames(retsoptim), cex=0.8,
        col=plot_theme$col$line.col, bty="n")
 # Or plot non-compounded (simple) cumulative returns
 PerformanceAnalytics::chart.CumReturns(
-  cbind(retsp %*% optiml$par, retsp),
+  cbind(retp %*% optiml$par, retp),
   lwd=2, ylab="", legend.loc="topleft", main="")
       @
     \column{0.5\textwidth}
@@ -2872,7 +2872,7 @@ PerformanceAnalytics::chart.CumReturns(
       \vspace{-1em}
         <<echo=(-(1:6)),eval=FALSE>>=
 riskf <- 0.03
-retsp <- c(asset1=0.05, asset2=0.06)
+retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
 corrp <- 0.6
 covmat <- matrix(c(1, corrp, corrp, 1), nc=2)
@@ -2935,9 +2935,9 @@ unlist(optimize(f=objfun, interval=c(-1, 2)))
         <<echo=TRUE,eval=FALSE>>=
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
-retsp <- rutils::etfenv$returns[, symbolv]
+retp <- rutils::etfenv$returns[, symbolv]
 # Calculate the covariance matrix
-covmat <- cov(retsp)
+covmat <- cov(retp)
 # Minimum variance weights, with sum equal to 1
 optiml <- quadprog::solve.QP(Dmat=2*covmat,
                     dvec=numeric(3),
@@ -2945,7 +2945,7 @@ optiml <- quadprog::solve.QP(Dmat=2*covmat,
                     bvec=1)
 # Minimum variance, maximum returns
 optiml <- quadprog::solve.QP(Dmat=2*covmat,
-                    dvec=apply(0.1*retsp, 2, mean),
+                    dvec=apply(0.1*retp, 2, mean),
                     Amat=matrix(1, nr=3, nc=1),
                     bvec=1)
 # Minimum variance positive weights, sum equal to 1
@@ -3023,23 +3023,23 @@ plot(optiml)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate daily percentage returns
-retsp <- rutils::etfenv$returns[, symbolv]
+retp <- rutils::etfenv$returns[, symbolv]
 # Objective equal to minus Sharpe ratio
-objfun <- function(weightv, retsp) {
-  retsp <- retsp %*% weightv
-  if (sd(retsp) == 0)
+objfun <- function(weightv, retp) {
+  retp <- retp %*% weightv
+  if (sd(retp) == 0)
     return(0)
   else
-    -return(mean(retsp)/sd(retsp))
+    -return(mean(retp)/sd(retp))
 }  # end objfun
 # Perform optimization using DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retsp)),
-  lower=rep(-10, NCOL(retsp)),
-  retsp=retsp,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retsp)
+names(weightv) <- colnames(retp)
       @
   \end{columns}
 \end{block}
@@ -3067,31 +3067,31 @@ names(weightv) <- colnames(retsp)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Objective with shrinkage penalty
-objfun <- function(weightv, retsp, lambda, alpha) {
-  retsp <- retsp %*% weightv
-  if (sd(retsp) == 0)
+objfun <- function(weightv, retp, lambda, alpha) {
+  retp <- retp %*% weightv
+  if (sd(retp) == 0)
     return(0)
   else {
     penaltyv <- lambda*((1-alpha)*sum(weightv^2) +
         alpha*sum(abs(weightv)))
-    -return(mean(retsp)/sd(retsp) + penaltyv)
+    -return(mean(retp)/sd(retp) + penaltyv)
   }
 }  # end objfun
 # Objective for equal weight portfolio
 weightv <- rep(1, NROW(symbolv))
 names(weightv) <- symbolv
 lambda <- 0.5 ; alpha <- 0.5
-objfun(weightv, retsp=retsp, lambda=lambda, alpha=alpha)
+objfun(weightv, retp=retp, lambda=lambda, alpha=alpha)
 # Perform optimization using DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retsp)),
-  lower=rep(-10, NCOL(retsp)),
-  retsp=retsp,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp,
   lambda=lambda,
   alpha=alpha,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retsp)
+names(weightv) <- colnames(retp)
       @
   \end{columns}
 \end{block}

@@ -341,8 +341,8 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/var_s/varv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/vec_tor/vectorv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/versi_color/versi/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/virgin_ica/virgin/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/vol_at/volat/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/vo_l/volat/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vol_at/volv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vo_l/volv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/vol_ume/volum/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/vt_i/vti/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/weal_th/wealthv/g' *.R*

@@ -264,14 +264,14 @@ rates <- rutils::do_call(cbind, rates)
 rates <- zoo::na.locf(rates, na.rm=FALSE)
 rates <- zoo::na.locf(rates, fromLast=TRUE)
 # Calculate daily percentage rates changes
-retsp <- rutils::diffit(log(rates))
+retp <- rutils::diffit(log(rates))
 # De-mean the returns
-retsp <- lapply(retsp, function(x) {x - mean(x)})
-retsp <- rutils::do_call(cbind, retsp)
-sapply(retsp, mean)
+retp <- lapply(retp, function(x) {x - mean(x)})
+retp <- rutils::do_call(cbind, retp)
+sapply(retp, mean)
 # Covariance and Correlation matrices of Treasury rates
-covmat <- cov(retsp)
-cormat <- cor(retsp)
+covmat <- cov(retp)
+cormat <- cor(retp)
 # Reorder correlation matrix based on clusters
 library(corrplot)
 ordern <- corrMatOrder(cormat, order="hclust",
@@ -324,17 +324,17 @@ nweights <- NROW(symbolv)
 weights <- rep(1/sqrt(nweights), nweights)
 names(weights) <- symbolv
 # Objective function equal to minus portfolio variance
-objfun <- function(weights, retsp) {
-  retsp <- retsp %*% weights
-  -1e7*var(retsp) + 1e7*(1 - sum(weights*weights))^2
+objfun <- function(weights, retp) {
+  retp <- retp %*% weights
+  -1e7*var(retp) + 1e7*(1 - sum(weights*weights))^2
 }  # end objfun
 # Objective function for equal weight portfolio
-objfun(weights, retsp)
+objfun(weights, retp)
 # Compare speed of vector multiplication methods
 library(microbenchmark)
 summary(microbenchmark(
-  transp=t(retsp) %*% retsp,
-  sumv=sum(retsp*retsp),
+  transp=t(retp) %*% retp,
+  sumv=sum(retp*retp),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -343,13 +343,13 @@ summary(microbenchmark(
 # Find weights with maximum variance
 optiml <- optim(par=weights,
   fn=objfun,
-  retsp=retsp,
+  retp=retp,
   method="L-BFGS-B",
   upper=rep(5.0, nweights),
   lower=rep(-5.0, nweights))
 # Optimal weights and maximum variance
 weights1 <- optiml$par
-objfun(weights1, retsp)
+objfun(weights1, retp)
 # Plot first principal component loadings
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -376,17 +376,17 @@ barplot(weights1, names.arg=names(weights1),
       The number of principal components is equal to the dimension of the covariance matrix.
       <<echo=TRUE,eval=FALSE>>=
 # pc1 weights and returns
-pc1 <- drop(retsp %*% weights1)
+pc1 <- drop(retp %*% weights1)
 # Redefine objective function
-objfun <- function(weights, retsp) {
-  retsp <- retsp %*% weights
-  -1e7*var(retsp) + 1e7*(1 - sum(weights^2))^2 +
+objfun <- function(weights, retp) {
+  retp <- retp %*% weights
+  -1e7*var(retp) + 1e7*(1 - sum(weights^2))^2 +
     1e7*sum(weights1*weights)^2
 }  # end objfun
 # Find second principal component weights
 optiml <- optim(par=weights,
                    fn=objfun,
-                   retsp=retsp,
+                   retp=retp,
                    method="L-BFGS-B",
                    upper=rep(5.0, nweights),
                    lower=rep(-5.0, nweights))
@@ -397,7 +397,7 @@ optiml <- optim(par=weights,
       <<echo=TRUE,eval=FALSE>>=
 # pc2 weights and returns
 weights2 <- optiml$par
-pc2 <- drop(retsp %*% weights2)
+pc2 <- drop(retp %*% weights2)
 sum(pc1*pc2)
 # Plot second principal component loadings
 barplot(weights2, names.arg=names(weights2),
@@ -481,7 +481,7 @@ barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
 # Eigen decomposition of correlation matrix
 eigend <- eigen(cormat)
 # Perform PCA with scaling
-pcad <- prcomp(retsp, scale=TRUE)
+pcad <- prcomp(retp, scale=TRUE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -489,7 +489,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
 # Eigen decomposition of covariance matrix
 eigend <- eigen(covmat)
 # Perform PCA without scaling
-pcad <- prcomp(retsp, scale=FALSE)
+pcad <- prcomp(retp, scale=FALSE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -523,7 +523,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
       A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # Perform principal component analysis PCA
-pcad <- prcomp(retsp, scale=TRUE)
+pcad <- prcomp(retp, scale=TRUE)
 # Plot standard deviations
 barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
   las=3, xlab="", ylab="",
@@ -586,17 +586,17 @@ for (ordern in 1:NCOL(pcad$rotation)) {
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
 # Standardize (de-mean and scale) the returns
-retsp <- lapply(retsp, function(x) {(x - mean(x))/sd(x)})
-retsp <- rutils::do_call(cbind, retsp)
-sapply(retsp, mean)
-sapply(retsp, sd)
+retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
+retp <- rutils::do_call(cbind, retp)
+sapply(retp, mean)
+sapply(retp, sd)
 # Calculate principal component time series
-pcacum <- retsp %*% pcad$rotation
+pcacum <- retp %*% pcad$rotation
 all.equal(pcad$x, pcacum, check.attributes=FALSE)
 # Calculate products of principal component time series
 round(t(pcacum) %*% pcacum, 2)
 # Coerce to xts time series
-pcacum <- xts(pcacum, order.by=zoo::index(retsp))
+pcacum <- xts(pcacum, order.by=zoo::index(retp))
 pcacum <- cumsum(pcacum)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
@@ -629,9 +629,9 @@ for (ordern in 1:NCOL(pcacum)) {
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Invert all the principal component time series
-retspca <- retsp %*% pcad$rotation
+retspca <- retp %*% pcad$rotation
 solved <- retspca %*% solve(pcad$rotation)
-all.equal(coredata(retsp), solved)
+all.equal(coredata(retp), solved)
       @
   \end{columns}
 \end{block}
@@ -654,9 +654,9 @@ all.equal(coredata(retsp), solved)
       <<echo=TRUE,eval=FALSE>>=
 # Invert first 3 principal component time series
 solved <- retspca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
-solved <- xts::xts(solved, zoo::index(retsp))
+solved <- xts::xts(solved, zoo::index(retp))
 solved <- cumsum(solved)
-retc <- cumsum(retsp)
+retc <- cumsum(retp)
 # Plot the solved returns
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
@@ -2807,15 +2807,15 @@ library(rutils)  # Load package rutils
 ohlc <- HighFreq::SPY
 nrows <- NROW(ohlc)
 closep <- log(quantmod::Cl(ohlc))
-retsp <- rutils::diffit(closep)
-colnames(retsp) <- "SPY"
+retp <- rutils::diffit(closep)
+colnames(retp) <- "SPY"
 # Standardize raw returns to make later comparisons
-retsp <- (retsp - mean(retsp))/sd(retsp)
+retp <- (retp - mean(retp))/sd(retp)
 # Calculate moments and perform normality test
-sapply(c(var=2, skew=3, kurt=4), function(x) sum(retsp^x)/nrows)
-tseries::jarque.bera.test(retsp)
+sapply(c(var=2, skew=3, kurt=4), function(x) sum(retp^x)/nrows)
+tseries::jarque.bera.test(retp)
 # Fit SPY returns using MASS::fitdistr()
-optiml <- MASS::fitdistr(retsp, densfun="t", df=2)
+optiml <- MASS::fitdistr(retp, densfun="t", df=2)
 loc <- optiml$estimate[1]
 scalev <- optiml$estimate[2]
       @
@@ -2826,16 +2826,16 @@ scalev <- optiml$estimate[2]
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot histogram of SPY returns
-histp <- hist(retsp, col="lightgrey", mgp=c(2, 1, 0),
+histp <- hist(retp, col="lightgrey", mgp=c(2, 1, 0),
   xlab="returns (standardized)", ylab="frequency", xlim=c(-3, 3),
   breaks=1e3, freq=FALSE, main="Distribution of High Frequency SPY Returns")
-# lines(density(retsp, bw=0.2), lwd=3, col="blue")
+# lines(density(retp, bw=0.2), lwd=3, col="blue")
 # Plot t-distribution function
 curve(expr=dt((x-loc)/scalev, df=2)/scalev,
       type="l", lwd=3, col="red", add=TRUE)
 # Plot the Normal probability distribution
-curve(expr=dnorm(x, mean=mean(retsp),
-  sd=sd(retsp)), add=TRUE, lwd=3, col="blue")
+curve(expr=dnorm(x, mean=mean(retp),
+  sd=sd(retp)), add=TRUE, lwd=3, col="blue")
 # Add legend
 legend("topright", inset=0.05, bty="n",
   leg=c("t-distr", "normal"), y.intersp=0.5,
@@ -2866,10 +2866,10 @@ retsh <- rutils::diffit(closep)
 retsh <- (retsh - mean(retsh))/sd(retsh)
 # Daily SPY percentage returns
 closep <- log(Cl(xts::to.period(x=ohlc, period="days")))
-retsd <- rutils::diffit(closep)
-retsd <- (retsd - mean(retsd))/sd(retsd)
+retd <- rutils::diffit(closep)
+retd <- (retd - mean(retd))/sd(retd)
 # Calculate moments
-sapply(list(minutely=retsp, hourly=retsh, daily=retsd),
+sapply(list(minutely=retp, hourly=retsh, daily=retd),
        function(rets) {sapply(c(var=2, skew=3, kurt=4),
                 function(x) mean(rets^x))
 })  # end sapply
@@ -2881,12 +2881,12 @@ sapply(list(minutely=retsp, hourly=retsh, daily=retsd),
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
-plot(density(retsp, bw=0.4), xlim=c(-3, 3),
+plot(density(retp, bw=0.4), xlim=c(-3, 3),
      lwd=3, mgp=c(2, 1, 0), col="blue",
      xlab="returns (standardized)", ylab="frequency",
      main="Density of High Frequency SPY Returns")
 lines(density(retsh, bw=0.4), lwd=3, col="green")
-lines(density(retsd, bw=0.4), lwd=3, col="red")
+lines(density(retd, bw=0.4), lwd=3, col="red")
 # Add legend
 legend("topright", inset=0.05, bty="n",
   leg=c("minutely", "hourly", "daily"), y.intersp=0.5,
@@ -2910,7 +2910,7 @@ legend("topright", inset=0.05, bty="n",
       The large overnight returns can be scaled down by dividing them by the overnight time interval.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate rolling volatility of SPY returns
-ret2013 <- retsp["2013-11-11/2013-11-15"]
+ret2013 <- retp["2013-11-11/2013-11-15"]
 # Calculate rolling volatility
 look_back <- 11
 endd <- seq_along(ret2013)
@@ -3075,7 +3075,7 @@ mtext(paste("beta =", round(coef(model)[2], 3)), cex=1.2, lwd=3, side=2, las=2, 
 # 60 minutes of data in look_back interval
 look_back <- 60
 vol2013 <- volum["2013"]
-ret2013 <- retsp["2013"]
+ret2013 <- retp["2013"]
 # Define end points with beginning stub
 nrows <- NROW(ret2013)
 nagg <- nrows %/% look_back
@@ -3128,11 +3128,11 @@ mtext(paste("beta =", round(coef(model)[2], 3)), cex=1.2, lwd=3, side=2, las=2, 
       The scaled returns have a smaller \emph{skewness} and \emph{kurtosis}, and they also have even higher autocorrelations than unscaled returns.
       <<echo=TRUE,eval=FALSE>>=
 # Scale returns using volume (volume clock)
-retsc <- ifelse(volum > 1e4, retsp/sqrt(volum), 0)
+retsc <- ifelse(volum > 1e4, retp/sqrt(volum), 0)
 retsc <- retsc/sd(retsc)
 # Calculate moments of scaled returns
-nrows <- NROW(retsp)
-sapply(list(retsp=retsp, retsc=retsc),
+nrows <- NROW(retp)
+sapply(list(retp=retp, retsc=retsc),
   function(rets) {sapply(c(skew=3, kurt=4),
            function(x) sum((rets/sd(rets))^x)/nrows)
 })  # end sapply
@@ -3144,7 +3144,7 @@ sapply(list(retsp=retsp, retsc=retsc),
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
-plot(density(retsp), xlim=c(-3, 3),
+plot(density(retp), xlim=c(-3, 3),
      lwd=3, mgp=c(2, 1, 0), col="blue",
      xlab="returns (standardized)", ylab="frequency",
      main="Density of Volume-scaled High Frequency SPY Returns")
@@ -3185,16 +3185,16 @@ legend("topright", inset=0.05, bty="n", y.intersp=0.5,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Ljung-Box test for minutely SPY returns
-Box.test(retsp, lag=10, type="Ljung")
+Box.test(retp, lag=10, type="Ljung")
 # Ljung-Box test for daily SPY returns
-Box.test(retsd, lag=10, type="Ljung")
+Box.test(retd, lag=10, type="Ljung")
 # Ljung-Box test statistics for scaled SPY returns
-sapply(list(retsp=retsp, retsc=retsc),
+sapply(list(retp=retp, retsc=retsc),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
 # Ljung-Box test statistics for aggregated SPY returns
-sapply(list(minutely=retsp, hourly=retsh, daily=retsd),
+sapply(list(minutely=retp, hourly=retsh, daily=retd),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
@@ -3224,7 +3224,7 @@ x11(width=6, height=8)
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
 layout(matrix(c(1, 2), ncol=1), widths=c(6, 6), heights=c(4, 4))
 # Plot the partial autocorrelations of minutely SPY returns
-pacfv <- pacf(as.numeric(retsp), lag=10,
+pacfv <- pacf(as.numeric(retp), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Minutely SPY Returns", line=1)
 # Plot the partial autocorrelations of scaled SPY returns
@@ -3293,12 +3293,12 @@ chart_Series(volatd["2010"],
       The volatility and trading volumes are typically higher at the beginning and end of the trading sessions.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate intraday time index with hours and minutes
-dates <- format(zoo::index(retsp), "%H:%M")
+dates <- format(zoo::index(retp), "%H:%M")
 # Aggregate the mean volume
 volumagg <- tapply(X=volum, INDEX=dates, FUN=mean)
 volumagg <- drop(volumagg)
 # Aggregate the mean volatility
-volagg <- tapply(X=retsp^2, INDEX=dates, FUN=mean)
+volagg <- tapply(X=retp^2, INDEX=dates, FUN=mean)
 volagg <- sqrt(drop(volagg))
 # Coerce to xts
 datev <- as.POSIXct(paste(Sys.Date(), names(volumagg)))
@@ -3504,12 +3504,12 @@ chart_Series(daily_skew[interval],
       A regression of lagged skews versus returns appears to be statistically significant, especially in periods of high volatility during the financial crisis of 2008-09.
       <<echo=(-(1:1))>>=
 # skew scatterplot
-retsp <- calc_rets(xts_data=SPY)
+retp <- calc_rets(xts_data=SPY)
 skew <- skew_ohlc(log_ohlc=log(SPY[, -5]))
 colnames(skew) <- paste0(symbol, ".skew")
 lag_skew <- rutils::lag_it(skew)
 lag_skew[1, ] <- 0
-datav <- cbind(retsp[, 1], sign(lag_skew))
+datav <- cbind(retp[, 1], sign(lag_skew))
 formulav <- as.formula(paste(colnames(datav)[1],
           paste(paste(colnames(datav)[-1],
             collapse=" + "), "- 1"), sep="~"))
@@ -3554,7 +3554,7 @@ abline(model, col="blue", lwd=2)
 posit <- -sign(lag_skew)
 posit[1, ] <- 0
 # Cumulative PnL
-pnl <- cumsum(posit*retsp[, 1])
+pnl <- cumsum(posit*retp[, 1])
 # Calculate frequency of trades
 50*sum(abs(sign(skew)-sign(lag_skew)))/nrow(skew)
 # Calculate transaction costs
@@ -3622,14 +3622,14 @@ add_TA(vwap_diff[interval] < 0, on=-1,
       A regression of the \emph{VWAP} indicator versus returns appears to be statistically significant.
       <<echo=(-(1:6))>>=
 # vwap scatterplot
-# retsp <- calc_rets(xts_data=SPY)
+# retp <- calc_rets(xts_data=SPY)
 vwap_short <- vwapv(xtsv=SPY, look_back=70)
 vwap_long <- vwapv(xtsv=SPY, look_back=225)
 vwap_diff <- vwap_short - vwap_long
 colnames(vwap_diff) <- paste0(symbol, ".vwap")
 lag_vwap <- rutils::lag_it(vwap_diff)
 lag_vwap[1, ] <- 0
-datav <- cbind(retsp[, 1], sign(lag_vwap))
+datav <- cbind(retp[, 1], sign(lag_vwap))
 formulav <- as.formula(paste(colnames(datav)[1],
           paste(paste(colnames(datav)[-1],
             collapse=" + "), "- 1"), sep="~"))
@@ -3644,7 +3644,7 @@ summary(lm(formulav, data=datav["2011-01-01/"]))$coef
       \includegraphics[width=0.45\paperwidth]{figure/earl_vwap_scatter-1}
       <<earl_vwap_scatter,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 interval <- "2013-12-01/"
-plot(formulav, data=cbind(retsp[, 1], lag_vwap)[interval],
+plot(formulav, data=cbind(retp[, 1], lag_vwap)[interval],
      cex=0.6, xlab="skew", ylab="rets")
 abline(model, col="blue", lwd=2)
       @
@@ -3671,7 +3671,7 @@ abline(model, col="blue", lwd=2)
       <<echo=(-(1:1))>>=
 # Trend following trading strategy
 # Cumulative PnL
-pnl <- cumsum(sign(lag_vwap)*retsp[, 1])
+pnl <- cumsum(sign(lag_vwap)*retp[, 1])
 # Calculate frequency of trades
 50*sum(abs(sign(vwap_diff)-sign(lag_vwap)))/nrow(vwap_diff)
 # Calculate transaction costs

@@ -2392,27 +2392,27 @@ pricev <- na.omit(pricev)
 pricel <- as.numeric(pricev)
 pricel <- c(pricel[1], pricel[-NROW(pricel)])
 pricel <- xts(pricel, zoo::index(pricev))
-retsp <- (pricev-pricel)/pricel
+retp <- (pricev-pricel)/pricel
 # Calculate percentage returns using dailyReturn()
-retsd <- quantmod::dailyReturn(pricev)
-head(cbind(retsd, retsp))
-all.equal(retsd, retsp, check.attributes=FALSE)
+retd <- quantmod::dailyReturn(pricev)
+head(cbind(retd, retp))
+all.equal(retd, retp, check.attributes=FALSE)
 # Calculate returns for all prices in etfenv$prices
-retsp <- lapply(etfenv$pricev, function(xtsv) {
-  retsd <- quantmod::dailyReturn(na.omit(xtsv))
-  colnames(retsd) <- names(xtsv)
-  retsd
+retp <- lapply(etfenv$pricev, function(xtsv) {
+  retd <- quantmod::dailyReturn(na.omit(xtsv))
+  colnames(retd) <- names(xtsv)
+  retd
 })  # end lapply
-# "retsp" is a list of xts
-class(retsp)
-class(retsp[[1]])
+# "retp" is a list of xts
+class(retp)
+class(retp[[1]])
 # Flatten list of xts into a single xts
-retsp <- do.call(cbind, retsp)
-class(retsp)
-dim(retsp)
-# Copy retsp into etfenv and save to .RData file
-# assign("retsp", retsp, envir=etfenv)
-etfenv$retsp <- retsp
+retp <- do.call(cbind, retp)
+class(retp)
+dim(retp)
+# Copy retp into etfenv and save to .RData file
+# assign("retp", retp, envir=etfenv)
+etfenv$retp <- retp
 save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       @
   \end{columns}
@@ -2692,16 +2692,16 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 # colnames(pricev) <- do.call(rbind,
 #   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns of the S&P500 constituent stocks
-# retsp <- xts::diff.xts(log(pricev))
-retsp <- xts::diff.xts(pricev)/
+# retp <- xts::diff.xts(log(pricev))
+retp <- xts::diff.xts(pricev)/
   rutils::lagit(pricev, pad_zeros=FALSE)
 set.seed(1121)
-samplev <- sample(NCOL(retsp), s=100, replace=FALSE)
+samplev <- sample(NCOL(retp), s=100, replace=FALSE)
 prices100 <- pricev[, samplev]
-returns100 <- retsp[, samplev]
+returns100 <- retp[, samplev]
 save(pricev, prices100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
-save(retsp, returns100,
+save(retp, returns100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
       @
     \column{0.5\textwidth}
@@ -3017,17 +3017,17 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 # colnames(pricev) <- do.call(rbind,
 #   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns
-retsp <- xts::diff.xts(pricev)/
+retp <- xts::diff.xts(pricev)/
   rutils::lagit(pricev, pad_zeros=FALSE)
 # Select a random sample of 100 prices and returns
 set.seed(1121)
-samplev <- sample(NCOL(retsp), s=100, replace=FALSE)
+samplev <- sample(NCOL(retp), s=100, replace=FALSE)
 prices100 <- pricev[, samplev]
-returns100 <- retsp[, samplev]
+returns100 <- retp[, samplev]
 # Save the data into binary files
 save(pricev, prices100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
-save(retsp, returns100,
+save(retp, returns100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
       @
   \end{columns}
@@ -3191,14 +3191,14 @@ pricev <- do.call(cbind, pricev)
 # Drop ".Close" from colnames
 colnames(pricev) <- do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate the log returns
-retsp <- xts::diff.xts(log(pricev))
+retp <- xts::diff.xts(log(pricev))
 # Copy prices and returns into etfenv
 etfenv$pricev <- pricev
-etfenv$retsp <- retsp
+etfenv$retp <- retp
 # Copy symbolv into etfenv
 etfenv$symbolv <- symbolv
 # Calculate the risk-return statistics
-riskstats <- PerformanceAnalytics::table.Stats(retsp)
+riskstats <- PerformanceAnalytics::table.Stats(retp)
 # Transpose the data frame
 riskstats <- as.data.frame(t(riskstats))
 # Add Name column
@@ -3206,8 +3206,8 @@ riskstats$Name <- rownames(riskstats)
 # Copy riskstats into etfenv
 etfenv$riskstats <- riskstats
 # Calculate the beta, alpha, Treynor ratio, and other performance statistics
-capmstats <- PerformanceAnalytics::table.CAPM(Ra=retsp[, symbolv], 
-                                               Rb=retsp[, "VTI"], scale=252)
+capmstats <- PerformanceAnalytics::table.CAPM(Ra=retp[, symbolv], 
+                                               Rb=retp[, "VTI"], scale=252)
 colnamev <- strsplit(colnames(capmstats), split=" ")
 colnamev <- do.call(cbind, colnamev)[1, ]
 colnames(capmstats) <- colnamev
