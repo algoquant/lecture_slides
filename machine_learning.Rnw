@@ -65,7 +65,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Machine Learning]{Machine Learning}
-\subtitle{FRE6871 \& FRE7241, Fall 2022}
+\subtitle{FRE6871 \& FRE7241, Spring 2023}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
@@ -1816,7 +1816,7 @@ nrows <- NROW(retp)
 nstocks <- NCOL(retp)
 head(retp[, 1:5])
 # Calculate the monthly end points
-endd <- rutils::calc_endpoints(retvti, interval="months")
+endd <- rutils::calc_endpoints(retvti, interval="weeks")
 retvti[head(endd)]
 retvti[tail(endd)]
 # Remove stub interval at the end
@@ -1942,7 +1942,7 @@ covarv <- HighFreq::run_covar(retp, lambda)
 correlv <- covarv[, 1, drop=FALSE]/sqrt(covarv[, 2]*covarv[, 3])
 volaapl <- sqrt(covarv[, 2])
 # Scatterplot of trailing stock volatilities and correlations
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 plot(x=volaapl[endd], y=correlv[endd, ], 
  xlab="volatility", ylab="correlation",
  main="Trailing Stock Volatilities and Correlations")
@@ -2008,7 +2008,7 @@ correlv[is.na(correlv)] <- 0
 correlp <- rowMeans(correlv)
 # Scatterplot of trailing stock volatilities and correlations
 volvti <- sqrt(HighFreq::run_var(retvti, lambda))
-endd <- rutils::calc_endpoints(retvti, interval="months")
+endd <- rutils::calc_endpoints(retvti, interval="weeks")
 plot(x=volvti[endd], y=correlp[endd], 
  xlab="volatility", ylab="correlation",
  main="Trailing Stock Volatilities and Correlations")
@@ -2315,14 +2315,14 @@ legend(x="topleft", # Add legend
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the residuals
 fittedv <- (alpha + betav*predv)
-residv <- (respv - fittedv)
-all.equal(residv, regmod$residuals, check.attributes=FALSE)
+resids <- (respv - fittedv)
+all.equal(resids, regmod$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to the predictor
-all.equal(sum(residv*predv), target=0)
+all.equal(sum(resids*predv), target=0)
 # Residuals are orthogonal to the fitted values
-all.equal(sum(residv*fittedv), target=0)
+all.equal(sum(resids*fittedv), target=0)
 # Sum of residuals is equal to zero
-all.equal(mean(residv), target=0)
+all.equal(mean(resids), target=0)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2370,7 +2370,7 @@ abline(h=0, lwd=3, col="red")
 # Degrees of freedom of residuals
 degf <- regmod$df.residual
 # Standard deviation of residuals
-residsd <- sqrt(sum(residv^2)/degf)
+residsd <- sqrt(sum(resids^2)/degf)
 # Standard error of beta
 betasd <- residsd/sqrt(sum(predzm^2))
 # Standard error of alpha
@@ -2686,7 +2686,7 @@ lmtest::dwtest(regmod)
       \vspace{-1em}
         <<echo=(-(1:3)),eval=FALSE>>=
 foo <- etfenv$returns[, c("VTI", "VEU")]
-endd <- endpoints(foo, on="months")
+endd <- endpoints(foo, on="weeks")
 head(foo)
 tail(foo)
 class(foo)
@@ -2835,9 +2835,9 @@ all.equal(infmat, infmat %*% infmat)
 # Calculate covariance and standard deviations of fitted values
 betav <- predinv %*% respv
 fittedv <- drop(predv %*% betav)
-residv <- drop(respv - fittedv)
+resids <- drop(respv - fittedv)
 degf <- (NROW(predv) - NCOL(predv))
-residsd <- sqrt(sum(residv^2)/degf)
+residsd <- sqrt(sum(resids^2)/degf)
 fitcovar <- residsd*infmat
 fitsd <- sqrt(diag(fitcovar))
 # Plot the standard deviations
@@ -3276,14 +3276,14 @@ all.equal(drop(betav), coef(regmod), check.attributes=FALSE)
 fittedv <- drop(predv %*% betav)
 all.equal(fittedv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate the residuals
-residv <- drop(respv - fittedv)
-all.equal(residv, regmod$residuals, check.attributes=FALSE)
+resids <- drop(respv - fittedv)
+all.equal(resids, regmod$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to predictor columns (predvs)
-sapply(residv %*% predv, all.equal, target=0)
+sapply(resids %*% predv, all.equal, target=0)
 # Residuals are orthogonal to the fitted values
-all.equal(sum(residv*fittedv), target=0)
+all.equal(sum(resids*fittedv), target=0)
 # Sum of residuals is equal to zero
-all.equal(sum(residv), target=0)
+all.equal(sum(resids), target=0)
       @
       \vspace{-1em}
   \end{columns}
@@ -3361,8 +3361,8 @@ all.equal(fitted_zm,
   check.attributes=FALSE)
 # Calculate the residuals
 respzm <- respv - mean(respv)
-residv <- drop(respzm - fitted_zm)
-all.equal(residv, regmod$residuals,
+resids <- drop(respzm - fitted_zm)
+all.equal(resids, regmod$residuals,
           check.attributes=FALSE)
 # Calculate the influence matrix
 influence_zm <- predzm %*% MASS::ginv(predzm)
@@ -3524,7 +3524,7 @@ ncols <- NCOL(predv)
 degf <- (nrows - ncols)
 all.equal(degf, regsum$df[2])
 # Variance of residuals
-residsd <- sum(residv^2)/degf
+residsd <- sum(resids^2)/degf
       @
   \end{columns}
 \end{block}
@@ -3559,7 +3559,7 @@ residsd <- sum(residv^2)/degf
 predv2 <- MASS::ginv(crossprod(predv))
 # predv2 <- t(predv) %*% predv
 # Variance of residuals
-residsd <- sum(residv^2)/degf
+residsd <- sum(resids^2)/degf
 # Calculate covariance matrix of betas
 betacovar <- residsd*predv2
 # Round(betacovar, 3)
@@ -3784,7 +3784,7 @@ all.equal(predictlm[1, "upr"], predicthigh)
 # TSS = ESS + RSS
 tss <- sum((respv-mean(respv))^2)
 ess <- sum((fittedv-mean(fittedv))^2)
-rss <- sum(residv^2)
+rss <- sum(resids^2)
 all.equal(tss, ess + rss)
       @
   \end{columns}
@@ -3858,7 +3858,7 @@ ncols <- NCOL(predv)
 # Degrees of freedom of residuals
 degf <- (nrows - ncols)
 # Adjusted R-squared
-rsqadj <- (1-sum(residv^2)/degf/var(respv))
+rsqadj <- (1-sum(resids^2)/degf/var(respv))
 # Compare adjusted R-squared from lm()
 all.equal(drop(rsqadj), regsum$adj.r.squared)
       @

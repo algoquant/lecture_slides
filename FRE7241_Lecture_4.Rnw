@@ -68,13 +68,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#4]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#4, Fall 2022}
+\subtitle{Lecture\#4, Spring 2023}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{September 27, 2022}
+\date{March 27, 2022}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -185,7 +185,7 @@ pnls <- retp*posit
 # Plot dygraph of in-sample VTI strategy
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="VTI Strategy Using In-sample Labels") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
@@ -535,7 +535,7 @@ colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Strategy Using Top and Bottom Labels") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -606,7 +606,7 @@ colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Strategy Out-of-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -743,7 +743,7 @@ sqrt(252)*sapply(wealthv,
       \includegraphics[width=0.45\paperwidth]{figure/strat_logistic_rets_insample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Forecasting Returns") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -814,7 +814,7 @@ colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Strategy Out-of-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -875,7 +875,7 @@ pnls <- retp*posit
 # Plot dygraph of Hampel strategy pnls
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="VTI Hampel Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -2834,8 +2834,8 @@ betas <- invpred %*% response
 fittedv <- drop(predv %*% betas)
 residuals <- drop(respv - fittedv)
 degf <- (NROW(predv) - NCOL(predv))
-residvar <- sqrt(sum(residuals^2)/degf)
-fitcovar <- residvar*influencem
+residsar <- sqrt(sum(residuals^2)/degf)
+fitcovar <- residsar*influencem
 fitsd <- sqrt(diag(fitcovar))
 # Plot the standard deviations
 fitsd <- cbind(fitted=fittedv, stddev=fitsd)
@@ -2933,14 +2933,14 @@ predictorn <- cbind(rep(1, NROW(newdata)), newdata)
 predsd <- sqrt(predvn %*% predictor2 %*% t(predvn))
 predv <- cbind(
   prediction=drop(predvn %*% betas),
-  stddev=diag(residvar*predsd))
+  stddev=diag(residsar*predsd))
 # Or: Perform loop over predictorn
 predv <- apply(predvn, MARGIN=1, function(predv) {
   # Calculate predicted values
   prediction <- predv %*% betas
   # Calculate standard deviation
   predsd <- sqrt(t(predv) %*% predictor2 %*% predv)
-  predictsd <- residvar*predsd
+  predictsd <- residsar*predsd
   c(prediction=prediction, stddev=predictsd)
 })  # end sapply
 predv <- t(predv)
@@ -3457,7 +3457,7 @@ ncols <- NCOL(predv)
 degf <- (nrows - ncols)
 all.equal(degf, modelsum$df[2])
 # Variance of residuals
-residvar <- sum(residuals^2)/degf
+residsar <- sum(residuals^2)/degf
       @
   \end{columns}
 \end{block}
@@ -3492,9 +3492,9 @@ residvar <- sum(residuals^2)/degf
 predictor2 <- MASS::ginv(crossprod(predv))
 # predictor2 <- t(predv) %*% predictor
 # Variance of residuals
-residvar <- sum(residuals^2)/degf
+residsar <- sum(residuals^2)/degf
 # Calculate covariance matrix of betas
-beta_covar <- residvar*predictor2
+beta_covar <- residsar*predictor2
 # Round(beta_covar, 3)
 betasd <- sqrt(diag(beta_covar))
 all.equal(betasd, modelsum$coeff[, 2], check.attributes=FALSE)
@@ -3545,7 +3545,7 @@ all.equal(influencem, influencem %*% influencem)
       \includegraphics[width=0.45\paperwidth]{figure/regm_fitsd.png}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate covariance and standard deviations of fitted values
-fitcovar <- residvar*influencem
+fitcovar <- residsar*influencem
 fitsd <- sqrt(diag(fitcovar))
 # Sort the standard deviations
 fitsd <- cbind(fitted=fittedv, stddev=fitsd)

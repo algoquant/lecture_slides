@@ -60,13 +60,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#6]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#6, Fall 2022}
+\subtitle{Lecture\#6, Spring 2023}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{October 18, 2022}
+\date{April 18, 2022}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -248,8 +248,8 @@ library(PerformanceAnalytics)
 # Calculate XLP beta
 PerformanceAnalytics::CAPM.beta(Ra=retp$XLP, Rb=retp$VTI)
 # Or
-retsxlp <- na.omit(retp[, c("XLP", "VTI")])
-betav <- drop(cov(retsxlp$XLP, retsxlp$VTI)/var(retsxlp$VTI))
+retxlp <- na.omit(retp[, c("XLP", "VTI")])
+betav <- drop(cov(retxlp$XLP, retxlp$VTI)/var(retxlp$VTI))
 betav
 # Calculate XLP alpha
 PerformanceAnalytics::CAPM.alpha(Ra=retp$XLP, Rb=retp$VTI)
@@ -516,7 +516,7 @@ colnames(portf) <- "Random"
 # Plot dygraph of stock index and random portfolio
 wealthv <- cbind(indeks, portf)
 colorv <- c("blue", "red")
-endd <- rutils::calc_endpoints(pricev, interval="months")
+endd <- rutils::calc_endpoints(pricev, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Stock Index and Random Portfolio") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
@@ -673,7 +673,7 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative returns of low and high volatility stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks In-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -702,15 +702,15 @@ regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
 regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
-residv <- regmod$residuals
-plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Volatility")
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Volatility")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Volatility vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
-text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
+text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -760,7 +760,7 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative returns of low and high volatility stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks Out-Of-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -800,7 +800,7 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative returns of low and high volatility stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volatility Stocks In-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -829,15 +829,15 @@ regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
 regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
-residv <- regmod$residuals
-plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Volatility")
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Volatility")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Idiosyncratic Volatility vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
-text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
+text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -876,7 +876,7 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative returns of low and high volatility stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volatility Stocks Out-Of-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -920,7 +920,7 @@ colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative returns of low and high beta stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks In-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -949,15 +949,15 @@ regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
 regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
-residv <- regmod$residuals
-plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Beta")
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Beta")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Beta vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
-text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
+text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -996,7 +996,7 @@ colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative returns of low and high beta stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -1097,7 +1097,7 @@ weightv <- scalef*weightv
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 npts <- NROW(endd)
 # Perform loop over the end points
 nstocks <- 10
@@ -1163,7 +1163,7 @@ sqrt(252)*sapply(wealthv,
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of stock index and momentum strategy
 colorv <- c("blue", "red")
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Log Stock Index and Momentum Strategy") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
@@ -1191,7 +1191,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Log Stock Index and Momentum Stra
       <<echo=TRUE,eval=FALSE>>=
 btmomtop <- function(rets,
   objfun=function(rets) (sum(rets)/sd(rets)),
-  look_back=12, rfreq="months", nstocks=10, bid_offer=0.001,
+  look_back=12, rfreq="weeks", nstocks=10, bid_offer=0.001,
   endd=rutils::calc_endpoints(rets, interval=rfreq), ...) {
   # Perform loop over end points
   npts <- NROW(endd)
@@ -1245,7 +1245,7 @@ btmomtop <- function(rets,
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtests for vector of look-back intervals
 look_backs <- seq(3, 15, by=1)
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 pnlsl <- lapply(look_backs, btmomtop, rets=retp, endd=endd, objfun=objfun)
 # Or perform parallel loop under Mac-OSX or Linux
 library(parallel)  # Load package parallel
@@ -1328,7 +1328,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Momentum Strategy for Sto
       <<echo=TRUE,eval=FALSE>>=
 btmomweight <- function(rets,
   objfun=function(rets) (sum(rets)/sd(rets)),
-  look_back=12, rfreq="months", bid_offer=0.001,
+  look_back=12, rfreq="weeks", bid_offer=0.001,
   endd=rutils::calc_endpoints(rets, interval=rfreq), ...) {
   # Perform loop over end points
   npts <- NROW(endd)
@@ -1429,7 +1429,7 @@ colnames(wealthv) <- c("VTI", "MTUM")
 sqrt(252)*sapply(wealthv, 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the scaled prices of VTI vs MTUM ETF
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="VTI vs MTUM ETF") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -1473,7 +1473,7 @@ retp <- rutils::etfenv$returns[, symbolv]
 retp <- na.omit(retp)
 datev <- zoo::index(retp)
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 npts <- NROW(endd)
 # Perform backtests for vector of look-back intervals
 look_backs <- seq(3, 15, by=1)
@@ -1623,15 +1623,15 @@ regmod <- lm(pnls ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
 regmod <- lm(pnls ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
-residv <- regmod$residuals
-plot.default(x=retvti, y=residv, xlab="VTI", ylab="momentum")
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="momentum")
 title(main="Treynor-Mazuy Market Timing Test\n for Momentum vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
-text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
+text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -2023,7 +2023,7 @@ pnls <- xts::xts(pnls, zoo::index(retp))
       \includegraphics[width=0.4\paperwidth]{figure/momentum_sp500_mult.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 # Plot dygraph of daily S&P500 momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], main="Daily S&P500 Momentum Strategies") %>%
@@ -2107,7 +2107,7 @@ legend("topleft", legend=colnames(pnls),
 # Calculate XLP and VTI returns
 retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
-endd <- xts::endpoints(retp, on="months")[-1]
+endd <- xts::endpoints(retp, on="weeks")[-1]
 # Calculate start points from look-back interval
 look_back <- 12  # Look back 12 months
 startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
@@ -2174,8 +2174,8 @@ dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
 # Calculate XLB and XLE prices
 pricev <- na.omit(rutils::etfenv$pricev[, c("XLB", "XLE")])
 cor(rutils::diffit(log(pricev)))
-xlb <- drop(zoo::coredata(pricev$XLB))
-xle <- drop(zoo::coredata(pricev$XLE))
+xlb <- drop(zoo::coredata(prices$XLB))
+xle <- drop(zoo::coredata(prices$XLE))
 # Calculate regression coefficients of XLB ~ XLE
 betav <- cov(xlb, xle)/var(xle)
 alpha <- (mean(xlb) - betav*mean(xle))

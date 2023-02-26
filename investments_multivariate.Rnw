@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Multivariate Investment Strategies]{Multivariate Investment Strategies}
-\subtitle{FRE7241, Fall 2022}
+\subtitle{FRE7241, Spring 2023}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -123,9 +123,9 @@ datev <- zoo::index(closep)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns and IR changes
 retp <- rutils::diffit(log(closep))
-retsr <- rutils::diffit(log(rates))
+retr <- rutils::diffit(log(rates))
 # Regress VTI returns versus the lagged rate differences
-predv <- rutils::lagit(retsr)
+predv <- rutils::lagit(retr)
 regmod <- lm(retp ~ predv)
 summary(regmod)
 # Regress VTI returns before and after 2012
@@ -150,8 +150,8 @@ summary(lm(retp["2012/"] ~ predv["2012/"]))
       The second principal component describes the steepening and flattening of the yield curve, and it's an indicator of investor risk appetite.  So it's also related to bullish and bearish market periods.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate PCA of rates correlation matrix
-eigend <- eigen(cor(retsr))
-pcar <- -(retsr %*% eigend$vectors)
+eigend <- eigen(cor(retr))
+pcar <- -(retr %*% eigend$vectors)
 colnames(pcar) <- paste0("PC", 1:6)
 # Define predictor as the YC PCAs
 predv <- rutils::lagit(pcar)
@@ -197,7 +197,7 @@ dygraphs::dygraph(cumsum(datav),
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor with intercept term
-predv <- rutils::lagit(retsr)
+predv <- rutils::lagit(retr)
 predv <- cbind(rep(1, NROW(predv)), predv)
 colnames(predv)[1] <- "intercept"
 # Calculate inverse of predictor
@@ -220,7 +220,7 @@ apply(factors, 2, sd)
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 colnamev <- colnames(wealthv)
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Yield Curve Strategy In-sample") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
@@ -749,12 +749,12 @@ rates <- na.omit(rates[datev])
 closep <- closep[zoo::index(rates)]
 datev <- zoo::index(closep)
 retp <- rutils::diffit(log(closep))
-retsr <- rutils::diffit(log(rates))
+retr <- rutils::diffit(log(rates))
 # Create a combined predictor matrix
 ordmax <- 5
 predv <- sapply(1:ordmax, rutils::lagit, input=as.numeric(retp))
 colnames(predv) <- paste0("retslag", 1:NCOL(predv))
-predv <- cbind(predv, rutils::lagit(retsr))
+predv <- cbind(predv, rutils::lagit(retr))
 predv <- cbind(rep(1, NROW(predv)), predv)
 colnames(predv)[1] <- "intercept"
 respv <- retp
@@ -967,7 +967,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 # Find optimal nagg for predictor
 naggs <- 5:100
 tvalues <- sapply(naggs, function(nagg) {
-  predv <- roll::roll_mean(retsr, width=nagg, min_obs=1)
+  predv <- roll::roll_mean(retr, width=nagg, min_obs=1)
   predv <- cbind(rep(1, NROW(predv)), predv)
   predv <- rutils::lagit(predv)
   regmod <- lm(respv ~ predv - 1)
@@ -978,7 +978,7 @@ naggs[which.max(tvalues)]
 plot(naggs, tvalues, t="l", col="blue", lwd=2)
 # Calculate aggregated predictor
 nagg <- 53
-predv <- roll::roll_mean(retsr, width=nagg, min_obs=1)
+predv <- roll::roll_mean(retr, width=nagg, min_obs=1)
 predv <- rutils::lagit(predv)
 predv <- cbind(rep(1, NROW(predv)), predv)
 regmod <- lm(respv ~ predv - 1)
@@ -1136,7 +1136,7 @@ colnames(wealthv) <- c("Price-weighted", "Equal-weighted")
 sqrt(252)*sapply(rutils::diffit(wealthv),
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the combined log wealth
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
   main="Wealth of Price-weighted and Equal-weighted Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -1179,7 +1179,7 @@ wealthv <- cbind(wealthpw, portf)
 wealthv <- log(wealthv)
 colnames(wealthv)[2] <- "Random"
 colorv <- c("blue", "red")
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], main="Stock Index and Random Portfolio") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
@@ -1363,15 +1363,15 @@ regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
 regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
-residv <- regmod$residuals
-plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Volatility")
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Volatility")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Volatility vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
-text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
+text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -1428,7 +1428,7 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative returns of low and high volatility stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks Out-Of-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -1468,7 +1468,7 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the returns of low and high idiosyncratic volatility stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volatility Stocks In-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -1497,15 +1497,15 @@ regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
 regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
-residv <- regmod$residuals
-plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Volatility")
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Volatility")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Idiosyncratic Volatility vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
-text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
+text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -1543,7 +1543,7 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the out-of-sample returns of low and high volatility stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volatility Stocks Out-Of-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -1586,7 +1586,7 @@ colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative returns of low and high beta stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks In-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -1615,15 +1615,15 @@ regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
 regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
-residv <- regmod$residuals
-plot.default(x=retvti, y=residv, xlab="VTI", ylab="Low Beta")
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Beta")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Beta vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
-text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
+text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -1661,7 +1661,7 @@ colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the out-of-sample returns of low and high beta stocks
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-Sample") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
   dyLegend(width=500)
@@ -1744,7 +1744,7 @@ sqrt(252)*sapply(rutils::diffit(wealthv),
       \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_stocks.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the log wealth
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
   main="Wealth of Price-weighted and Risk Parity Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -1798,7 +1798,7 @@ retvol <- rutils::diffit(wealthv)
 sqrt(252)*sapply(retvol, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the log wealth
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
   main="Wealth of Low and High Volatility Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -1849,7 +1849,7 @@ sqrt(252)*sapply(rutils::diffit(wealthv),
       \includegraphics[width=0.45\paperwidth]{figure/portf_vol_long_short_stocks.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the log wealth
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
   main="Wealth of Price-weighted and Long-Short Vol Portfolios") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
@@ -2140,7 +2140,7 @@ objfun <- function(retp) {
   if (varv > 0) mean(retp)/varv else 0
 }  # end objfun
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 npts <- NROW(endd)
 # Perform loop over the end points
 look_back <- 8
@@ -2204,7 +2204,7 @@ sqrt(252)*sapply(wealthv, function(x)
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of stock index and momentum strategy
 colorv <- c("blue", "red")
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Log Stock Index and Momentum Strategy") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
@@ -2231,7 +2231,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-btmomtop <- function(retp, objfun, look_back=12, rebalf="months", nstocks=10, 
+btmomtop <- function(retp, objfun, look_back=12, rebalf="weeks", nstocks=10, 
   bid_offer=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
   # Perform loop over end points
   npts <- NROW(endd)
@@ -2284,7 +2284,7 @@ btmomtop <- function(retp, objfun, look_back=12, rebalf="months", nstocks=10,
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtests for vector of look-back intervals
 look_backs <- seq(3, 15, by=1)
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 pnll <- lapply(look_backs, btmomtop, retp=retp, endd=endd, objfun=objfun)
 # Perform parallel loop under Mac-OSX or Linux
 library(parallel)  # Load package parallel
@@ -2366,7 +2366,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-btmomweight <- function(retp, objfun, look_back=12, rebalf="months", 
+btmomweight <- function(retp, objfun, look_back=12, rebalf="weeks", 
   bid_offer=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
   # Perform loop over end points
   npts <- NROW(endd)
@@ -2836,7 +2836,7 @@ sqrt(252)*sapply(wealthv, function(x)
       \includegraphics[width=0.45\paperwidth]{figure/momentum_mtum.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the scaled prices of VTI vs MTUM ETF
-endd <- rutils::calc_endpoints(wealthv, interval="months")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="VTI vs MTUM ETF") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -2928,7 +2928,7 @@ plot(x=look_backs, y=sharper, t="l",
       \includegraphics[width=0.45\paperwidth]{figure/momentum_pca_daily_mult.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retspca, interval="months")
+endd <- rutils::calc_endpoints(retspca, interval="weeks")
 # Plot dygraph of daily S&P500 momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
@@ -3078,7 +3078,7 @@ plot(x=look_backs, y=sharper, t="l",
       \includegraphics[width=0.45\paperwidth]{figure/momentum_pca_daily_mult_outsample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retspca, interval="months")
+endd <- rutils::calc_endpoints(retspca, interval="weeks")
 # Plot dygraph of daily out-of-sample PCA momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
@@ -3122,7 +3122,7 @@ plot(x=look_backs, y=sharper, t="l",
       \includegraphics[width=0.45\paperwidth]{figure/momentum_pca_daily_mult_outsample_revert.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retspca, interval="months")
+endd <- rutils::calc_endpoints(retspca, interval="weeks")
 # Plot dygraph of daily S&P500 momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
@@ -3164,7 +3164,7 @@ symbolv <- c("VTI", "IEF", "DBC")
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
 datev <- zoo::index(retp)
 # Calculate a vector of monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 npts <- NROW(endd)
 # Perform backtests for vector of look-back intervals
 look_backs <- seq(3, 15, by=1)
@@ -3320,15 +3320,15 @@ regmod <- lm(pnls ~ VTI + merton, data=predv); summary(regmod)
 # Treynor-Mazuy test
 regmod <- lm(pnls ~ VTI + treynor, data=predv); summary(regmod)
 # Plot residual scatterplot
-residv <- regmod$residuals
-plot.default(x=retvti, y=residv, xlab="VTI", ylab="momentum")
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="momentum")
 title(main="Treynor-Mazuy Market Timing Test\n for Momentum vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
-text(x=0.0, y=max(residv), paste("Treynor test t-value =", tvalue))
+text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -3763,7 +3763,7 @@ retp <- na.omit(retp)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define end of month end points
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 endd <- endd[-1]
 npts <- NROW(endd)
 datev <- zoo::index(retp)[endd]
@@ -3849,7 +3849,7 @@ dygraphs::dygraph(wealthv, main="Momentum Strategy") %>%
 # Define backtest functional
 btmomweight <- function(retp,
                       objfun=function(retp) (sum(retp)/sd(retp)),
-                      look_back=12, rebalf="months", bid_offer=0.0,
+                      look_back=12, rebalf="weeks", bid_offer=0.0,
                       endd=rutils::calc_endpoints(retp, interval=rebalf)[-1],
                       with_weights=FALSE, ...) {
   stopifnot("package:rutils" %in% search() || require("rutils", quietly=TRUE))
@@ -3924,7 +3924,7 @@ retp <- zoo::na.locf(retp, na.rm=FALSE)
 datev <- zoo::index(retp)
 # Returns in excess of risk-free rate
 riskf <- 0.03/252
-retsx <- (retp - riskf)
+retx <- (retp - riskf)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3933,7 +3933,7 @@ retsx <- (retp - riskf)
 # Maximum Sharpe weights in-sample interval
 retsis <- retp["/2014"]
 invmat <- MASS::ginv(cov(retsis))
-weightv <- invmat %*% colMeans(retsx["/2014"])
+weightv <- invmat %*% colMeans(retx["/2014"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(retp)
 # Plot portfolio weights
@@ -3968,7 +3968,7 @@ insample <- insample*sd(indeks)/sd(insample)
 # Plot cumulative portfolio returns
 pnls <- cbind(indeks, insample)
 colnames(pnls) <- c("Equal Weight", "Optimal")
-endd <- rutils::calc_endpoints(pnls, interval="months")
+endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="In-sample Optimal Portfolio Returns") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -4007,7 +4007,7 @@ sqrt(252)*sapply(pnls, function(x)
       \includegraphics[width=0.45\paperwidth]{figure/portf_etf_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-endd <- rutils::calc_endpoints(pnls, interval="months")
+endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Out-of-sample Optimal Portfolio Returns") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
@@ -4032,7 +4032,7 @@ dygraphs::dygraph(cumsum(pnls)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Maximum Sharpe weights in-sample interval
 invmat <- MASS::ginv(cov(retsis))
-weightv <- invmat %*% colMeans(retsx["/2014"])
+weightv <- invmat %*% colMeans(retx["/2014"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(retp)
 # Calculate in-sample portfolio returns
@@ -4051,7 +4051,7 @@ indeks <- xts::xts(rowMeans(retp), datev)
 pnls <- pnls*sd(indeks)/sd(pnls)
 pnls <- cbind(indeks, pnls)
 colnames(pnls) <- c("Equal Weight", "Optimal")
-endd <- rutils::calc_endpoints(pnls, interval="months")
+endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Out-of-sample Optimal Portfolio Returns for ETFs") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -4216,10 +4216,10 @@ dygraphs::dygraph(cumsum(pnls)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Shrink the in-sample returns to their mean
 alpha <- 0.7
-retsxm <- rowMeans(retsx["/2014"])
-retsxis <- (1-alpha)*retsx["/2014"] + alpha*retsxm
+retxm <- rowMeans(retx["/2014"])
+retxis <- (1-alpha)*retx["/2014"] + alpha*retxm
 # Calculate portfolio weights
-weightv <- invmat %*% colMeans(retsxis)
+weightv <- invmat %*% colMeans(retxis)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
@@ -4263,7 +4263,7 @@ dygraphs::dygraph(cumsum(pnls)[endd],
       \end{itemize}
       <<echo=TRUE,eval=FALSE>>=
 # Define monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 endd <- endd[endd > (nstocks+1)]
 npts <- NROW(endd)
 look_back <- 3
@@ -4271,7 +4271,7 @@ startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
 # Perform loop over end points
 pnls <- lapply(2:npts, function(ep) {
     # Calculate the portfolio weights
-    insample <- retsx[startp[ep-1]:endd[ep-1], ]
+    insample <- retx[startp[ep-1]:endd[ep-1], ]
     invmat <- MASS::ginv(cov(insample))
     weightv <- invmat %*% colMeans(insample)
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
@@ -4320,7 +4320,7 @@ startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
 # Perform loop over end points
 pnls <- lapply(2:npts, function(ep) {
     # Calculate regularized inverse of covariance matrix
-    insample <- retsx[startp[ep-1]:endd[ep-1], ]
+    insample <- retx[startp[ep-1]:endd[ep-1], ]
     eigend <- eigen(cov(insample))
     eigenvec <- eigend$vectors
     eigenval <- eigend$values
@@ -4373,7 +4373,7 @@ alpha <- 0.7
 # Perform loop over end points
 pnls <- lapply(2:npts, function(ep) {
     # Calculate regularized inverse of covariance matrix
-    insample <- retsx[startp[ep-1]:endd[ep-1], ]
+    insample <- retx[startp[ep-1]:endd[ep-1], ]
     eigend <- eigen(cov(insample))
     eigenvec <- eigend$vectors
     eigenval <- eigend$values
@@ -4527,12 +4527,12 @@ roll_portf <- function(excess, # Excess returns
       Multiple \emph{rolling portfolio optimization} strategies can be backtested by calling the function \texttt{roll\_portf()} in a loop over a vector of \emph{look-back} parameters.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate a monthly ETF momentum strategy
-pnls <- roll_portf(excess=retsx, returns=retp, endd=endd, 
+pnls <- roll_portf(excess=retx, returns=retp, endd=endd, 
   look_back=look_back, dimax=dimax)
 # Perform sapply loop over look_backs
 look_backs <- seq(2, 15, by=1)
 pnls <- lapply(look_backs, roll_portf,
-  returns=retp, excess=retsx, endd=endd, dimax=dimax)
+  returns=retp, excess=retx, endd=endd, dimax=dimax)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("look_back=", look_backs)
 pnlsums <- sapply(pnls, sum)
@@ -4575,7 +4575,7 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest for different dimax values
 eigenvals <- 2:11
-pnls <- lapply(eigenvals, roll_portf, excess=retsx, 
+pnls <- lapply(eigenvals, roll_portf, excess=retx, 
   returns=retp, endd=endd, look_back=look_back)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("eigenval=", eigenvals)
@@ -4621,7 +4621,7 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.0, to=0.9, by=0.1)
-pnls <- lapply(alphav, roll_portf, excess=retsx, 
+pnls <- lapply(alphav, roll_portf, excess=retx, 
   returns=retp, endd=endd, look_back=look_back, dimax=dimax)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("alpha=", alphav)
@@ -4673,13 +4673,13 @@ retp[1, is.na(retp[1, ])] <- 0
 retp <- zoo::na.locf(retp, na.rm=FALSE)
 datev <- zoo::index(retp)
 riskf <- 0.03/252
-retsx <- (retp - riskf)
+retx <- (retp - riskf)
 retsis <- retp["/2010"]
 retsos <- retp["2011/"]
 # Maximum Sharpe weights in-sample interval
 covmat <- cov(retsis)
 invmat <- MASS::ginv(covmat)
-weightv <- invmat %*% colMeans(retsx["/2010"])
+weightv <- invmat %*% colMeans(retx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(retp)
 # Calculate portfolio returns
@@ -4700,7 +4700,7 @@ colnames(pnls) <- c("Equal Weight", "Optimal")
 sqrt(252)*sapply(pnls[index(outsample)],
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative portfolio returns
-endd <- rutils::calc_endpoints(pnls, interval="months")
+endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -4732,7 +4732,7 @@ eigenval <- eigend$values
 invmat <- eigenvec[, 1:dimax] %*%
   (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
 # Calculate portfolio weights
-weightv <- invmat %*% colMeans(retsx["/2010"])
+weightv <- invmat %*% colMeans(retx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 names(weightv) <- colnames(retp)
 # Calculate portfolio returns
@@ -4753,7 +4753,7 @@ colnames(pnls) <- c("Equal Weight", "Optimal")
 sqrt(252)*sapply(pnls[index(outsample)],
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the cumulative portfolio returns
-endd <- rutils::calc_endpoints(pnls, interval="months")
+endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Out-of-sample Returns for Stocks with Dimension Reduction") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -4785,10 +4785,10 @@ dygraphs::dygraph(cumsum(pnls)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Shrink the in-sample returns to their mean
 alpha <- 0.7
-retsxm <- rowMeans(retsx["/2010"])
-retsxis <- (1-alpha)*retsx["/2010"] + alpha*retsxm
+retxm <- rowMeans(retx["/2010"])
+retxis <- (1-alpha)*retx["/2010"] + alpha*retxm
 # Calculate portfolio weights
-weightv <- invmat %*% colMeans(retsxis)
+weightv <- invmat %*% colMeans(retxis)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
@@ -5045,7 +5045,7 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     % \column{0.5\textwidth}
       Fast backtesting of strategies can be implemented using \protect\emph{RcppArmadillo}.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-arma::mat back_test(const arma::mat& retsx, // Portfolio excess returns
+arma::mat back_test(const arma::mat& retx, // Portfolio excess returns
                     const arma::mat& returns, // Portfolio returns
                     arma::uvec startp, 
                     arma::uvec endd, 
@@ -5067,7 +5067,7 @@ arma::mat back_test(const arma::mat& retsx, // Portfolio excess returns
   for (arma::uword it = 1; it < endd.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weightv = coeff*calc_weights(retsx.rows(startp(it-1), endd(it-1)), method, dimax, eigen_thresh, confi, alpha, scale, vol_target);
+    weightv = coeff*calc_weights(retx.rows(startp(it-1), endd(it-1)), method, dimax, eigen_thresh, confi, alpha, scale, vol_target);
     // Calculate out-of-sample returns
     pnls.rows(endd(it-1)+1, endd(it)) = returns.rows(endd(it-1)+1, endd(it))*weightv;
     // Add transaction costs
@@ -5108,17 +5108,17 @@ arma::mat back_test(const arma::mat& retsx, // Portfolio excess returns
 retp <- returns100
 retp[1, is.na(retp[1, ])] <- 0
 retp <- zoo::na.locf(retp, na.rm=FALSE)
-retsx <- (retp - riskf)
+retx <- (retp - riskf)
 nstocks <- NCOL(retp) ; datev <- zoo::index(retp)
 # Define monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
+endd <- rutils::calc_endpoints(retp, interval="weeks")
 endd <- endd[endd > (nstocks+1)]
 npts <- NROW(endd) ; look_back <- 12
 startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
 # Perform loop over end points - takes very long !!!
 pnls <- lapply(2:npts, function(ep) {
     # Subset the excess returns
-    insample <- retsx[startp[ep-1]:endd[ep-1], ]
+    insample <- retx[startp[ep-1]:endd[ep-1], ]
     invmat <- MASS::ginv(cov(insample))
     # Calculate the maximum Sharpe ratio portfolio weights
     weightv <- invmat %*% colMeans(insample)
@@ -5169,7 +5169,7 @@ startp[startp < 0] <- 0
 # Specify dimension reduction and return shrinkage using list of portfolio optimization parameters
 controlv <- HighFreq::param_portf(method="maxsharpe", dimax=21, alpha=0.7)
 # Perform backtest in Rcpp
-pnls <- HighFreq::back_test(excess=retsx, returns=retp,
+pnls <- HighFreq::back_test(excess=retx, returns=retp,
   startp=startp, endd=endd, controlv=controlv)
 pnls <- pnls*sd(indeks)/sd(pnls)
       @
@@ -5209,7 +5209,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling S&P500 Portfolio Optimiza
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.01, to=0.91, by=0.1)
 pnls <- lapply(alphav, function(alpha) {
-  HighFreq::back_test(excess=retsx, returns=retp,
+  HighFreq::back_test(excess=retx, returns=retp,
   startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
@@ -5222,7 +5222,7 @@ pnls <- pnls[[whichmax]]
 # Perform backtest over vector of dimension reduction eigenvals
 eigenvals <- seq(from=3, to=40, by=2)
 pnls <- lapply(eigenvals, function(dimax) {
-  HighFreq::back_test(excess=retsx, returns=retp,
+  HighFreq::back_test(excess=retx, returns=retp,
     startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
@@ -5271,7 +5271,7 @@ pnls <- lapply(look_backs, function(look_back) {
   startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
   startp <- (startp - 1)
   startp[startp < 0] <- 0
-  HighFreq::back_test(excess=retsx, returns=retp,
+  HighFreq::back_test(excess=retx, returns=retp,
     startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
@@ -5294,6 +5294,281 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Statistical Arbitrage}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cointegration of Stocks Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A group of stocks is \emph{cointegrated} if there is a portfolio of the stocks whose price is range-bound.
+      \vskip1ex
+      For two stocks, the cointegrating factor $\beta$ can be obtained from the regression of the stock prices.  The cointegrated portfolio $R$ is the residual of the regression:
+      \begin{displaymath}
+        R = p_1 - \beta p_2 - \alpha
+      \end{displaymath}
+      Regressing the stock \emph{prices} produces a \emph{cointegrated} portfolio, with a small variance of its \emph{prices}.
+      Regressing the stock \emph{returns} produces a \emph{correlated} portfolio, with a small variance of its \emph{returns}.
+      \vskip1ex
+      The standard confidence intervals are not valid for the regression of prices, because prices are not stationary and are not normally distributed.
+      <<echo=TRUE,eval=FALSE>>=
+# Load daily S&P500 stock prices
+load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+# Subset (select) the stock prices after the start date of XLK
+pricev <- cbind(rutils::etfenv$prices$XLK, prices$MSFT)
+pricev <- na.omit(pricev)
+colnames(pricev) <- c("XLK", "MSFT")
+datev <- zoo::index(pricev)
+# Calculate the regression coefficients of MSFT ~ XLK
+betav <- drop(cov(pricev$MSFT, pricev$XLK)/var(pricev$XLK))
+alphav <- mean(pricev$MSFT) - betav*mean(pricev$XLK)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/coint_scatter.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Scatterplot of prices
+pricem <- zoo::coredata(pricev) # plot() doesn't like xts time series
+plot(pricem[, "XLK"], pricem[, "MSFT"], main="MSFT and XLK Prices", 
+     xlab="XLK", ylab="MSFT", pch=1, col="blue")
+abline(a=alphav, b=betav, col="red", lwd=2)
+# Plot the prices
+endd <- rutils::calc_endpoints(pricev, interval="months")
+dygraphs::dygraph(log(pricev)[endd], main="MSFT and XLK Prices") %>%
+  dyOptions(colors=c("red", "blue"), strokeWidth=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cointegrated Portfolio Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Engle-Granger two-step procedure can be used to test the cointegrated portfolio of two stocks:
+      \begin{itemize}
+        \item Perform a regression of the stock prices to calculate the cointegrating factor $\beta$,
+        \item Apply the \emph{ADF} test to the regression residual (the portfolio price) to determine if they have a unit root (the portfolio price diverges), or if they are mean reverting.
+      \end{itemize}
+      The \emph{p}-value of the \emph{ADF} test for the cointegrated portfolio of \emph{MSFT} and \emph{XLK} is not small, so the \emph{null hypothesis} that it has a \emph{unit root} (it diverges) cannot be rejected.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{ADF} test is that the time series has a \emph{unit root} (it diverges).  So a small \emph{p}-value suggests that the \emph{null hypothesis} is \texttt{FALSE} and that the time series is range-bound.
+      \vskip1ex
+      The \emph{ADF} test statistic for the cointegrated portfolio is smaller than for either \emph{MSFT} or \emph{XLK} alone, which indicates that it's more mean-reverting.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the cointegrated portfolio prices (regression residual)
+resids <- (pricev$MSFT - betav*pricev$XLK - alphav)
+# Perform ADF test on the individual stocks
+sapply(pricev, tseries::adf.test, k=1)
+# Perform ADF test on the cointegrated portfolio
+tseries::adf.test(resids, k=1)
+# Perform ADF test for vector of cointegrating factors
+betas <- seq(1.5, 2.5, 0.1)
+adfstat <- sapply(betas, function(betav) {
+  resids <- (pricev$MSFT - betav*pricev$XLK)
+  tseries::adf.test(resids, k=1)$statistic
+})  # end sapply
+plot(x=betas, y=adfstat, type="l", xlab="cointegrating factor", ylab="statistic",
+ main="ADF Test Statistic as Function of Cointegrating Factor")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/coint_prices.png}
+      <<echo=TRUE,eval=FALSE>>=
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Trading Cointegrated Pairs}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The cointegrated portfolio has negative autocorrelations, so it can be traded using a mean-reverting strategy.
+      \vskip1ex
+      The mean-reverting strategy buys when the portfolio is cheap, sells it short when it's rich (expensive), and goes flat if the portfolio reaches a fair (mean) price.
+      \vskip1ex
+      The portfolio is cheap if its price is below its mean price minus the portfolio standard deviation, and it's rich (expensive) if its price is above the mean plus the standard deviation.  The portfolio price is fair if it's equal to the mean price.
+      \vskip1ex
+      Explain that the cointegration portfolio is not stationary (it has a time-dependent volatility), so it's hard to trade.
+      We need to make the volatility less time-dependent.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Plot histogram of the cointegrated portfolio prices
+hist(resids, breaks=100, xlab="Prices", 
+  main="Histogram of Cointegrated Portfolio Prices")
+# Plot PACF of the cointegrated portfolio returns
+pacf(rutils::diffit(as.numeric(resids)), lag=10, xlab=NA, ylab=NA,
+     main="PACF of Cointegrated Portfolio Returns")
+
+
+# Plot the cointegration residuals
+dygraphs::dygraph(resids[endd], main="MSFT and XLK Cointegration Residual") %>%
+  dyOptions(colors=c("blue"), strokeWidth=2)
+# Trade the cointegration residuals
+threshold <- drop(sqrt(var(resids)))
+meanv <- mean(resids)
+posv <- 0
+nrows <- NROW(resids)
+pnls <- numeric(nrows)
+# resids <- as.numeric(resids)
+for (it in 1:nrows) {
+  if ((posv > (-1)) && (resids[it] > (meanv + threshold))) {
+    # Enter short
+    pnls[it] <- resids[it]
+    posv <- (-1)
+  } else if ((posv < 1) && (resids[it] < (meanv - threshold))) {
+    # Enter long
+    pnls[it] <- (-resids[it])
+    posv <- 1
+  } else if ((posv < 0) && (resids[it] < meanv)) {
+    # Unwind short
+    pnls[it] <- (-resids[it])
+    posv <- 0
+  } else if ((posv > 0) && (resids[it] > meanv)) {
+    # Unwind long
+    pnls[it] <- resids[it]
+    posv <- 0
+  }  # end if
+}  # end for
+pnls <- cumsum(pnls)
+plot(pnls, t="l")
+
+# Dynamic
+lambda <- 0.9
+vars <- HighFreq::run_var(resids, lambda=lambda)
+threshd <- HighFreq::lagit(sqrt(vars))
+meand <- HighFreq::lagit(HighFreq::run_mean(resids, lambda=lambda))
+
+# Plot YC steepener principal component with VTI
+datav <- cbind(resids, meand+threshd, meand-threshd)
+colnames(datav) <- c("Resids", "Upper", "Lower")
+dygraphs::dygraph(datav[endd], main="Resids") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2)
+
+
+posv <- 0
+pnls <- numeric(nrows)
+# resids <- as.numeric(resids)
+for (it in 1:nrows) {
+  if ((posv > (-1)) && (resids[it] > (meand[it] + threshd[it]))) {
+    # Enter short
+    pnls[it] <- resids[it]
+    posv <- (-1)
+  } else if ((posv < 1) && (resids[it] < (meand[it] - threshd[it]))) {
+    # Enter long
+    pnls[it] <- (-resids[it])
+    posv <- 1
+  } else if ((posv < 0) && (resids[it] < meand[it])) {
+    # Unwind short
+    pnls[it] <- (-resids[it])
+    posv <- 0
+  } else if ((posv > 0) && (resids[it] > meand[it])) {
+    # Unwind long
+    pnls[it] <- resids[it]
+    posv <- 0
+  }  # end if
+}  # end for
+pnls <- cumsum(pnls)
+plot(pnls, t="l")
+
+
+retres <- rutils::diffit(resids)
+lambda <- 0.6
+volat <- HighFreq::run_var(retres, lambda=lambda)
+volat <- sqrt(volat)
+volat <- xts::xts(volat, datev)
+dygraphs::dygraph(volat[endd], main="Residual Volatility") %>%
+  dyOptions(colors=c("blue"), strokeWidth=2)
+
+# Calculate the regression residual
+resids <- (pricev$MSFT - betav*pricev$XLK)
+# Perform ADF test on residuals
+retp <- rutils::diffit(pricev$XLK)
+retres <- rutils::diffit(resids)
+resids <- retres/volat
+resids[1] <- 0
+resids <- HighFreq::run_mean(resids, lambda=lambda)
+resids <- xts::xts(resids, datev)
+# resids <- cumsum(retres)
+# Or
+# resids <- resids/volat
+# resids[1] <- 0
+range(resids)
+mad(resids)
+tseries::adf.test(resids, k=1)
+dygraphs::dygraph(resids[endd], main="MSFT and XLK Cointegration Residual") %>%
+  dyOptions(colors=c("blue"), strokeWidth=2)
+
+# Simulate in-sample VTI strategy
+posit <- rep(NA_integer_, NROW(resids))
+posit[1] <- 0
+posit[resids > 2] <- (-1)
+posit[resids <= 2] <- (1)
+posit <- zoo::na.locf(posit)
+posit <- rutils::lagit(posit)
+pnls <- retres*posit
+
+
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("XLK", "Strategy")
+sqrt(252)*sapply(wealthv, 
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of in-sample VTI strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="Logistic Strategy Using Top and Bottom Labels") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+
+
+# Simulate in-sample VTI strategy
+negav <- HighFreq::roll_sum(matrix(forecastneg), lagg)/lagg
+posav <- HighFreq::roll_sum(matrix(forecastpos), lagg)/lagg
+posit <- (negav - posav)
+# posit <- ifelse(forecastpos, 1, 0)
+# posit <- ifelse(forecastneg, -1, posit)
+posit <- rutils::lagit(posit)
+pnls <- retvti*posit
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retvti, pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+sqrt(252)*sapply(wealthv, 
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_logistic_rets_insample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of in-sample VTI strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="Logistic Forecasting Returns") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
