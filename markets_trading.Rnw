@@ -321,15 +321,15 @@ corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
       <<echo=TRUE,eval=FALSE>>=
 # Create initial vector of portfolio weights
 nweights <- NROW(symbolv)
-weights <- rep(1/sqrt(nweights), nweights)
+weightv <- rep(1/sqrt(nweights), nweights)
 names(weights) <- symbolv
 # Objective function equal to minus portfolio variance
-objfun <- function(weights, retp) {
-  retp <- retp %*% weights
-  -1e7*var(retp) + 1e7*(1 - sum(weights*weights))^2
+objfun <- function(weightv, retp) {
+  retp <- retp %*% weightv
+  -1e7*var(retp) + 1e7*(1 - sum(weightv*weightv))^2
 }  # end objfun
 # Objective function for equal weight portfolio
-objfun(weights, retp)
+objfun(weightv, retp)
 # Compare speed of vector multiplication methods
 library(microbenchmark)
 summary(microbenchmark(
@@ -341,7 +341,7 @@ summary(microbenchmark(
       \includegraphics[width=0.35\paperwidth]{figure/pca_rates_load1.png}
       <<echo=TRUE,eval=FALSE>>=
 # Find weights with maximum variance
-optiml <- optim(par=weights,
+optiml <- optim(par=weightv,
   fn=objfun,
   retp=retp,
   method="L-BFGS-B",
@@ -378,13 +378,13 @@ barplot(weights1, names.arg=names(weights1),
 # pc1 weights and returns
 pc1 <- drop(retp %*% weights1)
 # Redefine objective function
-objfun <- function(weights, retp) {
-  retp <- retp %*% weights
-  -1e7*var(retp) + 1e7*(1 - sum(weights^2))^2 +
-    1e7*sum(weights1*weights)^2
+objfun <- function(weightv, retp) {
+  retp <- retp %*% weightv
+  -1e7*var(retp) + 1e7*(1 - sum(weightv^2))^2 +
+    1e7*sum(weights1*weightv)^2
 }  # end objfun
 # Find second principal component weights
-optiml <- optim(par=weights,
+optiml <- optim(par=weightv,
                    fn=objfun,
                    retp=retp,
                    method="L-BFGS-B",
@@ -1953,8 +1953,8 @@ endds <- eapply(sp500env, end)
 endds <- unlist(endds)
 endds <- as.Date(endds)
 # Remove elements with short end dates
-se_lect <- (endds < max(endds))
-rm(list=names(sp500env)[se_lect], envir=sp500env)
+ishort <- (endds < max(endds))
+rm(list=names(sp500env)[ishort], envir=sp500env)
 # Rename element "BRK.B" to "BRKB"
 sp500env$BRKB <- sp500env$BRK.B
 rm(BRK.B, envir=sp500env)
@@ -1962,14 +1962,14 @@ names(sp500env$BRKB) <- paste("BRKB",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Rename element "LOW" to "LOWES"
 sp500env$LOWES <- sp500env$LOW
-names(sp500env$LOWES) <- paste("LO_WES",
-  c("Open", "High", "Low", "Close", "Volume"), sep=".")
 rm(LOW, envir=sp500env)
+names(sp500env$LOWES) <- paste("LOVES",
+  c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Rename element "BF.B" to "BFB"
 sp500env$BFB <- sp500env$BF.B
+rm(BF.B, envir=sp500env)
 names(sp500env$BFB) <- paste("BFB",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
-rm(BF.B, envir=sp500env)
 # Save OHLC prices to .RData file
 save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 plot(quantmod::Cl(sp500env$MSFT))
@@ -2754,7 +2754,7 @@ save_scrub_agg(symbol,
       The package \emph{HighFreq} contains several high frequency time series, in \emph{xts} format, stored in a file called \texttt{hf\_data.RData}:
       \begin{itemize}
         \item a time series called \texttt{SPY\_TAQ}, containing a single day of \emph{TAQ} data for the \emph{SPY} ETF.
-        \item three time series called \texttt{SPY}, \texttt{TLT}, and \texttt{VXX}, containing intraday 1-minute \emph{OHLC} price bars for the \emph{SPY}, \emph{TLT}, and \emph{VXX} ETFs.
+        \item three time series called \texttt{SPY}, \texttt{TLT}, and \texttt{VXX}, containing intraday \texttt{1}-minute \emph{OHLC} price bars for the \emph{SPY}, \emph{TLT}, and \emph{VXX} ETFs.
       \end{itemize}
       Even after the \emph{HighFreq} package is loaded, its datasets aren't loaded into the workspace, so they aren't listed in the workspace.
       \vskip1ex

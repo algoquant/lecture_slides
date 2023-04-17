@@ -110,9 +110,8 @@ coef(regmodsum)[, 1]
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot scatterplot of returns with aspect ratio 1
-plot(XLP ~ VTI, data=rutils::etfenv$returns,
-     xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
-     asp=1, main="Regression XLP ~ VTI")
+plot(XLP ~ VTI, data=rutils::etfenv$returns, main="Regression XLP ~ VTI",
+     xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), pch=1, col="blue", asp=1)
 # Add regression line and perpendicular line
 abline(regmod, lwd=2, col="red")
 abline(a=0, b=-1/coef(regmodsum)[2, 1], lwd=2, col="blue")
@@ -390,7 +389,7 @@ legend(x="topleft", bty="n", title="Security Market Line",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Treynor} ratio measures the excess returns per unit of the \emph{systematic} risk \emph{beta} $\beta$, and is equal to the excess returns (over a risk-free return) divided by the $\beta$:
+      The \emph{Treynor} ratio measures the excess returns per unit of the \emph{systematic} risk \emph{beta} $\beta$, and is equal to the excess returns (over a risk-free rate) divided by the $\beta$:
       \begin{displaymath}
         T_r=\frac{E[R-r_f]}{\beta}
       \end{displaymath}
@@ -466,39 +465,41 @@ rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Beta Regressions Over Time}
+\subsection{Trailing Stock Beta Over Time}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The rolling beta of \emph{XLP} versus \emph{VTI} changes over time, with lower beta in periods of \emph{VTI} selloffs.
+      The trailing beta of \emph{XLP} versus \emph{VTI} changes over time, with lower beta in periods of stock selloffs.
       \vskip1ex
-      The function \texttt{roll\_reg()} from package \emph{HighFreq} performs rolling regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
+      The function \texttt{roll\_reg()} from package \emph{HighFreq} performs trailing regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate XLP and VTI returns
 retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
-endd <- xts::endpoints(retp, on="weeks")[-1]
+endd <- xts::endpoints(retp, on="months")[-1]
 # Calculate start points from look-back interval
 look_back <- 12  # Look back 12 months
 startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
 head(cbind(endd, startp), look_back+2)
-# Calculate rolling beta regressions every month in R
+# Calculate trailing beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
 betar <- sapply(1:NROW(endd), FUN=function(ep) {
     datav <- retp[startp[ep]:endd[ep], ]
     # coef(lm(formulav, data=datav))[2]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
-# Calculate rolling betas using RcppArmadillo
-reg_stats <- HighFreq::roll_reg(respv=retp$XLP, retp=retp$VTI, endd=(endd-1), startp=(startp-1))
-betav <- reg_stats$VTI
+# Calculate trailing betas using RcppArmadillo
+controlv <- HighFreq::param_reg()
+reg_stats <- HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, 
+  startp=(startp-1), endp=(endd-1), controlv=controlv)
+betav <- reg_stats[, 2]
 all.equal(betav, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(respv=retp$XLP, retp=retp$VTI, endd=(endd-1), startp=(startp-1)),
+  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controlv=controlv),
   Rcode=sapply(1:NROW(endd), FUN=function(ep) {
     datav <- retp[startp[ep]:endd[ep], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
@@ -506,19 +507,132 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/rolling_betas.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/trailing_betas.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# dygraph plot of rolling XLP beta and VTI prices
-dates <- zoo::index(retp[endd, ])
-pricev <- rutils::etfenv$prices$VTI[dates]
+# dygraph plot of trailing XLP beta and VTI prices
+datev <- zoo::index(retp[endd, ])
+pricev <- rutils::etfenv$prices$VTI[datev]
 datav <- cbind(pricev, betav)
+colnames(datav)[2] <- "beta"
 colnamev <- colnames(datav)
-dygraphs::dygraph(datav, main="XLP Rolling 12-month Beta and VTI Prices") %>%
+dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trailing Stock Beta Over Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trailing beta of \emph{XLP} versus \emph{VTI} changes over time, with lower beta in periods of stock selloffs.
+      \vskip1ex
+      The function \texttt{roll\_reg()} from package \emph{HighFreq} performs trailing regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate XLP and VTI returns
+retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
+# Calculate monthly end points
+endd <- rutils::calc_endpoints(retp, interval="months")[-1]
+# Calculate start points from look-back interval
+look_back <- 12  # Look back 12 months
+startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
+head(cbind(endd, startp), look_back+2)
+# Calculate trailing beta regressions every month in R
+formulav <- XLP ~ VTI  # Specify regression formula
+betar <- sapply(1:NROW(endd), FUN=function(ep) {
+    datav <- retp[startp[ep]:endd[ep], ]
+    # coef(lm(formulav, data=datav))[2]
+    drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
+  })  # end sapply
+# Calculate trailing betas using RcppArmadillo
+controlv <- HighFreq::param_reg()
+reg_stats <- HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, 
+  startp=(startp-1), endp=(endd-1), controlv=controlv)
+betav <- reg_stats[, 2]
+all.equal(betav, betar)
+# Compare the speed of RcppArmadillo with R code
+library(microbenchmark)
+summary(microbenchmark(
+  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controlv=controlv),
+  Rcode=sapply(1:NROW(endd), FUN=function(ep) {
+    datav <- retp[startp[ep]:endd[ep], ]
+    drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
+  }),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/trailing_betas.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# dygraph plot of trailing XLP beta and VTI prices
+datev <- zoo::index(retp[endd, ])
+pricev <- log(rutils::etfenv$prices$VTI[datev])
+datav <- cbind(pricev, betav)
+colnames(datav)[2] <- "beta"
+colnamev <- colnames(datav)
+dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Trailing Stock Beta}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trailing beta $\beta$ of a stock with returns $r_t$ with respect to a stock index with returns $R_t$ can be updated using these recursive formulas with the weight decay factor $\lambda$:
+      \begin{flalign*}
+        & \bar{r}_t = \lambda \bar{r}_{t-1} + (1-\lambda) r_t \\
+        & \bar{R}_t = \lambda \bar{R}_{t-1} + (1-\lambda) R_t \\
+        & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (R_t - \bar{R}_t)^2 \\
+        & \operatorname{cov}_t = \lambda \operatorname{cov}_{t-1} + (1-\lambda) (r_t - \bar{r}_t) (R_t - \bar{R}_t) \\
+        & \beta_t = \frac{\operatorname{cov}_t}{\sigma^2_t}
+      \end{flalign*}
+      The parameter $\lambda$ determines the rate of decay of the weight of past returns.
+      If $\lambda$ is close to \texttt{1} then the decay is weak and past returns have a greater weight, and the trailing mean values have a stronger dependence on past returns.  This is equivalent to a long look-back interval.
+      And vice versa if $\lambda$ is close to \texttt{0}.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_covar()} calculates the trailing variances, covariances, and means of two \emph{time series}.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing betas
+lambda <- 0.99
+covarv <- HighFreq::run_covar(retp, lambda)
+betav <- covarv[, 1]/covarv[, 3]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/trailing_betas_rec.png}
+      <<echo=TRUE,eval=FALSE>>=
+# dygraph plot of trailing XLP beta and VTI prices
+datav <- cbind(pricev, betav[endd])[-(1:11)] # Remove warmup period
+colnames(datav)[2] <- "beta"
+colnamev <- colnames(datav)
+dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -573,7 +687,7 @@ barplot(pcad$sdev[1:ncomp],
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{S\&P500} \protect\emph{Principal Component} Loadings (Weights)}
+\subsection{\protect\emph{S\&P500} \protect\emph{Principal Component} Loadings}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -590,12 +704,12 @@ ncomps <- 6
 par(mfrow=c(ncomps/2, 2))
 par(mar=c(4, 2, 2, 1), oma=c(0, 0, 0, 0))
 # First principal component weights
-weights <- sort(pcad$rotation[, 1], decreasing=TRUE)
-barplot(weights[1:6], las=3, xlab="", ylab="", main="")
+weightv <- sort(pcad$rotation[, 1], decreasing=TRUE)
+barplot(weightv[1:6], las=3, xlab="", ylab="", main="")
 title(paste0("PC", 1), line=-2.0, col.main="red")
 for (ordern in 2:ncomps) {
-  weights <- sort(pcad$rotation[, ordern], decreasing=TRUE)
-  barplot(weights[c(1:3, 498:500)], las=3, xlab="", ylab="", main="")
+  weightv <- sort(pcad$rotation[, ordern], decreasing=TRUE)
+  barplot(weightv[c(1:3, 498:500)], las=3, xlab="", ylab="", main="")
   title(paste0("PC", ordern), line=-2.0, col.main="red")
 }  # end for
       @
@@ -619,7 +733,7 @@ for (ordern in 2:ncomps) {
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate principal component time series
-retspca <- xts(retp %*% pcad$rotation[, 1:ncomps], order.by=dates)
+retspca <- xts(retp %*% pcad$rotation[, 1:ncomps], order.by=datev)
 round(cov(retspca), 3)
 pcacum <- cumsum(retspca)
 # Plot principal component time series in multiple panels
@@ -662,7 +776,7 @@ par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 invmat <- solve(pcad$rotation)
 all.equal(invmat, t(pcad$rotation))
 solved <- retspca %*% invmat[1:ncomps, ]
-solved <- xts::xts(solved, dates)
+solved <- xts::xts(solved, datev)
 solved <- cumsum(solved)
 retc <- cumsum(retp)
 # Plot the solved returns
@@ -712,7 +826,7 @@ for (symbol in symbolv) {
          title=NULL, inset=0.05, cex=1.0, lwd=6, lty=1, col="blue")
 }  # end for
 # Perform ADF unit root test on principal component time series
-retspca <- xts(retp %*% pcad$rotation, order.by=dates)
+retspca <- xts(retp %*% pcad$rotation, order.by=datev)
 pcacum <- cumsum(retspca)
 adf_pvalues <- sapply(1:NCOL(pcacum), function(ordern)
   tseries::adf.test(pcacum[, ordern])$p.value)

@@ -96,15 +96,14 @@ knit_theme$set(thm)
 library(PortfolioAnalytics)
 # Use ETF returns from package rutils
 library(rutils)
-portf_names <- c("VTI", "IEF", "DBC", "XLF",
+symbolv <- c("VTI", "IEF", "DBC", "XLF",
         "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # Initial portfolio to equal weights
-portf_init <- rep(1/NROW(portf_names), NROW(portf_names))
+portfi <- rep(1/NROW(symbolv), NROW(symbolv))
 # Named vector
-names(portf_init) <- portf_names
+names(portfi) <- symbolv
 # Create portfolio object
-portf_init <- portfolio.spec(
-  assets=portf_init)
+portfi <- portfolio.spec(assets=portfi)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -112,7 +111,7 @@ portf_init <- portfolio.spec(
 library(PortfolioAnalytics)
 # Add constraints
 portf_maxSR <- add.constraint(
-  portfolio=portf_init,  # Initial portfolio
+  portfolio=portfi,  # Initial portfolio
   type="weightsum",  # Constraint sum weights
   min_sum=0.9, max_sum=1.1)
 # Add constraints
@@ -155,15 +154,14 @@ portf_maxSR <- add.objective(
 library(PortfolioAnalytics)
 # Use ETF returns from package rutils
 library(rutils)
-portf_names <- c("VTI", "IEF", "DBC", "XLF",
+symbolv <- c("VTI", "IEF", "DBC", "XLF",
         "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # Initial portfolio to equal weights
-portf_init <- rep(1/NROW(portf_names), NROW(portf_names))
+portfi <- rep(1/NROW(symbolv), NROW(symbolv))
 # Named vector
-names(portf_init) <- portf_names
+names(portfi) <- symbolv
 # Create portfolio object
-portf_init <- portfolio.spec(
-  assets=portf_init)
+portfi <- portfolio.spec(assets=portfi)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -171,7 +169,7 @@ portf_init <- portfolio.spec(
 library(PortfolioAnalytics)
 # Add constraints
 portf_maxSR <- add.constraint(
-  portfolio=portf_init,  # Initial portfolio
+  portfolio=portfi,  # Initial portfolio
   type="weightsum",  # Constraint sum weights
   min_sum=0.9, max_sum=1.1)
 # Add constraints
@@ -473,21 +471,21 @@ all.equal(var(retmv),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate vector of mean returns
-retsm <- colMeans(retp)
+retm <- colMeans(retp)
 # Specify the target return
 retarget <- 1.5*mean(retp)
 # Products of inverse with mean returns and unit vector
 c11 <- drop(t(unitv) %*% covinv %*% unitv)
-cr1 <- drop(t(unitv) %*% covinv %*% retsm)
-crr <- drop(t(retsm) %*% covinv %*% retsm)
+cr1 <- drop(t(unitv) %*% covinv %*% retm)
+crr <- drop(t(retm) %*% covinv %*% retm)
 fmat <- matrix(c(c11, cr1, cr1, crr), nc=2)
 # Solve for the Lagrange multipliers
 lagm <- solve(a=fmat, b=c(2, 2*retarget))
 # Calculate the efficient portfolio weights
-weightv <- 0.5*drop(covinv %*% cbind(unitv, retsm) %*% lagm)
+weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
 # Calculate constraints
-all.equal(1, sum(weightv))
-all.equal(retarget, sum(retsm*weightv))
+all.equal(1, sum(weights))
+all.equal(retarget, sum(retm*weightv))
       @
   \end{columns}
 \end{block}
@@ -567,7 +565,7 @@ all.equal(var(reteff),
 c11 <- drop(t(unitv) %*% covinv %*% unitv)
 weightv <- drop(covinv %*% unitv/c11)
 retmv <- (retp %*% weightv)
-retmvm <- sum(weightv*retsm)
+retmvm <- sum(weightv*retm)
 # Calculate the minimum variance
 varmv <- 1/c11
 stdevmv <- sqrt(varmv)
@@ -802,26 +800,26 @@ text(x=0.6*stdev, y=0.8*retarget,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the mean excess returns
 riskf <- retarget - sharper*stdeveff
-retx <- (retsm - riskf)
+retx <- (retm - riskf)
 # Calculate the efficient portfolio weights
-weightv <- 0.5*drop(covinv %*% cbind(unitv, retsm) %*% lagm)
+weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
 # Calculate the maximum Sharpe weights
 weightms <- drop(covinv %*% retx)/sum(covinv %*% retx)
 all.equal(weightv, weightms)
 # Calculate the maximum Sharpe mean return in two ways
-all.equal(sum(retsm*weightv),
+all.equal(sum(retm*weightv),
   (cr1*riskf-crr)/(c11*riskf-cr1))
 # Calculate the maximum Sharpe daily returns
 retd <- (retp %*% weightms)
 # Calculate the maximum Sharpe variance in four ways
 detf <- (c11*crr-cr1^2)  # det(fmat)
 all.equal(var(retd), 
-  t(weightv) %*% covmat %*% weightv,
+  t(weights) %*% covmat %*% weightv,
   (t(retx) %*% covinv %*% retx)/sum(covinv %*% retx)^2, 
   (c11*retarget^2-2*cr1*retarget+crr)/detf)
 # Calculate the maximum Sharpe ratio
 sqrt(252)*sum(weightv*retx)/
-  sqrt(drop(t(weightv) %*% covmat %*% weightv))
+  sqrt(drop(t(weights) %*% covmat %*% weightv))
 # Calculate the stock Sharpe ratios
 sqrt(252)*sapply((retp - riskf), function(x) mean(x)/sd(x))
       @
@@ -991,9 +989,9 @@ for (reteffm in reteffv) {
 nportf <- 1000
 randportf <- sapply(1:nportf, function(it) {
   weightv <- runif(nstocks-1, min=-0.25, max=1.0)
-  weightv <- c(weightv, 1-sum(weightv))
+  weightv <- c(weightv, 1-sum(weights))
   # Portfolio returns and standard deviation
-  c(return=252*sum(weightv*retsm),
+  c(return=252*sum(weightv*retm),
     stdev=sqrt(252*drop(weightv %*% covmat %*% weightv)))
 })  # end sapply
 # Plot scatterplot of random portfolios
@@ -1022,9 +1020,9 @@ text(x=effront[marketp, "stdev"], y=effront[marketp, "return"],
       <<echo=TRUE,eval=FALSE>>=
 # Plot individual assets
 points(x=sqrt(252*diag(covmat)),
-       y=252*retsm, col="blue", lwd=6)
-text(x=sqrt(252*diag(covmat)), y=252*retsm,
-     labels=names(retsm),
+       y=252*retm, col="blue", lwd=6)
+text(x=sqrt(252*diag(covmat)), y=252*retm,
+     labels=names(retm),
      col="blue", pos=1, cex=0.8)
       @
   \end{columns}
@@ -1049,7 +1047,7 @@ nstocks <- NROW(symbolv)
 nportf <- 1000
 randportf <- sapply(1:nportf, function(it) {
   weightv <- runif(nstocks, min=0, max=10)
-  weightv <- weightv/sum(weightv)
+  weightv <- weightv/sum(weights)
   retp <- rutils::etfenv$returns[, symbolv] %*% weightv
   100*c(ret=mean(retp), sd=sd(retp))
 })  # end sapply
@@ -1067,9 +1065,9 @@ plot(x=randportf[2, ], y=randportf[1, ], xlim=c(0, max(randportf[2, ])),
       <<echo=TRUE,eval=FALSE>>=
 # Plot individual assets
 points(x=sqrt(252*diag(covmat)),
-       y=252*retsm, col="blue", lwd=6)
-text(x=sqrt(252*diag(covmat)), y=252*retsm,
-     labels=names(retsm),
+       y=252*retm, col="blue", lwd=6)
+text(x=sqrt(252*diag(covmat)), y=252*retm,
+     labels=names(retm),
      col="blue", pos=1, cex=0.8)
       @
   \end{columns}
@@ -1206,7 +1204,7 @@ weightv <- seq(from=(-1), to=2, length.out=31)
 weightv <- cbind(weightv, 1-weightv)
 # Calculate portfolio returns and volatilities
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
-retp <- retp %*% t(weightv)
+retp <- retp %*% t(weights)
 portfv <- cbind(252*colMeans(retp),
   sqrt(252)*matrixStats::colSds(retp))
 colnames(portfv) <- c("returns", "stdev")
@@ -1233,10 +1231,10 @@ text(x=portfv[whichmax, "stdev"], y=portfv[whichmax, "returns"],
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot individual assets
-retsm <- 252*sapply(retp, mean)
+retm <- 252*sapply(retp, mean)
 stdevs <- sqrt(252)*sapply(retp, sd)
-points(stdevs, retsm, col="green", lwd=6)
-text(stdevs, retsm, labels=names(retp), pos=2, cex=0.8)
+points(stdevs, retm, col="green", lwd=6)
+text(stdevs, retm, labels=names(retp), pos=2, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
 points(x=0, y=riskf, col="blue", lwd=6)
 text(0, riskf, labels="risk-free", pos=4, cex=0.8)
@@ -1278,10 +1276,10 @@ colnames(retsoptim)[1] <- "efficient"
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue", "green")
 chart_Series(retsoptim, theme=plot_theme,
-             name="Efficient Portfolio for Stocks and Bonds")
+   name="Efficient Portfolio for Stocks and Bonds")
 legend("top", legend=colnames(retsoptim),
-       cex=0.8, inset=0.1, bg="white", lty=1,
-       lwd=6, col=plot_theme$col$line.col, bty="n")
+   cex=0.8, inset=0.1, bg="white", lty=1,
+   lwd=6, col=plot_theme$col$line.col, bty="n")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -1416,11 +1414,9 @@ coeffm %*% optiml$solution
       The \emph{Conditional Value at Risk} is also called the Expected Shortfall (\emph{ES}), or the Expected Tail Loss (\emph{ETL}).
       \vskip1ex
       The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data, and returns a list with a vector of loss values and a vector of corresponding densities.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
-# VTI percentage returns
-retp <- rutils::diffit(log(quantmod::Cl(rutils::etfenv$VTI)))
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.1
 varisk <- quantile(retp, confl)
 cvar <- mean(retp[retp < varisk])
@@ -1490,7 +1486,7 @@ library(Rglpk)
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
-retsm <- colMeans(retp)
+retm <- colMeans(retp)
 confl <- 0.05
 rmin <- 0 ; wmin <- 0 ; wmax <- 1
 weightsum <- 1
@@ -1499,13 +1495,13 @@ nrows <- NROW(retp) # number of rows
 # Create objective vector
 objvec <- c(numeric(ncols), rep(-1/(confl/nrows), nrows), -1)
 # Specify matrix of linear constraint coefficients
-coeffm <- rbind(cbind(rbind(1, retsm),
+coeffm <- rbind(cbind(rbind(1, retm),
                       matrix(data=0, nrow=2, ncol=(nrows+1))),
                 cbind(coredata(retp), diag(nrows), 1))
 # Specify the logical constraint operators
 logop <- c("==", ">=", rep(">=", nrows))
 # Specify the vector of constraints
-consv <- c(weightsum, rmin, rep(0, nrows))
+consv <- c(weightvum, rmin, rep(0, nrows))
 # Specify box constraints (wmin, wmax) (default is c(0, Inf))
 boxc <- list(lower=list(ind=1:ncols, val=rep(wmin, ncols)),
              upper=list(ind=1:ncols, val=rep(wmax, ncols)))
@@ -1539,7 +1535,7 @@ nstocks <- NROW(symbolv)
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
 # Create initial vector of portfolio weights
 weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
+names(weights) <- symbolv
 # Objective equal to minus Sharpe ratio
 objfun <- function(weightv, retp) {
   retp <- retp %*% weightv
@@ -1555,7 +1551,7 @@ optiml <- unlist(optimize(
     objfun(c(1, 1, weight), retp=retp),
   interval=c(-4, 1)))
 # Vectorize objective function with respect to third weight
-objvec <- function(weightv) sapply(weightv,
+objvec <- function(weights) sapply(weightv,
   function(weight) objfun(c(1, 1, weight),
     retp=retp))
 # Or
@@ -1660,14 +1656,14 @@ rgl::persp3d(
       <<echo=TRUE,eval=FALSE>>=
 # Vector of initial portfolio weights equal to 1
 weightv <- rep(1, nstocks)
-names(weightv) <- symbolv
+names(weights) <- symbolv
 # Objective function equal to standard deviation of returns
-objfun <- function(weightv) {
+objfun <- function(weights) {
   retp <- retp %*% weightv
-  sd(retp)/sum(weightv)
+  sd(retp)/sum(weights)
 }  # end objfun
 # objfun() for equal weight portfolio
-objfun(weightv)
+objfun(weights)
 objfun(2*weightv)
 # Perform portfolio optimization
 optiml <- optim(par=weightv,
@@ -1690,8 +1686,8 @@ text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
 
 # Objective function equal to minus Sharpe ratio
 riskf <- 0.03
-objfun <- function(weightv) {
-  retp <- 100*rutils::etfenv$returns[, names(weightv)] %*% weightv / sum(weightv)
+objfun <- function(weights) {
+  retp <- 100*rutils::etfenv$returns[, names(weights)] %*% weightv / sum(weights)
   -mean(retp-riskf)/sd(retp)
 }  # end objfun
 # Perform portfolio optimization
@@ -1713,10 +1709,10 @@ text(x=optim_sd, y=optim_ret,
      labels="maxSR", pos=2, cex=0.8)
 sharpem <- (optim_ret-riskf)/optim_sd
 # Plot individual assets
-retsm <- 100*sapply(retp, mean)
+retm <- 100*sapply(retp, mean)
 stdevs <- 100*sapply(retp, sd)
-points(stdevs, retsm, col="green", lwd=3)
-text(stdevs, retsm, labels=names(retsm), pos=2, cex=0.8)
+points(stdevs, retm, col="green", lwd=3)
+text(stdevs, retm, labels=names(retm), pos=2, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
 points(x=0, y=riskf)
 text(0, riskf, labels="risk-free", pos=4, cex=0.8)
@@ -1813,9 +1809,9 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red", "green", "blue")
 chart_Series(retsoptim, theme=plot_theme,
              name="Optimized portfolio performance")
-legend("top", legend=colnames(retsoptim), cex=0.8,
-       inset=0.1, bg="white", lty=1, lwd=6,
-       col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(retsoptim), cex=1.0,
+   inset=0.1, bg="white", lty=1, lwd=6,
+   col=plot_theme$col$line.col, bty="n")
 # Or plot non-compounded (simple) cumulative returns
 PerformanceAnalytics::chart.CumReturns(
   cbind(retp %*% optiml$par, retp),
@@ -2087,7 +2083,7 @@ optiml <- DEoptim::DEoptim(fn=objfun,
   retp=retp,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
       @
   \end{columns}
 \end{block}
@@ -2121,13 +2117,13 @@ objfun <- function(weightv, retp, lambda, alpha) {
     return(0)
   else {
     penaltyv <- lambda*((1-alpha)*sum(weightv^2) +
-        alpha*sum(abs(weightv)))
+        alpha*sum(abs(weights)))
     -return(mean(retp)/sd(retp) + penaltyv)
   }
 }  # end objfun
 # Objective for equal weight portfolio
 weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
+names(weights) <- symbolv
 lambda <- 0.5 ; alpha <- 0.5
 objfun(weightv, retp=retp, lambda=lambda, alpha=alpha)
 # Perform optimization using DEoptim
@@ -2139,7 +2135,7 @@ optiml <- DEoptim::DEoptim(fn=objfun,
   alpha=alpha,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
       @
   \end{columns}
 \end{block}
@@ -2173,13 +2169,13 @@ objfun <- function(weightv, retp, lambda, alpha) {
     return(0)
   else {
     penaltyv <- lambda*((1-alpha)*sum(weightv^2) +
-        alpha*sum(abs(weightv)))
+        alpha*sum(abs(weights)))
     -return(mean(retp)/sd(retp) + penaltyv)
   }
 }  # end objfun
 # Objective for equal weight portfolio
 weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
+names(weights) <- symbolv
 lambda <- 0.5 ; alpha <- 0.5
 objfun(weightv, retp=retp, lambda=lambda, alpha=alpha)
 # Perform optimization using DEoptim
@@ -2191,7 +2187,7 @@ optiml <- DEoptim::DEoptim(fn=objfun,
   alpha=alpha,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
       @
   \end{columns}
 \end{block}
@@ -2369,14 +2365,14 @@ detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search pa
 library(PortfolioAnalytics)
 # Use ETF returns from package rutils
 library(rutils)
-portf_names <- c("VTI", "IEF", "DBC", "XLF",
+symbolv <- c("VTI", "IEF", "DBC", "XLF",
         "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # Initial portfolio to equal weights
-portf_init <- rep(1/NROW(portf_names), NROW(portf_names))
+portfi <- rep(1/NROW(symbolv), NROW(symbolv))
 # named vector
-names(portf_init) <- portf_names
+names(portfi) <- symbolv
 # Create portfolio object
-portf_init <- portfolio.spec(assets=portf_init)
+portfi <- portfolio.spec(assets=portfi)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -2384,7 +2380,7 @@ portf_init <- portfolio.spec(assets=portf_init)
 library(PortfolioAnalytics)
 # Add constraints
 portf_maxSR <- add.constraint(
-  portfolio=portf_init,  # Initial portfolio
+  portfolio=portfi,  # Initial portfolio
   type="weightsum",  # Constraint sum weights
   min_sum=0.9, max_sum=1.1)
 # Add constraints
@@ -2421,7 +2417,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=rutils::etfenv$returns[, portf_names],  # Specify returns
+  R=rutils::etfenv$returns[, symbolv],  # Specify returns
   portfolio=portf_maxSR,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSR=TRUE,  # Maximize Sharpe
@@ -2508,10 +2504,10 @@ library(PortfolioAnalytics)
 plot_portf <- function(portfolio,
             rets_data=rutils::etfenv$returns) {
   weightv <- portfolio$weights
-  portf_names <- names(weightv)
+  symbolv <- names(weights)
   # Calculate xts of portfolio
   portf_max <- xts(
-    rets_data[, portf_names] %*% weightv,
+    rets_data[, symbolv] %*% weightv,
     order.by=zoo::index(rets_data))
   colnames(portf_max) <-
     deparse(substitute(portfolio))
@@ -2521,7 +2517,7 @@ plot_portf <- function(portfolio,
     cex.main=0.8, cex.sub=0.5)
   layout(matrix(c(1,2), 2),
     widths=c(1,1), heights=c(1,3))
-  barplot(weightv, names.arg=portf_names,
+  barplot(weightv, names.arg=symbolv,
           las=3, ylab="", xlab="Symbol", main="")
   title(main=paste("Loadings",
                 colnames(portf_max)), line=(-1))
@@ -2557,9 +2553,9 @@ maxSR_DEOpt_xts <- plot_portf(portfolio=maxSR_DEOpt)
     \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(PortfolioAnalytics)
-# Add leverage constraint abs(weightsum)
+# Add leverage constraint abs(weightvum)
 portf_maxSRN <- add.constraint(
-  portfolio=portf_init, type="leverage",
+  portfolio=portfi, type="leverage",
   min_sum=0.9, max_sum=1.1)
 # Add box constraint long/short
 portf_maxSRN <- add.constraint(
@@ -2596,7 +2592,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSRN_DEOpt <- optimize.portfolio(
-  R=rutils::etfenv$returns[, portf_names],  # Specify returns
+  R=rutils::etfenv$returns[, symbolv],  # Specify returns
   portfolio=portf_maxSRN,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSR=TRUE,  # Maximize Sharpe
@@ -2677,7 +2673,7 @@ chart.CumReturns(
 options(width=50)
 library(PerformanceAnalytics)
 load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
-rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weights)
+rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weightv)
 c(maxSR_DEOpt$objective_measures$mean,
 maxSRN_DEOpt$objective_measures$mean)
 c(maxSR_DEOpt$objective_measures$stdev[[1]],
@@ -2707,7 +2703,7 @@ maxSRN_DEOpt$objective_measures$stdev[[1]])
 library(PortfolioAnalytics)
 # Add constraints
 portf_maxSTARR <- add.constraint(
-  portfolio=portf_init,  # Initial portfolio
+  portfolio=portfi,  # Initial portfolio
   type="weightsum",  # Constraint sum weights
   min_sum=0.9, max_sum=1.1)
 # Add constraints
@@ -2744,7 +2740,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSTARR_DEOpt <- optimize.portfolio(
-  R=rutils::etfenv$returns[, portf_names],  # Specify returns
+  R=rutils::etfenv$returns[, symbolv],  # Specify returns
   portfolio=portf_maxSTARR,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSTARR=TRUE,  # Maximize STARR
@@ -2818,7 +2814,7 @@ chart.CumReturns(
 options(width=50)
 library(PerformanceAnalytics)
 load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
-rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
+rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weightv)
 c(maxSR_DEOpt$objective_measures$mean,
 maxSTARR_DEOpt$objective_measures$mean)
 c(maxSR_DEOpt$objective_measures$stdev[[1]],
@@ -2883,7 +2879,7 @@ text(x=maxSRN_DEOpt$objective_measures$stdev[[1]],
 library(PortfolioAnalytics)
 # Add constraints
 portf_minES <- add.constraint(
-  portfolio=portf_init,  # Initial portfolio
+  portfolio=portfi,  # Initial portfolio
   type="weightsum",  # Constraint sum weights
   min_sum=0.9, max_sum=1.1)
 # Add constraints
@@ -2915,7 +2911,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 minESROI <- optimize.portfolio(
-  R=rutils::etfenv$returns[, portf_names],  # Specify returns
+  R=rutils::etfenv$returns[, symbolv],  # Specify returns
   portfolio=portf_minES,  # Specify portfolio
   optimize_method="ROI", # Use ROI
   trace=TRUE, traceDE=0)
@@ -2994,7 +2990,7 @@ chart.CumReturns(
 options(width=50)
 library(PerformanceAnalytics)
 load(file="/Users/jerzy/Develop/lecture_slides/data/portf_optim.RData")
-rbind(maxSR_DEOpt$weights, minESROI$weights)
+rbind(maxSR_DEOpt$weights, minESROI$weightv)
 c(maxSR_DEOpt$objective_measures$mean,
 minESROI$objective_measures$mean)
 c(maxSR_DEOpt$objective_measures$stdev[[1]],
@@ -3023,7 +3019,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=rutils::etfenv$returns["/2011", portf_names],
+  R=rutils::etfenv$returns["/2011", symbolv],
   portfolio=portf_maxSR,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSR=TRUE,  # Maximize Sharpe
@@ -3057,7 +3053,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=rutils::etfenv$returns["2011/", portf_names],
+  R=rutils::etfenv$returns["2011/", symbolv],
   portfolio=portf_maxSR,  # Specify portfolio
   optimize_method="DEoptim", # Use DEoptim
   maxSR=TRUE,  # Maximize Sharpe
@@ -3145,25 +3141,25 @@ barplot(weights2h,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate random default probabilities
 set.seed(1121)
-nassets <- 100
-defprobs <- runif(nassets, max=0.2)
+nbonds <- 100
+defprobs <- runif(nbonds, max=0.2)
 mean(defprobs)
 # Simulate number of defaults
-unifv <- runif(nassets)
+unifv <- runif(nbonds)
 sum(unifv < defprobs)
 # Simulate average number of defaults using for() loop (inefficient way)
 nsimu <- 1000
 set.seed(1121)
 defaultv <- numeric(nsimu)
 for (i in 1:nsimu) {  # Perform loop
-  unifv <- runif(nassets)
+  unifv <- runif(nbonds)
   defaultv[i] <- sum(unifv < defprobs)
 }  # end for
 # Calculate average number of defaults
 mean(defaultv)
 # Simulate using vectorized functions (efficient way)
 set.seed(1121)
-unifm <- matrix(runif(nsimu*nassets), ncol=nsimu)
+unifm <- matrix(runif(nsimu*nbonds), ncol=nsimu)
 defaultv <- colSums(unifm < defprobs)
 mean(defaultv)
 # Plot the distribution of defaults
@@ -3199,9 +3195,9 @@ abline(v=mean(defaultv), lwd=3, col="red")
       <<echo=TRUE,eval=FALSE>>=
 # Calculate default thresholds and asset values
 defthresh <- qnorm(defprobs)
-assets <- qnorm(unifm)
+assetm <-qnorm(unifm)
 # Simulate defaults
-defaultv <- colSums(assets < defthresh)
+defaultv <- colSums(assetm < defthresh)
 mean(defaultv)
       @
     \column{0.5\textwidth}
@@ -3250,6 +3246,8 @@ polygon(c(xlim, xvar[intail], defthresh),
       \vskip1ex
       The variables $s$, $z_i$, and $a_i$ all follow the \emph{Standard Normal} distribution $\phi(0, 1)$.
       \vskip1ex
+      The matrix of asset values is arranged with columns corresponding to simulations and rows corresponding to bonds or loans.
+      \vskip1ex
       The \emph{Vasicek} model resembles the \emph{CAPM} model, with the asset value equal to the sum of a \emph{systematic} factor plus an \emph{idiosyncratic} factor.
       \vskip1ex
       The Bank for International Settlements (BIS) uses the \emph{Vasicek} model as part of its regulatory capital requirements for bank credit risk:\\
@@ -3263,32 +3261,34 @@ polygon(c(xlim, xvar[intail], defthresh),
       <<echo=TRUE,eval=FALSE>>=
 # Define correlation parameters
 rho <- 0.2
-rho_sqrt <- sqrt(rho) ; rho_sqrtm <- sqrt(1-rho)
-nassets <- 5 ; nsimu <- 10000
+rhos <- sqrt(rho) ; rhosm <- sqrt(1-rho)
+nbonds <- 5 ; nsimu <- 10000
 # Calculate vector of systematic and idiosyncratic factors
 sysv <- rnorm(nsimu)
-idiosyncv <- rnorm(nsimu*nassets)
+set.seed(1121)
+isync <- rnorm(nsimu*nbonds)
+dim(isync) <- c(nbonds, nsimu)
 # Simulate asset values using vectorized functions (efficient way)
-assets <- rho_sqrt*sysv + rho_sqrtm*idiosyncv
-dim(assets) <- c(nsimu, nassets)
+assetm <- t(rhos*sysv + t(rhosm*isync))
 # Asset values are standard normally distributed
-apply(assets, MARGIN=2, function(x) c(mean=mean(x), sd=sd(x)))
+apply(assetm, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
 # Calculate correlations between asset values
-cor(assets)
+cor(t(assetm))
 # Simulate asset values using for() loop (inefficient way)
 # Allocate matrix of assets
-assets <- matrix(nr=nsimu, nc=nassets)
+assetn <- matrix(nrow=nbonds, ncol=nsimu)
 # Simulate asset values using for() loop
+set.seed(1121)
 for (i in 1:nsimu) {  # Perform loop
-  assets[i, ] <- rho_sqrt*sysv[i] + rho_sqrtm*rnorm(nassets)
+  assetn[, i] <- rhos*sysv[i] + rhosm*rnorm(nbonds)
 }  # end for
-cor(assets)
+all.equal(assetn, assetm)
 # benchmark the speed of the two methods
 library(microbenchmark)
 summary(microbenchmark(
   forloop={for (i in 1:nsimu) {
-    rho_sqrt*sysv[i] + rho_sqrtm*rnorm(nassets)}},
-  vectorized={rho_sqrt*sysv + rho_sqrtm*rnorm(nsimu*nassets)},
+    rhos*sysv[i] + rhosm*rnorm(nbonds)}},
+  vectorized={t(rhos*sysv + t(rhosm*isync))},
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -3320,26 +3320,26 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate random default probabilities
-nassets <- 5
-defprobs <- runif(nassets, max=0.2)
+nbonds <- 5
+defprobs <- runif(nbonds, max=0.2)
 mean(defprobs)
 # Calculate default thresholds
 defthresh <- qnorm(defprobs)
 # Calculate number of defaults using vectorized functions (efficient way)
 # Calculate vector of number of defaults
-rowMeans(t(assets) < defthresh)
+rowMeans(assetm < defthresh)
 defprobs
 # Calculate number of defaults using for() loop (inefficient way)
 # Allocate matrix of defaultm
-defaultm <- matrix(nr=nsimu, nc=nassets)
+defaultm <- matrix(nrow=nbonds, ncol=nsimu)
 # Simulate asset values using for() loop
 for (i in 1:nsimu) {  # Perform loop
-  defaultm[i, ] <- (assets[i, ] < defthresh)
+  defaultm[, i] <- (assetm[, i] < defthresh)
 }  # end for
-colSums(defaultm) / nsimu
-defprobs
+rowMeans(defaultm)
+rowMeans(assetm < defthresh)
 # Calculate correlations between defaults
-cor(defaultm)
+cor(t(defaultm))
       @
   \end{columns}
 \end{block}
@@ -3369,25 +3369,28 @@ cor(defaultm)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define default probabilities
-nassets <- 2
+nbonds <- 2
 defprob <- 0.2
 defthresh <- qnorm(defprob)
 # Define correlation parameters
 rho <- 0.2
-rho_sqrt <- sqrt(rho) ; rho_sqrtm <- sqrt(1-rho)
+rhos <- sqrt(rho) ; rhosm <- sqrt(1-rho)
 # Calculate vector of systematic factors
 nsimu <- 1000
 sysv <- rnorm(nsimu)
+isync <- rnorm(nsimu*nbonds)
+dim(isync) <- c(nbonds, nsimu)
 # Simulate asset values using vectorized functions
-assets <- rho_sqrt*sysv + rho_sqrtm*rnorm(nsimu*nassets)
-dim(assets) <- c(nsimu, nassets)
+assetm <- t(rhos*sysv + t(rhosm*isync))
 # Calculate number of defaults using vectorized functions
-defaultm <- t(t(assets) < defthresh)
-# Calculate correlations between defaults
-cor(defaultm)
+defaultm <- (assetm < defthresh)
 # Calculate average number of defaults and compare to defprob
-colSums(defaultm) / nsimu
+rowMeans(defaultm)
 defprob
+# Calculate correlations between assets
+cor(t(assetm))
+# Calculate correlations between defaults
+cor(t(defaultm))
       @
   \end{columns}
 \end{block}
@@ -3455,9 +3458,9 @@ defprob
 # Define cumulative default distribution function
 cumdefdistr <- function(x, defthresh=(-2), rho=0.2)
   pnorm((sqrt(1-rho)*qnorm(x) - defthresh)/sqrt(rho))
+defprob <- 0.4; defthresh <- qnorm(defprob)
 cumdefdistr(x=0.2, defthresh=qnorm(defprob), rho=rho)
 # Plot cumulative default distribution function
-defprob <- 0.4; defthresh <- qnorm(defprob)
 curve(expr=cumdefdistr(x, defthresh=defthresh, rho=0.05),
       xlim=c(0, 0.999), lwd=3, xlab="percent default", ylab="probability",
       col="green", main="Cumulative Default Probabilities")
@@ -3469,12 +3472,12 @@ curve(expr=cumdefdistr(x, defthresh=defthresh, rho=0.05),
       <<echo=TRUE,eval=FALSE>>=
 # Plot default distribution with higher correlation
 curve(expr=cumdefdistr(x, defthresh=defthresh, rho=0.2),
-      xlim=c(0, 0.999), add=TRUE, lwd=3, col="blue", main="")
+    xlim=c(0, 0.999), add=TRUE, lwd=3, col="blue", main="")
 # Add legend
 legend(x="topleft",
-       legend=c("high correlation", "low correlation"),
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+   legend=c("high correlation", "low correlation"),
+   title=NULL, inset=0.05, cex=1.0, bg="white",
+   bty="n", lwd=6, lty=1, col=c("blue", "green"))
 # Add unconditional default probability
 abline(v=defprob, col="red", lwd=3)
 text(x=defprob, y=0.0, labels="default probability",
@@ -3506,7 +3509,7 @@ defdistr <- function(x, defthresh=(-2), rho=0.2)
   sqrt((1-rho)/rho)*exp(-(sqrt(1-rho)*qnorm(x) -
   defthresh)^2/(2*rho) + qnorm(x)^2/2)
 # Define parameters
-rho <- 0.2 ; rho_sqrt <- sqrt(rho) ; rho_sqrtm <- sqrt(1-rho)
+rho <- 0.2 ; rhos <- sqrt(rho) ; rhosm <- sqrt(1-rho)
 defprob <- 0.3; defthresh <- qnorm(defprob)
 defdistr(0.03, defthresh=defthresh, rho=rho)
 # Plot probability distribution of defaults
@@ -3525,9 +3528,9 @@ curve(expr=defdistr(x, defthresh=defthresh, rho=0.3),
       add=TRUE, lwd=3, col="blue", main="")
 # Add legend
 legend(x="topright",
-       legend=c("high correlation", "low correlation"),
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+   legend=c("high correlation", "low correlation"),
+   title=NULL, inset=0.05, cex=1.0, bg="white",
+   bty="n", lwd=6, lty=1, col=c("blue", "green"))
 # Add unconditional default probability
 abline(v=defprob, col="red", lwd=3)
 text(x=defprob, y=2, labels="default probability",
@@ -3556,12 +3559,12 @@ text(x=defprob, y=2, labels="default probability",
       <<echo=TRUE,eval=FALSE>>=
 # Plot default distribution with low correlation
 curve(expr=defdistr(x, defthresh=defthresh, rho=0.01),
-      xlab="default percentage", ylab="", lwd=2,
-      col="green", main="Distribution of Defaults")
+  xlab="default percentage", ylab="", lwd=2,
+  col="green", main="Distribution of Defaults")
 # Plot default distribution with high correlation
 curve(expr=defdistr(x, defthresh=defthresh, rho=0.99),
-      xlab="percentage of defaults", ylab="density",
-      add=TRUE, lwd=2, n=10001, col="blue", main="")
+  xlab="percentage of defaults", ylab="density",
+  add=TRUE, lwd=2, n=10001, col="blue", main="")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3569,14 +3572,12 @@ curve(expr=defdistr(x, defthresh=defthresh, rho=0.99),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Add legend
-legend(x="top",
-       legend=c("high correlation", "low correlation"),
-       title=NULL, inset=0.1, cex=0.8, bg="white",
-       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+legend(x="top", legend=c("high correlation", "low correlation"),
+   title=NULL, inset=0.1, cex=1.0, bg="white",
+   bty="n", lwd=6, lty=1, col=c("blue", "green"))
 # Add unconditional default probability
 abline(v=0.1, col="red", lwd=2)
-text(x=0.1, y=10, lwd=2, pos=4,
-       labels="default probability")
+text(x=0.1, y=10, lwd=2, pos=4, labels="default probability")
       @
   \end{columns}
 \end{block}
@@ -3729,8 +3730,11 @@ text(x=lgd*defprob-0.001, y=35, labels="expected loss", lwd=3, pos=4, cex=1.8)
       A single-tranche \emph{CDO} can be thought of as a short option spread on the asset defaults, struck at the attachment and detachment points.
       <<echo=TRUE,eval=FALSE>>=
 # Define Vasicek cumulative loss distribution
-cumlossdistr <- function(x, defthresh=(-2), rho=0.2, lgd=0.4)
-  pnorm((sqrt(1-rho)*qnorm(x/lgd) - defthresh)/sqrt(rho))
+# (with error handling for x)
+cumlossdistr <- function(x, defthresh=(-2), rho=0.2, lgd=0.4) {
+  qnormv <- ifelse(x/lgd < 0.999, qnorm(x/lgd), 3.1)
+  pnorm((sqrt(1-rho)*qnormv - defthresh)/sqrt(rho))
+}  # end cumlossdistr
 # Define Vasicek loss distribution function
 # (vectorized version with error handling for x)
 lossdistr <- function(x, defthresh=(-2), rho=0.1, lgd=0.4) {
@@ -3751,7 +3755,7 @@ tranchel <-
   # Loss between attachp and detachp
   integrate(function(x, attachp) (x-attachp)*lossdistr(x,
       defthresh=defthresh, rho=rho, lgd=lgd),
-      low=attachp, up=detachp, attachp=attachp)$value / (detachp-attachp) +
+      low=attachp, up=detachp, attachp=attachp)$value/(detachp-attachp) +
   # Loss in excess of detachp
         (1-cumlossdistr(x=detachp, defthresh=defthresh, rho=rho, lgd=lgd))
 # Plot probability distribution of losses
@@ -3911,12 +3915,13 @@ text(x=0.2, y=lgd*defprob, labels="expected loss", lwd=2, pos=3)
 integrate(lossdistr, low=0.0, up=lgd,
           defthresh=defthresh, rho=rho, lgd=lgd)
 # Calculate expected losses using lossdistr()
-integrate(function(x) x*lossdistr(x, defthresh=defthresh, rho=rho, lgd=lgd),
-          low=0.0, up=lgd)
+integrate(function(x) x*lossdistr(x, defthresh=defthresh, 
+  rho=rho, lgd=lgd), low=0.0, up=lgd)
 # Calculate confidence levels corresponding to VaR values
 vars <- seq(0.07, 0.12, 0.001)
 confls <- sapply(vars, function(varisk) {
-  integrate(lossdistr, low=varisk, up=lgd, defthresh=defthresh, rho=rho, lgd=lgd)
+  integrate(lossdistr, low=varisk, up=lgd, 
+            defthresh=defthresh, rho=rho, lgd=lgd)
 })  # end sapply
 confls <- cbind(as.numeric(t(confls)[, 1]), vars)
 colnames(confls) <- c("levels", "VaRs")
@@ -3946,8 +3951,8 @@ plot(x=1-confls[, "levels"],
       <<echo=TRUE,eval=FALSE>>=
 # Calculate CVaR values
 cvars <- sapply(vars, function(varisk) {
-  integrate(function(x) x*lossdistr(x, defthresh=defthresh, rho=rho, lgd=lgd),
-            low=varisk, up=lgd)})  # end sapply
+  integrate(function(x) x*lossdistr(x, defthresh=defthresh, 
+      rho=rho, lgd=lgd), low=varisk, up=lgd)})  # end sapply
 confls <- cbind(confls, as.numeric(t(cvars)[, 1]))
 colnames(confls)[3] <- "CVaRs"
 # Divide CVaR by confidence level
@@ -3968,11 +3973,11 @@ plot(x=1-confls[, "levels"], y=confls[, "CVaRs"],
 lines(x=1-confls[, "levels"], y=confls[, "VaRs"], lwd=2)
 # Add legend
 legend(x="topleft", legend=c("CVaRs", "VaRs"),
-       title="default probability = 5%
+   title="default probability = 5%
 correlation = 10%
 loss given default = 40%",
-       inset=0.1, cex=0.8, bg="white", bty="n",
-       lwd=6, lty=1, col=c("red", "black"))
+   inset=0.1, cex=1.0, bg="white", bty="n",
+   lwd=6, lty=1, col=c("red", "black"))
       @
   \end{columns}
 \end{block}
@@ -3987,25 +3992,25 @@ loss given default = 40%",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If the default probabilities $p_i$ are not all the same, then there's no formula for the \emph{portfolio loss distribution} under the Vasicek Model.
+      If the default probabilities $p_i$ are not all the same, then there's no simple formula for the \emph{portfolio loss distribution} under the Vasicek Model.
       \vskip1ex
       In that case the portfolio losses and \emph{VaR} must be simulated.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define model parameters
-nassets <- 300; nsimu <- 1000; lgd <- 0.4
+nbonds <- 300; nsimu <- 1000; lgd <- 0.4
 # Define correlation parameters
-rho <- 0.2; rho_sqrt <- sqrt(rho); rho_sqrtm <- sqrt(1-rho)
+rho <- 0.2; rhos <- sqrt(rho); rhosm <- sqrt(1-rho)
 # Calculate default probabilities and thresholds
 set.seed(1121)
-defprobs <- runif(nassets, max=0.2)
+defprobs <- runif(nbonds, max=0.2)
 defthresh <- qnorm(defprobs)
-# Simulate losses under Vasicek model
+# Simulate losses under the Vasicek model
 sysv <- rnorm(nsimu)
-assets <- matrix(rnorm(nsimu*nassets), ncol=nsimu)
-assets <- t(rho_sqrt*sysv + t(rho_sqrtm*assets))
-losses <- lgd*colSums(assets < defthresh)/nassets
+assetm <- matrix(rnorm(nsimu*nbonds), ncol=nsimu)
+assetm <- t(rhos*sysv + t(rhosm*assetm))
+lossm <- lgd*colSums(assetm < defthresh)/nbonds
       @
   \end{columns}
 \end{block}
@@ -4025,24 +4030,23 @@ losses <- lgd*colSums(assets < defthresh)/nassets
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VaR from confidence level
 confl <- 0.95
-varisk <- quantile(losses, confl)
+varisk <- quantile(lossm, confl)
 # Calculate the CVaR as the mean losses in excess of VaR
-cvar <- mean(losses[losses > varisk])
+cvar <- mean(lossm[lossm > varisk])
 # Plot the density of portfolio losses
-x11(width=6, height=5)
-densv <- density(losses, from=0)
+densv <- density(lossm, from=0)
 plot(densv, xlab="loss percentage", ylab="density", 
-     cex.main=1.8, cex.lab=1.8, cex.axis=1.5, 
-     lwd=3, col="blue", main="Portfolio Loss Distribution")
+   cex.main=1.0, cex.lab=1.0, cex.axis=1.0, 
+   lwd=3, col="blue", main="Portfolio Loss Distribution")
 # Add vertical line for expected loss
 exploss <- lgd*mean(defprobs)
 abline(v=exploss, col="red", lwd=3)
 xmax <- max(densv$x); ymax <- max(densv$y)
 text(x=exploss, y=(6*ymax/7), labels="expected loss", 
-     lwd=2, pos=4, cex=1.8)
+     lwd=2, pos=4, cex=1.0)
 # Add vertical line for VaR
 abline(v=varisk, col="red", lwd=3)
-text(x=varisk, y=4*ymax/5, labels="VaR", lwd=2, pos=4, cex=1.8)
+text(x=varisk, y=4*ymax/5, labels="VaR", lwd=2, pos=4, cex=1.0)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4054,15 +4058,15 @@ intail <- (densv$x > varisk)
 xvar <- c(min(densv$x[intail]), densv$x[intail], max(densv$x))
 polygon(xvar, c(-1, densv$y[intail], -1), col="red", border=NA, density=10)
 # Add text for CVaR
-text(x=5*varisk/4, y=(ymax/7), labels="CVaR", lwd=2, pos=4, cex=1.8)
+text(x=5*varisk/4, y=(ymax/7), labels="CVaR", lwd=2, pos=4, cex=1.0)
 # Add text with data
 text(xmax, ymax, labels=paste0(
-       "Expected Loss = ", format(100*exploss, digits=3), "%", "\n",
-       "Loss severity = ", format(100*lgd, digits=3), "%", "\n",
-       "Correlation = ", format(100*rho, digits=3), "%", "\n",
-       "VaR = ", format(100*varisk, digits=3), "%", "\n",
-       "CVaR = ", format(100*cvar, digits=3), "%"), 
-     adj=c(1, 1), cex=1.8, lwd=2)
+   "Expected Loss = ", format(100*exploss, digits=3), "%", "\n",
+   "Loss severity = ", format(100*lgd, digits=3), "%", "\n",
+   "Correlation = ", format(100*rho, digits=3), "%", "\n",
+   "VaR = ", format(100*varisk, digits=3), "%", "\n",
+   "CVaR = ", format(100*cvar, digits=3), "%"), 
+   adj=c(1, 1), cex=1.0, lwd=2)
       @
   \end{columns}
 \end{block}
@@ -4085,10 +4089,10 @@ text(xmax, ymax, labels=paste0(
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VaRs from confidence levels
 confls <- seq(0.93, 0.99, 0.01)
-vars <- quantile(losses, probs=confls)
+vars <- quantile(lossm, probs=confls)
 plot(x=confls, y=vars, t="l", lwd=2,
-     xlab="confidence level", ylab="VaRs",
-     main="Simulated VaR and Confidence Levels")
+   xlab="confidence level", ylab="VaRs",
+   main="Simulated VaR and Confidence Levels")
       @
   \end{columns}
 \end{block}
@@ -4109,33 +4113,32 @@ plot(x=confls, y=vars, t="l", lwd=2,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate CVaRs
 cvars <- sapply(vars, function(varisk) {
-  mean(losses[losses >= varisk])
+  mean(lossm[lossm >= varisk])
 })  # end sapply
 cvars <- cbind(cvars, vars)
 # Alternative CVaR calculation using frequency table
 # first calculate frequency table of losses
-# tablev <- table(losses)/nsimu
+# tablev <- table(lossm)/nsimu
 # Calculate CVaRs from frequency table
 # cvars <- sapply(vars, function(varisk) {
 #   tailrisk <- tablev[names(tablev) > varisk]
 #   tailrisk %*% as.numeric(names(tailrisk)) / sum(tailrisk)
 # })  # end sapply
-# Plot CVaRs
-plot(x=confls, y=cvars[, "cvars"],
-     t="l", col="red", lwd=2,
-     ylim=range(cvars),
-     xlab="confidence level", ylab="CVaRs",
-     main="Simulated CVaR and Confidence Levels")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_cvar_simu.png}
       <<echo=TRUE,eval=FALSE>>=
+# Plot CVaRs
+plot(x=confls, y=cvars[, "cvars"],
+   t="l", col="red", lwd=2, ylim=range(cvars),
+   xlab="confidence level", ylab="CVaRs",
+   main="Simulated CVaR and Confidence Levels")
 # Add VaRs
 lines(x=confls, y=cvars[, "vars"], lwd=2)
 # Add legend
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       lwd=6, lty=1, col=c("red", "black"))
+   title=NULL, inset=0.05, cex=1.0, bg="white",
+   y.intersp=0.3, lwd=6, lty=1, col=c("red", "black"))
       @
   \end{columns}
 \end{block}
@@ -4152,28 +4155,28 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
     \column{0.7\textwidth}
       The function \texttt{calc\_var()} simulates default losses under the \emph{Vasicek} model, for a vector of confidence levels, and calculates a vector of \emph{VaR} and \emph{CVaR} values.
       <<echo=TRUE,eval=FALSE>>=
-calcvar <- function(defthresh, # Default thresholds
-                     lgd=0.6, # loss given default
-                     rho_sqrt, rho_sqrtm, # asset correlation
-                     nsimu=1000, # number of simulations
-                     confls=seq(0.93, 0.99, 0.01) # Confidence levels
-                     ) {
+calc_var <- function(defthresh, # Default thresholds
+   lgd=0.6, # loss given default
+   rhos, rhosm, # asset correlation
+   nsimu=1000, # number of simulations
+   confls=seq(0.93, 0.99, 0.01) # Confidence levels
+   ) {
   # Define model parameters
-  nassets <- NROW(defthresh)
-  # Simulate losses under Vasicek model
+  nbonds <- NROW(defthresh)
+  # Simulate losses under the Vasicek model
   sysv <- rnorm(nsimu)
-  assets <- matrix(rnorm(nsimu*nassets), ncol=nsimu)
-  assets <- t(rho_sqrt*sysv + t(rho_sqrtm*assets))
-  losses <- lgd*colSums(assets < defthresh)/nassets
+  assetm <- matrix(rnorm(nsimu*nbonds), ncol=nsimu)
+  assetm <- t(rhos*sysv + t(rhosm*assetm))
+  lossm <- lgd*colSums(assetm < defthresh)/nbonds
   # Calculate VaRs and CVaRs
-  vars <- quantile(losses, probs=confls)
+  vars <- quantile(lossm, probs=confls)
   cvars <- sapply(vars, function(varisk) {
-    mean(losses[losses >= varisk])
+    mean(lossm[lossm >= varisk])
   })  # end sapply
   names(vars) <- confls
   names(cvars) <- confls
   c(vars, cvars)
-}  # end calcvar
+}  # end calc_var
       @
     \column{0.3\textwidth}
   \end{columns}
@@ -4198,29 +4201,30 @@ calcvar <- function(defthresh, # Default thresholds
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define model parameters
-nassets <- 300; nsimu <- 1000; lgd <- 0.4
-rho <- 0.2; rho_sqrt <- sqrt(rho); rho_sqrtm <- sqrt(1-rho)
+nbonds <- 300; nsimu <- 1000; lgd <- 0.4
+rho <- 0.2; rhos <- sqrt(rho); rhosm <- sqrt(1-rho)
 # Calculate default probabilities and thresholds
 set.seed(1121)
-defprobs <- runif(nassets, max=0.2)
+defprobs <- runif(nbonds, max=0.2)
 defthresh <- qnorm(defprobs)
+confls <- seq(0.93, 0.99, 0.01)
 # Define number of bootstrap simulations
 nboot <- 500
-# Perform bootstrap of calcvar
+# Perform bootstrap of calc_var
 set.seed(1121)
-bootd <- sapply(rep(lgd, nboot), calcvar,
+bootd <- sapply(rep(lgd, nboot), calc_var,
   defthresh=defthresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
+  rhos=rhos, rhosm=rhosm,
   nsimu=nsimu, confls=confls)  # end sapply
 bootd <- t(bootd)
-# Calculate vectors of standard errors of VaR and CVaR from bootd data
-stderr_var <- apply(bootd[, 1:7], MARGIN=2,
+# Calculate standard errors of VaR and CVaR from bootd data
+varsd <- apply(bootd[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-stderr_cvar <- apply(bootd[, 8:14], MARGIN=2,
+cvarsd <- apply(bootd[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
-stderr_var[2, ] <- stderr_var[2, ]/stderr_var[1, ]
-stderr_cvar[2, ] <- stderr_cvar[2, ]/stderr_cvar[1, ]
+varsds <- varsd[2, ]/varsd[1, ]
+cvarsds <- cvarsd[2, ]/cvarsd[1, ]
       @
   \end{columns}
 \end{block}
@@ -4235,7 +4239,7 @@ stderr_cvar[2, ] <- stderr_cvar[2, ]/stderr_cvar[1, ]
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The standard errors of \emph{VaR} and \emph{CVaR} are inversely proportional to square root of the number of loss events in the simulation that exceed the \emph{VaR}.
+      The standard errors of \emph{VaR} and \emph{CVaR} are inversely proportional to square root of the number of loss events in the simulation, that exceed the \emph{VaR}.
       \vskip1ex
       So the greater the number of loss events, the smaller the standard errors, and vice versa.
       \vskip1ex
@@ -4250,18 +4254,15 @@ stderr_cvar[2, ] <- stderr_cvar[2, ]/stderr_cvar[1, ]
     \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_cvar_stderror.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the standard errors of VaRs and CVaRs
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(x=colnames(stderr_cvar), y=stderr_cvar[2, ], 
-  t="l", col="red", lwd=2,
-  ylim=range(c(stderr_var[2, ], stderr_cvar[2, ])),
+# Plot the scaled standard errors of VaRs and CVaRs
+plot(x=names(varsds), y=varsds, 
+  t="l", lwd=2, ylim=range(c(varsds, cvarsds)),
   xlab="confidence level", ylab="standard error",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(stderr_var), y=stderr_var[2, ], lwd=2)
+  main="Scaled Standard Errors of CVaR and VaR")
+lines(x=names(cvarsds), y=cvarsds, lwd=2, col="red")
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       lwd=6, lty=1, col=c("red", "black"))
+   title=NULL, inset=0.05, cex=1.0, bg="white",
+   y.intersp=0.3, lwd=6, lty=1, col=c("red", "black"))
       @
   \end{columns}
 \end{block}
@@ -4281,43 +4282,41 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
 library(parallel)  # load package parallel
 ncores <- detectCores() - 1  # number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster
-# Perform bootstrap of calcvar for Windows
+# Perform bootstrap of calc_var for Windows
 clusterSetRNGStream(cluster, 1121)
 bootd <- parLapply(cluster, rep(lgd, nboot),
-  fun=calcvar, defthresh=defthresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
+  fun=calc_var, defthresh=defthresh,
+  rhos=rhos, rhosm=rhosm,
   nsimu=nsimu, confls=confls)  # end parLapply
+stopCluster(cluster)  # Stop R processes over cluster
 # Bootstrap under Mac-OSX or Linux
 bootd <- mclapply(rep(lgd, nboot),
-  FUN=calcvar, defthresh=defthresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
+  FUN=calc_var, defthresh=defthresh,
+  rhos=rhos, rhosm=rhosm,
   nsimu=nsimu, confls=confls)  # end mclapply
 bootd <- rutils::do_call(rbind, bootd)
-stopCluster(cluster)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from bootd data
-stderr_var <- apply(bootd[, 1:7], MARGIN=2,
+# Calculate standard errors of VaR and CVaR from bootd data
+varsd <- apply(bootd[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-stderr_cvar <- apply(bootd[, 8:14], MARGIN=2,
+cvarsd <- apply(bootd[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
-stderr_vars <- stderr_var[2, ]/stderr_var[1, ]
-stderr_cvars <- stderr_cvar[2, ]/stderr_cvar[1, ]
+varsds <- varsd[2, ]/varsd[1, ]
+cvarsds <- cvarsd[2, ]/cvarsd[1, ]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_cvar_stderror_parallel.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
-x11(width=6, height=5)
-plot(x=colnames(stderr_cvar),
-  y=stderr_cvars, t="l", col="red", lwd=2,
-  ylim=range(c(stderr_vars, stderr_cvars)),
+plot(x=names(varsds), y=varsds, t="l", lwd=2,
+  ylim=range(c(varsds, cvarsds)),
   xlab="confidence level", ylab="standard error",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(stderr_var), y=stderr_vars, lwd=2)
+  main="Scaled Standard Errors of CVaR and VaR")
+lines(x=names(cvarsds), y=cvarsds, lwd=2, col="red")
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       lwd=6, lty=1, col=c("red", "black"))
+   title=NULL, inset=0.05, cex=1.0, bg="white",
+   y.intersp=0.3, lwd=6, lty=1, col=c("red", "black"))
       @
   \end{columns}
 \end{block}
@@ -4336,29 +4335,29 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
       \vskip1ex
       The below function \texttt{calc\_var()} can simulate the \emph{Vasicek} model with uncertain default probabilities.
       <<echo=TRUE,eval=FALSE>>=
-calcvar <- function(defprobs, # Default probabilities
-                     lgd=0.6, # loss given default
-                     rho_sqrt, rho_sqrtm, # asset correlation
-                     nsimu=1000, # number of simulations
-                     confls=seq(0.93, 0.99, 0.01) # Confidence levels
-                     ) {
+calc_var <- function(defprobs, # Default probabilities
+   lgd=0.6, # loss given default
+   rhos, rhosm, # asset correlation
+   nsimu=1000, # number of simulations
+   confls=seq(0.93, 0.99, 0.01) # Confidence levels
+   ) {
   # Calculate random default thresholds
   defthresh <- qnorm(runif(1, min=0.5, max=1.5)*defprobs)
-  # Simulate losses under Vasicek model
-  nassets <- NROW(defprobs)
+  # Simulate losses under the Vasicek model
+  nbonds <- NROW(defprobs)
   sysv <- rnorm(nsimu)
-  assets <- matrix(rnorm(nsimu*nassets), ncol=nsimu)
-  assets <- t(rho_sqrt*sysv + t(rho_sqrtm*assets))
-  losses <- lgd*colSums(assets < defthresh)/nassets
+  assetm <- matrix(rnorm(nsimu*nbonds), ncol=nsimu)
+  assetm <- t(rhos*sysv + t(rhosm*assetm))
+  lossm <- lgd*colSums(assetm < defthresh)/nbonds
   # Calculate VaRs and CVaRs
-  vars <- quantile(losses, probs=confls)
+  vars <- quantile(lossm, probs=confls)
   cvars <- sapply(vars, function(varisk) {
-    mean(losses[losses >= varisk])
+    mean(lossm[lossm >= varisk])
   })  # end sapply
   names(vars) <- confls
   names(cvars) <- confls
   c(vars, cvars)
-}  # end calcvar
+}  # end calc_var
       @
     \column{0.3\textwidth}
   \end{columns}
@@ -4381,42 +4380,42 @@ calcvar <- function(defprobs, # Default probabilities
 library(parallel)  # load package parallel
 ncores <- detectCores() - 1  # number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster
-# Perform bootstrap of calcvar for Windows
+# Perform bootstrap of calc_var for Windows
 clusterSetRNGStream(cluster, 1121)
 bootd <- parLapply(cluster, rep(lgd, nboot),
-  fun=calcvar, defprobs=defprobs,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
+  fun=calc_var, defprobs=defprobs,
+  rhos=rhos, rhosm=rhosm,
   nsimu=nsimu, confls=confls)  # end parLapply
+stopCluster(cluster)  # Stop R processes over cluster
 # Bootstrap under Mac-OSX or Linux
 bootd <- mclapply(rep(lgd, nboot),
-  FUN=calcvar, defprobs=defprobs,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
+  FUN=calc_var, defprobs=defprobs,
+  rhos=rhos, rhosm=rhosm,
   nsimu=nsimu, confls=confls)  # end mclapply
 bootd <- rutils::do_call(rbind, bootd)
-stopCluster(cluster)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from bootd data
-stderr_var_param <- apply(bootd[, 1:7], MARGIN=2,
+# Calculate standard errors of VaR and CVaR from bootd data
+varsd <- apply(bootd[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-stderr_cvar_param <- apply(bootd[, 8:14], MARGIN=2,
+cvarsd <- apply(bootd[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
+# Scale the standard errors of VaRs and CVaRs
+varsdsu <- varsd[2, ]/varsd[1, ]
+cvarsdsu <- cvarsd[2, ]/cvarsd[1, ]
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_var_stderror_default_uncertainty.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs under uncertain default probabilities
-x11(width=6, height=5)
-plot(x=colnames(stderr_var),
-  y=stderr_var[2, ], t="l", lwd=3,
-  ylim=range(c(stderr_var[2, ], stderr_var_param[2, ])),
+plot(x=colnames(varsd), y=varsds, t="l", 
+ col="black", lwd=2, ylim=range(c(varsds, varsdsu)),
   xlab="confidence level", ylab="standard error",
   main="Standard Errors of VaR 
-  with Uncertain Default Probabilities")
-lines(x=colnames(stderr_var), y=stderr_var_param[2, ],
-      col="red", lwd=3)
-legend(x=0.95, y=0.02, bty="n",
-       legend=c("VaR Fixed Def Probs", "VaR Random Def Probs"), 
-       title=NULL, inset=0.05, cex=1.0, bg="white",
-       lwd=6, lty=1, col=c("black", "red"))
+  with Random Default Probabilities")
+lines(x=colnames(varsd), y=varsdsu, lwd=2, col="red")
+legend(x="topleft", 
+   legend=c("VaR Fixed Def Probs", "VaR Random Def Probs"), 
+   bty="n", title=NULL, inset=0.05, cex=1.0, bg="white",
+   y.intersp=0.3, lwd=6, lty=1, col=c("black", "red"))
       @
   \end{columns}
 \end{block}
@@ -4433,27 +4432,20 @@ legend(x=0.95, y=0.02, bty="n",
     \column{0.5\textwidth}
       The \emph{scaled} (relative) standard errors of \emph{VaR} and \emph{CVaR} under uncertain default probabilities decrease with higher confidence level, because the standard errors are less dependent on the confidence level and don't increase as fast as the \emph{VaR} does.
       <<echo=TRUE,eval=FALSE>>=
-# Scale the standard errors of VaRs and CVaRs
-stderr_vars <- stderr_var_param[2, ]/
-  stderr_var_param[1, ]
-stderr_cvars <- stderr_cvar_param[2, ]/
-  stderr_cvar_param[1, ]
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_stderror_default_uncertainty.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
-x11(width=6, height=5)
-plot(x=colnames(stderr_cvar_param),
-  y=stderr_cvars, t="l", col="red", lwd=3,
-  ylim=range(c(stderr_vars, stderr_cvars)),
+plot(x=colnames(varsd), y=varsdsu, t="l", lwd=2,
+  ylim=range(c(varsdsu, cvarsdsu)),
   xlab="confidence level", ylab="standard error",
   main="Relative Standard Errors of VaR and CVaR
   with Uncertain Default Probabilities")
-lines(x=names(stderr_vars), y=stderr_vars, lwd=3)
+lines(x=colnames(varsd), y=cvarsdsu, lwd=2, col="red")
 legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
-       title=NULL, inset=0.05, cex=1.0, bg="white",
-       lwd=6, lty=1, col=c("red", "black"))
+   title=NULL, inset=0.05, cex=1.0, bg="white",
+   y.intersp=0.3, lwd=6, lty=1, col=c("red", "black"))
       @
   \end{columns}
 \end{block}
@@ -4488,103 +4480,72 @@ legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Simulating the Vasicek Model Using Importance Sampling}
+\subsection{draft: Simulating Credit Portfolios Using Importance Sampling}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The simulation estimates of \emph{VaR} and \emph{CVaR} have large standard errors because default events are rare, so the number of events which contribute to their estimates is therefore small.
+      Importance sampling can be used to improve the accuracy of VaR and CVaR calculations for credit portfolios. 
       \vskip1ex
-      The \emph{variance} of an estimate produced by simulation decreases with the number of events which contribute to the estimate: $\sigma^2 \propto \frac{1}{n}$.
-      \vskip1ex
-      \emph{Importance sampling} with probability tilting can be applied to reduce the standard errors of \emph{VaR} and \emph{CVaR}.
-      \vskip1ex
-      The exponential probability tilting can be applied to the \emph{systematic} factor $s$:
-      \begin{displaymath}
-        \Phi(s, \lambda) = \exp(s \lambda - \lambda^2/2) \cdot \Phi(s, \lambda = 0)
-      \end{displaymath}
-      Where $\lambda$ is the tilt parameter.
-      \vskip1ex
-      The simulation outputs are then multiplied by the weights to compensate for the probability tilting:
-      \begin{displaymath}
-        w_x = \exp(-x \lambda + \lambda^2/2)
-      \end{displaymath}
+      Code doesn't work.
     \column{0.5\textwidth}
       \vspace{-1em}
-    % wippp
       <<echo=TRUE,eval=FALSE>>=
+##########################################
+# Summary: Calculate the VaR and CVaR of a credit 
+# portfolio using importance sampling.
+
+## Run the setup code below.
+
 # Define model parameters
-nassets <- 300; nsimu <- 1000; lgd <- 0.4
+nbonds <- 10; nsimu <- 1000; lgd <- 0.4
 # Define correlation parameters
-rho <- 0.2; rho_sqrt <- sqrt(rho); rho_sqrtm <- sqrt(1-rho)
+rho <- 0.2; rhos <- sqrt(rho); rhosm <- sqrt(1-rho)
 # Calculate default probabilities and thresholds
 set.seed(1121)
-defprobs <- runif(nassets, max=0.2)
+defprobs <- runif(nbonds, max=0.2)
 defthresh <- qnorm(defprobs)
-# Calculate vector of systematic factors
+# Simulate losses under the Vasicek model
 sysv <- rnorm(nsimu)
-# Calculate vector of idiosyncratic factors
-idiosyncv <-
-  matrix(rnorm(nsimu*nassets), ncol=nsimu)
-# Simulate losses under Vasicek model
-assets <-
-  t(rho_sqrt*sysv + t(rho_sqrtm*idiosyncv))
-losses <-
-  lgd*colSums(assets < defthresh)/nassets
-# Calculate VaRs
-confls <- seq(0.93, 0.99, 0.01)
-vars <- quantile(losses, probs=confls)
+assetm <- matrix(rnorm(nsimu*nbonds), ncol=nsimu)
+assetm <- t(rhos*sysv + t(rhosm*assetm))
+lossm <- lgd*colSums(assetm < defthresh)/nbonds
 
-# Importance sampling losses
-lambda <- 3
-assets <-
-  t(rho_sqrt*sysv + t(rho_sqrtm*idiosyncv))
+# Calculate VaR from confidence level
+confl <- 0.95
+varisk <- quantile(lossm, confl)
 
-cond_thresh <- outer(rho_sqrtm*defthresh, -rho_sqrt*sysv, FUN="+")
+cumprob <- (1:nsimu)/nsimu
+sort(lossm)[findInterval(confl, cumprob)]
 
-cond_probs <- pnorm(cond_thresh)
-
-tilt_probs <- lambda*cond_probs/(1 + cond_probs*(lambda - 1))
-
-weightv <- (1 + tilt_probs*(lambda - 1))/lambda
-
-tilt_thresh <- qnorm(tilt_probs)
-
-losses <-
-  lgd*colSums(weightv*(assets < tilt_thresh))/nassets
-
-vars <- quantile(losses, probs=confls)
+# Calculate the CVaR as the mean losses in excess of VaR
+cvar <- mean(lossm[lossm > varisk])
 
 
-foo <- (unifun < defprobs)
+# Apply importance sampling
+lambda <- (-0.1)
+assett <- assetm + lambda
+weightv <- exp(-lambda*assett + lambda^2/2)
 
-defthresh <- qnorm(defprobs)
+lossm <- lgd*colSums(assett < defthresh)/nbonds
+lossw <- matrixStats::colProds(weightv)
 
+# Calculate the CVaR using importance sampling - doesn't work
+sum((lossm < varisk)*lossw)/nsimu
+# Or
+lossm <- lgd*colSums((assett < defthresh)*weightv)/nbonds
+mean(lossm[lossm > varisk])
 
+# Data must be sorted for importance sampling of VaR
+ordern <- order(lossm)
+lossm <- lossm[ordern]
+lossw <- lossw[ordern]
 
+# Calculate the VaR using importance sampling - doesn't work
+cumprob <- cumsum(lossw)/nsimu
+lossm[findInterval(confl, cumprob)]
 
-
-assets <- t(rho_sqrt*(sysv - lambda) +
-      t(rho_sqrtm*idiosyncv))
-losses <-
-  lgd*colSums(assets < defthresh)/nassets
-# Calculate VaRs
-vars <- quantile(losses, probs=confls)
-
-
-assets <- t(rho_sqrt*(sysv - lambda) +
-      t(rho_sqrtm*idiosyncv))
-losses <-
-  lgd*colSums(assets < defthresh)/nassets
-# Calculate VaRs
-vars <- quantile(losses, probs=confls)
-
-
-
-plot(x=confls, y=vars, t="l", lwd=2,
-     xlab="confidence level", ylab="VaRs",
-     main="Simulated VaR and Confidence Levels")
       @
   \end{columns}
 \end{block}
@@ -4608,30 +4569,30 @@ plot(x=confls, y=vars, t="l", lwd=2,
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define model parameters
-nassets <- 300; nsimu <- 1000; lgd <- 0.4
-rho <- 0.2; rho_sqrt <- sqrt(rho); rho_sqrtm <- sqrt(1-rho)
+nbonds <- 300; nsimu <- 1000; lgd <- 0.4
+rho <- 0.2; rhos <- sqrt(rho); rhosm <- sqrt(1-rho)
 # Calculate default probabilities and thresholds
 set.seed(1121)
-defprobs <- runif(nassets, max=0.2)
+defprobs <- runif(nbonds, max=0.2)
 defthresh <- qnorm(defprobs)
 # Define number of bootstrap simulations
 nboot <- 500
-# Perform bootstrap of calcvar
+# Perform bootstrap of calc_var
 set.seed(1121)
 bootd <- sapply(rep(lgd, nboot),
-  calcvar,
+  calc_var,
   defthresh=defthresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
+  rhos=rhos, rhosm=rhosm,
   nsimu=nsimu, confls=confls)  # end sapply
 bootd <- t(bootd)
-# Calculate vectors of standard errors of VaR and CVaR from bootd data
-stderr_var <- apply(bootd[, 1:7], MARGIN=2,
+# Calculate standard errors of VaR and CVaR from bootd data
+varsd <- apply(bootd[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-stderr_cvar <- apply(bootd[, 8:14], MARGIN=2,
+cvarsd <- apply(bootd[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
-stderr_var[2, ] <- stderr_var[2, ]/stderr_var[1, ]
-stderr_cvar[2, ] <- stderr_cvar[2, ]/stderr_cvar[1, ]
+varsd[2, ] <- varsd[2, ]/varsd[1, ]
+cvarsd[2, ] <- cvarsd[2, ]/cvarsd[1, ]
       @
   \end{columns}
 \end{block}

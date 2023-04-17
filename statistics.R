@@ -141,7 +141,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo=datav[cutoff],
-  quantilev=quantile(datav, probs=confl),
+  quantv=quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 
 set.seed(1121)  # Reset random number generator

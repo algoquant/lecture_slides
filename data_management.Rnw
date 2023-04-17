@@ -2017,9 +2017,9 @@ save(pricev, file="pricev.RData")
       <<echo=TRUE,eval=TRUE,size="tiny">>=
 # Select ETF symbols for asset allocation
 symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
-  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
-  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
+ "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+ "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+ "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
 # Read etf database into data frame
 etflist <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etf_list.csv")
 rownames(etflist) <- etflist$Symbol
@@ -2027,12 +2027,12 @@ rownames(etflist) <- etflist$Symbol
 etflist <- etflist[symbolv, ]
 # Shorten names
 etfnames <- sapply(etflist$Name, function(name) {
-  namesvplit <- strsplit(name, split=" ")[[1]]
-  namesvplit <- namesvplit[c(-1, -NROW(namesvplit))]
-  name_match <- match("Select", namesvplit)
+  namesplit <- strsplit(name, split=" ")[[1]]
+  namesplit <- namesplit[c(-1, -NROW(namesplit))]
+  name_match <- match("Select", namesplit)
   if (!is.na(name_match))
-    namesvplit <- namesvplit[-name_match]
-  paste(namesvplit, collapse=" ")
+    namesplit <- namesplit[-name_match]
+  paste(namesplit, collapse=" ")
 })  # end sapply
 etflist$Name <- etfnames
 etflist["IEF", "Name"] <- "10 year Treasury Bond Fund"
@@ -2135,9 +2135,9 @@ print(xtable::xtable(etflist), comment=FALSE, size="tiny", include.rownames=FALS
       <<echo=TRUE,eval=FALSE>>=
 # Select ETF symbols for asset allocation
 symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
-  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
-  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
+ "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+ "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+ "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
 library(rutils)  # Load package rutils
 etfenv <- new.env()  # New environment for data
 # Boolean vector of symbols already downloaded
@@ -2147,7 +2147,7 @@ getSymbols.av(symbolv, adjust=TRUE, env=etfenv,
   output.size="full", api.key="T7JPW54ES8G75310")
 # Download data from Alpha Vantage using while loop
 nattempts <- 0  # number of download attempts
-while (((sum(!isdownloaded)) > 0) & (nattempts<10)) {
+while ((sum(!isdownloaded) > 0) & (nattempts<10)) {
   # Download data and copy it into environment
   nattempts <- nattempts + 1
   cat("Download attempt = ", nattempts, "\n")
@@ -2202,7 +2202,7 @@ tail(etfenv$VTI, 11)
 # Get class of all objects in etfenv
 eapply(etfenv, class)
 # Get class of all objects in R workspace
-lapply(ls(), function(ob_ject) class(get(ob_ject)))
+lapply(ls(), function(namev) class(get(namev)))
 # Get end dates of all objects in etfenv
 as.Date(sapply(etfenv, end))
       @
@@ -2472,17 +2472,31 @@ assign("prices", rutils::do_call(cbind,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Loading Stock Tickers}
+\subsection{Stock Databases And Survivorship Bias}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The file \texttt{sp500\_constituents.csv} contains a \emph{data frame} of \emph{S\&P500} constituents.
+      The file \texttt{sp500\_constituents.csv} contains a \emph{data frame} of over \texttt{700} present (and also some past) \emph{S\&P500} index constituents.
       \vskip1ex
-      The stock tickers are stored in the column \texttt{"Ticker"}.
+      The file \texttt{sp500\_constituents.csv} is updated with stocks recently added to the \emph{S\&P500} index by downloading the
+      \href{https://www.ssga.com/us/en/intermediary/etfs/funds/spdr-sp-500-etf-trust-spy}{\emph{SPY ETF Holdings}}.
       \vskip1ex
-      The \emph{data frame} contains duplicate tickers, which must be removed.
+      But the file \texttt{sp500\_constituents.csv} doesn't include companies that have gone bankrupt.
+      For example, it doesn't include Enron, which was in the \emph{S\&P500} index before it went bankrupt in 2001.
+      \vskip1ex
+      Most databases of stock prices don't include companies that have gone bankrupt or have been liquidated.
+      \vskip1ex
+      This introduces a \emph{survivorship bias} to the data, which can skew portfolio simulations and strategy backtests.
+      \vskip1ex
+      Accurate strategy simulations require starting with a portfolio of companies at a "point in time" in the past, and tracking them over time.
+      \vskip1ex
+      Research databases like the 
+      \href{https://wrds-www.wharton.upenn.edu}{\emph{WRDS}} 
+      database provide stock prices of companies that are no longer traded.
+      \vskip1ex
+      The stock tickers are stored in the column \texttt{"Ticker"} of the \texttt{sp500} \emph{data frame}.
       \vskip1ex
       Some tickers (like "BRK.B" and "BF.B") are not valid symbols in \emph{Tiingo}, so they must be renamed.
     \column{0.5\textwidth}
@@ -2543,7 +2557,7 @@ sp500env <- new.env()
 isdownloaded <- symbolv %in% ls(sp500env)
 # Download in while loop from Tiingo and copy into environment
 nattempts <- 0  # Number of download attempts
-while (((sum(!isdownloaded)) > 0) & (nattempts<3)) {
+while ((sum(!isdownloaded) > 0) & (nattempts<3)) {
   # Download data and copy it into environment
   nattempts <- nattempts + 1
   cat("Download attempt = ", nattempts, "\n")
@@ -2632,7 +2646,7 @@ namesv <- rutils::get_name(colnames(sp500env$LOW), field=2)
 # namesv <- do.call(rbind, strsplit(colnames(sp500env$LOW),
 #                                   split="[.]"))[, 2]
 # Rename "LOW" colnames to "LOWES"
-colnames(sp500env$LOW) <- paste("LO_WES", namesv, sep=".")
+colnames(sp500env$LOW) <- paste("LOVES", namesv, sep=".")
 sp500env$LOWES <- sp500env$LOW
 rm(LOW, envir=sp500env)
 # Rename BF-B colnames to "BFB"
@@ -2686,7 +2700,7 @@ pricev <- rutils::do_call(cbind, pricev)
 # Carry forward non-NA prices
 pricev <- zoo::na.locf(pricev, na.rm=FALSE)
 # Drop ".Close" from column names
-colnames(pricev[, 1:4])
+colnames(pricev)
 colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
 # colnames(pricev) <- do.call(rbind,
@@ -2738,7 +2752,8 @@ datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
 colnamev <- c("index", "VTI")
 colnames(datav) <- colnamev
 # Plot index with VTI
-dygraphs::dygraph(datav,
+endd <- rutils::calc_endpoints(datav, interval="weeks")
+dygraphs::dygraph(log(datav)[endd],
   main="S&P 500 Price-weighted Index and VTI") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
@@ -2878,7 +2893,7 @@ rm(list=ls(sp500env), envir=sp500env)
 # Download in while loop from Alpha Vantage and copy into environment
 isdownloaded <- symbolv %in% ls(sp500env)
 nattempts <- 0
-while (((sum(!isdownloaded)) > 0) & (nattempts<10)) {
+while ((sum(!isdownloaded) > 0) & (nattempts<10)) {
   # Download data and copy it into environment
   nattempts <- nattempts + 1
   for (symbol in symbolv[!isdownloaded]) {
@@ -3117,9 +3132,9 @@ dygraphs::dygraph(ohlc[, 1:4], main=paste("Candlestick Plot of", symbol, "OHLC p
       <<echo=TRUE,eval=FALSE>>=
 # Select ETF symbols for asset allocation
 symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
-  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
-  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
+ "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+ "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+ "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
 # Setup code
 etfenv <- new.env()  # New environment for data
 # Boolean vector of symbols already downloaded
@@ -3385,14 +3400,15 @@ chart_Series(x=sp500env$BRKB["2016/"],
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/fred_unemp_rate.png}
     \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
+      <<echo=TRUE,eval=FALSE>>=
 # Download U.S. unemployment rate data
-unemp_rate <- quantmod::getSymbols("UNRATE",
-                  auto.assign=FALSE, src="FRED")
+unrate <- quantmod::getSymbols("UNRATE", 
+   auto.assign=FALSE, src="FRED")
 # Plot U.S. unemployment rate data
-chart_Series(unemp_rate["1990/"],
-            name="U.S. unemployment rate")
+dygraphs::dygraph(unrate["1990/"], main="U.S. Unemployment Rate") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+# Or
+quantmod::chart_Series(unrate["1990/"], name="U.S. Unemployment Rate")
       @
   \end{columns}
 \end{block}

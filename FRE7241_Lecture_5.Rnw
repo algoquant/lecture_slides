@@ -64,7 +64,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{April 4, 2022}
+\date{April 4, 2023}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -1513,7 +1513,7 @@ optiml <- optim(par=weightv, fn=calc_phurst, retp=retp,
                 lower=rep(-10.0, nweights))
 # Optimal weights and maximum Hurst
 weightv <- optiml$par
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 -calc_phurst(weightv, retp=retp)
       @
     \column{0.5\textwidth}
@@ -1550,7 +1550,7 @@ optiml <- optim(par=weightv, fn=calc_phurst, retp=retp["/2010"],
                 lower=rep(-10.0, nweights))
 # Optimal weights and maximum Hurst
 weightv <- optiml$par
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 # Calculate the in-sample Hurst exponent
 -calc_phurst(weightv, retp=retp["/2010"])
 # Calculate the out-of-sample Hurst exponent
@@ -2189,8 +2189,8 @@ all.equal(c(alpha=alpha, beta=betav), coeff[, 1],
           check.attributes=FALSE)
 # Calculate regression standard errors directly
 betas <- c(alpha=alpha, beta=betav)
-fittedv <- (alpha + betav*pricelag)
-residuals <- (retp - fittedv)
+fitv <- (alpha + betav*pricelag)
+residuals <- (retp - fitv)
 prices2 <- sum((pricelag - mean(pricelag))^2)
 betasd <- sqrt(sum(residuals^2)/prices2/(nrows-2))
 alphasd <- sqrt(sum(residuals^2)/(nrows-2)*(1:nrows + mean(pricelag)^2/prices2))
@@ -2474,9 +2474,9 @@ class(arfit)
 is.list(arfit)
 drop(arfit$ar); drop(coeff)
 # Define predictor matrix without intercept column
-predv <- sapply(1:ncoeff, rutils::lagit, input=arimav)
+predm <- sapply(1:ncoeff, rutils::lagit, input=arimav)
 # Fit AR model using regression
-predinv <- MASS::ginv(predv)
+predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% arimav)
 all.equal(drop(arfit$ar), coeff, check.attributes=FALSE)
       @
@@ -2500,14 +2500,14 @@ all.equal(drop(arfit$ar), coeff, check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the regression residuals
-fittedv <- drop(predv %*% coeff)
-residuals <- drop(arimav - fittedv)
+fitv <- drop(predm %*% coeff)
+residuals <- drop(arimav - fitv)
 # Variance of residuals
 residsar <- sum(residuals^2)/(nrows-NROW(coeff))
 # predictor matrix squared
-predictor2 <- crossprod(predv)
+predictor2 <- crossprod(predm)
 # Calculate covariance matrix of AR coefficients
-covar <- residsar*MASS::ginv(predv2)
+covar <- residsar*MASS::ginv(predm2)
 coeffsd <- sqrt(diag(covar))
 # Calculate t-values of AR coefficients
 coefftv <- drop(coeff)/coeffsd
@@ -2540,13 +2540,13 @@ coefftv <- drop(coeff)/coeffsd
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Fit AR(5) model into AR(3) process
-predv <- sapply(1:5, rutils::lagit, input=arimav)
-predinv <- MASS::ginv(predv)
+predm <- sapply(1:5, rutils::lagit, input=arimav)
+predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% arimav)
 # Calculate t-values of AR(5) coefficients
-residuals <- drop(arimav - drop(predv %*% coeff))
+residuals <- drop(arimav - drop(predm %*% coeff))
 residsar <- sum(residuals^2)/(nrows-NROW(coeff))
-covar <- residsar*MASS::ginv(crossprod(predv))
+covar <- residsar*MASS::ginv(crossprod(predm))
 coeffsd <- sqrt(diag(covar))
 coefftv <- drop(coeff)/coeffsd
 # Fit AR(5) model using arima()
@@ -2557,13 +2557,13 @@ library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(arimav, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
 retp <- drop(zoo::coredata(na.omit(rutils::etfenv$returns$VTI)))
-predv <- sapply(1:5, rutils::lagit, input=retp)
-predinv <- MASS::ginv(predv)
+predm <- sapply(1:5, rutils::lagit, input=retp)
+predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% retp)
 # Calculate t-values of AR(5) coefficients
-residuals <- drop(retp - drop(predv %*% coeff))
+residuals <- drop(retp - drop(predm %*% coeff))
 residsar <- sum(residuals^2)/(nrows-NROW(coeff))
-covar <- residsar*MASS::ginv(crossprod(predv))
+covar <- residsar*MASS::ginv(crossprod(predm))
 coeffsd <- sqrt(diag(covar))
 coefftv <- drop(coeff)/coeffsd
       @
@@ -2793,11 +2793,11 @@ filterfast <- HighFreq::roll_conv(matrix(arimav), matrix(coeff))
 all.equal(fcast[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
           check.attributes=FALSE)
 # Define predictor matrix for forecasting
-predv <- sapply(0:(ncoeff-1), function(lagg) {
+predm <- sapply(0:(ncoeff-1), function(lagg) {
   rutils::lagit(arimav, lagg=lagg)
 })  # end sapply
 # Forecast using predictor matrix
-filterfast <- c(0, drop(predv %*% coeff))
+filterfast <- c(0, drop(predm %*% coeff))
 # Compare with loop in R
 all.equal(fcast, filterfast, check.attributes=FALSE)
       @
@@ -2831,18 +2831,18 @@ arima_fit <- arima(arimav, order=c(3,0,0), include.mean=FALSE)
 arima_fit$coef
 coeff
 # One-step-ahead forecast using predict.Arima()
-predv <- predict(arima_fit, n.ahead=1)
+predm <- predict(arima_fit, n.ahead=1)
 # Or directly call predict.Arima()
-# predv <- predict.Arima(arima_fit, n.ahead=1)
+# predm <- predict.Arima(arima_fit, n.ahead=1)
 # Inspect the prediction object
-class(predv)
-names(predv)
-class(predv$pred)
-unlist(predv)
+class(predm)
+names(predm)
+class(predm$pred)
+unlist(predm)
 # One-step-ahead forecast using matrix algebra
 fcast <- drop(arimav[nrows:(nrows-2)] %*% arima_fit$coef)
 # Compare one-step-ahead forecasts
-all.equal(predv$pred[[1]], fcast)
+all.equal(predm$pred[[1]], fcast)
 # Get information about predict.Arima()
 ?stats:::predict.Arima
       @
@@ -2911,17 +2911,17 @@ arimav <- .Call(stats:::C_rfilter, innov, coeff,
 # Define order of the AR(n) forecasting model
 ordern <- 5
 # Define predictor matrix for forecasting
-predv <- sapply(1:ordern, rutils::lagit, input=arimav)
-colnames(predv) <- paste0("pred", 1:NCOL(predv))
+predm <- sapply(1:ordern, rutils::lagit, input=arimav)
+colnames(predm) <- paste0("pred", 1:NCOL(predm))
 # Specify length of look-back interval
 look_back <- 100
 # Invert the predictor matrix
 rangev <- (nrows-look_back):(nrows-1)
-predinv <- MASS::ginv(predv[rangev, ])
+predinv <- MASS::ginv(predm[rangev, ])
 # Calculate fitted coefficients
 coeff <- drop(predinv %*% arimav[rangev])
 # Calculate forecast
-drop(predv[nrows, ] %*% coeff)
+drop(predm[nrows, ] %*% coeff)
       @
   \end{columns}
 \end{block}
@@ -2964,12 +2964,12 @@ nrows <- NROW(retp)
 respv <- retp
 # Define predictor as a rolling sum
 nagg <- 5
-predv <- rutils::roll_sum(retp, look_back=nagg)
+predm <- rutils::roll_sum(retp, look_back=nagg)
 # Define predictor matrix for forecasting
 ordmax <- 5
-predv <- sapply(1+nagg*(0:ordmax), rutils::lagit,
-                     input=predv)
-predv <- cbind(rep(1, nrows), predv)
+predm <- sapply(1+nagg*(0:ordmax), rutils::lagit,
+                     input=predm)
+predm <- cbind(rep(1, nrows), predm)
 # Perform rolling forecasting
 look_back <- 100
 fcast <- sapply((look_back+1):nrows, function(endd) {
@@ -2979,11 +2979,11 @@ fcast <- sapply((look_back+1):nrows, function(endd) {
   # startp <- 1
   rangev <- startp:(endd-1)
   # Invert the predictor matrix
-  predinv <- MASS::ginv(predv[rangev, ])
+  predinv <- MASS::ginv(predm[rangev, ])
   # Calculate fitted coefficients
   coeff <- drop(predinv %*% respv[rangev])
   # Calculate forecast
-  drop(predv[endd, ] %*% coeff)
+  drop(predm[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
 fcast <- c(rep(0, look_back), fcast)
@@ -3062,11 +3062,11 @@ sim_forecasts <- function(respv, nagg=5, ordern=5,
                           look_back=100, rollp=TRUE) {
   nrows <- NROW(respv)
   # Define predictor as a rolling sum
-  predv <- rutils::roll_sum(respv, look_back=nagg)
+  predm <- rutils::roll_sum(respv, look_back=nagg)
   # Define predictor matrix for forecasting
-  predv <- sapply(1+nagg*(0:ordern), rutils::lagit,
-                       input=predv)
-  predv <- cbind(rep(1, nrows), predv)
+  predm <- sapply(1+nagg*(0:ordern), rutils::lagit,
+                       input=predm)
+  predm <- cbind(rep(1, nrows), predm)
   # Perform rolling forecasting
   fcast <- sapply((look_back+1):nrows, function(endd) {
     # Define rolling look-back range
@@ -3077,11 +3077,11 @@ sim_forecasts <- function(respv, nagg=5, ordern=5,
     startp <- 1
     rangev <- startp:(endd-1)
     # Invert the predictor matrix
-    designinv <- MASS::ginv(predv[rangev, ])
+    designinv <- MASS::ginv(predm[rangev, ])
     # Calculate fitted coefficients
     coeff <- drop(desvinv %*% respv[rangev])
     # Calculate forecast
-    drop(predv[endd, ] %*% coeff)
+    drop(predm[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
   fcast <- c(rep(0, look_back), fcast)
@@ -3162,13 +3162,13 @@ retp <- as.numeric(retp)
 nrows <- NROW(retp)
 # Define predictor matrix for forecasting
 orderp <- 5
-predv <- sapply(1:orderp, rutils::lagit, input=retp)
-predv <- cbind(rep(1, nrows), predv)
-colnames(predv) <- paste0("pred", 1:NCOL(predv))
-predinv <- MASS::ginv(predv)
+predm <- sapply(1:orderp, rutils::lagit, input=retp)
+predm <- cbind(rep(1, nrows), predm)
+colnames(predm) <- paste0("pred", 1:NCOL(predm))
+predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% retp)
 # Calculate in-sample forecasts of VTI
-fcast <- drop(predv %*% coeff)
+fcast <- drop(predm %*% coeff)
 # Calculate the residuals (forecast errors)
 residuals <- drop(retp - fcast)
       @
@@ -3179,9 +3179,9 @@ residuals <- drop(retp - fcast)
 # Calculate the variance of the residuals
 residsar <- sum(residuals^2)/(nrows-NROW(coeff))
 # Calculate the predictor matrix squared
-predictor2 <- crossprod(predv)
+predictor2 <- crossprod(predm)
 # Calculate covariance matrix of the AR coefficients
-covar <- residsar*MASS::ginv(predv2)
+covar <- residsar*MASS::ginv(predm2)
 coeffsd <- sqrt(diag(covar))
 # Calculate the t-values of the AR coefficients
 coefftv <- coeff/coeffsd
@@ -3211,18 +3211,18 @@ barplot(coefftv, xlab="lag", ylab="t-value",
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor matrix for forecasting
 ordmax <- 5
-predv <- sapply(1:ordmax, rutils::lagit, input=retp)
-predv <- cbind(rep(1, nrows), predv)
-colnames(predv) <- paste0("pred", 1:NCOL(predv))
+predm <- sapply(1:ordmax, rutils::lagit, input=retp)
+predm <- cbind(rep(1, nrows), predm)
+colnames(predm) <- paste0("pred", 1:NCOL(predm))
 # Calculate forecasts as function of the AR order
-fcast <- lapply(2:NCOL(predv), function(ordern) {
+fcast <- lapply(2:NCOL(predm), function(ordern) {
   # Calculate fitted coefficients
-  predinv <- MASS::ginv(predv[, 1:ordern])
+  predinv <- MASS::ginv(predm[, 1:ordern])
   coeff <- drop(predinv %*% retp)
   # Calculate in-sample forecasts of VTI
-  drop(predv[, 1:ordern] %*% coeff)
+  drop(predm[, 1:ordern] %*% coeff)
 })  # end lapply
-names(fcast) <- paste0("n=", 2:NCOL(predv))
+names(fcast) <- paste0("n=", 2:NCOL(predm))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3235,7 +3235,7 @@ mse <- sapply(fcast, function(x) {
 mse <- t(mse)
 rownames(mse) <- names(fcast)
 # Plot forecasting MSE
-plot(x=2:NCOL(predv), y=mse[, 1],
+plot(x=2:NCOL(predm), y=mse[, 1],
   xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
   main="MSE of In-sample AR(n) Forecasting Model for VTI")
       @
@@ -3263,14 +3263,14 @@ plot(x=2:NCOL(predv), y=mse[, 1],
 insample <- 1:(nrows %/% 2)
 outsample <- (nrows %/% 2 + 1):nrows
 # Calculate forecasts as function of the AR order
-fcast <- lapply(2:NCOL(predv), function(ordern) {
+fcast <- lapply(2:NCOL(predm), function(ordern) {
   # Calculate fitted coefficients
-  predinv <- MASS::ginv(predv[insample, 1:ordern])
+  predinv <- MASS::ginv(predm[insample, 1:ordern])
   coeff <- drop(predinv %*% respv[insample])
   # Calculate out-of-sample forecasts of VTI
-  drop(predv[outsample, 1:ordern] %*% coeff)
+  drop(predm[outsample, 1:ordern] %*% coeff)
 })  # end lapply
-names(fcast) <- paste0("n=", 2:NCOL(predv))
+names(fcast) <- paste0("n=", 2:NCOL(predm))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3283,7 +3283,7 @@ mse <- sapply(fcast, function(x) {
 mse <- t(mse)
 rownames(mse) <- names(fcast)
 # Plot forecasting MSE
-plot(x=2:NCOL(predv), y=mse[, 1],
+plot(x=2:NCOL(predm), y=mse[, 1],
   xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
   main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
       @
@@ -3349,19 +3349,19 @@ dygraphs::dygraph(pnls[endd, 1:4],
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor as a rolling mean
 nagg <- 5
-predv <- roll::roll_mean(retp, width=nagg, min_obs=1)
+predm <- roll::roll_mean(retp, width=nagg, min_obs=1)
 respv <- retp
 # Define predictor matrix for forecasting
-predv <- sapply(1+nagg*(0:ordmax), rutils::lagit,
-                     input=predv)
-predv <- cbind(rep(1, nrows), predv)
+predm <- sapply(1+nagg*(0:ordmax), rutils::lagit,
+                     input=predm)
+predm <- cbind(rep(1, nrows), predm)
 # Calculate forecasts as function of the AR order
-fcast <- lapply(2:NCOL(predv), function(ordern) {
-  predinv <- MASS::ginv(predv[insample, 1:ordern])
+fcast <- lapply(2:NCOL(predm), function(ordern) {
+  predinv <- MASS::ginv(predm[insample, 1:ordern])
   coeff <- drop(predinv %*% respv[insample])
-  drop(predv[outsample, 1:ordern] %*% coeff)
+  drop(predm[outsample, 1:ordern] %*% coeff)
 })  # end lapply
-names(fcast) <- paste0("n=", 2:NCOL(predv))
+names(fcast) <- paste0("n=", 2:NCOL(predm))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3448,12 +3448,12 @@ dygraphs::dygraph(pnls[endd, 1:4],
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor as a rolling sum
 nagg <- 5
-predv <- rutils::roll_sum(retp, look_back=nagg)
+predm <- rutils::roll_sum(retp, look_back=nagg)
 # Define predictor matrix for forecasting
 ordmax <- 5
-predv <- sapply(1+nagg*(0:ordmax), rutils::lagit,
-                     input=predv)
-predv <- cbind(rep(1, nrows), predv)
+predm <- sapply(1+nagg*(0:ordmax), rutils::lagit,
+                     input=predm)
+predm <- cbind(rep(1, nrows), predm)
 # Perform rolling forecasting
 look_back <- 100
 fcast <- sapply((look_back+1):nrows, function(endd) {
@@ -3463,11 +3463,11 @@ fcast <- sapply((look_back+1):nrows, function(endd) {
   # startp <- 1
   rangev <- startp:(endd-1)
   # Invert the predictor matrix
-  designinv <- MASS::ginv(predv[rangev, ])
+  designinv <- MASS::ginv(predm[rangev, ])
   # Calculate fitted coefficients
   coeff <- drop(desvinv %*% retp[rangev])
   # Calculate forecast
-  drop(predv[endd, ] %*% coeff)
+  drop(predm[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
 fcast <- c(rep(0, look_back), fcast)
@@ -3546,11 +3546,11 @@ sim_forecasts <- function(respv, nagg=5, ordern=5,
                           look_back=100, rollp=TRUE) {
   nrows <- NROW(respv)
   # Define predictor as a rolling sum
-  predv <- rutils::roll_sum(respv, look_back=nagg)
+  predm <- rutils::roll_sum(respv, look_back=nagg)
   # Define predictor matrix for forecasting
-  predv <- sapply(1+nagg*(0:ordern), rutils::lagit,
-                       input=predv)
-  predv <- cbind(rep(1, nrows), predv)
+  predm <- sapply(1+nagg*(0:ordern), rutils::lagit,
+                       input=predm)
+  predm <- cbind(rep(1, nrows), predm)
   # Perform rolling forecasting
   fcast <- sapply((look_back+1):nrows, function(endd) {
     # Define rolling look-back range
@@ -3561,11 +3561,11 @@ sim_forecasts <- function(respv, nagg=5, ordern=5,
     startp <- 1
     rangev <- startp:(endd-1)
     # Invert the predictor matrix
-    designinv <- MASS::ginv(predv[rangev, ])
+    designinv <- MASS::ginv(predm[rangev, ])
     # Calculate fitted coefficients
     coeff <- drop(desvinv %*% respv[rangev])
     # Calculate forecast
-    drop(predv[endd, ] %*% coeff)
+    drop(predm[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
   fcast <- c(rep(0, look_back), fcast)

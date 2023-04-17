@@ -2537,7 +2537,7 @@ med_ian <- runmed(x=closep, k=look_back)
 sigmav <- runsd(x=closep, k=look_back,
           endrule="constant", align="center")
 # Vector of rolling quantiles
-quantilevs <- runquantile(x=closep, k=look_back,
+quantvs <- runquantile(x=closep, k=look_back,
   probs=0.9, endrule="constant", align="center")
 
 # Compile Rcpp functions

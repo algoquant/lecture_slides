@@ -64,8 +64,8 @@ save(var1, var2,  # Save selected objects
      file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
 rm(list=ls())  # Remove all objects
 ls()  # List objects
-load_ed <- load(file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
-load_ed
+loadv <- load(file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
+loadv
 ls()  # List objects
 
   q()  # quit R session
@@ -113,9 +113,9 @@ options(warn=1)
 # two or larger - warnings are turned into errors
 options(warn=2)
 # Save all options in variable
-op_tions <- options()
+optionv <- options()
 # Restore all options from variable
-options(op_tions)
+options(optionv)
 
 # R startup (site) directory
 paste(R.home(), "etc", sep="/")
@@ -275,13 +275,13 @@ c("a", "b", "c")
 # Create vector using c() combine function
 c(1, "b", "c")
 
-str_var <- "Some string"
-str_var
-str_var[1]
-str_var[2]
+stringv <- "Some string"
+stringv
+stringv[1]
+stringv[2]
 
-NROW(str_var)  # length of vector
-nchar(str_var)  # length of string
+NROW(stringv)  # length of vector
+nchar(stringv)  # length of string
 
 # Concatenate and echo to console
 cat("Hello", "World!")
@@ -289,10 +289,10 @@ cat("Enter\ttab")
 cat("Enter\nnewline")
 cat("Enter\\backslash")
 
-str_var1 <- "Hello"  # Define a character string
-str_var2 <- "World!"  # Define a character string
-paste(str_var1, str_var2, sep=" ")  # Concatenate and return value
-cat(str_var1, str_var2)  # Concatenate and echo to console
+stringv1 <- "Hello"  # Define a character string
+stringv2 <- "World!"  # Define a character string
+paste(stringv1, stringv2, sep=" ")  # Concatenate and return value
+cat(stringv1, stringv2)  # Concatenate and echo to console
 paste("a", 1:4, sep="-")  # Convert, recycle and concatenate
 paste(c("a1", "a2", "a3"), collapse="+")  # Collapse vector to string
 paste(list("a1", "a2", "a3"), collapse="+")
@@ -439,14 +439,12 @@ findInterval(x=1:8, vec=c(3, 5, 7), all.inside=TRUE)
 findInterval(x=1:8, vec=c(3, 5, 7), rightmost.closed=TRUE)
 
 # Named numeric vector of breakpoints
-brea_ks <- c(freezing=0, very_cold=30, cold=50, 
-       pleasant=60, warm=80, hot=90)
-brea_ks
-tempe_ratures <- runif(10, min=10, max=100)
-feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures, vec=brea_ks)])
-names(tempe_ratures) <- feels_like
-tempe_ratures
+breakv <- c(freezing=0, very_cold=30, cold=50, pleasant=60, warm=80, hot=90)
+breakv
+tempv <- runif(10, min=10, max=100)
+feels_like <- names(breakv[findInterval(x=tempv, vec=breakv)])
+names(tempv) <- feels_like
+tempv
 
 library(microbenchmark)
 datav <- sample(0:6) + 0.1
@@ -454,32 +452,29 @@ datav
 cut(x=datav, breaks=c(2, 4, 6, 8))
 rbind(datav, cut(x=datav, breaks=c(2, 4, 6, 8)))
 # cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
-    right=FALSE)
+cut(x=1:8, breaks=c(3, 5, 7), labels=1:2, right=FALSE)
 findInterval(x=1:8, vec=c(3, 5, 7))
 # findInterval() is a compiled function, so it's faster than cut()
 vectorv <- rnorm(1000)
 summary(microbenchmark(
-  find_interval=
-    findInterval(x=vectorv, vec=c(3, 5, 7)),
-  cuut=
-    cut(x=vectorv, breaks=c(3, 5, 7)),
+  find_interval=findInterval(x=vectorv, vec=c(3, 5, 7)),
+  cut=cut(x=vectorv, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 # Calculate VTI percentage returns
-returns <- na.omit(rutils::etfenv$returns$VTI)
+retp <- na.omit(rutils::etfenv$returns$VTI)
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-madv <- mad(returns)
-histp <- hist(returns, breaks=100,
+madv <- mad(retp)
+histp <- hist(retp, breaks=100,
   main="", xlim=c(-5*madv, 5*madv),
   xlab="", ylab="", freq=FALSE)
 
 # Draw kernel density of histogram
-lines(density(returns), col="red", lwd=2)
+lines(density(retp), col="red", lwd=2)
 # Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(returns), sd=sd(returns)),
+curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)),
 add=TRUE, type="l", lwd=2, col="blue")
 title(main="VTI Return Distribution", line=0)
 # Add legend
@@ -604,8 +599,7 @@ which(vectorv == max(vectorv))
 # Find index of smallest element
 which.min(vectorv)
 # Benchmark match() versus which()
-all.equal(match(5, vectorv),
-    min(which(vectorv == 5)))
+all.equal(match(5, vectorv), min(which(vectorv == 5)))
 library(microbenchmark)
 summary(microbenchmark(
   match=match(5, vectorv),
@@ -641,11 +635,9 @@ match(6, c(3, 5, 7))
 # Indices of "vec" that match elements of "x"
 findInterval(x=1:8, vec=c(3, 5, 7))
 # Return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-       all.inside=TRUE)
+findInterval(x=1:8, vec=c(3, 5, 7), all.inside=TRUE)
 # Make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-       rightmost.closed=TRUE)
+findInterval(x=1:8, vec=c(3, 5, 7), rightmost.closed=TRUE)
 
 numv1 <- 3  # "<-" and "=" are valid assignment operators
 numv1
@@ -1333,16 +1325,16 @@ str(moment)  # Get list of arguments
 # Apply moment function
 moment(x=returns, order=3)
 # 4x1 matrix of moment orders
-morderv <- as.matrix(1:4)
+orderv <- as.matrix(1:4)
 # Anonymous function allows looping over function parameters
-apply(X=morderv, MARGIN=1,
-      FUN=function(moment_order) {
-  moment(x=returns, order=moment_order)
+apply(X=orderv, MARGIN=1,
+      FUN=function(orderp) {
+  moment(x=returns, order=orderp)
 }  # end anonymous function
       )  # end apply
 
 # Another way of passing parameters into moment() function
-apply(X=morderv, MARGIN=1, FUN=moment, x=returns)
+apply(X=orderv, MARGIN=1, FUN=moment, x=returns)
 
 # Function with three arguments
 testfun <- function(arg1, arg2, arg3) {
@@ -1363,13 +1355,13 @@ sapply(iris[, -5], mean)
 lapply(iris[, -5], mean)
 # Lapply using anonymous function
 unlist(lapply(iris,
-      function(colnum) {
-        if (is.numeric(colnum)) mean(colnum)
+      function(column) {
+        if (is.numeric(column)) mean(column)
       }  # end anonymous function
       )  # end lapply
        )  # end unlist
-unlist(sapply(iris, function(colnum) {
-  if (is.numeric(colnum)) mean(colnum)}))
+unlist(sapply(iris, function(column) {
+  if (is.numeric(column)) mean(column)}))
 
 sapply(6:10, sqrt)  # Sapply on vector
 sapply(list(6, 7, 8, 9, 10), sqrt)  # Sapply on list
@@ -1405,23 +1397,23 @@ yvar <- dnorm(xvar, mean=1.0, sd=2.0)
 plot(xvar, yvar, type="l", lty="solid",
      xlab="", ylab="")
 title(main="Normal Density Function", line=0.5)
-startp <- 3; endp <- 5  # Set lower and upper bounds
+startp <- 3; endd <- 5  # Set lower and upper bounds
 # Set polygon base
-subv <- ((xvar >= startp) & (xvar <= endp))
-polygon(c(startp, xvar[subv], endp),  # Draw polygon
+subv <- ((xvar >= startp) & (xvar <= endd))
+polygon(c(startp, xvar[subv], endd),  # Draw polygon
   c(-1, yvar[subv], -1), col="red")
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
 # Create plot colors
-colors <- c("red", "black", "blue", "green")
+colorv <- c("red", "black", "blue", "green")
 # Create legend labels
 labelv <- paste("sigma", sigmavs, sep="=")
 for (indeks in 1:4) {  # Plot four curves
 curve(expr=dnorm(x, sd=sigmavs[indeks]),
 xlim=c(-4, 4),
 xlab="", ylab="", lwd=2,
-col=colors[indeks],
+col=colorv[indeks],
 add=as.logical(indeks-1))
 }  # end for
 # Add title
@@ -1429,14 +1421,14 @@ title(main="Normal Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, title="Sigmas",
  labelv, cex=0.8, lwd=2, lty=1, bty="n",
- col=colors)
+ col=colorv)
 
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 xvar <- seq(-4, 4, length=100)
 sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
 # Create plot colors
-colors <- c("red", "black", "blue", "green")
+colorv <- c("red", "black", "blue", "green")
 # Create legend labels
 labelv <- paste("sigma", sigmavs, sep="=")
 # Plot the first chart
@@ -1446,22 +1438,22 @@ plot(xvar, dnorm(xvar, sd=sigmavs[1]),
 # Add lines to plot
 for (indeks in 1:4) {
   lines(xvar, dnorm(xvar, sd=sigmavs[indeks]),
-  lwd=2, col=colors[indeks])
+  lwd=2, col=colorv[indeks])
 }  # end for
 # Add legend
 legend("topright", inset=0.05, title="Sigmas",
  labelv, cex=0.8, lwd=2, lty=1, bty="n",
- col=colors)
+ col=colorv)
 
 # Standard deviations of log-normal distribution
 sigmavs <- c(0.5, 1, 1.5)
 # Create plot colors
-colors <- c("black", "red", "blue")
+colorv <- c("black", "red", "blue")
 # Plot all curves
 for (indeks in 1:NROW(sigmavs)) {
   curve(expr=dlnorm(x, sdlog=sigmavs[indeks]),
   type="l", xlim=c(0, 3), lwd=2,
-  xlab="", ylab="", col=colors[indeks],
+  xlab="", ylab="", col=colorv[indeks],
   add=as.logical(indeks-1))
 }  # end for
 
@@ -1470,18 +1462,18 @@ title(main="Log-normal Distributions", line=0.5)
 legend("topright", inset=0.05, title="Sigmas",
  paste("sigma", sigmavs, sep="="),
  cex=0.8, lwd=2, lty=rep(1, NROW(sigmavs)),
- col=colors)
+ col=colorv)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
 degf <- c(2, 5, 8, 11)
 # Plot four curves in loop
-colors <- c("red", "black", "blue", "green")
+colorv <- c("red", "black", "blue", "green")
 for (indeks in 1:4) {
 curve(expr=dchisq(x, df=degf[indeks]),
 xlim=c(0, 20), ylim=c(0, 0.3),
-xlab="", ylab="", col=colors[indeks],
+xlab="", ylab="", col=colorv[indeks],
 lwd=2, add=as.logical(indeks-1))
 }  # end for
 
@@ -1492,13 +1484,13 @@ labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", labelv,
        cex=0.8, lwd=6, lty=1,
-       col=colors)
+       col=colorv)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 degf <- c(2, 5, 8, 11)  # df values
 # Create plot colors
-colors <- c("red", "black", "blue", "green")
+colorv <- c("red", "black", "blue", "green")
 # Create legend labels
 labelv <- paste("df", degf, sep="=")
 # Plot an empty chart
@@ -1508,7 +1500,7 @@ plot(xvar, dchisq(xvar, df=degf[1]),
 # Add lines to plot
 for (indeks in 1:4) {
   lines(xvar, dchisq(xvar, df=degf[indeks]),
-lwd=2, col=colors[indeks])
+lwd=2, col=colorv[indeks])
 }  # end for
 
 # Add title
@@ -1516,17 +1508,17 @@ title(main="Chi-squared Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05,
        title="Degrees of freedom", labelv,
-       cex=0.8, lwd=6, lty=1, bty="n", col=colors)
+       cex=0.8, lwd=6, lty=1, bty="n", col=colorv)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot three curves in loop
 degf <- c(3, 5, 9)  # Degrees of freedom
-colors <- c("black", "red", "blue", "green")
+colorv <- c("black", "red", "blue", "green")
 for (indeks in 1:NROW(degf)) {
 curve(expr=df(x, df1=degf[indeks], df2=3),
 xlim=c(0, 4), xlab="", ylab="", lwd=2,
-col=colors[indeks], add=as.logical(indeks-1))
+col=colorv[indeks], add=as.logical(indeks-1))
 }  # end for
 
 # Add title
@@ -1535,19 +1527,19 @@ title(main="F-Distributions", line=0.5)
 labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
        labelv, cex=0.8, lwd=2, lty=1,
-       col=colors)
+       col=colorv)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 degf <- c(3, 6, 9)  # df values
-colors <- c("black", "red", "blue", "green")
+colorv <- c("black", "red", "blue", "green")
 labelv <- c("normal", paste("df", degf, sep="="))
 # Plot a Normal probability distribution
 curve(expr=dnorm, xlim=c(-4, 4),
       xlab="", ylab="", lwd=2)
 for (indeks in 1:3) {  # Plot three t-distributions
 curve(expr=dt(x, df=degf[indeks]),
-      lwd=2, col=colors[indeks+1], add=TRUE)
+      lwd=2, col=colorv[indeks+1], add=TRUE)
 }  # end for
 
 # Add title
@@ -1555,20 +1547,20 @@ title(main="t-distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n",
        title="Degrees\n of freedom", labelv,
-       cex=0.8, lwd=6, lty=1, col=colors)
+       cex=0.8, lwd=6, lty=1, col=colorv)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 xvar <- seq(-4, 4, length=100)
 degf <- c(3, 6, 9)  # df values
-colors <- c("black", "red", "blue", "green")
+colorv <- c("black", "red", "blue", "green")
 labelv <- c("normal", paste("df", degf, sep="="))
 # Plot chart of normal distribution
 plot(xvar, dnorm(xvar), type="l",
      lwd=2, xlab="", ylab="")
 for (indeks in 1:3) {  # Add lines for t-distributions
   lines(xvar, dt(xvar, df=degf[indeks]),
-lwd=2, col=colors[indeks+1])
+lwd=2, col=colorv[indeks+1])
 }  # end for
 
 # Add title
@@ -1576,7 +1568,7 @@ title(main="t-distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n",
        title="Degrees\n of freedom", labelv,
-       cex=0.8, lwd=6, lty=1, col=colors)
+       cex=0.8, lwd=6, lty=1, col=colorv)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -1595,12 +1587,12 @@ par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Define Pareto function
 pare_to <- function(x, alpha)
   alpha*x^(-alpha-1)
-colors <- c("red", "blue", "green")
+colorv <- c("red", "blue", "green")
 alpha_s <- c(1.0, 2.0, 3.0)
 for (indeks in 1:3) {  # Plot three curves
   curve(expr=pare_to(x, alpha_s[indeks]),
   xlim=c(1, 2), ylim=c(0.0, 3.5),
-  xlab="", ylab="", lwd=3, col=colors[indeks],
+  xlab="", ylab="", lwd=3, col=colorv[indeks],
   add=as.logical(indeks-1))
 }  # end for
 # Add title and legend
@@ -1608,17 +1600,15 @@ title(main="Pareto Distributions", line=0.5)
 labelv <- paste("alpha", 1:3, sep=" = ")
 legend("topright", inset=0.2, bty="n",
  title=NULL, labelv, cex=0.8, lwd=6, lty=1,
- col=colors)
+ col=colorv)
 
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-poisson_events <- 0:11  # Poisson events
-poisson_freq <- dpois(poisson_events, lambda=4)
-names(poisson_freq) <- as.character(poisson_events)
+# Poisson frequency
+eventv <- 0:11  # Poisson events
+poissonf <- dpois(eventv, lambda=4)
+names(poissonf) <- as.character(eventv)
 # Poisson function
-poissonfun <- function(x, lambda)
-              {exp(-lambda)*lambda^x/factorial(x)}
+poissonfun <- function(x, lambda) {exp(-lambda)*lambda^x/factorial(x)}
 curve(expr=poissonfun(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
-xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
+xlab="No. of events", ylab="Frequency of events", lwd=2, col="blue")
 legend(x="topright", legend="Poisson density", title="", bty="n",
- inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
+ inset=0.05, cex=0.8, bg="white", lwd=6, lty=1, col="blue")

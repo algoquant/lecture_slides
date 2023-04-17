@@ -125,12 +125,12 @@ datev <- zoo::index(closep)
 retp <- rutils::diffit(log(closep))
 retr <- rutils::diffit(log(rates))
 # Regress VTI returns versus the lagged rate differences
-predv <- rutils::lagit(retr)
-regmod <- lm(retp ~ predv)
+predm <- rutils::lagit(retr)
+regmod <- lm(retp ~ predm)
 summary(regmod)
 # Regress VTI returns before and after 2012
-summary(lm(retp["/2012"] ~ predv["/2012"]))
-summary(lm(retp["2012/"] ~ predv["2012/"]))
+summary(lm(retp["/2012"] ~ predm["/2012"]))
+summary(lm(retp["2012/"] ~ predm["2012/"]))
       @
   \end{columns}
 \end{block}
@@ -154,8 +154,8 @@ eigend <- eigen(cor(retr))
 pcar <- -(retr %*% eigend$vectors)
 colnames(pcar) <- paste0("PC", 1:6)
 # Define predictor as the YC PCAs
-predv <- rutils::lagit(pcar)
-regmod <- lm(retp ~ predv)
+predm <- rutils::lagit(pcar)
+regmod <- lm(retp ~ predm)
 summary(regmod)
       @
     \column{0.5\textwidth}
@@ -172,7 +172,7 @@ dygraphs::dygraph(cumsum(datav),
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -197,19 +197,19 @@ dygraphs::dygraph(cumsum(datav),
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor with intercept term
-predv <- rutils::lagit(retr)
-predv <- cbind(rep(1, NROW(predv)), predv)
-colnames(predv)[1] <- "intercept"
+predm <- rutils::lagit(retr)
+predm <- cbind(rep(1, NROW(predm)), predm)
+colnames(predm)[1] <- "intercept"
 # Calculate inverse of predictor
-invmat <- MASS::ginv(predv)
+invmat <- MASS::ginv(predm)
 # Calculate coefficients from response and inverse of predictor
 respv <- retp
 coeff <- drop(invmat %*% respv)
 # Calculate forecasts and pnls in-sample
-fcast <- (predv %*% coeff)
+fcast <- (predm %*% coeff)
 pnls <- sign(fcast)*response
 # Calculate in-sample factors
-factors <- (predv*coeff)
+factors <- (predm*coeff)
 apply(factors, 2, sd)
       @
     \column{0.5\textwidth}
@@ -227,7 +227,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -250,11 +250,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 insample <- (datev < as.Date("2020-01-01"))
 outsample <- (datev >= as.Date("2020-01-01"))
 # Calculate inverse of predictor in-sample
-invmat <- MASS::ginv(predv[insample, ])
+invmat <- MASS::ginv(predm[insample, ])
 # Calculate coefficients in-sample
 coeff <- drop(invmat %*% respv[insample, ])
 # Calculate forecasts and pnls out-of-sample
-fcast <- (predv[outsample, ] %*% coeff)
+fcast <- (predm[outsample, ] %*% coeff)
 pnls <- sign(fcast)*respv[outsample, ]
       @
     \column{0.5\textwidth}
@@ -271,7 +271,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -301,10 +301,10 @@ pnls <- lapply(3:(NROW(years)-1), function(ep) {
   insample <- (datev > years[ep-1]) & (datev < years[ep])
   outsample <- (datev >= years[ep]) & (datev < years[ep+1])
   # Calculate coefficients in-sample
-  invmat <- MASS::ginv(predv[insample, ])
+  invmat <- MASS::ginv(predm[insample, ])
   coeff <- drop(invmat %*% respv[insample, ])
   # Calculate forecasts and pnls out-of-sample
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -324,7 +324,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -356,9 +356,9 @@ pnls <- lapply(12:(NROW(months)-1), function(ep) {
   insample <- (datev > months[ep-11]) & (datev < months[ep])
   outsample <- (datev > months[ep]) & (datev < months[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- MASS::ginv(predv[insample, ])
+  invmat <- MASS::ginv(predm[insample, ])
   coeff <- drop(invmat %*% respv[insample, ])
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -378,7 +378,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -404,9 +404,9 @@ pnls <- lapply(51:(NROW(weeks)-1), function(ep) {
   insample <- (datev > weeks[ep-10]) & (datev < weeks[ep])
   outsample <- (datev > weeks[ep]) & (datev < weeks[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- MASS::ginv(predv[insample, ])
+  invmat <- MASS::ginv(predm[insample, ])
   coeff <- drop(invmat %*% respv[insample, ])
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -426,7 +426,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -468,14 +468,14 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate singular value decomposition of the predictor matrix
-svdec <- svd(predv)
+svdec <- svd(predm)
 barplot(svdec$d, main="Singular Values of YC Predictor Matrix")
 # Calculate generalized inverse from SVD
 invsvd <- svdec$v %*% (t(svdec$u) / svdec$d)
 # Verify inverse property of inverse
-all.equal(zoo::coredata(predv), predv %*% invsvd %*% predv)
+all.equal(zoo::coredata(predm), predm %*% invsvd %*% predm)
 # Calculate generalized inverse using MASS::ginv()
-invmat <- MASS::ginv(predv)
+invmat <- MASS::ginv(predm)
 all.equal(invmat, invsvd)
 # Set tolerance for determining zero singular values
 precv <- sqrt(.Machine$double.eps)
@@ -486,7 +486,7 @@ notzero <- (svdec$d > (precv*svdec$d[1]))
 invreg <- svdec$v[, notzero] %*%
   (t(svdec$u[, notzero]) / svdec$d[notzero])
 # Verify inverse property of invreg
-all.equal(zoo::coredata(predv), predv %*% invreg %*% predv)
+all.equal(zoo::coredata(predm), predm %*% invreg %*% predm)
 all.equal(invreg, invmat)
       @
   \end{columns}
@@ -523,9 +523,9 @@ dimax <- 3
 invreg <- svdec$v[, 1:dimax] %*%
   (t(svdec$u[, 1:dimax]) / svdec$d[1:dimax])
 # Inverse property fails for invreg
-all.equal(zoo::coredata(predv), predv %*% invreg %*% predv)
+all.equal(zoo::coredata(predm), predm %*% invreg %*% predm)
 # Calculate shrinkage inverse using RcppArmadillo
-inverse_rcpp <- HighFreq::calc_inv(predv, dimax=dimax)
+inverse_rcpp <- HighFreq::calc_inv(predm, dimax=dimax)
 all.equal(invreg, inverse_rcpp, check.attributes=FALSE)
       @
   \end{columns}
@@ -551,9 +551,9 @@ all.equal(invreg, inverse_rcpp, check.attributes=FALSE)
 # Calculate in-sample pnls for different dimax values
 eigenvals <- 2:7
 pnls <- lapply(eigenvals, function(dimax) {
-  invmat <- HighFreq::calc_inv(predv, dimax=dimax)
+  invmat <- HighFreq::calc_inv(predm, dimax=dimax)
   coeff <- drop(invmat %*% respv)
-  fcast <- (predv %*% coeff)
+  fcast <- (predm %*% coeff)
   sign(fcast)*response
 })
 pnls <- do.call(cbind, pnls)
@@ -567,7 +567,7 @@ colnames(pnls) <- paste0("eigen", eigenvals)
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls), main="In-Sample Returns of Shrinkage YC Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -592,9 +592,9 @@ outsample <- (datev >= as.Date("2020-01-01"))
 # Calculate in-sample pnls for different dimax values
 eigenvals <- 2:7
 pnls <- lapply(eigenvals, function(x) {
-  invmat <- HighFreq::calc_inv(predv[insample, ], dimax=x)
+  invmat <- HighFreq::calc_inv(predm[insample, ], dimax=x)
   coeff <- drop(invmat %*% respv[insample, ])
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })
 pnls <- do.call(cbind, pnls)
@@ -608,7 +608,7 @@ colnames(pnls) <- paste0("eigen", eigenvals)
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls), main="Out-of-Sample Returns of Shrinkage YC Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -640,9 +640,9 @@ pnls <- lapply((look_back+1):(NROW(months)-1), function(ep) {
   insample <- (datev > months[ep-look_back]) & (datev < months[ep])
   outsample <- (datev > months[ep]) & (datev < months[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- HighFreq::calc_inv(predv[insample, ], dimax=dimax)
+  invmat <- HighFreq::calc_inv(predm[insample, ], dimax=dimax)
   coeff <- drop(invmat %*% respv[insample, ])
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -662,7 +662,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -690,9 +690,9 @@ pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   insample <- (datev > weeks[ep-look_back]) & (datev < weeks[ep])
   outsample <- (datev > weeks[ep]) & (datev < weeks[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- HighFreq::calc_inv(predv[insample, ], dimax=dimax)
+  invmat <- HighFreq::calc_inv(predm[insample, ], dimax=dimax)
   coeff <- drop(invmat %*% respv[insample, ])
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -712,7 +712,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -752,11 +752,11 @@ retp <- rutils::diffit(log(closep))
 retr <- rutils::diffit(log(rates))
 # Create a combined predictor matrix
 ordmax <- 5
-predv <- sapply(1:ordmax, rutils::lagit, input=as.numeric(retp))
-colnames(predv) <- paste0("retslag", 1:NCOL(predv))
-predv <- cbind(predv, rutils::lagit(retr))
-predv <- cbind(rep(1, NROW(predv)), predv)
-colnames(predv)[1] <- "intercept"
+predm <- sapply(1:ordmax, rutils::lagit, input=as.numeric(retp))
+colnames(predm) <- paste0("retslag", 1:NCOL(predm))
+predm <- cbind(predm, rutils::lagit(retr))
+predm <- cbind(rep(1, NROW(predm)), predm)
+colnames(predm)[1] <- "intercept"
 respv <- retp
       @
   \end{columns}
@@ -782,9 +782,9 @@ respv <- retp
 # Calculate in-sample pnls for different dimax values
 eigenvals <- 2:11
 pnls <- lapply(eigenvals, function(dimax) {
-  invmat <- HighFreq::calc_inv(predv, dimax=dimax)
+  invmat <- HighFreq::calc_inv(predm, dimax=dimax)
   coeff <- drop(invmat %*% respv)
-  fcast <- (predv %*% coeff)
+  fcast <- (predm %*% coeff)
   sign(fcast)*response
 })
 pnls <- do.call(cbind, pnls)
@@ -798,7 +798,7 @@ colnames(pnls) <- paste0("eigen", eigenvals)
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls), main="In-Sample Returns of Combined Strategies With Shrinkage") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -823,9 +823,9 @@ outsample <- (datev >= as.Date("2020-01-01"))
 # Calculate in-sample pnls for different dimax values
 eigenvals <- 2:11
 pnls <- lapply(eigenvals, function(x) {
-  invmat <- HighFreq::calc_inv(predv[insample, ], dimax=x)
+  invmat <- HighFreq::calc_inv(predm[insample, ], dimax=x)
   coeff <- drop(invmat %*% respv[insample, ])
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })
 pnls <- do.call(cbind, pnls)
@@ -839,7 +839,7 @@ colnames(pnls) <- paste0("eigen", eigenvals)
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls), main="Out-of-Sample Returns of Combined Strategies With Shrinkage") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -871,9 +871,9 @@ pnls <- lapply((look_back+1):(NROW(months)-1), function(ep) {
   insample <- (datev > months[ep-look_back]) & (datev < months[ep])
   outsample <- (datev > months[ep]) & (datev < months[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- HighFreq::calc_inv(predv[insample, ], dimax=dimax)
+  invmat <- HighFreq::calc_inv(predm[insample, ], dimax=dimax)
   coeff <- drop(invmat %*% respv[insample, ])
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -893,7 +893,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -921,9 +921,9 @@ pnls <- lapply((look_back+1):(NROW(weeks)-1), function(ep) {
   insample <- (datev > weeks[ep-look_back]) & (datev < weeks[ep])
   outsample <- (datev > weeks[ep]) & (datev < weeks[ep+1])
   # Calculate forecasts and pnls out-of-sample
-  invmat <- HighFreq::calc_inv(predv[insample, ], dimax=dimax)
+  invmat <- HighFreq::calc_inv(predm[insample, ], dimax=dimax)
   coeff <- drop(invmat %*% respv[insample, ])
-  fcast <- (predv[outsample, ] %*% coeff)
+  fcast <- (predm[outsample, ] %*% coeff)
   sign(fcast)*respv[outsample, ]
 })  # end lapply
 pnls <- do.call(rbind, pnls)
@@ -943,7 +943,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -967,21 +967,21 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 # Find optimal nagg for predictor
 naggs <- 5:100
 tvalues <- sapply(naggs, function(nagg) {
-  predv <- roll::roll_mean(retr, width=nagg, min_obs=1)
-  predv <- cbind(rep(1, NROW(predv)), predv)
-  predv <- rutils::lagit(predv)
-  regmod <- lm(respv ~ predv - 1)
-  modelsum <- summary(regmod)
-  max(abs(modelsum$coefficients[, 3][-1]))
+  predm <- HighFreq::roll_mean(retr, look_back=nagg)
+  predm <- cbind(rep(1, NROW(predm)), predm)
+  predm <- rutils::lagit(predm)
+  regmod <- lm(respv ~ predm - 1)
+  modsum <- summary(regmod)
+  max(abs(modsum$coefficients[, 3][-1]))
 })  # end sapply
 naggs[which.max(tvalues)]
 plot(naggs, tvalues, t="l", col="blue", lwd=2)
 # Calculate aggregated predictor
 nagg <- 53
-predv <- roll::roll_mean(retr, width=nagg, min_obs=1)
-predv <- rutils::lagit(predv)
-predv <- cbind(rep(1, NROW(predv)), predv)
-regmod <- lm(respv ~ predv - 1)
+predm <- HighFreq::roll_mean(retr, look_back=nagg)
+predm <- rutils::lagit(predm)
+predm <- cbind(rep(1, NROW(predm)), predm)
+regmod <- lm(respv ~ predm - 1)
 summary(regmod)
       @
     \column{0.5\textwidth}
@@ -989,9 +989,9 @@ summary(regmod)
       \includegraphics[width=0.45\paperwidth]{figure/strat_yc_insample_agg.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate forecasts and pnls in-sample
-invmat <- MASS::ginv(predv)
+invmat <- MASS::ginv(predm)
 coeff <- drop(invmat %*% respv)
-fcast <- (predv %*% coeff)
+fcast <- (predm %*% coeff)
 pnls <- sign(fcast)*response
 # Plot dygraph of in-sample IR strategy
 wealthv <- cbind(retp, pnls)
@@ -1003,7 +1003,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1028,9 +1028,9 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 insample <- (datev < as.Date("2020-01-01"))
 outsample <- (datev >= as.Date("2020-01-01"))
 # Calculate forecasts and pnls out-of-sample
-invmat <- MASS::ginv(predv[insample, ])
+invmat <- MASS::ginv(predm[insample, ])
 coeff <- drop(invmat %*% respv[insample, ])
-fcast <- (predv[outsample, ] %*% coeff)
+fcast <- (predm[outsample, ] %*% coeff)
 pnls <- sign(fcast)*respv[outsample, ]
       @
     \column{0.5\textwidth}
@@ -1047,7 +1047,446 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Statistical Arbitrage}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Idiosyncratic Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The daily stock returns $r_i - r_f$ in excess of the risk-free rate $r_f$, can be decomposed into \emph{systematic} returns $\beta (r_m - r_f)$ ($r_m$ are the market returns) plus \emph{idiosyncratic} returns $\alpha + \varepsilon_i$ (which are uncorrelated to the market returns):
+      \begin{displaymath}
+        r_i - r_f = \alpha + \beta (r_m - r_f) + \varepsilon_i
+      \end{displaymath}
+      The \emph{alpha} $\alpha$ are the abnormal returns in excess of the risk premium $\beta (r_m - r_f)$, and $\varepsilon_i$ are the regression residuals with zero mean.
+      \vskip1ex
+      We can simplify the formula by setting the risk-free rate to zero $r_f = 0$ and redefining the alpha $\alpha$.
+      <<echo=TRUE,eval=FALSE>>=
+# Load daily S&P500 stock returns
+load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+# Select ETF returns
+retetf <- rutils::etfenv$returns[, c("VTI", "XLK", "XLF", "XLE")]
+# Calculate the MSFT betas with respect to different ETFs
+betas <- sapply(retetf, function(retetf) {
+  retp <- na.omit(cbind(returns$MSFT, retetf))
+  # Calculate the MSFT beta
+  drop(cov(retp$MSFT, retp[, 2])/var(retp[, 2]))
+}) # end sapply
+# Combine MSFT and XLK returns
+retp <- cbind(returns$MSFT, rutils::etfenv$returns$XLK)
+retp <- na.omit(retp)
+colnames(retp) <- c("MSFT", "XLK")
+# Calculate the beta and alpha of returns MSFT ~ XLK
+betav <- drop(cov(retp$MSFT, retp$XLK)/var(retp$XLK))
+alphav <- retp$MSFT - betav*retp$XLK
+# Scatterplot of returns
+plot(MSFT ~ XLK, data=retp, main="MSFT ~ XLK Returns",
+     xlab="XLK", ylab="MSFT", pch=1, col="blue")
+abline(a=mean(alphav), b=betav, col="red", lwd=2)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/idiosync_rets.png}\\
+      The stock of Microsoft \emph{MSFT} began outperforming the \emph{XLK} ETF after Steve Ballmer was replaced as CEO in \texttt{2014}.
+      <<echo=TRUE,eval=FALSE>>=
+# dygraph plot of MSFT idiosyncratic returns vs XLK
+endd <- rutils::calc_endpoints(retp, interval="weeks")
+datev <- zoo::index(retp)[endd]
+dateb <- datev[findInterval(as.Date("2014-01-01"), datev)] # Steve Balmer exit date
+datav <- cbind(retp$XLK, alphav)
+colnames(datav)[2] <- "MSFT alpha"
+colnamev <- colnames(datav)
+dygraphs::dygraph(cumsum(datav)[endd], main="MSFT Cumulative Alpha vs XLK") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyEvent(dateb, label="Balmer exit", strokePattern="solid", color="red") %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trailing Idiosyncratic Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In practice, the stock beta should be updated over time and applied out-of-sample to calculate the trailing idiosyncratic stock returns.
+      \vskip1ex
+      The trailing beta $\beta$ of a stock with returns $r_t$ with respect to a stock index with returns $R_t$ can be updated using these recursive formulas with the weight decay factor $\lambda$:
+      \begin{flalign*}
+        & \bar{r}_t = \lambda \bar{r}_{t-1} + (1-\lambda) r_t \\
+        & \bar{R}_t = \lambda \bar{R}_{t-1} + (1-\lambda) R_t \\
+        & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (R_t - \bar{R}_t)^2 \\
+        & \operatorname{cov}_t = \lambda \operatorname{cov}_{t-1} + (1-\lambda) (r_t - \bar{r}_t) (R_t - \bar{R}_t) \\
+        & \beta_t = \frac{\operatorname{cov}_t}{\sigma^2_t} \\
+        & \alpha_t = r_t - \beta_t R_t
+      \end{flalign*}
+      The parameter $\lambda$ determines the rate of decay of the weight of past returns.
+      If $\lambda$ is close to \texttt{1} then the decay is weak and past returns have a greater weight.  And vice versa if $\lambda$ is close to \texttt{0}.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_covar()} calculates the trailing variances, covariances, and means of two \emph{time series}.
+      \vskip1ex
+      Using a dynamic beta produces a similar picture of \emph{MSFT} stock performance versus the \emph{XLK} ETF. 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/idiosync_rets_rec.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing alphas and betas
+lambda <- 0.9
+covars <- HighFreq::run_covar(retp, lambda)
+betav <- covars[, 1]/covars[, 3]
+alphav <- retp$MSFT - betav*retp$XLK
+# dygraph plot of trailing MSFT idiosyncratic returns vs XLK
+datav <- cbind(retp$XLK, alphav)
+colnames(datav)[2] <- "MSFT alpha"
+colnamev <- colnames(datav)
+dygraphs::dygraph(cumsum(datav)[endd], main="MSFT Trailing Cumulative Alpha vs XLK") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyEvent(dateb, label="Balmer exit", strokePattern="solid", color="red") %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cointegration of Stocks Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A group of stocks is \emph{cointegrated} if there is a portfolio of the stocks whose price is range-bound.
+      \vskip1ex
+      For two stocks, the cointegrating factor $\beta$ can be obtained from the regression of the stock prices.  The cointegrated portfolio price $R$ is the residual of the regression:
+      \begin{displaymath}
+        R = p_1 - \beta p_2
+      \end{displaymath}
+      Regressing the stock \emph{prices} produces a \emph{cointegrated} portfolio, with a small variance of its \emph{prices}.
+      \vskip1ex
+      Regressing the stock \emph{returns} produces a \emph{correlated} portfolio, with a small variance of its \emph{returns}.
+      \vskip1ex
+      The standard confidence intervals are not valid for the regression of prices, because prices are not stationary and are not normally distributed.
+      <<echo=TRUE,eval=FALSE>>=
+# Load daily S&P500 stock prices
+load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+# Combine MSFT and XLK prices
+pricev <- cbind(rutils::etfenv$prices$XLK, prices$MSFT)
+pricev <- log(na.omit(pricev))
+colnames(pricev) <- c("XLK", "MSFT")
+datev <- zoo::index(pricev)
+# Calculate the beta regression coefficient of prices MSFT ~ XLK
+betav <- drop(cov(pricev$MSFT, pricev$XLK)/var(pricev$XLK))
+# Calculate the cointegrated portfolio prices
+pricec <- pricev$MSFT - betav*pricev$XLK
+colnames(pricec) <- "MSFT Coint XLK"
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/coint_scatter.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Scatterplot of MSFT and XLK prices
+plot(MSFT ~ XLK, data=pricev, main="MSFT and XLK Prices", 
+     xlab="XLK", ylab="MSFT", pch=1, col="blue")
+abline(a=mean(pricec), b=betav, col="red", lwd=2)
+# Plot time series of prices
+endd <- rutils::calc_endpoints(pricev, interval="weeks")
+dygraphs::dygraph(pricev[endd], main="MSFT and XLK Log Prices") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cointegrated Portfolio Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Engle-Granger two-step procedure can be used to test the cointegrated portfolio of two stocks:
+      \begin{itemize}
+        \item Perform a regression of the stock prices to calculate the cointegrating factor $\beta$,
+        \item Apply the \emph{ADF} test to the cointegrated portfolio price, to determine if it has a unit root (the portfolio price diverges), or if it's mean reverting.
+      \end{itemize}
+      The \emph{p}-value of the \emph{ADF} test for the cointegrated portfolio of \emph{MSFT} and \emph{XLK} is not small, so the \emph{null hypothesis} that it has a \emph{unit root} (it diverges) cannot be rejected.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{ADF} test is that the time series has a \emph{unit root} (it diverges).  So a small \emph{p}-value suggests that the \emph{null hypothesis} is \texttt{FALSE} and that the time series is range-bound.
+      \vskip1ex
+      The \emph{ADF} test statistic for the cointegrated portfolio is smaller than for either \emph{MSFT} or \emph{XLK} alone, which indicates that it's more mean-reverting.
+      <<echo=TRUE,eval=FALSE>>=
+# Plot histogram of the cointegrated portfolio prices
+hist(pricec, breaks=100, xlab="Prices", 
+  main="Histogram of Cointegrated Portfolio Prices")
+# Plot of cointegrated portfolio prices
+datav <- cbind(pricev$XLK, pricec)[endd]
+colnames(datav)[2] <- "Cointegrated Portfolio"
+colnamev <- colnames(datav)
+dygraphs::dygraph(datav, main="MSFT and XLK Cointegrated Portfolio Prices") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/coint_adfstat.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Perform ADF test on the individual stocks
+sapply(pricev, tseries::adf.test, k=1)
+# Perform ADF test on the cointegrated portfolio
+tseries::adf.test(pricec, k=1)
+# Perform ADF test for vector of cointegrating factors
+betas <- seq(1.2, 2.2, 0.1)
+adfstat <- sapply(betas, function(betav) {
+  pricec <- (pricev$MSFT - betav*pricev$XLK)
+  tseries::adf.test(pricec, k=1)$statistic
+})  # end sapply
+# Plot ADF statistics for vector of cointegrating factors
+plot(x=betas, y=adfstat, type="l", xlab="cointegrating factor", ylab="statistic",
+ main="ADF Test Statistic as Function of Cointegrating Factor")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bollinger Band Strategy for Cointegrated Pairs}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The returns of the cointegrated portfolio have negative autocorrelations, so it can be traded using a mean-reverting strategy.
+      \vskip1ex
+      The \emph{Bollinger Band} strategy switches to long \texttt{\$1} dollar of the stock when the portfolio price is cheap (below the lower band), and sells short \texttt{-\$1} dollar of stock when the portfolio is rich (expensive - above the upper band).    It goes flat \texttt{\$0} dollar of stock (unwinds) if the stock reaches a fair (mean) price.
+      \vskip1ex
+      The strategy is therefore always either long \texttt{\$1} dollar of stock, or short \texttt{-\$1} dollar of stock, or flat \texttt{\$0} dollar of stock.
+      \vskip1ex
+      The portfolio is cheap if its price is below its mean price minus the portfolio standard deviation, and it's rich (expensive) if its price is above the mean plus the standard deviation.  The portfolio price is fair if it's equal to the mean price.
+      \vskip1ex
+      The pairs strategy is path dependent because it depends on the risk position.  So the simulation requires performing a loop.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/coint_msft_xlk.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot of PACF of the cointegrated portfolio returns
+pricen <- zoo::coredata(pricec) # Numeric price
+retd <- rutils::diffit(pricen)
+pacf(retd, lag=10, xlab=NA, ylab=NA,
+     main="PACF of Cointegrated Portfolio Returns")
+# Dygraphs plot of cointegrated portfolio prices
+endd <- rutils::calc_endpoints(pricec, interval="weeks")
+dygraphs::dygraph(pricec[endd], main=
+  "MSFT and XLK Cointegrated Portfolio Prices") %>%
+  dyOptions(colors=c("blue"), strokeWidth=2) %>%
+  dyLegend(show="always", width=200)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Pairs Strategy With Fixed Beta}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The pairs strategy performs well because it's in-sample - it uses the in-sample beta.
+      \vskip1ex
+      A more realistic strategy requires calculating the trailing betas on past prices, updating the pairs price, and updating the trailing mean and volatility.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing mean prices and volatilities
+lambda <- 0.9
+meanv <- HighFreq::run_mean(pricen, lambda=lambda)
+volat <- HighFreq::run_var(pricen, lambda=lambda)
+volat <- sqrt(volat)
+# Simulate the pairs Bollinger strategy
+pricem <- pricen - meanv # De-meaned price
+nrows <- NROW(pricec)
+threshd <- rutils::lagit(volat)
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(pricem > threshd, -1, posv)
+posv <- ifelse(pricem < -threshd, 1, posv)
+posv <- zoo::na.locf(posv)
+# Lag the positions to trade in the next period
+posv <- rutils::lagit(posv, lagg=1)
+# Calculate the pnls and the number of trades
+retp <- rutils::diffit(pricev)
+pnls <-  posv*(retp$MSFT - betav*retp$XLK)
+ntrades <- sum(abs(rutils::diffit(posv)) > 0)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_pairs_fixed.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(retp$MSFT, pnls)
+colnames(wealthv) <- c("MSFT", "Strategy")
+sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of pairs Bollinger strategy
+colnamev <- colnames(wealthv)
+captiont <- paste("Pairs Strategy", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number of trades=", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=200)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Pairs Strategy With Dynamic Beta}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In practice, the stock beta should be updated over time and applied out-of-sample to calculate the trailing cointegrated pair prices.
+      \vskip1ex
+      Using a dynamic beta produces poor performance for many stock and ETF pairs. 
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing cointegrated pair prices
+covars <- HighFreq::run_covar(pricev, lambda)
+betav <- covars[, 1]/covars[, 3]
+pricec <- (pricev$MSFT - betav*pricev$XLK)
+# Recalculate the mean of cointegrated portfolio prices
+meanv <- HighFreq::run_mean(pricec, lambda=lambda)
+vars <- sqrt(HighFreq::run_var(pricec, lambda=lambda))
+# Simulate the pairs Bollinger strategy
+pricen <- zoo::coredata(pricec) # Numeric price
+pricem <- pricen - meanv # De-meaned price
+threshd <- rutils::lagit(volat)
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(pricem > threshd, -1, posv)
+posv <- ifelse(pricem < -threshd, 1, posv)
+posv <- zoo::na.locf(posv)
+posv <- rutils::lagit(posv, lagg=1)
+# Calculate the pnls and the number of trades
+retp <- rutils::diffit(pricev)
+pnls <-  posv*(retp$MSFT - betav*retp$XLK)
+ntrades <- sum(abs(rutils::diffit(posv)) > 0)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_pairs_dynamic.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(retp$MSFT, pnls)
+colnames(wealthv) <- c("MSFT", "Strategy")
+sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of pairs Bollinger strategy
+colnamev <- colnames(wealthv)
+captiont <- paste("Dynamic Pairs Strategy", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number of trades=", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=200)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Pairs Strategy With Slow Beta}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The pairs strategy can be improved by introducing an independent decay parameter $\lambda_{\beta}$ for calculating the trailing stock $\beta$.
+      \vskip1ex
+      The pairs strategy performs better with fast decay for calculating the trailing pairs volatility and slow decay for calculating the trailing stock $\beta$.
+      \vskip1ex
+      Independent decay parameters for the trailing stock $\beta$ and for the trailing pairs volatility improve the pairs strategy performance, but they also increase the risk of overfitting the model, because the more model parameters, the greater the risk of overfitting.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing cointegrated pair prices
+covars <- HighFreq::run_covar(pricev, lambda=0.95)
+betav <- covars[, 1]/covars[, 3]
+pricec <- (pricev$MSFT - betav*pricev$XLK)
+# Recalculate the mean of cointegrated portfolio prices
+meanv <- HighFreq::run_mean(pricec, lambda=0.3)
+vars <- sqrt(HighFreq::run_var(pricec, lambda=0.3))
+# Simulate the pairs Bollinger strategy
+pricen <- zoo::coredata(pricec) # Numeric price
+pricem <- pricen - meanv # De-meaned price
+threshd <- rutils::lagit(volat)
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(pricem > threshd, -1, posv)
+posv <- ifelse(pricem < -threshd, 1, posv)
+posv <- zoo::na.locf(posv)
+posv <- rutils::lagit(posv, lagg=1)
+# Calculate the pnls and the number of trades
+retp <- rutils::diffit(pricev)
+pnls <-  posv*(retp$MSFT - betav*retp$XLK)
+ntrades <- sum(abs(rutils::diffit(posv)) > 0)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_pairs_dynamic_slow_beta.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(retp$MSFT, pnls)
+colnames(wealthv) <- c("MSFT", "Strategy")
+sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of pairs Bollinger strategy
+colnamev <- colnames(wealthv)
+captiont <- paste("Dynamic Pairs Slow Beta", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number of trades=", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -1067,34 +1506,34 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Stock market indices can be either capitalization-weighted, price-weighted, or equal-weighted.
+      Stock market indices can be either capitalization-weighted, price-weighted, or equal-dollar-weighted.
       \vskip1ex
       The cap-weighted index is equal to the average of the market capitalizations of all its companies (stock price times number of shares).  The \emph{S\&P500} index is cap-weighted.
       \vskip1ex
-      The price-weighted index is equal to the average of the stock prices.  The \emph{DJIA} index is price-weighted.
+      The cap-weighted index is equivalent to owning a fixed number of shares, proportional to the number of shares outstanding.  So if company X has twice as many shares outstanding as company Y, then the cap-weighted index will own twice as many shares of company X as company Y.
       \vskip1ex
-      The equal-weighted index is equal to the value (wealth) of the equal-weighted portfolio of stocks.
+      The price-weighted index is equal to the average of the stock prices.  The price-weighted index is equivalent to owning a fixed and equal number of shares.  The \emph{DJIA} index is price-weighted.
       \vskip1ex
-      The equal-weighted portfolio owns equal dollar amounts of each stock, and it rebalances its allocations as market prices change.
+      The equal-dollar-weighted index invests equal dollar amounts in each stock, and it rebalances its allocations as market prices change.
       \vskip1ex
-      The cap-weighted and price-weighted indices are overweight large-cap stocks, compared to the equal-weight index which has larger weights for small-cap stocks.
+      The cap-weighted and price-weighted indices are overweight large-cap stocks, compared to the equal-dollar-weighted index which has larger weights for small-cap stocks.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Load daily S&P500 log percentage stock returns
-load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+# Load daily S&P500 stock prices
+load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+# Calculate the percentage returns
+retp <- lapply(prices, function(x) xts::diff.xts(x)/rutils::lagit(x))
+retp <- rutils::do_call(cbind, retp)
 # Subset (select) the stock returns after the start date of VTI
 retvti <- na.omit(rutils::etfenv$returns$VTI)
 colnames(retvti) <- "VTI"
-retp <- returns[zoo::index(retvti)]
+retp <- retp[zoo::index(retvti)]
 datev <- zoo::index(retp)
 retvti <- retvti[datev]
 nrows <- NROW(retp)
 nstocks <- NCOL(retp)
 head(retp[, 1:5])
-# Replace NA returns with zeros
-retsna <- retp
-retsna[is.na(retsna)] <- 0
       @
   \end{columns}
 \end{block}
@@ -1109,38 +1548,39 @@ retsna[is.na(retsna)] <- 0
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The equal-weight portfolio rebalances its allocations - it sells the stocks with higher returns and buys stocks with lower returns.  So it's a \emph{mean reverting} (contrarian) strategy.
+      The equal-dollar-weighted portfolio rebalances its allocations - it sells the stocks with higher returns and buys stocks with lower returns.  So it's a \emph{mean reverting} (contrarian) strategy.
       \vskip1ex
-      The equal-weight portfolio underperforms the cap-weighted and price-weighted indices because it gradually overweights underperforming stocks, as it rebalances to maintain equal dollar allocations.
+      The equal-dollar-weighted portfolio can often underperform the cap-weighted and price-weighted indices because it gradually overweights underperforming stocks, as it rebalances to maintain equal dollar allocations.
       \vskip1ex
-      In periods when a small number of stocks dominate returns, the cap-weighted and price-weighted indices outperform the equal-weighted index.
+      In periods when a small number of stocks dominate returns, the cap-weighted and price-weighted indices outperform the equal-dollar-weighted index.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate normalized log prices that start at 0
-pricev <- cumsum(retsna)
-head(pricev[, 1:5])
-# Wealth of price-weighted (fixed shares) portfolio
-wealthpw <- rowMeans(exp(pricev))
-# Wealth of equal-weighted portfolio
-wealthew <- exp(rowMeans(pricev))
+# Select stocks with non-NA returns at beginning
+retna <- retp[, !is.na(retp[1, ])]
+# Replace remaining NA returns with zeros
+retna[is.na(retna)] <- 0
+# Wealth of fixed shares (price-weighted) portfolio
+wealthfs <- rowMeans(cumprod(1+retna))
+# Wealth of equal-dollar-weighted portfolio
+wealthew <- cumprod(1+rowMeans(retna))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_equal_weight.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate combined log wealth
-wealthv <- cbind(wealthpw, wealthew)
+wealthv <- cbind(wealthfs, wealthew)
 wealthv <- log(wealthv)
 wealthv <- xts::xts(wealthv, datev)
-colnames(wealthv) <- c("Price-weighted", "Equal-weighted")
+colnames(wealthv) <- c("Fixed shares", "Equal dollars")
 # Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(rutils::diffit(wealthv),
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the combined log wealth
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of combined log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
-  main="Wealth of Price-weighted and Equal-weighted Portfolios") %>%
+  main="Wealth of Fixed Share and Equal Dollar Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1161,28 +1601,25 @@ dygraphs::dygraph(wealthv[endd],
       \vskip1ex
       If a portfolio manager outperforms the median of random portfolios, then they may have stock picking skill.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the price-weighted average of all stock prices
-wealthpw <- xts::xts(wealthpw, order.by=datev)
-colnames(wealthpw) <- "Index"
-# Select a random, price-weighted portfolio of 5 stocks
+# Select a random, fixed share sub-portfolio of 5 stocks
 set.seed(1121)
+nstocks <- NCOL(retna)
 samplev <- sample.int(n=nstocks, size=5, replace=FALSE)
-portf <- pricev[, samplev]
-portf <- rowMeans(exp(portf))
+wealthr <- rowMeans(cumprod(1+retna[, samplev]))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_random.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of stock index and random portfolio
-wealthv <- cbind(wealthpw, portf)
+# Plot dygraph of all stocks and random sub-portfolio
+wealthv <- cbind(wealthfs, wealthr)
 wealthv <- log(wealthv)
-colnames(wealthv)[2] <- "Random"
-colorv <- c("blue", "red")
+wealthv <- xts::xts(wealthv, order.by=datev)
+colnames(wealthv) <- c("All stocks", "Random sub-portfolio")
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], main="Stock Index and Random Portfolio") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1208,31 +1645,31 @@ dygraphs::dygraph(wealthv[endd], main="Stock Index and Random Portfolio") %>%
 # Select 10 random price-weighted sub-portfolios
 set.seed(1121)
 nportf <- 10
-portfs <- sapply(1:nportf, function(x) {
-  portf <- pricev[, sample.int(n=nstocks, size=5, replace=FALSE)]
-  rowMeans(exp(portf))
+wealthr <- sapply(1:nportf, function(x) {
+  samplev <- sample.int(n=nstocks, size=5, replace=FALSE)
+  rowMeans(cumprod(1+retna[, samplev]))
 })  # end sapply
-portfs <- xts::xts(portfs, order.by=datev)
-colnames(portfs) <- paste0("portf", 1:nportf)
-# Sort the sub-portfolios according to perfomance
-portfs <- portfs[, order(portfs[nrows])]
-round(head(portfs), 3)
-round(tail(portfs), 3)
+wealthr <- xts::xts(wealthr, order.by=datev)
+colnames(wealthr) <- paste0("portf", 1:nportf)
+# Sort the sub-portfolios according to performance
+wealthr <- wealthr[, order(wealthr[nrows])]
+round(head(wealthr), 3)
+round(tail(wealthr), 3)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_randomm.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of stock index and random portfolios
+# Plot dygraph of all stocks and random sub-portfolios
 colorv <- colorRampPalette(c("red", "blue"))(nportf)
-wealthv <- cbind(wealthpw, portfs)
-wealthv <- log(wealthv)
-colnames(wealthv)[1] <- "Index"
-colnamev <- colnames(wealthv)
 colorv <- c("green", colorv)
-dygraphs::dygraph(wealthv[endd], main="Stock Index and Random Portfolios") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=3, col="green") %>%
+wealthv <- cbind(wealthfs, wealthr)
+wealthv <- log(wealthv)
+colnames(wealthv)[1] <- "All stocks"
+colnamev <- colnames(wealthv)
+dygraphs::dygraph(wealthv[endd], main="All Stocks and Random Sub-Portfolios") %>%
+  dyOptions(colors=colorv, strokeWidth=1) %>%
+  dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=3) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -1261,20 +1698,25 @@ datev[cutoff]
 insample <- 1:cutoff
 outsample <- (cutoff + 1):nrows
 # Calculate the 10 best performing stocks in-sample
-perfstat <- sort(drop(coredata(pricev[cutoff, ])), decreasing=TRUE)
-symbolv <- names(head(perfstat, 10))
+pricev <- cumprod(1+retna)
+wealthv <- pricev[cutoff, ]
+wealthv <- drop(coredata(wealthv))
+wealthv <- sort(wealthv, decreasing=TRUE)
+symbolv <- names(head(wealthv, 10))
 # Calculate the wealth of the 10 best performing stocks
-wealthv <- pricev[, symbolv]
-wealthv <- rowMeans(exp(wealthv))
+wealthv <- rowMeans(pricev[, symbolv])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_stocks_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Combine the price-weighted wealth with the 10 best performing stocks
-wealthv <- cbind(wealthpw, wealthv)
-wealthv <- log(wealthv)
-colnames(wealthv)[2] <- "Portfolio"
+wealthv <- cbind(wealthfs, wealthv)
+wealthv <- xts::xts(log(wealthv), order.by=datev)
+colnames(wealthv) <- c("All stocks", "Best performing")
+# Calculate the in-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(rutils::diffit(wealthv[insample, ]), 
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(rutils::diffit(wealthv[outsample, ]), 
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1282,7 +1724,7 @@ sqrt(252)*sapply(rutils::diffit(wealthv[outsample, ]),
 dygraphs::dygraph(wealthv[endd], main="Out-of-sample Log Prices of Stock Portfolio") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(datev[cutoff], label="in-sample", strokePattern="solid", color="green") %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -1321,11 +1763,12 @@ tail(riskret)
 riskv <- riskret[, "std"]
 medianv <- median(riskv)
 # Calculate the returns of low and high volatility stocks
-retlow <- rowMeans(retsna[, names(riskv[riskv<=medianv])])
-rethigh <- rowMeans(retsna[, names(riskv[riskv>medianv])])
+retlow <- rowMeans(retna[, names(riskv[riskv<=medianv])])
+rethigh <- rowMeans(retna[, names(riskv[riskv>medianv])])
 wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
-colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
+colnamev <- c("low_vol", "high_vol", "long_short")
+colnames(wealthv) <- colnamev
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1334,10 +1777,12 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative returns of low and high volatility stocks
+# Plot of cumulative returns of low and high volatility stocks
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks In-Sample") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dySeries(name=colnamev[1], col="blue", strokeWidth=1) %>%
+  dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
+  dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -1357,20 +1802,20 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks In
       The \emph{Treynor-Mazuy} test shows that the \emph{betting against volatility} strategy has some \emph{market timing} skill.
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
-predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(predv)[2:3] <- c("merton", "treynor")
-regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
+predm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(predm)[2:3] <- c("merton", "treynor")
+regmod <- lm(wealthv$long_short ~ VTI + merton, data=predm); summary(regmod)
 # Treynor-Mazuy test
-regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
+regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predm); summary(regmod)
 # Plot residual scatterplot
 resids <- regmod$residuals
 plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Volatility")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Volatility vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
-fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
-points.default(x=retvti, y=fittedv, pch=16, col="red")
+points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
@@ -1414,11 +1859,12 @@ tail(riskretis)
 riskv <- riskretis[, "std"]
 medianv <- median(riskv)
 # Calculate the out-of-sample returns of low and high volatility stocks
-retlow <- rowMeans(retsna[outsample, names(riskv[riskv<=medianv])])
-rethigh <- rowMeans(retsna[outsample, names(riskv[riskv>medianv])])
+retlow <- rowMeans(retna[outsample, names(riskv[riskv<=medianv])])
+rethigh <- rowMeans(retna[outsample, names(riskv[riskv>medianv])])
 wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
-colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
+colnamev <- c("low_vol", "high_vol", "long_short")
+colnames(wealthv) <- colnamev
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1427,11 +1873,13 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative returns of low and high volatility stocks
+# Plot of cumulative returns of low and high volatility stocks
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks Out-Of-Sample") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dySeries(name=colnamev[1], col="blue", strokeWidth=1) %>%
+  dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
+  dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -1454,11 +1902,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks Ou
 riskv <- riskret[, "ivol"]
 medianv <- median(riskv)
 # Calculate the returns of low and high idiosyncratic volatility stocks
-retlow <- rowMeans(retsna[, names(riskv[riskv<=medianv])])
-rethigh <- rowMeans(retsna[, names(riskv[riskv>medianv])])
+retlow <- rowMeans(retna[, names(riskv[riskv<=medianv])])
+rethigh <- rowMeans(retna[, names(riskv[riskv>medianv])])
 wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
-colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
+colnamev <- c("low_vol", "high_vol", "long_short")
+colnames(wealthv) <- colnamev
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1467,11 +1916,13 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the returns of low and high idiosyncratic volatility stocks
+# Plot of returns of low and high idiosyncratic volatility stocks
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volatility Stocks In-Sample") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dySeries(name=colnamev[1], col="blue", strokeWidth=1) %>%
+  dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
+  dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -1491,20 +1942,20 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volati
       The \emph{Treynor-Mazuy} test shows that the \emph{betting against idiosyncratic volatility} strategy has some \emph{market timing} skill.
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
-predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(predv)[2:3] <- c("merton", "treynor")
-regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
+predm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(predm)[2:3] <- c("merton", "treynor")
+regmod <- lm(wealthv$long_short ~ VTI + merton, data=predm); summary(regmod)
 # Treynor-Mazuy test
-regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
+regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predm); summary(regmod)
 # Plot residual scatterplot
 resids <- regmod$residuals
 plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Volatility")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Idiosyncratic Volatility vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
-fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
-points.default(x=retvti, y=fittedv, pch=16, col="red")
+points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
@@ -1529,11 +1980,12 @@ text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
 riskv <- riskretis[, "ivol"]
 medianv <- median(riskv)
 # Calculate the out-of-sample returns of low and high idiosyncratic volatility stocks
-retlow <- rowMeans(retsna[outsample, names(riskv[riskv<=medianv])])
-rethigh <- rowMeans(retsna[outsample, names(riskv[riskv>medianv])])
+retlow <- rowMeans(retna[outsample, names(riskv[riskv<=medianv])])
+rethigh <- rowMeans(retna[outsample, names(riskv[riskv>medianv])])
 wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
-colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
+colnamev <- c("low_vol", "high_vol", "long_short")
+colnames(wealthv) <- colnamev
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1542,11 +1994,13 @@ colnames(wealthv) <- c("low_vol", "high_vol", "long_short")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the out-of-sample returns of low and high volatility stocks
+# Plot of out-of-sample returns of low and high volatility stocks
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volatility Stocks Out-Of-Sample") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dySeries(name=colnamev[1], col="blue", strokeWidth=1) %>%
+  dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
+  dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -1572,11 +2026,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volati
 riskv <- riskret[, "beta"]
 medianv <- median(riskv)
 # Calculate the returns of low and high beta stocks
-betalow <- rowMeans(retsna[, names(riskv[riskv<=medianv])])
-betahigh <- rowMeans(retsna[, names(riskv[riskv>medianv])])
+betalow <- rowMeans(retna[, names(riskv[riskv<=medianv])])
+betahigh <- rowMeans(retna[, names(riskv[riskv>medianv])])
 wealthv <- cbind(betalow, betahigh, betalow - 0.5*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
-colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
+colnamev <- c("low_beta", "high_beta", "long_short")
+colnames(wealthv) <- colnamev
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1585,11 +2040,13 @@ colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative returns of low and high beta stocks
+# Plot of cumulative returns of low and high beta stocks
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks In-Sample") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dySeries(name=colnamev[1], col="blue", strokeWidth=1) %>%
+  dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
+  dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -1609,20 +2066,20 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks In-Sampl
       The \emph{Treynor-Mazuy} test shows that the \emph{betting against beta} strategy does not have significant \emph{market timing} skill.
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
-predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(predv)[2:3] <- c("merton", "treynor")
-regmod <- lm(wealthv$long_short ~ VTI + merton, data=predv); summary(regmod)
+predm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(predm)[2:3] <- c("merton", "treynor")
+regmod <- lm(wealthv$long_short ~ VTI + merton, data=predm); summary(regmod)
 # Treynor-Mazuy test
-regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predv); summary(regmod)
+regmod <- lm(wealthv$long_short ~ VTI + treynor, data=predm); summary(regmod)
 # Plot residual scatterplot
 resids <- regmod$residuals
 plot.default(x=retvti, y=resids, xlab="VTI", ylab="Low Beta")
 title(main="Treynor-Mazuy Market Timing Test\n for Low Beta vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
-fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
-points.default(x=retvti, y=fittedv, pch=16, col="red")
+points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
@@ -1647,11 +2104,12 @@ text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
 riskv <- riskretis[, "beta"]
 medianv <- median(riskv)
 # Calculate the out-of-sample returns of low and high beta stocks
-betalow <- rowMeans(retsna[outsample, names(riskv[riskv<=medianv])])
-betahigh <- rowMeans(retsna[outsample, names(riskv[riskv>medianv])])
+betalow <- rowMeans(retna[outsample, names(riskv[riskv<=medianv])])
+betahigh <- rowMeans(retna[outsample, names(riskv[riskv>medianv])])
 wealthv <- cbind(betalow, betahigh, betalow - 0.5*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
-colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
+colnamev <- c("low_beta", "high_beta", "long_short")
+colnames(wealthv) <- colnamev
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1660,11 +2118,13 @@ colnames(wealthv) <- c("low_beta", "high_beta", "long_short")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the out-of-sample returns of low and high beta stocks
+# Plot of out-of-sample returns of low and high beta stocks
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-Sample") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dySeries(name=colnamev[1], col="blue", strokeWidth=1) %>%
+  dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
+  dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -1690,7 +2150,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-S
       $\frac{p_i}{\sigma^d_i} = \frac{1}{\sigma_i}$,
       so the allocations $a_i$ are proportional to the inverse of the percentage volatilities $a_i \propto \frac{1}{\sigma_i}$.
       \vskip1ex
-      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a \emph{time series} of returns, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the returns minus the trailing means $(r_t - \bar{r}_t)^2$, using the decay factor $\lambda$:
+      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a \emph{time series} of returns, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the returns minus the trailing means $(r_t - \bar{r}_t)^2$, using the weight decay factor $\lambda$:
       \begin{flalign*}
         & \bar{r}_t = \lambda \bar{r}_{t-1} + (1-\lambda) r_t \\
         & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (r_t - \bar{r}_t)^2
@@ -1701,7 +2161,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-S
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing percentage volatilities
 lambda <- 0.6
-volat <- HighFreq::run_var(retsna, lambda=lambda)
+volat <- HighFreq::run_var(retna, lambda=lambda)
 volat <- sqrt(volat)
 # Calculate the risk parity portfolio allocations
 alloc <- ifelse(volat > 1e-4, 1/volat, 0)
@@ -1718,7 +2178,7 @@ alloc <- rutils::lagit(alloc)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performance of the Risk Parity Strategy for Stocks}
+\subsection{Risk Parity Strategy for Stocks Performance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1731,24 +2191,24 @@ alloc <- rutils::lagit(alloc)
 # Calculate the wealth of risk parity
 wealthrp <- exp(cumsum(rowSums(alloc*retp, na.rm=TRUE)))
 # Combined wealth
-wealthv <- cbind(wealthpw, wealthrp)
+wealthv <- cbind(wealthfs, wealthrp)
 wealthv <- xts::xts(wealthv, datev)
 colnames(wealthv) <- c("Price-weighted", "Risk parity")
 wealthv <- log(wealthv)
 # Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(rutils::diffit(wealthv),
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_stocks.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the log wealth
+# Plot of log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
   main="Wealth of Price-weighted and Risk Parity Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1797,12 +2257,12 @@ wealthv <- log(wealthv)
 retvol <- rutils::diffit(wealthv)
 sqrt(252)*sapply(retvol, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the log wealth
+# Plot of log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
   main="Wealth of Low and High Volatility Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1835,20 +2295,20 @@ factv <- rutils::lagit(factv)
 retls <- (retlow - factv*rethigh)
 wealthls <- exp(cumsum(retls))
 # Combined wealth
-wealthv <- cbind(wealthpw, wealthls)
+wealthv <- cbind(wealthfs, wealthls)
 wealthv <- xts::xts(wealthv, datev)
 colnamev <- c("Price-weighted", "Long-Short Vol")
 colnames(wealthv) <- colnamev
 wealthv <- log(wealthv)
 # Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(rutils::diffit(wealthv),
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_vol_long_short_stocks.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the log wealth
+# Plot of log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
   main="Wealth of Price-weighted and Long-Short Vol Portfolios") %>%
@@ -1856,7 +2316,7 @@ dygraphs::dygraph(wealthv[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1917,8 +2377,8 @@ weightm <- perfstat
 hist(weightm)
 # Center the weights
 weightv <- weightm - mean(weightm)
-sum(weightv)
-sort(weightv)
+sum(weights)
+sort(weights)
       @
   \end{columns}
 \end{block}
@@ -1949,7 +2409,7 @@ sort(weightv)
 # Quadratic constraint
 weightv <- weightm/sqrt(sum(weightm^2))
 sum(weightv^2)
-sum(weightv)
+sum(weights)
 weightv
       @
   \end{columns}
@@ -1978,7 +2438,7 @@ weightv
       <<echo=TRUE,eval=FALSE>>=
 # Apply the linear constraint
 weightv <- weightm/sum(weightm)
-sum(weightv)
+sum(weights)
 weightv
       @
   \end{columns}
@@ -2089,13 +2549,13 @@ symbolb <- names(head(perfstat, nstocks))
 symbolw <- names(tail(perfstat, nstocks))
 # Calculate equal weights for the best and worst performing stocks
 weightv <- numeric(NCOL(retp))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 weightv[symbolb] <- 1
 weightv[symbolw] <- (-1)
 # Calculate weights proportional to performance statistic
 weightv <- perfstat
 # Center weights so sum is equal to 0
-weightv <- weightv - mean(weightv)
+weightv <- weightv - mean(weights)
 # Scale weights so sum of squares is equal to 1
 weightv <- weightv/sqrt(sum(weightv^2))
 # Calculate the momentum portfolio returns
@@ -2156,7 +2616,7 @@ pnls <- lapply(2:(npts-1), function(ep) {
   symbolw <- names(tail(perfstat, nstocks))
   # Calculate the momentum weights
   weightv <- numeric(NCOL(retp))
-  names(weightv) <- colnames(retp)
+  names(weights) <- colnames(retp)
   weightv[symbolb] <- 1
   weightv[symbolw] <- (-1)
   # Calculate the in-sample portfolio returns
@@ -2208,7 +2668,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Log Stock Index and Momentum Strategy") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2247,7 +2707,7 @@ btmomtop <- function(retp, objfun, look_back=12, rebalf="weeks", nstocks=10,
     symbolw <- names(tail(perfstat, nstocks))
     # Calculate the momentum weights
     weightv <- numeric(NCOL(retp))
-    names(weightv) <- colnames(retp)
+    names(weights) <- colnames(retp)
     weightv[symbolb] <- 1
     weightv[symbolw] <- (-1)
     # Calculate the in-sample portfolio returns
@@ -2343,7 +2803,7 @@ colorv <- c("blue", "red")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Optimal Momentum Strategy for Stocks") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2446,7 +2906,7 @@ colorv <- c("blue", "red", "green")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Optimal Weighted Momentum Strategy for Stocks") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2471,21 +2931,19 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing variance
 look_back <- 152
-varm <- roll::roll_var(retp, width=look_back, min_obs=1)
+varm <- HighFreq::roll_var(retp, look_back=look_back)
 head(varm)
-varm[1, ] <- retp[1, ]^2
 # Calculate the trailing Kelly ratio
-perfstat <- roll::roll_mean(retp, width=look_back, min_obs=1)
+perfstat <- HighFreq::roll_mean(retp, look_back=look_back)
 weightv <- perfstat/varm
-weightv[varm == 0] <- 0
-sum(is.na(weightv))
+sum(is.na(weights))
 weightv <- weightv/sqrt(rowSums(weightv^2))
-weightv <- rutils::lagit(weightv)
+weightv <- rutils::lagit(weights)
 # Calculate the momentum profits and losses
 pnls <- rowSums(weightv*retp)
 # Calculate the transaction costs
 bid_offer <- 0.0
-costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
 pnls <- (pnls - costs)
       @
     \column{0.5\textwidth}
@@ -2506,7 +2964,7 @@ colorv <- c("blue", "red", "green")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Daily Momentum Strategy for Stocks") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2542,18 +3000,16 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 btmomdaily <- function(retp, look_back=252, trend=1, bid_offer=0.0, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate the trailing variance
-  varm <- roll::roll_var(retp, width=look_back, min_obs=1)
-  varm[1, ] <- retp[1, ]^2
+  varm <- HighFreq::roll_var(retp, look_back=look_back)
 # Calculate the trailing Kelly ratio
-  perfstat <- roll::roll_mean(retp, width=look_back, min_obs=1)
+  perfstat <- HighFreq::roll_mean(retp, look_back=look_back)
   weightv <- perfstat/varm
-  weightv[varm == 0] <- 0
   weightv <- weightv/sqrt(rowSums(weightv^2))
-  weightv <- rutils::lagit(weightv)
+  weightv <- rutils::lagit(weights)
   # Calculate the momentum profits and losses
   pnls <- trend*rowSums(weightv*retp)
   # Calculate the transaction costs
-  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
   (pnls - costs)
 }  # end btmomdaily
 @
@@ -2594,7 +3050,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Daily Stock Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot daily stock momentum strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
@@ -2641,20 +3097,18 @@ legend("bottomleft", legend=colnames(pnls),
 btmomdailyhold <- function(retp, look_back=252, holdp=5, trend=1, bid_offer=0.0, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate the trailing variance
-  varm <- roll::roll_var(retp, width=look_back, min_obs=1)
-  varm[1, ] <- retp[1, ]^2
+  varm <- HighFreq::roll_var(retp, look_back=look_back)
   # Calculate the trailing Kelly ratio
-  perfstat <- roll::roll_mean(retp, width=look_back, min_obs=1)
+  perfstat <- HighFreq::roll_mean(retp, look_back=look_back)
   weightv <- perfstat/varm
-  weightv[varm == 0] <- 0
   weightv <- weightv/sqrt(rowSums(weightv^2))
   # Average the weights over holding period
-  weightv <- roll::roll_mean(weightv, width=holdp, min_obs=1)
-  weightv <- rutils::lagit(weightv)
+  weightv <- HighFreq::roll_mean(weightv, look_back=holdp)
+  weightv <- rutils::lagit(weights)
   # Calculate the momentum profits and losses
   pnls <- trend*rowSums(weightv*retp)
   # Calculate the transaction costs
-  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
   (pnls - costs)
 }  # end btmomdailyhold
 @
@@ -2696,7 +3150,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Daily Stock Momentum Strategies with Holding Period") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot of daily stock momentum strategies with holding period
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
@@ -2745,7 +3199,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Mean Reverting Daily Stock Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot mean reverting daily stock momentum strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
@@ -2797,11 +3251,11 @@ btmomrun <- function(retp, lambda=0.9, trend=1, holdp=5, bid_offer=0.0, ...) {
   weightv <- weightv/sqrt(rowSums(weightv^2))
   # Average the weights over holding period
   weightv <- HighFreq::roll_mean(weightv, look_back=holdp)
-  weightv <- rutils::lagit(weightv)
+  weightv <- rutils::lagit(weights)
   # Calculate the momentum profits and losses
   pnls <- trend*rowSums(weightv*retp)
   # Calculate the transaction costs
-  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
   (pnls - costs)
 }  # end btmomrun
 @
@@ -2835,12 +3289,12 @@ sqrt(252)*sapply(wealthv, function(x)
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/momentum_mtum.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the scaled prices of VTI vs MTUM ETF
+# Plot of scaled prices of VTI vs MTUM ETF
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="VTI vs MTUM ETF") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -2934,7 +3388,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Daily PCA Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2975,7 +3429,7 @@ colorv <- c("blue", "red")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Optimal PCA Momentum Strategy") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3020,7 +3474,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Mean Reverting Daily PCA Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot daily PCA momentum strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
@@ -3084,7 +3538,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Daily Out-of-Sample PCA Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3128,7 +3582,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Mean Reverting Daily Out-of-Sample PCA Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3205,7 +3659,7 @@ pnls <- pnll[[whichmax]]
 pnls <- c(rowMeans(retp[endd[1]:endd[2], ]), pnls)
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
-all_weather <- retp %*% weightsaw
+all_weather <- retp %*% weightvaw
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3223,7 +3677,7 @@ colorv <- c("blue", "red", "green")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Momentum Strategy and All-weather for ETFs") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3258,7 +3712,7 @@ weightv <- lapply(1:(npts-1), function(ep) {
   weightv*sd(rowMeans(retsis))/sd(retportf)
 })  # end lapply
 weightv <- rutils::do_call(rbind, weightv)
-# Plot the momentum weights
+# Plot of momentum weights
 retvti <- cumsum(retp$VTI)
 datav <- cbind(retvti[endd], weightv)
 colnames(datav) <- c("VTI", paste0(colnames(retp), "_weight"))
@@ -3314,20 +3768,20 @@ zoo::plot.zoo(datav, main="Momentum Beta & VTI Price", xlab="")
       <<echo=TRUE,eval=FALSE>>=
 # Merton-Henriksson test
 retvti <- retp$VTI
-predv <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(predv)[2:3] <- c("merton", "treynor")
-regmod <- lm(pnls ~ VTI + merton, data=predv); summary(regmod)
+predm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(predm)[2:3] <- c("merton", "treynor")
+regmod <- lm(pnls ~ VTI + merton, data=predm); summary(regmod)
 # Treynor-Mazuy test
-regmod <- lm(pnls ~ VTI + treynor, data=predv); summary(regmod)
+regmod <- lm(pnls ~ VTI + treynor, data=predm); summary(regmod)
 # Plot residual scatterplot
 resids <- regmod$residuals
 plot.default(x=retvti, y=resids, xlab="VTI", ylab="momentum")
 title(main="Treynor-Mazuy Market Timing Test\n for Momentum vs VTI", line=0.5)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
-fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
-points.default(x=retvti, y=fittedv, pch=16, col="red")
+points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
@@ -3415,7 +3869,7 @@ cor(wealthv)
 # Plot ETF momentum strategy combined with All-Weather
 dygraphs::dygraph(cumsum(wealthv)[endd], main="ETF Momentum Strategy Combined with All-Weather") %>%
   dyOptions(colors=c("red", "blue", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Or
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("green", "blue", "red")
@@ -3448,21 +3902,19 @@ legend("topleft", legend=colnames(wealthv),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing variance
 look_back <- 152
-varm <- roll::roll_var(retp, width=look_back, min_obs=1)
-head(varm)
-varm[1, ] <- retp[1, ]^2
+varm <- HighFreq::roll_var(retp, look_back=look_back)
 # Calculate the trailing Kelly ratio
-perfstat <- roll::roll_mean(retp, width=look_back, min_obs=1)
+perfstat <- HighFreq::roll_mean(retp, look_back=look_back)
 weightv <- perfstat/varm
 weightv[varm == 0] <- 0
-sum(is.na(weightv))
+sum(is.na(weights))
 weightv <- weightv/sqrt(rowSums(weightv^2))
-weightv <- rutils::lagit(weightv)
+weightv <- rutils::lagit(weights)
 # Calculate the momentum profits and losses
 pnls <- rowSums(weightv*retp)
 # Calculate the transaction costs
 bid_offer <- 0.0
-costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weights)))
 pnls <- (pnls - costs)
       @
     \column{0.5\textwidth}
@@ -3471,7 +3923,7 @@ pnls <- (pnls - costs)
       <<echo=TRUE,eval=FALSE>>=
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
-all_weather <- retp %*% weightsaw
+all_weather <- retp %*% weightvaw
 # Scale the momentum volatility to all_weather
 pnls <- sd(all_weather)*pnls/sd(pnls)
 # Calculate the wealth of momentum returns
@@ -3484,7 +3936,7 @@ sqrt(252)*sapply(wealthv, function(x)
 # Plot dygraph of the momentum strategy returns
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Daily Momentum Strategy vs All-Weather") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3528,7 +3980,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Daily ETF Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot daily ETF momentum strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
@@ -3585,7 +4037,7 @@ pnls <- xts::xts(pnls, datev)
 colnames(pnls) <- "PnL"
 dygraphs::dygraph(cumsum(pnls), main="Daily Momentum Strategy") %>%
   dyOptions(colors="blue", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 
 @
 \end{block}
@@ -3625,7 +4077,7 @@ pnls <- xts::xts(pnls, datev)
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls), main="Daily ETF Momentum Strategies with Holding Period") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot daily ETF momentum strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
@@ -3682,7 +4134,7 @@ pnls <- rutils::lagit(pnls)
 cor(pnls, retsos)
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
-all_weather <- retsos %*% weightsaw
+all_weather <- retsos %*% weightvaw
 # Calculate the wealth of momentum returns
 wealthv <- xts::xts(cbind(all_weather, pnls), order.by=datev)
 colnames(wealthv) <- c("All-Weather", "Momentum")
@@ -3690,7 +4142,7 @@ cor(wealthv)
 # Plot dygraph of the momentum strategy returns
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Monthly Momentum Strategy vs All-Weather") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3804,12 +4256,12 @@ pnls <- rowSums(weightv*retsos)
 # Lag the momentum returns and weights
 # to correspond with end of future interval
 pnls <- rutils::lagit(pnls)
-weightv <- rutils::lagit(weightv)
+weightv <- rutils::lagit(weights)
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
 # Calculate the transaction costs
 wealthv <- cumsum(pnls)
-costs <- 0.5*bid_offer*wealth*rowSums(abs(rutils::diffit(weightv)))
+costs <- 0.5*bid_offer*wealth*rowSums(abs(rutils::diffit(weights)))
 wealthv <- cumsum(pnls - costs)
 datev <- zoo::index(retp[endd])
 wealthv <- xts::xts(wealthv, datev)
@@ -3820,10 +4272,10 @@ wealthv <- xts::xts(wealthv, datev)
       <<echo=TRUE,eval=FALSE>>=
 # Define all-weather benchmark
 weightsaw <- c(0.30, 0.55, 0.15)
-retsaw <- retp %*% weightsaw
+retsaw <- retp %*% weightvaw
 wealthaw <- cumsum(retsaw)
 wealthaw <- xts::xts(wealthaw[endd], datev)
-# Plot the Momentum strategy and benchmark
+# Plot of Momentum strategy and benchmark
 wealthv <- cbind(wealthv, wealthaw)
 colnames(wealthv) <- c("Momentum Strategy", "Benchmark")
 dygraphs::dygraph(wealthv, main="Momentum Strategy") %>%
@@ -3831,7 +4283,7 @@ dygraphs::dygraph(wealthv, main="Momentum Strategy") %>%
   dyAxis("y2", label="Momentum Strategy", independentTicks=TRUE) %>%
   dySeries(name="Momentum Strategy", axis="y2", label="Momentum Strategy", strokeWidth=2, col="red") %>%
   dySeries(name="Benchmark", axis="y", label="Benchmark", strokeWidth=2, col="blue") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3870,13 +4322,13 @@ btmomweight <- function(retp,
   # Scale weights so sum of squares is equal to 1
   weightv <- perfstat
   weightv <- weightv/sqrt(rowSums(weightv^2))
-  weightv[is.na(weightv)] <- 0  # Set NA values to zero
+  weightv[is.na(weights)] <- 0  # Set NA values to zero
   # Calculate the momentum profits and losses
   pnls <- rowSums(weightv*retsos)
   # Calculate the transaction costs
-  costs <- 0.5*bid_offer*cumsum(pnls)*rowSums(abs(rutils::diffit(weightv)))
+  costs <- 0.5*bid_offer*cumsum(pnls)*rowSums(abs(rutils::diffit(weights)))
   pnls <- (pnls - costs)
-  if (with_weights)
+  if (with_weightv)
     rutils::lagit(cbind(pnls, weightv))
   else
     rutils::lagit(pnls)
@@ -3935,11 +4387,11 @@ retsis <- retp["/2014"]
 invmat <- MASS::ginv(cov(retsis))
 weightv <- invmat %*% colMeans(retx["/2014"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 # Plot portfolio weights
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-barplot(sort(weightv), main="Maximum Sharpe Weights", cex.names=0.7)
+barplot(sort(weights), main="Maximum Sharpe Weights", cex.names=0.7)
       @
   \end{columns}
 \end{block}
@@ -3972,7 +4424,7 @@ endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="In-sample Optimal Portfolio Returns") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -4011,7 +4463,7 @@ endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Out-of-sample Optimal Portfolio Returns") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -4034,7 +4486,7 @@ dygraphs::dygraph(cumsum(pnls)[endd],
 invmat <- MASS::ginv(cov(retsis))
 weightv <- invmat %*% colMeans(retx["/2014"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 # Calculate in-sample portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 # Calculate out-of-sample portfolio returns
@@ -4056,7 +4508,7 @@ dygraphs::dygraph(cumsum(pnls)[endd],
   main="Out-of-sample Optimal Portfolio Returns for ETFs") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -4171,7 +4623,7 @@ all.equal(covmat, covmat %*% covinv %*% covmat)
 # Calculate portfolio weights
 weightv <- invmat %*% colMeans(retsis)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 # Calculate portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
@@ -4189,7 +4641,7 @@ dygraphs::dygraph(cumsum(pnls)[endd],
   main="Optimal Portfolio Returns With Dimension Reduction") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -4238,7 +4690,7 @@ dygraphs::dygraph(cumsum(pnls)[endd],
   main="Optimal Portfolio Returns With Eigen and Return Shrinkage") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -4295,7 +4747,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Monthly ETF Rolling Portfolio Strategy") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 @
   \end{columns}
 \end{block}
@@ -4349,7 +4801,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With Dimension Reduction") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4404,7 +4856,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With Return Shrinkage") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4460,7 +4912,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4547,7 +4999,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Rolling Portfolio Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot EWMA strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
@@ -4591,7 +5043,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Rolling Portfolio Strategies With Dimension Reduction") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot EWMA strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
@@ -4637,7 +5089,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Rolling Portfolio Strategies With Return Shrinkage") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot EWMA strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
@@ -4681,7 +5133,7 @@ covmat <- cov(retsis)
 invmat <- MASS::ginv(covmat)
 weightv <- invmat %*% colMeans(retx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 # Calculate portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
@@ -4699,13 +5151,13 @@ colnames(pnls) <- c("Equal Weight", "Optimal")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(pnls[index(outsample)],
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative portfolio returns
+# Plot of cumulative portfolio returns
 endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -4734,7 +5186,7 @@ invmat <- eigenvec[, 1:dimax] %*%
 # Calculate portfolio weights
 weightv <- invmat %*% colMeans(retx["/2010"])
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 # Calculate portfolio returns
 insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
 outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
@@ -4752,13 +5204,13 @@ colnames(pnls) <- c("Equal Weight", "Optimal")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(pnls[index(outsample)],
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative portfolio returns
+# Plot of cumulative portfolio returns
 endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Out-of-sample Returns for Stocks with Dimension Reduction") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -4806,12 +5258,12 @@ colnames(pnls) <- c("Equal Weight", "Optimal")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(pnls[index(outsample)],
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative portfolio returns
+# Plot of cumulative portfolio returns
 dygraphs::dygraph(cumsum(pnls)[endd], 
   main="Out-of-sample Returns for Stocks with Return Shrinkage") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -4922,7 +5374,7 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
     weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
-    weightv = (weightv - arma::mean(weightv));
+    weightv = (weightv - arma::mean(weights));
     break;
   }  // end ranksharpe
   case method::max_sharpe: {
@@ -4968,7 +5420,7 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     meancols = meancols/sd_cols;
     // Weights equal to ranks of Sharpe
     weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
-    weightv = (weightv - arma::mean(weightv));
+    weightv = (weightv - arma::mean(weights));
     break;
   }  // end rank
   case method::rankrob: {
@@ -4993,7 +5445,7 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     // Weights equal to ranks of Sharpe
     weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
     // level;
-    weightv = (weightv - arma::mean(weightv));
+    weightv = (weightv - arma::mean(weights));
     break;
   }  // end rankrob
   case method::quantile: {
@@ -5001,8 +5453,8 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     arma::vec levels = {confi, 1-confi};
     weightv = conv_to<vec>::from(arma::sum(arma::quantile(returns, levels, 0), 0));
     // Weights equal to ranks
-    weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(weightv)));
-    weightv = (weightv - arma::mean(weightv));
+    weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(weights)));
+    weightv = (weightv - arma::mean(weights));
     break;
   }  // end quantile
   default : {
@@ -5012,8 +5464,8 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
   }  // end switch
   
   if (scale == TRUE) {
-    // return weightv/std::sqrt(sum(square(weightv)));
-    // return weightv/sum(weightv);
+    // return weightv/std::sqrt(sum(square(weights)));
+    // return weightv/sum(weights);
     // Returns of equally weighted portfolio
     // arma::vec meanrows = arma::mean(returns, 1);
     // Returns of weighted portfolio
@@ -5144,7 +5596,7 @@ sqrt(252)*sapply(wealthv, function(x)
 # Plot cumulative strategy returns
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Optimization Strategy for S&P500 Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -5185,7 +5637,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling S&P500 Portfolio Optimization Strategy With Shrinkage") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -5246,7 +5698,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -5294,7 +5746,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -5302,274 +5754,51 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio 
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Statistical Arbitrage}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Cointegration of Stocks Prices}
+\subsection{draft: Applications of Machine Learning to Finance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A group of stocks is \emph{cointegrated} if there is a portfolio of the stocks whose price is range-bound.
-      \vskip1ex
-      For two stocks, the cointegrating factor $\beta$ can be obtained from the regression of the stock prices.  The cointegrated portfolio $R$ is the residual of the regression:
+      The inverse of the covariance matrix of returns $\mathbb{C}$ can be calculated from its \emph{eigenvalues} $\mathbb{D}$ and its \emph{eigenvectors} $\mathbb{O}$:
       \begin{displaymath}
-        R = p_1 - \beta p_2 - \alpha
+        \mathbb{C}^{-1} = \mathbb{O} \, \mathbb{D}^{-1} \, \mathbb{O}^T
       \end{displaymath}
-      Regressing the stock \emph{prices} produces a \emph{cointegrated} portfolio, with a small variance of its \emph{prices}.
-      Regressing the stock \emph{returns} produces a \emph{correlated} portfolio, with a small variance of its \emph{returns}.
+      If the number of time periods of returns (rows) is less than the number of stocks (columns), then some of the higher order eigenvalues are zero, and the above covariance matrix inverse is singular.
       \vskip1ex
-      The standard confidence intervals are not valid for the regression of prices, because prices are not stationary and are not normally distributed.
-      <<echo=TRUE,eval=FALSE>>=
-# Load daily S&P500 stock prices
-load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
-# Subset (select) the stock prices after the start date of XLK
-pricev <- cbind(rutils::etfenv$prices$XLK, prices$MSFT)
-pricev <- na.omit(pricev)
-colnames(pricev) <- c("XLK", "MSFT")
-datev <- zoo::index(pricev)
-# Calculate the regression coefficients of MSFT ~ XLK
-betav <- drop(cov(pricev$MSFT, pricev$XLK)/var(pricev$XLK))
-alphav <- mean(pricev$MSFT) - betav*mean(pricev$XLK)
-      @
+      The \emph{regularized inverse} $\mathbb{C}_n^{-1}$ is calculated by removing the zero eigenvalues, and keeping only the first $n$ \emph{eigenvalues}:
+      \begin{displaymath}
+        \mathbb{C}_n^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
+      \end{displaymath}
+      Where $\mathbb{D}_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the \emph{regularized} inverse of a matrix.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/coint_scatter.png}
       <<echo=TRUE,eval=FALSE>>=
-# Scatterplot of prices
-pricem <- zoo::coredata(pricev) # plot() doesn't like xts time series
-plot(pricem[, "XLK"], pricem[, "MSFT"], main="MSFT and XLK Prices", 
-     xlab="XLK", ylab="MSFT", pch=1, col="blue")
-abline(a=alphav, b=betav, col="red", lwd=2)
-# Plot the prices
-endd <- rutils::calc_endpoints(pricev, interval="months")
-dygraphs::dygraph(log(pricev)[endd], main="MSFT and XLK Prices") %>%
-  dyOptions(colors=c("red", "blue"), strokeWidth=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Cointegrated Portfolio Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Engle-Granger two-step procedure can be used to test the cointegrated portfolio of two stocks:
-      \begin{itemize}
-        \item Perform a regression of the stock prices to calculate the cointegrating factor $\beta$,
-        \item Apply the \emph{ADF} test to the regression residual (the portfolio price) to determine if they have a unit root (the portfolio price diverges), or if they are mean reverting.
-      \end{itemize}
-      The \emph{p}-value of the \emph{ADF} test for the cointegrated portfolio of \emph{MSFT} and \emph{XLK} is not small, so the \emph{null hypothesis} that it has a \emph{unit root} (it diverges) cannot be rejected.
-      \vskip1ex
-      The \emph{null hypothesis} of the \emph{ADF} test is that the time series has a \emph{unit root} (it diverges).  So a small \emph{p}-value suggests that the \emph{null hypothesis} is \texttt{FALSE} and that the time series is range-bound.
-      \vskip1ex
-      The \emph{ADF} test statistic for the cointegrated portfolio is smaller than for either \emph{MSFT} or \emph{XLK} alone, which indicates that it's more mean-reverting.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the cointegrated portfolio prices (regression residual)
-resids <- (pricev$MSFT - betav*pricev$XLK - alphav)
-# Perform ADF test on the individual stocks
-sapply(pricev, tseries::adf.test, k=1)
-# Perform ADF test on the cointegrated portfolio
-tseries::adf.test(resids, k=1)
-# Perform ADF test for vector of cointegrating factors
-betas <- seq(1.5, 2.5, 0.1)
-adfstat <- sapply(betas, function(betav) {
-  resids <- (pricev$MSFT - betav*pricev$XLK)
-  tseries::adf.test(resids, k=1)$statistic
-})  # end sapply
-plot(x=betas, y=adfstat, type="l", xlab="cointegrating factor", ylab="statistic",
- main="ADF Test Statistic as Function of Cointegrating Factor")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/coint_prices.png}
-      <<echo=TRUE,eval=FALSE>>=
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Trading Cointegrated Pairs}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The cointegrated portfolio has negative autocorrelations, so it can be traded using a mean-reverting strategy.
-      \vskip1ex
-      The mean-reverting strategy buys when the portfolio is cheap, sells it short when it's rich (expensive), and goes flat if the portfolio reaches a fair (mean) price.
-      \vskip1ex
-      The portfolio is cheap if its price is below its mean price minus the portfolio standard deviation, and it's rich (expensive) if its price is above the mean plus the standard deviation.  The portfolio price is fair if it's equal to the mean price.
-      \vskip1ex
-      Explain that the cointegration portfolio is not stationary (it has a time-dependent volatility), so it's hard to trade.
-      We need to make the volatility less time-dependent.
-      \vskip1ex
-      <<echo=TRUE,eval=FALSE>>=
-# Plot histogram of the cointegrated portfolio prices
-hist(resids, breaks=100, xlab="Prices", 
-  main="Histogram of Cointegrated Portfolio Prices")
-# Plot PACF of the cointegrated portfolio returns
-pacf(rutils::diffit(as.numeric(resids)), lag=10, xlab=NA, ylab=NA,
-     main="PACF of Cointegrated Portfolio Returns")
-
-
-# Plot the cointegration residuals
-dygraphs::dygraph(resids[endd], main="MSFT and XLK Cointegration Residual") %>%
-  dyOptions(colors=c("blue"), strokeWidth=2)
-# Trade the cointegration residuals
-threshold <- drop(sqrt(var(resids)))
-meanv <- mean(resids)
-posv <- 0
-nrows <- NROW(resids)
-pnls <- numeric(nrows)
-# resids <- as.numeric(resids)
-for (it in 1:nrows) {
-  if ((posv > (-1)) && (resids[it] > (meanv + threshold))) {
-    # Enter short
-    pnls[it] <- resids[it]
-    posv <- (-1)
-  } else if ((posv < 1) && (resids[it] < (meanv - threshold))) {
-    # Enter long
-    pnls[it] <- (-resids[it])
-    posv <- 1
-  } else if ((posv < 0) && (resids[it] < meanv)) {
-    # Unwind short
-    pnls[it] <- (-resids[it])
-    posv <- 0
-  } else if ((posv > 0) && (resids[it] > meanv)) {
-    # Unwind long
-    pnls[it] <- resids[it]
-    posv <- 0
-  }  # end if
-}  # end for
-pnls <- cumsum(pnls)
-plot(pnls, t="l")
-
-# Dynamic
-lambda <- 0.9
-vars <- HighFreq::run_var(resids, lambda=lambda)
-threshd <- HighFreq::lagit(sqrt(vars))
-meand <- HighFreq::lagit(HighFreq::run_mean(resids, lambda=lambda))
-
-# Plot YC steepener principal component with VTI
-datav <- cbind(resids, meand+threshd, meand-threshd)
-colnames(datav) <- c("Resids", "Upper", "Lower")
-dygraphs::dygraph(datav[endd], main="Resids") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2)
-
-
-posv <- 0
-pnls <- numeric(nrows)
-# resids <- as.numeric(resids)
-for (it in 1:nrows) {
-  if ((posv > (-1)) && (resids[it] > (meand[it] + threshd[it]))) {
-    # Enter short
-    pnls[it] <- resids[it]
-    posv <- (-1)
-  } else if ((posv < 1) && (resids[it] < (meand[it] - threshd[it]))) {
-    # Enter long
-    pnls[it] <- (-resids[it])
-    posv <- 1
-  } else if ((posv < 0) && (resids[it] < meand[it])) {
-    # Unwind short
-    pnls[it] <- (-resids[it])
-    posv <- 0
-  } else if ((posv > 0) && (resids[it] > meand[it])) {
-    # Unwind long
-    pnls[it] <- resids[it]
-    posv <- 0
-  }  # end if
-}  # end for
-pnls <- cumsum(pnls)
-plot(pnls, t="l")
-
-
-retres <- rutils::diffit(resids)
-lambda <- 0.6
-volat <- HighFreq::run_var(retres, lambda=lambda)
-volat <- sqrt(volat)
-volat <- xts::xts(volat, datev)
-dygraphs::dygraph(volat[endd], main="Residual Volatility") %>%
-  dyOptions(colors=c("blue"), strokeWidth=2)
-
-# Calculate the regression residual
-resids <- (pricev$MSFT - betav*pricev$XLK)
-# Perform ADF test on residuals
-retp <- rutils::diffit(pricev$XLK)
-retres <- rutils::diffit(resids)
-resids <- retres/volat
-resids[1] <- 0
-resids <- HighFreq::run_mean(resids, lambda=lambda)
-resids <- xts::xts(resids, datev)
-# resids <- cumsum(retres)
-# Or
-# resids <- resids/volat
-# resids[1] <- 0
-range(resids)
-mad(resids)
-tseries::adf.test(resids, k=1)
-dygraphs::dygraph(resids[endd], main="MSFT and XLK Cointegration Residual") %>%
-  dyOptions(colors=c("blue"), strokeWidth=2)
-
-# Simulate in-sample VTI strategy
-posit <- rep(NA_integer_, NROW(resids))
-posit[1] <- 0
-posit[resids > 2] <- (-1)
-posit[resids <= 2] <- (1)
-posit <- zoo::na.locf(posit)
-posit <- rutils::lagit(posit)
-pnls <- retres*posit
-
-
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("XLK", "Strategy")
-sqrt(252)*sapply(wealthv, 
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Logistic Strategy Using Top and Bottom Labels") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
-
-
-# Simulate in-sample VTI strategy
-negav <- HighFreq::roll_sum(matrix(forecastneg), lagg)/lagg
-posav <- HighFreq::roll_sum(matrix(forecastpos), lagg)/lagg
-posit <- (negav - posav)
-# posit <- ifelse(forecastpos, 1, 0)
-# posit <- ifelse(forecastneg, -1, posit)
-posit <- rutils::lagit(posit)
-pnls <- retvti*posit
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retvti, pnls)
-colnames(wealthv) <- c("VTI", "Strategy")
-sqrt(252)*sapply(wealthv, 
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_logistic_rets_insample.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Logistic Forecasting Returns") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+# Create rectangular matrix with collinear columns
+matrixv <- matrix(rnorm(10*8), nc=10)
+# Calculate covariance matrix
+covmat <- cov(matrixv)
+# Calculate inverse of covmat - error
+invmat <- solve(covmat)
+# Perform eigen decomposition
+eigend <- eigen(covmat)
+eigenvec <- eigend$vectors
+eigenval <- eigend$values
+# Set tolerance for determining zero singular values
+precv <- sqrt(.Machine$double.eps)
+# Calculate regularized inverse matrix
+notzero <- (eigenval > (precv*eigenval[1]))
+invreg <- eigenvec[, notzero] %*%
+  (t(eigenvec[, notzero]) / eigenval[notzero])
+# Verify inverse property of invreg
+all.equal(covmat, covmat %*% invreg %*% covmat)
+# Calculate regularized inverse of covmat
+invmat <- MASS::ginv(covmat)
+# Verify that invmat is same as invreg
+all.equal(invmat, invreg)
       @
   \end{columns}
 \end{block}

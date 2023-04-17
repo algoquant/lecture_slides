@@ -74,8 +74,8 @@ save(var1, var2,  # Save selected objects
      file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
 rm(list=ls())  # Remove all objects
 ls()  # List objects
-load_ed <- load(file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
-load_ed
+loadobj <- load(file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
+loadobj
 ls()  # List objects
 
   q()  # quit R session
@@ -85,20 +85,6 @@ savehistory(file="myfile")  # Default is ".Rhistory"
 loadhistory(file="myfile")  # Default is ".Rhistory"
 
 sessionInfo()  # Get R version and other session info
-
-Sys.getenv()[5:7]  # List some environment variables
-
-Sys.getenv("HOME")  # Get R user HOME directory
-
-Sys.setenv(Home="/Users/jerzy/Develop/data")  # Set HOME directory
-
-Sys.getenv("HOME")  # Get user HOME directory
-
-Sys.getenv("R_HOME")  # Get R_HOME directory
-
-R.home()  # Get R_HOME directory
-
-R.home("etc")  # Get "etc" sub-directory of R_HOME
 
 # ?options  # Long list of global options
 # Interpret strings as characters, not factors
@@ -123,9 +109,9 @@ options(warn=1)
 # 2 or larger - warnings are turned into errors
 options(warn=2)
 # Save all options in variable
-op_tions <- options()
+optionv <- options()
 # Restore all options from variable
-options(op_tions)
+options(optionv)
 
 rm(list=ls())
 # Get base environment
@@ -171,53 +157,53 @@ library(rutils)  # Load package rutils
 # Define ETF symbols
 symbolv <- c("VTI", "VEU", "IEF", "VNQ")
 # Extract symbolv from rutils::etfenv
-prices <- mget(symbolv, envir=rutils::etfenv)
+pricev <- mget(symbolv, envir=rutils::etfenv)
 # prices is a list of xts series
-class(prices)
-class(prices[[1]])
+class(pricev)
+class(pricev[[1]])
 # Extract Close prices
-prices <- lapply(prices, quantmod::Cl)
+pricev <- lapply(pricev, quantmod::Cl)
 # Collapse list into time series the hard way
-xts1 <- cbind(prices[[1]], prices[[2]], prices[[3]], prices[[4]])
+xts1 <- cbind(pricev[[1]], pricev[[2]], pricev[[3]], pricev[[4]])
 class(xts1)
 dim(xts1)
 # Collapse list into time series using do.call()
-prices <- do.call(cbind, prices)
-all.equal(xts1, prices)
-class(prices)
-dim(prices)
+pricev <- do.call(cbind, pricev)
+all.equal(xts1, pricev)
+class(pricev)
+dim(pricev)
 # Extract and cbind in single step
-prices <- do.call(cbind, lapply(
+pricev <- do.call(cbind, lapply(
   mget(symbolv, envir=rutils::etfenv), quantmod::Cl))
 # Or
 # Extract and bind all data, subset by symbolv
-prices <- lapply(symbolv, function(symbol) {
+pricev <- lapply(symbolv, function(symbol) {
     quantmod::Cl(get(symbol, envir=rutils::etfenv))
 })  # end lapply
 # Same, but loop over etfenv without anonymous function
-prices <- do.call(cbind,
+pricev <- do.call(cbind,
   lapply(as.list(rutils::etfenv)[symbolv], quantmod::Cl))
 # Same, but works only for OHLC series - produces error
-prices <- do.call(cbind,
+pricev <- do.call(cbind,
   eapply(rutils::etfenv, quantmod::Cl)[symbolv])
 
 # Drop ".Close" from column names
-colnames(prices[, 1:4])
-do.call(rbind, strsplit(colnames(prices[, 1:4]), split="[.]"))[, 1]
-colnames(prices) <- do.call(rbind, strsplit(colnames(prices), split="[.]"))[, 1]
+colnames(pricev)
+do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
+colnames(pricev) <- do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
 # Or
-colnames(prices) <- unname(sapply(colnames(prices),
+colnames(pricev) <- unname(sapply(colnames(pricev),
     function(colname) strsplit(colname, split="[.]")[[1]][1]))
-tail(prices, 3)
+tail(pricev, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
-write.zoo(prices,
+write.zoo(pricev,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
 # Copy prices into etfenv
 etfenv$etf_list <- etf_list
 # Or
-assign("prices", prices, envir=etfenv)
+assign("prices", pricev, envir=etfenv)
 # Save to .RData file
 save(etfenv, file="etf_data.RData")
 
@@ -357,14 +343,14 @@ matrixv <- matrix(rnorm(10000), ncol=2)
 # Allocate memory for row sums
 rowsumv <- numeric(NROW(matrixv))
 summary(microbenchmark(
-  rowsums = rowSums(matrixv),  # end rowsumv
-  apply = apply(matrixv, 1, sum),  # end apply
-  lapply = lapply(1:NROW(matrixv), function(indeks)
+  rowsumv = rowSums(matrixv),  # end rowsumv
+  applyloop = apply(matrixv, 1, sum),  # end apply
+  applyloop = lapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ])),  # end lapply
-  vapply = vapply(1:NROW(matrixv), function(indeks)
+  v_apply = vapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ]),
     FUN.VALUE = c(sum=0)),  # end vapply
-  sapply = sapply(1:NROW(matrixv), function(indeks)
+  s_apply = sapply(1:NROW(matrixv), function(indeks)
     sum(matrixv[indeks, ])),  # end sapply
   forloop = for (i in 1:NROW(matrixv)) {
     rowsumv[i] <- sum(matrixv[i,])
@@ -437,7 +423,7 @@ summary(microbenchmark(
   pmax=do.call(pmax.int,
 lapply(seq_along(matrixv[1, ]),
   function(indeks) matrixv[, indeks])),
-applyloop=unlist(lapply(seq_along(matrixv[, 1]),
+  applyloop=unlist(lapply(seq_along(matrixv[, 1]),
   function(indeks) max(matrixv[indeks, ]))),
   times=10))[, c(1, 4, 5)]
 
@@ -463,7 +449,7 @@ vectorv <- 1e3
 all.equal(rank(vectorv), Rfast::Rank(vectorv))
 library(microbenchmark)
 summary(microbenchmark(
-  Rcode = rank(vectorv),
+  rcode = rank(vectorv),
   Rfast = Rfast::Rank(vectorv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Benchmark speed of calculating column medians
@@ -517,7 +503,7 @@ set.seed(1121)
 sapply(stdevs, rnorm, n=2, mean=0)
 # Loop over means
 set.seed(1121)
-sapply(means, function(me_an) rnorm(n=2, mean=me_an))
+sapply(means, function(meanv) rnorm(n=2, mean=meanv))
 # Same
 set.seed(1121)
 sapply(means, rnorm, n=2)
@@ -763,7 +749,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo = datav[cutoff],
-  quantilev = quantile(datav, probs=confl),
+  quantv = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 
 # Sample from Standard Normal Distribution
@@ -805,15 +791,15 @@ bootd <- sapply(1:nboot, function(x) median(rnorm(nrows)))
 set.seed(1121)  # Reset random number generator
 # Calculate matrix of random data
 samplev <- matrix(rnorm(nboot*nrows), ncol=nboot)
-boot_vec <- matrixStats::colMedians(samplev)
-all.equal(bootd, boot_vec)
+bootv <- Rfast::colMedians(samplev)
+all.equal(bootd, bootv)
 # Compare speed of loops with vectorized R code
 library(microbenchmark)
 summary(microbenchmark(
   loop = sapply(1:nboot, function(x) median(rnorm(nrows))),
   cpp = {
     samplev <- matrix(rnorm(nboot*nrows), ncol=nboot)
-    matrixStats::colMedians(samplev)
+    Rfast::colMedians(samplev)
     },
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
@@ -884,11 +870,11 @@ apply(bootd, MARGIN=2, function(x)
 
 # Calculate time series of VTI returns
 library(rutils)
-returns <- rutils::etfenv$returns$VTI
-returns <- na.omit(returns)
-nrows <- NROW(returns)
+retp <- rutils::etfenv$returns$VTI
+retp <- na.omit(retp)
+nrows <- NROW(retp)
 # Sample from VTI returns
-samplev <- returns[sample.int(nrows, replace=TRUE)]
+samplev <- retp[sample.int(nrows, replace=TRUE)]
 c(sd=sd(samplev), mad=mad(samplev))
 # sample.int() is a little faster than sample()
 library(microbenchmark)
@@ -899,9 +885,9 @@ summary(microbenchmark(
 
 # Sample from time series of VTI returns
 library(rutils)
-returns <- rutils::etfenv$returns$VTI
-returns <- na.omit(returns)
-nrows <- NROW(returns)
+retp <- rutils::etfenv$returns$VTI
+retp <- na.omit(retp)
+nrows <- NROW(retp)
 # Bootstrap sd and MAD under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
@@ -909,19 +895,19 @@ cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 nboot <- 10000
 bootd <- parLapply(cluster, 1:nboot,
-  function(x, returns, nrows) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
+  function(x, retp, nrows) {
+    samplev <- retp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
-  }, returns=returns, nrows*nrows)  # end parLapply
+  }, retp=retp, nrows*nrows)  # end parLapply
 # Bootstrap sd and MAD under Mac-OSX or Linux
 bootd <- mclapply(1:nboot, function(x) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
+    samplev <- retp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 bootd <- rutils::do_call(rbind, bootd)
 # Standard error assuming normal distribution of returns
-sd(returns)/sqrt(nboot)
+sd(retp)/sqrt(nboot)
 # Means and standard errors from bootstrap
 stderrors <- apply(bootd, MARGIN=2,
   function(x) c(mean=mean(x), stderror=sd(x)))
@@ -932,22 +918,23 @@ stderrors[2, ]/stderrors[1, ]
 # Initialize random number generator
 set.seed(1121)
 # Define explanatory and response variables
-predictor <- rnorm(100, mean=2)
-noise <- rnorm(100)
-response <- (-3 + predictor + noise)
-design <- cbind(response, predictor)
+nrows <- 100
+predv <- rnorm(nrows, mean=2)
+noise <- rnorm(nrows)
+respv <- (-3 + 2*predictor + noise)
+desv <- cbind(respv, predv)
 # Calculate alpha and beta regression coefficients
-betav <- cov(design[, 1], design[, 2])/var(design[, 2])
-alpha <- mean(design[, 1]) - betav*mean(design[, 2])
+betav <- cov(desv[, 1], desv[, 2])/var(desv[, 2])
+alpha <- mean(desv[, 1]) - betav*mean(desv[, 2])
 x11(width=6, height=5)
-plot(response ~ predictor, data=design)
+plot(respv ~ predv, data=desv)
 abline(a=alpha, b=betav, lwd=3, col="blue")
 # Bootstrap of beta regression coefficient
 nboot <- 100
 bootd <- sapply(1:nboot, function(x) {
-  samplev <- sample.int(NROW(design), replace=TRUE)
-  design <- design[samplev, ]
-  cov(design[, 1], design[, 2])/var(design[, 2])
+  samplev <- sample.int(nrows, replace=TRUE)
+  desv <- desv[samplev, ]
+  cov(desv[, 1], desv[, 2])/var(desv[, 2])
 })  # end sapply
 
 x11(width=6, height=5)
@@ -967,17 +954,17 @@ ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
 # Bootstrap of regression under Windows
 bootd <- parLapply(cluster, 1:1000,
-  function(x, design) {
-    samplev <- sample.int(NROW(design), replace=TRUE)
-    design <- design[samplev, ]
-    cov(design[, 1], design[, 2])/var(design[, 2])
-  }, design=design)  # end parLapply
+  function(x, desv) {
+    samplev <- sample.int(nrows, replace=TRUE)
+    desv <- desv[samplev, ]
+    cov(desv[, 1], desv[, 2])/var(desv[, 2])
+  }, design=desv)  # end parLapply
 # Bootstrap of regression under Mac-OSX or Linux
 bootd <- mclapply(1:1000,
   function(x) {
-    samplev <- sample.int(NROW(design), replace=TRUE)
-    design <- design[samplev, ]
-    cov(design[, 1], design[, 2])/var(design[, 2])
+    samplev <- sample.int(nrows, replace=TRUE)
+    desv <- desv[samplev, ]
+    cov(desv[, 1], desv[, 2])/var(desv[, 2])
   }, mc.cores=ncores)  # end mclapply
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 
@@ -998,21 +985,21 @@ text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
 set.seed(1121)  # Reset random number generator
 barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
-paths <- numeric(nrows)  # Allocate path vector
-paths[1] <- 0  # Initialize path
-indeks <- 2  # Initialize simulation index
-while ((indeks <= nrows) && (paths[indeks - 1] < barl)) {
+pathv <- numeric(nrows)  # Allocate path vector
+pathv[1] <- 0  # Initialize path
+it <- 2  # Initialize simulation index
+while ((it <= nrows) && (pathv[it - 1] < barl)) {
 # Simulate next step
-  paths[indeks] <- paths[indeks - 1] + rnorm(1)
-  indeks <- indeks + 1  # Advance indeks
+  pathv[it] <- pathv[it - 1] + rnorm(1)
+  it <- it + 1  # Advance index
 }  # end while
-# Fill remaining paths after it crosses barl
-if (indeks <= nrows)
-  paths[indeks:nrows] <- paths[indeks - 1]
+# Fill remaining path after it crosses barl
+if (it <= nrows)
+  pathv[it:nrows] <- pathv[it - 1]
 # Plot the Brownian motion
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-plot(paths, type="l", col="black",
+plot(pathv, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barl, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
@@ -1022,9 +1009,9 @@ barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
 # Simulate path of Brownian motion
 pathv <- cumsum(rnorm(nrows))
-# Find index when pathv crosses barl
+# Find index when path crosses barl
 crossp <- which(pathv > barl)
-# Fill remaining pathv after it crosses barl
+# Fill remaining path after it crosses barl
 if (NROW(crossp)>0) {
   pathv[(crossp[1]+1):nrows] <- pathv[crossp[1]]
 }  # end if
@@ -1043,43 +1030,44 @@ nrows <- 1000  # Number of simulation steps
 nsimu <- 100  # Number of simulations
 # Simulate multiple paths of Brownian motion
 set.seed(1121)
-paths <- rnorm(nsimu*nrows, mean=drift, sd=sigmav)
-paths <- matrix(paths, nc=nsimu)
-paths <- matrixStats::colCumsums(paths)
+pathm <- rnorm(nsimu*nrows, mean=drift, sd=sigmav)
+pathm <- matrix(pathm, nc=nsimu)
+pathm <- matrixStats::colCumsums(pathm)
 # Final distribution of paths
-mean(paths[nrows, ]) ; sd(paths[nrows, ])
+mean(pathm[nrows, ]) ; sd(pathm[nrows, ])
 # Calculate option payout at maturity
 strikep <- 50  # Strike price
-payouts <- (paths[nrows, ] - strikep)
+payouts <- (pathm[nrows, ] - strikep)
 sum(payouts[payouts > 0])/nsimu
 # Calculate probability of crossing the barrier at any point
 barl <- 50
-crossi <- (colSums(paths > barl) > 0)
+crossi <- (colSums(pathm > barl) > 0)
 sum(crossi)/nsimu
 
 # Plot in window
 x11(width=6, height=5)
 par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
 # Select and plot full range of paths
-ordern <- order(paths[nrows, ])
+ordern <- order(pathm[nrows, ])
+pathm[nrows, ordern]
 indeks <- ordern[seq(1, 100, 9)]
-zoo::plot.zoo(paths[, indeks], main="Paths of Brownian Motion",
+zoo::plot.zoo(pathm[, indeks], main="Paths of Brownian Motion",
   xlab="time steps", ylab=NA, plot.type="single")
 abline(h=strikep, col="red", lwd=3)
 text(x=(nrows-60), y=strikep, labels="strike price", pos=3, cex=1)
 
 # Calculate percentage returns from VTI prices
 library(rutils)
-prices <- quantmod::Cl(rutils::etfenv$VTI)
-startd <- as.numeric(prices[1, ])
-returns <- rutils::diffit(log(prices))
-class(returns); head(returns)
-sum(is.na(returns))
-nrows <- NROW(returns)
+pricev <- quantmod::Cl(rutils::etfenv$VTI)
+startd <- as.numeric(pricev[1, ])
+retp <- rutils::diffit(log(pricev))
+class(retp); head(retp)
+sum(is.na(retp))
+nrows <- NROW(retp)
 # Define barrier level with respect to prices
-barl <- 1.5*max(prices)
+barl <- 1.5*max(pricev)
 # Calculate single bootstrap sample
-samplev <- returns[sample.int(nrows, replace=TRUE)]
+samplev <- retp[sample.int(nrows, replace=TRUE)]
 # Calculate prices from percentage returns
 samplev <- startd*exp(cumsum(samplev))
 # Calculate if prices crossed barrier
@@ -1093,16 +1081,16 @@ clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl"))
 nboot <- 10000
 bootd <- parLapply(cluster, 1:nboot,
-  function(x, returns, nrows) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
+  function(x, retp, nrows) {
+    samplev <- retp[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
     samplev <- startd*exp(cumsum(samplev))
     # Calculate if prices crossed barrier
     sum(samplev > barl) > 0
-  }, returns=returns, nrows*nrows)  # end parLapply
+  }, retp=retp, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:nboot, function(x) {
-    samplev <- returns[sample.int(nrows, replace=TRUE)]
+    samplev <- retp[sample.int(nrows, replace=TRUE)]
     # Calculate prices from percentage returns
     samplev <- startd*exp(cumsum(samplev))
     # Calculate if prices crossed barrier
@@ -1116,20 +1104,20 @@ sum(bootd)/nboot
 # Calculate percentage returns from VTI prices
 library(rutils)
 ohlc <- rutils::etfenv$VTI
-prices <- as.numeric(ohlc[, 4])
-startd <- prices[1]
-returns <- rutils::diffit(log(prices))
-nrows <- NROW(returns)
+pricev <- as.numeric(ohlc[, 4])
+startd <- pricev[1]
+retp <- rutils::diffit(log(pricev))
+nrows <- NROW(retp)
 # Calculate difference of OHLC price columns
-ohlc_diff <- ohlc[, 1:3] - prices
-class(returns); head(returns)
+ohlc_diff <- ohlc[, 1:3] - pricev
+class(retp); head(retp)
 # Calculate bootstrap prices from percentage returns
 datav <- sample.int(nrows, replace=TRUE)
-boot_prices <- startd*exp(cumsum(returns[datav]))
+boot_pricev <- startd*exp(cumsum(retp[datav]))
 boot_ohlc <- ohlc_diff + boot_prices
-boot_ohlc <- cbind(boot_ohlc, boot_prices)
+boot_ohlc <- cbind(boot_ohlc, boot_pricev)
 # Define barrier level with respect to prices
-barl <- 1.5*max(prices)
+barl <- 1.5*max(pricev)
 # Calculate if High bootstrapped prices crossed barrier level
 sum(boot_ohlc[, 2] > barl) > 0
 
@@ -1141,22 +1129,22 @@ clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
 clusterExport(cluster, c("startd", "barl", "ohlc_diff"))
 nboot <- 10000
 bootd <- parLapply(cluster, 1:nboot,
-  function(x, returns, nrows) {
+  function(x, retp, nrows) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
-    boot_prices <- startd*exp(cumsum(returns[datav]))
+    boot_pricev <- startd*exp(cumsum(retp[datav]))
     boot_ohlc <- ohlc_diff + boot_prices
-    boot_ohlc <- cbind(boot_ohlc, boot_prices)
+    boot_ohlc <- cbind(boot_ohlc, boot_pricev)
     # Calculate statistic
     sum(boot_ohlc[, 2] > barl) > 0
-  }, returns=returns, nrows*nrows)  # end parLapply
+  }, retp=retp, nrows*nrows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:nboot, function(x) {
     # Calculate OHLC prices from percentage returns
     datav <- sample.int(nrows, replace=TRUE)
-    boot_prices <- startd*exp(cumsum(returns[datav]))
+    boot_pricev <- startd*exp(cumsum(retp[datav]))
     boot_ohlc <- ohlc_diff + boot_prices
-    boot_ohlc <- cbind(boot_ohlc, boot_prices)
+    boot_ohlc <- cbind(boot_ohlc, boot_pricev)
     # Calculate statistic
     sum(boot_ohlc[, 2] > barl) > 0
   }, mc.cores=ncores)  # end mclapply
@@ -1165,206 +1153,675 @@ bootd <- rutils::do_call(rbind, bootd)
 # Calculate frequency of crossing barrier
 sum(bootd)/nboot
 
-options(width=50, dev="pdf")
-str(optimize)
-# Objective function with multiple minima
-objfun <- function(input, param1=0.01) {
-  sin(0.25*pi*input) + param1*(input-1)^2
-}  # end objfun
-unlist(optimize(f=objfun, interval=c(-4, 2)))
-unlist(optimize(f=objfun, interval=c(0, 8)))
-options(width=80, dev="pdf")
-
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Plot the objective function
-curve(expr=objfun, type="l", xlim=c(-8, 9),
-xlab="", ylab="", lwd=2)
-# Add title
-title(main="Objective Function", line=-1)
-
-# Rastrigin function
-rastrigin <- function(x, y, param=25) {
-  x^2 + y^2 - param*(cos(x) + cos(y))
-}  # end rastrigin
-# Rastrigin function is vectorized!
-rastrigin(c(-10, 5), c(-10, 5))
-# Set rgl options and load package rgl
-library(rgl)
-options(rgl.useNULL=TRUE)
-# Draw 3d surface plot of function
-rgl::persp3d(x=rastrigin, xlim=c(-10, 10), ylim=c(-10, 10),
-  col="green", axes=FALSE, param=15)
-# Render the 3d surface plot of function
-rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
-
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vectorv, param=25) {
-  sum(vectorv^2 - param*cos(vectorv))
-}  # end rastrigin
-vectorv <- c(pi/6, pi/6)
-rastrigin(vectorv=vectorv)
-# Draw 3d surface plot of Rastrigin function
-rgl::persp3d(
-  x=Vectorize(function(x, y) rastrigin(vectorv=c(x, y))),
-  xlim=c(-10, 10), ylim=c(-10, 10),
-  col="green", axes=FALSE, zlab="", main="rastrigin")
-# Optimize with respect to vector argument
-optiml <- optim(par=vectorv, fn=rastrigin,
-        method="L-BFGS-B",
-        upper=c(4*pi, 4*pi),
-        lower=c(pi/2, pi/2),
-        param=1)
-# Optimal parameters and value
-optiml$par
-optiml$value
-rastrigin(optiml$par, param=1)
-
-# Sample of normal variables
-datav <- rnorm(1000, mean=4, sd=2)
-# Objective function is log-likelihood
-objfun <- function(parv, datav) {
-  sum(2*log(parv[2]) +
-    ((datav - parv[1])/parv[2])^2)
-}  # end objfun
-# Objective function on parameter grid
-par_mean <- seq(1, 6, length=50)
-par_sd <- seq(0.5, 3.0, length=50)
-objective_grid <- sapply(par_mean, function(m) {
-  sapply(par_sd, function(sd) {
-    objfun(c(m, sd), datav)
-  })  # end sapply
+# Select ETF symbols for asset allocation
+symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
+ "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+ "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+ "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
+# Read etf database into data frame
+etflist <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etf_list.csv")
+rownames(etflist) <- etflist$Symbol
+# Select from etflist only those ETF's in symbolv
+etflist <- etflist[symbolv, ]
+# Shorten names
+etfnames <- sapply(etflist$Name, function(name) {
+  namesplit <- strsplit(name, split=" ")[[1]]
+  namesplit <- namesplit[c(-1, -NROW(namesplit))]
+  name_match <- match("Select", namesplit)
+  if (!is.na(name_match))
+    namesplit <- namesplit[-name_match]
+  paste(namesplit, collapse=" ")
 })  # end sapply
-# Perform grid search for minimum
-objective_min <- which(
-  objective_grid==min(objective_grid),
-  arr.ind=TRUE)
-objective_min
-par_mean[objective_min[1]]  # mean
-par_sd[objective_min[2]]  # sd
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1),
-       (objective_min[, 2] + -1:1)]
-# Or create parameter grid using function outer()
-objvecive <- Vectorize(
-  FUN=function(mean, sd, datav)
-    objfun(c(mean, sd), datav),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-objective_grid <- outer(par_mean, par_sd,
-objvecive, datav=datav)
+etflist$Name <- etfnames
+etflist["IEF", "Name"] <- "10 year Treasury Bond Fund"
+etflist["TLT", "Name"] <- "20 plus year Treasury Bond Fund"
+etflist["XLY", "Name"] <- "Consumer Discr. Sector Fund"
+etflist["EEM", "Name"] <- "Emerging Market Stock Fund"
+etflist["MTUM", "Name"] <- "Momentum Factor Fund"
+etflist["SVXY", "Name"] <- "Short VIX Futures"
+etflist["VXX", "Name"] <- "Long VIX Futures"
+etflist["DBC", "Name"] <- "Commodity Futures Fund"
+etflist["USO", "Name"] <- "WTI Oil Futures Fund"
+etflist["GLD", "Name"] <- "Physical Gold Fund"
 
-par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
-# Perspective plot of log-likelihood function
-persp(z=-objective_grid,
-theta=45, phi=30, shade=0.5,
-border="green", zlab="objective",
-main="objective function")
-# Interactive perspective plot of log-likelihood function
-library(rgl)  # Load package rgl
-rgl::par3d(cex=2.0)  # Scale text by factor of 2
-rgl::persp3d(z=-objective_grid, zlab="objective",
-  col="green", main="objective function")
+print(xtable::xtable(etflist), comment=FALSE, size="tiny", include.rownames=FALSE)
 
-# Initial parameters
-initp <- c(mean=0, sd=1)
-# Perform optimization using optim()
-optim_fit <- optim(par=initp,
-  fn=objfun, # Log-likelihood function
-  datav=datav,
-  method="L-BFGS-B", # Quasi-Newton method
-  upper=c(10, 10), # Upper constraint
-  lower=c(-10, 0.1)) # Lower constraint
-# Optimal parameters
-optim_fit$par
-# Perform optimization using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(datav, densfun="normal")
-optim_fit$estimate
-optim_fit$sd
-# Plot histogram
-histp <- hist(datav, plot=FALSE)
-plot(histp, freq=FALSE, main="histogram of sample")
-curve(expr=dnorm(x, mean=optim_fit$par["mean"], sd=optim_fit$par["sd"]),
-add=TRUE, type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL,
- leg="optimal parameters", lwd=2, bg="white", col="red")
+# Select ETF symbols for asset allocation
+symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
+ "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+ "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+ "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
+library(rutils)  # Load package rutils
+etfenv <- new.env()  # New environment for data
+# Boolean vector of symbols already downloaded
+isdownloaded <- symbolv %in% ls(etfenv)
+# Download data for symbolv using single command - creates pacing error
+getSymbols.av(symbolv, adjust=TRUE, env=etfenv,
+  output.size="full", api.key="T7JPW54ES8G75310")
+# Download data from Alpha Vantage using while loop
+nattempts <- 0  # number of download attempts
+while ((sum(!isdownloaded) > 0) & (nattempts<10)) {
+  # Download data and copy it into environment
+  nattempts <- nattempts + 1
+  cat("Download attempt = ", nattempts, "\n")
+  for (symbol in na.omit(symbolv[!isdownloaded][1:5])) {
+    cat("Processing: ", symbol, "\n")
+    tryCatch(  # With error handler
+quantmod::getSymbols.av(symbol, adjust=TRUE, env=etfenv, auto.assign=TRUE, output.size="full", api.key="T7JPW54ES8G75310"),
+# Error handler captures error condition
+error=function(error_cond) {
+  print(paste("error handler: ", error_cond))
+},  # end error handler
+finally=print(paste("symbol=", symbol))
+    )  # end tryCatch
+  }  # end for
+  # Update vector of symbols already downloaded
+  isdownloaded <- symbolv %in% ls(etfenv)
+  cat("Pausing 1 minute to avoid pacing...\n")
+  Sys.sleep(65)
+}  # end while
+# Download all symbolv using single command - creates pacing error
+# quantmod::getSymbols.av(symbolv, env=etfenv, adjust=TRUE, from="2005-01-03", output.size="full", api.key="T7NHW54ES8GG501C")
 
-# Sample from mixture of normal distributions
-datav <- c(rnorm(100, sd=1.0),
-      rnorm(100, mean=4, sd=1.0))
-# Objective function is log-likelihood
-objfun <- function(parv, datav) {
-  likev <- parv[1]/parv[3] *
-  dnorm((datav-parv[2])/parv[3]) +
-  (1-parv[1])/parv[5]*dnorm((datav-parv[4])/parv[5])
-  if (any(likev <= 0)) Inf else
-    -sum(log(likev))
-}  # end objfun
-# Vectorize objective function
-objvecive <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, datav)
-    objfun(c(w, m1, s1, mean, sd), datav),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-# Objective function on parameter grid
-par_mean <- seq(3, 5, length=50)
-par_sd <- seq(0.5, 1.5, length=50)
-objective_grid <- outer(par_mean, par_sd,
-    objvecive, datav=datav,
-    w=0.5, m1=2.0, s1=2.0)
-rownames(objective_grid) <- round(par_mean, 2)
-colnames(objective_grid) <- round(par_sd, 2)
-objective_min <- which(objective_grid==
-  min(objective_grid), arr.ind=TRUE)
-objective_min
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1),
-         (objective_min[, 2] + -1:1)]
+ls(etfenv)  # List files in etfenv
+# Get class of object in etfenv
+class(get(x=symbolv[1], envir=etfenv))
+# Another way
+class(etfenv$VTI)
+colnames(etfenv$VTI)
+# Get first 3 rows of data
+head(etfenv$VTI, 3)
+# Get last 11 rows of data
+tail(etfenv$VTI, 11)
+# Get class of all objects in etfenv
+eapply(etfenv, class)
+# Get class of all objects in R workspace
+lapply(ls(), function(ob_ject) class(get(ob_ject)))
+# Get end dates of all objects in etfenv
+as.Date(sapply(etfenv, end))
 
-# Perspective plot of objective function
-persp(par_mean, par_sd, -objective_grid,
-theta=45, phi=30,
-shade=0.5,
-col=rainbow(50),
-border="green",
-main="objective function")
+library(rutils)  # Load package rutils
+# Check of object is an OHLC time series
+is.OHLC(etfenv$VTI)
+# Adjust single OHLC object using its name
+etfenv$VTI <- adjustOHLC(etfenv$VTI, use.Adjusted=TRUE)
 
-# Initial parameters
-initp <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
-# Perform optimization
-optim_fit <- optim(par=initp,
-      fn=objfun,
-      datav=datav,
-      method="L-BFGS-B",
-      upper=c(1,10,10,10,10),
-      lower=c(0,-10,0.2,-10,0.2))
-optim_fit$par
-# Plot histogram
-histp <- hist(datav, plot=FALSE)
-plot(histp, freq=FALSE,
-     main="histogram of sample")
-fitfun <- function(x, parv) {
-  parv["weight"]*dnorm(x, mean=parv["m1"], sd=parv["s1"]) +
-  (1-parv["weight"])*dnorm(x, mean=parv["m2"], sd=parv["s2"])
-}  # end fitfun
-curve(expr=fitfun(x, parv=optim_fit$par), add=TRUE,
-type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL,
- leg="optimal parameters",
- lwd=2, bg="white", col="red")
+# Adjust OHLC object using string as name
+assign(symbolv[1], adjustOHLC(
+    get(x=symbolv[1], envir=etfenv), use.Adjusted=TRUE),
+  envir=etfenv)
 
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vectorv, param=25) {
-  sum(vectorv^2 - param*cos(vectorv))
-}  # end rastrigin
-vectorv <- c(pi/6, pi/6)
-rastrigin(vectorv=vectorv)
-library(DEoptim)
-# Optimize rastrigin using DEoptim
-optiml <-  DEoptim(rastrigin,
-  upper=c(6, 6), lower=c(-6, -6),
-  DEoptim.control(trace=FALSE, itermax=50))
-# Optimal parameters and value
-optiml$optim$bestmem
-rastrigin(optiml$optim$bestmem)
-summary(optiml)
-plot(optiml)
+# Adjust objects in environment using vector of strings
+for (symbol in ls(etfenv)) {
+  assign(symbol,
+   adjustOHLC(get(symbol, envir=etfenv), use.Adjusted=TRUE),
+   envir=etfenv)
+}  # end for
+
+library(rutils)  # Load package rutils
+# Define ETF symbols
+symbolv <- c("VTI", "VEU", "IEF", "VNQ")
+# Extract symbolv from rutils::etfenv
+pricev <- mget(symbolv, envir=rutils::etfenv)
+# pricev is a list of xts series
+class(pricev)
+class(pricev[[1]])
+tail(pricev[[1]])
+# Extract close prices
+pricev <- lapply(pricev, quantmod::Cl)
+# Collapse list into time series the hard way
+prices2 <- cbind(pricev[[1]], pricev[[2]], pricev[[3]], pricev[[4]])
+class(pricev2)
+dim(pricev2)
+# Collapse list into time series using do.call()
+pricev <- do.call(cbind, pricev)
+all.equal(pricev2, pricev)
+class(pricev)
+dim(pricev)
+# Or extract and cbind in single step
+pricev <- do.call(cbind, lapply(
+  mget(symbolv, envir=rutils::etfenv), quantmod::Cl))
+# Or extract and bind all data, subset by symbolv
+pricev <- lapply(symbolv, function(symbol) {
+    quantmod::Cl(get(symbol, envir=rutils::etfenv))
+})  # end lapply
+# Or loop over etfenv without anonymous function
+pricev <- do.call(cbind,
+  lapply(as.list(rutils::etfenv)[symbolv], quantmod::Cl))
+# Same, but works only for OHLC series - produces error
+pricev <- do.call(cbind,
+  eapply(rutils::etfenv, quantmod::Cl)[symbolv])
+
+# Column names end with ".Close"
+colnames(pricev)
+strsplit(colnames(pricev), split="[.]")
+do.call(rbind, strsplit(colnames(pricev), split="[.]"))
+do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
+# Drop ".Close" from colnames
+colnames(pricev) <- rutils::get_name(colnames(pricev))
+# Or
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
+tail(pricev, 3)
+# Which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+# Save xts to csv file
+write.zoo(pricev,
+  file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
+# Copy prices into etfenv
+etfenv$pricev <- prices
+# Or
+assign("prices", pricev, envir=etfenv)
+# Save to .RData file
+save(etfenv, file="etf_data.RData")
+
+# Extract VTI prices
+pricev <- etfenv$pricev[ ,"VTI"]
+pricev <- na.omit(pricev)
+# Calculate percentage returns "by hand"
+pricel <- as.numeric(pricev)
+pricel <- c(pricel[1], pricel[-NROW(pricel)])
+pricel <- xts(pricel, zoo::index(pricev))
+retp <- (pricev-pricel)/pricel
+# Calculate percentage returns using dailyReturn()
+retd <- quantmod::dailyReturn(pricev)
+head(cbind(retd, retp))
+all.equal(retd, retp, check.attributes=FALSE)
+# Calculate returns for all prices in etfenv$prices
+retp <- lapply(etfenv$pricev, function(xtsv) {
+  retd <- quantmod::dailyReturn(na.omit(xtsv))
+  colnames(retd) <- names(xtsv)
+  retd
+})  # end lapply
+# "retp" is a list of xts
+class(retp)
+class(retp[[1]])
+# Flatten list of xts into a single xts
+retp <- do.call(cbind, retp)
+class(retp)
+dim(retp)
+# Copy retp into etfenv and save to .RData file
+# assign("retp", retp, envir=etfenv)
+etfenv$retp <- retp
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+
+library(rutils)
+startd <- "2012-05-10"; endd <- "2013-11-20"
+# Select all objects in environment and return as environment
+new_env <- as.environment(eapply(etfenv, "[",
+            paste(startd, endd, sep="/")))
+# Select only symbolv in environment and return as environment
+new_env <- as.environment(
+  lapply(as.list(etfenv)[symbolv], "[",
+   paste(startd, endd, sep="/")))
+# Extract and cbind Close prices and return to environment
+assign("prices", rutils::do_call(cbind,
+         lapply(ls(etfenv), function(symbol) {
+           xtsv <- quantmod::Cl(get(symbol, etfenv))
+           colnames(xtsv) <- symbol
+           xtsv
+         })), envir=new_env)
+# Get sizes of OHLC xts series in etfenv
+sapply(mget(symbolv, envir=etfenv), object.size)
+# Extract and cbind adjusted prices and return to environment
+colname <- function(xtsv)
+  strsplit(colnames(xtsv), split="[.]")[[1]][1]
+assign("prices", rutils::do_call(cbind,
+         lapply(mget(etfenv$symbolv, envir=etfenv),
+                function(xtsv) {
+                  xtsv <- Ad(xtsv)
+                  colnames(xtsv) <- colname(xtsv)
+                  xtsv
+         })), envir=new_env)
+
+# Load data frame of S&P500 constituents from CSV file
+sp500 <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
+# Inspect data frame of S&P500 constituents
+dim(sp500)
+colnames(sp500)
+# Extract tickers from the column Ticker
+symbolv <- sp500$Ticker
+# Get duplicate tickers
+tablev <- table(symbolv)
+duplicates <- tablev[tablev>1]
+duplicates <- names(duplicates)
+# Get duplicate records (rows) of sp500
+sp500[symbolv %in% duplicates, ]
+# Get unique tickers
+symbolv <- unique(symbolv)
+# Find index of ticker "BRK.B"
+which(symbolv=="BRK.B")
+# Rename "BRK.B" to "BRK-B" and "BF.B" to "BF-B"
+symbolv[which(symbolv=="BRK.B")] <- "BRK-B"
+symbolv[which(symbolv=="BF.B")] <- "BF-B"
+
+# Load package rutils
+library(rutils)
+# Create new environment for data
+sp500env <- new.env()
+# Boolean vector of symbols already downloaded
+isdownloaded <- symbolv %in% ls(sp500env)
+# Download in while loop from Tiingo and copy into environment
+nattempts <- 0  # Number of download attempts
+while ((sum(!isdownloaded) > 0) & (nattempts<3)) {
+  # Download data and copy it into environment
+  nattempts <- nattempts + 1
+  cat("Download attempt = ", nattempts, "\n")
+  for (symbol in symbolv[!isdownloaded]) {
+    cat("processing: ", symbol, "\n")
+    tryCatch(  # With error handler
+quantmod::getSymbols(symbol, src="tiingo", adjust=TRUE, auto.assign=TRUE,
+           from="1990-01-01", env=sp500env, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
+# Error handler captures error condition
+error=function(error_cond) {
+  print(paste("error handler: ", error_cond))
+},  # end error handler
+finally=print(paste("symbol=", symbol))
+    )  # end tryCatch
+  }  # end for
+  # Update vector of symbols already downloaded
+  isdownloaded <- symbolv %in% ls(sp500env)
+  Sys.sleep(2)  # Wait 2 seconds until next attempt
+}  # end while
+class(sp500env$AAPL)
+class(zoo::index(sp500env$AAPL))
+tail(sp500env$AAPL)
+symbolv[!isdownloaded]
+
+# The date-time index of AAPL is POSIXct
+class(zoo::index(sp500env$AAPL))
+# Coerce the date-time index of AAPL to Date
+zoo::index(sp500env$AAPL) <- as.Date(zoo::index(sp500env$AAPL))
+# Coerce all the date-time indices to Date
+for (symbol in ls(sp500env)) {
+  ohlc <- get(symbol, envir=sp500env)
+  zoo::index(ohlc) <- as.Date(zoo::index(ohlc))
+  assign(symbol, ohlc, envir=sp500env)
+}  # end for
+
+# "LOW.Low" is a bad column name
+colnames(sp500env$LOW)
+strsplit(colnames(sp500env$LOW), split="[.]")
+do.call(cbind, strsplit(colnames(sp500env$LOW), split="[.]"))
+do.call(cbind, strsplit(colnames(sp500env$LOW), split="[.]"))[2, ]
+# Extract proper names from column names
+namesv <- rutils::get_name(colnames(sp500env$LOW), field=2)
+# Or
+# namesv <- do.call(rbind, strsplit(colnames(sp500env$LOW),
+#                                   split="[.]"))[, 2]
+# Rename "LOW" colnames to "LOWES"
+colnames(sp500env$LOW) <- paste("LOVES", namesv, sep=".")
+sp500env$LOWES <- sp500env$LOW
+rm(LOW, envir=sp500env)
+# Rename BF-B colnames to "BFB"
+colnames(sp500env$"BF-B") <- paste("BFB", namesv, sep=".")
+sp500env$BFB <- sp500env$"BF-B"
+rm("BF-B", envir=sp500env)
+# Rename BRK-B colnames
+sp500env$BRKB <- sp500env$`BRK-B`
+rm(`BRK-B`, envir=sp500env)
+colnames(sp500env$BRKB) <- gsub("BRK-B", "BRKB", colnames(sp500env$BRKB))
+# Save OHLC prices to .RData file
+save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+# Download "BRK.B" separately with auto.assign=FALSE
+# BRKB <- quantmod::getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
+# colnames(BRKB) <- paste("BRKB", namesv, sep=".")
+# sp500env$BRKB <- BRKB
+
+# Plot OHLC candlestick chart for LOWES
+chart_Series(x=sp500env$LOWES["2019-12/"],
+  TA="add_Vo()", name="LOWES OHLC Stock Prices")
+# Plot dygraph
+dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices") %>%
+  dyCandlestick()
+
+# Load S&P500 constituent stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+pricev <- eapply(sp500env, quantmod::Cl)
+pricev <- rutils::do_call(cbind, pricev)
+# Carry forward non-NA prices
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+# Drop ".Close" from column names
+colnames(pricev)
+colnames(pricev) <- rutils::get_name(colnames(pricev))
+# Or
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
+# Calculate percentage returns of the S&P500 constituent stocks
+# retp <- xts::diff.xts(log(pricev))
+retp <- xts::diff.xts(pricev)/
+  rutils::lagit(pricev, pad_zeros=FALSE)
+set.seed(1121)
+samplev <- sample(NCOL(retp), s=100, replace=FALSE)
+prices100 <- pricev[, samplev]
+returns100 <- retp[, samplev]
+save(pricev, prices100,
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+save(retp, returns100,
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+
+# Calculate number of constituents without prices
+datav <- rowSums(is.na(pricev))
+datav <- xts::xts(datav, order.by=zoo::index(pricev))
+dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+
+# Calculate price weighted index of constituent
+ncols <- NCOL(pricev)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+indeks <- xts(rowSums(pricev)/ncols, zoo::index(pricev))
+colnames(indeks) <- "index"
+# Combine index with VTI
+datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
+colnamev <- c("index", "VTI")
+colnames(datav) <- colnamev
+# Plot index with VTI
+endd <- rutils::calc_endpoints(datav, interval="weeks")
+dygraphs::dygraph(log(datav)[endd],
+  main="S&P 500 Price-weighted Index and VTI") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="red") %>%
+  dySeries(name=colnamev[2], axis="y2", col="blue")
+
+# Save the environment to compressed .RData file
+dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
+save(sp500env, file=paste0(dir_name, "sp500.RData"))
+# Save the ETF prices into CSV files
+dir_name <- "/Users/jerzy/Develop/lecture_slides/data/SP500/"
+for (symbol in ls(sp500env)) {
+  zoo::write.zoo(sp500env$symbol, file=paste0(dir_name, symbol, ".csv"))
+}  # end for
+# Or using lapply()
+file_names <- lapply(ls(sp500env), function(symbol) {
+  xtsv <- get(symbol, envir=sp500env)
+  zoo::write.zoo(xtsv, file=paste0(dir_name, symbol, ".csv"))
+  symbol
+})  # end lapply
+unlist(file_names)
+# Or using eapply() and data.table::fwrite()
+file_names <- eapply(sp500env , function(xtsv) {
+  file_name <- rutils::get_name(colnames(xtsv)[1])
+  data.table::fwrite(data.table::as.data.table(xtsv), file=paste0(dir_name, file_name, ".csv"))
+  file_name
+})  # end eapply
+unlist(file_names)
+
+# Load the environment from compressed .RData file
+dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
+load(file=paste0(dir_name, "sp500.RData"))
+# Get all the .csv file names in the directory
+dir_name <- "/Users/jerzy/Develop/lecture_slides/data/SP500/"
+file_names <- Sys.glob(paste0(dir_name, "*.csv"))
+# Create new environment for data
+sp500env <- new.env()
+for (file_name in file_names) {
+  xtsv <- xts::as.xts(zoo::read.csv.zoo(file_name))
+  symbol <- rutils::get_name(colnames(xtsv)[1])
+  # symbol <- strsplit(colnames(xtsv), split="[.]")[[1]][1]
+  assign(symbol, xtsv, envir=sp500env)
+}  # end for
+# Or using fread()
+for (file_name in file_names) {
+  xtsv <- data.table::fread(file_name)
+  data.table::setDF(xtsv)
+  xtsv <- xts::xts(xtsv[, -1], as.Date(xtsv[, 1]))
+  symbol <- rutils::get_name(colnames(xtsv)[1])
+  assign(symbol, xtsv, envir=sp500env)
+}  # end for
+
+# Remove all files from environment(if necessary)
+rm(list=ls(sp500env), envir=sp500env)
+# Download in while loop from Alpha Vantage and copy into environment
+isdownloaded <- symbolv %in% ls(sp500env)
+nattempts <- 0
+while ((sum(!isdownloaded) > 0) & (nattempts<10)) {
+  # Download data and copy it into environment
+  nattempts <- nattempts + 1
+  for (symbol in symbolv[!isdownloaded]) {
+    cat("processing: ", symbol, "\n")
+    tryCatch(  # With error handler
+quantmod::getSymbols(symbol, src="av", adjust=TRUE, auto.assign=TRUE, env=sp500env,
+           output.size="full", api.key="T7JPW54ES8G75310"),
+# error handler captures error condition
+error=function(error_cond) {
+  print(paste("error handler: ", error_cond))
+},  # end error handler
+finally=print(paste("symbol=", symbol))
+    )  # end tryCatch
+  }  # end for
+  # Update vector of symbols already downloaded
+  isdownloaded <- symbolv %in% ls(sp500env)
+  Sys.sleep(2)  # Wait 2 seconds until next attempt
+}  # end while
+# Adjust all OHLC prices in environment
+for (symbol in ls(sp500env)) {
+  assign(symbol,
+    adjustOHLC(get(x=symbol, envir=sp500env), use.Adjusted=TRUE),
+    envir=sp500env)
+}  # end for
+
+library(rutils)  # Load package rutils
+# Assign name SP500 to ^GSPC symbol
+setSymbolLookup(SP500=list(name="^GSPC", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# Download S&P500 prices into etfenv
+quantmod::getSymbols("SP500", env=etfenv,
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
+chart_Series(x=etfenv$SP500["2016/"],
+       TA="add_Vo()", name="S&P500 index")
+
+library(rutils)  # Load package rutils
+# Assign name DJIA to ^DJI symbol
+setSymbolLookup(DJIA=list(name="^DJI", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# Download DJIA prices into etfenv
+quantmod::getSymbols("DJIA", env=etfenv,
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
+chart_Series(x=etfenv$DJIA["2016/"],
+       TA="add_Vo()", name="DJIA index")
+
+# Calculate prices from OHLC data of the S&P500 stocks
+pricev <- eapply(sp500env, quantmod::Cl)
+pricev <- rutils::do_call(cbind, pricev)
+# Carry forward non-NA prices
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+# Get first column name
+colnames(pricev[, 1])
+rutils::get_name(colnames(pricev[, 1]))
+# Modify column names
+colnames(pricev) <- rutils::get_name(colnames(pricev))
+# Or
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
+# Calculate percentage returns
+retp <- xts::diff.xts(pricev)/
+  rutils::lagit(pricev, pad_zeros=FALSE)
+# Select a random sample of 100 prices and returns
+set.seed(1121)
+samplev <- sample(NCOL(retp), s=100, replace=FALSE)
+prices100 <- pricev[, samplev]
+returns100 <- retp[, samplev]
+# Save the data into binary files
+save(pricev, prices100,
+     file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+save(retp, returns100,
+     file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+
+# Setup code
+symbol <- "SPY"
+startd <- as.Date("1990-01-01")
+todayd <- Sys.Date()
+tspan <- "day"
+# Replace below your own Polygon API key
+apikey <- "SEpnsBpiRyONMJdl48r6dOo0_pjmCu5r"
+# Create url for download
+urll <- paste0("https://api.polygon.io/v2/aggs/ticker/", symbol, "/range/1/", tspan, "/", startd, "/", todayd, "?adjusted=true&sort=asc&limit=50000&apiKey=", apikey)
+# Download SPY OHLC prices in JSON format from Polygon
+ohlc <- jsonlite::read_json(urll)
+class(ohlc)
+NROW(ohlc)
+names(ohlc)
+# Extract list of prices from json object
+ohlc <- ohlc$results
+# Coerce from list to matrix
+ohlc <- lapply(ohlc, unlist)
+ohlc <- do.call(rbind, ohlc)
+# Coerce time from milliseconds to dates
+dates <- ohlc[, "t"]/1e3
+dates <- as.POSIXct(dates, origin="1970-01-01")
+dates <- as.Date(dates)
+tail(dates)
+# Coerce from matrix to xts
+ohlc <- ohlc[, c("o","h","l","c","v","vw")]
+colnames(ohlc) <- c("Open", "High", "Low", "Close", "Volume", "VWAP")
+ohlc <- xts::xts(ohlc, order.by=dates)
+tail(ohlc)
+# Save the xts time series to compressed RData file
+save(ohlc, file="/Users/jerzy/Data/spy_daily.RData")
+# Candlestick plot of SPY OHLC prices
+dygraphs::dygraph(ohlc[, 1:4], main=paste("Candlestick Plot of", symbol, "OHLC prices")) %>%
+  dygraphs::dyCandlestick()
+
+# Select ETF symbols for asset allocation
+symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
+ "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+ "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+ "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
+# Setup code
+etfenv <- new.env()  # New environment for data
+# Boolean vector of symbols already downloaded
+isdownloaded <- symbolv %in% ls(etfenv)
+
+# Download data from Polygon using while loop
+while (sum(!isdownloaded) > 0) {
+  for (symbol in symbolv[!isdownloaded]) {
+    cat("Processing:", symbol, "\n")
+    tryCatch({  # With error handler
+# Download OHLC bars from Polygon into JSON format file
+urll <- paste0("https://api.polygon.io/v2/aggs/ticker/", symbol, "/range/1/", tspan, "/", startd, "/", todayd, "?adjusted=true&sort=asc&limit=50000&apiKey=", apikey)
+ohlc <- jsonlite::read_json(urll)
+# Extract list of prices from json object
+ohlc <- ohlc$results
+# Coerce from list to matrix
+ohlc <- lapply(ohlc, unlist)
+ohlc <- do.call(rbind, ohlc)
+# Coerce time from milliseconds to dates
+dates <- ohlc[, "t"]/1e3
+dates <- as.POSIXct(dates, origin="1970-01-01")
+dates <- as.Date(dates)
+# Coerce from matrix to xts
+ohlc <- ohlc[, c("o","h","l","c","v","vw")]
+colnames(ohlc) <- paste0(symbol, ".", c("Open", "High", "Low", "Close", "Volume", "VWAP"))
+ohlc <- xts::xts(ohlc, order.by=dates)
+# Save to environment
+assign(symbol, ohlc, envir=etfenv)
+Sys.sleep(1)
+},
+    error={function(error_cond) print(paste("Error handler:", error_cond))},
+    finally=print(paste0("symbol=", symbol))
+    )  # end tryCatch
+  }  # end for
+  # Update vector of symbols already downloaded
+  isdownloaded <- symbolv %in% ls(etfenv)
+}  # end while
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+
+# Extract Close prices
+pricev <- eapply(etfenv, quantmod::Cl)
+pricev <- do.call(cbind, pricev)
+# Drop ".Close" from colnames
+colnames(pricev) <- do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
+# Calculate the log returns
+retp <- xts::diff.xts(log(pricev))
+# Copy prices and returns into etfenv
+etfenv$pricev <- pricev
+etfenv$retp <- retp
+# Copy symbolv into etfenv
+etfenv$symbolv <- symbolv
+# Calculate the risk-return statistics
+riskstats <- PerformanceAnalytics::table.Stats(retp)
+# Transpose the data frame
+riskstats <- as.data.frame(t(riskstats))
+# Add Name column
+riskstats$Name <- rownames(riskstats)
+# Copy riskstats into etfenv
+etfenv$riskstats <- riskstats
+# Calculate the beta, alpha, Treynor ratio, and other performance statistics
+capmstats <- PerformanceAnalytics::table.CAPM(Ra=retp[, symbolv],
+                                         Rb=retp[, "VTI"], scale=252)
+colnamev <- strsplit(colnames(capmstats), split=" ")
+colnamev <- do.call(cbind, colnamev)[1, ]
+colnames(capmstats) <- colnamev
+capmstats <- t(capmstats)
+capmstats <- capmstats[, -1]
+colnamev <- colnames(capmstats)
+whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnamev)
+colnamev[whichv] <- c("Alpha", "Information", "Treynor")
+colnames(capmstats) <- colnamev
+capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
+# Copy capmstats into etfenv
+etfenv$capmstats <- capmstats
+save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
+
+library(rutils)  # Load package rutils
+library(RCurl)  # Load package RCurl
+library(XML)  # Load package XML
+# Download text data from URL
+sp500 <- getURL(
+  "https://en.wikipedia.org/wiki/List_of_S%26P500_companies")
+# Extract tables from the text data
+sp500 <- readHTMLTable(sp500)
+str(sp500)
+# Extract colnames of data frames
+lapply(sp500, colnames)
+# Extract S&P500 constituents
+sp500 <- sp500[[1]]
+head(sp500)
+# Create valid R names from symbols containing "-" or "."characters
+sp500$namesv <- gsub("-", "_", sp500$Ticker)
+sp500$namesv <- gsub("[.]", "_", sp500$names)
+# Write data frame of S&P500 constituents to CSV file
+write.csv(sp500,
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_Yahoo.csv",
+  row.names=FALSE)
+
+library(rutils)  # Load package rutils
+# Load data frame of S&P500 constituents from CSV file
+sp500 <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_Yahoo.csv")
+# Register symbols corresponding to R names
+for (indeks in 1:NROW(sp500)) {
+  cat("processing: ", sp500$Ticker[indeks], "\n")
+  setSymbolLookup(structure(
+    list(list(name=sp500$Ticker[indeks])),
+    names=sp500$names[indeks]))
+}  # end for
+sp500env <- new.env()  # new environment for data
+# Remove all files (if necessary)
+rm(list=ls(sp500env), envir=sp500env)
+# Download data and copy it into environment
+rutils::get_data(sp500$names,
+   env_out=sp500env, startd="1990-01-01")
+# Or download in loop
+for (symbol in sp500$names) {
+  cat("processing: ", symbol, "\n")
+  rutils::get_data(symbol,
+   env_out=sp500env, startd="1990-01-01")
+}  # end for
+save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+chart_Series(x=sp500env$BRKB["2016/"],
+       TA="add_Vo()", name="BRK-B stock")
+
+library(quantmod)
+# Download U.S. unemployment rate data
+unemp_rate <- quantmod::getSymbols("UNRATE",
+            auto.assign=FALSE, src="FRED")
+# Plot U.S. unemployment rate data
+chart_Series(unemp_rate["1990/"],
+      name="U.S. unemployment rate")

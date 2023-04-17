@@ -895,7 +895,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo = datav[cutoff],
-  quantilev = quantile(datav, probs=confl),
+  quantv = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 
 # Sample from Standard Normal Distribution
@@ -1264,26 +1264,26 @@ set.seed(1121) # Reset random number generator
 nrows <- 1000
 datav <- rnorm(nrows)
 # Cumulative probability from formula
-quantilev <- (-2)
-pnorm(quantilev)
-integrate(dnorm, lower=-Inf, upper=quantilev)
+quantv <- (-2)
+pnorm(quantv)
+integrate(dnorm, lower=-Inf, upper=quantv)
 # Cumulative probability from Naive Monte Carlo
-sum(datav < quantilev)/nrows
+sum(datav < quantv)/nrows
 # Generate importance sample
 lambda <- (-1.5)  # Tilt parameter
 data_tilt <- datav + lambda  # Tilt the random numbers
 # Cumulative probability from importance sample
-sum(data_tilt < quantilev)/nrows
+sum(data_tilt < quantv)/nrows
 weights <- exp(-lambda*data_tilt + lambda^2/2)
-sum((data_tilt < quantilev)*weights)/nrows
+sum((data_tilt < quantv)*weights)/nrows
 # Bootstrap of standard errors of cumulative probability
 nboot <- 1000
 boot_data <- sapply(1:nboot, function(x) {
   datav <- rnorm(nrows)
-  naivemc <- sum(datav < quantilev)/nrows
+  naivemc <- sum(datav < quantv)/nrows
   datav <- (datav + lambda)
   weights <- exp(-lambda*datav + lambda^2/2)
-  isample <- sum((datav < quantilev)*weights)/nrows
+  isample <- sum((datav < quantv)*weights)/nrows
   c(naivemc=naivemc, importmc=isample)
 }) # end sapply
 apply(boot_data, MARGIN=1,

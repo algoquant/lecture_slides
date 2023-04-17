@@ -138,9 +138,9 @@ detach("package:tseries")  # Remove tseries from search path
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 # Get start and end dates
-dates <- time(stxts_adj)
-endd <- dates[NROW(dates)]
-startd <- round((4*endd + dates[1])/5)
+datev <- time(stxts_adj)
+endd <- datev[NROW(datev)]
+startd <- round((4*endd + datev[1])/5)
 # Plot using plotOHLC
 plotOHLC(window(stxts_adj,
                 start=startd,
@@ -282,7 +282,7 @@ title(main="MSFT Close Prices", line=-1)
       The package \emph{tseries} contains functions for calibrating models to time series:
       \begin{itemize}
         \item \texttt{garch()} for calibrating \emph{GARCH} volatility models,
-        \item \texttt{arma()} for calibrating \texttt{ARMA} models,
+        \item \texttt{arma()} for calibrating \emph{ARMA} models,
       \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -772,8 +772,8 @@ par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
 zoo::plot.zoo(pricev[, 1], lwd=2, col="orange",
               xlab=NA, ylab=NA, xaxt="n")
 # Create X-axis date labels and add X-axis
-dates <- pretty(zoo::index(pricev))
-axis(side=1, at=dates, labels=format(dates, "%b-%d-%y"))
+datev <- pretty(zoo::index(pricev))
+axis(side=1, at=datev, labels=format(datev, "%b-%d-%y"))
 # Plot second time series without y-axis
 par(new=TRUE)  # Allow new line on same plot
 zoo::plot.zoo(pricev[, 2], xlab=NA, ylab=NA,
@@ -858,7 +858,7 @@ dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(datav),
 indic <- (Cl(datav) > datav[, "VWAP"])
 whichv <- which(rutils::diffit(indic) != 0)
 indic <- rbind(first(indic), indic[whichv, ], last(indic))
-dates <- zoo::index(indic)
+datev <- zoo::index(indic)
 indic <- ifelse(drop(coredata(indic)), "lightgreen", "antiquewhite")
 # Create dygraph object without rendering it
 dyplot <- dygraphs::dygraph(datav) %>% dyCandlestick() %>% 
@@ -866,7 +866,7 @@ dyplot <- dygraphs::dygraph(datav) %>% dyCandlestick() %>%
 # Add shading
 for (i in 1:(NROW(indic)-1)) {
     dyplot <- dyplot %>% 
-      dyShading(from=dates[i], to=dates[i+1], color=indic[i])
+      dyShading(from=datev[i], to=datev[i+1], color=indic[i])
 }  # end for
 # Render the dygraph object
 dyplot
@@ -1010,7 +1010,7 @@ stats:::quantile.default
 library(microbenchmark)
 summary(microbenchmark(
   monte_carlo = datav[cutoff],
-  quantilev = quantile(datav, probs=confl),
+  quantv = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -1034,7 +1034,7 @@ set.seed(1121)  # Reset random number generator
 barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
 pathv <- numeric(nrows)  # Allocate path vector
-pathv[1] <- 0  # Initialize path
+pathv[1] <- rnorm(1)  # Initialize path
 it <- 2  # Initialize simulation index
 while ((it <= nrows) && (pathv[it - 1] < barl)) {
 # Simulate next step
@@ -1160,10 +1160,10 @@ plot(pricev, type="l", xlab="time", ylab="prices",
 sigmav <- 0.01/sqrt(48)
 drift <- 0.0
 nrows <- 1e4
-dates <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+datev <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
   length.out=nrows, by="30 min")
 pricev <- exp(cumsum(sigmav*rnorm(nrows) + drift - sigmav^2/2))
-pricev <- xts(pricev, order.by=dates)
+pricev <- xts(pricev, order.by=datev)
 pricev <- cbind(pricev,
   volume=sample(x=10*(2:18), size=nrows, replace=TRUE))
 # Aggregate to daily OHLC data
@@ -1399,7 +1399,7 @@ pricev <- zoo::na.locf(pricev, na.rm=FALSE)
 pricev <- zoo::na.locf(pricev, fromLast=TRUE)
 sum(is.na(pricev))
 # Drop ".Close" from column names
-colnames(pricev[, 1:4])
+colnames(pricev)
 colnames(pricev) <- rutils::get_name(colnames(pricev))
 # Or
 # colnames(pricev) <- do.call(rbind,
@@ -1579,9 +1579,9 @@ plot(pricev, type="l", xlab="time", ylab="prices",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The estimator of \emph{autocorrelation} of a time series of returns $r_i$ is equal to:
+      The lag $k$ \emph{autocorrelation} of a time series of returns $r_t$ is equal to:
       \begin{displaymath}
-        \rho_k = \frac{\sum_{i=k+1}^n (r_i-\bar{r})(r_{i-k}-\bar{r})}{(n-k) \, \sigma^2}
+        \rho_k = \frac{\sum_{t=k+1}^n (r_t-\bar{r})(r_{t-k}-\bar{r})}{(n-k) \, \sigma^2}
       \end{displaymath}
       The \emph{autocorrelation function} (\emph{ACF}) is the vector of autocorrelation coefficients $\rho_k$.
       \vskip1ex
@@ -2121,9 +2121,9 @@ retd[1] <- 0
       \begin{displaymath}
         H = \frac{\log{\sigma_t} - \log{\sigma}}{\log{\Delta t}}
       \end{displaymath}
-      For a vector of aggregation intervals $\Delta t_i$, the \emph{Hurst exponent} \texttt{H} is equal to the regression slope between the logarithms of the aggregated volatilities $\sigma_i$ versus the logarithms of the aggregation intervals $\Delta t_i$:
+      For a vector of aggregation intervals $\Delta t$, the \emph{Hurst exponent} \texttt{H} is equal to the regression slope between the logarithms of the aggregated volatilities $\sigma_t$ versus the logarithms of the aggregation intervals $\Delta t$:
       \begin{displaymath}
-        H = \frac{\operatorname{cov}(\log{\sigma_i}, \log{\Delta t_i})}{\operatorname{var}(\log{\Delta t_i})}
+        H = \frac{\operatorname{cov}(\log{\sigma_t}, \log{\Delta t})}{\operatorname{var}(\log{\Delta t})}
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volatilities for vector of aggregation intervals
@@ -2752,7 +2752,7 @@ optiml <- optim(par=weightv, fn=calc_phurst, retp=retp,
                 lower=rep(-10.0, nweights))
 # Optimal weights and maximum Hurst
 weightv <- optiml$par
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 -calc_phurst(weightv, retp=retp)
       @
     \column{0.5\textwidth}
@@ -2789,7 +2789,7 @@ optiml <- optim(par=weightv, fn=calc_phurst, retp=retp["/2010"],
                 lower=rep(-10.0, nweights))
 # Optimal weights and maximum Hurst
 weightv <- optiml$par
-names(weightv) <- colnames(retp)
+names(weights) <- colnames(retp)
 # Calculate the in-sample Hurst exponent
 -calc_phurst(weightv, retp=retp["/2010"])
 # Calculate the out-of-sample Hurst exponent
@@ -2813,24 +2813,24 @@ names(weightv) <- colnames(retp)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An \emph{autoregressive} process \emph{AR(n)} of order \emph{n} for a time series $r_i$ is defined as:
+      An \emph{autoregressive} process \emph{AR(n)} of order \emph{n} for a time series $r_t$ is defined as:
       \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i
+        r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t
       \end{displaymath}
-      Where $\varphi_i$ are the \emph{AR(n)} coefficients, and $\xi_i$ are standard normal \emph{innovations}.
+      Where $\varphi_i$ are the \emph{AR(n)} coefficients, and $\xi_t$ are standard normal \emph{innovations}.
       \vskip1ex
       The \emph{AR(n)} process is a special case of an \emph{ARIMA} process, and is simply called an \emph{AR(n)} process.
       \vskip1ex
-      If the \emph{AR(n)} process is \emph{stationary} then the time series $r_i$ is mean reverting to zero.
+      If the \emph{AR(n)} process is \emph{stationary} then the time series $r_t$ is mean reverting to zero.
       \vskip1ex
       The function \texttt{arima.sim()} simulates \emph{ARIMA} processes, with the \texttt{"model"} argument accepting a \texttt{list} of \emph{AR(n)} coefficients $\varphi_i$.
     <<echo=TRUE,eval=FALSE>>=
 # Simulate AR processes
 set.seed(1121)  # Reset random numbers
-dates <- Sys.Date() + 0:728  # Two year daily series
+datev <- Sys.Date() + 0:728  # Two year daily series
 # AR time series of returns
-arimav <- xts(x=arima.sim(n=NROW(dates), model=list(ar=0.2)), 
-              order.by=dates)
+arimav <- xts(x=arima.sim(n=NROW(datev), model=list(ar=0.2)), 
+              order.by=datev)
 arimav <- cbind(arimav, cumsum(arimav))
 colnames(arimav) <- c("AR returns", "AR prices")
       @
@@ -2865,18 +2865,18 @@ theme(legend.position=c(0.1, 0.5),
     \column{0.5\textwidth}
       The speed of mean reversion of an \emph{AR(1)} process depends on the \emph{AR(n)} coefficient $\varphi_1$, with a negative coefficient producing faster mean reversion, and a positive coefficient producing stronger diversion.
       \vskip1ex
-      A positive coefficient $\varphi_1$ produces a diversion away from the mean, so that the time series $r_i$ wanders away from the mean for longer periods of time.
+      A positive coefficient $\varphi_1$ produces a diversion away from the mean, so that the time series $r_t$ wanders away from the mean for longer periods of time.
       <<echo=TRUE,eval=FALSE>>=
 coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
 # Create three AR time series
 arimav <- sapply(coeff, function(phi) {
   set.seed(1121)  # Reset random numbers
-  arima.sim(n=NROW(dates), model=list(ar=phi))
+  arima.sim(n=NROW(datev), model=list(ar=phi))
 })  # end sapply
 colnames(arimav) <- paste("autocorr", coeff)
 plot.zoo(arimav, main="AR(1) prices", xlab=NA)
 # Or plot using ggplot
-arimav <- xts(x=arimav, order.by=dates)
+arimav <- xts(x=arimav, order.by=datev)
 library(ggplot)
 autoplot(arimav, main="AR(1) prices",
          facets=Series ~ .) +
@@ -2908,13 +2908,15 @@ theme(
     \column{0.5\textwidth}
       An \emph{autoregressive} process \emph{AR(n)}:
       \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i
+        r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t
       \end{displaymath}
       Can be simulated by using an explicit recursive loop in \texttt{R}.
       \vskip1ex
       \emph{AR(n)} processes can also be simulated by using the function \texttt{filter()} directly, with the argument \texttt{method="recursive"}.
       \vskip1ex
       The function \texttt{filter()} applies a linear filter to a vector, and returns a time series of class \texttt{"ts"}.
+      \vskip1ex
+      The function \texttt{HighFreq::sim\_ar()} simulates an \emph{AR(n)} processes using \texttt{C++} code.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -2931,13 +2933,26 @@ for (it in 4:NROW(arimav)) {
   arimav[it] <- arimav[(it-1):(it-3)] %*% coeff + innov[it]
 }  # end for
 # Simulate AR process using filter()
-arimafaster <- filter(x=innov, filter=coeff, method="recursive")
-class(arimafaster)
-all.equal(arimav, as.numeric(arimafaster))
+arimaf <- filter(x=innov, filter=coeff, method="recursive")
+class(arimaf)
+all.equal(arimav, as.numeric(arimaf))
 # Fast simulation of AR process using C_rfilter()
 arimacpp <- .Call(stats:::C_rfilter, innov, coeff,
-                       double(NROW(coeff) + NROW(innov)))[-(1:3)]
+     double(NROW(coeff) + NROW(innov)))[-(1:3)]
 all.equal(arimav, arimacpp)
+# Fastest simulation of AR process using HighFreq::sim_ar()
+arimav <- HighFreq::sim_ar(coeff=matrix(coeff), innov=matrix(innov))
+arimav <- drop(arimav)
+all.equal(arimav, arimacpp)
+# Benchmark the speed of the three methods of simulating AR process
+library(microbenchmark)
+summary(microbenchmark(
+  Rloop={for (it in 4:NROW(arimav)) {
+    arimav[it] <- arimav[(it-1):(it-3)] %*% coeff + innov[it]
+  }},
+  filter=filter(x=innov, filter=coeff, method="recursive"),
+  cpp=HighFreq::sim_ar(coeff=matrix(coeff), innov=matrix(innov))
+  ), times=10)[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}
@@ -2977,8 +2992,8 @@ arimav <- arima.sim(n=nrows,
   start.innov=innov[1:warmup],
   innov=innov[(warmup+1):NROW(innov)])
 # Simulate AR process using filter()
-arimafast <- filter(x=innov, filter=coeff, method="recursive")
-all.equal(arimafast[-(1:warmup)], as.numeric(arimav))
+arimaf <- filter(x=innov, filter=coeff, method="recursive")
+all.equal(arimaf[-(1:warmup)], as.numeric(arimav))
 # Benchmark the speed of the three methods of simulating AR process
 library(microbenchmark)
 summary(microbenchmark(
@@ -3004,7 +3019,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autocorrelation $\rho_i$ of an \emph{AR(1)} process (defined as $r_i = \varphi r_{i-1} + \xi_i$), satisfies the recursive equation: $\rho_i = \varphi \rho_{i-1}$, with $\rho_1 = \varphi$.
+      The autocorrelation $\rho_i$ of an \emph{AR(1)} process (defined as $r_t = \varphi r_{t-1} + \xi_t$), satisfies the recursive equation: $\rho_i = \varphi \rho_{i-1}$, with $\rho_1 = \varphi$.
       \vskip1ex
       Therefore \emph{AR(1)} processes have exponentially decaying autocorrelations: $\rho_i = \varphi^i$.
       \vskip1ex
@@ -3015,11 +3030,11 @@ summary(microbenchmark(
         r_3 &= \xi_3 + \varphi \xi_2 + \varphi^2 \xi_1 \\
         r_4 &= \xi_4 + \varphi \xi_3 + \varphi^2 \xi_2 + \varphi^3 \xi_1
       \end{align*}
-      Therefore the \emph{AR(1)} process can be expressed as a \emph{moving average} (\emph{MA}) of the \emph{innovations} $\xi_i$: $r_i = \sum_{i=1}^n {\varphi^{i-1} \xi_i}$.
+      Therefore the \emph{AR(1)} process can be expressed as a \emph{moving average} (\emph{MA}) of the \emph{innovations} $\xi_t$: $r_t = \sum_{i=1}^n {\varphi^{i-1} \xi_t}$.
       \vskip1ex
-      If $\varphi < 1.0$ then the influence of the innovation $\xi_i$ decays exponentially.
+      If $\varphi < 1.0$ then the influence of the innovation $\xi_t$ decays exponentially.
       \vskip1ex
-      If $\varphi = 1.0$ then the influence of the random innovations $\xi_i$ persists indefinitely, so that the variance of $r_i$ increases linearly with time.
+      If $\varphi = 1.0$ then the influence of the random innovations $\xi_t$ persists indefinitely, so that the variance of $r_t$ increases linearly with time.
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/ar_acf.png}\\
       An \emph{AR(1)} process has an exponentially decaying \emph{ACF}.
@@ -3089,7 +3104,7 @@ pacfv[1:5]
     \column{0.5\textwidth}
       An \emph{AR(3)} process of order \emph{three} is defined by the formula:
       \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \varphi_3 r_{i-3} + \xi_i
+        r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \varphi_3 r_{i-3} + \xi_t
       \end{displaymath}
       Autoregressive processes \emph{AR(n)} of order \emph{n} have an exponentially decaying \emph{ACF} and a non-zero \emph{PACF} up to lag \emph{n}.
       \vskip1ex
@@ -3124,7 +3139,7 @@ pacf(arimav, lag=10, xlab="", ylab="", main="PACF of AR(3) process")
       A process is \emph{stationary} if its probability distribution does not change with time, which means that it has constant mean and variance.
       \vskip1ex
       The \emph{autoregressive} process \emph{AR(n)}:
-      $r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i$
+      $r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t$
       \vskip1ex
       Has the following characteristic equation:
       $1 - \varphi_1 z - \varphi_2 z^2 - \ldots - \varphi_n z^n = 0$
@@ -3136,7 +3151,7 @@ pacf(arimav, lag=10, xlab="", ylab="", main="PACF of AR(3) process")
       Non-stationary processes with unit roots are called \emph{unit root} processes.
       \vskip1ex
       A simple example of a \emph{unit root} process is the \emph{Brownian Motion}:
-      $p_i = p_{i-1} + \xi_i$
+      $p_t = p_{t-1} + \xi_t$
     \column{0.5\textwidth}
       \vspace{-1em}
       \hspace*{-1em}
@@ -3146,14 +3161,14 @@ pacf(arimav, lag=10, xlab="", ylab="", main="PACF of AR(3) process")
 library(rutils)  # Load rutils
 library(ggplot2)  # Load ggplot2
 set.seed(1121)  # Initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
-                  order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <- paste("rand_walk", 1:3, sep="_")
-plot.zoo(rand_walk, main="Random walks",
+randw <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+      order.by=(Sys.Date()+0:99)))
+colnames(randw) <- paste("randw", 1:3, sep="_")
+plot.zoo(randw, main="Random walks",
      xlab="", ylab="", plot.type="single",
      col=c("black", "red", "blue"))
 # Add legend
-legend(x="topleft", legend=colnames(rand_walk),
+legend(x="topleft", legend=colnames(randw),
        col=c("black", "red", "blue"), lty=1)
       @
   \end{columns}
@@ -3171,21 +3186,21 @@ legend(x="topleft", legend=colnames(rand_walk),
     \column{0.5\textwidth}
       The cumulative sum of a given process is called its \emph{integrated} process.
       \vskip1ex
-      For example, asset prices follow an \emph{integrated} process with respect to asset returns: $p_n = {\sum_{i=1}^n r_i}$.
+      For example, asset prices follow an \emph{integrated} process with respect to asset returns: $p_t = {\sum_{i=1}^t r_i}$.
       \vskip1ex
       If returns follow an \emph{AR(n)} process:
-      $r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i$
+      $r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t$
       \vskip1ex
       Then asset prices follow the process:
-      $p_i = (1 + \varphi_1) p_{i-1} + (\varphi_2 - \varphi_1) p_{i-2} + \ldots + (\varphi_n - \varphi_{n-1}) p_{i-n} - \varphi_n p_{i-n-1} + \xi_i$
+      $p_t = (1 + \varphi_1) p_{t-1} + (\varphi_2 - \varphi_1) p_{t-2} + \ldots + (\varphi_n - \varphi_{n-1}) p_{t-n} - \varphi_n p_{t-n-1} + \xi_t$
       \vskip1ex
       The sum of the coefficients of the price process is equal to $1$, so it has a \emph{unit root} for all values of the $\varphi_i$ coefficients.
       \vskip1ex
       The \emph{integrated} process of an \emph{AR(n)} process is always a \emph{unit root} process.
     \column{0.5\textwidth}
-      For example, if returns follow an \emph{AR(1)} process: $r_i = \varphi r_{i-1} + \xi_i$.
+      For example, if returns follow an \emph{AR(1)} process: $r_t = \varphi r_{t-1} + \xi_t$.
       \vskip1ex
-      Then asset prices follow the process: $p_i = (1 + \varphi) p_{i-1} - \varphi p_{i-2} + \xi_i$
+      Then asset prices follow the process: $p_t = (1 + \varphi) p_{t-1} - \varphi p_{t-2} + \xi_t$
       \vskip1ex
       Which is a \emph{unit root} process for all values of $\varphi$, because the sum of its coefficients is equal to $1$.
       \vskip1ex
@@ -3219,24 +3234,24 @@ tseries::adf.test(cumsum(arimav))
   \begin{columns}[T]
     \column{0.5\textwidth}
       An \emph{AR(1)} process:
-      $r_i = \varphi r_{i-1} + \xi_i$
+      $r_t = \varphi r_{t-1} + \xi_t$
       has the following characteristic equation:
       $1 - \varphi z = 0$,
       with a root equal to:
       $z = 1 / \varphi$
       \vskip1ex
       If $\varphi = 1$, then the characteristic equation has a \emph{unit root} (and therefore it isn't \emph{stationary}), and the process follows:
-      $r_i = r_{i-1} + \xi_i$
+      $r_t = r_{t-1} + \xi_t$
       \vskip1ex
       The above is called a \emph{Brownian Motion}, and it's an example of a \emph{unit root} process.
       \vskip1ex
-      The expected value of the \emph{AR(1)} process $r_i = \varphi r_{i-1} + \xi_i$ is equal to zero: $\mathbb{E}[r_i] = \frac{\mathbb{E}[\xi_i]}{1 - \varphi} = 0$.
+      The expected value of the \emph{AR(1)} process $r_t = \varphi r_{t-1} + \xi_t$ is equal to zero: $\mathbb{E}[r_t] = \frac{\mathbb{E}[\xi_t]}{1 - \varphi} = 0$.
       \vskip1ex
       And its variance is equal to: $\sigma^2 = \mathbb{E}[r^2_i] = \frac{\sigma_{\xi}^2}{1 - \varphi^2}$.
       \vskip1ex
       If $\varphi = 1$, then the \emph{variance} grows over time and becomes infinite over time, so the process isn't \emph{stationary}.
       \vskip1ex
-      The variance of the \emph{Brownian Motion} $r_i = r_{i-1} + \xi$ is proportional to time: $\sigma^2_i = \mathbb{E}[r^2_i] = i \sigma_{\xi}^2$
+      The variance of the \emph{Brownian Motion} $r_t = r_{t-1} + \xi$ is proportional to time: $\sigma^2_i = \mathbb{E}[r^2_i] = i \sigma_{\xi}^2$
     \column{0.5\textwidth}
       \vspace{-1em}
       \hspace*{-1em}
@@ -3245,15 +3260,15 @@ tseries::adf.test(cumsum(arimav))
       <<echo=TRUE,eval=FALSE>>=
 # Simulate random walks using apply() loops
 set.seed(1121)  # Initialize random number generator
-rand_walks <- matrix(rnorm(1000*100), ncol=1000)
-rand_walks <- apply(rand_walks, 2, cumsum)
-variance <- apply(rand_walks, 1, var)
+randws <- matrix(rnorm(1000*100), ncol=1000)
+randws <- apply(randws, 2, cumsum)
+varv <- apply(randws, 1, var)
 # Simulate random walks using vectorized functions
 set.seed(1121)  # Initialize random number generator
-rand_walks <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
-variance <- matrixStats::rowVars(rand_walks)
+randws <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
+varv <- matrixStats::rowVars(randws)
 par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot(variance, xlab="time steps", ylab="",
+plot(varv, xlab="time steps", ylab="",
      t="l", col="blue", lwd=2,
      main="Variance of Random Walk")
       @
@@ -3270,16 +3285,16 @@ plot(variance, xlab="time steps", ylab="",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{Brownian Motion} process, the returns $r_i$ are equal to the random \emph{innovations}:
+      In the \emph{Brownian Motion} process, the returns $r_t$ are equal to the random \emph{innovations}:
       \begin{align*}
-        r_i &= p_i - p_{i-1} = \sigma \, \xi_i \\
-        p_i &= p_{i-1} + r_i
+        r_t &= p_t - p_{t-1} = \sigma \, \xi_t \\
+        p_t &= p_{t-1} + r_t
       \end{align*}
-      Where $\sigma$ is the volatility of returns, and $\xi_i$ are random normal \emph{innovations} with zero mean and unit variance.
+      Where $\sigma$ is the volatility of returns, and $\xi_t$ are random normal \emph{innovations} with zero mean and unit variance.
       \vskip1ex
       The \emph{Brownian Motion} process for prices can be written as an \emph{AR(1)} autoregressive process with coefficient $\varphi = 1$:
       \begin{displaymath}
-        p_i = \varphi p_{i-1} + \sigma \, \xi_i
+        p_t = \varphi p_{t-1} + \sigma \, \xi_t
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 # Define Brownian Motion parameters
@@ -3313,16 +3328,16 @@ quartz.save("figure/brown_paths.png", type="png", width=6, height=4)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{Ornstein-Uhlenbeck} process, the returns $r_i$ are equal to the difference between the equilibrium price $\mu$ minus the latest price $p_{i-1}$, times the mean reversion parameter $\theta$, plus random \emph{innovations}:
+      In the \emph{Ornstein-Uhlenbeck} process, the returns $r_t$ are equal to the difference between the equilibrium price $\mu$ minus the latest price $p_{t-1}$, times the mean reversion parameter $\theta$, plus random \emph{innovations}:
       \begin{align*}
-        r_i &= p_i - p_{i-1} = \theta \, (\mu - p_{i-1}) + \sigma \, \xi_i \\
-        p_i &= p_{i-1} + r_i
+        r_t &= p_t - p_{t-1} = \theta \, (\mu - p_{t-1}) + \sigma \, \xi_t \\
+        p_t &= p_{t-1} + r_t
       \end{align*}
-      Where $\sigma$ is the volatility of returns, and $\xi_i$ are random normal \emph{innovations} with zero mean and unit variance.
+      Where $\sigma$ is the volatility of returns, and $\xi_t$ are random normal \emph{innovations} with zero mean and unit variance.
       \vskip1ex
       The \emph{Ornstein-Uhlenbeck} process for prices can be written as an \emph{AR(1)} process plus a drift:
       \begin{displaymath}
-        p_i = \theta \, \mu + (1 - \theta ) \, p_{i-1} + \sigma \, \xi_i
+        p_t = \theta \, \mu + (1 - \theta ) \, p_{t-1} + \sigma \, \xi_t
       \end{displaymath}
       The \emph{Ornstein-Uhlenbeck} process cannot be simulated using the function \texttt{filter()} because of the drift term, so it must be simulated using explicit loops, either in \texttt{R} or in \texttt{C++}.
       \vskip1ex
@@ -3331,21 +3346,21 @@ quartz.save("figure/brown_paths.png", type="png", width=6, height=4)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck parameters
-init_price <- 0.0; priceq <- 1.0; 
+prici <- 0.0; priceq <- 1.0; 
 sigmav <- 0.02; thetav <- 0.01; nrows <- 1000
 # Initialize the data
 innov <- rnorm(nrows)
 retp <- numeric(nrows)
 pricev <- numeric(nrows)
 retp[1] <- sigmav*innov[1]
-pricev[1] <- init_price
+pricev[1] <- prici
 # Simulate Ornstein-Uhlenbeck process in R
 for (i in 2:nrows) {
   retp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
   pricev[i] <- pricev[i-1] + retp[i]
 }  # end for
 # Simulate Ornstein-Uhlenbeck process in Rcpp
-prices_cpp <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
+pricecpp <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
   theta=thetav, innov=matrix(innov))
 all.equal(pricev, drop(pricev_cpp))
 # Compare the speed of R code with Rcpp
@@ -3354,7 +3369,7 @@ summary(microbenchmark(
   Rcode={for (i in 2:nrows) {
     retp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
     pricev[i] <- pricev[i-1] + retp[i]}},
-  Rcpp=HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
+  Rcpp=HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
     theta=thetav, innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -3397,10 +3412,10 @@ summary(microbenchmark(
 plot(pricev, type="l", xlab="time", ylab="prices",
      main="Ornstein-Uhlenbeck Process")
 legend("topright", title=paste(c(paste0("sigmav = ", sigmav),
-                     paste0("eq_price = ", ),
-                     paste0("thetav = ", thetav)),
-                   collapse="\n"),
-       legend="", cex=0.8, inset=0.1, bg="white", bty="n")
+     paste0("eq_price = ", ),
+     paste0("thetav = ", thetav)),
+   collapse="\n"),
+ legend="", cex=0.8, inset=0.1, bg="white", bty="n")
 abline(h=, col='red', lwd=2)
       @
   \end{columns}
@@ -3462,11 +3477,11 @@ all.equal(c(alpha=alpha, beta=betav), coeff[, 1],
           check.attributes=FALSE)
 # Calculate regression standard errors directly
 betav <- c(alpha=alpha, beta=betav)
-fittedv <- (alpha + betav*pricelag)
-residuals <- (retp - fittedv)
+fitv <- (alpha + betav*pricelag)
+resids <- (retp - fitv)
 prices2 <- sum((pricelag - mean(pricelag))^2)
-betasd <- sqrt(sum(residuals^2)/prices2/(nrows-2))
-alphasd <- sqrt(sum(residuals^2)/(nrows-2)*(1:nrows + mean(pricelag)^2/prices2))
+betasd <- sqrt(sum(resids^2)/prices2/(nrows-2))
+alphasd <- sqrt(sum(resids^2)/(nrows-2)*(1:nrows + mean(pricelag)^2/prices2))
 cbind(direct=c(alphasd=alphasd, betasd=betasd), lm=coeff[, 2])
 all.equal(c(alphasd=alphasd, betasd=betasd), coeff[, 2],
           check.attributes=FALSE)
@@ -3497,12 +3512,12 @@ round(coeff, 4)
       \vskip1ex
       So the \emph{Ornstein-Uhlenbeck} process is better suited for simulating the logarithm of pricev, which can be negative.
       \vskip1ex
-      The \emph{Schwartz} process is the exponential of the \emph{Ornstein-Uhlenbeck} process, so it avoids negative prices by compounding the percentage returns $r_i$ instead of summing them:
+      The \emph{Schwartz} process is the exponential of the \emph{Ornstein-Uhlenbeck} process, so it avoids negative prices by compounding the percentage returns $r_t$ instead of summing them:
       \begin{align*}
-        r_i &= \log{p_i} - \log{p_{i-1}} = \theta \, (\mu - p_{i-1}) + \sigma \, \xi_i \\
-        p_i &= p_{i-1} \exp(r_i)
+        r_t &= \log{p_t} - \log{p_{t-1}} = \theta \, (\mu - p_{t-1}) + \sigma \, \xi_t \\
+        p_t &= p_{t-1} \exp(r_t)
       \end{align*}
-      Where the parameter $\theta$ is the strength of mean reversion, $\sigma$ is the volatility, and $\xi_i$ are random normal \emph{innovations} with zero mean and unit variance.
+      Where the parameter $\theta$ is the strength of mean reversion, $\sigma$ is the volatility, and $\xi_t$ are random normal \emph{innovations} with zero mean and unit variance.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate Schwartz process
 retp <- numeric(nrows)
@@ -3522,11 +3537,11 @@ for (i in 2:nrows) {
 plot(pricev, type="l", xlab="time", ylab="prices",
      main="Schwartz Process")
 legend("topright",
-       title=paste(c(paste0("sigmav = ", sigmav),
-                     paste0("priceq = ", priceq),
-                     paste0("thetav = ", thetav)),
-                   collapse="\n"),
-       legend="", cex=0.8, inset=0.12, bg="white", bty="n")
+ title=paste(c(paste0("sigmav = ", sigmav),
+     paste0("priceq = ", priceq),
+     paste0("thetav = ", thetav)),
+   collapse="\n"),
+ legend="", cex=0.8, inset=0.12, bg="white", bty="n")
 abline(h=priceq, col='red', lwd=2)
       @
   \end{columns}
@@ -3544,25 +3559,25 @@ abline(h=priceq, col='red', lwd=2)
     \column{0.5\textwidth}
       The \emph{Dickey-Fuller} process is a combination of an \emph{Ornstein-Uhlenbeck} process and an \emph{autoregressive} process.
       \vskip1ex
-      The returns $r_i$ are equal to the sum of a mean reverting term plus \emph{autoregressive} terms:
+      The returns $r_t$ are equal to the sum of a mean reverting term plus \emph{autoregressive} terms:
       \begin{align*}
-        r_i &= \theta (\mu - p_{i-1}) + \varphi_1 r_{i-1} + \ldots + \varphi_n r_{i-n} + \sigma \, \xi_i \\
-        p_i &= p_{i-1} + r_i
+        r_t &= \theta (\mu - p_{t-1}) + \varphi_1 r_{t-1} + \ldots + \varphi_n r_{t-n} + \sigma \, \xi_t \\
+        p_t &= p_{t-1} + r_t
       \end{align*}
-      Where $\mu$ is the equilibrium price, $\sigma$ is the volatility of returns, $\theta$ is the strength of mean reversion, and $\xi_i$ are standard normal \emph{innovations}.
+      Where $\mu$ is the equilibrium price, $\sigma$ is the volatility of returns, $\theta$ is the strength of mean reversion, and $\xi_t$ are standard normal \emph{innovations}.
       \vskip1ex
       Then the prices follow an \emph{autoregressive} process:
       \begin{multline*}
-        p_i = \theta \mu + (1 + \varphi_1 - \theta) p_{i-1} + (\varphi_2 - \varphi_1) p_{i-2} + \ldots + \\
-        (\varphi_n - \varphi_{n-1}) p_{i-n} - \varphi_n p_{i-n-1} + \sigma \, \xi_i
+        p_t = \theta \mu + (1 + \varphi_1 - \theta) p_{t-1} + (\varphi_2 - \varphi_1) p_{t-2} + \ldots + \\
+        (\varphi_n - \varphi_{n-1}) p_{t-n} - \varphi_n p_{t-n-1} + \sigma \, \xi_t
       \end{multline*}
       \vskip1ex
-      The sum of the \emph{autoregressive} coefficients is equal to $1 - \theta$, so if the mean reversion parameter $\theta$ is positive: $\theta > 0$, then the time series $p_i$ exhibits mean reversion and has no \emph{unit root}.
+      The sum of the \emph{autoregressive} coefficients is equal to $1 - \theta$, so if the mean reversion parameter $\theta$ is positive: $\theta > 0$, then the time series $p_t$ exhibits mean reversion and has no \emph{unit root}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define Dickey-Fuller parameters
-init_price <- 0.0;  priceq <- 1.0
+prici <- 0.0;  priceq <- 1.0
 thetav <- 0.01;  nrows <- 1000
 coeff <- c(0.1, 0.39, 0.5)
 # Initialize the data
@@ -3571,7 +3586,7 @@ retp <- numeric(nrows)
 pricev <- numeric(nrows)
 # Simulate Dickey-Fuller process using recursive loop in R
 retp[1] <- innov[1]
-pricev[1] <- init_price
+pricev[1] <- prici
 retp[2] <- thetav*(priceq - pricev[1]) + coeff[1]*retp[1] + innov[2]
 pricev[2] <- pricev[1] + retp[2]
 retp[3] <- thetav*(priceq - pricev[2]) + coeff[1]*retp[2] + coeff[2]*retp[1] + innov[3]
@@ -3581,7 +3596,7 @@ for (it in 4:nrows) {
   pricev[it] <- pricev[it-1] + retp[it]
 }  # end for
 # Simulate Dickey-Fuller process in Rcpp
-prices_cpp <- HighFreq::sim_df(init_price=init_price, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
+pricecpp <- HighFreq::sim_df(init_price=prici, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
 # Compare prices
 all.equal(pricev, drop(pricev_cpp))
 # Compare the speed of R code with Rcpp
@@ -3591,7 +3606,7 @@ summary(microbenchmark(
   retp[it] <- thetav*(priceq - pricev[it-1]) + retp[(it-1):(it-3)] %*% coeff + innov[it]
   pricev[it] <- pricev[it-1] + retp[it]
   }},
-  Rcpp=HighFreq::sim_df(init_price=init_price, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
+  Rcpp=HighFreq::sim_df(init_price=prici, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -3609,16 +3624,16 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The \emph{Augmented Dickey-Fuller} \emph{ADF} test is designed to test the \emph{null hypothesis} that a time series has a \emph{unit root}.
       \vskip1ex
-      The \emph{ADF} test fits an autoregressive model for the prices $p_i$:
+      The \emph{ADF} test fits an autoregressive model for the prices $p_t$:
       \begin{align*}
-        r_i &= \theta (\mu - p_{i-1}) + \varphi_1 r_{i-1} + \ldots + \varphi_n r_{i-n} + \sigma \, \xi_i \\
-        p_i &= p_{i-1} + r_i
+        r_t &= \theta (\mu - p_{t-1}) + \varphi_1 r_{t-1} + \ldots + \varphi_n r_{t-n} + \sigma \, \xi_t \\
+        p_t &= p_{t-1} + r_t
       \end{align*}
       Where $\mu$ is the equilibrium price, $\sigma$ is the volatility of returns, and $\theta$ is the strength of mean reversion.
       \vskip1ex
       $\varepsilon_i$ are the \emph{residuals}, which are assumed to be standard normally distributed $\phi(0, \sigma_\varepsilon)$, independent, and stationary.
       \vskip1ex
-      If the mean reversion parameter $\theta$ is positive: $\theta > 0$, then the time series $p_i$ exhibits mean reversion and has no \emph{unit root}.
+      If the mean reversion parameter $\theta$ is positive: $\theta > 0$, then the time series $p_t$ exhibits mean reversion and has no \emph{unit root}.
       \vskip1ex
       The \emph{null hypothesis} is that prices have a unit root ($\theta = 0$, no mean reversion), while the alternative hypothesis is that it's \emph{stationary} ($\theta > 0$, mean reversion).
       \vskip1ex
@@ -3641,21 +3656,21 @@ arimav <- HighFreq::sim_ar(coeff=matrix(0.99), innov=innov)
 x11(); plot(arimav, t="l", main="AR(1) coefficient = 0.99")
 tseries::adf.test(arimav, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with mean reversion
-init_price <- 0.0; priceq <- 0.0; thetav <- 0.1
-pricev <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
+prici <- 0.0; priceq <- 0.0; thetav <- 0.1
+pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
   theta=thetav, innov=innov)
 x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with zero reversion
 thetav <- 0.0
-pricev <- HighFreq::sim_ou(init_price=init_price, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
   theta=thetav, innov=innov)
 x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
       @
       The common practice is to use a small number of lags in the \emph{ADF} test, and if the residuals are autocorrelated, then to increase them until the correlations are no longer significant.
       \vskip1ex
-      If the number of lags in the regression is zero: $n = 0$ then the \emph{ADF} test becomes the standard \emph{Dickey-Fuller} test: $r_i = \theta (\mu - p_{i-1}) + \varepsilon_i$.
+      If the number of lags in the regression is zero: $n = 0$ then the \emph{ADF} test becomes the standard \emph{Dickey-Fuller} test: $r_t = \theta (\mu - p_{t-1}) + \varepsilon_i$.
   \end{columns}
 \end{block}
 
@@ -3673,15 +3688,15 @@ tseries::adf.test(pricev, k=1)
       \vskip1ex
       The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root}.
       \vskip1ex
-      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits a regression model to determine if the price time series $p_i$ exhibits mean reversion:
+      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits a regression model to determine if the price time series $p_t$ exhibits mean reversion:
       \begin{displaymath}
-        r_i = \theta p_{i-1} + \varphi_1 r_{i-1} + \ldots + \varphi_n r_{i-n} + \xi_i
+        r_t = \theta p_{t-1} + \varphi_1 r_{t-1} + \ldots + \varphi_n r_{t-n} + \xi_t
       \end{displaymath}
-      where $p_i = p_{i-1} + r_i$, so that:
+      where $p_t = p_{t-1} + r_t$, so that:
       \begin{displaymath}
-        p_i = (1 + \theta) p_{i-1} + \varphi_1 r_{i-1} + \ldots + \varphi_n r_{i-n} + \xi_i
+        p_t = (1 + \theta) p_{t-1} + \varphi_1 r_{t-1} + \ldots + \varphi_n r_{t-n} + \xi_t
       \end{displaymath}
-      If the mean reversion parameter $\theta$ is positive: $\theta > 0$, then the time series $p_i$ exhibits mean reversion and has no \emph{unit root}.
+      If the mean reversion parameter $\theta$ is positive: $\theta > 0$, then the time series $p_t$ exhibits mean reversion and has no \emph{unit root}.
       \vskip1ex
       The \emph{null hypothesis} is that the price process has a unit root ($\theta = 0$, no mean reversion), while the alternative hypothesis is that it's \emph{stationary} ($\theta > 0$, mean reversion).
       \vskip1ex
@@ -3689,7 +3704,7 @@ tseries::adf.test(pricev, k=1)
     \column{0.5\textwidth}
       The common practice is to perform the \emph{ADF} test with a small number of lags, and if the residuals are autocorrelated, then to increase the number of lags until the correlations are no longer significant.
       \vskip1ex
-      If the number of lags in the regression is zero: $n = 0$ then the \emph{ADF} test becomes the standard \emph{Dickey-Fuller} test: $r_i = \theta p_{i-1} + \xi_i$.
+      If the number of lags in the regression is zero: $n = 0$ then the \emph{ADF} test becomes the standard \emph{Dickey-Fuller} test: $r_t = \theta p_{t-1} + \xi_t$.
       \vskip1ex
       The function \texttt{tseries::adf.test()} performs the \emph{ADF} test.
       <<echo=TRUE,eval=FALSE>>=
@@ -3768,10 +3783,10 @@ plot(x=coeffv, y=adft["adfstat", ], main="ADF Stat Versus AR Coefficient",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An \emph{autoregressive} process \emph{AR(n)} for the time series of returns $r_i$:
+      An \emph{autoregressive} process \emph{AR(n)} for the time series of returns $r_t$:
       \begin{multline*}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i = \\
-        \sum_{j=1}^n {\varphi_j r_{i-j}} + \xi_i
+        r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t = \\
+        \sum_{j=1}^n {\varphi_j r_{t-j}} + \xi_t
       \end{multline*}
       The coefficients $\mathbf{\varphi}$ can be calculated using linear regression, with the \emph{response} equal to $\mathbf{r}$, and the columns of the \emph{predictor matrix} $\mathbb{P}$ equal to the lags of $\mathbf{r}$:
       \begin{displaymath}
@@ -3781,6 +3796,8 @@ plot(x=coeffv, y=adft["adfstat", ], main="ADF Stat Versus AR Coefficient",
       \vskip1ex
       Adding the intercept term produces slightly different coefficients, depending on the mean of the returns.
       \vskip1ex
+      The function \texttt{HighFreq::sim\_ar()} simulates an \emph{AR(n)} processes using \texttt{C++} code.
+      \vskip1ex
       The function \texttt{stats::ar.ols()} fits an \emph{AR(n)} model, but it produces slightly different coefficients than linear regression, because it uses a different calibration procedure.
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3789,7 +3806,6 @@ plot(x=coeffv, y=adft["adfstat", ], main="ADF Stat Versus AR Coefficient",
 nrows <- 1e3
 coeff <- matrix(c(0.1, 0.39, 0.5)); ncoeff <- NROW(coeff)
 set.seed(1121); innov <- matrix(rnorm(nrows))
-# arimav <- filter(x=innov, filter=coeff, method="recursive")
 # Simulate AR process using HighFreq::sim_ar()
 arimav <- HighFreq::sim_ar(coeff=coeff, innov=innov)
 # Fit AR model using ar.ols()
@@ -3798,9 +3814,9 @@ class(arfit)
 is.list(arfit)
 drop(arfit$ar); drop(coeff)
 # Define predictor matrix without intercept column
-predv <- sapply(1:ncoeff, rutils::lagit, input=arimav)
+predm <- sapply(1:ncoeff, rutils::lagit, input=arimav)
 # Fit AR model using regression
-predinv <- MASS::ginv(predv)
+predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% arimav)
 all.equal(drop(arfit$ar), coeff, check.attributes=FALSE)
       @
@@ -3819,10 +3835,10 @@ all.equal(drop(arfit$ar), coeff, check.attributes=FALSE)
     \column{0.5\textwidth}
       An \emph{autoregressive} process \emph{AR(n)} defined as:
       \begin{multline*}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i = \\
-        \sum_{j=1}^n {\varphi_j r_{i-j}} + \xi_i
+        r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t = \\
+        \sum_{j=1}^n {\varphi_j r_{t-j}} + \xi_t
       \end{multline*}
-      Can be expressed as a \emph{multivariate} linear regression model, with the \emph{response} equal to $r_i$, and the columns of the \emph{predictor matrix} equal to the lags of $r_i$.
+      Can be expressed as a \emph{multivariate} linear regression model, with the \emph{response} equal to $r_t$, and the columns of the \emph{predictor matrix} equal to the lags of $r_t$.
       \vskip1ex
       The function \texttt{stats::arima()} calibrates (fits) an \emph{ARIMA} model to a univariate time series, using the \emph{maximum likelihood} method (which may give slightly different coefficients than the linear regression model).
     \column{0.5\textwidth}
@@ -3841,14 +3857,14 @@ arimav <- .Call(stats:::C_rfilter, innov, coeff,
 # Calibrate ARIMA model using regression
 # Define predictor matrix
 arimav <- (arimav - mean(arimav))
-predv <- sapply(1:3, rutils::lagit, input=arimav)
+predm <- sapply(1:3, rutils::lagit, input=arimav)
 # Calculate de-meaned returns matrix
-predv <- t(t(predv) - colMeans(predv))
-predinv <- MASS::ginv(predv)
+predm <- t(t(predm) - colMeans(predm))
+predinv <- MASS::ginv(predm)
 # Regression coefficients with response equal to arimav
 coeff <- drop(predinv %*% arimav)
 
-all.equal(arima_fit$coef, coeff, check.attributes=FALSE)
+all.equal(arfit$coef, coeff, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -3869,18 +3885,21 @@ all.equal(arima_fit$coef, coeff, check.attributes=FALSE)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the regression residuals
-fittedv <- drop(predv %*% coeff)
-residuals <- drop(arimav - fittedv)
+# Calculate the model residuals
+fitv <- drop(predm %*% coeff)
+resids <- drop(arimav - fitv)
 # Variance of residuals
-residsar <- sum(residuals^2)/(nrows-NROW(coeff))
-# predictor matrix squared
-predictor2 <- crossprod(predv)
+residsd <- sum(resids^2)/(nrows-NROW(coeff))
+# Inverse of predictor matrix squared
+predm2 <- MASS::ginv(crossprod(predm))
 # Calculate covariance matrix of AR coefficients
-covar <- residsar*MASS::ginv(predv2)
+covar <- residsd*predm2
 coeffsd <- sqrt(diag(covar))
 # Calculate t-values of AR coefficients
-coefftv <- drop(coeff)/coeffsd
+coefft <- drop(coeff)/coeffsd
+# Plot the t-values of the AR coefficients
+barplot(coefft, xlab="lag", ylab="t-value", 
+  main="Coefficient t-values of AR Forecasting Model")
       @
   \end{columns}
 \end{block}
@@ -3910,32 +3929,32 @@ coefftv <- drop(coeff)/coeffsd
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Fit AR(5) model into AR(3) process
-predv <- sapply(1:5, rutils::lagit, input=arimav)
-predinv <- MASS::ginv(predv)
+predm <- sapply(1:5, rutils::lagit, input=arimav)
+predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% arimav)
 # Calculate t-values of AR(5) coefficients
-residuals <- drop(arimav - drop(predv %*% coeff))
-residsar <- sum(residuals^2)/(nrows-NROW(coeff))
-covar <- residsar*MASS::ginv(crossprod(predv))
+resids <- drop(arimav - drop(predm %*% coeff))
+residsd <- sum(resids^2)/(nrows-NROW(coeff))
+covar <- residsd*MASS::ginv(crossprod(predm))
 coeffsd <- sqrt(diag(covar))
-coefftv <- drop(coeff)/coeffsd
+coefft <- drop(coeff)/coeffsd
 # Fit AR(5) model using arima()
-arima_fit <- arima(arimav, order=c(5, 0, 0), include.mean=FALSE)
-arima_fit$coef
+arfit <- arima(arimav, order=c(5, 0, 0), include.mean=FALSE)
+arfit$coef
 # Fit AR(5) model using auto.arima()
 library(forecast)  # Load forecast
-arima_fit <- forecast::auto.arima(arimav, max.p=5, max.q=0, max.d=0)
+arfit <- forecast::auto.arima(arimav, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
 retp <- drop(zoo::coredata(na.omit(rutils::etfenv$returns$VTI)))
-predv <- sapply(1:5, rutils::lagit, input=retp)
-predinv <- MASS::ginv(predv)
+predm <- sapply(1:5, rutils::lagit, input=retp)
+predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% retp)
 # Calculate t-values of AR(5) coefficients
-residuals <- drop(retp - drop(predv %*% coeff))
-residsar <- sum(residuals^2)/(nrows-NROW(coeff))
-covar <- residsar*MASS::ginv(crossprod(predv))
+resids <- drop(retp - drop(predm %*% coeff))
+residsd <- sum(resids^2)/(nrows-NROW(coeff))
+covar <- residsd*MASS::ginv(crossprod(predm))
 coeffsd <- sqrt(diag(covar))
-coefftv <- drop(coeff)/coeffsd
+coefft <- drop(coeff)/coeffsd
       @
   \end{columns}
 \end{block}
@@ -3967,10 +3986,10 @@ coefftv <- drop(coeff)/coeffsd
       \vskip1ex
       An \emph{autoregressive} process \emph{AR(n)} defined as:
       \begin{multline*}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i = \\
-        \sum_{j=1}^n {\varphi_j r_{i-j}} + \xi_i
+        r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t = \\
+        \sum_{j=1}^n {\varphi_j r_{t-j}} + \xi_t
       \end{multline*}
-      Can be solved as a \emph{multivariate} linear regression model, with the \emph{response} equal to $r_i$, and the \emph{predictor matrix} columns equal to the lags of $r_i$.
+      Can be solved as a \emph{multivariate} linear regression model, with the \emph{response} equal to $r_t$, and the \emph{predictor matrix} columns equal to the lags of $r_t$.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -3978,20 +3997,20 @@ coefftv <- drop(coeff)/coeffsd
 # library(forecast)  # Load forecast
 forecast::auto.arima(arimav, max.p=3, max.q=0, max.d=0)
 # Calibrate ARIMA model using arima()
-arima_fit <- arima(arimav, order=c(3,0,0), include.mean=FALSE)
-arima_fit$coef
+arfit <- arima(arimav, order=c(3,0,0), include.mean=FALSE)
+arfit$coef
 # Calibrate ARIMA model using auto.arima()
 # library(forecast)  # Load forecast
 forecast::auto.arima(arimav, max.p=3, max.q=0, max.d=0)
 # Calibrate ARIMA model using regression
 arimav <- as.numeric(arimav)
 # Define predictor matrix for arimav
-predv <- sapply(1:3, rutils::lagit, input=arimav)
+predm <- sapply(1:3, rutils::lagit, input=arimav)
 # Generalized inverse of predictor matrix
-predinv <- MASS::ginv(predv)
+predinv <- MASS::ginv(predm)
 # Regression coefficients with response equal to arimav
 coeff <- drop(predinv %*% arimav)
-all.equal(arima_fit$coef, coeff, check.attributes=FALSE)
+all.equal(arfit$coef, coeff, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -4006,11 +4025,13 @@ all.equal(arima_fit$coef, coeff, check.attributes=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      To lighten the notation we can assume that the time series $r_i$ has zero mean $\mathbb{E}[r_i] = 0$ and unit variance $\mathbb{E}[r^2_i] = 1$.  ($\mathbb{E}$ is the expectation operator.)
+      The Yule-Walker equations relate the \emph{autocorrelation coefficients} $\rho_i$ with the coefficients of the \emph{AR(n)} process $\varphi_i$.
       \vskip1ex
-      Then the \emph{autocorrelations} of $r_i$ are equal to: $\rho_k = \mathbb{E}[r_i r_{i-k}]$.
+      To lighten the notation we can assume that the time series $r_t$ has zero mean $\mathbb{E}[r_t] = 0$ and unit variance $\mathbb{E}[r^2_i] = 1$.  ($\mathbb{E}$ is the expectation operator.)
       \vskip1ex
-      If we multiply the \emph{autoregressive} process \emph{AR(n)}: $r_i = \sum_{j=1}^n {\varphi_j r_{i-j}} + \xi_i$, by $r_{i-k}$ and take the expectations, then we obtain the Yule-Walker equations:
+      Then the \emph{autocorrelations} of $r_t$ are equal to: $\rho_k = \mathbb{E}[r_t r_{t-k}]$.
+      \vskip1ex
+      If we multiply the \emph{autoregressive} process \emph{AR(n)}: $r_t = \sum_{j=1}^n {\varphi_j r_{t-j}} + \xi_t$, by $r_{t-k}$ and take the expectations, then we obtain the Yule-Walker equations:
       \begin{displaymath}
         \begin{pmatrix}
           \rho_1 \\
@@ -4034,8 +4055,6 @@ all.equal(arima_fit$coef, coeff, check.attributes=FALSE)
           \varphi_n
         \end{pmatrix}
       \end{displaymath}
-      The Yule-Walker equations relate the \emph{autocorrelation coefficients} $\rho_i$ with the coefficients of the \emph{AR(n)} process $\varphi_i$.
-      \vskip1ex
       The Yule-Walker equations can be solved for the \emph{AR(n)} coefficients $\varphi_i$ using matrix inversion.
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4130,47 +4149,36 @@ all.equal(pacfv, pacfvl)
     \column{0.5\textwidth}
       An \emph{autoregressive} process \emph{AR(n)}:
       \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i
+        r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t
       \end{displaymath}
-      Can be simulated using the function \texttt{filter()} with the argument \texttt{method="recursive"}.
+      Can be simulated using the \texttt{HighFreq::sim\_ar()}.
       \vskip1ex
-      Recursive filtering can be performed even faster by directly calling the compiled \texttt{C++} function \texttt{stats:::C\_rfilter()}.
-      \vskip1ex
-      The one step ahead \emph{forecast} $f_i$ is equal to the \emph{convolution} of the time series $r_i$ with the \emph{AR(n)} coefficients:
+      The one step ahead \emph{forecast} $f_t$ is equal to the \emph{convolution} of the time series $r_t$ with the \emph{AR(n)} coefficients:
       \begin{displaymath}
-        f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n}
+        f_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n}
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
+# Simulate AR process using HighFreq::sim_ar()
 nrows <- 1e2
-coeff <- c(0.1, 0.39, 0.5); ncoeff <- NROW(coeff)
-set.seed(1121); innov <- rnorm(nrows, sd=0.01)
-# Simulate AR process using filter()
-arimav <- filter(x=innov, filter=coeff, method="recursive")
-arimav <- as.numeric(arimav)
-# Simulate AR process using C_rfilter()
-arimafast <- .Call(stats:::C_rfilter, innov, coeff,
-  double(nrows + ncoeff))
-all.equal(arimav, arimafast[-(1:ncoeff)],
-  check.attributes=FALSE)
+coeff <- matrix(c(0.1, 0.39, 0.5)); ncoeff <- NROW(coeff)
+set.seed(1121); innov <- matrix(rnorm(nrows))
+arimav <- HighFreq::sim_ar(coeff=coeff, innov=innov)
+# Forecast AR process using loop in R
+fcast <- numeric(nrows+1)
+fcast[2] <- coeff[1]*arimav[1]
+fcast[3] <- coeff[1]*arimav[2] + coeff[2]*arimav[1]
+for (it in 3:nrows) {
+  fcast[it+1] <- arimav[it:(it-2)] %*% coeff
+}  # end for
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/ar_forecast.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Forecast AR(3) process using loop in R
-fcast <- numeric(NROW(arimav)+1)
-fcast[1] <- 0
-fcast[2] <- coeff[1]*arimav[1]
-fcast[3] <- coeff[1]*arimav[2] + coeff[2]*arimav[1]
-for (it in 4:NROW(fcast)) {
-  fcast[it] <- arimav[(it-1):(it-3)] %*% coeff
-}  # end for
 # Plot with legend
-x11(width=6, height=4)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(arimav, main="Forecasting Using AR(3) Model",
   xlab="", ylab="", type="l")
-lines(fcast, col="red", lwd=2)
+lines(fcast[-(nrows+1)], col="red", lwd=2)
 legend(x="topright", legend=c("series", "forecasts"),
        col=c("black", "red"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
@@ -4188,9 +4196,9 @@ legend(x="topright", legend=c("series", "forecasts"),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The one step ahead \emph{forecast} $f_i$ is equal to the \emph{convolution} of the time series $r_i$ with the \emph{AR(n)} coefficients:
+      The one step ahead \emph{forecast} $f_t$ is equal to the \emph{convolution} of the time series $r_t$ with the \emph{AR(n)} coefficients:
       \begin{displaymath}
-        f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n}
+        f_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n}
       \end{displaymath}
       The above \emph{convolution} can be quickly calculated by using the function \texttt{filter()} with the argument \texttt{method="convolution"}.
       \vskip1ex
@@ -4201,31 +4209,30 @@ legend(x="topright", legend=c("series", "forecasts"),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Forecast using filter()
-filterfast <- filter(x=arimav, sides=1,
-  filter=coeff, method="convolution")
-filterfast <- as.numeric(filterfast)
+convf <- filter(x=arimav, sides=1, filter=coeff, method="convolution")
+convf <- as.numeric(convf)
 # Compare excluding warmup period
-all.equal(fcast[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
-          check.attributes=FALSE)
+all.equal(fcast[-(1:ncoeff)], convf[-(1:(ncoeff-1))],
+      check.attributes=FALSE)
 # Filter using C_cfilter() compiled C++ function directly
-filterfast <- .Call(stats:::C_cfilter, arimav, filter=coeff,
+convf <- .Call(stats:::C_cfilter, arimav, filter=coeff,
                      sides=1, circular=FALSE)
 # Compare excluding warmup period
-all.equal(fcast[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
-          check.attributes=FALSE)
+all.equal(fcast[-(1:ncoeff)], convf[-(1:(ncoeff-1))],
+      check.attributes=FALSE)
 # Filter using HighFreq::roll_conv() Rcpp function
-filterfast <- HighFreq::roll_conv(matrix(arimav), matrix(coeff))
+convf <- HighFreq::roll_conv(arimav, coeff)
 # Compare excluding warmup period
-all.equal(fcast[-(1:ncoeff)], filterfast[-(1:(ncoeff-1))],
-          check.attributes=FALSE)
+all.equal(fcast[-(1:ncoeff)], convf[-(1:(ncoeff-1))],
+      check.attributes=FALSE)
 # Define predictor matrix for forecasting
-predv <- sapply(0:(ncoeff-1), function(lagg) {
+predm <- sapply(0:(ncoeff-1), function(lagg) {
   rutils::lagit(arimav, lagg=lagg)
 })  # end sapply
 # Forecast using predictor matrix
-filterfast <- c(0, drop(predv %*% coeff))
+convf <- c(0, drop(predm %*% coeff))
 # Compare with loop in R
-all.equal(fcast, filterfast, check.attributes=FALSE)
+all.equal(fcast, convf, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -4253,22 +4260,22 @@ all.equal(fcast, filterfast, check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Fit ARIMA model using arima()
-arima_fit <- arima(arimav, order=c(3,0,0), include.mean=FALSE)
-arima_fit$coef
+arfit <- arima(arimav, order=c(3,0,0), include.mean=FALSE)
+arfit$coef
 coeff
 # One-step-ahead forecast using predict.Arima()
-predv <- predict(arima_fit, n.ahead=1)
+predm <- predict(arfit, n.ahead=1)
 # Or directly call predict.Arima()
-# predv <- predict.Arima(arima_fit, n.ahead=1)
+# predm <- predict.Arima(arfit, n.ahead=1)
 # Inspect the prediction object
-class(predv)
-names(predv)
-class(predv$pred)
-unlist(predv)
+class(predm)
+names(predm)
+class(predm$pred)
+unlist(predm)
 # One-step-ahead forecast using matrix algebra
-fcast <- drop(arimav[nrows:(nrows-2)] %*% arima_fit$coef)
+fcast1 <- drop(arimav[nrows:(nrows-2)] %*% arfit$coef)
 # Compare one-step-ahead forecasts
-all.equal(predv$pred[[1]], fcast)
+all.equal(predm$pred[[1]], fcast1)
 # Get information about predict.Arima()
 ?stats:::predict.Arima
       @
@@ -4285,11 +4292,13 @@ all.equal(predv$pred[[1]], fcast)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{forecasting residuals} $\varepsilon_i$ are equal to the differences between the actual values $r_i$ minus their \emph{forecasts} $f_i$: $\varepsilon_i = r_i - f_i$.
+      The \emph{forecasting residuals} $\varepsilon_i$ are equal to the differences between the actual values $r_t$ minus their \emph{forecasts} $f_t$: $\varepsilon_i = r_t - f_t$.
       \vskip1ex
       Accurate forecasting of an \emph{AR(n)} process requires knowing its coefficients.
       \vskip1ex
-      If the coefficients of the \emph{AR(n)} process are known exactly, then its \emph{in-sample residuals} $\varepsilon_i$ are equal to its \emph{innovations} $\xi_i$: $\varepsilon_i = r_i - f_i = \xi_i$.
+      If the coefficients of the \emph{AR(n)} process are known exactly, then its \emph{in-sample residuals} $\varepsilon_i$ are equal to its \emph{innovations} $\xi_t$: $\varepsilon_i = r_t - f_t = \xi_t$.
+      \vskip1ex
+      The forecasts have a lower volatility than the \emph{AR(n)} process because the convolution procedure averages out the noise.
       \vskip1ex
       In practice, the \emph{AR(n)} coefficients are not known, so they must be fitted to the empirical time series.
       \vskip1ex
@@ -4297,11 +4306,13 @@ all.equal(predv$pred[[1]], fcast)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the volatilities
+sd(arimav); sd(fcast)
 # Calculate the in-sample forecasting residuals
-residuals <- (arimav - fcast[-NROW(fcast)])
+resids <- (arimav - fcast[-NROW(fcast)])
 # Compare residuals with innovations
-all.equal(innov, residuals, check.attributes=FALSE)
-plot(residuals, t="l", lwd=3, xlab="", ylab="",
+all.equal(innov, resids, check.attributes=FALSE)
+plot(resids, t="l", lwd=3, xlab="", ylab="",
      main="ARIMA Forecast Errors")
       @
   \end{columns}
@@ -4319,9 +4330,9 @@ plot(residuals, t="l", lwd=3, xlab="", ylab="",
     \column{0.5\textwidth}
       Trivial: The variance of the predicted value is equal to the predictor vector multiplied by the covariance matrix of the regression coefficients.
       \vskip1ex
-      The one step ahead \emph{forecast} $f_i$ of the time series $r_i$ using the process \emph{AR(n)} is defined as:
+      The one step ahead \emph{forecast} $f_t$ of the time series $r_t$ using the process \emph{AR(n)} is defined as:
       \begin{displaymath}
-        f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n}
+        f_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n}
       \end{displaymath}
       The function \texttt{filter()} with the argument \texttt{method="convolution"} calculates the convolution of a vector with a filter.
       \vspace{-1em}
@@ -4340,30 +4351,30 @@ for (it in 4:NROW(fcast)) {
   fcast[it] <- arimav[(it-1):(it-3)] %*% coeff
 }  # end for
 # Forecast using filter()
-forecasts_filter <- filter(x=arimav, sides=1,
+fcastf <- filter(x=arimav, sides=1,
   filter=coeff, method="convolution")
-class(forecasts_filter)
+class(fcastf)
 all.equal(fcast[-(1:4)],
-  forecasts_filter[-c(1:3, NROW(forecasts_filter))],
+  fcastf[-c(1:3, NROW(fcastf))],
   check.attributes=FALSE)
 # Compare residuals with innovations
-residuals <- (arimav-fcast)
-tail(cbind(innov, residuals))
+resids <- (arimav-fcast)
+tail(cbind(innov, resids))
 
 
 # arimav <- as.numeric(lh)
 # nrows <- NROW(arimav)
 # Compare one-step-ahead forecasts
-# arima_fit <- arima(arimav, order=c(3,0,0), method="ML", include.mean=FALSE)
+# arfit <- arima(arimav, order=c(3,0,0), method="ML", include.mean=FALSE)
 
 # Compare many one-step-ahead forecasts
 fcast <- sapply(31:nrows, function(x) {
   cat("len = ", x, "\n")
   # arimav <- filter(x=rnorm(nrows+1), filter=coeff, method="recursive")
-  arima_fit <- arima(arimav[1:x], order=c(3,0,0), include.mean=FALSE)
-  predv <- predict(arima_fit, n.ahead=1)
-  fcast <- drop(arimav[x:(x-2)] %*% arima_fit$coef)
-  c(actual=arimav[x+1], forecast=fcast, predict=as.numeric(predv$pred))
+  arfit <- arima(arimav[1:x], order=c(3,0,0), include.mean=FALSE)
+  predm <- predict(arfit, n.ahead=1)
+  fcast <- drop(arimav[x:(x-2)] %*% arfit$coef)
+  c(actual=arimav[x+1], forecast=fcast, predict=as.numeric(predm$pred))
 })  # end sapply
 foo <- t(foo)
 # hist(foo[, 1], breaks=30,
@@ -4384,15 +4395,15 @@ for (it in 4:NROW(fcast)) {
   fcast[it] <- arimav[(it-1):(it-3)] %*% coeff
 }  # end for
 # Forecast using filter()
-forecasts_filter <- filter(x=arimav, sides=1,
+fcastf <- filter(x=arimav, sides=1,
   filter=coeff, method="convolution")
-class(forecasts_filter)
+class(fcastf)
 all.equal(fcast[-(1:4)],
-  forecasts_filter[-c(1:3, NROW(forecasts_filter))],
+  fcastf[-c(1:3, NROW(fcastf))],
   check.attributes=FALSE)
 # Compare residuals with innovations
-residuals <- (arimav-fcast)
-tail(cbind(innov, residuals))
+resids <- (arimav-fcast)
+tail(cbind(innov, resids))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/ar_forecast.png}
@@ -4431,25 +4442,26 @@ legend(x="topright", legend=c("series", "forecasts"),
       <<echo=TRUE,eval=FALSE>>=
 # Define AR process parameters
 nrows <- 1e3
-coeff <- c(0.5, 0.0, 0.0); ncoeff <- NROW(coeff)
-set.seed(1121); innov <- rnorm(nrows, sd=0.01)
-# Simulate AR process using C_rfilter()
-arimav <- .Call(stats:::C_rfilter, innov, coeff,
-  double(nrows + ncoeff))[-(1:ncoeff)]
+coeff <- matrix(c(0.5, 0.0, 0.0)); ncoeff <- NROW(coeff)
+set.seed(1121); innov <- matrix(rnorm(nrows, sd=0.01))
+# Simulate AR process using HighFreq::sim_ar()
+arimav <- HighFreq::sim_ar(coeff=coeff, innov=innov)
 # Define order of the AR(n) forecasting model
 ordern <- 5
 # Define predictor matrix for forecasting
-predv <- sapply(1:ordern, rutils::lagit, input=arimav)
-colnames(predv) <- paste0("pred", 1:NCOL(predv))
+predm <- sapply(1:ordern, rutils::lagit, input=arimav)
+colnames(predm) <- paste0("pred", 1:NCOL(predm))
 # Specify length of look-back interval
 look_back <- 100
 # Invert the predictor matrix
 rangev <- (nrows-look_back):(nrows-1)
-predinv <- MASS::ginv(predv[rangev, ])
+predinv <- MASS::ginv(predm[rangev, ])
 # Calculate fitted coefficients
 coeff <- drop(predinv %*% arimav[rangev])
 # Calculate forecast
-drop(predv[nrows, ] %*% coeff)
+drop(predm[nrows, ] %*% coeff)
+# Actual value
+arimav[nrows]
       @
   \end{columns}
 \end{block}
@@ -4464,9 +4476,9 @@ drop(predv[nrows, ] %*% coeff)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The stock returns $r_i$ are fitted into an \emph{autoregressive} process \emph{AR(n)} with a constant intercept term $\varphi_0$:
+      The stock returns $r_t$ are fitted into an \emph{autoregressive} process \emph{AR(n)} with a constant intercept term $\varphi_0$:
       \begin{displaymath}
-        r_i = \varphi_0 + \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n} + \xi_i
+        r_t = \varphi_0 + \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t
       \end{displaymath}
       The \emph{AR(n)} coefficients $\mathbf{\varphi}$ are calibrated using linear regression:
       \begin{displaymath}
@@ -4476,28 +4488,24 @@ drop(predv[nrows, ] %*% coeff)
       \vskip1ex
       The \emph{AR(n)} coefficients $\mathbf{\varphi}$ are recalibrated at every point in time on a rolling look-back interval of data. 
       \vskip1ex
-      The fitted coefficients $\mathbf{\varphi}$ are then used to calculate the one-day-ahead, out-of-sample return forecasts $f_i$:
+      The fitted coefficients $\mathbf{\varphi}$ are then used to calculate the one-day-ahead, out-of-sample return forecasts $f_t$:
       \begin{displaymath}
-        f_i = \varphi_0 + \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_n r_{i-n}
+        f_t = \varphi_0 + \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n}
       \end{displaymath}
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate a vector of daily VTI log returns
-retp <- na.omit(rutils::etfenv$returns$VTI)
-dates <- zoo::index(retp)
+retp <- zoo::coredata(na.omit(rutils::etfenv$returns$VTI))
+datev <- zoo::index(retp)
 retp <- as.numeric(retp)
 nrows <- NROW(retp)
-# Define response equal to returns
+# Define response equal to the returns
 respv <- retp
-# Define predictor as a rolling sum
-nagg <- 5
-predv <- rutils::roll_sum(retp, look_back=nagg)
 # Define predictor matrix for forecasting
 maxorder <- 5
-predv <- sapply(1+nagg*(0:maxorder), rutils::lagit,
-                     input=predv)
-predv <- cbind(rep(1, nrows), predv)
+predm <- sapply(1:maxorder, rutils::lagit, input=retp)
+predm <- cbind(rep(1, nrows), predm)
 # Perform rolling forecasting
 look_back <- 100
 fcast <- sapply((look_back+1):nrows, function(endd) {
@@ -4507,11 +4515,11 @@ fcast <- sapply((look_back+1):nrows, function(endd) {
   # startp <- 1
   rangev <- startp:(endd-1)
   # Invert the predictor matrix
-  predinv <- MASS::ginv(predv[rangev, ])
+  predinv <- MASS::ginv(predm[rangev, ])
   # Calculate fitted coefficients
   coeff <- drop(predinv %*% respv[rangev])
   # Calculate forecast
-  drop(predv[endd, ] %*% coeff)
+  drop(predm[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
 fcast <- c(rep(0, look_back), fcast)
@@ -4531,11 +4539,14 @@ fcast <- c(rep(0, look_back), fcast)
     \column{0.5\textwidth}
       The accuracy of a forecasting model can be measured using the \emph{mean squared error} and the \emph{correlation}.
       \vskip1ex
-      The mean squared error (\emph{MSE}) of a forecasting model is the average of the squared forecasting residuals $\varepsilon_i$, equal to the differences between the actual values $r_i$ minus the \emph{forecasts} $f_i$: $\varepsilon_i = r_i - f_i$:
+      The mean squared error (\emph{MSE}) of a forecasting model is the average of the squared forecasting residuals $\varepsilon_i$, equal to the differences between the actual values $r_t$ minus the \emph{forecasts} $f_t$: $\varepsilon_i = r_t - f_t$:
       \begin{displaymath}
-        \operatorname{MSE} = \frac{1}{n} \sum_{i=1}^n (r_i - f_i)^2
+        \operatorname{MSE} = \frac{1}{n} \sum_{i=1}^n (r_t - f_t)^2
       \end{displaymath}
+      The forecasts have a lower volatility than the empirical returns because the convolution procedure averages out the noise.
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the volatilities
+sd(retp); sd(fcast)
 # Mean squared error
 mean((retp - fcast)^2)
 # Correlation
@@ -4546,15 +4557,13 @@ cor(fcast, retp)
       \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_resid.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot forecasting series with legend
-x11(width=6, height=4)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 plot(retp[(nrows-look_back):nrows], col="blue", 
      xlab="", ylab="", type="l", lwd=2,
      main="Rolling Forecasting Using AR Model")
 lines(fcast[(nrows-look_back):nrows], col="red", lwd=2)
 legend(x="top", legend=c("returns", "forecasts"),
-       col=c("blue", "red"), lty=1, lwd=6,
-       cex=0.9, bg="white", bty="n")
+       y.intersp=0.3, col=c("blue", "red"), lty=1, lwd=6,
+       cex=1.0, bg="white", bty="n")
       @
   \end{columns}
 \end{block}
@@ -4590,11 +4599,10 @@ sim_fcasts <- function(respv, nagg=5, ordern=5,
                        look_back=100, rollp=TRUE) {
   nrows <- NROW(respv)
   # Define predictor as a rolling sum
-  predv <- rutils::roll_sum(respv, look_back=nagg)
+  predm <- rutils::roll_sum(respv, look_back=nagg)
   # Define predictor matrix for forecasting
-  predv <- sapply(1+nagg*(0:ordern), rutils::lagit,
-                       input=predv)
-  predv <- cbind(rep(1, nrows), predv)
+  predm <- sapply(1+nagg*(0:ordern), rutils::lagit, input=predm)
+  predm <- cbind(rep(1, nrows), predm)
   # Perform rolling forecasting
   fcast <- sapply((look_back+1):nrows, function(endd) {
     # Define rolling look-back range
@@ -4602,14 +4610,14 @@ sim_fcasts <- function(respv, nagg=5, ordern=5,
       startp <- max(1, endd-look_back)
     else
     # Or expanding look-back range
-    startp <- 1
+      startp <- 1
     rangev <- startp:(endd-1)
     # Invert the predictor matrix
-    designinv <- MASS::ginv(predv[rangev, ])
+    predinv <- MASS::ginv(predm[rangev, ])
     # Calculate fitted coefficients
-    coeff <- drop(desvinv %*% respv[rangev])
+    coeff <- drop(predinv %*% respv[rangev])
     # Calculate forecast
-    drop(predv[endd, ] %*% coeff)
+    drop(predm[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
   fcast <- c(rep(0, look_back), fcast)
@@ -4617,8 +4625,8 @@ sim_fcasts <- function(respv, nagg=5, ordern=5,
   rutils::roll_sum(fcast, look_back=nagg)
 }  # end sim_fcasts
 # Simulate the rolling autoregressive forecasts
-fcast <- sim_fcasts(respv=retvti, ordern=5, look_back=100)
-c(mse=mean((retvti - fcast)^2), cor=cor(retvti, fcast))
+fcast <- sim_fcasts(respv=retp, ordern=5, look_back=100)
+c(mse=mean((retp - fcast)^2), cor=cor(retp, fcast))
       @
   \end{columns}
 \end{block}
@@ -4642,9 +4650,9 @@ c(mse=mean((retvti - fcast)^2), cor=cor(retvti, fcast))
       <<echo=TRUE,eval=FALSE>>=
 look_backs <- seq(20, 200, 20)
 fcast <- sapply(look_backs, sim_fcasts, respv=retp, 
-                     nagg=nagg, ordern=ordern)
+                     nagg=5, ordern=5)
 colnames(fcast) <- look_backs
-msev <- apply(forecasts, 2, function(x) mean((retp - x)^2))
+msev <- apply(fcast, 2, function(x) mean((retp - x)^2))
 # Plot forecasting series with legend
 plot(x=look_backs, y=msev,
   xlab="look-back", ylab="MSE", type="l", lwd=2,
@@ -4656,6 +4664,7 @@ plot(x=look_backs, y=msev,
 \end{block}
 
 \end{frame}
+
 
 
 \end{document}
