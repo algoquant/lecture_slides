@@ -93,7 +93,7 @@ knit_theme$set(thm)
     \column{0.5\textwidth}
       The function \texttt{cat()} concatenates strings and writes them to standard output or to files.
       \vskip1ex
-      \texttt{cat()} interretsp its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value.
+      \texttt{cat()} parses its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value.
       \vskip1ex
       The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it.
       \vskip1ex
@@ -103,23 +103,23 @@ knit_theme$set(thm)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-cat("Enter\ttab")  # Cat() interretsp backslash escape sequences
+cat("Enter\ttab")  # Cat() parses backslash escape sequences
 print("Enter\ttab")
 
-my_text <- print("hello")
-my_text  # Print() returns its argument
+textv <- print("hello")
+textv  # Print() returns its argument
 
 # Create string
-my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
+textv <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
 
-cat(my_text, file="mytext.txt")  # Write to text file
+cat(textv, file="mytext.txt")  # Write to text file
 
 cat("Title: My Text",  # Write several lines to text file
     "Some numbers: 1,2,3,...",
     "Rprofile files contain code executed at R startup,",
     file="mytext.txt", sep="\n")
 
-save(my_text, file="mytext.RData")  # Write to binary file
+save(textv, file="mytext.RData")  # Write to binary file
       @
   \end{columns}
 \end{block}
@@ -223,15 +223,18 @@ rownames(matrixv) <- paste("row", 1:NROW(matrixv), sep="")
 write.table(dframe, file="florist.txt")
 readf <- read.table(file="florist.txt")
 readf  # A data frame
+all.equal(readf, dframe)
 
 # Write matrix to text file, and then read it back
 write.table(matrixv, file="matrix.txt")
 readmat <- read.table(file="matrix.txt")
 readmat  # write.table() coerced matrix to data frame
 class(readmat)
+all.equal(readmat, matrixv)
 # Coerce from data frame back to matrix
 readmat <- as.matrix(readmat)
 class(readmat)
+all.equal(readmat, matrixv)
       @
   \end{columns}
 \end{block}
@@ -325,9 +328,11 @@ readf  # the row names are read in as extra column
 rownames(readf) <- readf[, 1]
 readf <- readf[, -1]  # Remove extra column
 readf
+all.equal(readf, dframe)
 # Read data frame, with row names from first column
 readf <- read.csv(file="florist.csv", row.names=1)
 readf
+all.equal(readf, dframe)
       @
   \end{columns}
 \end{block}
@@ -352,6 +357,7 @@ readf
 write.csv(dframe, row.names=FALSE, file="florist.csv")
 readf <- read.csv(file="florist.csv")
 readf  # A data frame without row names
+all.equal(readf, dframe)
       @
   \end{columns}
 \end{block}
@@ -429,12 +435,13 @@ readmat <- read.csv(file="matrix.csv", row.names=1)
 readmat  # Read.csv() reads matrix as data frame
 class(readmat)
 readmat <- as.matrix(readmat)  # Coerce to matrix
-identical(matrixv, readmat)
+all.equal(readmat, matrixv)
 write.csv(matrixv, row.names=FALSE,
           file="matrix_ex_rows.csv")
 readmat <- read.csv(file="matrix_ex_rows.csv")
 readmat <- as.matrix(readmat)
 readmat  # A matrix without row names
+all.equal(readmat, matrixv)
       @
   \end{columns}
 \end{block}
@@ -613,8 +620,7 @@ all.equal(pricezoo, pricev)
       <<echo=(-(1:1)),eval=FALSE>>=
 library(zoo)  # Load package zoo
 # Write zoo series to CSV file, and then read it back
-write.zoo(pricev, file="pricev.csv",
-          sep=",", col.names=TRUE)
+write.zoo(pricev, file="pricev.csv", sep=",", col.names=TRUE)
 pricezoo <- read.zoo(file="pricev.csv",
   header=TRUE, sep=",", drop=FALSE)
 all.equal(pricev, drop(pricezoo))
@@ -653,8 +659,7 @@ dates <- seq(from=as.POSIXct("2013-06-15"),
 pricev <- zoo(rnorm(NROW(dates)), order.by=dates)
 head(pricev, 3)
 # Write zoo series to CSV file, and then read it back
-write.zoo(pricev, file="pricev.csv",
-          sep=",", col.names=TRUE)
+write.zoo(pricev, file="pricev.csv", sep=",", col.names=TRUE)
 # Read from CSV file using read.csv.zoo()
 pricezoo <- read.csv.zoo(file="pricev.csv")
 all.equal(pricev, pricezoo)
@@ -2360,9 +2365,9 @@ unlist(eapply(globalenv(), is.xts))
 write.zoo(pricev,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
 # Copy prices into etfenv
-etfenv$pricev <- prices
+etfenv$pricev <- pricev
 # Or
-assign("prices", pricev, envir=etfenv)
+assign("pricev", pricev, envir=etfenv)
 # Save to .RData file
 save(etfenv, file="etf_data.RData")
       @
@@ -3902,6 +3907,7 @@ setwd("/Users/jerzy/Develop/lecture_slides/data")
 readf <- read.csv(file="florist.csv", row.names=1)
 # Subset data frame
 readf <- readf[readf[, "type"]=="daisy", ]
+all.equal(readf, dframe)
 # Write data frame to CSV file, with row names
 write.csv(readf, file="daisies.csv")
       @
@@ -3934,6 +3940,7 @@ setwd("/Users/jerzy/Develop/lecture_slides/data")
 readf <- read.csv(file="florist.csv", row.names=1)
 # Subset data frame
 readf <- readf[readf[, "type"]=="daisy", ]
+all.equal(readf, dframe)
 # Write data frame to CSV file, with row names
 write.csv(readf, file="daisies.csv")
       @

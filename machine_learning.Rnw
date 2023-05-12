@@ -1104,9 +1104,11 @@ abline(regmod, lwd=2, col="red")
 # Select ETF symbols
 symbolv <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # Calculate ETF prices and log returns
-pricev <- rutils::etfenv$pricev[, symbolv]
-pricev <- zoo::na.locf(pricev, na.rm=FALSE)
-pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+pricev <- rutils::etfenv$prices[, symbolv]
+# Applying zoo::na.locf() can produce bias of the correlations
+# pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+# pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+pricev <- na.omit(pricev)
 retp <- rutils::diffit(log(pricev))
 # Calculate covariance matrix
 covmat <- cov(retp)
@@ -1129,7 +1131,7 @@ sapply(retp, sd)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/corr_etf.png}
+      \includegraphics[width=0.4\paperwidth]{figure/corr_etf.png}
             <<echo=TRUE,eval=FALSE>>=
 # Calculate correlation matrix
 cormat <- cor(retp)
@@ -1140,11 +1142,11 @@ ordern <- corrMatOrder(cormat, order="hclust",
 cormat <- cormat[ordern, ordern]
 # Plot the correlation matrix
 colorv <- colorRampPalette(c("red", "white", "blue"))
-x11(width=6, height=6)
+# x11(width=6, height=6)
 corrplot(cormat, title=NA, tl.col="black", mar=c(0,0,0,0), 
     method="square", col=colorv(NCOL(cormat)), tl.cex=0.8, 
     cl.offset=0.75, cl.cex=0.7, cl.align.text="l", cl.ratio=0.25)
-title("ETF Correlation Matrix", line=1)
+title("ETF Correlation Matrix", line=2)
 # Draw rectangles on the correlation matrix plot
 corrRect.hclust(cormat, k=NROW(cormat) %/% 2, 
   method="complete", col="red")
@@ -1176,14 +1178,14 @@ corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
       \end{align*}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# create initial vector of portfolio weights
+# Create initial vector of portfolio weights
 nweights <- NROW(symbolv)
 weightv <- rep(1/sqrt(nweights), nweights)
-names(weights) <- symbolv
+names(weightv) <- symbolv
 # Objective function equal to minus portfolio variance
 objfun <- function(weightv, retp) {
   retp <- retp %*% weightv
-  -sum(retp^2) + 1e7*(1 - sum(weightv^2))^2
+  -sum(retp^2) + 1e4*(1 - sum(weightv^2))^2
 }  # end objfun
 # Objective for equal weight portfolio
 objfun(weightv, retp)
@@ -1195,7 +1197,7 @@ summary(microbenchmark(
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_etf_load1.png}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_etf_load1.png}
       <<echo=TRUE,eval=FALSE>>=
 # Find weights with maximum variance
 optiml <- optim(par=weightv,
@@ -1233,8 +1235,8 @@ pc1 <- drop(retp %*% weights1)
 # Redefine objective function
 objfun <- function(weightv, retp) {
   retp <- retp %*% weightv
-  -sum(retp^2) + 1e7*(1 - sum(weightv^2))^2 +
-    1e7*(sum(weights1*weightv))^2
+  -sum(retp^2) + 1e4*(1 - sum(weightv^2))^2 +
+    1e4*(sum(weights1*weightv))^2
 }  # end objfun
 # Find second PC weights using parallel DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
@@ -1245,7 +1247,7 @@ optiml <- DEoptim::DEoptim(fn=objfun,
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_etf_load2.png}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_etf_load2.png}
       <<echo=TRUE,eval=FALSE>>=
 # PC2 weights
 weights2 <- optiml$optim$bestmem
@@ -1265,7 +1267,7 @@ barplot(weights2, names.arg=names(weights2), xlab="", ylab="",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Eigenvalues of the Covariance Matrix}
+\subsection{Eigenvalues of the Correlation Matrix}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1369,7 +1371,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
 # Redefine objective function to minimize variance
 objfun <- function(weightv, retp) {
   retp <- retp %*% weightv
-  sum(retp^2) + 1e7*(1 - sum(weightv^2))^2
+  sum(retp^2) + 1e4*(1 - sum(weightv^2))^2
 }  # end objfun
 # Find highest order PC weights using parallel DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
@@ -1379,14 +1381,14 @@ optiml <- DEoptim::DEoptim(fn=objfun,
     itermax=1000, parallelType=1))
 # PC6 weights and returns
 weights6 <- optiml$optim$bestmem
-names(weightv6) <- colnames(retp)
-sum(weightv6^2)
+names(weights6) <- colnames(retp)
+sum(weights6^2)
 sum(weights1*weights6)
 # Compare with eigend vector
 weights6
 eigend$vectors[, 6]
 # Calculate objective function
-objfun(weightv6, retp)
+objfun(weights6, retp)
 objfun(eigend$vectors[, 6], retp)
       @
     \column{0.5\textwidth}
@@ -1394,9 +1396,9 @@ objfun(eigend$vectors[, 6], retp)
       \includegraphics[width=0.4\paperwidth]{figure/pca_etf_load6.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot highest order principal component loadings
-x11(width=6, height=5)
-par(mar=c(2.5, 2, 2, 3), oma=c(0, 0, 0, 0), mgp=c(2, 0.5, 0))
-barplot(weightv6, names.arg=names(weights2), xlab="", ylab="",
+weights6 <- eigend$vectors[, 6]
+names(weights6) <- colnames(retp)
+barplot(weights6, names.arg=names(weights6), xlab="", ylab="",
         main="Highest Order Principal Component Loadings")
       @
   \end{columns}
@@ -1427,7 +1429,7 @@ barplot(weightv6, names.arg=names(weights2), xlab="", ylab="",
       Another rule is to use the \emph{principal components} with the largest standard deviations which sum up to \texttt{80\%} of the total variance of returns.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_etf_scree.png} \\
+      \includegraphics[width=0.4\paperwidth]{figure/pca_etf_scree.png} \\
       A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # Perform principal component analysis PCA
@@ -1461,7 +1463,7 @@ which(cumsum(pcavar)/sum(pcavar) > 0.8)[1]
       <<echo=TRUE,eval=FALSE>>=
 # Plot barplots with PCA loadings (weights) in multiple panels
 pcad$rotation
-x11(width=6, height=7)
+# x11(width=6, height=7)
 par(mfrow=c(nweights/2, 2))
 par(mar=c(3, 2, 2, 1), oma=c(0, 0, 0, 0))
 for (ordern in 1:nweights) {
@@ -1495,10 +1497,10 @@ for (ordern in 1:nweights) {
 round(t(pcad$x) %*% pcad$x, 2)
 # Calculate principal component time series from returns
 datev <- zoo::index(pricev)
-retspca <- xts::xts(retp %*% pcad$rotation, order.by=datev)
-round(cov(retspca), 3)
-all.equal(coredata(retspca), pcad$x, check.attributes=FALSE)
-pcacum <- cumsum(retspca)
+retpca <- xts::xts(retp %*% pcad$rotation, order.by=datev)
+round(cov(retpca), 3)
+all.equal(coredata(retpca), pcad$x, check.attributes=FALSE)
+pcacum <- cumsum(retpca)
 # Plot principal component time series in multiple panels
 rangev <- range(pcacum)
 for (ordern in 1:nweights) {
@@ -1529,11 +1531,11 @@ for (ordern in 1:nweights) {
       The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
       <<echo=TRUE,eval=FALSE>>=
 # Invert all the principal component time series
-retspca <- retp %*% pcad$rotation
-solved <- retspca %*% solve(pcad$rotation)
+retpca <- retp %*% pcad$rotation
+solved <- retpca %*% solve(pcad$rotation)
 all.equal(coredata(retp), solved)
 # Invert first 3 principal component time series
-solved <- retspca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
+solved <- retpca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
 solved <- xts::xts(solved, datev)
 solved <- cumsum(solved)
 retc <- cumsum(retp)
@@ -1591,7 +1593,7 @@ max(eigenval)/min(eigenval)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_cond_num.png}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_cond_num.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the condition numbers as function correlation
 corvec <- seq(0.1, 0.9, 0.1)
@@ -1646,7 +1648,7 @@ condvec <- sapply(obsvec, function(nobs) {
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_cond_num2.png}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_cond_num2.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the condition numbers
 plot(x=obsvec, y=condvec, t="l",
@@ -1666,7 +1668,7 @@ plot(x=obsvec, y=condvec, t="l",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Estimating the correlations of Stock returns is complicated because their date ranges may not overlap in time.  Stocks may trade over different date ranges because of IPOs and corporate events (takeovers, mergers).
+      Estimating the correlations of stock returns is complicated because their date ranges may not overlap in time.  Stocks may trade over different date ranges because of IPOs and corporate events (takeovers, mergers).
       \vskip1ex
       The function \texttt{cor()} calculates the correlation matrix of time series.  The argument \texttt{use="pairwise.complete.obs"} removes \texttt{NA} values from pairs of stock returns.
       \vskip1ex
@@ -1679,7 +1681,7 @@ plot(x=obsvec, y=condvec, t="l",
 # Load daily S&P500 log percentage stock returns
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Calculate the number of NA values in returns
-retp <- returns100["2000/"]
+retp <- returns
 colSums(is.na(retp))
 # Calculate the correlations ignoring NA values
 cor(retp$DAL, retp$FOXA, use="pairwise.complete.obs")
@@ -1723,7 +1725,7 @@ which(cumsum(eigenval)/sum(eigenval) > 0.8)[1]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_stock_scree.png}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_stock_scree.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the eigenvalues
 barplot(eigenval, xlab="", ylab="", las=3,
@@ -1743,23 +1745,21 @@ barplot(eigenval, xlab="", ylab="", las=3,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The returns of low volatility stocks have a higher correlation than those of high volatility stocks.
+      Low and high volatility stocks have different correlations and principal components.
       \vskip1ex
-      Low and high volatility stocks have different principal components.
+      Low volatility stocks have higher correlations than high volatility stocks, so their correlation matrix has a larger condition number than high volatility stocks.
       \vskip1ex
-      The returns of low volatility stocks have a higher correlation so they can be explained by a smaller number of principal components, compared to high volatility stocks.
-      \vskip1ex
-      The correlation matrix of high volatility stocks may have a larger condition number than low volatility stocks.
+      But low volatility stocks can be explained by a smaller number of principal components, compared to high volatility stocks.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the stock volatilities
-stdevs <- sapply(retp, var, na.rm=TRUE)
+# Calculate the stock variance
+varv <- sapply(retp, var, na.rm=TRUE)
 # Calculate the returns of low and high volatility stocks
 nstocks <- NCOL(retp)
-medianv <- median(stdevs)
-retlow <- retp[, names(stdevs[stdevs<=medianv])]
-rethigh <- retp[, names(stdevs[stdevs>medianv])]
+medianv <- median(varv)
+retlow <- retp[, varv <= medianv]
+rethigh <- retp[, varv > medianv]
 # Calculate the correlations of low volatility stocks
 cormat <- cor(retlow, use="pairwise.complete.obs")
 cormat[is.na(cormat)] <- 0
@@ -1769,7 +1769,7 @@ mean(cormat[upper.tri(cormat)])
 eigend <- eigen(cormat)
 eigenval <- eigend$values
 # Calculate the number of negative eigenvalues
-sum(eigenval<0)
+sum(eigenval < 0)
 # Calculate the number of eigenvalues which sum up to at least 80% of the total variance
 which(cumsum(eigenval)/sum(eigenval) > 0.8)[1]
 # Calculate the condition number
@@ -1783,7 +1783,7 @@ mean(cormat[upper.tri(cormat)])
 eigend <- eigen(cormat)
 eigenval <- eigend$values
 # Calculate the number of negative eigenvalues
-sum(eigenval<0)
+sum(eigenval < 0)
 # Calculate the number of eigenvalues which sum up to at least 80% of the total variance
 which(cumsum(eigenval)/sum(eigenval) > 0.8)[1]
 # Calculate the condition number
@@ -1796,7 +1796,7 @@ max(eigenval)/min(abs(eigenval))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Stock Correlations in Intervals of High and Low Volatility}
+\subsection{Stock Correlations in Periods of High and Low Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1816,7 +1816,7 @@ nrows <- NROW(retp)
 nstocks <- NCOL(retp)
 head(retp[, 1:5])
 # Calculate the monthly end points
-endd <- rutils::calc_endpoints(retvti, interval="weeks")
+endd <- rutils::calc_endpoints(retvti, interval="months")
 retvti[head(endd)]
 retvti[tail(endd)]
 # Remove stub interval at the end
@@ -1828,7 +1828,7 @@ stdcor <- sapply(2:npts, function(endp) {
   retp <- retp[endd[endp-1]:endd[endp]]
   cormat <- cor(retp, use="pairwise.complete.obs")
   cormat[is.na(cormat)] <- 0
-  c(std=sd(retvti[endd[endp-1]:endd[endp]]), 
+  c(stdev=sd(retvti[endd[endp-1]:endd[endp]]), 
     cor=mean(cormat[upper.tri(cormat)]))
 })  # end sapply
 stdcor <- t(stdcor)
@@ -1838,7 +1838,7 @@ stdcor <- t(stdcor)
       \includegraphics[width=0.45\paperwidth]{figure/pca_stock_stdcor.png}
       <<echo=TRUE,eval=FALSE>>=
 # Scatterplot of stock volatilities and correlations
-plot(x=stdcor[, "std"], y=stdcor[, "cor"], 
+plot(x=stdcor[, "stdev"], y=stdcor[, "cor"], 
  xlab="volatility", ylab="correlation",
  main="Monthly Stock Volatilities and Correlations")
 # Plot stock volatilities and correlations
@@ -1850,7 +1850,7 @@ dygraphs::dygraph(stdcor,
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1859,7 +1859,7 @@ dygraphs::dygraph(stdcor,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Principal Component Analysis in Intervals of High and Low Volatility}
+\subsection{Principal Component Analysis in Periods of High and Low Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1870,16 +1870,16 @@ dygraphs::dygraph(stdcor,
       Stock returns in time intervals with \emph{low volatility} have \emph{low correlations} and therefore require more eigenvalues to explain \texttt{80\%} of their total variance.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the median VTI volatility
-medianv <- median(stdcor[, "std"])
+medianv <- median(stdcor[, "stdev"])
 # Calculate the stock returns of low volatility intervals
 retlow <- lapply(2:npts, function(endp) {
-  if (stdcor[endp-1, "std"] <= medianv)
+  if (stdcor[endp-1, "stdev"] <= medianv)
     retp[endd[endp-1]:endd[endp]]
 })  # end lapply
 retlow <- rutils::do_call(rbind, retlow)
 # Calculate the stock returns of high volatility intervals
 rethigh <- lapply(2:npts, function(endp) {
-  if (stdcor[endp-1, "std"] > medianv)
+  if (stdcor[endp-1, "stdev"] > medianv)
     retp[endd[endp-1]:endd[endp]]
 })  # end lapply
 rethigh <- rutils::do_call(rbind, rethigh)
@@ -1894,7 +1894,7 @@ mean(cormat[upper.tri(cormat)])
 # Calculate the eigen decomposition of the correlation matrix
 eigend <- eigen(cormat)
 eigenval <- eigend$values
-sum(eigenval<0)
+sum(eigenval < 0)
 # Calculate the number of eigenvalues which sum up to at least 80% of the total variance
 which(cumsum(eigenval)/sum(eigenval) > 0.8)[1]
 # Calculate the condition number
@@ -1906,7 +1906,7 @@ mean(cormat[upper.tri(cormat)])
 # Calculate the eigen decomposition of the correlation matrix
 eigend <- eigen(cormat)
 eigenval <- eigend$values
-sum(eigenval<0)
+sum(eigenval < 0)
 # Calculate the number of eigenvalues which sum up to at least 80% of the total variance
 which(cumsum(eigenval)/sum(eigenval) > 0.8)[1]
 # Calculate the condition number
@@ -1925,7 +1925,7 @@ max(eigenval)/min(abs(eigenval))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The trailing covariance can be updated using these recursive formulas with the weight decay factor $\lambda$:
+      The trailing covariance can be updated using \emph{online} recursive formulas with the weight decay factor $\lambda$:
       \begin{flalign*}
         & \bar{x}_t = \lambda \bar{x}_{t-1} + (1-\lambda) x_t \\
         & \bar{y}_t = \lambda \bar{y}_{t-1} + (1-\lambda) y_t \\
@@ -1960,7 +1960,7 @@ dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1978,6 +1978,8 @@ dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
       The correlations of stock returns are typically higher in periods of higher volatility, and vice versa.
       \vskip1ex
       But stock correlations have increased after the \texttt{2008-09} financial crisis, while volatilities have decreased.
+      \vskip1ex
+      The correlation of \emph{AAPL} and \emph{XLK} has increased over time because \emph{AAPL} has become a much larger component of \emph{XLK}, as its stock has rallied.
       <<echo=TRUE,eval=FALSE>>=
 # Scatterplot of trailing stock volatilities and correlations
 volv <- sqrt(covarv[, 2])
@@ -2006,7 +2008,7 @@ dygraphs::dygraph(datav[endd], main="AAPL Trailing Stock Volatility and Correlat
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2064,7 +2066,7 @@ dygraphs::dygraph(datav[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2539,7 +2541,7 @@ regstats <- function(stdev) {  # Noisy regression
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end regstats
-# Apply regstats() to vector of std dev values
+# Apply regstats() to vector of stdev dev values
 vecsd <- seq(from=0.1, to=0.5, by=0.1)
 names(vecsd) <- paste0("sd=", vecsd)
 statsmat <- t(sapply(vecsd, regstats))
@@ -2580,7 +2582,7 @@ regstats <- function(datav) {  # get regression
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end regstats
-# Apply regstats() to vector of std dev values
+# Apply regstats() to vector of stdev dev values
 vecsd <- seq(from=0.1, to=0.5, by=0.1)
 names(vecsd) <- paste0("sd=", vecsd)
 statsmat <- t(sapply(vecsd, function(stdev) {
@@ -3486,20 +3488,20 @@ omitv <- sin(0.2*1:30)
 # Response depends on both predictors
 respv <- 0.2*predm + omitv + 0.2*rnorm(30)
 # Mis-specified regression only one predictor
-model_ovb <- lm(respv ~ predm)
-regsum <- summary(regmod_ovb)
+modovb <- lm(respv ~ predm)
+regsum <- summary(modovb)
 regsum$coeff
 regsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-lmtest::dwtest(regmod_ovb)
+lmtest::dwtest(modovb)
 # Plot the regression diagnostic plots
 x11(width=5, height=7)
 par(mfrow=c(2,1))  # Set plot panels
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
 plot(respv ~ predm)
-abline(regmod_ovb, lwd=2, col="red")
+abline(modovb, lwd=2, col="red")
 title(main="Omitted Variable Regression", line=-1)
-plot(regmod_ovb, which=2, ask=FALSE)  # Plot just Q-Q
+plot(modovb, which=2, ask=FALSE)  # Plot just Q-Q
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4345,14 +4347,14 @@ ordern <- order(predm)
 plot(x=predm[ordern], y=logmod$fitted.values[ordern],
      main="Category Densities and Logistic Function",
      type="l", lwd=4, col="orange", xlab="predictor", ylab="density")
-densityv <- density(predm[response])
-densityv$y <- densityv$y/max(densityv$y)
-lines(densityv, col="red")
-polygon(c(min(densityv$x), densityv$x, max(densityv$x)), c(min(densityv$y), densityv$y, min(densityv$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-densityv <- density(predm[!response])
-densityv$y <- densityv$y/max(densityv$y)
-lines(densityv, col="blue")
-polygon(c(min(densityv$x), densityv$x, max(densityv$x)), c(min(densityv$y), densityv$y, min(densityv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
+densv <- density(predm[respv])
+densv$y <- densv$y/max(densv$y)
+lines(densv, col="red")
+polygon(c(min(densv$x), densv$x, max(densv$x)), c(min(densv$y), densv$y, min(densv$y)), col=rgb(1, 0, 0, 0.2), border=NA)
+densv <- density(predm[!respv])
+densv$y <- densv$y/max(densv$y)
+lines(densv, col="blue")
+polygon(c(min(densv$x), densv$x, max(densv$x)), c(min(densv$y), densv$y, min(densv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
 # Add legend
 legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
        lwd=c(6, NA, NA), pch=c(NA, 15, 15), y.intersp=0.4,
@@ -4430,7 +4432,7 @@ legend(x="top", legend=c("b = 1", "b = 0"),
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Specify predictor matrix
-predm=cbind(intercept=rep(1, NROW(respv)), predm)
+predm <- cbind(intercept=rep(1, NROW(respv)), predm)
 # Likelihood function of the logistic model
 likefun <- function(coeff, respv, predm) {
   probs <- plogis(drop(predm %*% coeff))
@@ -4602,7 +4604,7 @@ detach("package:ISLR")  # Remove ISLR from search path
       This avoids implicit coercion by the function \texttt{glm()}.
     \column{0.5\textwidth}
       <<echo=TRUE,eval=TRUE>>=
-# Coerce the student and default columns into Boolean
+# Coerce the default and student columns to Boolean
 Default <- ISLR::Default
 Default$default <- (Default$default == "Yes")
 Default$student <- (Default$student == "Yes")
@@ -5169,8 +5171,9 @@ class(datev)
 last(datev)
 unclass(last(datev))
 as.numeric(last(datev))
-# Calculate the number of ticks per second
+# Calculate the number of seconds
 nsecs <- as.numeric(last(datev)) - as.numeric(first(datev))
+# Calculate the number of ticks per second
 NROW(taq)/(6.5*3600)
 # Select TAQ data columns
 taq <- taq[, .(price=PRICE, volume=SIZE)]
@@ -5199,24 +5202,24 @@ taq <- cbind(index=datev, taq)
       The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
       \vskip1ex
       The \emph{bid-ask bounce} creates an illusion of rapidly changing pricev, while in fact the mid price is constant.
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce trade ticks to xts series
+xlk <- xts::xts(taq[, .(price, volume)], taq$index)
+colnames(xlk) <- c("price", "volume")
+save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_dygraph.png}
       % \vspace{-1em}
       % \includegraphics[width=0.45\paperwidth]{figure/hf_stocks_bounce.png}
       <<echo=TRUE,eval=FALSE>>=
-# Coerce trade ticks to xts series
-xtsv <- xts::xts(taq[, .(price, volume)], taq$index)
-colnames(xtsv) <- paste(symbol, c("Close", "Volume"), sep=".")
-save(xtsv, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xtsv, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
 # Plot dygraph
-dygraphs::dygraph(xtsv$XLK.Close,
-  main="XLK Trade Ticks for 2020-03-16")
+dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16")
 # Plot in x11 window
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtsv$XLK.Close,
-  name="XLK Trade Ticks for 2020-03-16")
+quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
       @
   \end{columns}
 \end{block}
@@ -5242,42 +5245,43 @@ quantmod::chart_Series(x=xtsv$XLK.Close,
 # Calculate centered Hampel filter to remove price jumps
 look_back <- 111
 half_back <- look_back %/% 2
-medianv <- roll::roll_median(taq$price, width=look_back)
-# medianv <- TTR::runMedian(taq$price, n=look_back)
+pricev <- xlk$price
+medianv <- roll::roll_median(pricev, width=look_back)
+colnames(medianv) <- c("median")
+# Overwrite leading NA values
+medianv[1:look_back, ] <- pricev[1:look_back, ]
+# medianv <- TTR::runMedian(pricev, n=look_back)
 medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(matrix(taq$price), look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(taq$price, n=look_back)
+madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=look_back)
 madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
 # Calculate Z-scores
-zscores <- (taq$price - medianv)/madv
-zscores[is.na(zscores)] <- 0
-zscores[!is.finite(zscores)] <- 0
-sum(is.na(zscores))
-sum(!is.finite(zscores))
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+# Z-scores have very fat tails
 range(zscores); mad(zscores)
 hist(zscores, breaks=2000, xlim=c(-5*mad(zscores), 5*mad(zscores)))
+# Define discrimination threshold value
+threshv <- 6*mad(zscores)
+# Identify price jumps with large z-scores
+isbad <- (abs(zscores) > threshv)
+# Calculate number of price jumps
+sum(isbad)/NROW(zscores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_good_ticks_dygraph.png}
       <<echo=TRUE,eval=FALSE>>=
-# Define discrimination threshold value
-threshv <- 6*mad(zscores)
-# Remove price jumps with large z-scores
-bad_ticks <- (abs(zscores) > threshv)
-good_ticks <- taq[!bad_ticks]
-# Calculate number of price jumps
-sum(bad_ticks)/NROW(zscores)
-# Coerce trade prices to xts
-xtsv <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
-colnames(xtsv) <- c("XLK.Close", "XLK.Volume")
-# Plot dygraph of the clean lots
-dygraphs::dygraph(xtsv$XLK.Close,
-  main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
-# Plot the large lots
+# Remove price jumps and calculate time series of clean prices
+cleanp <- taq[!isbad]
+xlkc <- xts::xts(cleanp[, .(price, volume)], cleanp$index)
+colnames(xlkc) <- c("price", "volume")
+# Plot dygraph of the clean prices
+dygraphs::dygraph(xlkc$price,
+  main="Clean XLK Intraday Prices for 2020-03-16")
+# Plot using chart_Series()
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtsv$XLK.Close,
-  name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+quantmod::chart_Series(x=xlkc$price,
+  name="Clean XLK Intraday Prices for 2020-03-16")
       @
   \end{columns}
 \end{block}
@@ -5310,29 +5314,28 @@ quantmod::chart_Series(x=xtsv$XLK.Close,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Define discrimination threshold value
-threshv <- 6*mad(zscores)
-# Calculate number of prices classified as bad data
-isbad <- (abs(zscores) > threshv)
-sum(isbad)
 # Add 200 random price jumps into prices
 set.seed(1121)
 nbad <- 200
-isjump <- logical(NROW(closep))
+isjump <- logical(NROW(pricev))
 isjump[sample(x=NROW(isjump), size=nbad)] <- TRUE
-closep[isjump] <- closep[isjump]*
-  sample(c(0.95, 1.05), size=nbad, replace=TRUE)
-# Plot the prices and medians
-dygraphs::dygraph(cbind(closep, medianv), main="VTI median") %>%
-  dyOptions(colors=c("black", "red"))
+pricev <- xlk$price
+pricev[isjump] <- pricev[isjump]*
+  sample(c(0.98, 1.02), size=nbad, replace=TRUE)
 # Calculate time series of z-scores
-medianv <- roll::roll_median(closep, width=look_back)
-# medianv <- TTR::runMedian(closep, n=look_back)
-madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(closep, n=look_back)
-zscores <- (closep - medianv)/madv
+medianv <- roll::roll_median(pricev, width=look_back)
+colnames(medianv) <- c("median")
+# Plot the prices and medians
+dygraphs::dygraph(cbind(pricev, medianv), main="VTI Median Prices") %>%
+  dyOptions(colors=c("black", "red"))
+# medianv <- TTR::runMedian(pricev, n=look_back)
+madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=look_back)
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
 zscores[1:look_back, ] <- 0
-# Calculate number of prices classified as bad data
+zscores <- zscores/(sum(abs(range(zscores)))/2)
+# Identify price jumps with large z-scores
+threshv <- 0.1
 isbad <- (abs(zscores) > threshv)
 sum(isbad)
       @
@@ -5418,10 +5421,9 @@ confun <- function(actualv, zscores, threshv) {
   }  # end confun
 confun(isjump, zscores, threshv=threshv)
 # Define vector of discrimination thresholds
-threshv <- seq(from=0.2, to=5.0, by=0.2)
+threshv <- seq(from=0.001, to=0.1, by=0.001)
 # Calculate error rates
-errorr <- sapply(threshv, confun,
-  actualv=isjump, zscores=zscores)  # end sapply
+errorr <- sapply(threshv, confun, actualv=isjump, zscores=zscores)
 errorr <- t(errorr)
 rownames(errorr) <- threshv
 errorr <- rbind(c(1, 0), errorr)
@@ -5437,7 +5439,6 @@ abs(sum(truepos*falsepos))
       \includegraphics[width=0.45\paperwidth]{figure/hampel_roc.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot ROC curve for Hampel classifier
-x11(width=6, height=5)
 plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      xlim=c(0, 1), ylim=c(0, 1),
@@ -5510,7 +5511,7 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Improved Microstructure Noise Filtering}
+\subsection{draft: Improved Microstructure Noise Filtering}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -5521,13 +5522,13 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       If the \emph{z-score} exceeds the \emph{threshold value} then it's classified as an \emph{outlier} (jump in pricev).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate centered Hampel filter over 3 data points
-medianv <- roll::roll_median(taq$price, width=3)
-medianv[1:2] <- taq$price[1:2]
+medianv <- roll::roll_median(pricev, width=3)
+medianv[1:2] <- pricev[1:2]
 medianv <- rutils::lagit(medianv, lagg=-1, pad_zeros=FALSE)
-madv <- HighFreq::roll_var(matrix(taq$price), look_back=3, method="nonparametric")
+madv <- HighFreq::roll_var(pricev, look_back=3, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=-1, pad_zeros=FALSE)
 # Calculate Z-scores
-zscores <- ifelse(madv > 0, (taq$price - medianv)/madv, 0)
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
 range(zscores); mad(zscores)
 madv <- mad(zscores[abs(zscores)>0])
 hist(zscores, breaks=2000, xlim=c(-5*madv, 5*madv))
@@ -5538,20 +5539,20 @@ hist(zscores, breaks=2000, xlim=c(-5*madv, 5*madv))
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
 threshv <- 6*madv
-bad_ticks <- (abs(zscores) > threshv)
-good_ticks <- taq[!bad_ticks]
+isbad <- (abs(zscores) > threshv)
+cleanp <- taq[!isbad]
 # Calculate number of price jumps
-sum(bad_ticks)/NROW(zscores)
+sum(isbad)/NROW(zscores)
 # Coerce trade prices to xts
-xtsv <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
-colnames(xtsv) <- c("XLK.Close", "XLK.Volume")
+xlk <- xts::xts(cleanp[, .(price, volume)], cleanp$index)
+colnames(xlk) <- c("price", "volume")
 # Plot dygraph of the clean lots
-dygraphs::dygraph(xtsv$XLK.Close,
-  main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+dygraphs::dygraph(xlk$price,
+  main="XLK Intraday Prices for 2020-03-16 (Hampel filtered)")
 # Plot the large lots
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtsv$XLK.Close,
-  name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+quantmod::chart_Series(x=xlk$price,
+  name="XLK Intraday Prices for 2020-03-16 (Hampel filtered)")
       @
   \end{columns}
 \end{block}
@@ -5599,13 +5600,13 @@ quantmod::chart_Series(x=xtsv$XLK.Close,
 # Calculate EWMA VTI variance using compiled C++ function
 look_back <- 51
 weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+weightv <- weightv/sum(weightv)
 varv <- .Call(stats:::C_cfilter, retp^2, filter=weightv, sides=1, circular=FALSE)
 varv[1:(look_back-1)] <- varv[look_back]
 # Plot EWMA volatility
 varv <- xts:::xts(sqrt(varv), order.by=zoo::index(retp))
 dygraphs::dygraph(varv, main="VTI EWMA Volatility")
-quantmod::chart_Series(xtsv, name="VTI EWMA Volatility")
+quantmod::chart_Series(varv, name="VTI EWMA Volatility")
       @
   \end{columns}
 \end{block}

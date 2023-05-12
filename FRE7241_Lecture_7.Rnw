@@ -67,7 +67,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{April 25, 2023}
+\date{May 9, 2023}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -82,8 +82,116 @@ knit_theme$set(thm)
 
 
 
+
 %%%%%%%%%%%%%%%
 \section{Portfolio Optimization Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Covariance of Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Estimating the covariance of stock returns is complicated because their date ranges may not overlap in time.  Stocks may trade over different date ranges because of IPOs and corporate events (takeovers, mergers).
+      \vskip1ex
+      The function \texttt{cov()} calculates the covariance matrix of time series.  The argument \texttt{use="pairwise.complete.obs"} removes \texttt{NA} values from pairs of stock returns.
+      \vskip1ex
+      But removing \texttt{NA} values in pairs of stock returns can produce covariance matrices which are not positive semi-definite.
+      \vskip1ex
+      The reason is because the covariance are calculated over different time intervals for different pairs of stock returns.
+      \vskip1ex
+      Matrices which are not positive semi-definite may not have an inverse matrix, but they have a generalized inverse.
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select all the ETF symbols except "VXX", "SVXY" "MTUM", "QUAL", "VLUE", "USMV", and "AIEQ"
+symbolv <- colnames(rutils::etfenv$returns)
+# VYM has bad data in 2006
+symbolv <- symbolv[!(symbolv %in% c("VXX", "SVXY", "MTUM", "QUAL", "VLUE", "USMV", "AIEQ", "VYM"))]
+# Extract columns of rutils::etfenv$returns and overwrite NA values
+retp <- rutils::etfenv$returns[, symbolv]
+retp[1, ] <- 0.01
+nstocks <- NCOL(retp)
+datev <- zoo::index(retp)
+# Calculate the covariance ignoring NA values
+covmat <- cor(retp, use="pairwise.complete.obs")
+sum(is.na(covmat))
+# Calculate the inverse of covmat
+invmat <- solve(covmat)
+# Calculate the generalized inverse of covmat
+invreg <- MASS::ginv(covmat)
+all.equal(unname(invmat), invreg)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generalized Inverse of Singular Covariance Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard inverse of a positive semi-definite matrix $\mathbb{C}$ can be calculated from its \emph{eigenvalues} $\mathbb{D}$ and its \emph{eigenvectors} $\mathbb{O}$ as follows:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \mathbb{O} \, \mathbb{D}^{-1} \, \mathbb{O}^T
+      \end{displaymath}
+      The covariance matrix may not be positive semi-definite if the number of time periods of returns (rows) is less than the number of stocks (columns).
+      \vskip1ex
+      In that case some of the higher order eigenvalues are zero, and the above covariance matrix inverse is singular.
+      \vskip1ex
+      But a non-positive semi-definite covariance matrix may still have a \emph{generalized inverse}.
+      \vskip1ex
+      The \emph{generalized inverse} $\mathbb{C}_g^{-1}$ is calculated by removing the zero eigenvalues, and keeping only the first $n$ non-zero \emph{eigenvalues}:
+      \begin{displaymath}
+        \mathbb{C}_g^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
+      \end{displaymath}
+      Where $\mathbb{D}_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
+      \vskip1ex
+      The generalized inverse $\mathbb{C}_g^{-1}$ of the matrix $\mathbb{C}$ satisfies the equation:
+      \begin{displaymath}
+        \mathbb{C} \, \mathbb{C}_g^{-1} \mathbb{C} = \mathbbm{C}
+      \end{displaymath}
+      Which is a generalization of the standard inverse property: $\mathbb{C}^{-1} \mathbb{C} = \mathbbm{1}$
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create rectangular matrix with collinear columns
+matrixv <- matrix(rnorm(10*8), nc=10)
+# Calculate covariance matrix
+covmat <- cov(matrixv)
+# Calculate inverse of covmat - error
+invmat <- solve(covmat)
+# Perform eigen decomposition
+eigend <- eigen(covmat)
+eigenvec <- eigend$vectors
+eigenval <- eigend$values
+# Set tolerance for determining zero singular values
+precv <- sqrt(.Machine$double.eps)
+# Calculate generalized inverse from the eigen decomposition
+notzero <- (eigenval > (precv*eigenval[1]))
+inveigen <- eigenvec[, notzero] %*%
+  (t(eigenvec[, notzero]) / eigenval[notzero])
+# Verify inverse property of invreg
+all.equal(covmat, inveigen %*% covmat)
+# Verify generalized inverse property of invreg
+all.equal(covmat, covmat %*% inveigen %*% covmat)
+# Calculate generalized inverse of covmat
+invreg <- MASS::ginv(covmat)
+# Verify that inveigen is the same as invreg
+all.equal(inveigen, invreg)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -106,34 +214,22 @@ knit_theme$set(thm)
         \mathbf{w} = \mathbb{C}^{-1} \mu
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
-# Select all the ETF symbols except "VXX", "SVXY" "MTUM", "QUAL", "VLUE", and "USMV"
-symbolv <- colnames(rutils::etfenv$returns)
-symbolv <- symbolv[!(symbolv %in% c("VXX", "SVXY", "MTUM", "QUAL", "VLUE", "USMV"))]
-# Extract columns of rutils::etfenv$returns and overwrite NA values
-retp <- rutils::etfenv$returns[, symbolv]
-nstocks <- NCOL(retp)
-# retp <- na.omit(retp)
-retp[1, is.na(retp[1, ])] <- 0
-retp <- zoo::na.locf(retp, na.rm=FALSE)
-datev <- zoo::index(retp)
 # Returns in excess of risk-free rate
 riskf <- 0.03/252
 retx <- (retp - riskf)
+# Maximum Sharpe weights in-sample interval
+retis <- retp["/2014"]
+invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))
+weightv <- invreg %*% colMeans(retx["/2014"], na.rm=TRUE)
+weightv <- drop(weightv/sqrt(sum(weightv^2)))
+names(weightv) <- colnames(retp)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_weights_in_sample.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_etf_weights_in_sample.png}
       <<echo=TRUE,eval=FALSE>>=
-# Maximum Sharpe weights in-sample interval
-retsis <- retp["/2014"]
-invmat <- MASS::ginv(cov(retsis))
-weightv <- invmat %*% colMeans(retx["/2014"])
-weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weights) <- colnames(retp)
 # Plot portfolio weights
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-barplot(sort(weights), main="Maximum Sharpe Weights", cex.names=0.7)
+barplot(sort(weightv), main="Maximum Sharpe Weights", cex.names=0.7)
       @
   \end{columns}
 \end{block}
@@ -149,23 +245,35 @@ barplot(sort(weights), main="Maximum Sharpe Weights", cex.names=0.7)
   \begin{columns}[T]
     \column{0.5\textwidth}
       The in-sample performance of the optimal portfolio is much better than the equal weight portfolio.
+      \vskip1ex
+      The function \texttt{HighFreq::mult\_mat()} multiplies element-wise the rows or columns of a matrix times a vector.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate in-sample portfolio returns
-insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-indeks <- xts::xts(rowMeans(retsis), zoo::index(retsis))
-insample <- insample*sd(indeks)/sd(insample)
+# Calculate the equal weight index
+indeks <- xts::xts(rowMeans(retis, na.rm=TRUE), zoo::index(retis))
+# Calculate the in-sample weighted returns using transpose
+pnlis <- unname(t(t(retis)*weightv))
+# Or using Rcpp
+# pnlis <- HighFreq::mult_mat(weightv, retis)
+pnlis <- rowMeans(pnlis, na.rm=TRUE)
+pnlis <- pnlis*sd(indeks)/sd(pnlis)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_in_sample.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_etf_in_sample.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative portfolio returns
-pnls <- cbind(indeks, insample)
-colnames(pnls) <- c("Equal Weight", "Optimal")
-endd <- rutils::calc_endpoints(pnls, interval="weeks")
-dygraphs::dygraph(cumsum(pnls)[endd], main="In-sample Optimal Portfolio Returns") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(width=500)
+# Dygraph cumulative wealth
+wealthv <- cbind(indeks, pnlis, (pnlis + indeks)/2)
+colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Dygraph cumulative wealth
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="In-Sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -180,28 +288,34 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="In-sample Optimal Portfolio Returns"
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The out-of-sample performance of the optimal portfolio is not nearly as good as in-sample.
+      The out-of-sample performance of the optimal in-sample portfolio is not nearly as good as in-sample, but still better than the equal weight portfolio.
       \vskip1ex
       Combining the optimal portfolio with the equal weight portfolio produces and even better performing portfolio.
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the equal weight index
+retos <- retp["2015/"]
+indeks <- xts::xts(rowMeans(retos, na.rm=TRUE), zoo::index(retos))
 # Calculate out-of-sample portfolio returns
-retsos <- retp["2015/"]
-outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-indeks <- xts::xts(rowMeans(retsos), zoo::index(retsos))
-outsample <- outsample*sd(indeks)/sd(outsample)
-pnls <- cbind(indeks, outsample, (outsample + indeks)/2)
-colnames(pnls) <- c("Equal Weight", "Optimal", "Combined")
-sqrt(252)*sapply(pnls, function(x) mean(x)/sd(x))
+pnlos <- HighFreq::mult_mat(weightv, retos)
+pnlos <- rowMeans(pnlos, na.rm=TRUE)
+pnlos <- pnlos*sd(indeks)/sd(pnlos)
+wealthv <- cbind(indeks, pnlos, (pnlos + indeks)/2)
+colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_out_sample.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_etf_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative portfolio returns
-endd <- rutils::calc_endpoints(pnls, interval="weeks")
-dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Optimal Portfolio Returns") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(width=500)
+# Dygraph cumulative wealth
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Out-of-Sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -216,88 +330,43 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Optimal Portfolio Retu
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{portfolio optimization} strategy for ETFs is \emph{overfitted} in the \emph{in-sample} interval.
+      The \emph{portfolio optimization} strategy for ETFs is \emph{overfit} in the \emph{in-sample} interval.
       \vskip1ex
-      Therefore the strategy underperforms in the \emph{out-of-sample} interval.
+      Therefore the strategy doesn't perform as well in the \emph{out-of-sample} interval as in the \emph{in-sample} interval.
       <<echo=TRUE,eval=FALSE>>=
 # Maximum Sharpe weights in-sample interval
-invmat <- MASS::ginv(cov(retsis))
-weightv <- invmat %*% colMeans(retx["/2014"])
+invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))
+weightv <- invreg %*% colMeans(retx["/2014"], na.rm=TRUE)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weights) <- colnames(retp)
+names(weightv) <- colnames(retp)
 # Calculate in-sample portfolio returns
-insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
+pnlis <- HighFreq::mult_mat(weightv, retis)
+pnlis <- rowMeans(pnlis, na.rm=TRUE)
 # Calculate out-of-sample portfolio returns
-retsos <- retp["2015/"]
-outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_out_sample.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative portfolio returns
-pnls <- rbind(insample, outsample)
-indeks <- xts::xts(rowMeans(retp), datev)
+pnlos <- HighFreq::mult_mat(weightv, retos)
+pnlos <- rowMeans(pnlos, na.rm=TRUE)
+# Calculate cumulative wealth
+pnls <- c(pnlis, pnlos)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cbind(indeks, pnls)
-colnames(pnls) <- c("Equal Weight", "Optimal")
-endd <- rutils::calc_endpoints(pnls, interval="weeks")
-dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Optimal Portfolio Returns for ETFs") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+indeks <- xts::xts(rowMeans(retp, na.rm=TRUE), datev)
+wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
+colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Regularized Inverse of Singular Covariance Matrix}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The inverse of the covariance matrix of returns $\mathbb{C}$ can be calculated from its \emph{eigenvalues} $\mathbb{D}$ and its \emph{eigenvectors} $\mathbb{O}$:
-      \begin{displaymath}
-        \mathbb{C}^{-1} = \mathbb{O} \, \mathbb{D}^{-1} \, \mathbb{O}^T
-      \end{displaymath}
-      If the number of time periods of returns (rows) is less than the number of stocks (columns), then some of the higher order eigenvalues are zero, and the above covariance matrix inverse is singular.
-      \vskip1ex
-      The \emph{regularized inverse} $\mathbb{C}_n^{-1}$ is calculated by removing the zero eigenvalues, and keeping only the first $n$ \emph{eigenvalues}:
-      \begin{displaymath}
-        \mathbb{C}_n^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
-      \end{displaymath}
-      Where $\mathbb{D}_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
-      \vskip1ex
-      The function \texttt{MASS::ginv()} calculates the \emph{regularized} inverse of a matrix.
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_etfs_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
-# Create rectangular matrix with collinear columns
-matrixv <- matrix(rnorm(10*8), nc=10)
-# Calculate covariance matrix
-covmat <- cov(matrixv)
-# Calculate inverse of covmat - error
-invmat <- solve(covmat)
-# Perform eigen decomposition
-eigend <- eigen(covmat)
-eigenvec <- eigend$vectors
-eigenval <- eigend$values
-# Set tolerance for determining zero singular values
-precv <- sqrt(.Machine$double.eps)
-# Calculate regularized inverse matrix
-notzero <- (eigenval > (precv*eigenval[1]))
-invreg <- eigenvec[, notzero] %*%
-  (t(eigenvec[, notzero]) / eigenval[notzero])
-# Verify inverse property of invreg
-all.equal(covmat, covmat %*% invreg %*% covmat)
-# Calculate regularized inverse of covmat
-invmat <- MASS::ginv(covmat)
-# Verify that invmat is same as invreg
-all.equal(invmat, invreg)
+# Dygraph cumulative wealth
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Out-of-Sample Optimal Portfolio Returns for ETFs") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -314,31 +383,35 @@ all.equal(invmat, invreg)
     \column{0.5\textwidth}
       If the higher order singular values are very small then the inverse matrix amplifies the statistical noise in the response matrix.
       \vskip1ex
-      The technique of \emph{dimension reduction} calculates the inverse of a covariance matrix by removing the very small, higher order eigenvalues, to reduce the propagation of statistical noise and improve the signal-to-noise ratio:
+      The \emph{reduced inverse} $\mathbb{C}^{-1}_{R}$ is calculated from the largest (lowest order) eigenvalues, up to $dimax$:
       \begin{displaymath}
-        \mathbb{C}^{-1}_{DR} = \mathbb{O}_{dimax} \, \mathbb{D}^{-1}_{dimax} \, \mathbb{O}_{dimax}^T
+        \mathbb{C}^{-1}_{R} = \mathbb{O}_{dimax} \, \mathbb{D}^{-1}_{dimax} \, \mathbb{O}_{dimax}^T
       \end{displaymath}
-      The parameter \texttt{dimax} specifies the number of eigenvalues used for calculating the \emph{dimension reduction inverse} of the covariance matrix of returns.
+      The parameter $dimax$ specifies the number of eigenvalues used for calculating the \emph{reduced inverse} of the covariance matrix of returns.
       \vskip1ex
-      Even though the \emph{dimension reduction inverse} $\mathbb{C}^{-1}_{DR}$ does not satisfy the matrix inverse property (so it's biased), its out-of-sample forecasts are usually more accurate than those using the actual inverse matrix.
+      The \emph{dimension reduction} technique calculates the \emph{reduced inverse} of a covariance matrix by removing the very small, higher order eigenvalues, to reduce the propagation of statistical noise and improve the signal-to-noise ratio:
+      \vskip1ex
+      Even though the \emph{reduced inverse} $\mathbb{C}^{-1}_{R}$ does not satisfy the matrix inverse property (so it's biased), its out-of-sample forecasts are usually more accurate than those using the exact inverse matrix.
       \vskip1ex
       But removing a larger number of eigenvalues increases the bias of the covariance matrix, which is an example of the \emph{bias-variance tradeoff}.
       \vskip1ex
-      The optimal value of the parameter \texttt{dimax} can be determined using \emph{backtesting} (\emph{cross-validation}).
+      The optimal value of the parameter $dimax$ can be determined using \emph{backtesting} (\emph{cross-validation}).
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate in-sample covariance matrix
-covmat <- cov(retsis)
+covmat <- cov(retis, use="pairwise.complete.obs")
 eigend <- eigen(covmat)
 eigenvec <- eigend$vectors
 eigenval <- eigend$values
-# Calculate dimension reduction inverse of covariance matrix
+# Negative eigenvalues
+eigenval
+# Calculate reduced inverse of covariance matrix
 dimax <- 3
-covinv <- eigenvec[, 1:dimax] %*%
+invred <- eigenvec[, 1:dimax] %*%
   (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
 # Verify inverse property of inverse
-all.equal(covmat, covmat %*% covinv %*% covmat)
+all.equal(covmat, covmat %*% invred %*% covmat)
       @
   \end{columns}
 \end{block}
@@ -353,31 +426,38 @@ all.equal(covmat, covmat %*% covinv %*% covmat)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{out-of-sample} performance of the \emph{portfolio optimization} strategy is greatly improved by shrinking the inverse of the covariance matrix.
+      The \emph{out-of-sample} performance of the \emph{portfolio optimization} strategy is greatly improved by applying dimension reduction to the inverse of the covariance matrix.
       \vskip1ex
-      The \emph{in-sample} performance is worse because shrinkage reduces \emph{overfitting}.
+      The \emph{in-sample} performance is worse because dimension reduction reduces \emph{overfitting}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate portfolio weights
-weightv <- invmat %*% colMeans(retsis)
+weightv <- invred %*% colMeans(retis, na.rm=TRUE)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weights) <- colnames(retp)
+names(weightv) <- colnames(retp)
 # Calculate portfolio returns
-insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+pnlis <- HighFreq::mult_mat(weightv, retis)
+pnlis <- rowMeans(pnlis, na.rm=TRUE)
+pnlos <- HighFreq::mult_mat(weightv, retos)
+pnlos <- rowMeans(pnlos, na.rm=TRUE)
+pnls <- c(pnlis, pnlos)
+pnls <- pnls*sd(indeks)/sd(pnls)
+wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
+colnames(wealthv) <- c("Equal Weight", "DimReduction", "Combined")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_out_sample_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_etfs_out_sample_dimred.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative portfolio returns
-pnls <- rbind(insample, outsample)
-pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cbind(indeks, pnls)
-colnames(pnls) <- c("Equal Weight", "Optimal")
-dygraphs::dygraph(cumsum(pnls)[endd], main="Optimal Portfolio Returns With Dimension Reduction") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+# Dygraph cumulative wealth
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Optimal Portfolio Returns With Dimension Reduction") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -404,28 +484,35 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="Optimal Portfolio Returns With Dimen
       <<echo=TRUE,eval=FALSE>>=
 # Shrink the in-sample returns to their mean
 alpha <- 0.7
-retxm <- rowMeans(retx["/2014"])
+retxm <- rowMeans(retx["/2014"], na.rm=TRUE)
 retxis <- (1-alpha)*retx["/2014"] + alpha*retxm
 # Calculate portfolio weights
-weightv <- invmat %*% colMeans(retxis)
+weightv <- invred %*% colMeans(retxis, na.rm=TRUE)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
-insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+pnlis <- HighFreq::mult_mat(weightv, retis)
+pnlis <- rowMeans(pnlis, na.rm=TRUE)
+pnlos <- HighFreq::mult_mat(weightv, retos)
+pnlos <- rowMeans(pnlos, na.rm=TRUE)
+pnls <- c(pnlis, pnlos)
+pnls <- pnls*sd(indeks)/sd(pnls)
+wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
+colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_etfs_out_sample_rets_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_etfs_out_sample_rets_dimred.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative portfolio returns
-pnls <- rbind(insample, outsample)
-pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cbind(indeks, pnls)
-colnames(pnls) <- c("Equal Weight", "Optimal")
-dygraphs::dygraph(cumsum(pnls)[endd], main="Optimal Portfolio Returns With Eigen and Return Shrinkage") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Dygraph cumulative wealth
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Optimal Portfolio With Dimension Reduction and Return Shrinkage") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -448,41 +535,70 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="Optimal Portfolio Returns With Eigen
         \item Calculate the optimal portfolio weights from the past (in-sample) performance,
         \item Calculate the out-of-sample returns by applying the portfolio weights to the future returns.
       \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define monthly end points
-endd <- rutils::calc_endpoints(retp, interval="weeks")
+endd <- rutils::calc_endpoints(retp, interval="months")
 endd <- endd[endd > (nstocks+1)]
 npts <- NROW(endd)
 look_back <- 3
 startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
 # Perform loop over end points
-pnls <- lapply(2:npts, function(ep) {
+pnls <- lapply(1:(npts-1), function(tday) {
     # Calculate the portfolio weights
-    insample <- retx[startp[ep-1]:endd[ep-1], ]
-    invmat <- MASS::ginv(cov(insample))
-    weightv <- invmat %*% colMeans(insample)
+    retis <- retx[startp[tday]:endd[tday], ]
+    covmat <- cov(retis, use="pairwise.complete.obs")
+    covmat[is.na(covmat)] <- 0
+    invreg <- MASS::ginv(covmat)
+    colm <- colMeans(retis, na.rm=TRUE)
+    colm[is.na(colm)] <- 0
+    weightv <- invreg %*% colm
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the in-sample portfolio returns
+    pnlis <- HighFreq::mult_mat(weightv, retis)
+    pnlis <- rowMeans(pnlis, na.rm=TRUE)
     # Calculate the out-of-sample portfolio returns
-    outsample <- retp[(endd[ep-1]+1):endd[ep], ]
-    xts::xts(outsample %*% weightv, zoo::index(outsample))
+    retos <- retp[(endd[tday]+1):endd[tday+1], ]
+    pnlos <- HighFreq::mult_mat(weightv, retos)
+    pnlos <- rowMeans(pnlos, na.rm=TRUE)
+    pnlos <- pnlos*0.01/sd(pnlos)
+    xts::xts(pnlos, zoo::index(retos))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In a \emph{rolling portfolio optimization strategy}, the portfolio is optimized periodically and held out-of-sample.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe and Sortino ratios
+pnls <- pnls*sd(indeks)/sd(pnls)
+wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
+colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_monthly.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of rolling ETF portfolio strategy
-pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "Strategy", "Combined")
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv,
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Dygraph cumulative wealth
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Monthly ETF Rolling Portfolio Strategy") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
 @
   \end{columns}
 \end{block}
@@ -497,46 +613,54 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Monthly ETF Rolling Portfolio Str
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The rolling portfolio optimization strategy with dimension reduction performs better than the standard strategy because dimension reduction suppresses the data noise.
+      Dimension reduction improves the performance of the rolling portfolio strategy because it suppresses the data noise.
       \vskip1ex
-      The strategy performs especially well during sharp market selloffs, like in the years \texttt{2008} and \texttt{2020}.
+      The strategy performed especially well during sharp market selloffs, like in the years \texttt{2008} and \texttt{2020}.
       <<echo=TRUE,eval=FALSE>>=
-# Define monthly end points
-look_back <- 3; dimax <- 9
-startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
 # Perform loop over end points
-pnls <- lapply(2:npts, function(ep) {
-    # Calculate regularized inverse of covariance matrix
-    insample <- retx[startp[ep-1]:endd[ep-1], ]
-    eigend <- eigen(cov(insample))
+dimax <- 9
+pnls <- lapply(1:(npts-1), function(tday) {
+    # Calculate the portfolio weights
+    retis <- retx[startp[tday]:endd[tday], ]
+    covmat <- cov(retis, use="pairwise.complete.obs")
+    covmat[is.na(covmat)] <- 0
+    eigend <- eigen(covmat)
     eigenvec <- eigend$vectors
     eigenval <- eigend$values
-    invmat <- eigenvec[, 1:dimax] %*%
+    invred <- eigenvec[, 1:dimax] %*%
       (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-    # Calculate the maximum Sharpe ratio portfolio weights
-    weightv <- invmat %*% colMeans(insample)
+    colm <- colMeans(retis, na.rm=TRUE)
+    colm[is.na(colm)] <- 0
+    weightv <- invred %*% colm
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the in-sample portfolio returns
+    pnlis <- HighFreq::mult_mat(weightv, retis)
+    pnlis <- rowMeans(pnlis, na.rm=TRUE)
     # Calculate the out-of-sample portfolio returns
-    outsample <- retp[(endd[ep-1]+1):endd[ep], ]
-    xts::xts(outsample %*% weightv, zoo::index(outsample))
+    retos <- retp[(endd[tday]+1):endd[tday+1], ]
+    pnlos <- HighFreq::mult_mat(weightv, retos)
+    pnlos <- rowMeans(pnlos, na.rm=TRUE)
+    pnlos <- pnlos*0.01/sd(pnlos)
+    xts::xts(pnlos, zoo::index(retos))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_shrinkeigen.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_monthly_dimred.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of rolling ETF portfolio strategy
+# Calculate the Sharpe and Sortino ratios
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
 wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "Strategy", "Combined")
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv,
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Dygraph cumulative wealth
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With Dimension Reduction") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -551,47 +675,58 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With D
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The rolling portfolio optimization strategy with return shrinkage performs better than the standard strategy because return shrinkage suppresses the data noise.
+      Shrinkage averages the stock returns, which creates bias, but it also reduces the variance.
       \vskip1ex
-      The strategy performs especially well during sharp market selloffs, like in the years \texttt{2008} and \texttt{2020}.
+      Return shrinkage can be applied to improve the performance of the rolling portfolio strategy.
       <<echo=TRUE,eval=FALSE>>=
-# Define the return shrinkage intensity
-alpha <- 0.7
+alpha <- 0.7 # Return shrinkage intensity
 # Perform loop over end points
-pnls <- lapply(2:npts, function(ep) {
-    # Calculate regularized inverse of covariance matrix
-    insample <- retx[startp[ep-1]:endd[ep-1], ]
-    eigend <- eigen(cov(insample))
+pnls <- lapply(1:(npts-1), function(tday) {
+    # Shrink the in-sample returns to their mean
+    retis <- retx[startp[tday]:endd[tday], ]
+    rowm <- rowMeans(retis, na.rm=TRUE)
+    rowm[is.na(rowm)] <- 0
+    retis <- (1-alpha)*retis + alpha*rowm
+    # Calculate the portfolio weights
+    covmat <- cov(retis, use="pairwise.complete.obs")
+    covmat[is.na(covmat)] <- 0
+    eigend <- eigen(covmat)
     eigenvec <- eigend$vectors
     eigenval <- eigend$values
-    invmat <- eigenvec[, 1:dimax] %*%
+    invred <- eigenvec[, 1:dimax] %*%
       (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-    # Shrink the in-sample returns to their mean
-    insample <- (1-alpha)*insample + alpha*rowMeans(insample)
-    # Calculate the maximum Sharpe ratio portfolio weights
-    weightv <- invmat %*% colMeans(insample)
+    colm <- colMeans(retis, na.rm=TRUE)
+    colm[is.na(colm)] <- 0
+    weightv <- invred %*% colm
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the in-sample portfolio returns
+    pnlis <- HighFreq::mult_mat(weightv, retis)
+    pnlis <- rowMeans(pnlis, na.rm=TRUE)
     # Calculate the out-of-sample portfolio returns
-    outsample <- retp[(endd[ep-1]+1):endd[ep], ]
-    xts::xts(outsample %*% weightv, zoo::index(outsample))
+    retos <- retp[(endd[tday]+1):endd[tday+1], ]
+    pnlos <- HighFreq::mult_mat(weightv, retos)
+    pnlos <- rowMeans(pnlos, na.rm=TRUE)
+    pnlos <- pnlos*0.01/sd(pnlos)
+    xts::xts(pnlos, zoo::index(retos))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
+pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_shrinkrets.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_monthly_shrinkrets.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of rolling ETF portfolio strategy
+# Calculate the Sharpe and Sortino ratios
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
 wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "Strategy", "Combined")
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv,
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Dygraph cumulative wealth
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With Return Shrinkage") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -609,32 +744,44 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With R
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtest functional for rolling portfolio strategy
-roll_portf <- function(excess, # Excess returns
-                       returns, # Stock returns
+roll_portf <- function(retx, # Excess returns
+                       retp, # Stock returns
                        endd, # End points
                        look_back=12, # Look-back interval
-                       dimax=3, # Dimension reduction intensity
+                       dimax=3, # Dimension reduction parameter
                        alpha=0.0, # Return shrinkage intensity
                        bid_offer=0.0, # Bid-offer spread
                        ...) {
   npts <- NROW(endd)
   startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
-  pnls <- lapply(2:npts, function(ep) {
-    # Calculate regularized inverse of covariance matrix
-    insample <- excess[startp[ep-1]:endd[ep-1], ]
-    eigend <- eigen(cov(insample))
+  pnls <- lapply(1:(npts-1), function(tday) {
+    retis <- retx[startp[tday]:endd[tday], ]
+    # Shrink the in-sample returns to their mean
+    if (alpha > 0) {
+      rowm <- rowMeans(retis, na.rm=TRUE)
+      rowm[is.na(rowm)] <- 0
+      retis <- (1-alpha)*retis + alpha*rowm
+    } # end if
+    # Calculate the portfolio weights
+    covmat <- cov(retis, use="pairwise.complete.obs")
+    covmat[is.na(covmat)] <- 0
+    eigend <- eigen(covmat)
     eigenvec <- eigend$vectors
     eigenval <- eigend$values
-    invmat <- eigenvec[, 1:dimax] %*%
-      (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-    # Shrink the in-sample returns to their mean
-    insample <- (1-alpha)*insample + alpha*rowMeans(insample)
-    # Calculate the maximum Sharpe ratio portfolio weights
-    weightv <- invmat %*% colMeans(insample)
+    invred <- eigenvec[, 1:dimax] %*% (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
+    colm <- colMeans(retis, na.rm=TRUE)
+    colm[is.na(colm)] <- 0
+    weightv <- invred %*% colm
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
+    # Calculate the in-sample portfolio returns
+    pnlis <- HighFreq::mult_mat(weightv, retis)
+    pnlis <- rowMeans(pnlis, na.rm=TRUE)
     # Calculate the out-of-sample portfolio returns
-    outsample <- returns[(endd[ep-1]+1):endd[ep], ]
-    xts::xts(outsample %*% weightv, zoo::index(outsample))
+    retos <- retp[(endd[tday]+1):endd[tday+1], ]
+    pnlos <- HighFreq::mult_mat(weightv, retos)
+    pnlos <- rowMeans(pnlos, na.rm=TRUE)
+    pnlos <- pnlos*0.01/sd(pnlos)
+    xts::xts(pnlos, zoo::index(retos))
   })  # end lapply
   pnls <- do.call(rbind, pnls)
   # Add warmup period to pnls
@@ -657,28 +804,28 @@ roll_portf <- function(excess, # Excess returns
     \column{0.5\textwidth}
       Multiple \emph{rolling portfolio optimization} strategies can be backtested by calling the function \texttt{roll\_portf()} in a loop over a vector of \emph{look-back} parameters.
       <<echo=TRUE,eval=FALSE>>=
-# Simulate a monthly ETF momentum strategy
-pnls <- roll_portf(excess=retx, returns=retp, endd=endd, 
+# Simulate a monthly ETF portfolio strategy
+pnls <- roll_portf(retx=retx, retp=retp, endd=endd, 
   look_back=look_back, dimax=dimax)
 # Perform sapply loop over look_backs
 look_backs <- seq(2, 15, by=1)
 pnls <- lapply(look_backs, roll_portf,
-  returns=retp, excess=retx, endd=endd, dimax=dimax)
+  retp=retp, retx=retx, endd=endd, dimax=dimax)
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("look_back=", look_backs)
+colnames(pnls) <- paste0("lookb=", look_backs)
 pnlsums <- sapply(pnls, sum)
 look_back <- look_backs[which.max(pnlsums)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_multlb.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_monthly_multlb.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of daily ETF momentum strategies
+# Plot dygraph of monthly ETF portfolio strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd], main="Rolling Portfolio Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
-# Plot EWMA strategies with custom line colors
+  dyLegend(show="always", width=600)
+# Plot EWMA strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
   colorRampPalette(c("blue", "red"))(NCOL(pnls))
@@ -704,24 +851,25 @@ legend("bottomleft", legend=colnames(pnls),
       Multiple \emph{rolling portfolio optimization} strategies can be backtested by calling the function \texttt{roll\_portf()} in a loop over a vector of the dimension reduction parameter.
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest for different dimax values
-eigenvals <- 2:11
-pnls <- lapply(eigenvals, roll_portf, excess=retx, 
-  returns=retp, endd=endd, look_back=look_back)
+dimaxs <- 2:11
+pnls <- lapply(dimaxs, roll_portf, retx=retx, 
+  retp=retp, endd=endd, look_back=look_back)
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("eigenval=", eigenvals)
+colnames(pnls) <- paste0("dimax=", dimaxs)
 pnlsums <- sapply(pnls, sum)
-dimax <- eigenvals[which.max(pnlsums)]
+dimax <- dimaxs[which.max(pnlsums)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_multeigen.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_monthly_multeigen.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of daily ETF momentum strategies
+# Plot dygraph of monthly ETF portfolio strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
-dygraphs::dygraph(cumsum(pnls)[endd], main="Rolling Portfolio Strategies With Dimension Reduction") %>%
+dygraphs::dygraph(cumsum(pnls)[endd], 
+  main="Rolling Portfolio Strategies With Dimension Reduction") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-# Plot EWMA strategies with custom line colors
+# Plot EWMA strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
   colorRampPalette(c("blue", "red"))(NCOL(pnls))
@@ -736,6 +884,7 @@ legend("bottomleft", legend=colnames(pnls),
 
 \end{frame}
 
+
 %%%%%%%%%%%%%%%
 \subsection{Rolling Portfolio Optimization With Different Return Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
@@ -749,8 +898,8 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.0, to=0.9, by=0.1)
-pnls <- lapply(alphav, roll_portf, excess=retx, 
-  returns=retp, endd=endd, look_back=look_back, dimax=dimax)
+pnls <- lapply(alphav, roll_portf, retx=retx, 
+  retp=retp, endd=endd, look_back=look_back, dimax=dimax)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("alpha=", alphav)
 pnlsums <- sapply(pnls, sum)
@@ -758,14 +907,15 @@ alpha <- alphav[which.max(pnlsums)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_etf_monthly_multalpha.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_monthly_multalpha.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of daily ETF momentum strategies
+# Plot dygraph of monthly ETF portfolio strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
-dygraphs::dygraph(cumsum(pnls)[endd], main="Rolling Portfolio Strategies With Return Shrinkage") %>%
+dygraphs::dygraph(cumsum(pnls)[endd], 
+  main="Rolling Portfolio Strategies With Return Shrinkage") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-# Plot EWMA strategies with custom line colors
+# Plot EWMA strategies using quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
   colorRampPalette(c("blue", "red"))(NCOL(pnls))
@@ -788,50 +938,54 @@ legend("bottomleft", legend=colnames(pnls),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{portfolio optimization} strategy for stocks is \emph{overfitted} in the \emph{in-sample} interval.
+      The \emph{portfolio optimization} strategy for stocks is \emph{overfit} in the \emph{in-sample} interval.
       \vskip1ex
-      Therefore the strategy completely fails in the \emph{out-of-sample} interval.
+      Therefore the strategy is mediocre in the \emph{out-of-sample} interval.
       <<echo=TRUE,eval=FALSE>>=
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns
-retp <- returns["2000/"]
+retp <- returns
 nstocks <- NCOL(retp)
-retp[1, is.na(retp[1, ])] <- 0
-retp <- zoo::na.locf(retp, na.rm=FALSE)
+retp[is.na(retp)] <- 0
+sum(is.na(retp))
 datev <- zoo::index(retp)
 riskf <- 0.03/252
 retx <- (retp - riskf)
-retsis <- retp["/2010"]
-retsos <- retp["2011/"]
+retis <- retp["/2010"]
+retos <- retp["2011/"]
 # Maximum Sharpe weights in-sample interval
-covmat <- cov(retsis)
-invmat <- MASS::ginv(covmat)
-weightv <- invmat %*% colMeans(retx["/2010"])
+covmat <- cov(retis, use="pairwise.complete.obs")
+invreg <- MASS::ginv(covmat)
+weightv <- invreg %*% colMeans(retx["/2010"], na.rm=TRUE)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weights) <- colnames(retp)
+names(weightv) <- colnames(retp)
 # Calculate portfolio returns
-insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+pnlis <- (retis %*% weightv)
+pnlos <- (retos %*% weightv)
 indeks <- xts::xts(rowMeans(retp), datev)
+# Combine in-sample and out-of-sample returns
+pnls <- c(pnlis, pnlos)
+pnls <- pnls*sd(indeks)/sd(pnls)
+wealthv <- cbind(indeks, pnls)
+colnames(wealthv) <- c("Equal Weight", "Optimal")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_out_sample.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_optim_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
-# Combine in-sample and out-of-sample returns
-pnls <- rbind(insample, outsample)
-pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cbind(indeks, pnls)
-colnames(pnls) <- c("Equal Weight", "Optimal")
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(pnls[index(outsample)],
+# Calculate the in-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv[index(retis)],
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative portfolio returns
-endd <- rutils::calc_endpoints(pnls, interval="weeks")
-dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv[index(retos)],
+  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of cumulative portfolio returns
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Out-of-Sample Optimal Portfolio Returns for Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -840,50 +994,49 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Optimal Portfolio Retu
 
 
 %%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization for Stocks with Dimension Reduction}
+\subsection{Portfolio Strategy for Stocks with Dimension Reduction}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{out-of-sample} performance of the \emph{portfolio optimization} strategy is greatly improved by shrinking the inverse of the covariance matrix.
+      The \emph{out-of-sample} performance of the \emph{portfolio optimization} strategy is greatly improved by applying dimension reduction to the inverse of the covariance matrix.
       \vskip1ex
-      The \emph{in-sample} performance is worse because shrinkage reduces \emph{overfitting}.
+      The \emph{in-sample} performance is worse because dimension reduction reduces \emph{overfitting}.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate regularized inverse of covariance matrix
-look_back <- 8; dimax <- 21
-eigend <- eigen(cov(retsis))
+# Calculate reduced inverse of covariance matrix
+dimax <- 3
+eigend <- eigen(cov(retis, use="pairwise.complete.obs"))
 eigenvec <- eigend$vectors
 eigenval <- eigend$values
-invmat <- eigenvec[, 1:dimax] %*%
+invred <- eigenvec[, 1:dimax] %*%
   (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
 # Calculate portfolio weights
-weightv <- invmat %*% colMeans(retx["/2010"])
+weightv <- invred %*% colMeans(retx["/2010"], na.rm=TRUE)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weights) <- colnames(retp)
+names(weightv) <- colnames(retp)
 # Calculate portfolio returns
-insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
-indeks <- xts::xts(rowMeans(retp), datev)
+pnlis <- (retis %*% weightv)
+pnlos <- (retos %*% weightv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_out_sample_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_optim_out_sample_dimred.png}
       <<echo=TRUE,eval=FALSE>>=
 # Combine in-sample and out-of-sample returns
-pnls <- rbind(insample, outsample)
+pnls <- c(pnlis, pnlos)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cbind(indeks, pnls)
-colnames(pnls) <- c("Equal Weight", "Optimal")
+wealthv <- cbind(indeks, pnls)
+colnames(wealthv) <- c("Equal Weight", "Optimal")
 # Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(pnls[index(outsample)],
+sqrt(252)*sapply(wealthv[index(retos)],
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative portfolio returns
-endd <- rutils::calc_endpoints(pnls, interval="weeks")
-dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Returns for Stocks with Dimension Reduction") %>%
+# Plot of cumulative portfolio returns
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Out-of-Sample Returns for Stocks with Dimension Reduction") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -913,29 +1066,30 @@ alpha <- 0.7
 retxm <- rowMeans(retx["/2010"])
 retxis <- (1-alpha)*retx["/2010"] + alpha*retxm
 # Calculate portfolio weights
-weightv <- invmat %*% colMeans(retxis)
+weightv <- invred %*% colMeans(retxis, na.rm=TRUE)
 weightv <- drop(weightv/sqrt(sum(weightv^2)))
 # Calculate portfolio returns
-insample <- xts::xts(retsis %*% weightv, zoo::index(retsis))
-outsample <- xts::xts(retsos %*% weightv, zoo::index(retsos))
+pnlis <- (retis %*% weightv)
+pnlos <- (retos %*% weightv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_optim_out_sample_rets_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_optim_out_sample_rets_dimred.png}
       <<echo=TRUE,eval=FALSE>>=
 # Combine in-sample and out-of-sample returns
-pnls <- rbind(insample, outsample)
+pnls <- c(pnlis, pnlos)
 pnls <- pnls*sd(indeks)/sd(pnls)
-pnls <- cbind(indeks, pnls)
-colnames(pnls) <- c("Equal Weight", "Optimal")
+wealthv <- cbind(indeks, pnls)
+colnames(wealthv) <- c("Equal Weight", "Optimal")
 # Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(pnls[index(outsample)],
+sqrt(252)*sapply(wealthv[index(retos)],
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot the cumulative portfolio returns
-dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Returns for Stocks with Return Shrinkage") %>%
+# Plot of cumulative portfolio returns
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Out-of-Sample Returns for Stocks with Return Shrinkage") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retsis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=500)
+  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -950,42 +1104,42 @@ dygraphs::dygraph(cumsum(pnls)[endd], main="Out-of-sample Returns for Stocks wit
 \begin{block}{}
   \begin{columns}[T]
   \column{0.5\textwidth}
-      \emph{RcppArmadillo} can be used to quickly calculate the regularized inverse of a covariance matrix.
+      \emph{RcppArmadillo} can be used to quickly calculate the reduced inverse of a covariance matrix.
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/back_test.cpp")
 # Create random matrix of returns
 matrixv <- matrix(rnorm(300), nc=5)
-# Regularized inverse of covariance matrix
-dimax <- 4
-eigend <- eigen(cov(matrixv))
-covinv <- eigend$vectors[, 1:dimax] %*%
+# Reduced inverse of covariance matrix
+dimax <- 3
+eigend <- eigen(covmat)
+invred <- eigend$vectors[, 1:dimax] %*%
   (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
-# Regularized inverse using RcppArmadillo
-covinv_arma <- calc_inv(matrixv, dimax)
-all.equal(covinv, covinv_arma)
+# Reduced inverse using RcppArmadillo
+invarma <- calc_inv(covmat, dimax)
+all.equal(invred, invarma)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
-  rcode={eigend <- eigen(cov(matrixv))
+  rcode={eigend <- eigen(covmat)
     eigend$vectors[, 1:dimax] %*%
       (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
   },
-  cppcode=calc_inv(matrixv, dimax),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
+  rcpp=calc_inv(covmat, dimax),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+@
   \column{0.5\textwidth}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-arma::mat calc_inv(const arma::mat& tseries,
-                   double eigen_thresh = 0.001, 
-                   arma::uword dimax = 0) {
-  
+arma::mat calc_inv(const arma::mat& matrixv, 
+                   arma::uword dimax = 0, // Max number of PCA for dimension reduction
+                   double eigen_thresh = 0.01) { // Threshold for discarding small singular values
+
   if (dimax == 0) {
     // Calculate the inverse using arma::pinv()
     return arma::pinv(tseries, eigen_thresh);
   } else {
-    // Calculate the regularized inverse using SVD decomposition
+    // Calculate the reduced inverse using SVD decomposition
     
     // Allocate SVD
     arma::vec svdval;
@@ -1023,130 +1177,154 @@ arma::mat calc_inv(const arma::mat& tseries,
     % \column{0.5\textwidth}
       Fast portfolio optimization using matrix algebra can be implemented using \protect\emph{RcppArmadillo}.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
-                       std::string method = "ranksharpe",
-                       double eigen_thresh = 0.001,
-                       arma::uword dimax = 0,
-                       double confi = 0.1,
-                       double alpha = 0.0,
-                       bool scale = true,
-                       double vol_target = 0.01) {
-  // Initialize
-  arma::vec weightv(returns[ncols, fill::zeros);
-  if (dimax == 0)  dimax = returns[ncols;
+arma::vec calc_weights(const arma::mat& returns, // Asset returns
+                       Rcpp::List controlv) { // List of portfolio optimization parameters
   
-  // Switch for the different methods for weights
+  // Unpack the control list of portfolio optimization parameters
+  // Type of portfolio optimization model
+  std::string method = Rcpp::as<std::string>(controlv["method"]);
+  // Threshold level for discarding small singular values
+  double eigen_thresh = Rcpp::as<double>(controlv["eigen_thresh"]);
+  // Dimension reduction
+  arma::uword dimax = Rcpp::as<int>(controlv["dimax"]);
+  // Confidence level for calculating the quantiles of returns
+  double confl = Rcpp::as<double>(controlv["confl"]);
+  // Shrinkage intensity of returns
+  double alpha = Rcpp::as<double>(controlv["alpha"]);
+  // Should the weights be ranked?
+  bool rankw = Rcpp::as<int>(controlv["rankw"]);
+  // Should the weights be centered?
+  bool centerw = Rcpp::as<int>(controlv["centerw"]);
+  // Method for scaling the weights
+  std::string scalew = Rcpp::as<std::string>(controlv["scalew"]);
+  // Volatility target for scaling the weights
+  double vol_target = Rcpp::as<double>(controlv["vol_target"]);
+
+  // Initialize the variables
+  arma::uword ncols = returns.n_cols;
+  arma::vec weightv(ncols, fill::zeros);
+  // If no regularization then set dimax to ncols
+  if (dimax == 0)  dimax = ncols;
+  // Calculate the covariance matrix
+  arma::mat covmat = calc_covar(returns);
+  
+  // Apply different calculation methods for the weights
   switch(calc_method(method)) {
-  case method::ranksharpe: {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::mean(returns, 0));
-    // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
-    sd_cols.replace(0, 1);
-    meancols = meancols/sd_cols;
-    // Weights equal to ranks of Sharpe
-    weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
-    weightv = (weightv - arma::mean(weights));
+  case methodenum::maxsharpe: {
+    // Mean returns of columns
+    arma::vec colmeans = arma::trans(arma::mean(returns, 0));
+    // Shrink colmeans to the mean of returns
+    colmeans = ((1-alpha)*colmeans + alpha*arma::mean(colmeans));
+    // Calculate weights using reduced inverse
+    weightv = calc_inv(covmat, dimax, eigen_thresh)*colmeans;
     break;
-  }  // end ranksharpe
-  case method::max_sharpe: {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::mean(returns, 0));
-    // Shrink meancols to the mean of returns
-    meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
-    // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), dimax);
-    // weightv = calc_inv(cov(returns), dimax)*meancols;
-    weightv = calc_inv(cov(returns), eigen_thresh, dimax)*meancols;
+  }  // end maxsharpe
+  case methodenum::maxsharpemed: {
+    // Median returns of columns
+    arma::vec colmeans = arma::trans(arma::median(returns, 0));
+    // Shrink colmeans to the median of returns
+    colmeans = ((1-alpha)*colmeans + alpha*arma::median(colmeans));
+    // Calculate weights using reduced inverse
+    weightv = calc_inv(covmat, dimax, eigen_thresh)*colmeans;
     break;
-  }  // end max_sharpe
-  case method::max_sharpe_median: {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::median(returns, 0));
-    // Shrink meancols to the mean of returns
-    meancols = ((1-alpha)*meancols + alpha*arma::median(meancols));
-    // Apply regularized inverse
-    // arma::mat inverse = calc_inv(cov(returns), dimax);
-    weightv = calc_inv(cov(returns), eigen_thresh, dimax)*meancols;
+  }  // end maxsharpemed
+  case methodenum::minvarlin: {
+    // Minimum variance weights under linear constraint
+    // Multiply reduced inverse times unit vector
+    weightv = calc_inv(covmat, dimax, eigen_thresh)*arma::ones(ncols);
     break;
-  }  // end max_sharpe_median
-  case method::min_var: {
-    // Apply regularized inverse to unit vector
-    weightv = calc_inv(cov(returns), eigen_thresh, dimax)*arma::ones(returns[ncols);
-    break;
-  }  // end min_var
-  case method::min_varpca: {
+  }  // end minvarlin
+  case methodenum::minvarquad: {
+    // Minimum variance weights under quadratic constraint
     // Calculate highest order principal component
     arma::vec eigenval;
     arma::mat eigenvec;
-    arma::eig_sym(eigenval, eigenvec, arma::cov(returns));
-    weightv = eigenvec.col(0);
+    arma::eig_sym(eigenval, eigenvec, covmat);
+    weightv = eigenvec.col(ncols-1);
     break;
-  }  // end min_varpca
-  case method::rank: {
-    // Mean returns by columns
-    arma::vec meancols = arma::trans(arma::mean(returns, 0));
-    // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
-    sd_cols.replace(0, 1);
-    meancols = meancols/sd_cols;
-    // Weights equal to ranks of Sharpe
-    weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
-    weightv = (weightv - arma::mean(weights));
+  }  // end minvarquad
+  case methodenum::sharpem: {
+    // Momentum weights equal to Sharpe ratios
+    // Mean returns of columns
+    arma::vec colmeans = arma::trans(arma::mean(returns, 0));
+    // Standard deviation of columns
+    arma::vec colsd = arma::sqrt(covmat.diag());
+    colsd.replace(0, 1);
+    // Momentum weights equal to Sharpe ratios
+    weightv = colmeans/colsd;
     break;
-  }  // end rank
-  case method::rankrob: {
-    // Median returns by columns
-    arma::vec meancols = arma::trans(arma::median(returns, 0));
-    // meancols = ((1-alpha)*meancols + alpha*arma::mean(meancols));
-    // Standard deviation by columns
-    arma::vec sd_cols = arma::trans(arma::stddev(returns, 0));
-    sd_cols.replace(0, 1);
-    meancols = meancols/sd_cols;
-    // Apply regularized inverse
-    // arma::mat invmat = calc_inv(cov(returns), dimax);
-    // weightv = calc_inv(cov(returns), dimax)*meancols;
-    // weightv = calc_inv(cov(returns), dimax)*meancols;
-    // // Standard deviation by columns
-    // arma::vec sd_cols = meancols;
-    // for (arma::uword it=0; it < returns[ncols; it++) {
-    //   sd_cols(it) = arma::median(arma::abs((returns.col(it) - sd_cols)));
-    // }  // end for
-    // sd_cols.replace(0, 1);
-    // meancols = meancols/sd_cols;
-    // Weights equal to ranks of Sharpe
-    weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(meancols)));
-    // level;
-    weightv = (weightv - arma::mean(weights));
+  }  // end sharpem
+  case methodenum::kellym: {
+    // Momentum weights equal to Kelly ratios
+    // Mean returns of columns
+    arma::vec colmeans = arma::trans(arma::mean(returns, 0));
+    // Variance of columns
+    arma::vec colvar = covmat.diag();
+    colvar.replace(0, 1);
+    // Momentum weights equal to Kelly ratios
+    weightv = colmeans/colvar;
     break;
-  }  // end rankrob
-  case method::quantile: {
-    // Sum of quantiles for columns
-    arma::vec levels = {confi, 1-confi};
-    weightv = conv_to<vec>::from(arma::sum(arma::quantile(returns, levels, 0), 0));
-    // Weights equal to ranks
-    weightv = conv_to<vec>::from(arma::sort_index(arma::sort_index(weights)));
-    weightv = (weightv - arma::mean(weights));
+  }  // end kellym
+  case methodenum::robustm: {
+    // Momentum weights equal to robust Sharpe ratios
+    // Median returns of columns
+    arma::vec colmeans = arma::trans(arma::median(returns, 0));
+    // Standard deviation of columns
+    arma::vec colsd = arma::sqrt(covmat.diag());
+    colsd.replace(0, 1);
+    // Momentum weights equal to robust Sharpe ratios
+    colmeans = colmeans/colsd;
+    break;
+  }  // end robustm
+  case methodenum::quantile: {
+    // Momentum weights equal to sum of quantiles for columns
+    arma::vec levels = {confl, 1-confl};
+    weightv = arma::conv_to<vec>::from(arma::sum(arma::quantile(returns, levels, 0), 0));
     break;
   }  // end quantile
   default : {
     cout << "Warning: Invalid method parameter: " << method << endl;
-    return arma::ones(returns[ncols);
+    return arma::ones(ncols);
   }  // end default
   }  // end switch
   
-  if (scale == TRUE) {
-    // return weightv/std::sqrt(sum(square(weights)));
-    // return weightv/sum(weights);
-    // Returns of equally weighted portfolio
-    // arma::vec meanrows = arma::mean(returns, 1);
-    // Returns of weighted portfolio
-    // arma::vec returns_portf = returns*weightv;
-    // Scale weights to equally weighted portfolio and return them
-    // return weightv*arma::stddev(arma::mean(returns, 1))/arma::stddev(returns*weightv);
-    // Scale weights so the resulting portfolio has a volatility equal to vol_target
-    return weightv*vol_target/arma::stddev(returns*weightv);
+  if (rankw == TRUE) {
+    // Convert the weights to their ranks
+    weightv = arma::conv_to<vec>::from(calc_ranks_stl(weightv));
   }  // end if
+  
+  if (centerw == TRUE) {
+    // Center the weights so their sum is equal to zero
+    weightv = (weightv - arma::mean(weightv));
+  }  // end if
+  
+  // Apply different scaling methods for the weights
+  switch(calc_method(scalew)) {
+  case methodenum::voltarget: {
+    // Scale the weights so the portfolio has the volatility equal to vol_target
+    weightv = weightv*vol_target/arma::stddev(returns*weightv);
+    break;
+  }  // end voltarget
+  case methodenum::voleqw: {
+    // Scale the weights to the volatility of the equal weight portfolio
+    weightv = weightv*arma::stddev(arma::mean(returns, 1))/arma::stddev(returns*weightv);
+    break;
+  }  // end voleqw
+  case methodenum::sumone: {
+    // Scale the weights so their sum of squares is equal to one
+    weightv = weightv/arma::sum(weightv*arma::ones(ncols));
+    break;
+  }  // end sumone
+  case methodenum::sumsq: {
+    // Scale the weights so their sum of squares is equal to one
+    weightv = weightv/std::sqrt(arma::sum(arma::square(weightv)));
+    break;
+  }  // end sumsq
+  default : {
+    // No scaling
+    break;
+  }  // end default
+  }  // end switch
   
   return weightv;
   
@@ -1169,33 +1347,33 @@ arma::vec calc_weights(const arma::mat& returns, // Portfolio returns
     % \column{0.5\textwidth}
       Fast backtesting of strategies can be implemented using \protect\emph{RcppArmadillo}.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-arma::mat back_test(const arma::mat& retx, // Portfolio excess returns
-                    const arma::mat& returns, // Portfolio returns
-                    arma::uvec startp, 
-                    arma::uvec endd, 
-                    std::string method = "ranksharpe",
-                    double eigen_thresh = 0.001,
-                    arma::uword dimax = 0,
-                    double confi = 0.1,
-                    double alpha = 0.0,
-                    bool scale = true,
-                    double vol_target = 0.01,
-                    double coeff = 1.0,
-                    double bid_offer = 0.0) {
+arma::mat back_test(const arma::mat& retx, // Asset excess returns
+                    const arma::mat& retp, // Asset returns
+                    Rcpp::List controlv, // List of portfolio optimization model parameters
+                    arma::uvec startp, // Start points
+                    arma::uvec endp, // End points
+                    double lambda = 0.0, // Decay factor for averaging the portfolio weights
+                    double coeff = 1.0, // Multiplier of strategy returns
+                    double bid_offer = 0.0) { // The bid-offer spread
   
-  arma::vec weightv(returns[ncols, fill::zeros);
-  arma::vec weights_past = zeros(returns[ncols);
-  arma::mat pnls = zeros(returns*nrows, 1);
-  
+  double lambda1 = 1-lambda;
+  arma::uword nweights = retp.n_cols;
+  arma::vec weightv(nweights, fill::zeros);
+  arma::vec weights_past = arma::ones(nweights)/std::sqrt(nweights);
+  arma::mat pnls = arma::zeros(retp.n_rows, 1);
+
   // Perform loop over the end points
-  for (arma::uword it = 1; it < endd.size(); it++) {
+  for (arma::uword it = 1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
-    // Calculate portfolio weights
-    weightv = coeff*calc_weights(retx.rows(startp(it-1), endd(it-1)), method, eigen_thresh, dimax, confi, alpha, scale, vol_target);
+    // Calculate the portfolio weights
+    weightv = coeff*calc_weights(retx.rows(startp(it-1), endp(it-1)), controlv);
+    // Calculate the weights as the weighted sum with past weights
+    weightv = lambda1*weightv + lambda*weights_past;
     // Calculate out-of-sample returns
-    pnls.rows(endd(it-1)+1, endd(it)) = returns.rows(endd(it-1)+1, endd(it))*weightv;
+    pnls.rows(endp(it-1)+1, endp(it)) = retp.rows(endp(it-1)+1, endp(it))*weightv;
     // Add transaction costs
-    pnls.row(endd(it-1)+1) -= bid_offer*sum(abs(weightv - weights_past))/2;
+    pnls.row(endp(it-1)+1) -= bid_offer*sum(abs(weightv - weights_past))/2;
+    // Copy the weights
     weights_past = weightv;
   }  // end for
   
@@ -1203,7 +1381,6 @@ arma::mat back_test(const arma::mat& retx, // Portfolio excess returns
   return pnls;
   
 }  // end back_test
-
     \end{lstlisting}
     % \column{0.5\textwidth}
       % \vspace{-1em}
@@ -1214,7 +1391,7 @@ arma::mat back_test(const arma::mat& retx, // Portfolio excess returns
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Portfolio Optimization Strategy for S\&P500 Stocks}
+\subsection{Rolling Portfolio Strategy for S\&P500 Stocks}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1228,34 +1405,33 @@ arma::mat back_test(const arma::mat& retx, // Portfolio excess returns
       \end{enumerate}
       The strategy parameters are: the rebalancing frequency (annual, monthly, etc.), and the length of look-back interval.
       <<echo=TRUE,eval=FALSE>>=
-# Overwrite NA values in returns100
+# Overwrite NA values in returns
 retp <- returns100
-retp[1, is.na(retp[1, ])] <- 0
-retp <- zoo::na.locf(retp, na.rm=FALSE)
+retp[is.na(retp)] <- 0
 retx <- (retp - riskf)
 nstocks <- NCOL(retp) ; datev <- zoo::index(retp)
 # Define monthly end points
-endd <- rutils::calc_endpoints(retp, interval="weeks")
+endd <- rutils::calc_endpoints(retp, interval="months")
 endd <- endd[endd > (nstocks+1)]
 npts <- NROW(endd) ; look_back <- 12
 startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
-# Perform loop over end points - takes very long !!!
-pnls <- lapply(2:npts, function(ep) {
+# Perform loop over end points - takes long
+pnls <- lapply(1:(npts-1), function(tday) {
     # Subset the excess returns
-    insample <- retx[startp[ep-1]:endd[ep-1], ]
-    invmat <- MASS::ginv(cov(insample))
+    retis <- retx[startp[tday]:endd[tday], ]
+    invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))
     # Calculate the maximum Sharpe ratio portfolio weights
-    weightv <- invmat %*% colMeans(insample)
+    weightv <- invreg %*% colMeans(retis, na.rm=TRUE)
     weightv <- drop(weightv/sqrt(sum(weightv^2)))
     # Calculate the out-of-sample portfolio returns
-    outsample <- retp[(endd[ep-1]+1):endd[ep], ]
-    xts::xts(outsample %*% weightv, zoo::index(outsample))
+    retos <- retp[(endd[tday]+1):endd[tday+1], ]
+    xts::xts(retos %*% weightv, zoo::index(retos))
 })  # end lapply
 pnls <- rutils::do_call(rbind, pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_sp500.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate returns of equal weight portfolio
 indeks <- xts::xts(rowMeans(retp), datev)
@@ -1263,12 +1439,13 @@ pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(indeks, pnls)
 colnames(wealthv) <- c("Equal Weight", "Strategy")
-sqrt(252)*sapply(wealthv,
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot cumulative strategy returns
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Optimization Strategy for S&P500 Stocks") %>%
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Rolling Portfolio Strategy for S&P500 Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1291,25 +1468,27 @@ endd[endd < 0] <- 0
 startp <- (startp - 1)
 startp[startp < 0] <- 0
 # Specify dimension reduction and return shrinkage using list of portfolio optimization parameters
-controlv <- HighFreq::param_portf(method="maxsharpe", dimax=21, alpha=0.7)
+controlv <- HighFreq::param_portf(method="maxsharpe", dimax=dimax, alpha=0.7)
 # Perform backtest in Rcpp
-pnls <- HighFreq::back_test(excess=retx, returns=retp,
+pnls <- HighFreq::back_test(retx=retx, retp=retp,
   startp=startp, endd=endd, controlv=controlv)
 pnls <- pnls*sd(indeks)/sd(pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_sp500_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative strategy returns
 wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "Strategy", "Combined")
+colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
 # Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv,
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling S&P500 Portfolio Optimization Strategy With Shrinkage") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Rolling S&P500 Portfolio Strategy With Shrinkage") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1318,57 +1497,64 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling S&P500 Portfolio Optimiza
 
 
 %%%%%%%%%%%%%%%
-\subsection{Determining Shrinkage Parameters Using Backtesting}
+\subsection{Optimal Dimension Reduction And Shrinkage Parameters}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The optimal values of the dimension reduction parameter \texttt{dimax} and the return shrinkage intensity parameter $\alpha$ can be determined using \emph{backtesting}.
+      The optimal values of the dimension reduction parameter $dimax$ and the return shrinkage intensity parameter $\alpha$ can be determined using \emph{backtesting}.
       \vskip1ex
-      The best dimension reduction parameter for this portfolio of stocks is equal to \texttt{dimax=33}, which means relatively weak dimension reduction.
+      The best dimension reduction parameter for this portfolio of stocks is equal to \texttt{dimax=15}, which means relatively weak dimension reduction.
       \vskip1ex
-      The best return shrinkage parameter for this portfolio of stocks is equal to $\alpha=0.81$, which means strong return shrinkage.
+      The best return shrinkage parameter for this portfolio of stocks is equal to $\alpha=0.71$, which means strong return shrinkage.
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.01, to=0.91, by=0.1)
 pnls <- lapply(alphav, function(alpha) {
-  HighFreq::back_test(excess=retx, returns=retp,
-  startp=startp, endd=endd, controlv=controlv)
+  controlv <- HighFreq::param_portf(method="maxsharpe", 
+            dimax=dimax, alpha=alpha)
+  HighFreq::back_test(retx=retx, retp=retp,
+            startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
-plot(x=alphav, y=profilev, t="l", main="Rolling Strategy as Function of Return Shrinkage",
+plot(x=alphav, y=profilev, t="l",
+  main="Rolling Strategy as Function of Return Shrinkage",
   xlab="Shrinkage Intensity Alpha", ylab="pnl")
 whichmax <- which.max(profilev)
 alpha <- alphav[whichmax]
 pnls <- pnls[[whichmax]]
-# Perform backtest over vector of dimension reduction eigenvals
-eigenvals <- seq(from=3, to=40, by=2)
-pnls <- lapply(eigenvals, function(dimax) {
-  HighFreq::back_test(excess=retx, returns=retp,
+# Perform backtest over vector of dimension reduction parameters
+dimaxs <- seq(from=3, to=40, by=2)
+pnls <- lapply(dimaxs, function(dimax) {
+  controlv <- HighFreq::param_portf(method="maxsharpe", 
+    dimax=dimax, alpha=alpha)
+  HighFreq::back_test(retx=retx, retp=retp,
     startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
-plot(x=eigenvals, y=profilev, t="l", main="Strategy PnL as Function of dimax",
-  xlab="dimax", ylab="pnl")
-whichmax <- which.max(profilev)
-dimax <- eigenvals[whichmax]
-pnls <- pnls[[whichmax]]
-pnls <- pnls*sd(indeks)/sd(pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink_optim.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_sp500_shrink_optim.png}
       <<echo=TRUE,eval=FALSE>>=
+plot(x=dimaxs, y=profilev, t="l", xlab="dimax", ylab="pnl", 
+  main="Strategy PnL as Function of dimax")
+whichmax <- which.max(profilev)
+dimax <- dimaxs[whichmax]
+pnls <- pnls[[whichmax]]
+pnls <- pnls*sd(indeks)/sd(pnls)
 # Plot cumulative strategy returns
 wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "Strategy", "Combined")
+colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
 # Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv,
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Optimal Rolling S&P500 Stock Portfolio Strategy") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1385,15 +1571,18 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio 
     \column{0.5\textwidth}
       The optimal value of the look-back interval can be determined using \emph{backtesting}.
       \vskip1ex
-      The optimal value of the look-back interval for this portfolio of stocks is equal to \texttt{look\_back=9} months, which roughly agrees with the research literature on momentum strategies.
+      The optimal value of the look-back interval for this portfolio of stocks is equal to \texttt{look\_back=11} months, which roughly agrees with the research literature on momentum strategies.
       <<echo=TRUE,eval=FALSE>>=
+# Create list of model parameters
+controlv <- HighFreq::param_portf(method="maxsharpe", 
+            dimax=dimax, alpha=alpha)
 # Perform backtest over look-backs
-look_backs <- seq(from=3, to=12, by=1)
+look_backs <- seq(from=5, to=16, by=1)
 pnls <- lapply(look_backs, function(look_back) {
   startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
   startp <- (startp - 1)
   startp[startp < 0] <- 0
-  HighFreq::back_test(excess=retx, returns=retp,
+  HighFreq::back_test(retx=retx, retp=retp,
     startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
@@ -1406,17 +1595,19 @@ pnls <- pnls*sd(indeks)/sd(pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/portf_rolling_sp500_shrink_optim_lookback.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_sp500_shrink_optim_lookback.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative strategy returns
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "Strategy", "Combined")
 # Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv,
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
+colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Dygraph the cumulative wealth
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Optimal Rolling S&P500 Portfolio Strategy") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1427,6 +1618,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio 
 
 %%%%%%%%%%%%%%%
 \section{Portfolio Efficient Frontier}
+
 
 %%%%%%%%%%%%%%%
 \subsection{Vector and Matrix Calculus}
@@ -1464,105 +1656,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Rolling S&P500 Portfolio 
 
 
 %%%%%%%%%%%%%%%
-\subsection{Portfolio Weight Constraints}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Portfolio optimization requires constraints on the portfolio weights to prevent excessive leverage (the size of positions relative to the capital).
-      \vskip1ex
-      Portfolio-level constraints limit the combined size of the weights.
-      \vskip1ex
-      For example, under \emph{linear} constraints the sum of the weights is equal to \texttt{1}: $\mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$, so that the weights are constrained to a \emph{hyperplane}.
-      \vskip1ex
-      The weights can be shifted by an amount $x$ in order to satisfy the \emph{linear} constraint: $w^{\prime}_i = w_i - x$.  This is equivalent to subtracting an equal-weighted portfolio from the weights.
-      \vskip1ex
-      The disadvantage of \emph{linear} constraints is that they allow highly leveraged portfolios, with very large positive and negative weights.
-      \vskip1ex
-      Under \emph{quadratic} constraints the sum of the \emph{squared} weights is equal to \texttt{1}: $\mathbf{w}^T \mathbf{w} = {\sum_{i=1}^n w^2_i} = 1$, so that the weights are constrained to a \emph{hypersphere}.
-      \vskip1ex
-      The weights can be scaled by a factor $x$ in order to satisfy the \emph{quadratic} constraint: $w^{\prime}_i = x w_i$.  This is equivalent to deleveraging the portfolio.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Linear constraint
-weightv <- weightv/sum(weights)
-# Quadratic constraint
-weightv <- weightv/sqrt(sum(weightv^2))
-# Box constraints
-weightv[weightv > 1] <- 1
-weightv[weightv < 0] <- 0
-      @
-      Box constraints limit the individual weights, for example: $0 \leq w_i \leq 1$.
-      \vskip1ex
-      Box constraints are often applied when constructing long-only portfolios, or when limiting the exposure to some stocks.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Maximum Return Portfolio Using Linear Programming}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The weights of the maximum return portfolio are obtained by maximizing the portfolio returns:
-      \begin{displaymath}
-        w_{max} = \operatorname*{arg\,max}_{w} [ \, \mathbf{r}^T \mathbf{w} \, ] = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i r_i \, ]
-      \end{displaymath}
-      Where $\mathbf{r}$ is the vector of returns, and $\mathbf{w}$ is the vector of portfolio weights, with a linear constraint:
-      \begin{displaymath}
-        \mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1
-      \end{displaymath}
-      And a box constraint:
-      \begin{displaymath}
-        0 \leq w_i \leq 1
-      \end{displaymath}
-      The weights of the maximum return portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints.
-      \vskip1ex
-      The function \texttt{Rglpk\_solve\_LP()} from package \emph{Rglpk} solves linear programming problems by calling the \emph{GNU Linear Programming Kit} library.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(rutils)
-library(Rglpk)
-# Vector of symbol names
-symbolv <- c("VTI", "IEF", "DBC")
-nstocks <- NROW(symbolv)
-# Calculate mean returns
-retp <- na.omit(rutils::etfenv$returns[, symbolv])
-retm <- colMeans(retp)
-# Specify linear constraint coefficients
-lincon <- matrix(c(rep(1, nstocks), 1, 1, 0),
-                       nc=nstocks, byrow=TRUE)
-directs <- c("==", "<=")
-rhs <- c(1, 0)
-# Specify box constraints (-1, 1) (default is c(0, Inf))
-boxc <- list(lower=list(ind=1:nstocks, val=rep(-1, nstocks)),
-               upper=list(ind=1:nstocks, val=rep(1, nstocks)))
-# Perform optimization
-optiml <- Rglpk::Rglpk_solve_LP(
-  obj=retm,
-  mat=lincon,
-  dir=directs,
-  rhs=rhs,
-  bounds=boxc,
-  max=TRUE)
-unlist(optiml[1:2])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Minimum Variance} Portfolio Under \protect\emph{Linear} Constraints}
+\subsection{The \protect\emph{Minimum Variance} Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1608,41 +1702,54 @@ unlist(optiml[1:2])
 
 
 %%%%%%%%%%%%%%%
-\subsection{Variance of the \protect\emph{Minimum Variance} Portfolio}
+\subsection{Returns and Variance of the \protect\emph{Minimum Variance} Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The weights of the \emph{minimum variance} portfolio under the constraint $\mathbf{w}^T \mathbbm{1} = 1$ can be calculated using the inverse of the covariance matrix:
+      The stock weights of the \emph{minimum variance} portfolio under the constraint $\mathbf{w}^T \mathbbm{1} = 1$ can be calculated using the inverse of the covariance matrix:
       \begin{displaymath}
         \mathbf{w} = \frac{\mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}}
       \end{displaymath}
+      The daily returns of the \emph{minimum variance} portfolio are equal to:
+      \begin{displaymath}
+        \mathbf{r}_{mv} = \frac{\mathbf{r}^T \mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}} = \frac{\mathbf{r}^T \mathbb{C}^{-1} \mathbbm{1}}{c_{11}}
+      \end{displaymath}
+      Where $\mathbf{r}$ are the daily stock returns, and $c_{11} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$.
+      \vskip1ex
       The variance of the \emph{minimum variance} portfolio is equal to:
       \begin{displaymath}
-        \sigma^2 = \frac{\mathbbm{1}^T \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mathbbm{1}}{(\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1})^2} = \frac{1}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}}
+        \sigma^2_{mv} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} = \frac{\mathbbm{1}^T \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mathbbm{1}}{(\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1})^2} = \frac{1}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}} = \frac{1}{c_{11}}
       \end{displaymath}
       The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
       \vskip1ex
       The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices.
       \vskip1ex
-      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix.
       \vskip1ex
-      The function \texttt{drop()} removes any dimensions of length \emph{one}.
+      The function \texttt{drop()} removes any extra dimensions of length \emph{one}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# Calculate daily stock returns
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
 # Calculate covariance matrix of returns and its inverse
 covmat <- cov(retp)
 covinv <- solve(a=covmat)
-unitv <- rep(1, NCOL(covmat))
-# Minimum variance weights with constraint
-# weightv <- solve(a=covmat, b=unitv)
-weightv <- covinv %*% unitv
-weightv <- weightv/drop(t(unitv) %*% weightv)
-# Minimum variance
-t(weights) %*% covmat %*% weightv
-1/(t(unitv) %*% covinv %*% unitv)
+unitv <- rep(1, nstocks)
+# Calculate the minimum variance weights
+c11 <- drop(t(unitv) %*% covinv %*% unitv)
+weightmv <- drop(covinv %*% unitv/c11)
+# Calculate the daily minvar portfolio returns in two ways
+retmv <- (retp %*% weightmv)
+all.equal(retmv, (retp %*% covinv %*% unitv)/c11)
+# Calculate the minimum variance in three ways
+all.equal(var(retmv), 
+  t(weightmv) %*% covmat %*% weightmv, 
+  1/(t(unitv) %*% covinv %*% unitv))
       @
   \end{columns}
 \end{block}
@@ -1659,9 +1766,11 @@ t(weights) %*% covmat %*% weightv
     \column{0.5\textwidth}
       A portfolio which has the smallest variance, given a target return, is an \emph{efficient portfolio}.
       \vskip1ex
-      The \emph{efficient portfolio} weights have two constraints: the sum of portfolio weights $\mathbf{w}$ is equal to \texttt{1}: $\mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$, and the mean portfolio return is equal to the target return $r_t$: $\mathbf{w}^T \mathbf{r} = {\sum_{i=1}^n w_i r_i} = r_t$.
+      The efficient portfolio weights have two constraints: the sum of portfolio weights $\mathbf{w}$ is equal to \texttt{1}: $\mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$, and the mean portfolio return is equal to the target return $r_t$: $\mathbf{w}^T \mathbf{\bar{r}} = {\sum_{i=1}^n w_i \bar{r}_i} = r_t$.
       \vskip1ex
-      The weights that minimize the portfolio variance under these constraints can be found by minimizing the \emph{Lagrangian}:
+      Where $\mathbf{\bar{r}}$ are the mean stock returns. 
+      \vskip1ex
+      The stock weights that minimize the portfolio variance under these constraints can be found by minimizing the \emph{Lagrangian}:
       \begin{displaymath}
         \mathcal{L} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} - \, \lambda_1 \, (\mathbf{w}^T \mathbbm{1} - 1) - \, \lambda_2 \, (\mathbf{w}^T \mathbf{r} - r_t)
       \end{displaymath}
@@ -1669,23 +1778,23 @@ t(weights) %*% covmat %*% weightv
       \vskip1ex
       The derivative of the \emph{Lagrangian} $\mathcal{L}$ with respect to $\mathbf{w}$ is given by:
       \begin{displaymath}
-        d_w \mathcal{L} = 2 \mathbf{w}^T \mathbb{C} - \lambda_1 \mathbbm{1}^T - \lambda_2 \mathbf{r}^T
+        d_w \mathcal{L} = 2 \mathbf{w}^T \mathbb{C} - \lambda_1 \mathbbm{1}^T - \lambda_2 \mathbf{\bar{r}}^T
       \end{displaymath}
-      By setting the derivative to zero we obtain the \emph{efficient portfolio} weights $\mathbf{w}$:
+      By setting the derivative to zero we obtain the efficient portfolio weights $\mathbf{w}$:
       \begin{displaymath}
-        \mathbf{w} = \frac{1}{2} (\lambda_1 \, \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \, \mathbb{C}^{-1} \mathbf{r})
+        \mathbf{w} = \frac{1}{2} (\lambda_1 \, \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \, \mathbb{C}^{-1} \mathbf{\bar{r}})
       \end{displaymath}
     \column{0.5\textwidth}
-      By multiplying the above from the left first by $\mathbbm{1}^T$, and then by $\mathbf{r}^T$, we obtain a system of two equations for $\lambda_1$ and $\lambda_2$:
+      By multiplying the above from the left first by $\mathbbm{1}^T$, and then by $\mathbf{\bar{r}}^T$, we obtain a system of two equations for $\lambda_1$ and $\lambda_2$:
       \begin{align*}
-        2 \mathbbm{1}^T \mathbf{w} = \lambda_1 \, \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \, \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{r} = 2\\
-        2 \mathbf{r}^T \mathbf{w} = \lambda_1 \, \mathbf{r}^T \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \, \mathbf{r}^T \mathbb{C}^{-1} \mathbf{r} = 2 r_t
+        2 \mathbbm{1}^T \mathbf{w} = \lambda_1 \, \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \, \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}} = 2\\
+        2 \mathbf{\bar{r}}^T \mathbf{w} = \lambda_1 \, \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \, \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbf{\bar{r}} = 2 r_t
       \end{align*}
       The above can be written in matrix notation as:
       \begin{displaymath}
         \begin{bmatrix}
-          \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} & \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{r} \\
-          \mathbf{r}^T \mathbb{C}^{-1} \mathbbm{1} & \mathbf{r}^T \mathbb{C}^{-1} \mathbf{r}
+          \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} & \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}} \\
+          \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1} & \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbf{\bar{r}}
         \end{bmatrix}
         \begin{bmatrix}
           \lambda_1 \\
@@ -1699,8 +1808,8 @@ t(weights) %*% covmat %*% weightv
       Or:
       \begin{displaymath}
         \begin{bmatrix}
-          a & b \\
-          b & c
+          c_{11} & c_{r1} \\
+          c_{r1} & c_{rr}
         \end{bmatrix}
         \begin{bmatrix}
           \lambda_1 \\
@@ -1713,7 +1822,7 @@ t(weights) %*% covmat %*% weightv
         \end{bmatrix} =
         2 u
       \end{displaymath}
-      With $a = \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$, $b = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{r}$, $c = \mathbf{r}^T \mathbb{C}^{-1} \mathbf{r}$,
+      With $c_{11} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$, $c_{r1} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}}$, $c_{rr} = \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbf{\bar{r}}$,
       $\lambda = \begin{bmatrix}
           \lambda_1 \\
           \lambda_2
@@ -1724,8 +1833,8 @@ t(weights) %*% covmat %*% weightv
         \end{bmatrix}$,
         and
       $\mathbb{F} = u^T \mathbb{C}^{-1} u = \begin{bmatrix}
-          a & b \\
-          b & c
+          c_{11} & c_{r1} \\
+          c_{r1} & c_{rr}
         \end{bmatrix}$.
       \vskip1ex
       The \emph{Lagrange multipliers} can be solved as:
@@ -1745,59 +1854,60 @@ t(weights) %*% covmat %*% weightv
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{efficient portfolio} weights $\mathbf{w}$ can now be solved as:
+      The efficient portfolio weights $\mathbf{w}$ can now be solved as:
       \begin{align*}
-        \mathbf{w} = \frac{1}{2} (\lambda_1 \, \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \, \mathbb{C}^{-1} \mathbf{r}) = \\
+        \mathbf{w} = \frac{1}{2} (\lambda_1 \, \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \, \mathbb{C}^{-1} \mathbf{\bar{r}}) = \\
         \frac{1}{2}
         {\begin{bmatrix}
           \mathbb{C}^{-1} \mathbbm{1} \\
-          \mathbb{C}^{-1} \mathbf{r}
+          \mathbb{C}^{-1} \mathbf{\bar{r}}
         \end{bmatrix}}^T
         \lambda =
         {\begin{bmatrix}
           \mathbb{C}^{-1} \mathbbm{1} \\
-          \mathbb{C}^{-1} \mathbf{r}
+          \mathbb{C}^{-1} \mathbf{\bar{r}}
         \end{bmatrix}}^T
         \mathbb{F}^{-1} \, u = \\
-        \frac{1}{a c-b^2}
+        \frac{1}{\det{\mathbb{F}}}
         {\begin{bmatrix}
           \mathbb{C}^{-1} \mathbbm{1} \\
-          \mathbb{C}^{-1} \mathbf{r}
+          \mathbb{C}^{-1} \mathbf{\bar{r}}
         \end{bmatrix}}^T
         \begin{bmatrix}
-          c & -b \\
-          -b & a
+          c_{rr} & -c_{r1} \\
+          -c_{r1} & c_{11}
         \end{bmatrix}
         \begin{bmatrix}
           1 \\
           r_t
         \end{bmatrix} = \\
-        \frac{(c - b r_t)  \, \mathbb{C}^{-1} \mathbbm{1} + (a r_t - b)  \, \mathbb{C}^{-1} \mathbf{r}}{a c-b^2}
+        \frac{(c_{rr} - c_{r1} r_t)  \, \mathbb{C}^{-1} \mathbbm{1} + (c_{11} r_t - c_{r1})  \, \mathbb{C}^{-1} \mathbf{\bar{r}}}{\det{\mathbb{F}}}
       \end{align*}
-      With $a = \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$, $b = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{r}$, $c = \mathbf{r}^T \mathbb{C}^{-1} \mathbf{r}$.
+      With $c_{11} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$, $c_{r1} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}}$, $c_{rr} = \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbf{\bar{r}}$. \\
+      And $\det{\mathbb{F}} = c_{11} c_{rr}-c^2_{r1}$ is the determinant of the matrix $\mathbb{F}$.
       \vskip1ex
-      The above formula shows that a convex sum of two \emph{efficient portfolio} weights: $w = \alpha w_1 + (1-\alpha) w_2$ \\
-      Are also the weights of an \emph{efficient portfolio}, with target return equal to: $r_t = \alpha r_1 + (1-\alpha) r_2$
+      The above formula shows that the efficient portfolio weights are a linear function of the target return.
+      \vskip1ex
+      Therefore a convex sum of two efficient portfolio weights: $w = \alpha w_1 + (1-\alpha) w_2$, are also the weights of an \emph{efficient portfolio}, with target return equal to: $r_t = \alpha r_1 + (1-\alpha) r_2$
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate vector of mean returns
 retm <- colMeans(retp)
 # Specify the target return
-rett <- 1.5*mean(retp)
+retarget <- 1.5*mean(retp)
 # Products of inverse with mean returns and unit vector
-fmat <- matrix(c(
-  t(unitv) %*% covinv %*% unitv,
-  t(unitv) %*% covinv %*% retm,
-  t(retm) %*% covinv %*% unitv,
-  t(retm) %*% covinv %*% retm), nc=2)
+c11 <- drop(t(unitv) %*% covinv %*% unitv)
+cr1 <- drop(t(unitv) %*% covinv %*% retm)
+crr <- drop(t(retm) %*% covinv %*% retm)
+fmat <- matrix(c(c11, cr1, cr1, crr), nc=2)
 # Solve for the Lagrange multipliers
-lagm <- solve(a=fmat, b=c(2, 2*rett))
-# Calculate weights
-weightv <- drop(0.5*covinv %*% cbind(unitv, retm) %*% lagm)
+lagm <- solve(a=fmat, b=c(2, 2*retarget))
+# Calculate the efficient portfolio weights
+weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
 # Calculate constraints
 all.equal(1, sum(weights))
-all.equal(rett, sum(retm*weightv))
+all.equal(retarget, sum(retm*weightv))
       @
   \end{columns}
 \end{block}
@@ -1815,44 +1925,46 @@ all.equal(rett, sum(retm*weightv))
       The \emph{efficient portfolio} variance is equal to:
       \begin{align*}
         \sigma^2 = \mathbf{w}^T \mathbb{C} \, \mathbf{w} = \frac{1}{4} \lambda^T \mathbb{F} \, \lambda = u^T \mathbb{F}^{-1} \, u =\\
-        \frac{1}{a c-b^2}
+        \frac{1}{\det{\mathbb{F}}}
         {\begin{bmatrix}
           1 \\
           r_t
         \end{bmatrix}}^T
         \begin{bmatrix}
-          c & -b \\
-          -b & a
+          c_{rr} & -c_{r1} \\
+          -c_{r1} & c_{11}
         \end{bmatrix}
         \begin{bmatrix}
           1 \\
           r_t
         \end{bmatrix} =\\
-        \frac{a r^2_t - 2b r_t + c}{a c-b^2}
+        \frac{c_{11} r^2_t - 2 c_{r1} r_t + c_{rr}}{\det{\mathbb{F}}}
       \end{align*}
       The above formula shows that the variance of the \emph{efficient portfolios} is a \emph{parabola} with respect to the target return $r_t$.
       \vskip1ex
-      The vertex of the \emph{parabola} is at $r_t = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{r} / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$ and $\sigma^2 = 1 / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$.
+      The vertex of the \emph{parabola} is the minimum variance portfolio: $r_{mv} = c_{r1}/c_{11} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}} / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$ and $\sigma^2_{mv} = 1/c_{11} = 1 / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$.
+      \vskip1ex
+      The \emph{efficient portfolio} variance can be expressed in terms of the difference $\Delta_r = r_t - r_{mv}$ as:
+      \begin{displaymath}
+        \sigma^2 = \frac{\Delta^2_r + \det{\mathbb{F}}}{c_{11} \det{\mathbb{F}}}
+      \end{displaymath}
+      So that if $\Delta_r = 0$ then $\sigma^2 = 1/c_{11}$.
+      \vskip1ex
+      Where $\det{\mathbb{F}} = c_{11} c_{rr}-c^2_{r1}$ is the determinant of the matrix $\mathbb{F}$.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate portfolio return and standard deviation
-retp <- drop(retp %*% weightv)
-c(return=mean(retp), sd=sd(retp))
-all.equal(mean(retp), rett)
-# Calculate portfolio variance
-uu <- c(1, rett)
+# Calculate the efficient portfolio returns
+reteff <- drop(retp %*% weightv)
+reteffm <- mean(reteff)
+all.equal(reteffm, retarget)
+# Calculate the efficient portfolio variance in three ways
+uu <- c(1, retarget)
 finv <- solve(fmat)
-all.equal(var(retp), drop(t(uu) %*% finv %*% uu))
-# Calculate vertex of variance parabola
-weightv <- drop(covinv %*% unitv /
-  drop(t(unitv) %*% covinv %*% unitv))
-retp <- drop(retp %*% weightv)
-retsv <- drop(t(unitv) %*% covinv %*% retm /
-  t(unitv) %*% covinv %*% unitv)
-all.equal(mean(retp), retsv)
-varmin <- drop(1/t(unitv) %*% covinv %*% unitv)
-all.equal(var(retp), varmin)
+detf <- (c11*crr-cr1^2)  # det(fmat)
+all.equal(var(reteff), 
+  drop(t(uu) %*% finv %*% uu),
+  (c11*reteffm^2-2*cr1*reteffm+crr)/detf)
       @
   \end{columns}
 \end{block}
@@ -1867,25 +1979,37 @@ all.equal(var(retp), varmin)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{efficient frontier} is the plot of the \emph{efficient portfolio} standard deviations with respect to the target return $r_t$, which is a \emph{hyperbola}.
+      The \emph{efficient frontier} is the set of \emph{efficient portfolios}, that have the lowest risk (standard deviation) for the given level of return.
+      \vskip1ex
+      The \emph{efficient frontier} is the plot of the target returns $r_t$ and the standard deviations of the \emph{efficient portfolios}, which is a \emph{hyperbola}.
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the daily and mean minvar portfolio returns
+c11 <- drop(t(unitv) %*% covinv %*% unitv)
+weightv <- drop(covinv %*% unitv/c11)
+retmv <- (retp %*% weightv)
+retmvm <- sum(weightv*retm)
+# Calculate the minimum variance
+varmv <- 1/c11
+stdevmv <- sqrt(varmv)
 # Calculate efficient frontier from target returns
-retst <- retsv*(1+seq(from=(-1), to=1, by=0.1))
-effront <- sapply(retst, function(rett) {
+targetv <- retmvm*(1+seq(from=(-1), to=1, by=0.1))
+stdevs <- sapply(targetv, function(rett) {
   uu <- c(1, rett)
   sqrt(drop(t(uu) %*% finv %*% uu))
 })  # end sapply
-# Plot efficient frontier
-x11(width=6, height=5)
-plot(x=effront, y=retst, t="l", col="blue", lwd=2,
-     main="Efficient Frontier and Minimum Variance Portfolio",
-     xlab="standard deviation", ylab="return")
-points(x=sqrt(varmin), y=retsv, col="green", lwd=6)
-text(x=sqrt(varmin), y=retsv, labels="minimum \nvariance",
-     pos=4, cex=0.8)
       @
     \column{0.5\textwidth}
+      \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/eff_front.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the efficient frontier
+plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2,
+     main="Efficient Frontier and Minimum Variance Portfolio",
+     xlab="standard deviation", ylab="return")
+points(x=stdevmv, y=retmvm, col="green", lwd=6)
+text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
+     pos=4, cex=0.8)
+      @
   \end{columns}
 \end{block}
 
@@ -1899,32 +2023,36 @@ text(x=sqrt(varmin), y=retsv, labels="minimum \nvariance",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The \emph{tangent} line connects the risk-free point $(\sigma=0, r=r_f)$ with a single tangent point on the \emph{efficient frontier}. 
+      \vskip1ex
       A \emph{tangent} line can be drawn at every point on the \protect\emph{efficient frontier}.
       \vskip1ex
-      The slope $\beta$ of the \emph{tangent} line can be calculated by differentiating the variance $\sigma^2$ by the target return $r_t$:
+      The slope $\beta$ of the \emph{tangent} line can be calculated by differentiating the efficient portfolio variance $\sigma^2$ by the target return $r_t$:
       \begin{align*}
-        \frac{d \sigma^2}{d r_t} = 2 \sigma \frac{d \sigma}{d r_t} = \frac{2 a r_t - 2 b}{a c-b^2} \\
-        \frac{d \sigma}{d r_t} = \frac{a r_t - b}{\sigma \, (a c-b^2)} \\
-        \beta = \frac{\sigma \, (a c-b^2)}{a r_t - b}
+        \frac{d \sigma^2}{d r_t} = 2 \sigma \frac{d \sigma}{d r_t} = \frac{2 c_{11} r_t - 2 c_{r1}}{\det{\mathbb{F}}} \\
+        \frac{d \sigma}{d r_t} = \frac{c_{11} r_t - c_{r1}}{\sigma \, \det{\mathbb{F}}} \\
+        \beta = \frac{\sigma \, \det{\mathbb{F}}}{c_{11} r_t - c_{r1}}
       \end{align*}
       The \emph{tangent} line connects the \emph{tangent} point on the \protect\emph{efficient frontier} with a \emph{risk-free} rate $r_f$.
     \column{0.5\textwidth}
       The \emph{risk-free} rate $r_f$ can be calculated as the intercept of the tangent line:
       \begin{align*}
-        r_f = r_t - \sigma \, \beta = r_t - \frac{\sigma^2 \, (a c-b^2)}{a r_t - b} = \\
-        r_t - \frac{a r^2_t - 2b r_t + c}{a c-b^2} \frac{a c-b^2}{a r_t - b} = \\
-        r_t - \frac{a r^2_t - 2b r_t + c}{a r_t - b} = \frac{b r_t - c}{a r_t - b}
+        r_f = r_t - \sigma \, \beta = r_t - \frac{\sigma^2 \, \det{\mathbb{F}}}{c_{11} r_t - c_{r1}} = \\
+        r_t - \frac{c_{11} r^2_t - 2 c_{r1} r_t + c_{rr}}{\det{\mathbb{F}}} \frac{\det{\mathbb{F}}}{c_{11} r_t - c_{r1}} = \\
+        r_t - \frac{c_{11} r^2_t - 2 c_{r1} r_t + c_{rr}}{c_{11} r_t - c_{r1}} = \frac{c_{r1} r_t - c_{rr}}{c_{11} r_t - c_{r1}}
       \end{align*}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate portfolio standard deviation
-stdev <- sqrt(drop(t(uu) %*% finv %*% uu))
+# Calculate standard deviation of efficient portfolio
+uu <- c(1, retarget)
+stdeveff <- sqrt(drop(t(uu) %*% finv %*% uu))
 # Calculate the slope of the tangent line
-slopev <- (stdev*det(fmat))/(fmat[1, 1]*rett-fmat[1, 2])
+detf <- (c11*crr-cr1^2)  # det(fmat)
+sharper <- (stdeveff*detf)/(c11*retarget-cr1)
 # Calculate the risk-free rate as intercept of the tangent line
-riskf <- rett - slopev*stdev
+riskf <- retarget - sharper*stdeveff
 # Calculate the risk-free rate from target return
-riskf <- (rett*fmat[1, 2]-fmat[2, 2]) /
-  (rett*fmat[1, 1]-fmat[1, 2])
+all.equal(riskf,
+  (retarget*cr1-crr)/(retarget*c11-cr1))
       @
   \end{columns}
 \end{block}
@@ -1933,37 +2061,73 @@ riskf <- (rett*fmat[1, 2]-fmat[2, 2]) /
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Tangent Line} on the \protect\emph{Efficient Frontier}}
+\subsection{The \protect\emph{Capital Market Line}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{efficient portfolios} are also called \emph{tangency portfolios}, since they are the tangent points on the \emph{efficient frontier}.
+      The \emph{Capital Market Line} (CML) is the tangent line connecting the risk-free point $(\sigma=0, r=r_f)$ with a single tangent point on the \emph{efficient frontier}. 
       \vskip1ex
-      The \emph{tangency portfolio} is the \emph{market portfolio} corresponding to the given \emph{risk-free} rate.
+      The \emph{tangency portfolio} is the \emph{efficient portfolio} at the tangent point corresponding to the given \emph{risk-free} rate.  
       \vskip1ex
-      The \emph{tangent line} at the \emph{market portfolio} is known as the \emph{Capital Market Line} (CML).
+      Each value of the \emph{risk-free} rate $r_f$ corresponds to a unique \emph{tangency portfolio}.
+      \vskip1ex
+      For a given \emph{risk-free} rate $r_f$, the \emph{tangency portfolio} has the highest \emph{Sharpe ratio} among all the \emph{efficient portfolios}.
       <<echo=TRUE,eval=FALSE>>=
 # Plot efficient frontier
-plot(x=effront, y=retst, t="l", col="blue", lwd=2,
-     xlim=c(0.0, max(effront)),
-     main="Efficient Frontier and Tangency Portfolio",
+aspratio <- 1.0*max(stdevs)/diff(range(targetv))
+plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2, asp=aspratio,
+     xlim=c(0.4, 0.6)*max(stdevs), ylim=c(0.2, 0.9)*max(targetv), 
+     main="Efficient Frontier and Capital Market Line",
      xlab="standard deviation", ylab="return")
-# Plot minimum variance
-points(x=sqrt(varmin), y=retsv, col="green", lwd=6)
-text(x=sqrt(varmin), y=retsv, labels="minimum \nvariance",
+# Plot the minimum variance portfolio
+points(x=stdevmv, y=retmvm, col="green", lwd=6)
+text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
      pos=4, cex=0.8)
-# Plot tangent point
-points(x=stdev, y=rett, col="red", lwd=6)
-text(x=stdev, y=rett, labels="tangency\nportfolio", pos=2, cex=0.8)
-# Plot risk-free point
-points(x=0, y=riskf, col="red", lwd=6)
-text(x=0, y=riskf, labels="risk-free", pos=4, cex=0.8)
-# Plot tangent line
-abline(a=riskf, b=slopev, lwd=2, col="green")
       @
     \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent2.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the tangent portfolio
+points(x=stdeveff, y=retarget, col="red", lwd=6)
+text(x=stdeveff, y=retarget, labels="tangency\nportfolio", pos=2, cex=0.8)
+# Plot the risk-free point
+points(x=0, y=riskf, col="red", lwd=6)
+text(x=0, y=riskf, labels="risk-free", pos=4, cex=0.8)
+# Plot the tangent line
+abline(a=riskf, b=sharper, lwd=2, col="green")
+text(x=0.6*stdev, y=0.8*retarget,
+     labels="Capital Market Line", pos=2, cex=0.8,
+     srt=180/pi*atan(aspratio*sharper))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Capital Market Line} Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The points on the \emph{Capital Market Line} represent portfolios consisting of the \emph{tangency portfolio} and the \emph{risk-free} asset (bond).
+      \vskip1ex
+      The \emph{Capital Market Line} represents delevered and levered portfolios, consisting of the \emph{tangency portfolio} combined with the \emph{risk-free} asset (bond).
+      \vskip1ex
+      The \emph{CML} portfolios have weights proportional to the tangency portfolio weights.
+      \vskip1ex
+      The \emph{CML} portfolios above the tangent point are levered with respect to the \emph{tangency portfolio} through borrowing at the \emph{risk-free} rate $r_f$.  Their weights are equal to the tangency portfolio weights multiplied by a factor greater than \texttt{1}.
+      \vskip1ex
+      The \emph{CML} portfolios below the tangent point are delevered with respect to the \emph{tangency portfolio} through investing at the \emph{risk-free} rate $r_f$.  Their weights are equal to the tangency portfolio weights multiplied by a factor less than \texttt{1}.
+      \vskip1ex
+      All the \emph{CML} portfolios have the same \emph{Sharpe ratio}. 
+    \column{0.5\textwidth}
+      \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent2.png}
   \end{columns}
 \end{block}
@@ -1972,7 +2136,7 @@ abline(a=riskf, b=slopev, lwd=2, col="green")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Maximum \protect\emph{Sharpe} Portfolio Weights}
+\subsection{\protect\emph{Maximum Sharpe} Portfolio Weights}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1982,9 +2146,9 @@ abline(a=riskf, b=slopev, lwd=2, col="green")
       \begin{displaymath}
         SR = \frac{\mathbf{w}^T \mu}{\sigma}
       \end{displaymath}
-      Where $\mu = \mathbf{r} - r_f$ is the vector of excess returns (in excess of the risk-free rate $r_f$), $\mathbf{w}$ is the vector of portfolio weights, and $\sigma = \sqrt{\mathbf{w}^T \mathbb{C} \, \mathbf{w}}$, where $\mathbb{C}$ is the covariance matrix of returns.
+      Where $\mu = \mathbf{\bar{r}} - r_f$ is the vector of mean excess returns (in excess of the risk-free rate $r_f$), $\mathbf{w}$ is the vector of portfolio weights, and $\sigma = \sqrt{\mathbf{w}^T \mathbb{C} \, \mathbf{w}}$, where $\mathbb{C}$ is the covariance matrix of returns.
       \vskip1ex
-      We can calculate the maximum \emph{Sharpe} portfolio weights by setting the derivative of the \emph{Sharpe} ratio with respect to the weights, to zero:
+      We can calculate the \emph{maximum Sharpe} portfolio weights by setting the derivative of the \emph{Sharpe} ratio with respect to the weights, to zero:
       \begin{displaymath}
         d_w {SR} = \frac{1}{\sigma} (\mu^T - \frac{(\mathbf{w}^T \mu) (\mathbf{w}^T \mathbb{C})}{\sigma^2}) = 0
       \end{displaymath}
@@ -2001,15 +2165,16 @@ abline(a=riskf, b=slopev, lwd=2, col="green")
       \begin{displaymath}
         \mathbf{w} = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu}
       \end{displaymath}
-      These are the weights of the maximum \emph{Sharpe} portfolio, with the vector of excess returns equal to $\mu$, and the covariance matrix equal to $\mathbb{C}$.
+      These are the weights of the \emph{maximum Sharpe} portfolio, with the vector of mean excess returns equal to $\mu$, and the covariance matrix equal to $\mathbb{C}$.
       \vskip1ex
-      The maximum \emph{Sharpe} portfolio is an \emph{efficient portfolio}, and so its mean return is equal to some target return $r_t$: $\mathbf{w}^T \mathbf{r} = {\sum_{i=1}^n w_i r_i} = r_t$.
+      The \emph{maximum Sharpe} portfolio is an \emph{efficient portfolio}, and so its mean return is equal to some target return $r_t$: $\mathbf{\bar{r}}^T \mathbf{w} = {\sum_{i=1}^n w_i r_i} = r_t$.
       \vskip1ex
-      The mean portfolio return can be written as:
+      The mean return of the \emph{maximum Sharpe} portfolio is equal to:
       \begin{align*}
-        \mathbf{r}^T \mathbf{w} = \frac{\mathbf{r}^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} =
-        \frac{\mathbf{r}^T \mathbb{C}^{-1} (\mathbf{r} - r_f)}{\mathbbm{1}^T \mathbb{C}^{-1} (\mathbf{r} - r_f)} = \\
-        r_t = \frac{\mathbf{r}^T \mathbb{C}^{-1} \mathbbm{1} \, r_f - \mathbf{r}^T \mathbb{C}^{-1} \mathbf{r}}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} \, r_f - \mathbf{r}^T \mathbb{C}^{-1} \mathbbm{1}}
+        r_t = \mathbf{\bar{r}}^T \mathbf{w} = \frac{\mathbf{\bar{r}}^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = 
+        \frac{\mathbf{\bar{r}}^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}{\mathbbm{1}^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)} =\\
+        \frac{\mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1} \, r_f - \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1} \, \mathbf{\bar{r}}}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} \, r_f - \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1}} = 
+        \frac{c_{r1} \, r_f - c_{rr}}{c_{11} \, r_f - c_{r1}}
       \end{align*}
       The above formula calculates the target return $r_t$ from the risk-free rate $r_f$.
   \end{columns}
@@ -2019,51 +2184,66 @@ abline(a=riskf, b=slopev, lwd=2, col="green")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Returns and Variance of Maximum \protect\emph{Sharpe} Portfolio}
+\subsection{Returns and Variance of the \protect\emph{Maximum Sharpe} Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The weights of the maximum \emph{Sharpe} portfolio are equal to:
+      The \emph{maximum Sharpe} portfolio weights depend on the value of the risk-free rate $r_f$:
       \begin{displaymath}
-        \mathbf{w} = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu}
+        \mathbf{w} = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = 
+        \frac{\mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}{\mathbbm{1}^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}
       \end{displaymath}
-      Where $\mu$ is the vector of excess returns, and $\mathbb{C}$ is the covariance matrix.
+      The mean return of the \emph{maximum Sharpe} portfolio is equal to:
+      \begin{displaymath}
+        r_t = \mathbf{\bar{r}}^T \mathbf{w} = \frac{\mathbf{\bar{r}}^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = \frac{c_{r1} \, r_f - c_{rr}}{c_{11} \, r_f - c_{r1}}
+      \end{displaymath}
+      The variance of the \emph{maximum Sharpe} portfolio is equal to:
+      \begin{align*}
+        \sigma^2 = \mathbf{w}^T \mathbb{C} \, \mathbf{w} = 
+        \frac{\mu^T \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mu}{(\mathbbm{1}^T \mathbb{C}^{-1} \mu)^2} =
+        \frac{\mu^T \mathbb{C}^{-1} \mu}{(\mathbbm{1}^T \mathbb{C}^{-1} \mu)^2} = \\
+        \frac{(\mathbf{\bar{r}} - r_f)^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}{(\mathbbm{1}^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f))^2} = 
+        \frac{c_{11} r^2_t - 2 c_{r1} r_t + c_{rr}}{\det{\mathbb{F}}}
+      \end{align*}
+      The above formula expresses the \emph{maximum Sharpe} portfolio variance as a function of its mean return $r_t$.
       \vskip1ex
-      The excess returns of the maximum \emph{Sharpe} portfolio are equal to:
-      \begin{displaymath}
-        R = \mathbf{w}^T \mu = \frac{\mu^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu}
-      \end{displaymath}
-      The variance of the maximum \emph{Sharpe} portfolio is equal to:
-      \begin{displaymath}
-        \sigma^2 = \frac{\mu^T \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mu}{(\mathbbm{1}^T \mathbb{C}^{-1} \mu)^2} = \frac{\mu^T \mathbb{C}^{-1} \mu}{(\mathbbm{1}^T \mathbb{C}^{-1} \mu)^2}
-      \end{displaymath}
-      The \emph{Sharpe} ratio is equal to:
-      \begin{displaymath}
-        SR = \sqrt{\mu^T \mathbb{C}^{-1} \mu}
-      \end{displaymath}
+      The \emph{maximum Sharpe} ratio is equal to:
+      \begin{align*}
+        SR = \frac{\mathbf{w}^T \mu}{\sigma} = 
+        \frac{\mathbbm{\mu}^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} / 
+        \frac{\sqrt{\mu^T \mathbb{C}^{-1} \mu}}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = \\
+        \sqrt{\mu^T \mathbb{C}^{-1} \mu} = 
+        \sqrt{(\mathbf{\bar{r}} - r_f)^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}
+      \end{align*}
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate excess returns
-riskf <- 0.03/252
-retx <- (retp - riskf)
-# Calculate covariance and inverse matrix
-covmat <- cov(retp)
-unitv <- rep(1, NCOL(covmat))
-covinv <- solve(a=covmat)
-# Calculate mean excess returns
-retx <- sapply(retx, mean)
-# Weights of maximum Sharpe portfolio
-# weightv <- solve(a=covmat, b=returns)
-weightv <- covinv %*% retx
-weightv <- weightv/drop(t(unitv) %*% weightv)
-# Sharpe ratios
-sqrt(252)*sum(weightv*retx) /
-  sqrt(drop(weightv %*% covmat %*% weightv))
-sapply(retp - riskf, function(x) sqrt(252)*mean(x)/sd(x))
-maxsharpe <- weightv
+# Calculate the mean excess returns
+riskf <- retarget - sharper*stdeveff
+retx <- (retm - riskf)
+# Calculate the efficient portfolio weights
+weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
+# Calculate the maximum Sharpe weights
+weightms <- drop(covinv %*% retx)/sum(covinv %*% retx)
+all.equal(weightv, weightms)
+# Calculate the maximum Sharpe mean return in two ways
+all.equal(sum(retm*weightv),
+  (cr1*riskf-crr)/(c11*riskf-cr1))
+# Calculate the maximum Sharpe daily returns
+retd <- (retp %*% weightms)
+# Calculate the maximum Sharpe variance in four ways
+detf <- (c11*crr-cr1^2)  # det(fmat)
+all.equal(var(retd), 
+  t(weights) %*% covmat %*% weightv,
+  (t(retx) %*% covinv %*% retx)/sum(covinv %*% retx)^2, 
+  (c11*retarget^2-2*cr1*retarget+crr)/detf)
+# Calculate the maximum Sharpe ratio
+sqrt(252)*sum(weightv*retx)/
+  sqrt(drop(t(weights) %*% covmat %*% weightv))
+# Calculate the stock Sharpe ratios
+sqrt(252)*sapply((retp - riskf), function(x) mean(x)/sd(x))
       @
   \end{columns}
 \end{block}
@@ -2072,76 +2252,29 @@ maxsharpe <- weightv
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimal Portfolios Under Zero Correlation}
+\subsection{\protect\emph{Maximum Sharpe} and \protect\emph{Minimum Variance} Performance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
-      \begin{displaymath}
-        \mathbb{C} = \begin{pmatrix}
-          \sigma^2_1 & 0 & \cdots & 0 \\
-          0 & \sigma^2_2 & \cdots & 0 \\
-          \vdots  & \vdots  & \ddots & \vdots  \\
-          0 & 0 & \cdots & \sigma^2_n
-        \end{pmatrix}
-      \end{displaymath}
-      Where $\sigma^2_i$ is the variance of returns of asset \texttt{i}.
+      The \emph{maximum Sharpe} and \emph{Minimum Variance} portfolios are both \emph{efficient portfolios}, with the lowest risk (standard deviation) for the given level of return.
       \vskip1ex
-      The inverse of $\mathbb{C}$ is then simply:
-      \begin{displaymath}
-        \mathbb{C}^{-1} = \begin{pmatrix}
-          \sigma^{-2}_1 & 0 & \cdots & 0 \\
-          0 & \sigma^{-2}_2 & \cdots & 0 \\
-          \vdots  & \vdots  & \ddots & \vdots  \\
-          0 & 0 & \cdots & \sigma^{-2}_n
-        \end{pmatrix}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      The \emph{minimum variance} portfolio weights are proportional to the inverse of the individual variances:
-      \begin{displaymath}
-        w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
-      \end{displaymath}
-      The maximum \emph{Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
-      \begin{displaymath}
-        w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Maximum \protect\emph{Sharpe} and \protect\emph{Minimum Variance} Performance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The maximum \emph{Sharpe} and \emph{Minimum Variance} portfolios are both \emph{efficient portfolios}, with the lowest risk (standard deviation) for the given level of return.
+      The \emph{maximum Sharpe} portfolio has both a higher Sharpe ratio and higher absolute returns.
       <<echo=TRUE,eval=FALSE>>=
-library(rutils)
-# Calculate minimum variance weights
-weightv <- covinv %*% unitv
-minvar <- weightv/drop(t(unitv) %*% weightv)
 # Calculate optimal portfolio returns
-retsoptim <- xts(
-  x=cbind(exp(cumsum(retp %*% maxsharpe)),
-          exp(cumsum(retp %*% minvar))),
-  order.by=zoo::index(retp))
-colnames(retsoptim) <- c("maxsharpe", "minvar")
-# Plot optimal portfolio returns, with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "green")
-x11(width=6, height=5)
-chart_Series(retsoptim, theme=plot_theme,
-  name="Maximum Sharpe and
-  Minimum Variance portfolios")
-legend("top", legend=colnames(retsoptim), cex=0.8,
-       inset=0.1, bg="white", lty=1, lwd=6,
-       col=plot_theme$col$line.col, bty="n")
+wealthv <- cbind(retp %*% weightms, retp %*% weightmv)
+wealthv <- xts::xts(wealthv, zoo::index(retp))
+colnames(wealthv) <- c("MaxSharpe", "MinVar")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, 
+  function(x) c(Sharpe=(mean(x)-riskf)/sd(x), Sortino=(mean(x)-riskf)/sd(x[x<0])))
+# Plot the log wealth
+endd <- rutils::calc_endpoints(retp, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Maximum Sharpe and Minimum Variance Portfolios") %>%
+  dyOptions(colors=c("blue", "green"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/maxsharpe_minvar.png}
@@ -2152,121 +2285,62 @@ legend("top", legend=colnames(retsoptim), cex=0.8,
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Efficient Frontier} and \protect\emph{Capital Market Line}}
+\subsection{The \protect\emph{Maximum Sharpe} Portfolios and the \protect\emph{Efficient Frontier}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The maximum \emph{Sharpe} portfolio weights depend on the value of the risk-free rate $r_f$,
-      \begin{displaymath}
-        \mathbf{w} = \frac{\mathbb{C}^{-1} (\mathbf{r} - r_f)}{\mathbbm{1}^T \mathbb{C}^{-1} (\mathbf{r} - r_f)}
-      \end{displaymath}
-      The \emph{Efficient Frontier} is the set of \emph{efficient portfolios}, that have the lowest risk (standard deviation) for the given level of return.
+      The \emph{maximum Sharpe} portfolios are \emph{efficient portfolios}, so they form the \emph{efficient frontier}.
       \vskip1ex
-      The maximum \emph{Sharpe} portfolios are \emph{efficient portfolios}, and they lie on the \emph{Efficient Frontier}, forming a tangent line from the risk-free rate to the \emph{Efficient Frontier}, known as the \emph{Capital Market Line} (CML).
+      A \emph{market portfolio} is the portfolio of all the available assets, with weights proportional to their market capitalizations. 
       \vskip1ex
-      The maximum \emph{Sharpe} portfolios are considered to be the \emph{market portfolios}, corresponding to different values of the risk-free rate $r_f$.
-      \vskip1ex
-      The maximum \emph{Sharpe} portfolios are also called \emph{tangency} portfolios, since they are the tangent point on the \emph{Efficient Frontier}.
-      \vskip1ex
-      The \emph{Capital Market Line} is the line drawn from the \emph{risk-free} rate to the \emph{market portfolio} on the \emph{Efficient Frontier}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eff_front_market.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{Efficient Frontier} and Maximum \protect\emph{Sharpe} Portfolios}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-x11(widthp <- 6, heightp <- 6)
-# Calculate minimum variance weights
-weightv <- covinv %*% unitv
-weightv <- weightv/drop(t(unitv) %*% weightv)
-# Minimum standard deviation and return
-stdev <- sqrt(252*drop(weightv %*% covmat %*% weightv))
-retp <- 252*sum(weightv*retm)
-# Calculate maximum Sharpe portfolios
-riskf <- (retp * seq(-10, 10, by=0.1)^3)/252
-effront <- sapply(riskf, function(riskf) {
-  weightv <- covinv %*% (retm - riskf)
-  weightv <- weightv/drop(t(unitv) %*% weightv)
-  # Portfolio return and standard deviation
-  c(return=252*sum(weightv*retm),
-    stddev=sqrt(252*drop(weightv %*% covmat %*% weightv)))
+      The \emph{maximum Sharpe} portfolio is sometimes considered to be the \emph{market portfolio}, because it's the optimal portfolio for the given value of the risk-free rate $r_f$.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the maximum Sharpe portfolios for different risk-free rates
+detf <- (c11*crr-cr1^2)  # det(fmat)
+riskfv <- retmvm*seq(from=1.3, to=20, by=0.1)
+riskfv <- c(riskfv, retmvm*seq(from=(-20), to=0.7, by=0.1))
+effront <- sapply(riskfv, function(riskf) {
+  # Calculate the maximum Sharpe mean return
+  reteffm <- (cr1*riskf-crr)/(c11*riskf-cr1)
+  # Calculate the maximum Sharpe standard deviation
+  stdev <- sqrt((c11*reteffm^2-2*cr1*reteffm+crr)/detf)
+  c(return=reteffm, stdev=stdev)
 })  # end sapply
-effront <- cbind(252*riskf, t(effront))
-colnames(effront)[1] <- "risk-free"
-effront <- effront[is.finite(effront[, "stddev"]), ]
-effront <- effront[order(effront[, "return"]), ]
-# Plot maximum Sharpe portfolios
-plot(x=effront[, "stddev"],
-     y=effront[, "return"], t="l",
-     xlim=c(0.0*stdev, 3.0*stdev),
-     ylim=c(0.0*retp, 2.0*retp),
-     main="Efficient Frontier and Capital Market Line",
-     xlab="standard deviation", ylab="return")
-points(x=effront[, "stddev"], y=effront[, "return"],
-       col="red", lwd=3)
+effront <- effront[, order(effront["return", ])]
+# Plot the efficient frontier
+reteffv <- effront["return", ]
+stdevs <- effront["stdev", ]
+aspratio <- 0.6*max(stdevs)/diff(range(reteffv))
+plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2, asp=aspratio,
+  main="Maximum Sharpe Portfolio and Efficient Frontier",
+  xlim=c(0.0, max(stdevs)), xlab="standard deviation", ylab="return")
+# Plot the minimum variance portfolio
+points(x=stdevmv, y=retmvm, col="green", lwd=6)
+text(x=stdevmv, y=retmvm, labels="minimum \nvariance", pos=4, cex=0.8)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/eff_front_market.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting the \protect\emph{Capital Market Line}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot minimum variance portfolio
-points(x=stdev, y=retp, col="green", lwd=6)
-text(stdev, retp, labels="minimum \nvariance",
-     pos=4, cex=0.8)
-# Draw Capital Market Line
-sortv <- sort(effront[, 1])
-riskf <- sortv[findInterval(x=0.5*retp, vec=sortv)]
-points(x=0, y=riskf, col="blue", lwd=6)
-text(x=0, y=riskf, labels="risk-free",
-     pos=4, cex=0.8)
-marketp <- match(riskf, effront[, 1])
-points(x=effront[marketp, "stddev"],
-       y=effront[marketp, "return"],
-       col="blue", lwd=6)
-text(x=effront[marketp, "stddev"],
-     y=effront[marketp, "return"],
-     labels="market portfolio",
-     pos=2, cex=0.8)
-sharper <- (effront[marketp, "return"]-riskf)/
-  effront[marketp, "stddev"]
-abline(a=riskf, b=sharper, col="blue", lwd=2)
-text(x=0.7*effront[marketp, "stddev"],
-     y=0.7*effront[marketp, "return"]+0.01,
-     labels="Capital Market Line", pos=2, cex=0.8,
-     srt=45*atan(sharper*heightp/widthp)/(0.25*pi))
+# Calculate the maximum Sharpe return and standard deviation
+riskf <- min(reteffv)
+retmax <- (cr1*riskf-crr)/(c11*riskf-cr1)
+stdevmax <- sqrt((c11*retmax^2-2*cr1*retmax+crr)/detf)
+# Plot the maximum Sharpe portfolio
+points(x=stdevmax, y=retmax, col="red", lwd=6)
+text(x=stdevmax, y=retmax, labels="Max Sharpe\nportfolio", pos=2, cex=0.8)
+# Plot the risk-free point
+points(x=0, y=riskf, col="red", lwd=6)
+text(x=0, y=riskf, labels="risk-free", pos=4, cex=0.8)
+# Plot the tangent line
+sharper <- (stdevmax*detf)/(c11*retmax-cr1)
+abline(a=riskf, b=sharper, lwd=2, col="green")
+text(x=0.6*stdevmax, y=0.8*retmax, labels="Capital Market Line", 
+     pos=2, cex=0.8, srt=180/pi*atan(aspratio*sharper))
       @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eff_front_market.png}
-      The \emph{Capital Market Line} represents delevered and levered portfolios, consisting of the \emph{market portfolio} combined with the \emph{risk-free} rate.
   \end{columns}
 \end{block}
 
@@ -2274,7 +2348,58 @@ text(x=0.7*effront[marketp, "stddev"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Random Portfolios}
+\subsection{Efficient Portfolios and Their Tangent Lines}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{efficient frontier} consists of all the \emph{maximum Sharpe} portfolios corresponding to different values of the risk-free rate.
+      \vskip1ex
+      The target return can be expressed as a function of the risk-free rate as:
+      \begin{align*}
+        r_t = \frac{c_{r1} \, r_f - c_{rr}}{c_{11} \, r_f - c_{r1}}
+      \end{align*}
+      If $r_f \rightarrow \pm \infty$ then $r_t \rightarrow r_{mv} = c_{r1}/c_{11}$.
+      \vskip1ex
+      But if the risk-free rate tends to the mean returns of the minimum variance portfolio: $r_f \rightarrow r_{mv} = c_{r1}/c_{11}$, then $r_t \rightarrow \pm \infty$, which means that there is no efficient portfolio corresponding to the risk-free rate equal to the mean returns of the minimum variance portfolio: $r_f = r_{mv} = c_{r1}/c_{11}$.
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the efficient frontier
+reteffv <- effront["return", ]
+stdevs <- effront["stdev", ]
+plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2,
+  xlim=c(0.0, max(stdevs)),
+  main="Efficient Frontier and Tangent Lines",
+  xlab="standard deviation", ylab="return")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate vector of mean returns
+reteffv <- min(reteffv) + diff(range(reteffv))*c(0.2, 0.4, 0.6, 0.8)
+# Plot the tangent lines
+for (reteffm in reteffv) {
+  # Calculate the maximum Sharpe standard deviation
+  stdev <- sqrt((c11*reteffm^2-2*cr1*reteffm+crr)/detf)
+  # Calculate the slope of the tangent line
+  sharper <- (stdev*detf)/(c11*reteffm-cr1)
+  # Calculate the risk-free rate as intercept of the tangent line
+  riskf <- reteffm - sharper*stdev
+  # Plot the tangent portfolio
+  points(x=stdev, y=reteffm, col="red", lwd=3)
+  # Plot the tangent line
+  abline(a=riskf, b=sharper, lwd=2, col="green")
+} # end for
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Portfolios}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2287,36 +2412,32 @@ nportf <- 1000
 randportf <- sapply(1:nportf, function(it) {
   weightv <- runif(nstocks-1, min=-0.25, max=1.0)
   weightv <- c(weightv, 1-sum(weights))
-  # Portfolio return and standard deviation
+  # Portfolio returns and standard deviation
   c(return=252*sum(weightv*retm),
-    stddev=sqrt(252*drop(weightv %*% covmat %*% weightv)))
+    stdev=sqrt(252*drop(weightv %*% covmat %*% weightv)))
 })  # end sapply
 # Plot scatterplot of random portfolios
 x11(widthp <- 6, heightp <- 6)
-plot(x=randportf["stddev", ], y=randportf["return", ],
+plot(x=randportf["stdev", ], y=randportf["return", ],
      main="Efficient Frontier and Random Portfolios",
-     xlim=c(0.5*stdev, 0.8*max(randportf["stddev", ])),
+     xlim=c(0.5*stdev, 0.8*max(randportf["stdev", ])),
      xlab="standard deviation", ylab="return")
 # Plot maximum Sharpe portfolios
-lines(x=effront[, "stddev"],
-     y=effront[, "return"], lwd=2)
-points(x=effront[, "stddev"], y=effront[, "return"],
+lines(x=effront[, "stdev"], y=effront[, "return"], lwd=2)
+points(x=effront[, "stdev"], y=effront[, "return"],
        col="red", lwd=3)
-# Plot minimum variance portfolio
+# Plot the minimum variance portfolio
 points(x=stdev, y=retp, col="green", lwd=6)
-text(stdev, retp, labels="minimum\nvariance",
-     pos=2, cex=0.8)
-# Plot market portfolio
-points(x=effront[marketp, "stddev"],
+text(stdev, retp, labels="minimum\nvariance", pos=2, cex=0.8)
+# Plot efficient portfolio
+points(x=effront[marketp, "stdev"],
        y=effront[marketp, "return"], col="green", lwd=6)
-text(x=effront[marketp, "stddev"],
-     y=effront[marketp, "return"],
-     labels="market\nportfolio",
-     pos=2, cex=0.8)
+text(x=effront[marketp, "stdev"], y=effront[marketp, "return"],
+     labels="market\nportfolio", pos=2, cex=0.8)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eff_front_random.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_random.png}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot individual assets
@@ -2363,18 +2484,18 @@ plot(portfsd, retp, t="l",
  lwd=2, col="orange",
  xlim=c(0, max(portfsd)),
  ylim=c(0.02, max(retp)))
-# Add Market Portfolio (maximum Sharpe ratio portfolio)
+# Add efficient portfolio (maximum Sharpe ratio portfolio)
 points(portfsd[whichmax], retp[whichmax],
        col="blue", lwd=3)
 text(x=portfsd[whichmax], y=retp[whichmax],
-     labels=paste(c("market portfolio\n",
+     labels=paste(c("efficient portfolio\n",
        structure(c(weightv[whichmax], 1-weightv[whichmax]),
                names=names(retp))), collapse=" "),
      pos=2, cex=0.8)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/cml_two_assets.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/cml_two_assets.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot individual assets
@@ -2384,11 +2505,11 @@ text(stdevs, retp, labels=names(retp), pos=4, cex=0.8)
 points(x=0, y=riskf, col="blue", lwd=3)
 text(0, riskf, labels="risk-free\nrate", pos=4, cex=0.8)
 abline(a=riskf, b=sharpem, lwd=2, col="blue")
-range_s <- par("usr")
+rangev <- par("usr")
 text(portfsd[whichmax]/2, (retp[whichmax]+riskf)/2,
      labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(sharpem*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+                   (rangev[4]-rangev[3])*
                    heightp/widthp)/(0.25*pi))
       @
   \end{columns}
@@ -2415,31 +2536,31 @@ symbolv <- c("VTI", "IEF")
 weightv <- seq(from=(-1), to=2, length.out=31)
 weightv <- cbind(weightv, 1-weightv)
 # Calculate portfolio returns and volatilities
-retp <- rutils::etfenv$returns[, symbolv]
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
 retp <- retp %*% t(weights)
 portfv <- cbind(252*colMeans(retp),
   sqrt(252)*matrixStats::colSds(retp))
-colnames(portfv) <- c("returns", "stddev")
+colnames(portfv) <- c("returns", "stdev")
 riskf <- 0.06
 portfv <- cbind(portfv,
-  (portfv[, "returns"]-riskf)/portfv[, "stddev"])
+  (portfv[, "returns"]-riskf)/portfv[, "stdev"])
 colnames(portfv)[3] <- "Sharpe"
 whichmax <- which.max(portfv[, "Sharpe"])
 sharpem <- portfv[whichmax, "Sharpe"]
-plot(x=portfv[, "stddev"], y=portfv[, "returns"],
+plot(x=portfv[, "stdev"], y=portfv[, "returns"],
      main="Stock and Bond portfolios", t="l",
-     xlim=c(0, 0.7*max(portfv[, "stddev"])), ylim=c(0, max(portfv[, "returns"])),
+     xlim=c(0, 0.7*max(portfv[, "stdev"])), ylim=c(0, max(portfv[, "returns"])),
      xlab="standard deviation", ylab="return")
-# Add blue point for market portfolio
-points(x=portfv[whichmax, "stddev"], y=portfv[whichmax, "returns"], col="blue", lwd=6)
-text(x=portfv[whichmax, "stddev"], y=portfv[whichmax, "returns"],
-     labels=paste(c("market portfolio\n", 
+# Add blue point for efficient portfolio
+points(x=portfv[whichmax, "stdev"], y=portfv[whichmax, "returns"], col="blue", lwd=6)
+text(x=portfv[whichmax, "stdev"], y=portfv[whichmax, "returns"],
+     labels=paste(c("efficient portfolio\n", 
         structure(c(weightv[whichmax, 1], weightv[whichmax, 2]), names=symbolv)), collapse=" "),
      pos=3, cex=0.8)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eff_front_stocks_bonds.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_stocks_bonds.png}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot individual assets
@@ -2451,11 +2572,11 @@ text(stdevs, retm, labels=names(retp), pos=2, cex=0.8)
 points(x=0, y=riskf, col="blue", lwd=6)
 text(0, riskf, labels="risk-free", pos=4, cex=0.8)
 abline(a=riskf, b=sharpem, col="blue", lwd=2)
-range_s <- par("usr")
-text(max(portfv[, "stddev"])/3, 0.75*max(portfv[, "returns"]),
+rangev <- par("usr")
+text(max(portfv[, "stdev"])/3, 0.75*max(portfv[, "returns"]),
      labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(sharpem*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+                   (rangev[4]-rangev[3])*
                    heightp/widthp)/(0.25*pi))
       @
   \end{columns}
@@ -2465,7 +2586,7 @@ text(max(portfv[, "stddev"])/3, 0.75*max(portfv[, "returns"]),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performance of Market Portfolio for Stocks and Bonds}
+\subsection{Performance of Efficient Portfolio for Stocks and Bonds}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2479,23 +2600,23 @@ x11(widthp <- 6, heightp <- 5)
 retsoptim <- lapply(retp,
   function(retp) exp(cumsum(retp)))
 retsoptim <- rutils::do_call(cbind, retsoptim)
-# Calculate market portfolio returns
+# Calculate the efficient portfolio returns
 retsoptim <- cbind(exp(cumsum(retp %*%
     c(weightv[whichmax], 1-weightv[whichmax]))),
   retsoptim)
-colnames(retsoptim)[1] <- "market"
-# Plot market portfolio with custom line colors
+colnames(retsoptim)[1] <- "efficient"
+# Plot efficient portfolio with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue", "green")
 chart_Series(retsoptim, theme=plot_theme,
-             name="Market portfolio for stocks and bonds")
+   name="Efficient Portfolio for Stocks and Bonds")
 legend("top", legend=colnames(retsoptim),
-       cex=0.8, inset=0.1, bg="white", lty=1,
-       lwd=6, col=plot_theme$col$line.col, bty="n")
+   cex=0.8, inset=0.1, bg="white", lty=1,
+   lwd=6, col=plot_theme$col$line.col, bty="n")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/market_stocks_bonds.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_stocks_bonds.png}
   \end{columns}
 \end{block}
 
@@ -2505,6 +2626,67 @@ legend("top", legend=colnames(retsoptim),
 
 %%%%%%%%%%%%%%%
 \section{Portfolio Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Maximum Return Portfolio Using Linear Programming}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stock weights of the maximum return portfolio are obtained by maximizing the portfolio returns:
+      \begin{displaymath}
+        w_{max} = \operatorname*{arg\,max}_{w} [ \, \mathbf{\bar{r}}^T \mathbf{w} \, ] = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i r_i \, ]
+      \end{displaymath}
+      Where $\mathbf{r}$ is the vector of returns, and $\mathbf{w}$ is the vector of portfolio weights, with a linear constraint:
+      \begin{displaymath}
+        \mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1
+      \end{displaymath}
+      And a box constraint:
+      \begin{displaymath}
+        0 \leq w_i \leq 1
+      \end{displaymath}
+      The weights of the maximum return portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints.
+      \vskip1ex
+      The function \texttt{Rglpk\_solve\_LP()} from package \emph{Rglpk} solves linear programming problems by calling the \emph{GNU Linear Programming Kit} library.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)
+library(Rglpk)
+# Vector of symbol names
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+# Calculate the objective vector - the mean returns
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+objvec <- colMeans(retp)
+# Specify matrix of linear constraint coefficients
+coeffm <- matrix(c(rep(1, nstocks), 1, 1, 0),
+                 nc=nstocks, byrow=TRUE)
+# Specify the logical constraint operators
+logop <- c("==", "<=")
+# Specify the vector of constraints
+consv <- c(1, 0)
+# Specify box constraints (-1, 1) (default is c(0, Inf))
+boxc <- list(lower=list(ind=1:nstocks, val=rep(-1, nstocks)),
+             upper=list(ind=1:nstocks, val=rep(1, nstocks)))
+# Perform optimization
+optiml <- Rglpk::Rglpk_solve_LP(
+  obj=objvec,
+  mat=coeffm,
+  dir=logop,
+  rhs=consv,
+  bounds=boxc,
+  max=TRUE)
+all.equal(optiml$optimum, sum(objvec*optiml$solution))
+optiml$solution
+coeffm %*% optiml$solution
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -2521,11 +2703,9 @@ legend("top", legend=colnames(retsoptim),
       The \emph{Conditional Value at Risk} is also called the Expected Shortfall (\emph{ES}), or the Expected Tail Loss (\emph{ETL}).
       \vskip1ex
       The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data, and returns a list with a vector of loss values and a vector of corresponding densities.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
-# VTI percentage returns
-retp <- rutils::diffit(log(quantmod::Cl(rutils::etfenv$VTI)))
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.1
 varisk <- quantile(retp, confl)
 cvar <- mean(retp[retp < varisk])
@@ -2573,7 +2753,7 @@ text(x=1.5*varisk, y=ymax/7, labels="CVaR", lwd=2, pos=2)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The weights of the minimum \emph{CVaR} portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints,
+      The stock weights of the minimum \emph{CVaR} portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints,
       \begin{displaymath}
         w_{min} = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i b_i \, ]
       \end{displaymath}
@@ -2603,20 +2783,21 @@ ncols <- NCOL(retp) # number of assets
 nrows <- NROW(retp) # number of rows
 # Create objective vector
 objvec <- c(numeric(ncols), rep(-1/(confl/nrows), nrows), -1)
-# Specify linear constraint coefficients
-lincon <- rbind(cbind(rbind(1, retm),
+# Specify matrix of linear constraint coefficients
+coeffm <- rbind(cbind(rbind(1, retm),
                       matrix(data=0, nrow=2, ncol=(nrows+1))),
                 cbind(coredata(retp), diag(nrows), 1))
-rhs <- c(weightvum, rmin, rep(0, nrows))
-directs <- c("==", ">=", rep(">=", nrows))
+# Specify the logical constraint operators
+logop <- c("==", ">=", rep(">=", nrows))
+# Specify the vector of constraints
+consv <- c(weightvum, rmin, rep(0, nrows))
 # Specify box constraints (wmin, wmax) (default is c(0, Inf))
 boxc <- list(lower=list(ind=1:ncols, val=rep(wmin, ncols)),
-               upper=list(ind=1:ncols, val=rep(wmax, ncols)))
+             upper=list(ind=1:ncols, val=rep(wmax, ncols)))
 # Perform optimization
-optiml <- Rglpk_solve_LP(obj=objvec, mat=lincon, dir=directs, rhs=rhs, types=rep("C", NROW(objvec)), max=T, bounds=boxc)
-optiml$solution
-lincon %*% optiml$solution
-objvec %*% optiml$solution
+optiml <- Rglpk_solve_LP(obj=objvec, mat=coeffm, dir=logop, rhs=consv, types=rep("C", NROW(objvec)), max=T, bounds=boxc)
+all.equal(optiml$optimum, sum(objvec*optiml$solution))
+coeffm %*% optiml$solution
 as.numeric(optiml$solution[1:ncols])
       @
   \end{columns}
@@ -2639,7 +2820,8 @@ as.numeric(optiml$solution[1:ncols])
         <<echo=(-(1:3)),eval=FALSE>>=
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
-retp <- rutils::etfenv$returns[, symbolv]
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
 # Create initial vector of portfolio weights
 weightv <- rep(1, NROW(symbolv))
 names(weights) <- symbolv
@@ -2828,9 +3010,9 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red", "green", "blue")
 chart_Series(retsoptim, theme=plot_theme,
              name="Optimized portfolio performance")
-legend("top", legend=colnames(retsoptim), cex=0.8,
-       inset=0.1, bg="white", lty=1, lwd=6,
-       col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(retsoptim), cex=1.0,
+   inset=0.1, bg="white", lty=1, lwd=6,
+   col=plot_theme$col$line.col, bty="n")
 # Or plot non-compounded (simple) cumulative returns
 PerformanceAnalytics::chart.CumReturns(
   cbind(retp %*% optiml$par, retp),
@@ -2935,7 +3117,8 @@ unlist(optimize(f=objfun, interval=c(-1, 2)))
         <<echo=TRUE,eval=FALSE>>=
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
-retp <- rutils::etfenv$returns[, symbolv]
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
 # Calculate the covariance matrix
 covmat <- cov(retp)
 # Minimum variance weights, with sum equal to 1
@@ -3023,7 +3206,9 @@ plot(optiml)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate daily percentage returns
-retp <- rutils::etfenv$returns[, symbolv]
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
 # Objective equal to minus Sharpe ratio
 objfun <- function(weightv, retp) {
   retp <- retp %*% weightv
@@ -3093,6 +3278,52 @@ optiml <- DEoptim::DEoptim(fn=objfun,
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
 names(weights) <- colnames(retp)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Portfolios Under Zero Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma^2_1 & 0 & \cdots & 0 \\
+          0 & \sigma^2_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^2_n
+        \end{pmatrix}
+      \end{displaymath}
+      Where $\sigma^2_i$ is the variance of returns of asset \texttt{i}.
+      \vskip1ex
+      The inverse of $\mathbb{C}$ is then simply:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \begin{pmatrix}
+          \sigma^{-2}_1 & 0 & \cdots & 0 \\
+          0 & \sigma^{-2}_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^{-2}_n
+        \end{pmatrix}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The \emph{minimum variance} portfolio weights are proportional to the inverse of the individual variances:
+      \begin{displaymath}
+        w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
+      \end{displaymath}
+      The \emph{maximum Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
+      \begin{displaymath}
+        w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
+      \end{displaymath}
+      The portfolio weights are proportional to the \emph{Kelly ratios} - the excess returns divided by the variances:
+      \begin{displaymath}
+        w_i \propto \frac{\mu_i}{\sigma^2_i}
+      \end{displaymath}
   \end{columns}
 \end{block}
 

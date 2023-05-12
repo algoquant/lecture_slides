@@ -1626,19 +1626,19 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retetf <- rutils::etfenv$returns[, c("VTI", "XLK", "XLF", "XLE")]
 # Calculate the MSFT betas with respect to different ETFs
 betas <- sapply(retetf, function(retetf) {
-  retv <- na.omit(cbind(returns$MSFT, retetf))
+  retp <- na.omit(cbind(returns$MSFT, retetf))
   # Calculate the MSFT beta
-  drop(cov(retv$MSFT, retv[, 2])/var(retv[, 2]))
+  drop(cov(retp$MSFT, retp[, 2])/var(retp[, 2]))
 }) # end sapply
 # Combine MSFT and XLK returns
-retv <- cbind(returns$MSFT, rutils::etfenv$returns$XLK)
-retv <- na.omit(retv)
-colnames(retv) <- c("MSFT", "XLK")
+retp <- cbind(returns$MSFT, rutils::etfenv$returns$XLK)
+retp <- na.omit(retp)
+colnames(retp) <- c("MSFT", "XLK")
 # Calculate the beta and alpha of returns MSFT ~ XLK
-betav <- drop(cov(retv$MSFT, retv$XLK)/var(retv$XLK))
-alphav <- retv$MSFT - betav*retv$XLK
+betav <- drop(cov(retp$MSFT, retp$XLK)/var(retp$XLK))
+alphav <- retp$MSFT - betav*retp$XLK
 # Scatterplot of returns
-plot(MSFT ~ XLK, data=retv, main="MSFT ~ XLK Returns",
+plot(MSFT ~ XLK, data=retp, main="MSFT ~ XLK Returns",
      xlab="XLK", ylab="MSFT", pch=1, col="blue")
 abline(a=mean(alphav), b=betav, col="red", lwd=2)
       @
@@ -1648,10 +1648,10 @@ abline(a=mean(alphav), b=betav, col="red", lwd=2)
       The stock of Microsoft \emph{MSFT} began outperforming the \emph{XLK} ETF after Steve Ballmer was replaced as CEO in \texttt{2014}.
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of MSFT idiosyncratic returns vs XLK
-endd <- rutils::calc_endpoints(retv, interval="weeks")
-datev <- zoo::index(retv)[endd]
+endd <- rutils::calc_endpoints(retp, interval="weeks")
+datev <- zoo::index(retp)[endd]
 dateb <- datev[findInterval(as.Date("2014-01-01"), datev)] # Steve Balmer exit date
-datav <- cbind(retv$XLK, alphav)
+datav <- cbind(retp$XLK, alphav)
 colnames(datav)[2] <- "MSFT alpha"
 colnamev <- colnames(datav)
 dygraphs::dygraph(cumsum(datav)[endd], main="MSFT Cumulative Alpha vs XLK") %>%
@@ -1698,11 +1698,11 @@ dygraphs::dygraph(cumsum(datav)[endd], main="MSFT Cumulative Alpha vs XLK") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing alphas and betas
 lambda <- 0.9
-covars <- HighFreq::run_covar(retv, lambda)
+covars <- HighFreq::run_covar(retp, lambda)
 betav <- covars[, 1]/covars[, 3]
-alphav <- retv$MSFT - betav*retv$XLK
+alphav <- retp$MSFT - betav*retp$XLK
 # dygraph plot of trailing MSFT idiosyncratic returns vs XLK
-datav <- cbind(retv$XLK, alphav)
+datav <- cbind(retp$XLK, alphav)
 colnames(datav)[2] <- "MSFT alpha"
 colnamev <- colnames(datav)
 dygraphs::dygraph(cumsum(datav)[endd], main="MSFT Trailing Cumulative Alpha vs XLK") %>%
@@ -1892,8 +1892,8 @@ posv <- zoo::na.locf(posv)
 # Lag the positions to trade in the next period
 posv <- rutils::lagit(posv, lagg=1)
 # Calculate the pnls and the number of trades
-retv <- rutils::diffit(pricev)
-pnls <-  posv*(retv$MSFT - betav*retv$XLK)
+retp <- rutils::diffit(pricev)
+pnls <-  posv*(retp$MSFT - betav*retp$XLK)
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
       @
     \column{0.5\textwidth}
@@ -1901,7 +1901,7 @@ ntrades <- sum(abs(rutils::diffit(posv)) > 0)
       \includegraphics[width=0.45\paperwidth]{figure/strat_pairs_fixed.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
-wealthv <- cbind(retv$MSFT, pnls)
+wealthv <- cbind(retp$MSFT, pnls)
 colnames(wealthv) <- c("MSFT", "Strategy")
 sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
 sharper <- round(sharper, 3)
@@ -1950,8 +1950,8 @@ posv <- ifelse(pricem < -threshd, 1, posv)
 posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv, lagg=1)
 # Calculate the pnls and the number of trades
-retv <- rutils::diffit(pricev)
-pnls <-  posv*(retv$MSFT - betav*retv$XLK)
+retp <- rutils::diffit(pricev)
+pnls <-  posv*(retp$MSFT - betav*retp$XLK)
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
       @
     \column{0.5\textwidth}
@@ -1959,7 +1959,7 @@ ntrades <- sum(abs(rutils::diffit(posv)) > 0)
       \includegraphics[width=0.45\paperwidth]{figure/strat_pairs_dynamic.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
-wealthv <- cbind(retv$MSFT, pnls)
+wealthv <- cbind(retp$MSFT, pnls)
 colnames(wealthv) <- c("MSFT", "Strategy")
 sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
 sharper <- round(sharper, 3)
@@ -2010,8 +2010,8 @@ posv <- ifelse(pricem < -threshd, 1, posv)
 posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv, lagg=1)
 # Calculate the pnls and the number of trades
-retv <- rutils::diffit(pricev)
-pnls <-  posv*(retv$MSFT - betav*retv$XLK)
+retp <- rutils::diffit(pricev)
+pnls <-  posv*(retp$MSFT - betav*retp$XLK)
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
       @
     \column{0.5\textwidth}
@@ -2019,7 +2019,7 @@ ntrades <- sum(abs(rutils::diffit(posv)) > 0)
       \includegraphics[width=0.45\paperwidth]{figure/strat_pairs_dynamic_slow_beta.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
-wealthv <- cbind(retv$MSFT, pnls)
+wealthv <- cbind(retp$MSFT, pnls)
 colnames(wealthv) <- c("MSFT", "Strategy")
 sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
 sharper <- round(sharper, 3)
@@ -2070,15 +2070,15 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Subset (select) the stock returns after the start date of VTI
 retvti <- na.omit(rutils::etfenv$returns$VTI)
 colnames(retvti) <- "VTI"
-retv <- returns[zoo::index(retvti)]
-datev <- zoo::index(retv)
+retp <- returns[zoo::index(retvti)]
+datev <- zoo::index(retp)
 retvti <- retvti[datev]
-nrows <- NROW(retv)
-nstocks <- NCOL(retv)
-head(retv[, 1:5])
+nrows <- NROW(retp)
+nstocks <- NCOL(retp)
+head(retp[, 1:5])
 # Replace NA returns with zeros
-retsna <- retv
-retsna[is.na(retsna)] <- 0
+retna <- retp
+retna[is.na(retna)] <- 0
       @
   \end{columns}
 \end{block}
@@ -2100,10 +2100,10 @@ retsna[is.na(retsna)] <- 0
       In periods when a small number of stocks dominate returns, the cap-weighted and price-weighted indices outperform the equal-weighted index.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate normalized log prices that start at 0
-pricev <- cumsum(retsna)
+pricev <- cumsum(retna)
 head(pricev[, 1:5])
 # Wealth of price-weighted (fixed shares) portfolio
-wealthpw <- rowMeans(exp(pricev))
+wealthfs <- rowMeans(exp(pricev))
 # Wealth of equal-weighted portfolio
 wealthew <- exp(rowMeans(pricev))
       @
@@ -2112,7 +2112,7 @@ wealthew <- exp(rowMeans(pricev))
       \includegraphics[width=0.45\paperwidth]{figure/portf_equal_weight.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate combined log wealth
-wealthv <- cbind(wealthpw, wealthew)
+wealthv <- cbind(wealthfs, wealthew)
 wealthv <- log(wealthv)
 wealthv <- xts::xts(wealthv, datev)
 colnames(wealthv) <- c("Price-weighted", "Equal-weighted")
@@ -2146,8 +2146,8 @@ dygraphs::dygraph(wealthv[endd],
       If a portfolio manager outperforms the median of random portfolios, then they may have stock picking skill.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the price-weighted average of all stock prices
-wealthpw <- xts::xts(wealthpw, order.by=datev)
-colnames(wealthpw) <- "Index"
+wealthfs <- xts::xts(wealthfs, order.by=datev)
+colnames(wealthfs) <- "Index"
 # Select a random, price-weighted portfolio of 5 stocks
 set.seed(1121)
 samplev <- sample.int(n=nstocks, size=5, replace=FALSE)
@@ -2159,7 +2159,7 @@ portf <- rowMeans(exp(portf))
       \includegraphics[width=0.45\paperwidth]{figure/portf_random.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of stock index and random portfolio
-wealthv <- cbind(wealthpw, portf)
+wealthv <- cbind(wealthfs, portf)
 wealthv <- log(wealthv)
 colnames(wealthv)[2] <- "Random"
 colorv <- c("blue", "red")
@@ -2209,7 +2209,7 @@ round(tail(portfs), 3)
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of stock index and random portfolios
 colorv <- colorRampPalette(c("red", "blue"))(nportf)
-wealthv <- cbind(wealthpw, portfs)
+wealthv <- cbind(wealthfs, portfs)
 wealthv <- log(wealthv)
 colnames(wealthv)[1] <- "Index"
 colnamev <- colnames(wealthv)
@@ -2256,7 +2256,7 @@ wealthv <- rowMeans(exp(wealthv))
       \includegraphics[width=0.45\paperwidth]{figure/portf_stocks_out_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Combine the price-weighted wealth with the 10 best performing stocks
-wealthv <- cbind(wealthpw, wealthv)
+wealthv <- cbind(wealthfs, wealthv)
 wealthv <- log(wealthv)
 colnames(wealthv)[2] <- "Portfolio"
 # Calculate the out-of-sample Sharpe and Sortino ratios
@@ -2288,25 +2288,25 @@ dygraphs::dygraph(wealthv[endd], main="Out-of-sample Log Prices of Stock Portfol
       \emph{USMV} is an \emph{ETF} that holds low volatility stocks, although it hasn't met expectations. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the stock volatilities, betas, and alphas
-riskret <- sapply(retv, function(retv) {
-  retv <- na.omit(retv)
-  std <- sd(retv)
-  retvti <- retvti[zoo::index(retv)]
+riskret <- sapply(retp, function(retp) {
+  retp <- na.omit(retp)
+  stdev <- sd(retp)
+  retvti <- retvti[zoo::index(retp)]
   varvti <- drop(var(retvti))
   meanvti <- mean(retvti)
-  betav <- drop(cov(retv, retvti))/varvti
-  resid <- retv - betav*retvti
-  alphav <- mean(retv) - betav*meanvti
-  c(alpha=alphav, beta=betav, std=std, ivol=sd(resid))
+  betav <- drop(cov(retp, retvti))/varvti
+  resid <- retp - betav*retvti
+  alphav <- mean(retp) - betav*meanvti
+  c(alpha=alphav, beta=betav, stdev=stdev, ivol=sd(resid))
 })  # end sapply
 riskret <- t(riskret)
 tail(riskret)
 # Calculate the median volatility
-riskv <- riskret[, "std"]
+riskv <- riskret[, "stdev"]
 medianv <- median(riskv)
 # Calculate the returns of low and high volatility stocks
-retlow <- rowMeans(retsna[, names(riskv[riskv<=medianv])])
-rethigh <- rowMeans(retsna[, names(riskv[riskv>medianv])])
+retlow <- rowMeans(retna[, names(riskv[riskv<=medianv])])
+rethigh <- rowMeans(retna[, names(riskv[riskv>medianv])])
 wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_vol", "high_vol", "long_short")
@@ -2379,30 +2379,30 @@ text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
       The low volatility stocks selected in-sample also have a higher \emph{Sharpe ratio} in the out-of-sample period than the high volatility stocks, although their absolute returns are similar.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample stock volatilities, betas, and alphas
-riskretis <- sapply(retv[insample], function(retv) {
-  combv <- na.omit(cbind(retv, retvti))
+riskretis <- sapply(retp[insample], function(retp) {
+  combv <- na.omit(cbind(retp, retvti))
   if (NROW(combv) > 0) {
-    retv <- na.omit(retv)
-    std <- sd(retv)
-    retvti <- retvti[zoo::index(retv)]
+    retp <- na.omit(retp)
+    stdev <- sd(retp)
+    retvti <- retvti[zoo::index(retp)]
     varvti <- drop(var(retvti))
     meanvti <- mean(retvti)
-    betav <- drop(cov(retv, retvti))/varvti
-    resid <- retv - betav*retvti
-    alphav <- mean(retv) - betav*meanvti
-    return(c(alpha=alphav, beta=betav, std=std, ivol=sd(resid)))
+    betav <- drop(cov(retp, retvti))/varvti
+    resid <- retp - betav*retvti
+    alphav <- mean(retp) - betav*meanvti
+    return(c(alpha=alphav, beta=betav, stdev=stdev, ivol=sd(resid)))
   } else {
-    return(c(alpha=0, beta=0, std=0, ivol=0))
+    return(c(alpha=0, beta=0, stdev=0, ivol=0))
   }  # end if
 })  # end sapply
 riskretis <- t(riskretis)
 tail(riskretis)
 # Calculate the median volatility
-riskv <- riskretis[, "std"]
+riskv <- riskretis[, "stdev"]
 medianv <- median(riskv)
 # Calculate the out-of-sample returns of low and high volatility stocks
-retlow <- rowMeans(retsna[outsample, names(riskv[riskv<=medianv])])
-rethigh <- rowMeans(retsna[outsample, names(riskv[riskv>medianv])])
+retlow <- rowMeans(retna[outsample, names(riskv[riskv<=medianv])])
+rethigh <- rowMeans(retna[outsample, names(riskv[riskv>medianv])])
 wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_vol", "high_vol", "long_short")
@@ -2444,8 +2444,8 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks Ou
 riskv <- riskret[, "ivol"]
 medianv <- median(riskv)
 # Calculate the returns of low and high idiosyncratic volatility stocks
-retlow <- rowMeans(retsna[, names(riskv[riskv<=medianv])])
-rethigh <- rowMeans(retsna[, names(riskv[riskv>medianv])])
+retlow <- rowMeans(retna[, names(riskv[riskv<=medianv])])
+rethigh <- rowMeans(retna[, names(riskv[riskv>medianv])])
 wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_vol", "high_vol", "long_short")
@@ -2522,8 +2522,8 @@ text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
 riskv <- riskretis[, "ivol"]
 medianv <- median(riskv)
 # Calculate the out-of-sample returns of low and high idiosyncratic volatility stocks
-retlow <- rowMeans(retsna[outsample, names(riskv[riskv<=medianv])])
-rethigh <- rowMeans(retsna[outsample, names(riskv[riskv>medianv])])
+retlow <- rowMeans(retna[outsample, names(riskv[riskv<=medianv])])
+rethigh <- rowMeans(retna[outsample, names(riskv[riskv>medianv])])
 wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_vol", "high_vol", "long_short")
@@ -2568,8 +2568,8 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volati
 riskv <- riskret[, "beta"]
 medianv <- median(riskv)
 # Calculate the returns of low and high beta stocks
-betalow <- rowMeans(retsna[, names(riskv[riskv<=medianv])])
-betahigh <- rowMeans(retsna[, names(riskv[riskv>medianv])])
+betalow <- rowMeans(retna[, names(riskv[riskv<=medianv])])
+betahigh <- rowMeans(retna[, names(riskv[riskv>medianv])])
 wealthv <- cbind(betalow, betahigh, betalow - 0.5*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_beta", "high_beta", "long_short")
@@ -2646,8 +2646,8 @@ text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
 riskv <- riskretis[, "beta"]
 medianv <- median(riskv)
 # Calculate the out-of-sample returns of low and high beta stocks
-betalow <- rowMeans(retsna[outsample, names(riskv[riskv<=medianv])])
-betahigh <- rowMeans(retsna[outsample, names(riskv[riskv>medianv])])
+betalow <- rowMeans(retna[outsample, names(riskv[riskv<=medianv])])
+betahigh <- rowMeans(retna[outsample, names(riskv[riskv>medianv])])
 wealthv <- cbind(betalow, betahigh, betalow - 0.5*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_beta", "high_beta", "long_short")
@@ -2703,7 +2703,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-S
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing percentage volatilities
 lambda <- 0.6
-volat <- HighFreq::run_var(retsna, lambda=lambda)
+volat <- HighFreq::run_var(retna, lambda=lambda)
 volat <- sqrt(volat)
 # Calculate the risk parity portfolio allocations
 alloc <- ifelse(volat > 1e-4, 1/volat, 0)
@@ -2731,9 +2731,9 @@ alloc <- rutils::lagit(alloc)
       The risk parity strategy performs better when the correlations of asset returns are negative, and worse when the correlations are positive.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the wealth of risk parity
-wealthrp <- exp(cumsum(rowSums(alloc*retv, na.rm=TRUE)))
+wealthrp <- exp(cumsum(rowSums(alloc*retp, na.rm=TRUE)))
 # Combined wealth
-wealthv <- cbind(wealthpw, wealthrp)
+wealthv <- cbind(wealthfs, wealthrp)
 wealthv <- xts::xts(wealthv, datev)
 colnames(wealthv) <- c("Price-weighted", "Risk parity")
 wealthv <- log(wealthv)
@@ -2777,13 +2777,13 @@ medianv <- matrixStats::rowMedians(volat)
 alloc <- matrix(integer(nrows*nstocks), ncol=nstocks)
 alloc[volat <= medianv] <- 1
 alloc <- rutils::lagit(alloc)
-retlow <- rowSums(alloc*retv, na.rm=TRUE)
+retlow <- rowSums(alloc*retp, na.rm=TRUE)
 wealth_lovol <- exp(cumsum(retlow))
 # Calculate the wealth of high volatility stocks
 alloc <- matrix(integer(nrows*nstocks), ncol=nstocks)
 alloc[volat > medianv] <- 1
 alloc <- rutils::lagit(alloc)
-rethigh <- rowSums(alloc*retv, na.rm=TRUE)
+rethigh <- rowSums(alloc*retp, na.rm=TRUE)
 wealth_hivol <- exp(cumsum(rethigh))
       @
     \column{0.5\textwidth}
@@ -2796,8 +2796,8 @@ wealthv <- xts::xts(wealthv, datev)
 colnames(wealthv) <- c("Low Volatility", "High Volatility")
 wealthv <- log(wealthv)
 # Calculate the Sharpe and Sortino ratios
-retvol <- rutils::diffit(wealthv)
-sqrt(252)*sapply(retvol, function(x) 
+retpol <- rutils::diffit(wealthv)
+sqrt(252)*sapply(retpol, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot of log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
@@ -2826,7 +2826,7 @@ dygraphs::dygraph(wealthv[endd],
       The \emph{Long-Short Volatility} strategy has higher risk-adjusted returns than the price-weighted portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the volatilities of the low and high volatility stocks
-volat <- HighFreq::run_var(retvol, lambda=lambda)
+volat <- HighFreq::run_var(retpol, lambda=lambda)
 volat <- sqrt(volat)
 volat[1:2, ] <- 1
 colnames(volat) <- c("Low Volatility", "High Volatility")
@@ -2837,7 +2837,7 @@ factv <- rutils::lagit(factv)
 retls <- (retlow - factv*rethigh)
 wealthls <- exp(cumsum(retls))
 # Combined wealth
-wealthv <- cbind(wealthpw, wealthls)
+wealthv <- cbind(wealthfs, wealthls)
 wealthv <- xts::xts(wealthv, datev)
 colnamev <- c("Price-weighted", "Long-Short Vol")
 colnames(wealthv) <- colnamev

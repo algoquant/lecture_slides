@@ -1538,12 +1538,12 @@ virgin <- iris[iris$Species=="virginica", ]
 dim(setosa)
 head(setosa, 2)
 # Split iris into list based on Species
-split_iris <- split(iris, iris$Species)
-str(split_iris, max.confl=1)
-names(split_iris)
-dim(split_iris$setosa)
-head(split_iris$setosa, 2)
-all.equal(setosa, split_iris$setosa)
+splitiris <- split(iris, iris$Species)
+str(splitiris, max.confl=1)
+names(splitiris)
+dim(splitiris$setosa)
+head(splitiris$setosa, 2)
+all.equal(setosa, splitiris$setosa)
       @
   \end{columns}
 \end{block}
@@ -1728,24 +1728,25 @@ do.call(cbind, data_cars)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Download CRSPpanel.txt from Brightspace
+# Download CRSPpanel.txt from the NYU share drive
 # Read the file using read.table() with header and sep arguments
-panel_data <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt", 
+paneld <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt", 
                          header=TRUE, sep="\t")
-attach(panel_data)
-# Split panel_data based on Industry column
-split_panel <- split(panel_data, panel_data$Industry)
+paneld[1:5, 1:5]
+attach(paneld)
+# Split paneld based on Industry column
+panelds <- split(paneld, paneld$Industry)
 # Number of companies in each Industry
-sapply(split_panel, NROW)
+sapply(panelds, NROW)
 # Number of Sectors that each Industry belongs to
-sapply(split_panel, function(x) {
+sapply(panelds, function(x) {
   NROW(unique(x$Sector))
 })  # end sapply
 # Or
 aggregate(x=(Sector ~ Industry), 
-  data=panel_data, FUN=function(x) NROW(unique(x)))
+  data=paneld, FUN=function(x) NROW(unique(x)))
 # Industries and the Sector to which they belong
-aggregate(x=(Sector ~ Industry), data=panel_data, FUN=unique)
+aggregate(x=(Sector ~ Industry), data=paneld, FUN=unique)
 # Or
 aggregate(x=Sector, by=list(Industry), FUN=unique)
 # Or
@@ -1780,29 +1781,28 @@ sapply(unique(Industry), function(x) {
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Split panel_data based on Sector column
-split_panel <- split(panel_data, panel_data$Sector)
+# Split paneld based on Sector column
+panelds <- split(paneld, paneld$Sector)
 # Number of companies in each Sector
-sapply(split_panel, NROW)
+sapply(panelds, NROW)
 # Industries belonging to each Sector (jagged array)
-sec_ind <- sapply(split_panel, 
-  function(x) unique(x$Industry))
+secind <- sapply(panelds, function(x) unique(x$Industry))
 # Or use aggregate() (returns a data frame)
-sec_ind2 <- aggregate(x=(Industry ~ Sector), 
-  data=panel_data, FUN=function(x) unique(x))
+secind2 <- aggregate(x=(Industry ~ Sector), 
+  data=paneld, FUN=function(x) unique(x))
 # Or use aggregate() with "by" argument
-sec_ind2 <- aggregate(x=Industry, by=list(Sector), 
+secind2 <- aggregate(x=Industry, by=list(Sector), 
     FUN=function(x) as.vector(unique(x)))
-# Coerce sec_ind2 into a jagged array
-namesv <- as.vector(sec_ind2[, 1])
-sec_ind2 <- sec_ind2[, 2]
-names(sec_ind2) <- namesv
-all.equal(sec_ind2, sec_ind)
+# Coerce secind2 into a jagged array
+namesv <- secind2[, 1]
+secind2 <- secind2[, 2]
+names(secind2) <- namesv
+all.equal(secind2, secind)
 # Or use tapply() (returns an array)
-sec_ind2 <- tapply(X=Industry, INDEX=Sector, FUN=unique)
-# Coerce sec_ind2 into a jagged array
-sec_ind2 <- drop(as.matrix(sec_ind2))
-all.equal(sec_ind2, sec_ind)
+secind2 <- tapply(X=Industry, INDEX=Sector, FUN=unique)
+# Coerce secind2 into a jagged array
+secind2 <- drop(as.matrix(secind2))
+all.equal(secind2, secind)
       @
   \end{columns}
 \end{block}
@@ -1830,20 +1830,20 @@ sapply(split(ROE, Industry), mean)
 # Average, min, and max ROE in each Industry
 t(sapply(split(ROE, Industry), FUN=function(x) 
   c(mean=mean(x), max=max(x), min=min(x))))
-# Split panel_data based on Industry column
-split_panel <- split(panel_data, panel_data$Industry)
+# Split paneld based on Industry column
+panelds <- split(paneld, paneld$Industry)
 # Average ROE and EPS in each Industry
-t(sapply(split_panel, FUN=function(x) 
+t(sapply(panelds, FUN=function(x) 
   c(mean_roe=mean(x$ROE), 
     mean_eps=mean(x$EPS.EXCLUDE.EI))))
-# Or: split panel_data based on Industry column
-split_panel <- split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
-  panel_data$Industry)
+# Or: split paneld based on Industry column
+panelds <- split(paneld[, c("ROE", "EPS.EXCLUDE.EI")], 
+  paneld$Industry)
 # Average ROE and EPS in each Industry
-t(sapply(split_panel, FUN=function(x) sapply(x, mean)))
+t(sapply(panelds, FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
-aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
-  by=list(panel_data$Industry), FUN=mean)
+aggregate(x=paneld[, c("ROE", "EPS.EXCLUDE.EI")], 
+  by=list(paneld$Industry), FUN=mean)
       @
   \end{columns}
 \end{block}
@@ -2175,8 +2175,7 @@ valido("a")
 # sumtwo() returns the sum of its two arguments
 sumtwo <- function(input1, input2) {  # Even more robust
 # Check if at least one argument is not missing
-  stopifnot(!missing(input1) &&
-              !missing(input2))
+  stopifnot(!missing(input1) && !missing(input2))
 # Check if arguments are valid and return sum
   if (is.numeric(input1) && is.numeric(input2)) {
     input1 + input2  # Both valid

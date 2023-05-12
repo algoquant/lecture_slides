@@ -2583,8 +2583,8 @@ colnames(retp[, 1:4])
 colnames(retp) <- rutils::get_name(colnames(retp))
 # Calculate PCA prices using matrix algebra
 eigend <- eigen(cor(retp))
-retspca <- retp %*% eigend$vectors
-pricepca <- xts::xts(matrixStats::colCumsums(retspca),
+retpca <- retp %*% eigend$vectors
+pricepca <- xts::xts(matrixStats::colCumsums(retpca),
                        order.by=index(retp))
 colnames(pricepca) <- paste0("PC", 1:NCOL(retp))
 # Calculate the Hurst exponents of PCAs
@@ -2637,8 +2637,8 @@ text(x=mean(orderv), y=max(hurstv),
 # Calculate in-sample eigen decomposition using matrix algebra
 eigend <- eigen(cor(retp["/2010"]))
 # Calculate out-of-sample PCA prices
-retspca <- retp["2010/"] %*% eigend$vectors
-pricepca <- xts::xts(matrixStats::colCumsums(retspca),
+retpca <- retp["2010/"] %*% eigend$vectors
+pricepca <- xts::xts(matrixStats::colCumsums(retpca),
                        order.by=index(retp["2010/"]))
 colnames(pricepca) <- paste0("PC", 1:NCOL(retp))
 # Calculate the Hurst exponents of PCAs
@@ -2752,7 +2752,7 @@ optiml <- optim(par=weightv, fn=calc_phurst, retp=retp,
                 lower=rep(-10.0, nweights))
 # Optimal weights and maximum Hurst
 weightv <- optiml$par
-names(weights) <- colnames(retp)
+names(weightv) <- colnames(retp)
 -calc_phurst(weightv, retp=retp)
       @
     \column{0.5\textwidth}
@@ -2789,7 +2789,7 @@ optiml <- optim(par=weightv, fn=calc_phurst, retp=retp["/2010"],
                 lower=rep(-10.0, nweights))
 # Optimal weights and maximum Hurst
 weightv <- optiml$par
-names(weights) <- colnames(retp)
+names(weightv) <- colnames(retp)
 # Calculate the in-sample Hurst exponent
 -calc_phurst(weightv, retp=retp["/2010"])
 # Calculate the out-of-sample Hurst exponent
@@ -3587,16 +3587,20 @@ pricev <- numeric(nrows)
 # Simulate Dickey-Fuller process using recursive loop in R
 retp[1] <- innov[1]
 pricev[1] <- prici
-retp[2] <- thetav*(priceq - pricev[1]) + coeff[1]*retp[1] + innov[2]
+retp[2] <- thetav*(priceq - pricev[1]) + coeff[1]*retp[1] + 
+  innov[2]
 pricev[2] <- pricev[1] + retp[2]
-retp[3] <- thetav*(priceq - pricev[2]) + coeff[1]*retp[2] + coeff[2]*retp[1] + innov[3]
+retp[3] <- thetav*(priceq - pricev[2]) + coeff[1]*retp[2] + 
+  coeff[2]*retp[1] + innov[3]
 pricev[3] <- pricev[2] + retp[3]
 for (it in 4:nrows) {
-  retp[it] <- thetav*(priceq - pricev[it-1]) + retp[(it-1):(it-3)] %*% coeff + innov[it]
+  retp[it] <- thetav*(priceq - pricev[it-1]) + 
+    retp[(it-1):(it-3)] %*% coeff + innov[it]
   pricev[it] <- pricev[it-1] + retp[it]
 }  # end for
 # Simulate Dickey-Fuller process in Rcpp
-pricecpp <- HighFreq::sim_df(init_price=prici, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
+pricecpp <- HighFreq::sim_df(init_price=prici, eq_price=priceq, 
+   theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
 # Compare prices
 all.equal(pricev, drop(pricev_cpp))
 # Compare the speed of R code with Rcpp
@@ -4468,7 +4472,7 @@ arimav[nrows]
 
 \end{frame}
 
-% Copied to investment_strategies
+% Copied to/from investments_univariate
 %%%%%%%%%%%%%%%
 \subsection{Rolling Forecasting of Autoregressive Models}
 \begin{frame}[fragile,t]{\subsecname}
@@ -4529,7 +4533,7 @@ fcast <- c(rep(0, look_back), fcast)
 
 \end{frame}
 
-% Copied to investment_strategies
+% Copied to/from investments_univariate
 %%%%%%%%%%%%%%%
 \subsection{Mean Squared Error of the Autoregressive Forecasting Model}
 \begin{frame}[fragile,t]{\subsecname}
@@ -4539,36 +4543,35 @@ fcast <- c(rep(0, look_back), fcast)
     \column{0.5\textwidth}
       The accuracy of a forecasting model can be measured using the \emph{mean squared error} and the \emph{correlation}.
       \vskip1ex
-      The mean squared error (\emph{MSE}) of a forecasting model is the average of the squared forecasting residuals $\varepsilon_i$, equal to the differences between the actual values $r_t$ minus the \emph{forecasts} $f_t$: $\varepsilon_i = r_t - f_t$:
+      The mean squared error (\emph{MSE}) of a forecasting model is the average of the squared forecasting errors $\varepsilon_i$, equal to the differences between the \emph{forecasts} $f_t$ minus the actual values $r_t$: $\varepsilon_i = f_t - r_t$:
       \begin{displaymath}
         \operatorname{MSE} = \frac{1}{n} \sum_{i=1}^n (r_t - f_t)^2
       \end{displaymath}
-      The forecasts have a lower volatility than the empirical returns because the convolution procedure averages out the noise.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the volatilities
-sd(retp); sd(fcast)
+# Calculate the correlation between forecasts and returns
+cor(fcasts, retp)
+# Calculate the forecasting errors
+errorf <- (fcasts - retp)
 # Mean squared error
-mean((retp - fcast)^2)
-# Correlation
-cor(fcast, retp)
+mean(errorf^2)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_resid.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_stock.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot forecasting series with legend
-plot(retp[(nrows-look_back):nrows], col="blue", 
-     xlab="", ylab="", type="l", lwd=2,
-     main="Rolling Forecasting Using AR Model")
-lines(fcast[(nrows-look_back):nrows], col="red", lwd=2)
-legend(x="top", legend=c("returns", "forecasts"),
-       y.intersp=0.3, col=c("blue", "red"), lty=1, lwd=6,
-       cex=1.0, bg="white", bty="n")
+# Plot the forecasts
+datav <- cbind(retp, fcasts)["2020-01/2020-06"]
+colnames(datav) <- c("returns", "forecasts")
+dygraphs::dygraph(datav, 
+  main="VTI Returns And Forecasts") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
 
 % Copied to investments_univariate
 %%%%%%%%%%%%%%%

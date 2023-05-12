@@ -18,7 +18,6 @@ which(symbolv=="BRK.B")
 # Rename "BRK.B" to "BRK-B" and "BF.B" to "BF-B"
 symbolv[which(symbolv=="BRK.B")] <- "BRK-B"
 symbolv[which(symbolv=="BF.B")] <- "BF-B"
-
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
 retp <- rutils::etfenv$returns$VTI
@@ -52,7 +51,6 @@ plot(densityv, xlim=c(-5*madv, 5*madv),
      xlab="returns", ylab="density",
      t="l", col="blue", lwd=3,
      main="Density of VTI Returns")
-
 # Plot histogram
 histp <- hist(retp, breaks=100, freq=FALSE,
   xlim=c(-5*madv, 5*madv), xlab="", ylab="",
@@ -66,7 +64,6 @@ add=TRUE, lwd=2, col="blue")
 legend("topright", inset=0.05, cex=0.8, title=NULL,
  leg=c("VTI", "Normal"), bty="n",
  lwd=6, bg="white", col=c("red", "blue"))
-
 # Create normal Q-Q plot
 qqnorm(retp, ylim=c(-0.1, 0.1), main="VTI Q-Q Plot",
  xlab="Normal Quantiles")
@@ -74,14 +71,12 @@ qqnorm(retp, ylim=c(-0.1, 0.1), main="VTI Q-Q Plot",
 qqline(retp, col="red", lwd=2)
 # Perform Shapiro-Wilk test
 shapiro.test(retp[1:499])
-
 # Boxplot method for formula
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
 # Boxplot method for data frame of EuStockMarkets percentage returns
 boxplot(x=diff(log(EuStockMarkets)))
-
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 # Number of observations
@@ -103,7 +98,6 @@ sdrets <- sd(retp)
 nrows/((nrows-1)*(nrows-2))*sum(((retp - retm)/sdrets)^3)
 # Kurtosis of random normal returns
 nrows*(nrows+1)/((nrows-1)^3)*sum(((retp - retm)/sdrets)^4)
-
 # calc_skew() calculates skew of returns
 calc_skew <- function(retp) {
   retp <- na.omit(retp)
@@ -125,7 +119,6 @@ calcmom <- function(retp, moment=3) {
 # Calculate skew and kurtosis of VTI returns
 calcmom(retp, moment=3)
 calcmom(retp, moment=4)
-
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 nrows <- 1000
@@ -136,7 +129,6 @@ mean(datav)
 sd(datav)
 # Standard error of sample mean
 sd(datav)/sqrt(nrows)
-
 xvar <- seq(-5, 7, length=100)
 yvar <- dnorm(xvar, mean=1.0, sd=2.0)
 plot(xvar, yvar, type="l", lty="solid", xlab="", ylab="")
@@ -146,7 +138,6 @@ startp <- 3; endd <- 5  # Set lower and upper bounds
 subv <- ((xvar >= startp) & (xvar <= endd))
 polygon(c(startp, xvar[subv], endd),  # Draw polygon
   c(-1, yvar[subv], -1), col="red")
-
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
 # Create plot colors
@@ -163,7 +154,6 @@ title(main="Normal Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, title="Sigmas",
  labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colorv)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 degf <- c(3, 6, 9)  # Df values
@@ -175,14 +165,12 @@ for (it in 1:3) {  # Plot three t-distributions
   curve(expr=dt(x, df=degf[it]), xlab="", ylab="",
 lwd=2, col=colorv[it+1], add=TRUE)
 }  # end for
-
 # Add title
 title(main="t-distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n",
        title="Degrees\n of freedom", labelv,
        cex=0.8, lwd=6, lty=1, col=colorv)
-
 # Mixture of two normal distributions with sd=1 and sd=2
 nrows <- 1e5
 retp <- c(rnorm(nrows/2), 2*rnorm(nrows/2))
@@ -193,7 +181,6 @@ calc_kurt(rnorm(nrows))
 calc_kurt(retp)
 # Or
 nrows*sum(retp^4)/(nrows-1)^2
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot the distributions
@@ -206,7 +193,6 @@ curve(expr=dt(x, df=3), lwd=2, col="green", add=TRUE)
 legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
   legend=c("Mixture", "Normal", "t-distribution"),
   col=c("red", "blue", "green"))
-
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 # x11(width=6, height=5)
 # Define density of non-standard t-distribution
@@ -227,13 +213,11 @@ for (it in 1:3) {
   curve(expr=tdistr(x, dfree=3, scalev=scalev[it]), xlim=c(-3, 3),
 xlab="", ylab="", lwd=2, col=colorv[it], add=(it>1))
 }  # end for
-
 # Add title
 title(main="t-distributions with Different Scale Parameters", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n", title="Scale Parameters", labelv,
        cex=0.8, lwd=6, lty=1, col=colorv)
-
 # Calculate VTI percentage returns
 library(rutils)
 retp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))[1:499]
@@ -248,7 +232,6 @@ shapiro.test(retp)
 shapiro.test(runif(nrows))
 # Restore output digits
 options(digits=ndigits$digits)
-
 library(tseries)  # Load package tseries
 # Jarque-Bera test for normal distribution
 jarque.bera.test(rnorm(nrows))
@@ -256,7 +239,6 @@ jarque.bera.test(rnorm(nrows))
 jarque.bera.test(retp)
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(retp)))
-
 # KS test for normal distribution
 ks_test <- ks.test(rnorm(100), pnorm)
 ks_test$p.value
@@ -271,7 +253,6 @@ ks.test(rnorm(100), rnorm(100, sd=2.0))
 retp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
 retp <- (retp - mean(retp))/sd(retp)
 ks.test(retp, pnorm)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
@@ -284,7 +265,6 @@ for (it in 1:4) {
   xlab="", ylab="", col=colorv[it],
   lwd=2, add=as.logical(it-1))
 }  # end for
-
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
@@ -292,7 +272,6 @@ labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", labelv,
        cex=0.8, lwd=6, lty=1, col=colorv)
-
 # Observed frequencies from random normal data
 histp <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
 countsn <- histp$counts
@@ -318,7 +297,6 @@ countst <- pt((histp$breaks-locv)/scalev, df=2)
 countst <- rutils::diffit(countst)
 # Perform Chi-squared test for VTI returns
 chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-
 # Objective function from function dt()
 likefun <- function(par, dfree, data) {
   -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
@@ -331,7 +309,6 @@ likefun <- function(par, dfree, data) {
   sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
     log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
 }  # end likefun
-
 # Calculate VTI percentage returns
 retp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
 # Fit VTI returns using MASS::fitdistr()
@@ -359,7 +336,6 @@ fitobj <- optim(par=initp,
 locv <- fitobj$par["mean"]
 scalev <- fitobj$par["scale"]
 locv; scalev
-
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 # x11(width=6, height=5)
 # Plot histogram of VTI returns
@@ -381,7 +357,6 @@ curve(expr=tdistr(x, dfree=3, locv=locv, scalev=scalev), col="red", lwd=3, add=T
 legend("topright", inset=0.05, bty="n",
   leg=c("density", "t-distr", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
-
 # Calculate sample from non-standard t-distribution with df=3
 tdata <- scalev*rt(NROW(retp), df=3) + locv
 # Q-Q plot of VTI Returns vs non-standard t-distribution
@@ -395,7 +370,6 @@ qtdata <- quantile(tdata, probs)
 slope <- diff(qrets)/diff(qtdata)
 intercept <- qrets[1]-slope*qtdata[1]
 abline(intercept, slope, lwd=2, col="red")
-
 # KS test for VTI returns vs t-distribution data
 ks.test(retp, tdata)
 # Define cumulative distribution of non-standard t-distribution
@@ -404,7 +378,6 @@ ptdistr <- function(x, dfree, locv=0, scalev=1) {
 }  # end ptdistr
 # KS test for VTI returns vs cumulative t-distribution
 ks.test(sample(retp, replace=TRUE), ptdistr, dfree=3, locv=locv, scalev=scalev)
-
 # Plot log density of VTI returns
 plot(density(retp, adjust=4), xlab="VTI Returns", ylab="Density",
      main="Fat Left Tail of VTI Returns (density in log scale)",
@@ -417,7 +390,6 @@ curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)), lwd=3, col="green", add=TRUE,
 legend("topleft", inset=0.01, bty="n", y.intersp=c(0.25, 0.25, 0.25),
   leg=c("density", "t-distr", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
-
 # Calculate VTI returns and trading volumes
 ohlc <- rutils::etfenv$VTI
 closep <- drop(coredata(quantmod::Cl(ohlc)))
@@ -439,7 +411,6 @@ dygraphs::dygraph(datav, main="VTI Variance and Trading Volumes") %>%
   dySeries(name=colnamev[1], strokeWidth=2, axis="y", col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=2, axis="y2", col="red") %>%
   dyLegend(show="always", width=500)
-
 # Scale returns using volume (volume clock)
 retsc <- ifelse(volumv > 0, sqrt(volumr)*retp/sqrt(volumv), 0)
 retsc <- sd(retp)*retsc/sd(retsc)
@@ -450,7 +421,6 @@ sapply(list(retp=retp, retsc=retsc),
   function(rets) {sapply(c(skew=3, kurt=4),
      function(x) sum((rets/sd(rets))^x)/nrows)
 })  # end sapply
-
 # x11(width=6, height=5)
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
@@ -469,7 +439,6 @@ legend("topright", inset=0.05, bty="n",
   leg=c("unscaled", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
 quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
-
 # Load package PerformanceAnalytics
 library(PerformanceAnalytics)
 # Get documentation for package PerformanceAnalytics
@@ -483,7 +452,6 @@ ls("package:PerformanceAnalytics")
 data(package="PerformanceAnalytics")
 # Remove PerformanceAnalytics from search path
 detach("package:PerformanceAnalytics")
-
 perf_data <- unclass(data(
     package="PerformanceAnalytics"))$results[, -(1:2)]
 apply(perf_data, 1, paste, collapse=" - ")
@@ -492,7 +460,6 @@ data(managers)
 class(managers)
 dim(managers)
 head(managers, 3)
-
 # Load package "PerformanceAnalytics"
 library(PerformanceAnalytics)
 # Calculate ETF returns
@@ -502,7 +469,6 @@ retp <- na.omit(retp)
 x11(width=6, height=5)
 chart.CumReturns(retp, lwd=2, ylab="",
   legend.loc="topleft", main="ETF Cumulative Returns")
-
 retp <- na.omit(rutils::etfenv$returns$VTI)
 chart.Histogram(retp, xlim=c(-0.04, 0.04),
   colorset = c("lightgray", "red", "blue"), lwd=3,
@@ -511,14 +477,12 @@ chart.Histogram(retp, xlim=c(-0.04, 0.04),
 legend("topright", inset=0.05, bty="n",
  leg=c("VTI Density", "Normal"),
  lwd=6, lty=1, col=c("red", "blue"))
-
 retp <- rutils::etfenv$returns[,
   c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")]
 x11(width=6, height=5)
 chart.Boxplot(names=FALSE, retp)
 par(cex.lab=0.8, cex.axis=0.8)
 axis(side=2, at=(1:NCOL(retp))/7.5-0.05,labels=colnames(retp))
-
 # Simulate normally distributed data
 nrows <- 1000
 datav <- rnorm(nrows)
@@ -557,7 +521,6 @@ bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
 apply(bootd, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
-
 # Calculate VTI returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(retp)
@@ -592,7 +555,6 @@ bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
 apply(bootd, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
-
 library(PerformanceAnalytics)
 # Define target rate of return of 50 bps
 targetr <- 0.005
@@ -610,7 +572,6 @@ nrows <- NROW(returns_sub)
 # Calculate the downside deviation
 all.equal(sqrt(sum(returns_sub^2)/nrows),
   drop(DownsideDeviation(retp, MAR=targetr, method="subset")))
-
 # Calculate time series of VTI drawdowns
 closep <- log(quantmod::Cl(rutils::etfenv$VTI))
 drawdns <- (closep - cummax(closep))
@@ -636,7 +597,6 @@ dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
   dyEvent(startd, "start drawdown", col="blue") %>%
   dyEvent(datemin, "max drawdown", col="red") %>%
   dyEvent(endd, "end drawdown", col="green")
-
 # Plot VTI drawdowns using package quantmod
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue")
@@ -652,7 +612,6 @@ text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
 xval <- match(endd, datev)
 abline(v=xval, col="green")
 text(x=xval, y=0.85*yval, "end drawdown", col="green", cex=0.9)
-
 library(xtable)
 library(PerformanceAnalytics)
 closep <- log(quantmod::Cl(rutils::etfenv$VTI))
@@ -673,12 +632,10 @@ tablev <- PerformanceAnalytics::table.Drawdowns(retp, geometric=FALSE)
 tablev <- cbind(sapply(tablev[, 1:3], as.character), tablev[, 4:7])
 # Print table of VTI drawdowns
 print(xtable(tablev), comment=FALSE, size="tiny", include.rownames=FALSE)
-
 # Load "managers" data set
 data(managers)
 charts.PerformanceSummary(ham1,
   main="", lwd=2, ylog=TRUE)
-
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.1
@@ -692,7 +649,6 @@ histp <- hist(retp, col="lightgrey",
   xlim=c(-0.05, 0.01), freq=FALSE, main="VTI Returns Histogram")
 # Calculate density
 densv <- density(retp, adjust=1.5)
-
 # Plot density
 lines(densv, lwd=3, col="blue")
 # Plot line for VaR
@@ -704,7 +660,6 @@ varmax <- -0.06
 rangev <- (densv$x < varisk) &  (densv$x > varmax)
 polygon(c(varmax, densv$x[rangev], varisk),
   c(0, densv$y[rangev], 0), col=rgb(1, 0, 0,0.5), border=NA)
-
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(retp)
@@ -720,7 +675,6 @@ PerformanceAnalytics::VaR(retp, p=(1-confl), method="historical")
 all.equal(unname(varisk),
   as.numeric(PerformanceAnalytics::VaR(retp,
   p=(1-confl), method="historical")))
-
 # Calculate VaR as quantile
 varisk <- quantile(retp, confl)
 # Calculate CVaR as expected loss
@@ -730,7 +684,6 @@ PerformanceAnalytics::ETL(retp, p=(1-confl), method="historical")
 all.equal(unname(cvar),
   as.numeric(PerformanceAnalytics::ETL(retp,
     p=(1-confl), method="historical")))
-
 # Calculate the risk-return statistics
 riskstats <-
   PerformanceAnalytics::table.Stats(rutils::etfenv$returns)
@@ -743,7 +696,6 @@ riskstats$Name <- rownames(riskstats)
 riskstats$Sharpe <- riskstats$"Arithmetic Mean"/riskstats$Stdev
 # Sort on Sharpe ratio
 riskstats <- riskstats[order(riskstats$Sharpe, decreasing=TRUE), ]
-
 # Copy from rutils to save time
 riskstats <- rutils::etfenv$riskstats
 # Add Sharpe ratio column
@@ -752,10 +704,8 @@ riskstats$Sharpe <- riskstats$"Arithmetic Mean"/riskstats$Stdev
 riskstats <- riskstats[order(riskstats$Sharpe, decreasing=TRUE), ]
 # Print data frame
 knitr::kable(riskstats[, c("Sharpe", "Skewness", "Kurtosis")])
-
 # Print data frame
 knitr::kable(riskstats[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
-
 # dygraph plot of VXX versus SVXY
 pricev <- na.omit(rutils::etfenv$pricev[, c("VXX", "SVXY")])
 pricev <- pricev["2017/"]
@@ -768,7 +718,6 @@ dygraphs::dygraph(pricev, main="Prices of VXX and SVXY") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="green") %>%
   dyLegend(show="always", width=500) %>% dyLegend(show="always", width=500) %>%
   dyLegend(show="always", width=500)
-
 # Remove VIX volatility ETF data
 riskstats <- riskstats[-match(c("VXX", "SVXY"), riskstats$Name), ]
 # Plot scatterplot of Sharpe vs Skewness
@@ -787,7 +736,6 @@ plot(Kurtosis ~ Skewness, data=riskstats,
 # Add labels
 text(x=riskstats$Skewness, y=riskstats$Kurtosis,
     labels=riskstats$Name, pos=1, cex=0.8)
-
 library(PerformanceAnalytics)
 retp <- rutils::etfenv$returns[, c("VTI", "IEF")]
 retp <- na.omit(retp)
@@ -813,7 +761,6 @@ cvar <- sapply(retp, function(x) {
   mean(x[x < quantile(x, confl)])
 })
 -sapply(retp, mean)/cvar
-
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 retp <- drop(zoo::coredata(retp))
@@ -841,7 +788,6 @@ sapply(colnames(datav), function(name) {
   if (name == colnames(datav)[2]) {ratio <- holdp}
   sqrt(252/ratio)*mean(x)/c(Sharpe=stdev, Dowd=-varisk, DowdC=-cvar)
 })  # end sapply
-
 # Plot the densities of returns
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
@@ -852,7 +798,6 @@ lines(density(retc), t="l", col="red", lwd=3)
 curve(expr=dnorm(x, mean=mean(retc), sd=sd(retc)), col="green", lwd=3, add=TRUE)
 legend("topright", legend=c("VTI Daily", "Compounded", "Normal"),
  inset=-0.1, bg="white", lty=1, lwd=6, col=c("blue", "red", "green"), bty="n")
-
 # Test if IEF can time VTI
 retp <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
 retvti <- retp$VTI
@@ -860,7 +805,6 @@ desv <- cbind(retp, 0.5*(retvti+abs(retvti)), retvti^2)
 colnames(desv)[3:4] <- c("merton", "treynor")
 # Merton-Henriksson test
 regmod <- lm(IEF ~ VTI + merton, data=desv); summary(regmod)
-
 # Treynor-Mazuy test
 regmod <- lm(IEF ~ VTI + treynor, data=desv); summary(regmod)
 # Plot residual scatterplot
@@ -874,7 +818,6 @@ fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
 text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
-
 library(rutils)
 # Extract the ETF prices from rutils::etfenv$prices
 pricev <- rutils::etfenv$prices
@@ -890,7 +833,6 @@ retd <- rutils::diffit(pricev)
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Calculate the log returns
 retl <- rutils::diffit(log(pricev))
-
 # Set the initial dollar returns
 retd[1, ] <- pricev[1, ]
 # Calculate the prices from dollar returns
@@ -904,19 +846,16 @@ pricen <- lapply(1:NCOL(pricen), function (i) pricesi[i]*pricen[, i])
 pricen <- rutils::do_call(cbind, pricen)
 # pricen <- t(t(pricen)*pricesi)
 all.equal(pricen, pricev, check.attributes=FALSE)
-
 # Plot log VTI prices
 endd <- rutils::calc_endpoints(rutils::etfenv$VTI, interval="weeks")
 dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endd]),
   main="Logarithm of VTI Prices") %>%
   dyOptions(colors="blue", strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Calculate the percentage VTI returns
 pricev <- rutils::etfenv$prices$VTI
 pricev <- na.omit(pricev)
 retp <- rutils::diffit(pricev)/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
-
 # Funding rate per day
 frate <- 0.01/252
 # Margin account
@@ -936,7 +875,6 @@ dygraphs::dygraph(datav[endd], main="VTI Margin Funding Costs") %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=200)
-
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
 # Cumulative transaction costs
@@ -954,7 +892,6 @@ dygraphs::dygraph(datav[endd], main="VTI Transaction Costs") %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=200)
-
 # Calculate the VTI and IEF dollar returns
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
@@ -970,7 +907,6 @@ pricesi <- as.numeric(pricev[1, ])
 retd[1, ] <- pricev[1, ]
 wealth_tsa2 <- cumsum(retd %*% (weightv/pricesi))
 all.equal(wealth_tsa, drop(wealth_tsa2))
-
 # Wealth of fixed dollars (with rebalancing)
 wealth_tda <- cumsum(retp %*% weightv)
 # Calculate the Sharpe and Sortino ratios
@@ -986,7 +922,6 @@ dygraphs::dygraph(wealthv[endd], main="Wealth of Weighted Portfolios") %>%
   dySeries(name=colnamev[1], col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Margin account for fixed dollars (with rebalancing)
 margin <- cumsum(retp %*% weightv)
 # Cumulative transaction costs
@@ -1004,7 +939,6 @@ dygraphs::dygraph(datav[endd], main="Fixed Dollar Portfolio Transaction Costs") 
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=200)
-
 # Wealth of fixed shares (without rebalancing)
 wealth_tsa <- cumsum(retd %*% (weightv/pricesi))
 # Or compound the percentage returns
@@ -1023,7 +957,6 @@ dygraphs::dygraph(wealthv[endd],
   main="Wealth of Proportional Dollar Allocations") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Returns in excess of weighted returns
 retw <- retp %*% weightv
 retx <- lapply(retp, function(x) (retw - x))
@@ -1037,7 +970,6 @@ retx <- retx*rutils::lagit(wealth_pda)
 costs <- bid_offer*cumsum(retx)/2
 # Subtract transaction costs from wealth
 wealth_pda <- (wealth_pda - costs)
-
 # dygraph plot of wealth and transaction costs
 wealthv <- cbind(wealth_pda, costs)
 wealthv <- xts::xts(wealthv, datev)
@@ -1050,7 +982,6 @@ dygraphs::dygraph(wealthv[endd],
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
   dyLegend(show="always", width=200)
-
 # Wealth of fixed shares (without rebalancing)
 wealth_tsa <- drop(apply(retp, 2, function(x) cumprod(1+x)) %*% weightv)-1
 # Wealth of proportional dollar allocations (with rebalancing)
@@ -1077,7 +1008,6 @@ colnames(wealthv) <- c("Proportional Allocations", "Proportional Target")
 dygraphs::dygraph(wealthv, main="Wealth of Proportional Target Allocations") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Calculate the stock and bond returns
 retp <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 weightv <- c(0.4, 0.6)
@@ -1095,7 +1025,6 @@ sapply(retp, function(x) {
   x <- (x - mean(x))/stdev
   c(stdev=stdev, skew=mean(x^3), kurt=mean(x^4))
 })  # end sapply
-
 # Wealth of proportional allocations
 wealthv <- cumprod(1 + retp)
 # Calculate the a vector of monthly end points
@@ -1106,7 +1035,6 @@ dygraphs::dygraph(log(wealthv[endd]),
   dyOptions(colors=c("blue", "green", "blue", "red")) %>%
   dySeries("Combined", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Calculate the Sharpe ratios
 sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
 # Calculate the Sharpe ratios for vector of weights
@@ -1126,7 +1054,6 @@ calc_sharpe <- function(weight) {
 }  # end calc_sharpe
 optv <- optimize(calc_sharpe, interval=c(0, 1))
 weightm <- optv$minimum
-
 # Plot Sharpe ratios
 plot(x=weightv, y=sharpev,
      main="Sharpe Ratio as Function of VTI Weight",
@@ -1135,7 +1062,6 @@ plot(x=weightv, y=sharpev,
 abline(v=weightm, lty="dashed", lwd=1, col="blue")
 text(x=weightm, y=0.7*max(sharpev), pos=4, cex=1.2,
      labels=paste("optimal VTI weight =", round(weightm, 2)))
-
 # Coerce the returns from xts time series to matrix
 retp <- zoo::coredata(retp[, 1:2])
 nrows <- NROW(retp)
@@ -1156,7 +1082,6 @@ bootd <- mclapply(1:nboot, function(x) {
   retp[sample.int(nrows, replace=TRUE), ]
 }, mc.cores=ncores)  # end mclapply
 is.list(bootd); NROW(bootd); dim(bootd[[1]])
-
 # Calculate the distribution of terminal wealths under Windows
 wealthv <- parLapply(cluster, bootd, function(retp) {
   apply(retp, 2, function(x) prod(1+x))
@@ -1173,7 +1098,6 @@ apply(wealthv, 2, sd)
 # Extract the terminal wealths of VTI and IEF
 wealthvti <- wealthv[, "VTI"]
 wealthief <- wealthv[, "IEF"]
-
 # Plot the densities of the terminal wealths of VTI and IEF
 meanvti <- mean(wealthvti); meanief <- mean(wealthief)
 densvti <- density(wealthvti); densief <- density(wealthief)
@@ -1188,7 +1112,6 @@ text(x=meanief, y=0.5, labels="IEF mean", pos=4, cex=0.8)
 legend(x="topright", legend=c("VTI", "IEF"),
  inset=0.1, cex=1.0, bg="white", bty="n", y.intersp=0.5,
  lwd=6, lty=1, col=c("blue", "green"))
-
 # Calculate the distributions of stock wealth
 holdv <- nrows*seq(0.1, 1.0, 0.1)
 wealthm <- mclapply(bootd, function(retp) {
@@ -1212,7 +1135,6 @@ plot(x=holdv, y=riskrets,
      main="Stock Risk-Return Ratio as Function of Holding Period",
      xlab="Holding Period", ylab="Ratio",
      t="l", lwd=3, col="blue")
-
 # Plot the stock wealth for long and short holding periods
 wealth1 <- wealthm[, 9]
 wealth2 <- wealthm[, 1]
@@ -1229,7 +1151,6 @@ text(x=mean2, y=0.5, labels="Short", pos=4, cex=0.8)
 legend(x="top", legend=c("Long", "Short"),
  inset=0.1, cex=1.0, bg="white", bty="n", y.intersp=0.5,
  lwd=6, lty=1, col=c("blue", "green"))
-
 # Calculate the distributions of portfolio wealth
 weightv <- seq(0.05, 0.95, 0.05)
 wealthm <- mclapply(bootd, function(retp) {
@@ -1243,7 +1164,6 @@ dim(wealthm)
 riskrets <- apply(wealthm, 2, riskretfun)
 # Calculate the optimal VTI weight
 weightm <- weightv[which.max(riskrets)]
-
 # Plot the portfolio risk-return ratios
 plot(x=weightv, y=riskrets,
      main="Portfolio Risk-Return Ratio as Function of VTI Weight",
@@ -1252,7 +1172,6 @@ plot(x=weightv, y=riskrets,
 abline(v=weightm, lty="dashed", lwd=1, col="blue")
 text(x=weightm, y=0.7*max(riskrets), pos=4, cex=1.2,
      labels=paste("optimal VTI weight =", round(weightm, 2)))
-
 # Extract the ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
@@ -1262,7 +1181,6 @@ retp <- cbind(retp, retp %*% weightsaw)
 colnames(retp)[4] <- "All Weather"
 # Calculate the Sharpe ratios
 sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
-
 # Calculate the cumulative wealth from returns
 wealthv <- cumprod(1+retp)
 # Calculate the a vector of monthly end points
@@ -1280,7 +1198,6 @@ quantmod::chart_Series(wealthv, theme=plot_theme, lwd=c(2, 2, 2, 4),
 legend("topleft", legend=colnames(wealthv),
   inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
   col=plot_theme$col$line.col, bty="n")
-
 # Calculate the VTI returns
 retp <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
 datev <- zoo::index(retp)
@@ -1300,7 +1217,6 @@ stockv[1] <- min(coeff*(portfv[1] - bfloor), portfv[1])
 # Bond allocation
 bondv <- numeric(nrows)
 bondv[1] <- (portfv[1] - stockv[1])
-
 # Simulate CPPI strategy
 for (t in 2:nrows) {
   portfv[t] <- portfv[t-1] + stockv[t-1]*retp[t]
@@ -1315,7 +1231,6 @@ endd <- rutils::calc_endpoints(datav, interval="weeks")
 dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
   dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the dollar and percentage returns for VTI and IEF.
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
@@ -1342,7 +1257,6 @@ colnames(wealthv) <- c("With rebalancing", "Without rebalancing")
 dygraphs::dygraph(wealthv, main="Wealth of Equal Dollar Amount of Shares") %>%
   dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Calculate the dollar and percentage returns for VTI and IEF.
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
@@ -1368,7 +1282,6 @@ alloc <- rutils::lagit(alloc)
 # Calculate the wealth of risk parity.
 retw <- rowSums(retp*alloc)
 wealth_risk_parity <- cumprod(1 + retw)
-
 # Calculate the log wealths.
 wealthv <- log(cbind(wealth_pda, wealth_risk_parity))
 wealthv <- xts::xts(wealthv, datev)
@@ -1381,7 +1294,6 @@ dygraphs::dygraph(wealthv[endd],
   main="Log Wealth of Risk Parity vs Proportional Allocations") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Test risk parity market timing of VTI using Treynor-Mazuy test
 retrp <- rutils::diffit(wealthv)
 retvti <- retp$VTI
@@ -1401,7 +1313,6 @@ fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fittedv, pch=16, col="red")
 text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
-
 # Test for fixed ratio market timing of VTI using Treynor-Mazuy test
 regmod <- lm(fixed ~ VTI + treynor, data=desv)
 summary(regmod)
@@ -1410,7 +1321,6 @@ coefreg <- summary(regmod)$coeff
 fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 points.default(x=retvti, y=fittedv, pch=16, col="blue")
 text(x=0.05, y=0.6*max(resids), paste("Fixed Ratio t-value =", round(coefreg["treynor", "t value"], 2)))
-
 # Calculate the positions
 retp <- na.omit(rutils::etfenv$returns$VTI)
 posv <- rep(NA_integer_, NROW(retp))
@@ -1430,7 +1340,6 @@ colnames(wealthv) <- c("VTI", "sell_in_may")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv,
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot wealth of Sell in May strategy
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Sell in May Strategy") %>%
@@ -1445,7 +1354,6 @@ quantmod::chart_Series(wealthv, theme=plot_theme, name="Sell in May Strategy")
 legend("topleft", legend=colnames(wealthv),
   inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
   col=plot_theme$col$line.col, bty="n")
-
 # Test if Sell in May strategy can time VTI
 desv <- cbind(wealth$sell_in_may, 0.5*(retp+abs(retp)), retp^2)
 colnames(desv) <- c("VTI", "merton", "treynor")
@@ -1465,7 +1373,6 @@ fittedv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retp
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retp, y=fittedv, pch=16, col="red")
 text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
-
 # Calculate the log of OHLC VTI prices
 ohlc <- log(rutils::etfenv$VTI)
 openp <- quantmod::Op(ohlc)
@@ -1480,7 +1387,6 @@ open_close <- (closep - openp)
 colnames(open_close) <- "open_close"
 close_open <- (openp - rutils::lagit(closep, lagg=1, pad_zeros=FALSE))
 colnames(close_open) <- "close_open"
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(close_close, close_open, open_close)
 sqrt(252)*sapply(wealthv,
@@ -1493,7 +1399,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dySeries(name="close_open", label="Close-to-Open (overnight)", strokeWidth=2, col="red") %>%
   dySeries(name="open_close", label="Open-to-Close (daytime)", strokeWidth=2, col="green") %>%
   dyLegend(width=600)
-
 # Calculate the VTI returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 datev <- zoo::index(retp)
@@ -1510,7 +1415,6 @@ datev[head(indeks, 11)]
 # Calculate the Turn of the Month pnls
 pnls <- numeric(NROW(retp))
 pnls[indeks] <- retp[indeks, ]
-
 # Combine data
 wealthv <- cbind(retp, pnls)
 colnamev <- c("VTI", "Strategy")
@@ -1526,7 +1430,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
-
 # Calculate the VTI returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 datev <- zoo::index(retp)
@@ -1554,7 +1457,6 @@ pnls2 <- retp
 isdd <- rutils::lagit(dd < -stopl*cummaxv)
 pnls2 <- ifelse(isdd, 0, pnls2)
 all.equal(pnls, pnls2)
-
 # Combine data
 wealthv <- xts::xts(cbind(retp, pnls), datev)
 colnamev <- c("VTI", "Strategy")
@@ -1570,7 +1472,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
-
 # Simulate multiple stop-loss strategies
 cumsumv <- cumsum(retp)
 cummaxv <- cummax(cumsumv)
@@ -1582,19 +1483,15 @@ cum_pnls <- sapply(stopv, function(stopl) {
   pnls <- ifelse(isdd, 0, pnls)
   sum(pnls)
 })  # end sapply
-
 # Plot cumulative pnls for stop-loss strategies
 plot(x=stopv, y=cum_pnls,
      main="Cumulative PnLs for Stop-loss Strategies",
      xlab="stop-loss level", ylab="cumulative pnl",
      t="l", lwd=3, col="blue")
-
 NA
-
 App setup code that runs only once at startup.
 ndata <- 1e4
 stdev <- 1.0
-
 Define the user interface
 uiface <- shiny::fluidPage(
   # Create numeric input for the number of data points.
@@ -1605,7 +1502,6 @@ uiface <- shiny::fluidPage(
   # Render plot in a panel.
   plotOutput("plotobj", height=300, width=500)
 )  # end user interface
-
 Define the server function
 servfun <- function(input, output) {
   output$plotobj <- shiny::renderPlot({
@@ -1616,10 +1512,8 @@ servfun <- function(input, output) {
     hist(datav, xlim=c(-4, 4), main="Histogram of Random Data")
   })  # end renderPlot
 }  # end servfun
-
 # Return a Shiny app object
 shiny::shinyApp(ui=uiface, server=servfun)
-
 Create elements of the user interface
 uiface <- shiny::fluidPage(
   titlePanel("VWAP Moving Average"),
@@ -1635,7 +1529,6 @@ uiface <- shiny::fluidPage(
   # Create output plot panel
   mainPanel(dygraphs::dygraphOutput("dyplot"), width=12)
 )  # end fluidPage interface
-
 Define the server function
 servfun <- shiny::shinyServer(function(input, output) {
   # Get the close and volume data in a reactive environment
@@ -1647,7 +1540,6 @@ servfun <- shiny::shinyServer(function(input, output) {
     # Return the data
     cbind(closep, volum)
   })  # end reactive code
-
   # Calculate the VWAP indicator in a reactive environment
   vwapv <- shiny::reactive({
     # Get model parameters from input argument
@@ -1664,7 +1556,6 @@ servfun <- shiny::shinyServer(function(input, output) {
     colnames(datav) <- c(input$symbol, "VWAP")
     datav
   })  # end reactive code
-
   # Return the dygraph plot to output argument
   output$dyplot <- dygraphs::renderDygraph({
     colnamev <- colnames(vwapv())
@@ -1675,28 +1566,22 @@ dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue
 dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red")
   })  # end output plot
 })  # end server code
-
 Return a Shiny app object
 shiny::shinyApp(ui=uiface, server=servfun)
-
 Define the server function
 servfun <- shiny::shinyServer(function(input, output) {
-
   # Create an empty list of reactive values.
   value_s <- reactiveValues()
-
   # Get input parameters from the user interface.
   nrows <- reactive({
     # Add nrows to list of reactive values.
     value_s*nrows <- input$nrows
     input$nrows
   })  # end reactive code
-
   # Broadcast a message to the console when the button is pressed.
   observeEvent(eventExpr=input$button, handlerExpr={
     cat("Input button pressed\n")
   })  # end observeEvent
-
   # Send the data when the button is pressed.
   datav <- eventReactive(eventExpr=input$button, valueExpr={
     # eventReactive() executes on input$button, but not on nrows() or input$nrows.
@@ -1706,7 +1591,6 @@ servfun <- shiny::shinyServer(function(input, output) {
     datav
   })  # end eventReactive
   #   datav
-
   # Draw table of the data when the button is pressed.
   observeEvent(eventExpr=input$button, handlerExpr={
     datav <- datav()
@@ -1715,8 +1599,6 @@ servfun <- shiny::shinyServer(function(input, output) {
     cat("Drawing table\n")
     output$tablev <- renderTable(datav)
   })  # end observeEvent
-
 })  # end server code
-
 Return a Shiny app object
 shiny::shinyApp(ui=uiface, server=servfun)

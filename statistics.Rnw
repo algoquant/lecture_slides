@@ -2893,4 +2893,1209 @@ cor.test(xvar, yxvar, method="kendall")
 \end{frame}
 
 
+
+%%%%%%%%%%%%%%%
+\section{Modeling and Fitting Asset Returns}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Kernel Density of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The kernel density is proportional to the number of data points close to a given point.
+      \vskip1ex
+      The kernel density is analogous to a histogram, but it provides more detailed information about the distribution of the data.
+      \vskip1ex
+      The smoothing kernel $K(x)$ is a symmetric function which decreases with the distance $x$.
+      \vskip1ex
+      The kernel density $d_r$ at a point $r$ is equal to the sum over the kernel function $K(x)$:
+      \begin{displaymath}
+        d_r = \sum_{j=1}^n {K(r - r_j)}
+      \end{displaymath}
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
+      \vskip1ex
+      The parameter \emph{smoothing bandwidth} is the standard deviation of the smoothing kernel $K(x)$. 
+      \vskip1ex
+      The function \texttt{density()} returns a vector of densities at equally spaced points, not for the original data points.
+      \vskip1ex
+      The function \texttt{approx()} interpolates a vector of data into another vector.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Calculate VTI percentage returns
+retp <- rutils::etfenv$returns$VTI
+retp <- drop(coredata(na.omit(retp)))
+nrows <- NROW(retp)
+# Mean and standard deviation of returns
+c(mean(retp), sd(retp))
+# Calculate the smoothing bandwidth as the MAD of returns 10 points apart
+retp <- sort(retp)
+bwidth <- 10*mad(rutils::diffit(retp, lagg=10))
+# Calculate the kernel density
+densv <- sapply(1:nrows, function(it) {
+  sum(dnorm(retp-retp[it], sd=bwidth))
+})  # end sapply
+madv <- mad(retp)
+plot(retp, densv, xlim=c(-5*madv, 5*madv),
+     t="l", col="blue", lwd=3,
+     xlab="returns", ylab="density",
+     main="Density of VTI Returns")
+# Calculate the kernel density using density()
+densv <- density(retp, bw=bwidth)
+NROW(densv$y)
+x11(width=6, height=5)
+plot(densv, xlim=c(-5*madv, 5*madv),
+     xlab="returns", ylab="density",
+     col="blue", lwd=3, main="Density of VTI Returns")
+# Interpolate the densv vector into returns
+densv <- approx(densv$x, densv$y, xout=retp)
+all.equal(densv$x, retp)
+plot(densv, xlim=c(-5*madv, 5*madv),
+     xlab="returns", ylab="density",
+     t="l", col="blue", lwd=3,
+     main="Density of VTI Returns")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset returns are usually not normally distributed and they exhibit \emph{leptokurtosis} (large kurtosis, or fat tails).
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram.
+      \vskip1ex
+      The function \texttt{lines()} draws a line through specified points.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hist_vti_dens.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot histogram
+histp <- hist(retp, breaks=100, freq=FALSE,
+  xlim=c(-5*madv, 5*madv), xlab="", ylab="",
+  main="VTI Return Distribution")
+# Draw kernel density of histogram
+lines(densv, col="red", lwd=2)
+# Add density of normal distribution
+curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)),
+      add=TRUE, lwd=2, col="blue")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+       leg=c("VTI", "Normal"), bty="n", y.intersp=0.4,
+       lwd=6, bg="white", col=c("red", "blue"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{depr: Distribution of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset returns are usually not normally distributed and they exhibit \emph{leptokurtosis} (large kurtosis, or fat tails).
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram.
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
+      \vskip1ex
+      The function \texttt{lines()} draws a line through specified points.
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Calculate VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
+# Mean and standard deviation of returns
+c(mean(retp), sd(retp))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hist_vti.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot histogram
+x11(width=6, height=5)
+par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+madv <- mad(retp)
+histp <- hist(retp, breaks=100,
+  main="", xlim=c(-5*madv, 5*madv),
+  xlab="", ylab="", freq=FALSE)
+# Draw kernel density of histogram
+lines(density(retp), col="red", lwd=2)
+# Add density of normal distribution
+curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)),
+      add=TRUE, type="l", lwd=2, col="blue")
+title(main="VTI Return Distribution", line=0)  # Add title
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+       leg=c("VTI", "Normal"), bty="n", y.intersp=0.4,
+       lwd=6, bg="white", col=c("red", "blue"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Quantile-Quantile Plot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{Quantile-Quantile} (\emph{Q-Q}) plot is a plot of points with the same \emph{quantiles}, from two probability distributions.
+      \vskip1ex
+      If the two distributions are similar then all the points in the \emph{Q-Q} plot lie along the diagonal.
+      \vskip1ex
+      The \emph{VTI} \emph{Q-Q} plot shows that the \emph{VTI} return distribution has fat tails.
+      \vskip1ex
+      The \emph{p}-value of the \emph{Shapiro-Wilk} test is very close to zero, which shows that the \emph{VTI} returns are very unlikely to be normal.
+      \vskip1ex
+      The function \texttt{shapiro.test()} performs the \emph{Shapiro-Wilk} test of normality.
+      \vskip1ex
+      The function \texttt{qqnorm()} produces a normal \emph{Q-Q} plot.
+      \vskip1ex
+      The function \texttt{qqline()} fits a line to the normal quantiles.
+      <<echo=TRUE,eval=FALSE>>=
+# Create normal Q-Q plot
+qqnorm(retp, ylim=c(-0.1, 0.1), main="VTI Q-Q Plot",
+       xlab="Normal Quantiles")
+# Fit a line to the normal quantiles
+qqline(retp, col="red", lwd=2)
+# Perform Shapiro-Wilk test
+shapiro.test(retp)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/qq_plot.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Boxplots of Distributions of Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Box-and-whisker plots (\emph{boxplots}) are graphical representations of a distribution of values.
+      \vskip1ex
+      The bottom and top box edges (\emph{hinges}) are equal to the first and third quartiles, and the \emph{box} width is equal to the interquartile range (\emph{IQR}).
+      \vskip1ex
+      The nominal range is equal to 1.5 times the \emph{IQR} above and below the box \emph{hinges}.
+      \vskip1ex
+      The \emph{whiskers} are dashed vertical lines representing values beyond the first and third quartiles, but within the nominal range.
+      \vskip1ex
+      The \emph{whiskers} end at the last values within the nominal range, while the open circles represent outlier values beyond the nominal range.
+      \vskip1ex
+      The function \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (for categorical variables), and another for \texttt{data frames}.
+      <<box_plots,eval=FALSE>>=
+# Boxplot method for formula
+boxplot(formula=mpg ~ cyl, data=mtcars,
+        main="Mileage by number of cylinders",
+        xlab="Cylinders", ylab="Miles per gallon")
+# Boxplot method for data frame of EuStockMarkets percentage returns
+boxplot(x=diff(log(EuStockMarkets)))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/box_plots-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Higher Moments of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The estimators of moments of a probability distribution are given by:
+      \vskip1ex
+      Sample mean: $\bar{x} = \frac{1}{n} \sum_{i=1}^n x_i$
+      \vskip1ex
+      Sample variance: $\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$
+      \vskip1ex
+      With their expected values equal to the population mean and standard deviation:\\
+      $\mathbb{E}[\bar{x}] = \mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma] = \sigma$
+      \vskip1ex
+      The sample skewness (third moment):
+      \begin{displaymath}
+        \varsigma = \frac{n}{(n-1)(n-2)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
+      \end{displaymath}
+      The sample kurtosis (fourth moment):
+      \begin{displaymath}
+        \kappa = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+      \end{displaymath}
+      The normal distribution has skewness equal to $0$ and kurtosis equal to $3$.
+      \vskip1ex
+      Stock returns typically have negative skewness and kurtosis much greater than $3$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
+# Number of observations
+nrows <- NROW(retp)
+# Mean of VTI returns
+retm <- mean(retp)
+# Standard deviation of VTI returns
+stdev <- sd(retp)
+# Skewness of VTI returns
+nrows/((nrows-1)*(nrows-2))*sum(((retp - retm)/stdev)^3)
+# Kurtosis of VTI returns
+nrows*(nrows+1)/((nrows-1)^3)*sum(((retp - retm)/stdev)^4)
+# Random normal returns
+retp <- rnorm(nrows, sd=stdev)
+# Mean and standard deviation of random normal returns
+retm <- mean(retp)
+stdev <- sd(retp)
+# Skewness of random normal returns
+nrows/((nrows-1)*(nrows-2))*sum(((retp - retm)/stdev)^3)
+# Kurtosis of random normal returns
+nrows*(nrows+1)/((nrows-1)^3)*sum(((retp - retm)/stdev)^4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functions for Calculating Skew and Kurtosis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} provides an easy way for users to write functions.
+      \vskip1ex
+      The function \texttt{calc\_skew()} calculates the skew of returns, and \texttt{calc\_kurt()} calculates the kurtosis.
+      \vskip1ex
+      Functions return the value of the last expression that is evaluated.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# calc_skew() calculates skew of returns
+calc_skew <- function(retp) {
+  retp <- na.omit(retp)
+  sum(((retp - mean(retp))/sd(retp))^3)/NROW(retp)
+}  # end calc_skew
+# calc_kurt() calculates kurtosis of returns
+calc_kurt <- function(retp) {
+  retp <- na.omit(retp)
+  sum(((retp - mean(retp))/sd(retp))^4)/NROW(retp)
+}  # end calc_kurt
+# Calculate skew and kurtosis of VTI returns
+calc_skew(retp)
+calc_kurt(retp)
+# calc_mom() calculates the moments of returns
+calc_mom <- function(retp, moment=3) {
+  retp <- na.omit(retp)
+  sum(((retp - mean(retp))/sd(retp))^moment)/NROW(retp)
+}  # end calc_mom
+# Calculate skew and kurtosis of VTI returns
+calc_mom(retp, moment=3)
+calc_mom(retp, moment=4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Statistical estimators are functions of samples (which are random variables), and therefore are themselves \emph{random variables}.
+      \vskip1ex
+      The \emph{standard error} (SE) of an estimator is defined as its \emph{standard deviation} (not to be confused with the \emph{population standard deviation} of the underlying random variable).
+      \vskip1ex
+      For example, the \emph{standard error} of the estimator of the mean is equal to:
+      \begin{displaymath}
+        \sigma_{\mu} = \frac{\sigma}{\sqrt{n}}
+      \end{displaymath}
+      Where $\sigma$ is the \emph{population standard deviation} (which is usually unkown).
+      \vskip1ex
+      The \emph{estimator} of this \emph{standard error} is equal to:
+      \begin{displaymath}
+        SE_{\mu} = \frac{\hat\sigma}{\sqrt{n}}
+      \end{displaymath}
+      where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample standard deviation (the estimator of the population standard deviation).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+nrows <- 1000
+datav <- rnorm(nrows)
+# Sample mean
+mean(datav)
+# Sample standard deviation
+sd(datav)
+# Standard error of sample mean
+sd(datav)/sqrt(nrows)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Normal (Gaussian)} probability density function is given by:
+      \begin{displaymath}
+        \phi(x, \mu, \sigma) = \frac{e^{-(x-\mu)^2/{2 \sigma^2}}}{\sigma \sqrt{2 \pi}}
+      \end{displaymath}
+      The \emph{Standard Normal} distribution $\phi(0, 1)$ is a special case of the \emph{Normal} $\phi(\mu, \sigma)$ with $\mu=0$ and $\sigma=1$.
+      \vskip1ex
+      The function \texttt{dnorm()} calculates the \emph{Normal} probability density.
+      <<echo=TRUE,eval=FALSE>>=
+xvar <- seq(-5, 7, length=100)
+yvar <- dnorm(xvar, mean=1.0, sd=2.0)
+plot(xvar, yvar, type="l", lty="solid", xlab="", ylab="")
+title(main="Normal Density Function", line=0.5)
+startp <- 3; endd <- 5  # Set lower and upper bounds
+# Set polygon base
+subv <- ((xvar >= startp) & (xvar <= endd))
+polygon(c(startp, xvar[subv], endd),  # Draw polygon
+        c(-1, yvar[subv], -1), col="red")
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.45\paperwidth]{figure/norm_dist}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Plots of several \emph{Normal} distributions with different values of $\sigma$, using the function \texttt{curve()} for plotting functions given by their name.
+      <<norm_dist_mult_curves,eval=FALSE,echo=(-(1:1)),fig.show="hide">>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
+# Create plot colors
+colorv <- c("red", "black", "blue", "green")
+# Create legend labels
+labelv <- paste("sigma", sigmavs, sep="=")
+for (it in 1:4) {  # Plot four curves
+  curve(expr=dnorm(x, sd=sigmavs[it]),
+        xlim=c(-4, 4), xlab="", ylab="", lwd=2,
+        col=colorv[it], add=as.logical(it-1))
+}  # end for
+# Add title
+title(main="Normal Distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, title="Sigmas", y.intersp=0.4,
+       labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colorv)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/norm_dist_mult_curves-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_{1},\ldots , z_{\nu}$ be independent standard normal random variables, with sample mean: $\bar{z}=\frac{1}{\nu} \sum_{i=1}^{\nu} z_i$ ($\mathbb{E}[\bar{z}]=\mu$) and sample variance: $\hat\sigma^2=\frac{1}{\nu-1} \sum_{i=1}^{\nu} (z_i-\bar{z})^2$
+      \vskip1ex
+      Then the random variable (\emph{t-ratio}):
+      \begin{displaymath}
+        t = \frac{\bar{z} - \mu}{\hat\sigma / \sqrt{\nu}}
+      \end{displaymath}
+      Follows the \emph{t-distribution} with $\nu$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu}\,\Gamma(\nu/2)}\, (1 + t^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+degf <- c(3, 6, 9)  # Df values
+colorv <- c("black", "red", "blue", "green")
+labelv <- c("normal", paste("df", degf, sep="="))
+# Plot a Normal probability distribution
+curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
+for (it in 1:3) {  # Plot three t-distributions
+  curve(expr=dt(x, df=degf[it]), xlab="", ylab="",
+        lwd=2, col=colorv[it+1], add=TRUE)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="t-distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n", y.intersp=0.4,
+       title="Degrees\n of freedom", labelv,
+       cex=0.8, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mixture Models of Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Mixture models} are produced by randomly sampling data from different distributions.
+      \vskip1ex
+      The mixture of two normal distributions with different variances produces a distribution with \emph{leptokurtosis} (large kurtosis, or fat tails).
+      \vskip1ex
+      Student's \emph{t-distribution} has fat tails because the sample variance in the denominator of the \emph{t-ratio} is variable.
+      \vskip1ex
+      The time-dependent volatility of asset returns is referred to as \emph{heteroskedasticity}.
+      \vskip1ex
+      Random processes with \emph{heteroskedasticity} can be considered a type of mixture model.
+      \vskip1ex
+      The \emph{heteroskedasticity} produces \emph{leptokurtosis} (large kurtosis, or fat tails).
+      <<echo=TRUE,eval=FALSE>>=
+# Mixture of two normal distributions with sd=1 and sd=2
+nrows <- 1e5
+retp <- c(rnorm(nrows/2), 2*rnorm(nrows/2))
+retp <- (retp-mean(retp))/sd(retp)
+# Kurtosis of normal
+calc_kurt(rnorm(nrows))
+# Kurtosis of mixture
+calc_kurt(retp)
+# Or
+nrows*sum(retp^4)/(nrows-1)^2
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/mix_normal.png}
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot the distributions
+plot(density(retp), xlab="", ylab="",
+  main="Mixture of Normal Returns",
+  xlim=c(-3, 3), type="l", lwd=3, col="red")
+curve(expr=dnorm, lwd=2, col="blue", add=TRUE)
+curve(expr=dt(x, df=3), lwd=2, col="green", add=TRUE)
+# Add legend
+legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
+  legend=c("Mixture", "Normal", "t-distribution"), y.intersp=0.4,
+  col=c("red", "blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Non-standard Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The non-standard Student's \emph{t-distribution} has the probability density function:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{t - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+       It has non-zero mean equal to the location parameter $\mu$, and a standard deviation proportional to the scale parameter $\sigma$.
+        <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# x11(width=6, height=5)
+# Define density of non-standard t-distribution
+tdistr <- function(x, dfree, locv=0, scalev=1) {
+  dt((x-locv)/scalev, df=dfree)/scalev
+}  # end tdistr
+# Or
+tdistr <- function(x, dfree, locv=0, scalev=1) {
+  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scalev)*
+    (1+((x-locv)/scalev)^2/dfree)^(-(dfree+1)/2)
+}  # end tdistr
+# Calculate vector of scale values
+scalev <- c(0.5, 1.0, 2.0)
+colorv <- c("blue", "black", "red")
+labelv <- paste("scale", format(scalev, digits=2), sep="=")
+# Plot three t-distributions
+for (it in 1:3) {
+  curve(expr=tdistr(x, dfree=3, scalev=scalev[it]), xlim=c(-3, 3),
+        xlab="", ylab="", lwd=2, col=colorv[it], add=(it>1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_scale.png}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="t-distributions with Different Scale Parameters", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n", title="Scale Parameters", labelv,
+       cex=0.8, lwd=6, lty=1, col=colorv, y.intersp=0.4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Shapiro-Wilk} Test of Normality}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Shapiro-Wilk} test is designed to test the \emph{null hypothesis} that a sample: $\{x_1, \ldots, x_n\}$ is from a normally distributed population.
+      \vskip1ex
+      The test statistic is equal to:
+      \begin{displaymath}
+        W = \frac {(\sum_{i=1}^n a_i x_{(i)})^2} {\sum_{i=1}^n (x_i-\bar{x})^2}
+      \end{displaymath}
+      Where the: $\{a_1, \ldots, a_n\}$ are proportional to the \emph{order statistics} of random variables from the normal distribution.
+      \vskip1ex
+      $x_{(k)}$ is the \emph{k}-th \emph{order statistic}, and is equal to the \emph{k}-th smallest value in the sample: $\{x_1, \ldots, x_n\}$.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} statistic follows its own distribution, and is less than or equal to $1$.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} statistic is close to $1$ for samples from normal distributions.
+      \vskip1ex
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
+      \vskip1ex
+      The \emph{Shapiro-Wilk} test is not reliable for large sample sizes, so it's limited to less than \texttt{5000} sample size.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Calculate VTI percentage returns
+library(rutils)
+retp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))[1:499]
+# Reduce number of output digits
+ndigits <- options(digits=5)
+# Shapiro-Wilk test for normal distribution
+nrows <- NROW(retp)
+shapiro.test(rnorm(nrows))
+# Shapiro-Wilk test for VTI returns
+shapiro.test(retp)
+# Shapiro-Wilk test for uniform distribution
+shapiro.test(runif(nrows))
+# Restore output digits
+options(digits=ndigits$digits)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Jarque-Bera} Test of Normality}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Jarque-Bera} test is designed to test the \emph{null hypothesis} that a sample: $\{x_1, \ldots, x_n\}$ is from a normally distributed population.
+      \vskip1ex
+      The test statistic is equal to:
+      \begin{displaymath}
+        JB = \frac{n}{6} (\varsigma^2 + \frac{1}{4} (\kappa - 3)^2)
+      \end{displaymath}
+      Where the \emph{skewness} and \emph{kurtosis} are defined as:
+      \begin{align*}
+        \varsigma = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
+      &&
+        \kappa = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+      \end{align*}
+      The \emph{Jarque-Bera} statistic asymptotically follows the \emph{chi-squared} distribution with  \texttt{2} degrees of freedom.
+      \vskip1ex
+      The \emph{Jarque-Bera} statistic is small for samples from normal distributions.
+      \vskip1ex
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+library(tseries)  # Load package tseries
+# Jarque-Bera test for normal distribution
+jarque.bera.test(rnorm(nrows))
+# Jarque-Bera test for VTI returns
+jarque.bera.test(retp)
+# Jarque-Bera test for uniform distribution
+jarque.bera.test(runif(NROW(retp)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kolmogorov-Smirnov} test \emph{null hypothesis} is that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} statistic depends on the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
+      \begin{displaymath}
+        D = \sup_i | P(x_i) - P(y_i) |
+      \end{displaymath}
+      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The second argument to \texttt{ks.test()} can be either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# KS test for normal distribution
+ks_test <- ks.test(rnorm(100), pnorm)
+ks_test$p.value
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two shifted normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, sd=2.0))
+# KS test for VTI returns vs normal distribution
+retp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
+retp <- (retp - mean(retp))/sd(retp)
+ks.test(retp, pnorm)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Chi-squared} Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
+      \vskip1ex
+      Then the random variable $X = \sum_{i=1}^k z^2_i$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      \begin{displaymath}
+        f(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
+      \end{displaymath}
+      \vskip1ex
+      The \emph{Chi-squared} distribution with $k$ degrees of freedom has mean equal to $k$ and variance equal to $2k$.
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Degrees of freedom
+degf <- c(2, 5, 8, 11)
+# Plot four curves in loop
+colorv <- c("red", "black", "blue", "green")
+for (it in 1:4) {
+  curve(expr=dchisq(x, df=degf[it]),
+        xlim=c(0, 20), ylim=c(0, 0.3),
+        xlab="", ylab="", col=colorv[it],
+        lwd=2, add=as.logical(it-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chisq_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="Chi-squared Distributions", line=0.5)
+# Add legend
+labelv <- paste("df", degf, sep="=")
+legend("topright", inset=0.05, bty="n", y.intersp=0.4,
+       title="Degrees of freedom", labelv,
+       cex=0.8, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Chi-squared} Test for the Goodness of Fit}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Goodness of Fit} tests are designed to test if a set of observations fits an assumed theoretical probability distribution.
+      \vskip1ex
+      The \emph{Chi-squared} test tests if a frequency of counts fits the specified distribution.
+      \vskip1ex
+      The \emph{Chi-squared} statistic is the sum of squared differences between the observed frequencies $o_i$ and the theoretical frequencies $p_i$:
+      \begin{displaymath}
+        \chi^2 = N \sum_{i=1}^{n} {\frac{(o_i - p_i )^2}{p_i}}
+      \end{displaymath}
+      Where $N$ is the total number of observations.
+      \vskip1ex
+      The \emph{null hypothesis} is that the observed frequencies are consistent with the theoretical distribution.
+      \vskip1ex
+      The function \texttt{chisq.test()} performs the \emph{Chi-squared} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} in the function \texttt{hist()} should be chosen large enough to capture the shape of the frequency distribution.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Observed frequencies from random normal data
+histp <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
+countsn <- histp$counts
+# Theoretical frequencies
+countst <- rutils::diffit(pnorm(histp$breaks))
+# Perform Chi-squared test for normal data
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+# Return p-value
+chisq_test <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+chisq_test$p.value
+# Observed frequencies from shifted normal data
+histp <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
+countsn <- histp$counts/sum(histp$counts)
+# Theoretical frequencies
+countst <- rutils::diffit(pnorm(histp$breaks))
+# Perform Chi-squared test for shifted normal data
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+# Calculate histogram of VTI returns
+histp <- hist(retp, breaks=100, plot=FALSE)
+countsn <- histp$counts
+# Calculate cumulative probabilities and then difference them
+countst <- pt((histp$breaks-locv)/scalev, df=2)
+countst <- rutils::diffit(countst)
+# Perform Chi-squared test for VTI returns
+chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Likelihood Function of Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The non-standard Student's \emph{t-distribution} is:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{t - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+       It has non-zero mean equal to the location parameter $\mu$, and a standard deviation proportional to the scale parameter $\sigma$.
+      \vskip1ex
+      The negative logarithm of the probability density is equal to:
+      \begin{multline*}
+        -\log(f(t)) = -\log(\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)}) + \log(\sigma) + \\
+        \frac{\nu+1}{2} \, \log(1 + (\frac{t - \mu}{\sigma})^2/\nu)
+      \end{multline*}
+      The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the model parameters $\theta$, given the observed values $\bar{x}$, under the model's probability distribution $f(x|\theta)$:
+      \begin{displaymath}
+        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} f(x_i|\theta)
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Objective function from function dt()
+likefun <- function(par, dfree, data) {
+  -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
+}  # end likefun
+# Demonstrate equivalence with log(dt())
+likefun(c(1, 0.5), 2, 2:5)
+-sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
+# Objective function is negative log-likelihood
+likefun <- function(par, dfree, data) {
+  sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
+    log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
+}  # end likefun
+      @
+      The \emph{likelihood} function measures how \emph{likely} are the parameters, given the observed values $\bar{x}$.
+      \vskip1ex
+      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the parameters are those that maximize the \emph{likelihood} function:
+      \begin{displaymath}
+        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
+      \end{displaymath}
+      In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Asset Returns into Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization.
+      \vskip1ex
+      The function \texttt{fitdistr()} performs a \emph{maximum likelihood} optimization to find the non-standardized Student's \emph{t-distribution} location and scale parameters.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+retp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
+# Fit VTI returns using MASS::fitdistr()
+fitobj <- MASS::fitdistr(retp, densfun="t", df=3)
+summary(fitobj)
+# Fitted parameters
+fitobj$estimate
+locv <- fitobj$estimate[1]
+scalev <- fitobj$estimate[2]
+locv; scalev
+# Standard errors of parameters
+fitobj$sd
+# Log-likelihood value
+fitobj$value
+# Fit distribution using optim()
+initp <- c(mean=0, scale=0.01)  # Initial parameters
+fitobj <- optim(par=initp,
+  fn=likefun, # Log-likelihood function
+  data=retp,
+  dfree=3, # Degrees of freedom
+  method="L-BFGS-B", # Quasi-Newton method
+  upper=c(1, 0.1), # Upper constraint
+  lower=c(-1, 1e-7)) # Lower constraint
+# Optimal parameters
+locv <- fitobj$par["mean"]
+scalev <- fitobj$par["scale"]
+locv; scalev
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Student's \protect\emph{t-distribution} Fitted to Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset returns typically exhibit \emph{negative skewness} and \emph{large kurtosis} (leptokurtosis), or fat tails.
+      \vskip1ex
+      Stock returns fit the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom quite well.
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram.
+        <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# x11(width=6, height=5)
+# Plot histogram of VTI returns
+madv <- mad(retp)
+histp <- hist(retp, col="lightgrey",
+  xlab="returns", breaks=100, xlim=c(-5*madv, 5*madv),
+  ylab="frequency", freq=FALSE, main="Histogram of VTI Returns")
+lines(density(retp, adjust=1.5), lwd=3, col="blue")
+# Plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(retp),
+  sd=sd(retp)), add=TRUE, lwd=3, col="green")
+# Define non-standard t-distribution
+tdistr <- function(x, dfree, locv=0, scalev=1) {
+  dt((x-locv)/scalev, df=dfree)/scalev
+}  # end tdistr
+# Plot t-distribution function
+curve(expr=tdistr(x, dfree=3, locv=locv, scalev=scalev), col="red", lwd=3, add=TRUE)
+# Add legend
+legend("topright", inset=0.05, bty="n", y.intersp=0.4,
+  leg=c("density", "t-distr", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_rets.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Goodness of Fit of Student's \protect\emph{t-distribution} Fitted to Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Q-Q} plot illustrates the relative distributions of two samples of data.
+      \vskip1ex
+      The \emph{Q-Q} plot shows that stock returns fit the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom quite well.
+      \vskip1ex
+      The function \texttt{qqplot()} produces a \emph{Q-Q} plot for two samples of data.
+      \vskip1ex
+      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test for the similarity of two distributions.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{Kolmogorov-Smirnov} test is that the two samples were obtained from the same probability distribution.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test rejects the \emph{null hypothesis} that stock returns follow closely the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate sample from non-standard t-distribution with df=3
+tdata <- scalev*rt(NROW(retp), df=3) + locv
+# Q-Q plot of VTI Returns vs non-standard t-distribution
+qqplot(tdata, retp, xlab="t-Dist Quantiles", ylab="VTI Quantiles", 
+       main="Q-Q plot of VTI Returns vs Student's t-distribution")
+# Calculate quartiles of the distributions
+probs <- c(0.25, 0.75)
+qrets <- quantile(retp, probs)
+qtdata <- quantile(tdata, probs)
+# Calculate slope and plot line connecting quartiles
+slope <- diff(qrets)/diff(qtdata)
+intercept <- qrets[1]-slope*qtdata[1]
+abline(intercept, slope, lwd=2, col="red")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_qq.png}
+        <<echo=TRUE,eval=FALSE>>=
+# KS test for VTI returns vs t-distribution data
+ks.test(retp, tdata)
+# Define cumulative distribution of non-standard t-distribution
+ptdistr <- function(x, dfree, locv=0, scalev=1) {
+  pt((x-locv)/scalev, df=dfree)
+}  # end ptdistr
+# KS test for VTI returns vs cumulative t-distribution
+ks.test(sample(retp, replace=TRUE), ptdistr, dfree=3, locv=locv, scalev=scalev)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Leptokurtosis Fat Tails of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The probability under the \emph{normal} distribution decreases exponentially for large values of $x$:
+      \begin{displaymath}
+        \phi(x) \propto e^{-{x^2/2\sigma^2}} \qquad (as \, {\left| x \right|} \to \infty)
+      \end{displaymath}
+      This is because a normal variable can be thought of as the sum of a large number of independent binomial variables of equal size.
+      \vskip1ex
+      So large values are produced only when all the contributing binomial variables are of the same sign, which is very improbable, so it produces extremely low tail probabilities (thin tails),
+      \vskip1ex
+      But in reality, the probability of large negative asset returns decreases much slower, as the negative power of the returns (fat tails).
+      \vskip1ex
+      The probability under Student's \emph{t-distribution} decreases as a power for large values of $x$:
+      \begin{displaymath}
+        f(x) \propto {\left| x \right|}^{-(\nu+1)} \qquad (as \, {\left| x \right|} \to \infty)
+      \end{displaymath}
+      This is because a \emph{t-variable} can be thought of as the sum of normal variables with different volatilities (different sizes).
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/stock_fat_tails.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot log density of VTI returns
+plot(density(retp, adjust=4), xlab="VTI Returns", ylab="Density",
+     main="Fat Left Tail of VTI Returns (density in log scale)", 
+     type="l", lwd=3, col="blue", xlim=c(min(retp), -0.02), log="y")
+# Plot t-distribution function
+curve(expr=dt((x-locv)/scalev, df=3)/scalev, lwd=3, col="red", add=TRUE, log="y")
+# Plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)), lwd=3, col="green", add=TRUE, log="y")
+# Add legend
+legend("topleft", inset=0.01, bty="n", y.intersp=c(0.25, 0.25, 0.25),
+  legend=c("density", "t-distr", "normal"), y.intersp=0.4,
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trading Volumes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The average trading volumes have increased significantly since the 2008 crisis, mostly because of high frequency trading (HFT).
+      \vskip1ex
+      Higher levels of volatility coincide with higher \emph{trading volumes}.
+      \vskip1ex
+      The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI returns and trading volumes
+ohlc <- rutils::etfenv$VTI
+closep <- drop(coredata(quantmod::Cl(ohlc)))
+retp <- rutils::diffit(log(closep))
+volumv <- coredata(quantmod::Vo(ohlc))
+# Calculate trailing variance
+look_back <- 121
+varv <- HighFreq::roll_var_ohlc(log(ohlc), method="close", look_back=look_back, scale=FALSE)
+varv[1:look_back, ] <- varv[look_back+1, ]
+# Calculate trailing average volume
+volumr <- HighFreq::roll_var(volumv, look_back=look_back)/look_back
+# dygraph plot of VTI variance and trading volumes
+datav <- xts::xts(cbind(varv, volumr), zoo::index(ohlc))
+colnamev <- c("variance", "volume")
+colnames(datav) <- colnamev
+dygraphs::dygraph(datav, main="VTI Variance and Trading Volumes") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], strokeWidth=2, axis="y", col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, axis="y2", col="red") %>%
+  dyLegend(show="always", width=500)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/volume_volat_dyg.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Returns in Trading Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
+      \vskip1ex
+      If asset returns were measured at fixed intervals of \emph{trading volumes} (\emph{trading time} instead of clock time), then the volatility would be lower and less time-dependent.
+      \vskip1ex
+      The asset returns can be adjusted to \emph{trading time} by dividing them by the \emph{square root of the trading volumes}, to obtain scaled returns over equal trading volumes.
+      \vskip1ex
+      The scaled returns have a more positive \emph{skewness} and a smaller \emph{kurtosis} than unscaled returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Scale the returns using volume clock to trading time
+retsc <- ifelse(volumv > 0, sqrt(volumr)*retp/sqrt(volumv), 0)
+retsc <- sd(retp)*retsc/sd(retsc)
+# retsc <- ifelse(volumv > 1e4, retp/volumv, 0)
+# Calculate moments of scaled returns
+nrows <- NROW(retp)
+sapply(list(retp=retp, retsc=retsc),
+  function(rets) {sapply(c(skew=3, kurt=4),
+           function(x) sum((rets/sd(rets))^x)/nrows)
+})  # end sapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vti_scaled.png}
+      <<echo=TRUE,eval=FALSE>>=
+# x11(width=6, height=5)
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot densities of SPY returns
+madv <- mad(retp)
+# bwidth <- mad(rutils::diffit(retp))
+plot(density(retp, bw=madv/10), xlim=c(-5*madv, 5*madv),
+     lwd=3, mgp=c(2, 1, 0), col="blue",
+     xlab="returns (standardized)", ylab="frequency",
+     main="Density of Volume-scaled VTI Returns")
+lines(density(retsc, bw=madv/10), lwd=3, col="red")
+curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)),
+      add=TRUE, lwd=3, col="green")
+# Add legend
+legend("topright", inset=0.05, bty="n", y.intersp=0.4,
+  leg=c("unscaled", "scaled", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+quartz.save("figure/vti_scaled.png", type="png", width=6, height=5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Central Limit Theorem}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $x_1, \ldots , x_n$ be independent and identically distributed (i.i.d.) random variables with expected value $\mu$ and variance $\sigma^2$, and let $\bar{x} = \frac{1}{n} \sum_{i=1}^n x_i$ be their mean.
+      \vskip1ex
+      The random variables $x_i$ don't have to be normally distributed, they only need a finite second moment $\sigma$.
+      \vskip1ex
+      The \emph{Central Limit Theorem} states that as $n \to \infty$, then in the limit, the random variable $z$:
+      \begin{displaymath}
+        z = \frac{\bar{x} - \mu}{\sigma / \sqrt{n}}
+      \end{displaymath}
+      Follows the \emph{standard normal} distribution $\phi(0, 1)$.
+
+    \column{0.5\textwidth}
+      The \emph{normal} distribution is the limiting distribution of sums of random variables which have a finite second moment.
+      \vskip1ex
+      For example, the sums of random variables with fat tails, which decrease as a power for large values of $x$:
+      \begin{displaymath}
+        f(x) \propto {\left| x \right|}^{-(\nu+1)} \qquad (with \; \nu > 1)
+      \end{displaymath}
+      Tend to the \emph{standard normal} distribution $\phi(0, 1)$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
 \end{document}

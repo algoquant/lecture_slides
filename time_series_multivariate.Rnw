@@ -485,8 +485,8 @@ startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
 head(cbind(endd, startp), look_back+2)
 # Calculate trailing beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
-betar <- sapply(1:NROW(endd), FUN=function(ep) {
-    datav <- retp[startp[ep]:endd[ep], ]
+betar <- sapply(1:NROW(endd), FUN=function(tday) {
+    datav <- retp[startp[tday]:endd[tday], ]
     # coef(lm(formulav, data=datav))[2]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
@@ -500,8 +500,8 @@ all.equal(betav, betar)
 library(microbenchmark)
 summary(microbenchmark(
   Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controlv=controlv),
-  Rcode=sapply(1:NROW(endd), FUN=function(ep) {
-    datav <- retp[startp[ep]:endd[ep], ]
+  Rcode=sapply(1:NROW(endd), FUN=function(tday) {
+    datav <- retp[startp[tday]:endd[tday], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   }),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -550,8 +550,8 @@ startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
 head(cbind(endd, startp), look_back+2)
 # Calculate trailing beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
-betar <- sapply(1:NROW(endd), FUN=function(ep) {
-    datav <- retp[startp[ep]:endd[ep], ]
+betar <- sapply(1:NROW(endd), FUN=function(tday) {
+    datav <- retp[startp[tday]:endd[tday], ]
     # coef(lm(formulav, data=datav))[2]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
@@ -565,8 +565,8 @@ all.equal(betav, betar)
 library(microbenchmark)
 summary(microbenchmark(
   Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controlv=controlv),
-  Rcode=sapply(1:NROW(endd), FUN=function(ep) {
-    datav <- retp[startp[ep]:endd[ep], ]
+  Rcode=sapply(1:NROW(endd), FUN=function(tday) {
+    datav <- retp[startp[tday]:endd[tday], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   }),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -733,9 +733,9 @@ for (ordern in 2:ncomps) {
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate principal component time series
-retspca <- xts(retp %*% pcad$rotation[, 1:ncomps], order.by=datev)
-round(cov(retspca), 3)
-pcacum <- cumsum(retspca)
+retpca <- xts(retp %*% pcad$rotation[, 1:ncomps], order.by=datev)
+round(cov(retpca), 3)
+pcacum <- cumsum(retpca)
 # Plot principal component time series in multiple panels
 par(mfrow=c(ncomps/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
@@ -775,7 +775,7 @@ par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 # Invert principal component time series
 invmat <- solve(pcad$rotation)
 all.equal(invmat, t(pcad$rotation))
-solved <- retspca %*% invmat[1:ncomps, ]
+solved <- retpca %*% invmat[1:ncomps, ]
 solved <- xts::xts(solved, datev)
 solved <- cumsum(solved)
 retc <- cumsum(retp)
@@ -826,8 +826,8 @@ for (symbol in symbolv) {
          title=NULL, inset=0.05, cex=1.0, lwd=6, lty=1, col="blue")
 }  # end for
 # Perform ADF unit root test on principal component time series
-retspca <- xts(retp %*% pcad$rotation, order.by=datev)
-pcacum <- cumsum(retspca)
+retpca <- xts(retp %*% pcad$rotation, order.by=datev)
+pcacum <- cumsum(retpca)
 adf_pvalues <- sapply(1:NCOL(pcacum), function(ordern)
   tseries::adf.test(pcacum[, ordern])$p.value)
 # AdF unit root test on stationary time series
@@ -936,20 +936,20 @@ title("Dendrogram representing hierarchical clustering
       <<echo=(-(1:1)),eval=FALSE>>=
 library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"
 # PC returns from rotation and scaled returns
-retscaled <- apply(retp, 2, scale)
-retspca <- retscaled %*% pcad$rotation
+retsc <- apply(retp, 2, scale)
+retpca <- retsc %*% pcad$rotation
 # "x" matrix contains time series of PC returns
 dim(pcad$x)
 class(pcad$x)
 head(pcad$x[, 1:3], 3)
 # Convert PC matrix to xts and rescale to decimals
-retspca <- xts(pcad$x/100, order.by=zoo::index(retp))
+retpca <- xts(pcad$x/100, order.by=zoo::index(retp))
       @
 \vspace{-1em}
       <<pca_retc,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"
 chart.CumReturns(
-  retspca[, 1:3], lwd=2, ylab="", 
+  retpca[, 1:3], lwd=2, ylab="", 
   legend.loc="topright", main="")
 # Add title
 title(main="ETF cumulative returns", line=-1)
@@ -974,11 +974,11 @@ title(main="ETF cumulative returns", line=-1)
       <<echo=(-1),eval=FALSE>>=
 library(PerformanceAnalytics)
 # Calculate PC correlation matrix
-cormat <- cor(retspca)
-colnames(cormat) <- colnames(retspca)
-rownames(cormat) <- colnames(retspca)
+cormat <- cor(retpca)
+colnames(cormat) <- colnames(retpca)
+rownames(cormat) <- colnames(retpca)
 cormat[1:3, 1:3]
-table.CAPM(Ra=retspca[, 1:3], Rb=retp$VTI, scale=252)
+table.CAPM(Ra=retpca[, 1:3], Rb=retp$VTI, scale=252)
       @
     \column{0.5\textwidth}
   \end{columns}

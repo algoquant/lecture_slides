@@ -342,25 +342,25 @@ c(mean(retp), sd(retp))
 retp <- sort(retp)
 bwidth <- 10*mad(rutils::diffit(retp, lagg=10))
 # Calculate the kernel density
-densityv <- sapply(1:nrows, function(it) {
+densv <- sapply(1:nrows, function(it) {
   sum(dnorm(retp-retp[it], sd=bwidth))
 })  # end sapply
 madv <- mad(retp)
-plot(retp, densityv, xlim=c(-5*madv, 5*madv), 
+plot(retp, densv, xlim=c(-5*madv, 5*madv), 
      t="l", col="blue", lwd=3, 
      xlab="returns", ylab="density",
      main="Density of VTI Returns")
 # Calculate the kernel density using density()
-densityv <- density(retp, bw=bwidth)
-NROW(densityv$y)
+densv <- density(retp, bw=bwidth)
+NROW(densv$y)
 x11(width=6, height=5)
-plot(densityv, xlim=c(-5*madv, 5*madv), 
+plot(densv, xlim=c(-5*madv, 5*madv), 
      xlab="returns", ylab="density",
      col="blue", lwd=3, main="Density of VTI Returns")
-# Interpolate the densityv vector into returns
-densityv <- approx(densityv$x, densityv$y, xout=retp)
-all.equal(densityv$x, retp)
-plot(densityv, xlim=c(-5*madv, 5*madv), 
+# Interpolate the densv vector into returns
+densv <- approx(densv$x, densv$y, xout=retp)
+all.equal(densv$x, retp)
+plot(densv, xlim=c(-5*madv, 5*madv), 
      xlab="returns", ylab="density",
      t="l", col="blue", lwd=3, 
      main="Density of VTI Returns")
@@ -395,7 +395,7 @@ histp <- hist(retp, breaks=100, freq=FALSE,
   xlim=c(-5*madv, 5*madv), xlab="", ylab="", 
   main="VTI Return Distribution")
 # Draw kernel density of histogram
-lines(densityv, col="red", lwd=2)
+lines(densv, col="red", lwd=2)
 # Add density of normal distribution
 curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)),
       add=TRUE, type="l", lwd=2, col="blue")
@@ -4103,18 +4103,18 @@ ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
 # Define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
 NumericVector sim_oucpp(double eq_price, 
-                          double volat, 
-                          double thetav, 
-                          NumericVector innov) {
+                        double volat, 
+                        double thetav, 
+                        NumericVector innov) {
   int nrows = innov.size();
-  NumericVector prices(nrows);
-  NumericVector returns(nrows);
+  NumericVector pricev(nrows);
+  NumericVector retv(nrows);
   pricev[0] = eq_price;
   for (int it = 1; it < nrows; it++) {
-    returns[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
-    pricev[it] = pricev[it-1] + returns[it];
+    retv[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
+    pricev[it] = pricev[it-1] + retv[it];
   }  // end for
-  return prices;
+  return pricev;
 }")  # end cppFunction
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
@@ -4697,7 +4697,7 @@ summary(microbenchmark(
 // Rcpp header with information for C++ compiler
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>  // include Rcpp C++ header files
-using namespace std;
+using namespace stdev;
 using namespace Rcpp; // use Rcpp C++ namespace
 using namespace arma;
 
@@ -4721,7 +4721,7 @@ arma::mat calc_inv(const arma::mat& matrixv,
     dimax = svdnum - 1;
   } else {
     // Adjust dimax
-    dimax = std::min(dimax - 1, svdnum - 1);
+    dimax = stdev::min(dimax - 1, svdnum - 1);
   }  // end if
   
   // Remove all small singular values
@@ -4863,7 +4863,7 @@ arma::vec calc_weights(const arma::mat& returns, // Asset returns
   }  // end sumone
   case methodenum::sumsq: {
     // Scale the weights so their sum of squares is equal to one
-    weights = weights/std::sqrt(arma::sum(square(weights)));
+    weights = weights/stdev::sqrt(arma::sum(square(weights)));
     break;
   }  // end sumsq
   default : {
@@ -4905,7 +4905,7 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
   double lambda1 = 1-lambda;
   arma::uword nweights = returns.n_cols;
   arma::vec weights(nweights, fill::zeros);
-  arma::vec weights_past = ones(nweights)/std::sqrt(nweights);
+  arma::vec weights_past = ones(nweights)/stdev::sqrt(nweights);
   arma::mat pnls = zeros(returns.n_rows, 1);
 
   // Perform loop over the end points

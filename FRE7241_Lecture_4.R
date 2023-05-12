@@ -13,7 +13,6 @@ pricez <- (2*closep -
   rutils::lagit(closep, half_back, pad_zeros=FALSE) -
   rutils::lagit(closep, -half_back, pad_zeros=FALSE))
 pricez <- ifelse(stdev > 0, pricez/stdev, 0)
-
 # Plot dygraph of z-scores of VTI prices
 pricev <- cbind(closep, pricez)
 colnames(pricev) <- c("VTI", "Z-scores")
@@ -23,7 +22,6 @@ dygraphs::dygraph(pricev["2009"], main="VTI Price Z-Scores") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
-
 # Calculate the thresholds for labeling tops and bottoms
 confl <- c(0.2, 0.8)
 threshv <- quantile(pricez, confl)
@@ -38,7 +36,6 @@ posv[bottoms] <- 1
 posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv)
 pnls <- retp*posv
-
 # Plot dygraph of in-sample VTI strategy
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
@@ -49,7 +46,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyAxis("y2", label="Strategy", independentTicks=TRUE) %>%
   dySeries(name="VTI", axis="y", label="VTI", strokeWidth=2, col="blue") %>%
   dySeries(name="Strategy", axis="y2", label="Strategy", strokeWidth=2, col="red")
-
 # Calculate the volatility z-scores
 volat <- HighFreq::roll_var_ohlc(ohlc=ohlc, look_back=look_back, scale=FALSE)
 volatm <- HighFreq::roll_mean(volat, look_back)
@@ -64,7 +60,6 @@ volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volum), look_back))
 volumsd[1] <- 0
 volumz <- ifelse(volumsd > 0, (volum - volumean)/volumsd, 0)
 colnames(volumz) <- "volume"
-
 # Calculate the trailing price regression z-scores
 datev <- matrix(zoo::index(closep))
 look_back <- 21
@@ -72,7 +67,6 @@ controlv <- HighFreq::param_reg()
 regz <- HighFreq::roll_reg(respv=closep, predv=datev, look_back=look_back, controlv=controlv)
 regz <- drop(regz[, NCOL(regz)])
 regz[1:look_back] <- 0
-
 # Plot dygraph of z-scores of VTI prices
 pricev <- cbind(closep, regz)
 colnames(pricev) <- c("VTI", "Z-scores")
@@ -82,7 +76,6 @@ dygraphs::dygraph(pricev["2009"], main="VTI Price Z-Scores") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
-
 lambdav <- c(0.5, 1, 1.5)
 colorv <- c("red", "blue", "green")
 # Plot three curves in loop
@@ -97,7 +90,6 @@ title(main="Logistic function", line=0.5)
 legend("topleft", title="Scale parameters",
        paste("lambda", lambdav, sep="="), y.intersp=0.4,
        inset=0.05, cex=0.8, lwd=6, bty="n", lty=1, col=colorv)
-
 # Define predictor for tops including intercept column
 predm <- cbind(volatz, volumz, regz)
 predm[1, ] <- 0
@@ -112,7 +104,6 @@ ordern <- order(fcast)
 fcast <- 1/(1+exp(-fcast))
 all.equal(logmod$fitted.values, fcast, check.attributes=FALSE)
 hist(fcast)
-
 plot(x=fcast[ordern], y=tops[ordern],
      main="Logistic Regression of Stock Tops",
      col="orange", xlab="predictor", ylab="top")
@@ -120,7 +111,6 @@ lines(x=fcast[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n", lwd=6,
  legend=c("tops", "logit fitted values"), y.intersp=0.5,
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
-
 # Define discrimination threshold value
 threshv <- quantile(fcast, confl[2])
 # Calculate the confusion matrix in-sample
@@ -130,7 +120,6 @@ confmat
 sum(tops & (fcast < threshv))
 # Calculate the FALSE negative (type II error)
 sum(!tops & (fcast > threshv))
-
 # Calculate the FALSE positive and FALSE negative rates
 confmat <- confmat / rowSums(confmat)
 c(typeI=confmat[2, 1], typeII=confmat[1, 2])
@@ -145,7 +134,6 @@ comment=FALSE, size="scriptsize",
 include.rownames=TRUE,
 include.colnames=TRUE)
 # end unsuccessful attempt to draw confusion table using xtable
-
 # Confusion matrix as function of threshold
 confun <- function(actual, fcast, threshv) {
   forb <- (fcast < threshv)
@@ -168,7 +156,6 @@ plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
 threshm <- threshv[which.max(informv)]
 forecastops <- (fcast > threshm)
-
 # Calculate the area under ROC curve (AUC)
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
@@ -181,7 +168,6 @@ plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Stock Tops", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
-
 # Fit in-sample logistic regression for bottoms
 logmod <- glm(bottoms ~ predm, family=binomial(logit))
 summary(logmod)
@@ -200,7 +186,6 @@ plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
 threshm <- threshv[which.max(informv)]
 forecastbot <- (fcast > threshm)
-
 # Calculate the area under ROC curve (AUC)
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
@@ -213,7 +198,6 @@ plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Stock Bottoms", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
-
 # Average the signals over time
 topsav <- HighFreq::roll_sum(matrix(forecastops), 5)/5
 botsav <- HighFreq::roll_sum(matrix(forecastbot), 5)/5
@@ -227,7 +211,6 @@ posv <- (botsav - topsav)
 # posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv)
 pnls <- retp*posv
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
@@ -239,7 +222,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Top and Bottom Strategy In-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Define in-sample and out-of-sample intervals
 insample <- 1:(nrows %/% 2)
 outsample <- (nrows %/% 2 + 1):nrows
@@ -271,7 +253,6 @@ forecastops <- (fcast > threshtop)
 fcast <- drop(predictout %*% coeffbot)
 fcast <- 1/(1+exp(-fcast))
 forecastbot <- (fcast > threshbot)
-
 # Simulate out-of-sample VTI strategy
 topsav <- HighFreq::roll_sum(matrix(forecastops), 5)/5
 botsav <- HighFreq::roll_sum(matrix(forecastbot), 5)/5
@@ -289,7 +270,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Strategy Out-of-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Simulate AR processes
 set.seed(1121)  # Reset random numbers
 datev <- Sys.Date() + 0:728  # Two year daily series
@@ -298,7 +278,6 @@ arimav <- xts(x=arima.sim(n=NROW(datev), model=list(ar=0.2)),
           order.by=datev)
 arimav <- cbind(arimav, cumsum(arimav))
 colnames(arimav) <- c("AR returns", "AR prices")
-
 library(ggplot2)  # Load ggplot2
 library(gridExtra)  # Load gridExtra
 autoplot(object=arimav, # ggplot AR process
@@ -309,7 +288,6 @@ autoplot(object=arimav, # ggplot AR process
 theme(legend.position=c(0.1, 0.5),
   plot.background=element_blank(),
   axis.text.y=element_blank())
-
 coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
 # Create three AR time series
 arimav <- sapply(coeff, function(phi) {
@@ -331,7 +309,6 @@ theme(
   plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
   plot.background=element_blank(),
   axis.text.y=element_blank())
-
 # Define AR(3) coefficients and innovations
 coeff <- c(0.1, 0.39, 0.5)
 nrows <- 1e2
@@ -365,7 +342,6 @@ summary(microbenchmark(
   filter=filter(x=innov, filter=coeff, method="recursive"),
   cpp=HighFreq::sim_ar(coeff=matrix(coeff), innov=matrix(innov))
   ), times=10)[, c(1, 4, 5)]
-
 # Calculate modulus of roots of characteristic equation
 rootv <- Mod(polyroot(c(1, -coeff)))
 # Calculate warmup period
@@ -392,7 +368,6 @@ summary(microbenchmark(
   arima_loop={for (it in 4:NROW(arimav)) {
   arimav[it] <- arimav[(it-1):(it-3)] %*% coeff + innov[it]}}
   ), times=10)[, c(1, 4, 5)]
-
 x11(width=6, height=4)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 # Simulate AR(1) process
@@ -401,13 +376,11 @@ arimav <- arima.sim(n=1e3, model=list(ar=0.8))
 acfv <- rutils::plot_acf(arimav, lag=10, xlab="", ylab="",
   main="Autocorrelations of AR(1) process")
 acfv$acf[1:5]
-
 # PACF of AR(1) process
 pacfv <- pacf(arimav, lag=10, xlab="", ylab="", main="")
 title("Partial autocorrelations of AR(1) process", line=1)
 pacfv <- as.numeric(pacfv$acf)
 pacfv[1:5]
-
 library(rutils)  # Load rutils
 library(ggplot2)  # Load ggplot2
 set.seed(1121)  # Initialize random number generator
@@ -420,7 +393,6 @@ plot.zoo(randw, main="Random walks",
 # Add legend
 legend(x="topleft", legend=colnames(randw),
  col=c("black", "red", "blue"), lty=1)
-
 # Simulate arima with large AR coefficient
 set.seed(1121)
 nrows <- 1e4
@@ -434,7 +406,6 @@ arimav <- arima.sim(n=nrows, model=list(ar=-0.99))
 tseries::adf.test(arimav)
 # Integrated series has unit root
 tseries::adf.test(cumsum(arimav))
-
 # Simulate random walks using apply() loops
 set.seed(1121)  # Initialize random number generator
 randws <- matrix(rnorm(1000*100), ncol=1000)
@@ -448,7 +419,6 @@ par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
 plot(varv, xlab="time steps", ylab="",
      t="l", col="blue", lwd=2,
      main="Variance of Random Walk")
-
 # Define Brownian Motion parameters
 nrows <- 1000; sigmav <- 0.01
 # Simulate 5 paths of Brownian motion
@@ -463,7 +433,6 @@ matplot(y=pricev, main="Brownian Motion Paths",
   xlab="", ylab="", type="l", lty="solid", lwd=1, col="blue")
 # Save plot to png file on Mac
 quartz.save("figure/brown_paths.png", type="png", width=6, height=4)
-
 # Define Ornstein-Uhlenbeck parameters
 prici <- 0.0; priceq <- 1.0;
 sigmav <- 0.02; thetav <- 0.01; nrows <- 1000
@@ -491,7 +460,6 @@ summary(microbenchmark(
   Rcpp=HighFreq::sim_ou(init_price=prici, eq_price=priceq,
     theta=thetav, innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 plot(pricev, type="l", xlab="time", ylab="prices",
      main="Ornstein-Uhlenbeck Process")
 legend("topright", title=paste(c(paste0("sigmav = ", sigmav),
@@ -500,7 +468,6 @@ legend("topright", title=paste(c(paste0("sigmav = ", sigmav),
    collapse="\n"),
  legend="", cex=0.8, inset=0.1, bg="white", bty="n")
 abline(h=, col='red', lwd=2)
-
 retp <- rutils::diffit(pricev)
 pricelag <- rutils::lagit(pricev)
 formulav <- retp ~ pricelag
@@ -509,7 +476,6 @@ summary(regmod)
 # Plot regression
 plot(formulav, main="OU Returns Versus Lagged Prices")
 abline(regmod, lwd=2, col="red")
-
 # Calculate volatility parameter
 c(volatility=sigmav, estimate=sd(retp))
 # Extract OU parameters from regression
@@ -539,7 +505,6 @@ coeff <- cbind(c(thetav*priceq, -thetav), coeff[, 1:2])
 rownames(coeff) <- c("drift", "theta")
 colnames(coeff)[1] <- "actual"
 round(coeff, 4)
-
 # Simulate Schwartz process
 retp <- numeric(nrows)
 pricev <- numeric(nrows)
@@ -549,7 +514,6 @@ for (i in 2:nrows) {
   retp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
   pricev[i] <- pricev[i-1]*exp(retp[i])
 }  # end for
-
 plot(pricev, type="l", xlab="time", ylab="prices",
      main="Schwartz Process")
 legend("topright",
@@ -559,7 +523,6 @@ legend("topright",
    collapse="\n"),
  legend="", cex=0.8, inset=0.12, bg="white", bty="n")
 abline(h=priceq, col='red', lwd=2)
-
 # Define Dickey-Fuller parameters
 prici <- 0.0;  priceq <- 1.0
 thetav <- 0.01;  nrows <- 1000
@@ -592,7 +555,6 @@ summary(microbenchmark(
   }},
   Rcpp=HighFreq::sim_df(init_price=prici, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 set.seed(1121); innov <- matrix(rnorm(1e4, sd=0.01))
 # Simulate AR(1) process with coefficient=1, with unit root
 arimav <- HighFreq::sim_ar(coeff=matrix(1), innov=innov)
@@ -617,7 +579,6 @@ pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq,
   theta=thetav, innov=innov)
 x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
-
 # Simulate AR(1) process with different coefficients
 coeffv <- seq(0.99, 0.999, 0.001)
 retp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
@@ -632,7 +593,6 @@ plot(x=coeffv, y=adft["pval", ], main="ADF p-val Versus AR Coefficient",
      xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
 plot(x=coeffv, y=adft["adfstat", ], main="ADF Stat Versus AR Coefficient",
      xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
-
 # Load daily S&P500 stock returns
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Select ETF returns
@@ -654,7 +614,6 @@ alphav <- retv$MSFT - betav*retv$XLK
 plot(MSFT ~ XLK, data=retv, main="MSFT ~ XLK Returns",
      xlab="XLK", ylab="MSFT", pch=1, col="blue")
 abline(a=mean(alphav), b=betav, col="red", lwd=2)
-
 # dygraph plot of MSFT idiosyncratic returns vs XLK
 endd <- rutils::calc_endpoints(retv, interval="weeks")
 datev <- zoo::index(retv)[endd]
@@ -669,7 +628,6 @@ dygraphs::dygraph(cumsum(datav)[endd], main="MSFT Cumulative Alpha vs XLK") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
   dyEvent(dateb, label="Balmer exit", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=500)
-
 # Calculate the trailing alphas and betas
 lambda <- 0.9
 covars <- HighFreq::run_covar(retv, lambda)
@@ -686,7 +644,6 @@ dygraphs::dygraph(cumsum(datav)[endd], main="MSFT Trailing Cumulative Alpha vs X
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
   dyEvent(dateb, label="Balmer exit", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=500)
-
 # Load daily S&P500 stock prices
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 # Combine MSFT and XLK prices
@@ -699,7 +656,6 @@ betav <- drop(cov(pricev$MSFT, pricev$XLK)/var(pricev$XLK))
 # Calculate the cointegrated portfolio prices
 pricec <- pricev$MSFT - betav*pricev$XLK
 colnames(pricec) <- "MSFT Coint XLK"
-
 # Scatterplot of MSFT and XLK prices
 plot(MSFT ~ XLK, data=pricev, main="MSFT and XLK Prices",
      xlab="XLK", ylab="MSFT", pch=1, col="blue")
@@ -708,7 +664,6 @@ abline(a=mean(pricec), b=betav, col="red", lwd=2)
 endd <- rutils::calc_endpoints(pricev, interval="weeks")
 dygraphs::dygraph(pricev[endd], main="MSFT and XLK Log Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
-
 # Plot histogram of the cointegrated portfolio prices
 hist(pricec, breaks=100, xlab="Prices",
   main="Histogram of Cointegrated Portfolio Prices")
@@ -722,7 +677,6 @@ dygraphs::dygraph(datav, main="MSFT and XLK Cointegrated Portfolio Prices") %>%
   dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Perform ADF test on the individual stocks
 sapply(pricev, tseries::adf.test, k=1)
 # Perform ADF test on the cointegrated portfolio
@@ -736,7 +690,6 @@ adfstat <- sapply(betas, function(betav) {
 # Plot ADF statistics for vector of cointegrating factors
 plot(x=betas, y=adfstat, type="l", xlab="cointegrating factor", ylab="statistic",
  main="ADF Test Statistic as Function of Cointegrating Factor")
-
 # Plot of PACF of the cointegrated portfolio returns
 pricen <- zoo::coredata(pricec) # Numeric price
 retd <- rutils::diffit(pricen)
@@ -748,7 +701,6 @@ dygraphs::dygraph(pricec[endd], main=
   "MSFT and XLK Cointegrated Portfolio Prices") %>%
   dyOptions(colors=c("blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Calculate the trailing mean prices and volatilities
 lambda <- 0.9
 meanv <- HighFreq::run_mean(pricen, lambda=lambda)
@@ -769,7 +721,6 @@ posv <- rutils::lagit(posv, lagg=1)
 retv <- rutils::diffit(pricev)
 pnls <-  posv*(retv$MSFT - betav*retv$XLK)
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
-
 # Calculate the Sharpe ratios
 wealthv <- cbind(retv$MSFT, pnls)
 colnames(wealthv) <- c("MSFT", "Strategy")
@@ -784,7 +735,6 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Calculate the trailing cointegrated pair prices
 covars <- HighFreq::run_covar(pricev, lambda)
 betav <- covars[, 1]/covars[, 2]
@@ -806,7 +756,6 @@ posv <- rutils::lagit(posv, lagg=1)
 retv <- rutils::diffit(pricev)
 pnls <-  posv*(retv$MSFT - betav*retv$XLK)
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
-
 # Calculate the Sharpe ratios
 wealthv <- cbind(retv$MSFT, pnls)
 colnames(wealthv) <- c("MSFT", "Strategy")
@@ -821,7 +770,6 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Calculate the trailing cointegrated pair prices
 covars <- HighFreq::run_covar(pricev, lambda=0.95)
 betav <- covars[, 1]/covars[, 2]
@@ -843,7 +791,6 @@ posv <- rutils::lagit(posv, lagg=1)
 retv <- rutils::diffit(pricev)
 pnls <-  posv*(retv$MSFT - betav*retv$XLK)
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
-
 # Calculate the Sharpe ratios
 wealthv <- cbind(retv$MSFT, pnls)
 colnames(wealthv) <- c("MSFT", "Strategy")
@@ -858,7 +805,6 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=200)
-
 # Load daily S&P500 log percentage stock returns
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Subset (select) the stock returns after the start date of VTI
@@ -873,7 +819,6 @@ head(retv[, 1:5])
 # Replace NA returns with zeros
 retsna <- retv
 retsna[is.na(retsna)] <- 0
-
 # Calculate normalized log prices that start at 0
 pricev <- cumsum(retsna)
 head(pricev[, 1:5])
@@ -881,7 +826,6 @@ head(pricev[, 1:5])
 wealthpw <- rowMeans(exp(pricev))
 # Wealth of equal-weighted portfolio
 wealthew <- exp(rowMeans(pricev))
-
 # Calculate combined log wealth
 wealthv <- cbind(wealthpw, wealthew)
 wealthv <- log(wealthv)
@@ -896,7 +840,6 @@ dygraphs::dygraph(wealthv[endd],
   main="Wealth of Price-weighted and Equal-weighted Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Calculate the price-weighted average of all stock prices
 wealthpw <- xts::xts(wealthpw, order.by=datev)
 colnames(wealthpw) <- "Index"
@@ -905,7 +848,6 @@ set.seed(1121)
 samplev <- sample.int(n=nstocks, size=5, replace=FALSE)
 portf <- pricev[, samplev]
 portf <- rowMeans(exp(portf))
-
 # Plot dygraph of stock index and random portfolio
 wealthv <- cbind(wealthpw, portf)
 wealthv <- log(wealthv)
@@ -915,7 +857,6 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], main="Stock Index and Random Portfolio") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Select 10 random price-weighted sub-portfolios
 set.seed(1121)
 nportf <- 10
@@ -929,7 +870,6 @@ colnames(portfs) <- paste0("portf", 1:nportf)
 portfs <- portfs[, order(portfs[nrows])]
 round(head(portfs), 3)
 round(tail(portfs), 3)
-
 # Plot dygraph of stock index and random portfolios
 colorv <- colorRampPalette(c("red", "blue"))(nportf)
 wealthv <- cbind(wealthpw, portfs)
@@ -938,10 +878,9 @@ colnames(wealthv)[1] <- "Index"
 colnamev <- colnames(wealthv)
 colorv <- c("green", colorv)
 dygraphs::dygraph(wealthv[endd], main="Stock Index and Random Portfolios") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyOptions(colors=colorv, strokeWidth=1) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=3, col="green") %>%
   dyLegend(show="always", width=500)
-
 # Define in-sample and out-of-sample intervals
 cutoff <- nrows %/% 2
 datev[cutoff]
@@ -953,7 +892,6 @@ symbolv <- names(head(perfstat, 10))
 # Calculate the wealth of the 10 best performing stocks
 wealthv <- pricev[, symbolv]
 wealthv <- rowMeans(exp(wealthv))
-
 # Combine the price-weighted wealth with the 10 best performing stocks
 wealthv <- cbind(wealthpw, wealthv)
 wealthv <- log(wealthv)
@@ -966,7 +904,6 @@ dygraphs::dygraph(wealthv[endd], main="Out-of-sample Log Prices of Stock Portfol
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(datev[cutoff], label="in-sample", strokePattern="solid", color="green") %>%
   dyLegend(width=500)
-
 # Calculate the stock volatilities, betas, and alphas
 riskret <- sapply(retv, function(retv) {
   retv <- na.omit(retv)
@@ -991,7 +928,6 @@ wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_vol", "high_vol", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1001,7 +937,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks In
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=500)
-
 # Merton-Henriksson test
 predm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
 colnames(predm)[2:3] <- c("merton", "treynor")
@@ -1018,7 +953,6 @@ fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
-
 # Calculate the in-sample stock volatilities, betas, and alphas
 riskretis <- sapply(retv[insample], function(retv) {
   combv <- na.omit(cbind(retv, retvti))
@@ -1040,6 +974,7 @@ riskretis <- t(riskretis)
 tail(riskretis)
 # Calculate the median volatility
 riskv <- riskretis[, "std"]
+riskv[which(is.na(riskv))] <- 0
 medianv <- median(riskv)
 # Calculate the out-of-sample returns of low and high volatility stocks
 retlow <- rowMeans(retsna[outsample, names(riskv[riskv<=medianv])])
@@ -1048,7 +983,6 @@ wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_vol", "high_vol", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1059,7 +993,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks Ou
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=500)
-
 # Calculate the median idiosyncratic volatility
 riskv <- riskret[, "ivol"]
 medianv <- median(riskv)
@@ -1070,7 +1003,6 @@ wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_vol", "high_vol", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1081,7 +1013,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volati
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=500)
-
 # Merton-Henriksson test
 predm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
 colnames(predm)[2:3] <- c("merton", "treynor")
@@ -1098,7 +1029,6 @@ fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
-
 # Calculate the median in-sample idiosyncratic volatility
 riskv <- riskretis[, "ivol"]
 medianv <- median(riskv)
@@ -1109,7 +1039,6 @@ wealthv <- cbind(retlow, rethigh, retlow - 0.5*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_vol", "high_vol", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1120,7 +1049,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volati
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=500)
-
 # Calculate the median beta
 riskv <- riskret[, "beta"]
 medianv <- median(riskv)
@@ -1131,7 +1059,6 @@ wealthv <- cbind(betalow, betahigh, betalow - 0.5*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_beta", "high_beta", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1142,7 +1069,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks In-Sampl
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=500)
-
 # Merton-Henriksson test
 predm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
 colnames(predm)[2:3] <- c("merton", "treynor")
@@ -1159,7 +1085,6 @@ fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["treynor", "t value"], 2)
 points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
-
 # Calculate the median beta
 riskv <- riskretis[, "beta"]
 medianv <- median(riskv)
@@ -1170,7 +1095,6 @@ wealthv <- cbind(betalow, betahigh, betalow - 0.5*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_beta", "high_beta", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1181,7 +1105,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-S
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=500)
-
 # Calculate the trailing percentage volatilities
 lambda <- 0.6
 volat <- HighFreq::run_var(retsna, lambda=lambda)
@@ -1193,7 +1116,6 @@ allocs <- rowSums(alloc)
 alloc <- ifelse(allocs > 0, alloc/allocs, 0)
 # Lag the allocations
 alloc <- rutils::lagit(alloc)
-
 # Calculate the wealth of risk parity
 wealthrp <- exp(cumsum(rowSums(alloc*retv, na.rm=TRUE)))
 # Combined wealth
@@ -1204,14 +1126,12 @@ wealthv <- log(wealthv)
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(rutils::diffit(wealthv),
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot of log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd],
   main="Wealth of Price-weighted and Risk Parity Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Calculate the median volatilities
 medianv <- matrixStats::rowMedians(volat)
 # Calculate the wealth of low volatility stocks
@@ -1226,7 +1146,6 @@ alloc[volat > medianv] <- 1
 alloc <- rutils::lagit(alloc)
 rethigh <- rowSums(alloc*retv, na.rm=TRUE)
 wealth_hivol <- exp(cumsum(rethigh))
-
 # Combined wealth
 wealthv <- cbind(wealth_lovol, wealth_hivol)
 wealthv <- xts::xts(wealthv, datev)
@@ -1242,7 +1161,6 @@ dygraphs::dygraph(wealthv[endd],
   main="Wealth of Low and High Volatility Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Calculate the volatilities of the low and high volatility stocks
 volat <- HighFreq::run_var(retvol, lambda=lambda)
 volat <- sqrt(volat)
@@ -1263,7 +1181,6 @@ wealthv <- log(wealthv)
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(rutils::diffit(wealthv),
   function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot of log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd],

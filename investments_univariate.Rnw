@@ -84,1399 +84,6 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Investor Risk Preferences and Portfolio Selection}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Single Period Binary Gamble}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Consider a single investment (gamble) with a binary outcome: \\
-      The investor makes no up-front payments, and either wins an amount $a$ (with probability $p$), or loses an amount $b$ (with probability $q = 1-p$).
-      <<results='asis',echo=FALSE,eval=TRUE>>=
-library(xtable)
-gamblev <- data.frame(win=c("p", "a", "1 + a"), lose=c("q = 1 - p", "-b", "1 - b"))
-rownames(gamblev) <- c("probability", "payout", "terminal wealth")
-# print(xtable(gamblev), comment=FALSE, size="tiny")
-print(xtable(gamblev), comment=FALSE)
-      @
-      The initial wealth is equal to $1$ dollar, and the terminal wealth after the gamble is either $1 + a$ (with probability $p$), or $1 - b$ (with probability $q = 1-p$).
-      \vskip1ex
-      The amounts $a$ and $b$ are expressed as percentages of the wealth risked in the gamble, and the ratio $a / b$ is called the \emph{betting odds}.
-      \vskip1ex
-      The expected return on the gamble is called the \emph{edge} and is equal to: $\mu = p \, a - q \, b$, and the variance of returns is equal to: $\sigma^2 = p \, q \, (a + b)^2$.
-    \column{0.5\textwidth}
-      If the investor chooses to risk only a fraction $k_f$ of wealth, then the return on the gamble is either $k_f a$ (with probability $p$), or $- k_f b$ (with probability $q = 1-p$).
-      \vskip1ex
-      The fraction $k_f$ can be greater than $1$ (leveraged investing), or it can be negative (shorting).
-      \vskip1ex
-      And the expected return on the gamble is equal to: $p \, k_f a - q \, k_f b = k_f \, \mu$.
-      \vskip1ex
-      If an investor makes decisions exclusively based on the expected return $\mu$, then they would either invest all their wealth ($k_f = 1$) on the gamble if $\mu > 0$, or choose not to invest at all ($k_f = 0$) if $\mu < 0$.
-      \vskip1ex
-      Without loss of generality we can assume that $p = q = \frac{1}{2}$.
-      \vskip1ex
-      And then $\mu = 0.5 \, (a - b)$, and $\sigma^2 = 0.25 \, (a + b)^2$.
-      \vskip1ex
-      The \emph{Sharpe ratio} of the gamble is then equal to:
-      \begin{displaymath}
-        S_r = \frac{\mu}{\sigma} = \frac{(a - b)}{(a + b)}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Investor Utility and Fractional Betting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{expected utility} hypothesis states that investors try to maximize the expected \emph{utility} of wealth, not the expected wealth.
-      \vskip1ex
-      In 1738 Daniel Bernoulli introduced the concept of \emph{logarithmic utility} in his work \emph{"Specimen Theoriae Novae de Mensura Sortis"} (New Theory of the Measurement of Risk).
-      \vskip1ex
-      The \emph{logarithmic utility} function is defined as the logarithm of wealth: $u(w) = \log(w)$.
-      \vskip1ex
-      Under \emph{logarithmic utility} investor preferences depend on the percentage change of wealth, instead of the absolute change of wealth: $\mathrm{d} u(w) = \frac{\mathrm{d}w}{w}$.
-      \vskip1ex
-      An investor with \emph{logarithmic utility} invests only a fraction $k_f$ of their wealth in a gamble, depending on the risk-return of the gamble.
-      \vskip1ex
-      If the initial wealth is equal to $1$, then the expected value of \emph{logarithmic utility} for the binary gamble is equal to: $u(k_f) = p \, \log(1 + k_f a) + q \, \log(1 - k_f b)$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/util_log.png}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Define logarithmic utility
-utilfun <- function(frac, p=0.3, a=20, b=1) {
-  p*log(1+frac*a) + (1-p)*log(1-frac*b)
-}  # end utilfun
-# Plot utility
-curve(expr=utilfun, xlim=c(0, 1),
-      ylim=c(-0.5, 0.4), xlab="betting fraction",
-      ylab="utility", main="", lwd=2)
-title(main="Logarithmic Utility", line=0.5)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimal Fractional Betting Under Logarithmic Utility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The betting fraction that maximizes the \emph{utility} can be found by equating the derivative of \emph{utility} to zero:
-      \begin{displaymath}
-        \frac{\mathrm{d} u(k_f)}{\mathrm{d} k_f} = \frac{p \, a}{1 + k_f a} - \frac{q \, b}{1 - k_f b} = 0
-      \end{displaymath}
-      \begin{displaymath}
-        k_f = \frac{p}{b}-\frac{q}{a} = \frac{p \, a - q \, b}{b \, a} = \frac{\mu}{b \, a}
-      \end{displaymath}
-      The optimal $k_f$ is called the \emph{Kelly fraction}, and it depends on the parameters of the gamble.
-      \vskip1ex
-      The \emph{Kelly fraction} can be greater than $1$ (leveraged investing), or it can be negative (shorting).
-      \vskip1ex
-      If we assume that $b=1$, then the betting odds are equal to $a$ and the \emph{Kelly fraction} is: $k_f = \frac{p (a + 1) - 1}{a}$
-      \vskip1ex
-      The \emph{Kelly fraction} is then equal to the expected payout divided by the betting odds.
-      \vskip1ex
-      If the expected payout of the gamble is not positive, then an investor with logarithmic utility should not allocate any capital to the gamble.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/kelly_fraction.png}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Define and plot Kelly fraction
-kelly_frac <- function(a, p=0.5, b=1) {
-  p/b - (1-p)/a
-}  # end kelly_frac
-curve(expr=kelly_frac, xlim=c(0, 5),
-      ylim=c(-2, 1), xlab="betting odds",
-      ylab="kelly fraction", main="", lwd=2)
-abline(h=0.5, lwd=2, col="red")
-text(x=1.5, y=0.5, pos=3, cex=0.8, labels="max Kelly fraction=0.5")
-title(main="Kelly fraction", line=-0.8)
-      @
-\end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Kelly Criterion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Kelly criterion} states that investors should bet the optimal \emph{Kelly fraction} of their capital in a gamble.
-      \vskip1ex
-      Investors with concave utility functions (for example logarithmic utility) are sensitive to the risk of ruin (losing all their capital).
-      \vskip1ex
-      Applying the \emph{Kelly criterion} and betting only a fraction of their capital reduces the risk of ruin (but it doesn't eliminate the risk if prices drop suddenly).
-      \vskip1ex
-      The loss amount $b$ determines the risk of ruin, with larger values of $b$ increasing the risk of ruin.
-      \vskip1ex
-      Therefore investors will choose a smaller betting fraction $k_f$ for larger values of $b$.
-      \vskip1ex
-      This means that even for huge odds in their favor, investors may not choose to invest all their capital, because of the risk of ruin.
-      \vskip1ex
-      For example, if the betting odds are very large $a \to \infty$, then the \emph{Kelly fraction}: $k_f = \frac{p}{b}$.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-    \includegraphics[width=0.45\paperwidth]{figure/kelly_fraction_max.png}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Plot several Kelly curves
-curve(expr=kelly_frac(x, b=1), xlim=c(0, 5),
-      ylim=c(-1, 1.5), xlab="betting odds",
-      ylab="kelly fraction", main="", lwd=2)
-abline(h=0.5, lwd=2, col="red")
-text(x=1.5, y=0.5, pos=3, cex=0.8, labels="b=1.0; max fraction=0.5")
-curve(expr=kelly_frac(x, b=0.5), add=TRUE, main="", lwd=2)
-abline(h=1.0, lwd=2, col="red")
-text(x=1.5, y=1.0, pos=3, cex=0.8, labels="b=0.5; max fraction=1.0")
-title(main="Kelly fraction", line=-0.8)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Utility of Multiperiod Betting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $r_t$ be the random return on the gamble in period $i$, and let $w_i = (1 + k_f r_t)$ be the random wealth increment.
-      \vskip1ex
-      Then the terminal wealth after $n$ rounds is equal to the compounded wealth increments: $w_n = \prod_{i=1}^n w_i = \prod_{i=1}^n (1 + k_f r_t)$.
-      \vskip1ex
-      And the utility is equal to the sum of the individual utilities:
-      \begin{displaymath}
-        u_n = \log(w_n) = \sum_{i=1}^n \log(w_i) = \sum_{i=1}^n \log(1 + k_f r_t) = \sum_{i=1}^n u_i
-      \end{displaymath}
-      The individual utilities are all maximized by the same \emph{Kelly fraction} $k_f$, so the \emph{Kelly fraction} for multiperiod betting is the same as for single period betting:
-      \begin{displaymath}
-        k_f = \frac{p}{b}-\frac{q}{a}
-      \end{displaymath}
-    \column{0.5\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Wealth of Multiperiod Betting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In multiperiod betting the investor participates in $n$ rounds of gambles, and in each round they risk a fixed fraction $k_f$ of their current outstanding wealth.
-      \vskip1ex
-      In each round the wealth is multiplied by either $(1 + k_f a)$ (win) or $(1 - k_f b)$ (loss), so that the current outstanding wealth changes over time.
-      \vskip1ex
-      The terminal wealth after $n$ rounds with $m$ wins is equal to: $w(k_f) = (1 + k_f a)^m (1 - k_f b)^{n-m}$.
-      \vskip1ex
-      If the number of rounds $n$ is very large, then the number of wins is almost always equal to $m = n \, p$, and the terminal wealth is equal to: $w(k_f) = (1 + k_f a)^{np} (1 - k_f b)^{nq}$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/kelly_multi.png}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Wealth of multiperiod binary betting
-wealthv <- function(f, a=0.8, b=0.1, n=1e3, i=150) {
-  (1+f*a)^i * (1-f*b)^(n-i)
-}  # end wealth
-curve(expr=wealthv, xlim=c(0, 1),
-      xlab="betting fraction",
-      ylab="wealth", main="", lwd=2)
-title(main="Wealth of Multiperiod Betting", line=0.1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimal Multiperiod Betting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.9\textwidth}
-      The betting fraction $k_f$ that maximizes the terminal wealth is found by setting the derivative of $w(k_f)$ to zero:
-      \begin{flalign*}
-        & \frac{\mathrm{d} w(k_f)}{\mathrm{d} k_f} = n p a (1 + k_f a)^{np-1} (1 - k_f b)^{nq} - n q b (1 + k_f a)^{np} (1 - k_f b)^{nq-1} & \\
-        & = (\frac{n p a}{1 + k_f a} - \frac{n q b}{1 - k_f b}) (1 + k_f a)^{np} (1 - k_f b)^{nq} = 0 &
-      \end{flalign*}
-      We can then solve for the optimal betting fraction $k_f$:
-      \begin{flalign*}
-        \frac{p a}{1 + k_f a} - \frac{q b}{1 - k_f b} = 0 \\
-        p a (1 - k_f b) - q b (1 + k_f a) = 0 \\
-        p a - q b - k_f a b = 0 \\
-        k_f = \frac{p a - q b}{a b} = \frac{p}{b} - \frac{q}{a}
-      \end{flalign*}
-      The above is just the \emph{Kelly fraction} $k_f$ that maximizes the utility.
-      \vskip1ex
-      So the \emph{Kelly fraction} $k_f$ that maximizes the utility also maximizes the terminal wealth.
-    \column{0.1\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{depr: Multiperiod Binary Gambles}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.9\textwidth}
-      The terminal wealth after $n$ repeated gambles with $m$ wins is equal to: $(1 + k_f a)^m (1 - k_f b)^{n-m}$.
-      \vskip1ex
-      And the expected value of the wealth is equal to:
-      \begin{displaymath}
-        w(k_f) = \sum_{m=0}^n {\binom{n}{m} p^m q^{n-m} {(1 + k_f a)^m (1 - k_f b)^{n-m}}}
-      \end{displaymath}
-      We can then find the fraction $k_f$ which maximizes the expected wealth $w(k_f)$:
-      \begin{flalign*}
-        \frac{\mathrm{d} w(k_f)}{\mathrm{d} k_f} = \sum_{m=0}^n \binom{n}{m} p^m q^{n-m} {(1 + k_f a)^m (1 - k_f b)^{n-m}} (\frac{a m}{1 + k_f a} - \frac{b (n-m)}{1 - k_f b}) = \\
-        \frac{a}{1 + k_f a} \sum_{m=0}^n \binom{n}{m} p^m q^{n-m} {m} - \\
-        \sum_{m=0}^n \binom{n}{m} p^m q^{n-m} {(1 + k_f a)^m (1 - k_f b)^{n-m}} (\frac{a m}{1 + k_f a} - \frac{b (n-m)}{1 - k_f b}) \\
-      \end{flalign*}
-      If the investor chooses to risk only a fraction $k_f$ of wealth, then the wealth after the gamble is either $1 + k_f a$ (with probability $p$), or $1 - k_f b$ (with probability $q = 1-p$).
-      \vskip1ex
-      (with probability $p$), or $1 - b$ (with probability $q = 1-p$).
-      initial wealth is equal to $1$, and the
-      The \emph{Kelly fraction} for multiperiod betting can be found by maximizing the expected \emph{utility} of the final wealth distribution:
-      \begin{flalign*}
-        u(k_f) &= \sum_{m=0}^n \binom{n}{m} p^m q^{n-m} \log((1 + k_f a)^m (1 - k_f b)^{n-m}) &\\
-        &= \log(1 + k_f a) \sum_{m=0}^n {\binom{n}{m} p^m q^{n-m} m} + &\\
-        & \log(1 - k_f b) \sum_{m=0}^n {\binom{n}{m} p^m q^{n-m} (n-m)} &\\
-        &= n \, p \, \log(1 + k_f a) + n \, q \, \log(1 - k_f b)
-      \end{flalign*}
-      The above is just the single period \emph{utility} multiplied by the number of rounds of betting $n$.
-      \vskip1ex
-      The \emph{Kelly fraction} $k_f$ for multiperiod betting is the same as for single period betting:
-      \begin{displaymath}
-        k_f = \frac{p}{b}-\frac{q}{a}
-      \end{displaymath}
-    \column{0.1\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{depr: Utility of Multiperiod Binary Gambles}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.7\textwidth}
-      The \emph{Kelly fraction} for multiperiod betting can be found by maximizing the expected \emph{utility} of the final wealth distribution:
-      \begin{flalign*}
-        u(k_f) &= \sum_{m=0}^n \binom{n}{m} p^m q^{n-m} \log((1 + k_f a)^m (1 - k_f b)^{n-m}) &\\
-        &= \log(1 + k_f a) \sum_{m=0}^n {\binom{n}{m} p^m q^{n-m} m} + &\\
-        & \log(1 - k_f b) \sum_{m=0}^n {\binom{n}{m} p^m q^{n-m} (n-m)} &\\
-        &= n \, p \, \log(1 + k_f a) + n \, q \, \log(1 - k_f b)
-      \end{flalign*}
-      The above is just the single period \emph{utility} multiplied by the number of rounds of betting $n$.
-      \vskip1ex
-      The \emph{Kelly fraction} $k_f$ for multiperiod betting is the same as for single period betting:
-      \begin{displaymath}
-        k_f = \frac{p}{b}-\frac{q}{a}
-      \end{displaymath}
-    \column{0.3\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Investing With Fixed Margin}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $r_t$ be the percentage returns on a \emph{risky asset}, so that the asset price $p_t$ at time $t$ is given by:
-      \begin{displaymath}
-        p_t = p_0 \prod_{i=1}^t {(1 + r_t)}
-      \end{displaymath}
-      The initial investor wealth at time $t=0$ is equal to $1$ dollar, and they also borrow on margin $m$ dollars to invest in the \emph{risky asset}.
-      \vskip1ex
-      The investor's \emph{wealth} at time $t$ is equal to (the margin borrowing rate is assumed to be zero):
-      \begin{displaymath}
-        w_t = 1 + m \, \frac{p_t - p_0}{p_0}
-      \end{displaymath}
-      The \emph{leverage} $k_f$ is equal to the \emph{margin debt} $m$ divided by the total wealth $w_t$: $k_f = m / w_t$.
-      \vskip1ex
-      If the asset price drops then the \emph{leverage} increases, because the \emph{margin debt} is fixed while the wealth drops.
-      \vskip1ex
-      If the asset price drops enough so that the wealth reaches zero, then the investment is liquidated and the investor is ruined.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/simu_prices.png}
-      <<echo=(-(1:5)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-set.seed(1121)  # Reset random number generator
-# Simulate asset prices
-calc_pricev <- function(x) cumprod(1 + rnorm(1e3, sd=0.01))
-price_paths <- sapply(1:3, calc_pricev)
-plot(price_paths[, 1], type="l", lwd=3,
-     main="Simulated Asset Prices",
-     ylim=range(price_paths),
-     lty="solid", xlab="time", ylab="price")
-lines(price_paths[, 2], col="blue", lwd=3)
-lines(price_paths[, 3], col="orange", lwd=3)
-abline(h=0.5, col="red", lwd=3)
-text(x=200, y=0.5, pos=3, labels="liquidation threshold")
-      @
-  \end{columns}
-\end{block}
-
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Investing With Fixed Leverage}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In order to avoid ruin, the investor may choose to maintain a fixed \emph{leverage ratio} equal to $k_f$, so that the amount invested in the \emph{risky asset} is proportional to the \emph{wealth}: $k_f \, w_t$.
-      \vskip1ex
-      This requires buying the \emph{risky asset} when its price increases, and selling it when it drops.
-      \vskip1ex
-      The return on the \emph{risky asset} in a single period is equal to: $k_f \, w_t \, r_t$, so the \emph{terminal wealth} at time $t$ is equal to the compounded returns:
-      \begin{displaymath}
-        w_t = (1 + k_f \, r_1) \ldots (1 + k_f \, r_t) = \prod_{i=1}^t {(1 + k_f \, r_t)}
-      \end{displaymath}
-      The utility of the \emph{terminal wealth} is equal to the sum of the utilities of single periods:
-      \begin{flalign*}
-        & \mathbbm{E}[\log{w_t}] = \mathbbm{E}[\log((1 + k_f \, r_1) \ldots (1 + k_f \, r_t))] &\\
-        & = \sum_{i=1}^t {\mathbbm{E}[\log{(1 + k_f \, r_t)}]} = t \, \mathbbm{E}[\log{(1 + k_f \, r)}]
-      \end{flalign*}
-      The last equality holds because all the utilities of single periods are the same.
-    \column{0.5\textwidth}
-      Let the returns over a short time period be equal to $r$, with probability distribution $p(r)$.
-      \vskip1ex
-      The mean return $\bar{r}$, and variance $\sigma^2$ are:
-      \begin{displaymath}
-        \bar{r} = \int {r \, p(r) \, \mathrm{d}r} \; ; \quad
-        \sigma^2 = \int {(r - \bar{r})^2 \, p(r) \, \mathrm{d}r}
-      \end{displaymath}
-      Since the returns are over a short time period, we have: $r \ll 1$ and $\bar{r} \ll \sigma$, so that we can replace $r - \bar{r}$ with $r$ as follows:
-      \begin{displaymath}
-        \int {(r - \bar{r})^2 \, p(r) \, \mathrm{d}r} \approx \int {r^2 \, p(r) \, \mathrm{d}r}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Utility of Leveraged Asset Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      So the utility of the \emph{terminal wealth} $u_t$ is equal to the utility of a single period times the number of periods:
-      \begin{displaymath}
-        u_t = \mathbbm{E}[\log{w_t}] = t \, \mathbbm{E}[\log{(1 + k_f \, r)}] = t \, u_r
-      \end{displaymath}
-      The utility of the asset returns $u_r$ is equal to:
-      \begin{displaymath}
-        u_r = \mathbbm{E}[\log{(1 + k_f \, r)}] = \int {\log(1 + k_f \, r) \, p(r) \, \mathrm{d}r}
-      \end{displaymath}
-      The leverage $k_f$ is limited so that $(1 + k_f \, r) > 0$ for all return values $r$.
-      \vskip1ex
-      If the mean returns are positive, then at first the utility increases with leverage, but only up to a point.
-      \vskip1ex
-      With higher leverage, the negative utility of time periods with negative returns becomes significant, forcing the aggregate utility to drop.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the VTI returns
-retp <- rutils::etfenv$returns$VTI
-retp <- na.omit(retp)
-c(mean=mean(retp), std=sd(retp))
-range(retp)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/util_rets.png}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Define vectorized logarithmic utility function
-utilfun <- function(kellyfrac, retp) {
-  sapply(kellyfrac, function(x) sum(log(1 + x*retp)))
-}  # end utilfun
-utilfun(1, retp)
-utilfun(c(1, 4), retp)
-# Plot the logarithmic utility
-curve(expr=utilfun(x, retp=retp),
-      xlim=c(0.1, 5), xlab="leverage", ylab="utility",
-      main="Utility of Asset Returns", lwd=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Kelly Criterion for Optimal Leverage of Asset Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{logarithmic utility}  $u_r$ can be expanded in the moments of the return distribution:
-      \begin{flalign*}
-        & u_r = \mathbbm{E}[\log{(1 + k_f \, r)}] = \int {\log(1 + k_f \, r) \, p(r) \, \mathrm{d}r} & \\
-        & = \int {(k_f \, r - \frac{(k_f \, r)^2}{2} + \frac{(k_f \, r)^3}{3} - \frac{(k_f \, r)^4}{4}) \, p(r) \, \mathrm{d}r} & \\
-        & = k_f \bar{r} - \frac{k_f^2 \sigma^2}{2} + \frac{k_f^3 \sigma^3 \varsigma}{3} - \frac{k_f^4 \sigma^4 \kappa}{4}
-      \end{flalign*}
-      Where $\varsigma = \int {\frac{r^3}{\sigma^3} \, p(r) \, \mathrm{d}r}$ is the \emph{skewness}, and $\kappa = \int {\frac{r^4}{\sigma^4} \, p(r) \, \mathrm{d}r}$ is the \emph{kurtosis}.
-      \vskip1ex
-      The \emph{Kelly leverage} which maximizes the \emph{utility} is found by equating the derivative of \emph{utility} to zero:
-      \begin{displaymath}
-        \frac{\mathrm{d} u_r}{\mathrm{d}k_f} = \bar{r} - k_f \sigma^2 + k_f^2 \sigma^3 \varsigma - k_f^3 \sigma^4 \kappa = 0
-      \end{displaymath}
-      % wippp
-      This shows that the logarithmic utility has positive odd derivatives and negative even derivatives.
-    \column{0.5\textwidth}
-      Assuming that the third and fourth moments $\sigma^4 \varsigma$ and $\sigma^4 \kappa$ are small and can be neglected, we get:
-      \begin{displaymath}
-        k_f = \frac{\bar{r}}{\sigma^2} = \frac{S_r}{\sigma} \; ; \quad u_r = \frac{1}{2} \frac{{\bar{r}}^2}{\sigma^2} = \frac{1}{2} S_r^2
-      \end{displaymath}
-      The \emph{Kelly leverage} is \emph{approximately} equal to the \emph{Sharpe ratio} divided by the \emph{standard deviation}.
-      \vskip1ex
-      The optimal utility $u_r$ is \emph{approximately} equal to half the \emph{Sharpe ratio} $S_r$ squared.
-      \vskip1ex
-      The \emph{standard deviation} and \emph{Sharpe ratio} are calculated over the same time interval as the returns (not annualized).
-      <<echo=TRUE,eval=FALSE>>=
-# Approximate Kelly leverage
-mean(retp)/var(retp)
-PerformanceAnalytics::KellyRatio(R=retp, method="full")
-# Kelly leverage
-unlist(optimize(
-  f=function(x) -utilfun(x, retp),
-  interval=c(1, 4)))
-      @
-    \vspace{-1em}
-%    \vspace{-1em}
-%    \includegraphics[width=0.45\paperwidth]{figure/kelly_returns-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Kelly Strategy Wealth Path}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The wealth of a Kelly Strategy with a fixed leverage ratio $k_f$ is equal to:
-      \begin{displaymath}
-        w_t = \prod_{i=1}^t {(1 + k_f \, r_t)}
-      \end{displaymath}
-      The \emph{Kelly fraction} $k_f$ provides the optimal leverage to maximize the utility of wealth, by balancing the benefit of leveraging higher positive returns, with the risk of ruin due to excessive leverage.
-      \vskip1ex
-      If the mean asset returns are positive, then a higher leverage ratio provides higher returns.
-      \vskip1ex
-      But if the leverage is too high, then the losses in periods with negative returns wipe out most of the wealth, so then it's slow to recover.
-      <<echo=(-(1:2)),eval=FALSE>>=
-# Calculate the VTI returns
-retp <- rutils::etfenv$returns$VTI
-retp <- na.omit(retp)
-# Calculate the wealth paths
-kelly_ratio <- drop(mean(retp)/var(retp))
-kelly_wealthv <- cumprod(1 + kelly_ratio*retp)
-hyper_kelly <- cumprod(1 + (kelly_ratio+2)*retp)
-sub_kelly <- cumprod(1 + (kelly_ratio-2)*retp)
-kelly_paths <- cbind(kelly_wealth, hyper_kelly, sub_kelly)
-colnames(kelly_paths) <- c("kelly", "hyper-kelly", "sub-kelly")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/kelly_wealth.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot wealth paths
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "orange", "blue")
-quantmod::chart_Series(kelly_paths, theme=plot_theme, name="Wealth Paths")
-legend("topleft", legend=colnames(kelly_paths),
-       inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5, 
-       col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Kelly Strategy With Margin Account}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{margin debt} $m_t$ is equal to the dollar amount borrowed to purchase the \emph{risky asset}.
-      \vskip1ex
-      The wealth $w_t$ at time $t$ is equal to the initial wealth $w_0 = 1$ plus the dollar amount of the \emph{risky asset} $a_t$, minus the \emph{margin debt} $m_t$: $w_t = 1 + a_t - m_t$.
-      \vskip1ex
-      The dollar amount of the \emph{risky asset} $a_t$ is equal to the wealth $w_t$ times the \emph{leverage} $k_f$: $a_t = k_f w_t$.
-      \vskip1ex
-      So the \emph{margin debt} $m_t$ is proportional to the wealth $w_t$: $m_t = (k_f - 1) w_t + 1$.
-      \vskip1ex
-      The wealth changes from $w_{t-1}$ to: $w_t = w_{t-1} (1 + k_f \, r_t)$, while the dollar amount of the \emph{risky asset} changes from $a_{t-1} = k_f w_{t-1}$ to: $a_t = k_f w_{t-1} (1 + r_t)$, so that the leverage changes from $k_f$ to:
-      \begin{displaymath}
-        \frac{k_f w_{t-1} (1 + r_t)}{w_{t-1} (1 + k_f \, r_t)} = \frac{k_f (1 + r_t)}{1 + k_f \, r_t}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      In order to maintain a fixed \emph{leverage ratio} equal to $k_f$, the investor must actively trade the \emph{risky asset}, and the \emph{margin debt} $m_t$ changes over time.
-      \vskip1ex
-      The change in margin in a single time period is equal to:
-      \begin{displaymath}
-        \Delta m_t = (k_f - 1) \Delta w_t = k_f (k_f - 1) w_{t-1} r_t
-      \end{displaymath}
-      The dollar amount of the \emph{risky asset} traded is equal to the change in \emph{margin}.
-      \vskip1ex
-      Therefore the investor must borrow on margin and buy the \emph{risky asset} when its price increases, and sell it when it drops.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Kelly Strategy With Transaction Costs of Trading}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bid-offer spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
-      \vskip1ex
-      The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
-      \vskip1ex
-      The \emph{transaction costs} $c^r$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the \emph{risky asset}:
-      \begin{displaymath}
-        c^r = \frac{\delta}{2} \left| \Delta m_t \right|
-      \end{displaymath}
-      If the transaction costs are much less than the change in wealth $c^r \ll \left| \Delta w_t \right|$, then we can write approximately:
-      \begin{displaymath}
-        c^r = \frac{\delta}{2} k_f (k_f - 1) w_{t-1} \left| r_t \right|
-      \end{displaymath}
-    \column{0.5\textwidth}
-      The wealth of the Kelly Strategy after accounting for the \emph{bid-offer spread} is then equal to:
-      \begin{displaymath}
-        w_t = \prod_{i=1}^t {(1 + k_f \, r_t - \frac{\delta}{2} k_f (k_f - 1) \left| r_t \right|)}
-      \end{displaymath}
-      The effect of the \emph{bid-offer spread} is to reduce the effective asset returns by an amount proportional to the \emph{bid-offer spread}.
-      <<echo=TRUE,eval=FALSE>>=
-# bid_offer equal to 10 bps for liquid ETFs
-bid_offer <- 0.001
-# Calculate the wealth paths
-kelly_ratio <- drop(mean(retp)/var(retp))
-wealthv <- cumprod(1 + kelly_ratio*retp)
-wealth_trans <- cumprod(1 + kelly_ratio*retp - 
-  0.5*bid_offer*kelly_ratio*(kelly_ratio-1)*abs(retp))
-# Calculate the compounded wealth from returns
-wealthv <- cbind(wealthv, wealth_trans)
-colnames(wealthv) <- c("Kelly", "Including bid-offer")
-# Plot compounded wealth
-dygraphs::dygraph(wealthv, main="Kelly Strategy With Transaction Costs") %>%
-  dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: The Half-Kelly Criterion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In reality investors don't know the probability of winning or the odds of the gamble, so they can't accurately Calculate the optimal \emph{Kelly fraction}.
-      \vskip1ex
-      The \emph{Kelly fraction}: $k_f = \frac{\bar{r}}{\sigma^2}$ is especially sensitive to the uncertainty of the expected returns $\bar{r}$.
-      \vskip1ex
-      If the expected returns are over-estimated, then it can produce an inflated value of the \emph{Kelly fraction}, leading to ruin.
-      \vskip1ex
-      The risk of applying too much leverage (over-betting) is much greater than the risk of applying too little leverage (under-betting).
-      \vskip1ex
-      Too much leverage (over-betting) not only reduces returns, but it increases the risk of ruin.
-      \vskip1ex
-      So in practice many investors apply only half the theoretical \emph{Kelly fraction} (the Half-Kelly), to reduce the risk of ruin.
-    \column{0.5\textwidth}
-      Perform bootstrap simulation to obtain the standard error of the \emph{Kelly fraction}.
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Plot several Kelly curves
-curve(expr=kelly_frac(x, b=1), xlim=c(0, 5),
-      ylim=c(-1, 1.5), xlab="betting odds",
-      ylab="kelly fraction", main="", lwd=2)
-abline(h=0.5, lwd=2, col="red")
-text(x=1.5, y=0.5, pos=3, cex=0.8, labels="b=1.0; max fraction=0.5")
-curve(expr=kelly_frac(x, b=0.5), add=TRUE, main="", lwd=2)
-abline(h=1.0, lwd=2, col="red")
-text(x=1.5, y=1.0, pos=3, cex=0.8, labels="b=0.5; max fraction=1.0")
-title(main="Kelly fraction", line=-0.8)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Risk Aversion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Risk aversion is the investor preference to avoid losses more than to seek similar percentage gains in wealth.
-      \vskip1ex
-      For example, for a risk averse investor, a $10\%$ loss of wealth is more important than a $10\%$ gain.
-      \vskip1ex
-      Risk aversion is associated with the \emph{diminishing marginal utility} of the percentage change in wealth $\Delta w$.
-      \vskip1ex
-      This manifests itself as a concave utility function, with a negative second derivative $u''(w) < 0$.
-      \vskip1ex
-      For example, the \emph{logarithmic utility} function is concave.
-      \vskip1ex
-      The Arrow-Pratt coefficient of relative risk aversion is proportional to the convexity $u''(w)$ of the utility, and is defined as: $\eta = - \frac{w \, u''(w)}{u'(w)}$.
-      \vskip1ex
-      The relative risk aversion of \emph{logarithmic utility} is equal to one: $\eta = 1$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/util_log2.png}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Plot logarithmic utility function
-curve(expr=log, lwd=3, col="blue", xlim=c(0.5, 5),
-      xlab="wealth", ylab="utility",
-      main="Logarithmic Utility")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Constant Relative Risk Aversion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      It's not a given that all investors have a risk aversion coefficient equal to $1$, and other \emph{utility functions} are possible.
-      \vskip1ex
-      The Constant Relative Risk Aversion (\emph{CRRA}) utility function is a generalization of logarithmic utility:
-      \begin{displaymath}
-        u(w) = \frac{w^{1 - \eta} - 1}{1 - \eta}
-      \end{displaymath}
-      Where $\eta$ is the risk aversion parameter.
-      \vskip1ex
-      The relative risk aversion of the \emph{CRRA} utility function is constant and equal to $\eta$.
-      \vskip1ex
-      When the risk aversion parameter is equal to one $\eta = 1$, then the \emph{CRRA} utility function is equal to the logarithmic utility.
-      \vskip1ex
-      In practice, the risk aversion parameter $\eta$ is not known, and must be estimated through empirical studies.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/util_crra.png}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Define CRRA utility
-cr_ra <- function(w, ra) {
-  (w^(1-ra) - 1)/(1-ra)
-}  # end cr_ra
-# Plot utility functions
-curve(expr=cr_ra(x, ra=0.7), xlim=c(0.5, 5), lwd=3,
-      xlab="wealth", ylab="utility", main="", col="blue")
-curve(expr=log, add=TRUE, lwd=3)
-curve(expr=cr_ra(x, ra=1.3), add=TRUE, lwd=3, col="red")
-# Add title and legend
-title(main="CRRA Utility", line=0.5)
-legend(x="topleft", legend=c("risk seeking", "logarithmic", "risk averse"),
-       title="Risk Aversion", inset=0.05, cex=0.8, bg="white", y.intersp=0.5, 
-       lwd=6, lty=1, bty="n", col=c("blue", "black", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: CRRA Optimal Leverage}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      It's not a given that all investors have a risk aversion coefficient equal to $1$, and other \emph{utility functions} are possible.
-      \vskip1ex
-      The Constant Relative Risk Aversion (\emph{CRRA}) utility function is a generalization of logarithmic utility:
-      \begin{displaymath}
-        u(w) = \frac{w^{1 - \eta} - 1}{1 - \eta}
-      \end{displaymath}
-      Where $\eta$ is the risk aversion parameter.
-      \vskip1ex
-      The relative risk aversion of the \emph{CRRA} utility function is constant and equal to $\eta$.
-      \vskip1ex
-      When the risk aversion parameter is equal to one $\eta = 1$, then the \emph{CRRA} utility function is equal to the logarithmic utility.
-      \vskip1ex
-      In practice, the risk aversion parameter $\eta$ is not known, and must be estimated through empirical studies.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/util_crra.png}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=5, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-# Define CRRA utility
-cr_ra <- function(w, ra) {
-  (w^(1-ra) - 1)/(1-ra)
-}  # end cr_ra
-# Plot utility functions
-curve(expr=cr_ra(x, ra=0.7), xlim=c(0.5, 5), lwd=3,
-      xlab="wealth", ylab="utility", main="", col="blue")
-curve(expr=log, add=TRUE, lwd=3)
-curve(expr=cr_ra(x, ra=1.3), add=TRUE, lwd=3, col="red")
-# Add title and legend
-title(main="CRRA Utility", line=0.5)
-legend(x="topleft", legend=c("risk seeking", "logarithmic", "risk averse"),
-       title="Risk Aversion", inset=0.05, cex=0.8, bg="white", y.intersp=0.5, 
-       lwd=6, lty=1, bty="n", col=c("blue", "black", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%
-\subsection{draft: CRRA Strategy Wealth Path}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The wealth of a Kelly Strategy with a fixed leverage ratio $k_f$ is equal to:
-      \begin{displaymath}
-        w_t = \prod_{i=1}^t {(1 + k_f \, r_t)}
-      \end{displaymath}
-      The \emph{Kelly fraction} $k_f$ provides the optimal leverage to maximize the utility of wealth, by balancing the benefit of leveraging higher positive returns, with the risk of ruin due to excessive leverage.
-      \vskip1ex
-      If the mean asset returns are positive, then a higher leverage ratio provides higher returns.
-      \vskip1ex
-      But if the leverage is too high, then the losses in periods with negative returns wipe out most of the wealth, so then it's slow to recover.
-      <<echo=(-(1:2)),eval=FALSE>>=
-# Calculate the VTI returns
-retp <- rutils::etfenv$returns$VTI
-retp <- na.omit(retp)
-# Calculate the wealth paths
-kelly_ratio <- drop(mean(retp)/var(retp))
-kelly_wealthv <- cumprod(1 + kelly_ratio*retp)
-hyper_kelly <- cumprod(1 + (kelly_ratio+2)*retp)
-sub_kelly <- cumprod(1 + (kelly_ratio-2)*retp)
-kelly_paths <- cbind(kelly_wealth, hyper_kelly, sub_kelly)
-colnames(kelly_paths) <- c("kelly", "hyper-kelly", "sub-kelly")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/kelly_wealth.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot wealth paths
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "orange", "blue")
-quantmod::chart_Series(kelly_paths, theme=plot_theme,
-             name="Wealth Paths")
-legend("topleft", legend=colnames(kelly_paths),
-       inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5, 
-       col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Utility of Lottery Tickets}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Lottery tickets are equivalent to binary gambles with a very small probability of winning $p$, but a very large winning amount $a$, and a small loss amount $b$ equal to the ticket price.
-      \vskip1ex
-      The expected payout $\mu = p \, a - q \, b$ of most lottery tickets is negative.
-      \vskip1ex
-      So under \emph{logarithmic utility}, the Kelly fraction $k_f$ for most lottery tickets is also negative, meaning that investors should not be expected to buy these lottery tickets.
-      \vskip1ex
-      But in reality many people do buy lottery tickets with negative expected payouts, which means that their utility functions are not logarithmic.
-      \vskip1ex
-      The demand for lottery tickets can be explained by assuming a strong demand for positive \emph{skewness}, which exceeds the demand for a positive payout.
-      \vskip1ex
-      People buy lottery tickets because they want a small chance of a very large payout, even if the average payout is negative.
-    \column{0.5\textwidth}
-      Without loss of generality we can assume that the lottery ticket price is one dollar $b = 1$, that it pays out $a$ dollars, and that the expected payout is equal to zero: $\mu = p \, a - q \, b = 0$.
-      \vskip1ex
-      Then the probabilities of winning and losing are equal to:
-      $p = \frac{1}{a + 1}$ and $q = \frac{a}{a + 1}$.
-      \vskip1ex
-      The variance is equal to: $\sigma^2 = p \, q \, (a + 1)^2 = a$.
-      \vskip1ex
-      And the \emph{skewness} is equal to:
-      $\varsigma = \frac{1}{\sigma^3} (\frac{a^3}{a + 1} - \frac{a}{a + 1}) = \frac{a - 1}{\sqrt{a}}$.
-      \vskip1ex
-      So the positive \emph{skewness} of a lottery ticket increases as the square root of the \emph{betting odds} $a$, and it can become very large for large \emph{betting odds}.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Investor \protect\emph{Risk Aversion}, \protect\emph{Prudence} and \protect\emph{Temperance}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Investor risk and return preferences depend on the signs of the derivatives of their \emph{utility} function.
-      \vskip1ex
-      Investors with \emph{logarithmic utility} have positive \emph{odd} derivatives ($u'(w) > 0$ and $u'''(w) > 0$) and negative \emph{even} derivatives ($u''(w) < 0$ and $u''''(w) < 0$), which is typical for most other investors as well.
-      \vskip1ex
-      \emph{Risk averse} investors have a negative second derivative of utility $u''(w) < 0$.
-      \vskip1ex
-      The demand for lottery tickets shows that investors' utility typically has a positive third derivative $u'''(w) > 0$.
-      \vskip1ex
-      Positive \emph{odd} derivatives imply a preference for larger \emph{odd moments} of the change in the wealth distribution (mean, skewness).
-      \vskip1ex
-      Negative \emph{even} derivatives imply a preference for smaller \emph{even moments} (variance, kurtosis).
-      \vskip1ex
-      The preference for smaller \emph{variance} is called \emph{risk aversion}, for larger \emph{skewness} is called \emph{prudence}, and for smaller \emph{kurtosis} is called \emph{temperance}.
-    \column{0.5\textwidth}
-      The expected change of the \emph{utility} of wealth $\mathbb{E}[\Delta u(w)]$ can be expanded in the moments of the wealth distribution $\Delta w$:
-      \begin{flalign*}
-        \mathbb{E}[\Delta u(w)] &= u'(w) \mathbb{E}[\Delta w] + \frac{u''(w)}{2} \sigma^2 &\\
-        & + \frac{u'''(w)}{3!} \mu3 + \frac{u''''(w)}{4!} \mu3
-      \end{flalign*}
-      Where $\mathbb{E}[\Delta w]$ is the expected change of wealth, $\sigma^2 = \int {{\Delta w}^2 \, p(w) \, \mathrm{d}w}$ is the \emph{variance} of The change in wealth, and $\mu3 = \int {{\Delta w}^3 \, p(w) \, \mathrm{d}w} = \sigma^3 \varsigma$ and $\mu4 = \int {{\Delta w}^4 \, p(w) \, \mathrm{d}w} = \sigma^4 \kappa$ are the third and fourth moments, proportional to the \emph{skewness} $\varsigma$ and the \emph{kurtosis} $\kappa$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Investor Preferences and Empirical Return Distributions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The investor preference for higher \emph{returns} and for lower \emph{volatility} is expressed by maximizing the \emph{Sharpe ratio}.
-      \vskip1ex
-      The third and fourth moments of asset returns are usually much smaller than the \emph{variance}, so they typically have a smaller effect on the investor risk and return preferences.
-      \vskip1ex
-      Nevertheless, there is evidence that investors also have significant preferences for positive \emph{skewness} and lower \emph{kurtosis}.
-      \vskip1ex
-      But stock returns typically have negative \emph{skewness} and excess \emph{kurtosis}, the opposite of what investors prefer.
-      \vskip1ex
-      Many investors may prefer positive \emph{skewness}, even at the expense of lower \emph{returns}, similar to the buyers of lottery tickets.
-      \vskip1ex
-      A paper by Amaya asks if the
-      \href{http://papers.ssrn.com/sol3/papers.cfm?abstract_id=1898735}{\emph{Realized Skewness Predicts the Cross-Section of Equity Returns?}}
-      \vskip1ex
-      But higher moments are hard to estimate accurately from low frequency (daily) returns, which makes empirical investigations more difficult.
-    \column{0.5\textwidth}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the VTI returns
-retp <- rutils::etfenv$returns$VTI
-retp <- na.omit(retp)
-# Calculate the higher moments of VTI returns
-c(mean=sum(retp),
-  variance=sum(retp^2),
-  mom3=sum(retp^3),
-  mom4=sum(retp^4))/NROW(retp)
-# Calculate the higher moments of minutely SPY returns
-spy <- HighFreq::SPY[, 4]
-spy <- na.omit(spy)
-spy <- rutils::diffit(log(spy))
-c(mean=sum(spy),
-  variance=sum(spy^2),
-  mom3=sum(spy^3),
-  mom4=sum(spy^4))/NROW(spy)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Utility of Stock and Bond Portfolio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The utility $u$ of the stock and bond portfolio with weights $stocku, bondu$ is equal to:
-      \begin{displaymath}
-        u = \sum_{i=1}^n {\log(1 + stocku \, r^s_i + bondu \, r^b_i)}
-      \end{displaymath}
-      Where $r^s_i, r^b_i$ are the stock and bond returns.
-      <<echo=TRUE,eval=FALSE>>=
-retp <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
-# Logarithmic utility of stock and bond portfolio
-utilfun <- function(stocku, bondu) {
-  -sum(log(1 + stocku*retp$VTI + bondu*retp$IEF))
-}  # end utilfun
-# Create matrix of utility values
-stocku <- seq(from=3, to=7, by=0.2)
-bondu <- seq(from=12, to=20, by=0.2)
-utilm <- sapply(bondu, function(y) sapply(stocku,
-  function(x) utilfun(x, y)))
-# Set rgl options and load package rgl
-options(rgl.useNULL=TRUE)
-library(rgl)
-# Draw 3d surface plot of utility
-rgl::persp3d(stocku, bondu, utilm, col="green",
-        xlab="stocks", ylab="bonds", zlab="utility")
-# Render the surface plot
-rgl::rglwidget(elementId="plot3drgl")
-# Save the surface plot to png file
-rgl::rgl.snapshot("utility_surface.png")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/utility_surface.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Kelly Optimal Weights}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Kelly optimal stock and bond portfolio weights $stocku, bondu$ can be calculated by maximizing the utility $u$.
-      <<echo=TRUE,eval=FALSE>>=
-# Approximate Kelly weights
-weightv <- sapply(retp, function(x) mean(x)/var(x))
-# Kelly weight for stocks
-unlist(optimize(f=function(x) utilfun(x, bondu=0), interval=c(1, 4)))
-# Kelly weight for bonds
-unlist(optimize(f=function(x) utilfun(x, stocku=0), interval=c(1, 14)))
-# Vectorized utility of stock and bond portfolio
-utility_vec <- function(weights) {
-  utilfun(weightv[1], weightv[2])
-}  # end utility_vec
-# Optimize with respect to vector argument
-optiml <- optim(fn=utility_vec, par=c(3, 10),
-                method="L-BFGS-B",
-                upper=c(8, 20), lower=c(2, 5))
-# Exact Kelly weights
-optiml$par
-      @
-    \column{0.5\textwidth}
-      The Kelly optimal weights can be calculated approximately by first calculating the individual stock and bond weights, and then multiplying them by the Kelly weight of the combined portfolio.
-      <<echo=TRUE,eval=FALSE>>=
-# Approximate Kelly weights
-retsport <- (retp %*% weightv)
-drop(mean(retsport)/var(retsport))*weightv
-# Exact Kelly weights
-optiml$par
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Kelly Optimal Stock and Bond Portfolio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In practice, the Kelly optimal weights under logarithmic utility are too aggressive and they require very active trading, so half-Kelly or even quarter-Kelly weights are used instead.
-      <<echo=TRUE,eval=FALSE>>=
-# Quarter-Kelly sub-optimal weights
-weightv <- optiml$par/4
-# Plot Kelly optimal portfolio
-retp <- cbind(retp, weightv[1]*retp$VTI + weightv[2]*retp$IEF)
-colnames(retp)[3] <- "Kelly_sub_optimal"
-# Calculate the compounded wealth from returns
-wealthv <- cumprod(1 + retp)
-# Plot compounded wealth
-dygraphs::dygraph(wealthv, main="Stock and Bond Portfolio") %>%
-  dyOptions(colors=c("green", "blue", "green")) %>%
-  dySeries("Kelly_sub_optimal", color="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/kelly_stocks_bonds.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling Kelly Weights}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Kelly weights $k_f$ are calculated daily over a rolling look-back interval:
-      \begin{displaymath}
-        k_f = \frac{\bar{r_t}}{\sigma^2_t}
-      \end{displaymath}
-      \vskip1ex
-      The distribution of the Kelly weights depends on the rolling returns $\bar{r_t}$ and variance $\sigma^2_t$.
-      <<echo=TRUE,eval=FALSE>>=
-retp <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
-# Calculate the rolling returns and variance
-look_back <- 200
-var_rolling <- HighFreq::roll_var(retp, look_back)
-weightv <- HighFreq::roll_sum(retp, look_back)/look_back
-weightv <- weightv/var_rolling
-weightv[1, ] <- 1/NCOL(weights)
-weightv <- zoo::na.locf(weights)
-sum(is.na(weights))
-range(weights)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/kelly_distr.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the weights
-x11(width=6, height=5)
-par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
-plot(density(retp$IEF), t="l", lwd=3, col="red",
-     xlab="weights", ylab="density",
-     ylim=c(0, max(density(retp$VTI)$y)),
-     main="Kelly Weight Distributions")
-lines(density(retp$VTI), t="l", col="blue", lwd=3)
-legend("topright", legend=c("VTI", "IEF"),
-       inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5, 
-       col=c("blue", "red"), bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling Kelly Strategy For Stocks}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In the rolling Kelly strategy, the leverage of the risky asset $k_f$ changes over time.
-      \vskip1ex
-      The leverage is equal to the updated weight from the previous period.
-      <<echo=TRUE,eval=FALSE>>=
-# Scale and lag the Kelly weights
-weightv <- lapply(weightv, function(x) 10*x/sum(abs(range(x))))
-weightv <- do.call(cbind, weightv)
-weightv <- rutils::lagit(weights)
-# Calculate the compounded Kelly wealth and VTI
-wealthv <- cbind(cumprod(1 + weightv$VTI*retp$VTI), cumprod(1 + retp$VTI))
-colnames(wealthv) <- c("Kelly Strategy", "VTI")
-dygraphs::dygraph(wealthv, main="VTI Strategy Using Rolling Kelly Weight") %>%
-  dyAxis("y", label="Kelly Strategy", independentTicks=TRUE) %>%
-  dyAxis("y2", label="VTI", independentTicks=TRUE) %>%
-  dySeries(name="Kelly Strategy", axis="y", label="Kelly Strategy", strokeWidth=1, col="red") %>%
-  dySeries(name="VTI", axis="y2", label="VTI", strokeWidth=1, col="blue")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/kelly_roll_vti.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling Kelly Strategy With Transaction Costs}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{margin debt} $m_t$ is proportional to the wealth $w_t$: $m_t = (k_f - 1) w_t + 1$.
-      \vskip1ex
-      The dollar amount of the \emph{risky asset} traded is equal to the change in \emph{margin}, equal to: $\Delta m_t = \Delta [(k_f - 1) w_t]$.
-      \vskip1ex
-      If the transaction costs are large, then they will reduce the wealth and reduce the dollar amount of the \emph{risky asset} held by the investor.
-      \vskip1ex
-      The transaction costs depend on the change in wealth, and the wealth is decreased by the transaction costs.
-      \vskip1ex
-      So the transaction costs in each time period must be calculated recursively in a loop from the wealth in the past period.
-      \vskip1ex
-      If the transaction costs are much less than the change in wealth $c^r \ll \left| \Delta w_t \right|$, then they can be calculated approximately as the absolute value of the change in \emph{margin} $m_t^{nc}$ for a wealth path with no transaction costs:
-      \begin{displaymath}
-        c^r = \frac{\delta}{2} \left| \Delta m_t^{nc} \right|
-      \end{displaymath}
-    \column{0.5\textwidth}
-      The transaction costs as a percentage of wealth are equal to: $c_t/w_t^{nc}$, where $w_t^{nc}$ is the wealth assuming no transaction costs.
-      \vskip1ex
-      The wealth of the Kelly Strategy after accounting for the \emph{bid-offer spread} is then equal to:
-      \begin{displaymath}
-        w_t = \prod_{i=1}^t {(1 + k_f \, r_t - \frac{\delta}{2} \frac{\left| \Delta m_i^{nc} \right|}{w_i^{nc}})}
-      \end{displaymath}
-      The effect of the \emph{bid-offer spread} is to reduce the effective asset returns by an amount proportional to the \emph{bid-offer spread}.
-      <<echo=TRUE,eval=FALSE>>=
-# bid_offer equal to 10 bps for liquid ETFs
-bid_offer <- 0.001
-# Calculate the compounded Kelly wealth and margin
-wealthv <- cumprod(1 + weightv$VTI*retp$VTI)
-marginv <- (retp$VTI - 1)*wealthv + 1
-# Calculate the transaction costs
-costs <- bid_offer*drop(rutils::diffit(marginv))/2
-wealth_diff <- drop(rutils::diffit(wealthv))
-costs_rel <- ifelse(wealth_diff>0, costs/wealth_diff, 0)
-range(costs_rel)
-hist(costs_rel, breaks=10000, xlim=c(-0.02, 0.02))
-# Scale and lag the transaction costs
-costs <- rutils::lagit(abs(costs)/wealthv)
-# ReCalculate the compounded Kelly wealth
-wealth_trans <- cumprod(1 + retp$VTI*retp$VTI - costs)
-# Plot compounded wealth
-wealthv <- cbind(wealthv, wealth_trans)
-colnames(wealthv) <- c("Kelly", "Including bid-offer")
-dygraphs::dygraph(wealthv, main="Kelly Strategy With Transaction Costs") %>%
-  dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling Kelly Strategy For Stocks and Bonds}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In the rolling Kelly strategy, the leverage of the risky asset $k_f$ changes over time.
-      \vskip1ex
-      The leverage is equal to the updated weight from the previous period.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the compounded wealth from returns
-wealthv <- cumprod(1 + rowSums(weightv*retp))
-wealthv <- xts::xts(wealthv, zoo::index(retp))
-quantmod::chart_Series(wealthv, name="Rolling Kelly Strategy For VTI and IEF")
-# Calculate the compounded Kelly wealth and VTI
-wealthv <- cbind(wealthv, cumprod(1 + 0.6*retp$IEF + 0.4*retp$VTI))
-colnames(wealthv) <- c("Kelly Strategy", "VTI plus IEF")
-dygraphs::dygraph(wealthv, main="Rolling Kelly Strategy For VTI and IEF") %>%
-  dyAxis("y", label="Kelly Strategy", independentTicks=TRUE) %>%
-  dyAxis("y2", label="VTI plus IEF", independentTicks=TRUE) %>%
-  dySeries(name="Kelly Strategy", axis="y", label="Kelly Strategy", strokeWidth=1, col="red") %>%
-  dySeries(name="VTI plus IEF", axis="y2", label="VTI plus IEF", strokeWidth=1, col="blue")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/kelly_roll_vti_ief.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Evaluating Manager Skill}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Tests for Market Timing Skill}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Market timing} skill is the ability to forecast the direction and magnitude of market returns.
-      \vskip1ex
-      The \emph{market timing} skill can be measured by performing a \emph{linear regression} of a strategy's returns against a strategy with perfect \emph{market timing} skill.
-      \vskip1ex
-      The \emph{Merton-Henriksson} market timing test uses a linear \emph{market timing} term:
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(0, R_m - R_f)} + {\varepsilon}
-      \end{displaymath}
-      Where $R$ are the strategy returns, $R_m$ are the market returns, and $R_f$ are the risk-free rates.
-      \vskip1ex
-      If the coefficient $\gamma$ is statistically significant, then it's very likely due to \emph{market timing} skill.
-      \vskip1ex
-      The \emph{market timing} regression is a generalization of the \emph{Capital Asset Pricing Model}.
-      \vskip1ex
-      The \emph{Treynor-Mazuy} test uses a quadratic term, which makes it more sensitive to the magnitude of returns:
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma (R_m - R_f)^2 + {\varepsilon}
-      \end{displaymath}
-      <<echo=TRUE,eval=FALSE>>=
-# Test if IEF can time VTI
-retp <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
-retvti <- retp$VTI
-desv <- cbind(retp, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(desv)[3:4] <- c("merton", "treynor")
-# Merton-Henriksson test
-regmod <- lm(IEF ~ VTI + merton, data=desv); summary(regmod)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/timing_skill_ief_vti.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Treynor-Mazuy test
-regmod <- lm(IEF ~ VTI + treynor, data=desv); summary(regmod)
-# Plot residual scatterplot
-x11(width=6, height=5)
-resids <- (desv$IEF - regmod$coeff["VTI"]*retvti)
-plot.default(x=retvti, y=resids, xlab="VTI", ylab="IEF")
-title(main="Treynor-Mazuy Market Timing Test\n for IEF vs VTI", line=0.5)
-# Plot fitted (predicted) response values
-coefreg <- summary(regmod)$coeff
-fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
-tvalue <- round(coefreg["treynor", "t value"], 2)
-points.default(x=retvti, y=fitv, pch=16, col="red")
-text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Identifying Managers With Skill}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      % Adapt from RFinance\2017.Rmd and from file scratch.R.
-      \vskip1ex
-      Consider a binary investment (gamble) with the probability of winning equal to $p$, the winning amount (gain) equal to $a$, and the loss equal to $b$.
-      \vskip1ex
-      The investor makes no up-front payments, and either wins an amount $a$, or loses an amount $b$.
-      \vskip1ex
-      Assuming that an investor makes decisions exclusively on the basis of the expected value of future wealth, then they would choose to invest all their wealth on the gamble if its expected value is positive, and choose not to invest at all if its expected value is negative.
-    \column{0.5\textwidth}
-      <<results='asis',echo=FALSE,eval=TRUE>>=
-library(xtable)
-gamblev <- data.frame(win=c("p", "a"), lose=c("q = 1 - p", "-b"))
-rownames(gamblev) <- c("probability", "payout")
-# print(xtable(gamblev), comment=FALSE, size="tiny")
-print(xtable(gamblev), comment=FALSE)
-      @
-      The expected value of the gamble is equal to: $m = p \, a - q \, b$.
-      \vskip1ex
-      The variance of the gamble is equal to: $var=p \, q \, (a + b)^2$.
-      \vskip1ex
-      Without loss of generality we can assume that $p=q = \frac{1}{2}$,\\
-      $m = 0.5 \, (b - a)$,\\
-      $var=0.25 \, (a + b)^2$.
-      \vskip1ex
-      The \emph{Sharpe ratio} of the gamble is then equal to:
-      \begin{displaymath}
-        S_r = \frac{m}{sqrt(var)} = \frac{(b - a)}{(a + b)}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
 \section{Rebalancing Strategies}
 
 
@@ -1550,7 +157,7 @@ retd[1, ] <- pricev[1, ]
 pricen <- cumsum(retd)
 all.equal(pricen, pricev)
 # Compound the percentage returns
-pricen <- cumprod(1+retp)
+pricen <- cumprod(1 + retp)
 # Set the initial prices
 pricesi <- as.numeric(pricev[1, ])
 pricen <- lapply(1:NCOL(pricen), function (i) pricesi[i]*pricen[, i])
@@ -1729,7 +336,7 @@ datev <- zoo::index(pricev)
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Wealth of fixed shares equal to $0.5 each (without rebalancing)
 weightv <- c(0.5, 0.5)  # dollar weights
-wealthfs <- drop(cumprod(1+retp) %*% weightv)
+wealthfs <- drop(cumprod(1 + retp) %*% weightv)
 # Or using the dollar returns
 pricesi <- as.numeric(pricev[1, ])
 retd[1, ] <- pricev[1, ]
@@ -1838,7 +445,7 @@ dygraphs::dygraph(datav[endd], main="Fixed Dollar Portfolio Transaction Costs") 
 # Wealth of fixed shares (without rebalancing)
 wealthfs <- cumsum(retd %*% (weightv/pricesi))
 # Or compound the percentage returns
-wealthfs <- cumprod(1+retp) %*% weightv
+wealthfs <- cumprod(1 + retp) %*% weightv
 # Wealth of proportional allocations (with rebalancing)
 wealthpd <- cumprod(1 + retp %*% weightv)
 wealthv <- cbind(wealthfs, wealthpd)
@@ -1936,7 +543,7 @@ dygraphs::dygraph(wealthv[endd],
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of fixed shares (without rebalancing)
-wealthfs <- drop(apply(retp, 2, function(x) cumprod(1+x)) %*% weightv)-1
+wealthfs <- drop(apply(retp, 2, function(x) cumprod(1 + x)) %*% weightv)-1
 # Wealth of proportional dollar allocations (with rebalancing)
 wealthpd <- cumprod(1 + retp %*% weightv) - 1
 # Wealth of proportional target allocation (with rebalancing)
@@ -2176,11 +783,11 @@ is.list(bootd); NROW(bootd); dim(bootd[[1]])
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the distribution of terminal wealths under Windows
 wealthv <- parLapply(cluster, bootd, function(retp) {
-  apply(retp, 2, function(x) prod(1+x))
+  apply(retp, 2, function(x) prod(1 + x))
 })  # end parLapply
 # Calculate the distribution of terminal wealths under Mac-OSX or Linux
 wealthv <- mclapply(bootd, function(retp) {
-  apply(retp, 2, function(x) prod(1+x))
+  apply(retp, 2, function(x) prod(1 + x))
 }, mc.cores=ncores)  # end mclapply
 wealthv <- do.call(rbind, wealthv)
 class(wealthv); dim(wealthv); tail(wealthv)
@@ -2348,8 +955,8 @@ text(x=weightm, y=0.7*max(riskrets), pos=4, cex=1.2,
 symbolv <- c("VTI", "IEF", "DBC")
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
 # Calculate the all-weather portfolio wealth
-weightsaw <- c(0.30, 0.55, 0.15)
-retp <- cbind(retp, retp %*% weightvaw)
+weightaw <- c(0.30, 0.55, 0.15)
+retp <- cbind(retp, retp %*% weightaw)
 colnames(retp)[4] <- "All Weather"
 # Calculate the Sharpe ratios
 sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
@@ -2359,7 +966,7 @@ sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
       \includegraphics[width=0.45\paperwidth]{figure/portf_all_weather.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the cumulative wealth from returns
-wealthv <- cumprod(1+retp)
+wealthv <- cumprod(1 + retp)
 # Calculate the a vector of monthly end points
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 # dygraph all-weather wealth
@@ -2460,7 +1067,7 @@ for (t in 2:nrows) {
   bondv[t] <- (portfv[t] - stockv[t])
 }  # end for
 # dygraph plot of CPPI strategy
-pricev <- 100*cumprod(1+retp)
+pricev <- 100*cumprod(1 + retp)
 datav <- xts::xts(cbind(stockv, bondv, portfv, pricev), datev)
 colnames(datav) <- c("stocks", "bonds", "CPPI", "VTI")
 endd <- rutils::calc_endpoints(datav, interval="weeks")
@@ -2525,55 +1132,53 @@ dygraphs::dygraph(wealthv, main="Wealth of Equal Dollar Amount of Shares") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Risk Parity Strategy}
+\subsection{Risk Parity Strategy For Stocks and Bonds}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{Risk Parity} strategy the dollar portfolio allocations are rebalanced daily so that their dollar volatilities remain equal.
+      In the \emph{Risk Parity} strategy the portfolio weights are rebalanced daily so that their dollar volatilities remain equal.
       \vskip1ex
-      This means that the allocations $a_i$ are proportional to the \emph{standardized prices} ($\frac{p_i}{\sigma^d_i}$ - the dollar amounts of stocks with unit dollar volatilities):
-      $a_i \propto \frac{p_i}{\sigma^d_i}$, 
+      This means that the weights $w_i$ are proportional to the \emph{standardized prices} ($\frac{p_i}{\sigma^d_i}$ - the dollar amounts of stocks with unit dollar volatilities):
+      $w_i \propto \frac{p_i}{\sigma^d_i}$, 
       where $\sigma^d_i$ is the dollar volatility.
       \vskip1ex
       But the \emph{standardized prices} are equal to the inverse of the percentage volatilities $\sigma_i$:
       $\frac{p_i}{\sigma^d_i} = \frac{1}{\sigma_i}$,
-      so the allocations $a_i$ are proportional to the inverse of the percentage volatilities $a_i \propto \frac{1}{\sigma_i}$.
+      so the weights $w_i$ are proportional to the inverse of the percentage volatilities $w_i \propto \frac{1}{\sigma_i}$.
       \vskip1ex
-      In general, the dollar allocations $a_i$ may be set proportional to some target weights $\omega_i$:
+      In general, the dollar weights $w_i$ may be set proportional to some target weights $\omega_i$:
       \begin{displaymath}
-        a_i \propto \frac{\omega_i}{\sigma_i}
+        w_i \propto \frac{\omega_i}{\sigma_i}
       \end{displaymath}
       The risk parity strategy is also called the equal risk contributions (ERC) strategy.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the dollar and percentage returns for VTI and IEF
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
+# Calculate the dollar and percentage returns for stocks and bonds
+pricev <- rutils::etfenv$prices[, c("VTI", "TLT")]
 pricev <- na.omit(pricev)
 retd <- rutils::diffit(pricev)
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
-# Calculate the wealth of proportional allocations
+# Calculate the wealth of proportional dollar allocations
 weightv <- c(0.5, 0.5)
 retw <- retp %*% weightv
 wealthpd <- cumprod(1 + retw)
-# Calculate the rolling percentage volatility
-look_back <- 21
-volat <- HighFreq::roll_var(retp, look_back=look_back)
-iszero <- (rowSums(volat) == 0)
-volat[iszero, ] <- 1
-# Calculate the risk parity portfolio allocations
-alloc <- lapply(1:NCOL(pricev), 
-  function(x) weightv[x]/volat[, x])
-alloc <- do.call(cbind, alloc)
-# Scale allocations to 1 dollar total
-alloc <- alloc/rowSums(alloc)
-# Lag the allocations
-alloc <- rutils::lagit(alloc)
+# Calculate the trailing percentage volatility
+lambda <- 0.15
+volat <- HighFreq::run_var(retp, lambda=lambda)
+volat <- sqrt(volat)
+# Calculate the risk parity portfolio weights
+weightv <- ifelse(volat > 1e-4, 1/volat, 0)
+# Scale weights to 1 dollar total
+weightv <- weightv/rowSums(weightv)
+weightv[1, ] <- 0
+# Lag the weights
+weightv <- rutils::lagit(weightv)
 # Calculate the wealth of risk parity
-retw <- rowSums(retp*alloc)
-wealth_rp <- cumprod(1 + retw)
+retw <- rowSums(retp*weightv)
+wealthrp <- cumprod(1 + retw)
       @
   \end{columns}
 \end{block}
@@ -2588,9 +1193,7 @@ wealth_rp <- cumprod(1 + retw)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The risk parity strategy for \emph{VTI} and \emph{IEF} has lower absolute returns than the fixed ratio strategy because it's more overweight bonds. 
-      \vskip1ex
-      The risk parity strategy underperformed the fixed ratio strategy after \texttt{2020} because it's more overweight bonds. 
+      The risk parity strategy for stocks and bonds has a slightly higher Sharpe ratio, and also higher absolute returns than the proportional dollar strategy, despite the fact that it's more overweight bonds. 
       \vskip1ex
       Risk parity works better for assets with low correlations and very different volatilities, like stocks and bonds.
       \vskip1ex
@@ -2600,12 +1203,12 @@ wealth_rp <- cumprod(1 + retw)
       \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the log wealths
-datev <- zoo::index(pricev)
-wealthv <- log(cbind(wealthpd, wealth_rp))
-wealthv <- xts::xts(wealthv, datev)
+wealthv <- log(cbind(wealthpd, wealthrp))
+wealthv <- xts::xts(wealthv, zoo::index(pricev))
 colnames(wealthv) <- c("PropDollars", "Risk Parity")
-# Calculate the Sharpe ratios
-sqrt(252)*sapply(rutils::diffit(wealthv), function (x) mean(x)/sd(x))
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot a dygraph of the log wealths
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], 
@@ -2942,7 +1545,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Stop-loss Strategy}
+\subsection{The Stop-loss Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2954,19 +1557,20 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vskip1ex
       The stock is bought back after the price recovers, for example after the price reaches its previous maximum price.
       \vskip1ex
+      The stop-loss strategy trades a single \texttt{\$1} of stock, and is either long \texttt{\$1} of stock or it's flat (\texttt{\$0} of stock).
+      \vskip1ex
       The stop-loss strategy is trend-following because it expects prices to continue dropping.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI prices and returns
 pricev <- na.omit(rutils::etfenv$prices$VTI)
+nrows <- NROW(pricev)
 datev <- zoo::index(pricev)
-pricev <- drop(zoo::coredata(pricev))
 retp <- rutils::diffit(log(pricev))
-nrows <- NROW(retp)
 # Simulate stop-loss strategy
 stopl <- 0.05 # Stop-loss percentage
-pricem <- cummax(pricev) # Max prices
+pricem <- cummax(pricev) # Trailing maximum prices
 # Calculate the drawdown
 dd <- (pricev - pricem)
 pnls <- retp # Initialize PnLs
@@ -2977,9 +1581,9 @@ for (i in 1:(nrows-1)) {
 }  # end for
 # Same but without using loops in R
 pnls2 <- retp
-isdd <- rutils::lagit(dd < -stopl*pricem)
-pnls2 <- ifelse(isdd, 0, pnls2)
-all.equal(pnls, pnls2)
+insl <- rutils::lagit(dd < -stopl*pricem)
+pnls2 <- ifelse(insl, 0, pnls2)
+all.equal(pnls, pnls2, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -2998,10 +1602,10 @@ all.equal(pnls, pnls2)
       \vskip1ex
       And the stop-loss strategy also underperforms because it gets \emph{"whipsawed"} when prices are range-bound without a trend.  
       \vskip1ex
-      When prices are range-bound without a trend, the stop-loss strategy often stops because of a drawdown (goes flat risk), but the prices soon rebound, and then it's forced to buy back the stock.  (This is called a \emph{"whipsaw"}.)
+      When prices are range-bound without a trend, the stop-loss strategy often stops because of a drawdown (goes flat risk), but if the prices soon rebound, then it's forced to buy back the stock.  (This is called a \emph{"whipsaw"}.)
       <<echo=TRUE,eval=FALSE>>=
 # Combine the data
-wealthv <- xts::xts(cbind(retp, pnls), datev)
+wealthv <- cbind(retp, pnls)
 colnamev <- c("VTI", "Strategy")
 colnames(wealthv) <- colnamev
 # Calculate the Sharpe and Sortino ratios
@@ -3020,9 +1624,9 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph with shading
 # Create colors for background shading
-indic <- (rutils::diffit(isdd) != 0) # Indices of crosses
-crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
-shadev <- ifelse(isdd[indic] == 1, "antiquewhite", "lightgreen")
+indic <- (rutils::diffit(insl) != 0) # Indices of stop-loss
+crossd <- c(datev[indic], datev[nrows]) # Dates of stop-loss
+shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
   main="VTI Stop-loss Strategy") %>%
@@ -3061,14 +1665,14 @@ dd <- (pricev - pricem)
 stopv <- 0.01*(1:30)
 pnlc <- sapply(stopv, function(stopl) {
   pnls <- retp
-  isdd <- rutils::lagit(dd < -stopl*pricem)
-  pnls <- ifelse(isdd, 0, pnls)
+  insl <- rutils::lagit(dd < -stopl*pricem)
+  pnls <- ifelse(insl, 0, pnls)
   sum(pnls)
 })  # end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/stop_loss_profile.png}
+      \includegraphics[width=0.4\paperwidth]{figure/stop_loss_profile.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative pnls for stop-loss strategies
 plot(x=stopv, y=pnlc, 
@@ -3083,59 +1687,60 @@ plot(x=stopv, y=pnlc,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Gain-Loss Strategy}
+\subsection{Stop-Start Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The stop-loss strategy can be improved by introducing a take-gain rule: buy back the stock if its price rebounds from the previous minimum and exceeds the take-gain level.
+      The stop-loss strategy can be improved by introducing a start-gain rule: buy back the stock if its price rebounds from the previous minimum and exceeds the start-gain level.
       \vskip1ex
-      The gain-loss strategy implements both stop-loss events due to price drawdowns and take-gain events due to price draw-ups.  
+      The stop-start strategy implements both stop-loss events due to price drawdowns and start-gain events due to price draw-ups.  
       \vskip1ex
-      In order to determine the stop-loss and take-gain events, the gain-loss strategy follows the trailing maximum and trailing minimum prices.
+      In order to determine the stop-loss and start-gain events, the stop-start strategy follows the trailing maximum and trailing minimum prices.
       \vskip1ex
-      A draw-up is when the stock price rebounds from the previous minimum and exceeds the take-gain level, equal to the take-gain percentage times the previous minimum price.
+      A start-gain event is when the stock price rebounds from the previous minimum and exceeds the start-gain level, equal to the start-gain percentage times the previous minimum price.
       \vskip1ex
-      After the take-gain level is crossed, the strategy buys back the stock which was sold under the stop-loss.
+      After the start-gain level is crossed, the strategy buys back the stock which was sold under the stop-loss.
       \vskip1ex
-      The take-gain rule tends to quickly override the stop-loss rule, so that the strategy is mostly long the stock.
+      The stop-start strategy is trend-following because it profits if price trends are persistent.  But it loses if prices are range-bound.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Define function for simulating a gain-loss strategy
-sim_gainloss <- function(stopl) {
+# Define function for simulating a stop-start strategy
+sim_stopstart <- function(stopl) {
   maxp <- pricev[1] # Trailing maximum price
   minp <- pricev[1] # Trailing minimum price
-  isdd <- FALSE # Is in drawdown?
-  isdu <- FALSE # Is in drawup?
+  insl <- FALSE # Is in stop-loss?
+  insg <- FALSE # Is in start-gain?
   pnls <- retp # Initialize PnLs
-  for (i in 1:(nrows-1)) {
-    # Update the maximum and minimum prices
-    maxp <- max(maxp, pricev[i])
-    minp <- min(minp, pricev[i])
-    # Calculate the drawdown and drawup
-    dd <- (pricev[i] - maxp)
-    du <- (pricev[i] - minp)
-    if (dd < -stopl*maxp) { # Check for stop-loss
-      if (!isdd) { # Check if start of stop?
-        isdd <- TRUE # Is in drawdown?
-        isdu <- FALSE # Is in drawup?
-        minp <- pricev[i] # Set minimum price to current price
+  for (i in 1:nrows) {
+    if (insl) { # In stop-loss
+      pnls[i] <- 0 # Set PnLs = 0 if in stop-loss
+      minp <- min(minp, pricev[i]) # Update minimum price to current price
+      if (pricev[i] > ((1 + stopl)*minp)) { # Check for start-gain
+        insg <- TRUE # Is in start-gain?
+        insl <- FALSE # Is in stop-loss?
+        maxp <- pricev[i] # Reset trailing maximum price
       }  # end if
-      pnls[i+1] <- 0 # Set PnLs = 0 if in stop-loss
-    }  # end if
-    if (du > stopl*minp) { # Check for take-gain
-      if (!isdu) { # Check if start of stop?
-        isdu <- TRUE # Is in drawup?
-        isdd <- FALSE # Is in drawdown?
-        maxp <- pricev[i] # Set maximum price to current price
+    } else if (insg) { # In start-gain
+      maxp <- max(maxp, pricev[i]) # Update maximum price to current price
+      if (pricev[i] < ((1 - stopl)*maxp)) { # Check for stop-loss
+        insl <- TRUE # Is in stop-loss?
+        insg <- FALSE # Is in start-gain?
+        minp <- pricev[i] # Reset trailing minimum price
       }  # end if
-      pnls[i+1] <- retp[i+1] # Set PnLs = retp if in take-gain
+    } else { # Warmup period
+      # Update the maximum and minimum prices
+      maxp <- max(maxp, pricev[i])
+      minp <- min(minp, pricev[i])
+      # Update the stop-loss and start-gain indicators
+      insl <- (pricev[i] < ((1 - stopl)*maxp)) # Is in stop-loss?
+      insg <- (pricev[i] > ((1 + stopl)*minp)) # Is in start-gain?
     }  # end if
   }  # end for
   return(pnls)
-} # end sim_gainloss
+} # end sim_stopstart
 @
   \end{columns}
 \end{block}
@@ -3144,20 +1749,20 @@ sim_gainloss <- function(stopl) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Gain-Loss Strategy Performance}
+\subsection{Stop-Start Strategy Performance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The gain-loss strategy spends less time in a stop-loss because prices tend to rebound sharply after a steep loss.
+      The stop-start strategy spends less time in a stop-loss because prices tend to rebound sharply after a steep loss.
       \vskip1ex
-      And the gain-loss strategy also underperforms because it gets \emph{"whipsawed"} when prices are range-bound without a trend.  It then stops because of a drawdown (goes flat risk), but the prices soon rebound and it's forced to buy back the stock.  (This is called a \emph{"whipsaw"}.)
+      The start-gain rule tends to quickly override the stop-loss rule, so that the strategy is long the stock after it recovers after a stop-loss.
       <<echo=TRUE,eval=FALSE>>=
-# Simulate gain-loss strategy
-pnls <- sim_gainloss(0.1)
+# Simulate stop-start strategy
+pnls <- sim_stopstart(0.1)
 # Combine the data
-wealthv <- xts::xts(cbind(retp, pnls), datev)
+wealthv <- cbind(retp, pnls)
 colnamev <- c("VTI", "Strategy")
 colnames(wealthv) <- colnamev
 # Calculate the Sharpe and Sortino ratios
@@ -3166,23 +1771,23 @@ sqrt(252)*sapply(wealthv, function(x)
 # dygraph plot the stop-loss strategy
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="VTI Gain-Loss Strategy") %>%
+  main="VTI Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/gain_loss_performance.png}
+      \includegraphics[width=0.45\paperwidth]{figure/stop_start_performance.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph with shading
 # Create colors for background shading
-isdd <- (pnls == 0) # Is in drawdown?
-indic <- (rutils::diffit(isdd) != 0) # Indices of crosses
+insl <- (pnls == 0) # Is in stop-loss?
+indic <- (rutils::diffit(insl) != 0) # Indices of crosses
 crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
-shadev <- ifelse(isdd[indic] == 1, "antiquewhite", "lightgreen")
+shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
-  main="VTI Gain-Loss Strategy") %>%
+  main="VTI Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Add shading to dygraph object
@@ -3199,33 +1804,29 @@ dyplot
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimal Gain-Loss Strategy}
+\subsection{Optimal Stop-Start Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Stop-loss rules can reduce the largest drawdowns but they also tend to reduce cumulative returns.
+      The stop-start strategy performs much better than the stop-loss strategy because it captures stock gains.
       \vskip1ex
-      The best performing stop-loss strategy for \emph{VTI} has the largest stop-loss percentage - i.e. it almost never enters into a stop-loss. 
-      \vskip1ex
-      That's because \emph{VTI} has had positive returns in the last \texttt{20} years, so a stop-loss rule had little benefit.
-      \vskip1ex
-      That's why many quantitative investment funds do not use stop-loss rules if they have strong convictions that the stocks will have positive returns.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate multiple stop-loss strategies
 stopv <- 0.01*(1:30)
 pnlc <- sapply(stopv, function(stopl) {
-  sum(sim_gainloss(stopl))
+  sum(sim_stopstart(stopl))
 })  # end sapply
+stopl <- stopv[which.max(pnlc)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/gain_loss_profile.png}
+      \includegraphics[width=0.4\paperwidth]{figure/stop_start_profile.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative pnls for stop-loss strategies
 plot(x=stopv, y=pnlc, 
-   main="Cumulative PnLs for Gain-Loss Strategies",
+   main="Cumulative PnLs for Stop-Start Strategies",
    xlab="stop-loss percent", ylab="cumulative pnl", 
    t="l", lwd=3, col="blue")
       @
@@ -3236,38 +1837,33 @@ plot(x=stopv, y=pnlc,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Gain-Loss Strategy for Other ETFs}
+\subsection{Stop-Start Strategy for Other ETFs}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The gain-loss strategy didn't perform well for \emph{VTI} because it has had positive returns in the last \texttt{20} years, so there was little to gain from gain-loss.
+      The stop-start strategy can prevent losses for stocks with significant negative returns, like the \emph{USO} ETF (oil fund).
       \vskip1ex
-      But the gain-loss strategy has performed well for other stocks with negative returns in the last \texttt{20} years, like the \emph{USO} ETF (oil fund).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the USO prices and returns
 pricev <- na.omit(rutils::etfenv$prices$USO)
+nrows <- NROW(pricev)
 datev <- zoo::index(pricev)
-pricev <- drop(zoo::coredata(pricev))
 retp <- rutils::diffit(log(pricev))
-nrows <- NROW(retp)
-# Calculate the drawdown
-pricem <- cummax(pricev) # Max prices
-pnls <- retp # Initialize PnLs
-# Simulate multiple gain-loss strategies
+# Simulate multiple stop-start strategies
 stopv <- 0.01*(1:30)
 pnlc <- sapply(stopv, function(stopl) {
-  sum(sim_gainloss(stopl))
+  sum(sim_stopstart(stopl))
 })  # end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/gain_loss_uso_profile.png}
+      \includegraphics[width=0.4\paperwidth]{figure/stop_start_uso_profile.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative pnls for gain-loss strategies
+# Plot cumulative pnls for stop-start strategies
 plot(x=stopv, y=pnlc, 
-   main="Cumulative PnLs for USO Gain-Loss Strategies",
+   main="Cumulative PnLs for USO Stop-Start Strategies",
    xlab="stop-loss percent", ylab="cumulative pnl", 
    t="l", lwd=3, col="blue")
       @
@@ -3278,48 +1874,46 @@ plot(x=stopv, y=pnlc,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimal Gain-Loss Strategy For \protect\emph{USO}}
+\subsection{Optimal Stop-Start Strategy For \protect\emph{USO}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The gain-loss strategy for the \emph{USO} ETF has performed well because it has had very negative returns in the last \texttt{20} years.
+      The stop-start strategy for the \emph{USO} ETF has performed well because \emph{USO} has had very negative returns in the last \texttt{20} years.
       \vskip1ex
-      So gain-loss strategies can be useful when the underlying asset or strategy is at risk of significant drawdowns.
-      \vskip1ex
-      The tradeoff for gain-loss strategies is that they reduce profits for the best performing stocks, in return for avoiding losses for the worst performing stocks.
+      Stop-start strategies are able to preserve profits for the best performing stocks, and avoid losses for the worst performing stocks.
       <<echo=TRUE,eval=FALSE>>=
-# Simulate optimal gain-loss strategy for USO
+# Simulate optimal stop-start strategy for USO
 stopl <- stopv[which.max(pnlc)]
-pnls <- sim_gainloss(stopl)
+pnls <- sim_stopstart(stopl)
 # Combine the data
-wealthv <- xts::xts(cbind(retp, pnls), datev)
+wealthv <- cbind(retp, pnls)
 colnamev <- c("USO", "Strategy")
 colnames(wealthv) <- colnamev
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# dygraph plot the gain-loss strategy
+# dygraph plot the stop-start strategy
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="USO Gain-Loss Strategy") %>%
+  main="USO Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/gain_loss_uso_performance.png}
+      \includegraphics[width=0.45\paperwidth]{figure/stop_start_uso_performance.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph with shading
 # Create colors for background shading
-isdd <- (pnls == 0) # Is in drawdown?
-indic <- (rutils::diffit(isdd) != 0) # Indices of crosses
+insl <- (pnls == 0) # Is in stop-loss?
+indic <- (rutils::diffit(insl) != 0) # Indices of crosses
 crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
-shadev <- ifelse(isdd[indic] == 1, "antiquewhite", "lightgreen")
+shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
-  main="USO Gain-Loss Strategy") %>%
+  main="USO Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Add shading to dygraph object
@@ -4209,7 +2803,7 @@ legend("topleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the weights proportional to Sharpe ratios
 weightv <- c(sharpetrend, sharperevert)
-weightv[weightv<0] <- 0
+weightv[weightv < 0] <- 0
 weightv <- weightv/sum(weights)
 retc <- cbind(pnltrend, pnlrevert)
 retc <- retc %*% weightv
@@ -5039,8 +3633,8 @@ for (it in 2:nrows) {
 # Calculate the number of trades
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
 # Calculate the pnls
-retv <- rutils::diffit(pricev)
-pnls <- retv*posv
+retp <- rutils::diffit(pricev)
+pnls <- retp*posv
       @
   \end{columns}
 \end{block}
@@ -5067,7 +3661,7 @@ pnls <- retv*posv
       \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
-wealthv <- cbind(retv, pnls)
+wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
 sharper <- round(sharper, 3)
@@ -5114,7 +3708,7 @@ for (it in 2:nrows) {
   }  # end if
 }  # end for
 # Calculate the PnLs
-pnls2 <- retv*posv
+pnls2 <- retp*posv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -5201,15 +3795,15 @@ posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv, lagg=1)
 # Calculate the number of trades and the PnLs
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
-retv <- rutils::diffit(pricev)
-pnls <- retv*posv
+retp <- rutils::diffit(pricev)
+pnls <- retp*posv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger_intraday.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
-wealthv <- cbind(retv, pnls)
+wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("SPY", "Strategy")
 nyears <- as.numeric(end(pricev)-start(pricev))/365
 sharper <- sqrt(nrows/nyears)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
@@ -5325,15 +3919,15 @@ posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv)
 # Calculate the number of trades and the PnLs
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
-retv <- rutils::diffit(pricev)
-pnls <- retv*posv
+retp <- rutils::diffit(pricev)
+pnls <- retp*posv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_hampel.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
-wealthv <- cbind(retv, pnls)
+wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
 sharper <- round(sharper, 3)
@@ -5384,15 +3978,15 @@ posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv)
 # Calculate the number of trades and the PnLs
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
-retv <- rutils::diffit(pricev)
-pnls <- retv*posv
+retp <- rutils::diffit(pricev)
+pnls <- retp*posv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_hampel_intraday.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
-wealthv <- cbind(retv, pnls)
+wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("SPY", "Strategy")
 nyears <- as.numeric(end(pricev)-start(pricev))/365
 sharper <- sqrt(nrows/nyears)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
@@ -5415,7 +4009,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
 
 
 %%%%%%%%%%%%%%%
-% \section{Classification Strategies}
+\section{Classification Strategies}
 
 
 %%%%%%%%%%%%%%%
@@ -5680,21 +4274,21 @@ predm <- rutils::lagit(predm)
 logmod <- glm(tops ~ predm, family=binomial(logit))
 summary(logmod)
 coeff <- logmod$coefficients
-fcast <- drop(cbind(rep(1, nrows), predm) %*% coeff)
-ordern <- order(fcast)
+fcasts <- drop(cbind(rep(1, nrows), predm) %*% coeff)
+ordern <- order(fcasts)
 # Calculate the in-sample forecasts from logistic regression model
-fcast <- 1/(1+exp(-fcast))
-all.equal(logmod$fitted.values, fcast, check.attributes=FALSE)
-hist(fcast)
+fcasts <- 1/(1 + exp(-fcasts))
+all.equal(logmod$fitted.values, fcasts, check.attributes=FALSE)
+hist(fcasts)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/logistic_stocktops.png}
       <<echo=TRUE,eval=FALSE>>=
-plot(x=fcast[ordern], y=tops[ordern],
+plot(x=fcasts[ordern], y=tops[ordern],
      main="Logistic Regression of Stock Tops", 
      col="orange", xlab="predictor", ylab="top")
-lines(x=fcast[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
+lines(x=fcasts[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
 legend(x="topleft", inset=0.1, bty="n", lwd=6,
        legend=c("tops", "logit fitted values"), y.intersp=0.5, 
        col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
@@ -5727,14 +4321,14 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define discrimination threshold value
-threshv <- quantile(fcast, confl[2])
+threshv <- quantile(fcasts, confl[2])
 # Calculate the confusion matrix in-sample
-confmat <- table(actual=!tops, forecast=(fcast < threshv))
+confmat <- table(actual=!tops, forecast=(fcasts < threshv))
 confmat
 # Calculate the FALSE positive (type I error)
-sum(tops & (fcast < threshv))
+sum(tops & (fcasts < threshv))
 # Calculate the FALSE negative (type II error)
-sum(!tops & (fcast > threshv))
+sum(!tops & (fcasts > threshv))
       @
   \end{columns}
 \end{block}
@@ -5820,19 +4414,19 @@ print(xtable::xtable(confusion_matrix,
       The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
-confun <- function(actual, fcast, threshv) {
-  forb <- (fcast < threshv)
+confun <- function(actual, fcasts, threshv) {
+  forb <- (fcasts < threshv)
   conf <- matrix(c(sum(!actual & !forb), sum(actual & !forb), 
                    sum(!actual & forb), sum(actual & forb)), ncol=2)
   conf <- conf / rowSums(conf)
   c(typeI=conf[2, 1], typeII=conf[1, 2])
 }  # end confun
-confun(!tops, fcast, threshv=threshv)
+confun(!tops, fcasts, threshv=threshv)
 # Define vector of discrimination thresholds
-threshv <- quantile(fcast, seq(0.01, 0.99, by=0.01))
+threshv <- quantile(fcasts, seq(0.01, 0.99, by=0.01))
 # Calculate the error rates
 errorr <- sapply(threshv, confun,
-  actual=!tops, fcast=fcast)  # end sapply
+  actual=!tops, fcasts=fcasts)  # end sapply
 errorr <- t(errorr)
 rownames(errorr) <- threshv
 # Calculate the informedness
@@ -5840,7 +4434,7 @@ informv <- 2 - rowSums(errorr)
 plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
 threshm <- threshv[which.max(informv)]
-topf <- (fcast > threshm)
+topf <- (fcasts > threshm)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -5884,11 +4478,11 @@ logmod <- glm(bottoms ~ predm, family=binomial(logit))
 summary(logmod)
 # Calculate the in-sample forecast from logistic regression model
 coeff <- logmod$coefficients
-fcast <- drop(cbind(rep(1, nrows), predm) %*% coeff)
-fcast <- 1/(1+exp(-fcast))
+fcasts <- drop(cbind(rep(1, nrows), predm) %*% coeff)
+fcasts <- 1/(1 + exp(-fcasts))
 # Calculate the error rates
 errorr <- sapply(threshv, confun,
-  actual=!bottoms, fcast=fcast)  # end sapply
+  actual=!bottoms, fcasts=fcasts)  # end sapply
 errorr <- t(errorr)
 rownames(errorr) <- threshv
 # Calculate the informedness
@@ -5896,7 +4490,7 @@ informv <- 2 - rowSums(errorr)
 plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
 threshm <- threshv[which.max(informv)]
-botf <- (fcast > threshm)
+botf <- (fcasts > threshm)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -5990,7 +4584,7 @@ fitv <- logmod$fitted.values
 coefftop <- logmod$coefficients
 # Calculate the error rates and best threshold value
 errorr <- sapply(threshv, confun,
-  actual=!tops[insample], fcast=fitv)  # end sapply
+  actual=!tops[insample], fcasts=fitv)  # end sapply
 errorr <- t(errorr)
 informv <- 2 - rowSums(errorr)
 threshtop <- threshv[which.max(informv)]
@@ -6000,18 +4594,18 @@ fitv <- logmod$fitted.values
 coeffbot <- logmod$coefficients
 # Calculate the error rates and best threshold value
 errorr <- sapply(threshv, confun,
-  actual=!bottoms[insample], fcast=fitv)  # end sapply
+  actual=!bottoms[insample], fcasts=fitv)  # end sapply
 errorr <- t(errorr)
 informv <- 2 - rowSums(errorr)
 threshbot <- threshv[which.max(informv)]
 # Calculate the out-of-sample forecasts from logistic regression model
 predictout <- cbind(rep(1, NROW(outsample)), predm[outsample, ])
-fcast <- drop(predictout %*% coefftop)
-fcast <- 1/(1+exp(-fcast))
-topf <- (fcast > threshtop)
-fcast <- drop(predictout %*% coeffbot)
-fcast <- 1/(1+exp(-fcast))
-botf <- (fcast > threshbot)
+fcasts <- drop(predictout %*% coefftop)
+fcasts <- 1/(1 + exp(-fcasts))
+topf <- (fcasts > threshtop)
+fcasts <- drop(predictout %*% coeffbot)
+fcasts <- 1/(1 + exp(-fcasts))
+botf <- (fcasts > threshbot)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -6070,10 +4664,10 @@ trainset <- Default[samplev, ]
 logmod <- glm(formulav, data=trainset, family=binomial(logit))
 # Forecast over test data out-of-sample
 testset <- Default[-samplev, ]
-fcast <- predict(logmod, newdata=testset, type="response")
+fcasts <- predict(logmod, newdata=testset, type="response")
 # Calculate the confusion matrix out-of-sample
 table(actual=!testset$default, 
-      forecast=(fcast < threshv))
+      forecast=(fcasts < threshv))
       @
   \end{columns}
 \end{block}
@@ -6105,34 +4699,34 @@ retos <- (retsf > 0)
 logmod <- glm(retspos ~ predm - 1, family=binomial(logit))
 summary(logmod)
 coeff <- logmod$coefficients
-fcast <- drop(predm %*% coeff)
-fcast <- 1/(1+exp(-fcast))
+fcasts <- predm %*% coeff
+fcasts <- 1/(1 + exp(-fcasts))
 # Calculate the error rates
-threshv <- quantile(fcast, seq(0.01, 0.99, by=0.01))
+threshv <- quantile(fcasts, seq(0.01, 0.99, by=0.01))
 errorr <- sapply(threshv, confun,
-  actual=!retspos, fcast=fcast)  # end sapply
+  actual=!retspos, fcasts=fcasts)  # end sapply
 errorr <- t(errorr)
 # Calculate the threshold corresponding to highest informedness
 informv <- 2 - rowSums(errorr)
 plot(threshv, informv, t="l", main="Informedness")
 threshm <- threshv[which.max(informv)]
-forecastpos <- (fcast > threshm)
+forecastpos <- (fcasts > threshm)
 # Fit in-sample logistic regression for negative returns
 retsneg <- (retsf < 0)
 logmod <- glm(retsneg ~ predm - 1, family=binomial(logit))
 summary(logmod)
 coeff <- logmod$coefficients
-fcast <- drop(predm %*% coeff)
-fcast <- 1/(1+exp(-fcast))
+fcasts <- predm %*% coeff
+fcasts <- 1/(1 + exp(-fcasts))
 # Calculate the error rates
 errorr <- sapply(threshv, confun,
-  actual=!retsneg, fcast=fcast)  # end sapply
+  actual=!retsneg, fcasts=fcasts)  # end sapply
 errorr <- t(errorr)
 # Calculate the threshold corresponding to highest informedness
 informv <- 2 - rowSums(errorr)
 plot(threshv, informv, t="l", main="Informedness")
 threshm <- threshv[which.max(informv)]
-forecastneg <- (fcast > threshm)
+forecastneg <- (fcasts > threshm)
       @
   \end{columns}
 \end{block}
@@ -6205,7 +4799,7 @@ fitv <- logmod$fitted.values
 coefftop <- logmod$coefficients
 # Calculate the error rates and best threshold value
 errorr <- sapply(threshv, confun,
-  actual=!tops[insample], fcast=fitv)  # end sapply
+  actual=!tops[insample], fcasts=fitv)  # end sapply
 errorr <- t(errorr)
 informv <- 2 - rowSums(errorr)
 threshtop <- threshv[which.max(informv)]
@@ -6215,18 +4809,18 @@ fitv <- logmod$fitted.values
 coeffbot <- logmod$coefficients
 # Calculate the error rates and best threshold value
 errorr <- sapply(threshv, confun,
-  actual=!bottoms[insample], fcast=fitv)  # end sapply
+  actual=!bottoms[insample], fcasts=fitv)  # end sapply
 errorr <- t(errorr)
 informv <- 2 - rowSums(errorr)
 threshbot <- threshv[which.max(informv)]
 # Calculate the out-of-sample forecasts from logistic regression model
 predictout <- cbind(rep(1, NROW(outsample)), predm[outsample, ])
-fcast <- drop(predictout %*% coefftop)
-fcast <- 1/(1+exp(-fcast))
-topf <- (fcast > threshtop)
-fcast <- drop(predictout %*% coeffbot)
-fcast <- 1/(1+exp(-fcast))
-botf <- (fcast > threshbot)
+fcasts <- drop(predictout %*% coefftop)
+fcasts <- 1/(1 + exp(-fcasts))
+topf <- (fcasts > threshtop)
+fcasts <- drop(predictout %*% coeffbot)
+fcasts <- 1/(1 + exp(-fcasts))
+botf <- (fcasts > threshbot)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -6257,1211 +4851,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 
 \end{frame}
 
-
-
 %%%%%%%%%%%%%%%
-\section{Trend Following Strategies}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Autoregressive Strategies}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Daily Mean Reverting Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The lag $k$ \emph{autocorrelation} of a time series of returns $r_t$ is equal to:
-      \begin{displaymath}
-        \rho_k = \frac{\sum_{t=k+1}^n (r_t-\bar{r})(r_{t-k}-\bar{r})}{(n-k) \, \sigma^2}
-      \end{displaymath}
-      The function \texttt{rutils::plot\_acf()} calculates and plots the autocorrelations of a time series.
-      \vskip1ex
-      Daily stock returns often exhibit some negative autocorrelations.
-      \vskip1ex
-      The daily mean reverting strategy buys or sells short \texttt{\$1} of stock at the end of each day (depending on the sign of the previous daily return), and holds the position until the next day.
-      \vskip1ex
-      If the previous daily return was positive, it sells short \texttt{\$1} of stock.
-      If the previous daily return was negative, it buys \texttt{\$1} of stock.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the vector of daily VTI percentage returns
-retp <- na.omit(rutils::etfenv$returns$VTI)
-# Calculate the autocorrelations of daily VTI percentage returns
-rutils::plot_acf(retp)
-# Simulate mean reverting strategy
-posv <- rutils::lagit(sign(retp), lagg=1)
-pnls <- (-retp*posv)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_vti.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "Strategy")
-sqrt(252)*sapply(wealthv, function(x) 
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of mean reverting strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="VTI Daily Mean Reverting Strategy") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Daily Mean Reverting Strategy With a Holding Period}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The daily mean reverting strategy can be improved by combining the daily returns from the previous two days.  This is equivalent to holding the position for two days, instead of rolling it daily.
-      \vskip1ex
-      The daily mean reverting strategy with a holding period performs better than the simple daily strategy because of risk diversification.
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate mean reverting strategy with two day holding period
-posv <- rutils::lagit(rutils::roll_sum(sign(retp), look_back=2))/2
-pnls <- (-retp*posv)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_hold2day.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "Strategy")
-sqrt(252)*sapply(wealthv, function(x) 
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of mean reverting strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="Daily Mean Reverting Strategy With Two Day Holding Period") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Daily Mean Reverting Strategy For Stocks}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Some daily stock returns exhibit stronger negative autocorrelations than ETFs.
-      \vskip1ex
-      But the daily mean reverting strategy doesn't perform well for many stocks.
-      <<echo=TRUE,eval=FALSE>>=
-# Load daily S&P500 stock returns
-load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-retp <- na.omit(returns$MSFT)
-rutils::plot_acf(retp)
-# Simulate mean reverting strategy with two day holding period
-posv <- rutils::lagit(rutils::roll_sum(sign(retp), look_back=2))/2
-pnls <- (-retp*posv)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_msft.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("MSFT", "Strategy")
-sqrt(252)*sapply(wealthv, function(x) 
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of mean reverting strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="Daily Mean Reverting Strategy For MSFT") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Daily Mean Reverting Strategy For All Stocks}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The combined daily mean reverting strategy for all \emph{S\&P500} stocks performed well prior to and during the \texttt{2008} financial crisis, but was flat afterwards.
-      \vskip1ex
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the average returns of all S&P500 stocks
-datev <- zoo::index(returns)
-retp <- returns
-retp[is.na(retp)] <- 0
-retp <- rowMeans(retp)
-# Simulate mean reverting strategy for all S&P500 stocks
-pnls <- lapply(returns, function(retp) {
-  retp <- na.omit(retp)
-  posv <- rutils::lagit(rutils::roll_sum(sign(retp), look_back=2))/2
-  pnls <- (-retp*posv)
-  pnls
-}) # end lapply
-pnls <- do.call(cbind, pnls)
-pnls[is.na(pnls)] <- 0
-pnls <- rowMeans(pnls)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_allstocks.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
-wealthv <- xts::xts(wealthv, datev)
-colnames(wealthv) <- c("All Stocks", "Strategy")
-sqrt(252)*sapply(wealthv, function(x) 
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of mean reverting strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="Daily Mean Reverting Strategy For All Stocks") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Forecasting Stock Returns Using Autoregressive Models}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Assume that the stock returns $r_t$ follow an \emph{autoregressive} process \emph{AR(n)} with a constant term (intercept):
-      \begin{displaymath}
-        r_t = \varphi_0 + \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n} + \xi_t
-      \end{displaymath}
-      The coefficients $\mathbf{\varphi}$ can be calculated using linear regression, with the \emph{response} equal to $\mathbf{r}$, and the columns of the \emph{predictor matrix} $\mathbb{P}$ equal to the lags of $\mathbf{r}$:
-      \begin{displaymath}
-        \mathbf{\varphi} = \mathbb{P}^{-1} \mathbf{r}
-      \end{displaymath}
-      The \emph{in-sample} \emph{AR(n)} autoregressive forecasts are calculated by multiplying the predictor matrix by the fitted coefficients:
-      \begin{displaymath}
-        f_t = \varphi_0 + \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n}
-      \end{displaymath}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the vector of daily VTI percentage returns
-retp <- na.omit(rutils::etfenv$returns$VTI)
-nrows <- NROW(retp)
-# Define the response and predictor matrices
-respv <- retp
-orderp <- 5
-predm <- lapply(1:orderp, rutils::lagit, input=respv)
-predm <- rutils::do_call(cbind, predm)
-# predm <- cbind(rep(1, nrows), predm)
-colnames(predm) <- paste0("pred", 1:NCOL(predm))
-predinv <- MASS::ginv(predm)
-coeff <- drop(predinv %*% respv)
-# Calculate the in-sample forecasts of VTI
-fcast <- drop(predm %*% coeff)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_coeff.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the residuals (forecast errors)
-resids <- drop(fcast - retp)
-# Calculate the variance of the residuals
-vares <- sum(resids^2)/(nrows-NROW(coeff))
-# Calculate the predictor matrix squared
-predm2 <- crossprod(predm)
-# Calculate the covariance matrix of the AR coefficients
-covar <- vares*MASS::ginv(predm2)
-coeffsd <- sqrt(diag(covar))
-# Calculate the t-values of the AR coefficients
-coefft <- coeff/coeffsd
-# Plot the t-values of the AR coefficients
-barplot(coefft, xlab="lag", ylab="t-value", 
-  main="Coefficient t-values of AR Forecasting Model")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autoregressive Strategy In-sample}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The autoregressive strategy invests dollar amounts of \emph{VTI} stock proportional to the in-sample forecasts. 
-      \vskip1ex
-      The in-sample autoregressive strategy performs well during periods of high volatility, but not in low volatility periods.
-      \vskip1ex
-      The dollar allocations of \emph{VTI} stock are too large in periods of high volatility, which causes over-leverage and very high risk.
-      \vskip1ex
-      The autoregressive model assumes stationary returns, with similar volatility over time.  In reality stock volatility is highly time dependent.
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate autoregressive strategy in-sample
-pnls <- retp*fcast
-# Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp)/sd(pnls)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_insample.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "Strategy")
-sqrt(252)*sapply(wealthv, function(x) 
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="Autoregressive Strategy In-Sample") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autoregressive Coefficients in Periods of High Volatility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The autoregressive model assumes stationary returns, with similar volatility over time.  In reality stock volatility is highly time dependent.
-      \vskip1ex
-      The autoregressive coefficients in periods of high volatility are very different from those under low volatility.
-      \vskip1ex
-      In periods of high volatility, there are larger negative autocorrelations than in low volatility.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the high volatility AR coefficients
-respv <- retp["2008/2010"]
-predm <- lapply(1:orderp, rutils::lagit, input=respv)
-predm <- rutils::do_call(cbind, predm)
-predinv <- MASS::ginv(predm)
-coeffh <- drop(predinv %*% respv)
-barplot(coeffh, xlab="lag", ylab="coefficient", 
-  main="High Volatility AR Coefficients")
-# Calculate the low volatility AR coefficients
-respv <- retp["2011/2019"]
-predm <- lapply(1:orderp, rutils::lagit, input=respv)
-predm <- rutils::do_call(cbind, predm)
-predinv <- MASS::ginv(predm)
-coeffl <- drop(predinv %*% respv)
-barplot(coeffl, xlab="lag", ylab="coefficient", 
-  main="Low Volatility AR Coefficients")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.35\paperwidth]{figure/ar_forecast_coeffh.png}
-      \includegraphics[width=0.35\paperwidth]{figure/ar_forecast_coeffl.png}
-      <<echo=TRUE,eval=FALSE>>=
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Winsor} Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Some models produce very large dollar allocations, leading to large portfolio leverage (dollars invested divided by the capital).
-      \vskip1ex
-      The \emph{winsor function} maps the \emph{model weight} $w$ into the dollar amount for investment.  The hyperbolic tangent function can serve as a winsor function:
-      \begin{displaymath}
-        W(x) = \frac{\exp(\lambda w) - \exp(-\lambda w)}{\exp(\lambda w) + \exp(-\lambda w)}
-      \end{displaymath}
-      Where $\lambda$ is the scale parameter.
-      \vskip1ex
-      The hyperbolic tangent is close to linear for small values of the \emph{model weight} $w$, and saturates to $+1\$ / -1\$$ for very large positive and negative values of the \emph{model weight}.
-      \vskip1ex
-      The saturation effect limits (caps) the leverage in the strategy to $+1\$ / -1\$$.
-      \vskip1ex
-      For very small values of the scale parameter $\lambda$, the invested dollar amount is linear for a wide range of \emph{model weights}.  So the strategy is mostly invested in dollar amounts proportional to the \emph{model weights}.
-      \vskip1ex
-      For very large values of the scale parameter $\lambda$, the invested dollar amount jumps from $-1\$$ for negative \emph{model weights} to $+1\$$ for positive \emph{model weight} values.  So the strategy is invested in either $-1\$$ or $+1\$$ dollar amounts.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/winsor_func.png}
-        <<echo=TRUE,eval=FALSE>>=
-lambdav <- c(0.5, 1, 1.5)
-colorv <- c("red", "blue", "green")
-# Define the leverage function
-winsor <- function(p, lambda) tanh(lambda*p)
-# Plot three curves in loop
-for (indeks in 1:3) {
-  curve(expr=winsor(x, lambda=lambdav[indeks]),
-        xlim=c(-4, 4), type="l", lwd=4,
-        xlab="model weight", ylab="dollar amount", 
-        col=colorv[indeks], add=(indeks>1))
-}  # end for
-# Add title and legend
-title(main="Winsor function", line=0.5)
-legend("topleft", title="scale parameters\n",
-   paste("lambda", lambdav, sep="="), inset=0.0, cex=1.0, 
-   lwd=6, bty="n", y.intersp=0.3, lty=1, col=colorv)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Winsorized Autoregressive Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The performance of the autoregressive strategy can be improved by fitting its coefficients using the \emph{winsorized returns}, to reduce the leverage of very large returns.
-      \vskip1ex
-      The performance can also be improved by \emph{winsorizing} the forecasts.
-      <<echo=TRUE,eval=FALSE>>=
-# Winsorize the VTI returns
-retw <- winsor(retp/0.01, lambda=1.5)
-# Define the response and predictor matrices
-respv <- retw
-orderp <- 5
-predm <- lapply(1:orderp, rutils::lagit, input=respv)
-predm <- rutils::do_call(cbind, predm)
-# predm <- cbind(rep(1, nrows), predm)
-colnames(predm) <- paste0("pred", 1:NCOL(predm))
-predinv <- MASS::ginv(predm)
-coeff <- drop(predinv %*% respv)
-# Calculate the in-sample forecasts of VTI
-fcast <- drop(predm %*% coeff)
-# Simulate autoregressive strategy in-sample
-pnls <- retp*winsor(fcast/sd(fcast), lambda=1.5)
-# Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp)/sd(pnls)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_winsor.png}
-      % \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_perf_capped.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "Strategy")
-sqrt(252)*sapply(wealthv, function(x) 
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="Winsorized Autoregressive Strategy In-Sample") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Autoregressive Strategy in Trading Time}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The performance of the autoregressive strategy can be improved by fitting its coefficients using returns in \emph{trading time}, to account for time-dependent volatility.
-      \vskip1ex
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate VTI returns and trading volumes
-ohlc <- rutils::etfenv$VTI
-closep <- quantmod::Cl(ohlc)
-retp <- rutils::diffit(log(closep))
-volumv <- quantmod::Vo(ohlc)
-# Calculate trailing average volume
-volumr <- HighFreq::run_mean(volumv, lambda=0.95)
-# Scale the returns using volume clock to trading time
-retsc <- ifelse(volumv > 0, volumr*retp/volumv, 0)
-retsc <- sd(retp)*retsc/sd(retsc)
-# Define the response and predictor matrices
-respv <- retsc
-orderp <- 5
-predm <- lapply(1:orderp, rutils::lagit, input=respv)
-predm <- rutils::do_call(cbind, predm)
-# predm <- cbind(rep(1, nrows), predm)
-colnames(predm) <- paste0("pred", 1:NCOL(predm))
-predinv <- MASS::ginv(predm)
-coeff <- drop(predinv %*% respv)
-# Calculate the in-sample forecasts of VTI
-fcast <- drop(predm %*% coeff)
-# Simulate autoregressive strategy in-sample
-pnls <- retp*fcast
-# Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp)/sd(pnls)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_ttime.png}
-      % \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_perf_capped.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "Strategy")
-sqrt(252)*sapply(wealthv, function(x) 
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main="Autoregressive Strategy in Trading Time") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{In-sample Order Selection of Autoregressive Forecasting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The mean squared errors (\emph{MSE}) of the \emph{in-sample} forecasts decrease steadily with the increasing order parameter \emph{n} of the \emph{AR(n)} forecasting model.
-      \vskip1ex
-      \emph{In-sample forecasting} consists of first fitting an \emph{AR(n)} model to the data, and calculating its coefficients.
-      \vskip1ex
-      The \emph{in-sample} forecasts are calculated by multiplying the predictor matrix by the fitted coefficients.
-      \vskip1ex
-      <<echo=TRUE,eval=FALSE>>=
-# Define predictor matrix for forecasting
-ordmax <- 5
-predm <- sapply(1:ordmax, rutils::lagit, input=respv)
-predm <- cbind(rep(1, nrows), predm)
-colnames(predm) <- paste0("pred", 1:NCOL(predm))
-# Calculate the forecasts as function of the AR order
-fcasts <- lapply(2:NCOL(predm), function(ordern) {
-  # Calculate the fitted coefficients
-  predinv <- MASS::ginv(predm[, 1:ordern])
-  coeff <- drop(predinv %*% respv)
-  # Calculate the in-sample forecasts of VTI
-  drop(predm[, 1:ordern] %*% coeff)
-})  # end lapply
-names(fcasts) <- paste0("n=", 2:NCOL(predm))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_insample.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the mean squared errors
-mse <- sapply(fcasts, function(x) {
-  c(mse=mean((respv - x)^2), cor=cor(respv, x))
-})  # end sapply
-mse <- t(mse)
-rownames(mse) <- names(fcasts)
-# Plot forecasting MSE
-plot(x=2:NCOL(predm), y=mse[, 1],
-  xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
-  main="MSE of In-sample AR(n) Forecasting Model for VTI")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Out-of-Sample Forecasting Using Autoregressive Models}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The mean squared errors (\emph{MSE}) of the \emph{out-of-sample} forecasts increase with the increasing order parameter \emph{n} of the \emph{AR(n)} model.
-      \vskip1ex
-      The reason for the increasing out-of-sample MSE is the \emph{overfitting} of the coefficients to the training data for larger order parameters.
-      \vskip1ex
-      \emph{Out-of-sample forecasting} consists of first fitting an \emph{AR(n)} model to the training data, and calculating its coefficients.
-      \vskip1ex
-      The \emph{out-of-sample} forecasts are calculated by multiplying the \emph{out-of-sample} predictor matrix by the fitted coefficients.
-      <<echo=TRUE,eval=FALSE>>=
-# Define in-sample and out-of-sample intervals
-insample <- 1:(nrows %/% 2)
-outsample <- (nrows %/% 2 + 1):nrows
-# Calculate the forecasts as function of the AR order
-fcasts <- lapply(2:NCOL(predm), function(ordern) {
-  # Calculate the fitted coefficients
-  predinv <- MASS::ginv(predm[insample, 1:ordern])
-  coeff <- drop(predinv %*% respv[insample])
-  # Calculate the out-of-sample forecasts of VTI
-  drop(predm[outsample, 1:ordern] %*% coeff)
-})  # end lapply
-names(fcasts) <- paste0("n=", 2:NCOL(predm))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_outofsample.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the mean squared errors
-mse <- sapply(fcasts, function(x) {
-  c(mse=mean((respv[outsample] - x)^2), cor=cor(respv[outsample], x))
-})  # end sapply
-mse <- t(mse)
-rownames(mse) <- names(fcasts)
-# Plot forecasting MSE
-plot(x=2:NCOL(predm), y=mse[, 1],
-  xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
-  main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autoregressive Strategy Out-of-sample Performance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The autoregressive strategy invests a single dollar amount of \emph{VTI} equal to the sign of the forecasts. 
-      \vskip1ex
-      The performance of the autoregressive strategy is better with a smaller order parameter \emph{n} of the \emph{AR(n)} model.
-      \vskip1ex
-      Decreasing the order parameter of the autoregressive model is a form of \emph{shrinkage} because it reduces the number of predictive variables.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the out-of-sample PnLs
-pnls <- sapply(fcasts, function(x) {
-  cumsum(sign(x)*retp[outsample])
-})  # end sapply
-colnames(pnls) <- names(fcasts)
-pnls <- xts::xts(pnls, datev[outsample])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_order.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of out-of-sample PnLs
-colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls))
-colnamev <- colnames(pnls)
-endd <- rutils::calc_endpoints(pnls, interval="weeks")
-dygraphs::dygraph(pnls[endd],
-  main="Autoregressive Strategies With Different Order Parameters") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autoregressive Strategy Using Average Past Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{out-of-sample} forecasts can be improved by using the rolling average of the returns as a predictor.
-      \vskip1ex
-      This is because the average of returns has a lower \emph{variance}.
-      \vskip1ex
-      But the average also has a higher \emph{bias} because it includes past returns that may be unrelated to the present.
-      \vskip1ex
-      Using the rolling average of returns as a predictor reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
-      <<echo=TRUE,eval=FALSE>>=
-# Define predictor as a rolling mean
-nagg <- 5
-predm <- HighFreq::roll_mean(matrix(retp), nagg)
-# Define predictor matrix for forecasting
-predm <- sapply(1+nagg*(0:ordmax), rutils::lagit, input=predm)
-predm <- cbind(rep(1, nrows), predm)
-# Calculate the forecasts as function of the AR order
-fcasts <- lapply(2:NCOL(predm), function(ordern) {
-  predinv <- MASS::ginv(predm[insample, 1:ordern])
-  coeff <- drop(predinv %*% respv[insample])
-  drop(predm[outsample, 1:ordern] %*% coeff)
-})  # end lapply
-names(fcasts) <- paste0("n=", 2:NCOL(predm))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_sum.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the out-of-sample PnLs
-pnls <- sapply(fcasts, function(x) {
-  cumsum(sign(x)*retp[outsample])
-})  # end sapply
-colnames(pnls) <- names(fcasts)
-pnls <- xts::xts(pnls, datev[outsample])
-# Plot dygraph of out-of-sample PnLs
-colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls))
-dygraphs::dygraph(pnls[endd],
-  main="Autoregressive Strategies Using Rolling Average Predictor") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autoregressive Strategy Using Average of Past Forecasts}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{out-of-sample} forecasts can be further improved by using the average of past forecasts.
-      \vskip1ex
-      This is because the average of forecasts has a lower \emph{variance}.
-      \vskip1ex
-      But the average also has a higher \emph{bias} because it includes past forecasts that may be unrelated to the present.
-      \vskip1ex
-      Using the rolling average of past forecasts reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the PnLs using the average of past forecasts
-nagg <- 5
-pnls <- sapply(fcasts, function(x) {
-  x <- HighFreq::roll_mean(matrix(x), nagg)
-  cumsum(sign(x)*retp[outsample])
-})  # end sapply
-colnames(pnls) <- names(fcasts)
-pnls <- xts::xts(pnls, datev[outsample])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_forecasts.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of out-of-sample PnLs
-dygraphs::dygraph(pnls[endd],
-  main="Autoregressive Strategies Using Rolling Average Forecasts") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{depr: Forecasting Returns Using Autoregressive Models}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Forecasting using an autoregressive model is performed by first fitting an \emph{AR(n)} model to past data, and calculating its coefficients.
-      \vskip1ex
-      The fitted coefficients are then applied to calculating the \emph{out-of-sample} forecasts.
-      \vskip1ex
-      The forecasting model depends on two unknown \emph{meta-parameters}: the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(rutils)
-# Calculate the a vector of daily VTI log returns
-pricev <- log(quantmod::Cl(rutils::etfenv$VTI))
-retp <- rutils::diffit(pricev)
-retp <- as.numeric(retp)
-nrows <- NROW(retp)
-# Define predictor matrix for forecasting
-ordmax <- 5
-desv <- sapply(1:ordmax, rutils::lagit, input=respv)
-colnames(desv) <- paste0("pred", 1:NCOL(desv))
-# Add response equal to VTI
-desv <- cbind(retp, desv)
-colnames(desv)[1] <- "response"
-# Specify length of look-back interval
-look_back <- 100
-# Invert the predictor matrix
-rangev <- (nrows-look_back):(nrows-1)
-desvinv <- MASS::ginv(desv[rangev, -1])
-# Calculate the fitted coefficients
-coeff <- drop(desvinv %*% desv[rangev, 1])
-# Calculate the forecast of VTI for nrows
-drop(desv[nrows, -1] %*% coeff)
-# Compare with actual value
-desv[nrows, 1]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling Autoregressive Forecasting Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The autoregressive coefficients can be calibrated dynamically over a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
-      \vskip1ex
-      \emph{Backtesting} is the simulation of a model on historical data to test its forecasting accuracy.
-      \vskip1ex
-      The autoregressive forecasting model can be \emph{backtested} by calculating forecasts over either a \emph{rolling} or an \emph{expanding} look-back interval.
-      \vskip1ex
-      If the start date is fixed at the first row then the look-back interval is \emph{expanding}.
-      \vskip1ex
-      The coefficients of the \emph{AR(n)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
-      \vskip1ex
-      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{look\_back}).
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define predictor as a rolling mean
-nagg <- 5
-predm <- HighFreq::roll_mean(matrix(retp), nagg)
-# Define predictor matrix for forecasting
-ordmax <- 5
-predm <- sapply(1+nagg*(0:ordmax), rutils::lagit, input=predm)
-predm <- cbind(rep(1, nrows), predm)
-# Perform rolling forecasting
-look_back <- 100
-fcasts <- sapply((look_back+1):nrows, function(endd) {
-  # Define rolling look-back range
-  startp <- max(1, endd-look_back)
-  # Or expanding look-back range
-  # startp <- 1
-  rangev <- startp:(endd-1)
-  # Invert the predictor matrix
-  desvinv <- MASS::ginv(predm[rangev, ])
-  # Calculate the fitted coefficients
-  coeff <- drop(desvinv %*% retp[rangev])
-  # Calculate the forecast
-  drop(predm[endd, ] %*% coeff)
-})  # end sapply
-# Add warmup period
-fcasts <- c(rep(0, look_back), fcasts)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Mean Squared Error of the Autoregressive Forecasting Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The accuracy of a forecasting model can be measured using the \emph{mean squared error} and the \emph{correlation}.
-      \vskip1ex
-      The mean squared error (\emph{MSE}) of a forecasting model is the average of the squared forecasting errors $\varepsilon_i$, equal to the differences between the \emph{forecasts} $f_t$ minus the actual values $r_t$: $\varepsilon_i = f_t - r_t$:
-      \begin{displaymath}
-        \operatorname{MSE} = \frac{1}{n} \sum_{i=1}^n (r_t - f_t)^2
-      \end{displaymath}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the correlation between forecasts and returns
-cor(fcasts, retp)
-# Calculate the forecasting errors
-errorf <- (fcasts - retp)
-# Mean squared error
-mean(errorf^2)
-# Calculate correlation between forecast errors and returns
-cor(errorf, retp)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_resid.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot forecasting series with legend
-plot(retp[(nrows-5*look_back):nrows], col="blue", 
-     xlab="", ylab="", type="l", lwd=2,
-     main="Rolling Forecasting Using AR Model")
-lines(fcasts[(nrows-5*look_back):nrows], col="red", lwd=2)
-legend(x="topleft", legend=c("returns", "forecasts"),
-       col=c("blue", "red"), lty=1, lwd=6, y.intersp=0.3, 
-       cex=1.0, bg="white", bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Backtesting Function for the Forecasting Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{meta-parameters} of the \emph{backtesting} function are the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
-      \vskip1ex
-      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
-      \vskip1ex
-      \emph{Backtesting} is the simulation of a model on historical data to test its forecasting accuracy.
-      \vskip1ex
-      The autoregressive forecasting model can be \emph{backtested} by calculating forecasts over either a \emph{rolling} or an \emph{expanding} look-back interval.
-      \vskip1ex
-      If the start date is fixed at the first row then the look-back interval is \emph{expanding}.
-      \vskip1ex
-      The coefficients of the \emph{AR(n)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
-      \vskip1ex
-      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{look\_back}).
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define backtesting function
-sim_fcasts <- function(respv, nagg=5, ordern=5, 
-                       look_back=100, rollp=TRUE) {
-  nrows <- NROW(respv)
-  # Define predictor as a rolling sum
-  predm <- rutils::roll_sum(respv, look_back=nagg)
-  # Define predictor matrix for forecasting
-  predm <- sapply(1+nagg*(0:ordern), rutils::lagit,
-                       input=predm)
-  predm <- cbind(rep(1, nrows), predm)
-  # Perform rolling forecasting
-  fcasts <- sapply((look_back+1):nrows, function(endd) {
-    # Define rolling look-back range
-    if (rollp)
-      startp <- max(1, endd-look_back)
-    else
-    # Or expanding look-back range
-    startp <- 1
-    rangev <- startp:(endd-1)
-    # Invert the predictor matrix
-    desvinv <- MASS::ginv(predm[rangev, ])
-    # Calculate the fitted coefficients
-    coeff <- drop(desvinv %*% respv[rangev])
-    # Calculate the forecast
-    drop(predm[endd, ] %*% coeff)
-  })  # end sapply
-  # Add warmup period
-  fcasts <- c(rep(0, look_back), fcasts)
-  # Aggregate the forecasts
-  rutils::roll_sum(fcasts, look_back=nagg)
-}  # end sim_fcasts
-# Simulate the rolling autoregressive forecasts
-fcasts <- sim_fcasts(respv=retp, ordern=5, look_back=100)
-c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Forecasting Dependence On the Look-back Interval}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{backtesting} function can be used to find the optimal \emph{meta-parameters} of the autoregressive forecasting model.
-      \vskip1ex
-      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{look\_back}).
-      \vskip1ex
-      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
-      \vskip1ex
-      The accuracy of the forecasting model increases with longer look-back intervals (\texttt{look\_back}), because more data improves the estimates of the autoregressive coefficients.
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-# Calculate the number of available cores
-ncores <- detectCores() - 1
-# Initialize compute cluster under Windows
-cluster <- makeCluster(ncores)
-# Perform parallel loop under Windows
-look_backs <- seq(20, 600, 40)
-fcasts <- parLapply(cluster, look_backs, sim_fcasts, 
-  response=retp, nagg=5, ordern=5)
-# Perform parallel bootstrap under Mac-OSX or Linux
-fcasts <- mclapply(look_backs, sim_fcasts, response=retp, 
-  nagg=5, ordern=5, mc.cores=ncores)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_mse.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the mean squared errors
-mse <- sapply(fcasts, function(x) {
-  c(mse=mean((retp - x)^2), cor=cor(retp, x))
-})  # end sapply
-mse <- t(mse)
-rownames(mse) <- look_backs
-# Select optimal look_back interval
-look_back <- look_backs[which.min(mse[, 1])]
-# Plot forecasting MSE
-plot(x=look_backs, y=mse[, 1],
-  xlab="look-back", ylab="MSE", type="l", lwd=2,
-  main="MSE of AR Forecasting Model As Function of Look-back")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Dependence On the Order Parameter}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{backtesting} function can be used to find the optimal \emph{meta-parameters} of the autoregressive forecasting model.
-      \vskip1ex
-      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{look\_back}).
-      \vskip1ex
-      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
-      \vskip1ex
-      The accuracy of the forecasting model decreases for larger AR order parameters, because of overfitting in-sample.
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-# Calculate the number of available cores
-ncores <- detectCores() - 1
-# Initialize compute cluster under Windows
-cluster <- makeCluster(ncores)
-# Perform parallel loop under Windows
-orderv <- 2:6
-fcasts <- parLapply(cluster, orderv, sim_fcasts, response=retp, 
-  nagg=5, look_back=look_back)
-stopCluster(cluster)  # Stop R processes over cluster under Windows
-# Perform parallel bootstrap under Mac-OSX or Linux
-fcasts <- mclapply(orderv, sim_fcasts, response=retp, 
-  nagg=5, look_back=look_back, mc.cores=ncores)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_mse_order.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the mean squared errors
-mse <- sapply(fcasts, function(x) {
-  c(mse=mean((retp - x)^2), cor=cor(retp, x))
-})  # end sapply
-mse <- t(mse)
-rownames(mse) <- orderv
-# Select optimal order parameter
-ordern <- orderv[which.min(mse[, 1])]
-# Plot forecasting MSE
-plot(x=orderv, y=mse[, 1],
-  xlab="AR order", ylab="MSE", type="l", lwd=2,
-  main="MSE of Forecasting Model As Function of AR Order")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling Autoregressive Strategy Performance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
-      \vskip1ex
-      The autoregressive strategy is dominated by a few periods with very large returns, without producing profits for the remaining periods.
-      \vskip1ex
-      Using the return forecasts as portfolio weights produces very large weights in periods of high volatility, and creates excessive risk.
-      \vskip1ex
-      To reduce excessive risk, a binary strategy uses portfolio weights equaly to the sign of the forecasts.
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate the rolling autoregressive forecasts
-fcasts <- sim_fcasts(retp, ordern=ordern, look_back=look_back)
-# Calculate the strategy PnLs
-pnls <- sign(fcasts)*retp
-pnls <- cbind(retp, pnls, (retp+pnls)/2)
-colnames(pnls) <- c("VTI", "AR_Strategy", "Combined")
-cor(pnls)
-# Annualized Sharpe ratios of VTI and AR strategy
-pnls <- xts::xts(pnls, datev)
-sqrt(252)*sapply(pnls, function (x) mean(x)/sd(x))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_optim.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the cumulative strategy PnLs
-endd <- rutils::calc_endpoints(pnls, interval="weeks")
-dygraphs::dygraph(cumsum(pnls)[endd], main="Rolling Autoregressive Strategy") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Backtesting of Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Backtesting is the simulation of a rolling strategy's performance on historical data.
-      \vskip1ex
-      A \emph{rolling strategy} can be \emph{backtested} by specifying the parameter updating frequency, the formation interval, and the holding period:
-      \setlength{\leftmargini}{1.0em}
-      \begin{itemize}
-        \item Calculate the \emph{end points} for parameter updating,
-        \item Define an objective function for parameter optimization,
-        \item Calculate the optimal parameters in the in-sample formation interval,
-        \item Calculate the out-of-sample strategy returns,
-        \item Calculate the transaction costs and subtract them from the strategy returns.
-      \end{itemize}
-      \vskip1ex
-      But using a different updating frequency in the \emph{backtest} can produce different values for the optimal trading strategy parameters.
-      \vskip1ex
-      The \emph{backtesting} redefines the problem of finding (tuning) the optimal trading strategy parameters, into the problem of finding the optimal \emph{backtest} (meta-model) parameters.
-      \vskip1ex
-      But the advantage of using the \emph{backtest} meta-model is that it can reduce the number of parameters that need to be optimized.
-      \vskip1ex
-      In-sample, the best \emph{Dual EWMA} strategy performs better than \emph{VTI}, because it has two parameters that can be adjusted to improve performance.  
-      \vskip1ex
-      But out-of-sample, the best \emph{Dual EWMA} strategy performs worse than \emph{VTI}, because it's been \emph{overfitted} in-sample.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_dual_out_sample.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Dygraphs plot with custom line colors
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sample") %>%
-  dyEvent(zoo::index(wealthv[last(insample)]), label="in-sample", strokePattern="solid", color="green") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{depr: The Dependence On the Order Parameter}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model.
-      \vskip1ex
-      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
-      \vskip1ex
-      Longer look-back intervals (\texttt{look\_back}) are usually better for the autoregressive forecasting model.
-      \vskip1ex
-      The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
-      \vskip1ex
-      The autoregressive strategy is dominated by a few periods with very large returns, without producing profits for the remaining periods.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the PnLs for ordern=5
-fcasts <- sim_fcasts(retp, ordern=ordern, look_back=look_back)
-pnls5 <- cumsum(sign(fcasts)*retp)
-# Calculate the PnLs for ordern=3
-fcasts <- sim_fcasts(retp, ordern=ordern, look_back=look_back)
-pnls3 <- cumsum(sign(fcasts)*retp)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_order.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the cumulative strategy returns
-wealthv <- cbind(pnls5, pnls3)
-wealthv <- xts::xts(wealthv, datev)
-colnamev <- c("AR(5)_Strategy", "AR(3)_Strategy")
-colnames(wealthv) <- colnamev
-dygraphs::dygraph(wealthv, main="Autoregressive Strategies for Different Order Parameters") %>%
-  dySeries(name=colnamev[1], col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], col="red", strokeWidth=2) %>%
-  dyLegend(width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Autoregressive Strategy With an Expanding Look-back Interval}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Study why the \emph{expanding} look-back interval doesn't improve performance.
-      \vskip1ex
-      The accuracy of the forecasting model depends on whether a \emph{rolling} or an \emph{expanding} look-back interval is used.
-      \vskip1ex
-      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
-      \vskip1ex
-      Longer look-back intervals (\texttt{look\_back}) are usually better for the autoregressive forecasting model.
-      \vskip1ex
-      The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
-      \vskip1ex
-      The autoregressive strategy is dominated by a few periods with very large returns, without producing profits for the remaining periods.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the PnLs for rolling look-back
-fcasts <- sim_fcasts(retp, ordern=ordern, look_back=look_back, 
-                           rollp=TRUE)
-pnls_roll <- cumsum(sign(fcasts)*retp)
-# Calculate the PnLs for expanding look-back
-fcasts <- sim_fcasts(retp, ordern=ordern, look_back=look_back, 
-                           rollp=FALSE)
-pnls_expand <- cumsum(sign(fcasts)*retp)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_expanding.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the cumulative strategy returns
-wealthv <- cbind(pnls_roll, pnls_expand)
-wealthv <- xts::xts(wealthv, datev)
-colnamev <- c("Rolling", "Expanding")
-colnames(wealthv) <- colnamev
-dygraphs::dygraph(wealthv[endd], main="Autoregressive Strategies for Expanding Look-back Interval") %>%
-  dySeries(name=colnamev[1], col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], col="red", strokeWidth=2) %>%
-  dyLegend(width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
+% \section{Trend Following Strategies}
 
 \end{document}
