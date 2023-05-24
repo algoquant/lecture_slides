@@ -199,7 +199,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/op_en/openp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/op_tim/optimd/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/or_der/orderp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/order_s/orderv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/order_max/ordmax/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/order_max/dimax/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/out_put/output/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/pa_ram/param/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/p_acf/pacfv/g' *.R*

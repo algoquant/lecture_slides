@@ -855,7 +855,7 @@ dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(datav),
       The function \texttt{dyShading()} requires a vector of dates for shading.
       <<echo=TRUE,eval=FALSE>>=
 # Create candlestick plot with background shading
-indic <- (Cl(datav) > datav[, "VWAP"])
+indic <- (quantmod::Cl(datav) > datav[, "VWAP"])
 whichv <- which(rutils::diffit(indic) != 0)
 indic <- rbind(first(indic), indic[whichv, ], last(indic))
 datev <- zoo::index(indic)
@@ -892,7 +892,7 @@ dyplot
       <<echo=TRUE,eval=FALSE>>=
 library(dygraphs)
 # Prepare VTI and IEF prices
-pricev <- cbind(Cl(rutils::etfenv$VTI), Cl(rutils::etfenv$IEF))
+pricev <- cbind(quantmod::Cl(rutils::etfenv$VTI), quantmod::Cl(rutils::etfenv$IEF))
 pricev <- na.omit(pricev)
 colnamev <- rutils::get_name(colnames(pricev))
 colnames(pricev) <- colnamev
@@ -1631,13 +1631,13 @@ qnorm(0.975)/sqrt(NROW(retp))
       The function \texttt{rutils::plot\_acf()} from package \emph{rutils} is a wrapper for \texttt{acf()}, and it omits the lag zero autocorrelation.
       <<echo=TRUE,eval=FALSE>>=
 # Get the ACF data returned invisibly
-acfv <- acf(retp, plot=FALSE)
-summary(acfv)
+acfl <- acf(retp, plot=FALSE)
+summary(acfl)
 # Print the ACF data
-print(acfv)
-dim(acfv$acf)
-dim(acfv$lag)
-head(acfv$acf)
+print(acfl)
+dim(acfl$acf)
+dim(acfl$lag)
+head(acfl$acf)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -1645,26 +1645,101 @@ head(acfv$acf)
 plot_acf <- function(xtsv, lagg=10, plotobj=TRUE,
                      xlab="Lag", ylab="", main="", ...) {
   # Calculate the ACF without a plot
-  acfv <- acf(x=xtsv, lag.max=lagg, plot=FALSE, ...)
+  acfl <- acf(x=xtsv, lag.max=lagg, plot=FALSE, ...)
   # Remove first element of ACF data
-  acfv$acf <- array(data=acfv$acf[-1],
-    dim=c((dim(acfv$acf)[1]-1), 1, 1))
-  acfv$lag <- array(data=acfv$lag[-1],
-    dim=c((dim(acfv$lag)[1]-1), 1, 1))
+  acfl$acf <- array(data=acfl$acf[-1],
+    dim=c((dim(acfl$acf)[1]-1), 1, 1))
+  acfl$lag <- array(data=acfl$lag[-1],
+    dim=c((dim(acfl$lag)[1]-1), 1, 1))
   # Plot ACF
   if (plotobj) {
     ci <- qnorm((1+0.95)/2)/sqrt(NROW(xtsv))
-    ylim <- c(min(-ci, range(acfv$acf[-1])),
-              max(ci, range(acfv$acf[-1])))
-    plot(acfv, xlab=xlab, ylab=ylab,
+    ylim <- c(min(-ci, range(acfl$acf[-1])),
+              max(ci, range(acfl$acf[-1])))
+    plot(acfl, xlab=xlab, ylab=ylab,
          ylim=ylim, main="", ci=0)
     title(main=main, line=0.5)
     abline(h=c(-ci, ci), col="blue", lty=2)
   }  # end if
   # Return the ACF data invisibly
-  invisible(acfv)
+  invisible(acfl)
 }  # end plot_acf
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{U.S. Macroeconomic Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{Ecdat} contains the \texttt{Macrodat} U.S. macroeconomic data.
+      \vskip1ex
+      \texttt{"lhur"} is the unemployment rate (average of months in quarter).
+      \vskip1ex
+      \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
+      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+library(rutils)  # Load package rutils
+library(Ecdat)  # Load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+# Coerce to "zoo"
+macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macrodata) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # Generic ggplot2 for "zoo"
+  object=macrodata, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # Modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/macro_data-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelations of Econometric Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Most econometric data displays a high degree of autocorrelation.
+      \vskip1ex
+      But the time series of asset returns display very low autocorrelations.
+      \vskip1ex
+      The function \texttt{zoo::coredata()} extracts the underlying numeric data from a complex data object.
+      <<echo=TRUE,eval=FALSE>>=
+# Open plot window under MS Windows
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), 
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Set two vertical plot panels
+par(mfrow=c(2,1))
+macrodiff <- na.omit(diff(macrodata))
+# Plot the autocorrelations
+rutils::plot_acf(coredata(macrodiff[, "unemprate"]),
+  lag=10, main="quarterly unemployment rate")
+rutils::plot_acf(coredata(macrodiff[, "3mTbill"]),
+  lag=10, main="3 month T-bill EOQ")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/macro_corr-1}
   \end{columns}
 \end{block}
 
@@ -1682,14 +1757,12 @@ plot_acf <- function(xtsv, lagg=10, plotobj=TRUE,
       \vskip1ex
       But the visual inspection of the \emph{ACF} plot alone is not enough to test whether autocorrelations are statistically significant or not.
       <<echo=TRUE,eval=FALSE>>=
-# Improved autocorrelation function
-x11(width=6, height=4)
-rutils::plot_acf(retp, lag=10, main="")
-title(main="ACF of VTI returns", line=-1)
+# Autocorrelations of VTI returns
+rutils::plot_acf(retp, lag=10, main="ACF of VTI returns")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/acf_vti_bis.png}
+      \includegraphics[width=0.4\paperwidth]{figure/acf_vti_bis.png}
   \end{columns}
 \end{block}
 
@@ -1779,7 +1852,7 @@ Box.test(macrodiff[, "unemprate"], lag=10, type="Ljung")
 retp <- rutils::etfenv$returns[, c("VTI", "XLF")]
 retp <- na.omit(retp)
 nrows <- NROW(retp)
-# De-mean (center) and scale the returns
+# Center (de-mean) and scale the returns
 retp <- apply(retp, MARGIN=2, function(x) (x-mean(x))/sd(x))
 apply(retp, MARGIN=2, sd)
 # Calculate the correlation
@@ -1851,13 +1924,13 @@ Box.test(retp^2, lag=10, type="Ljung")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Autocorrelations in Intervals of High and Low Volatility}
+\subsection{Autocorrelations in Intervals of Low and High Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Stock returns have significant negative autocorrelations in time intervals with high volatility, but not in time intervals with low volatility.
+      Stock returns have significant negative autocorrelations in time intervals with high volatility, but much less in time intervals with low volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the monthly end points
 endd <- rutils::calc_endpoints(retp, interval="weeks")
@@ -1899,79 +1972,61 @@ Box.test(rethigh, lag=10, type="Ljung")
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{U.S. Macroeconomic Data}
+\subsection{Autocorrelations of Low and High Volatility Stocks}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{Ecdat} contains the \texttt{Macrodat} U.S. macroeconomic data.
+      Low volatility stocks have more significant negative autocorrelations than high volatility stocks.
       \vskip1ex
-      \texttt{"lhur"} is the unemployment rate (average of months in quarter).
-      \vskip1ex
-      \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
-      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-library(rutils)  # Load package rutils
-library(Ecdat)  # Load Ecdat
-colnames(Macrodat)  # United States Macroeconomic Time Series
-# Coerce to "zoo"
-macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macrodata) <- c("unemprate", "3mTbill")
-# ggplot2 in multiple panes
-autoplot(  # Generic ggplot2 for "zoo"
-  object=macrodata, main="US Macro",
-  facets=Series ~ .) + # end autoplot
-  xlab("") +
-theme(  # Modify plot theme
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank()
-)  # end theme
-      @
-    \column{0.5\textwidth}
-      \hspace*{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/macro_data-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelations of Econometric Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Most econometric data displays a high degree of autocorrelation.
-      \vskip1ex
-      But the time series of asset returns display very low autocorrelations.
-      \vskip1ex
-      The function \texttt{zoo::coredata()} extracts the underlying numeric data from a complex data object.
+      But even the lowest volatility quantile of stocks has less significant negative autocorrelations than \emph{VTI} does.
       <<echo=TRUE,eval=FALSE>>=
-# Open plot window under MS Windows
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), 
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Set two vertical plot panels
-par(mfrow=c(2,1))
-macrodiff <- na.omit(diff(macrodata))
-# Plot the autocorrelations
-rutils::plot_acf(coredata(macrodiff[, "unemprate"]),
-  lag=10, main="quarterly unemployment rate")
-rutils::plot_acf(coredata(macrodiff[, "3mTbill"]),
-  lag=10, main="3 month T-bill EOQ")
+# Load daily S&P500 stock returns
+load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+# Calculate the stock volatilities and Ljung-Box test statistics
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1
+statm <- mclapply(returns, function(retp) {
+  retp <- na.omit(retp)
+  c(stdev=sd(retp), lbstat=Box.test(retp, lag=10, type="Ljung")$statistic)
+}, mc.cores=ncores)  # end mclapply
+statm <- do.call(rbind, statm)
+colnames(statm)[2] <- "lbstat"
+# Calculate the median volatility
+stdev <- statm[, "stdev"]
+lbstat <- statm[, "lbstat"]
+stdevm <- median(stdev)
+# Calculate the Ljung-Box statistics for stock volatility quantiles
+quants <- quantile(stdev, c(0.001, seq(0.1, 0.9, 0.1), 0.999))
+lbstatq <- sapply(2:NROW(quants), function(it) {
+  mean(lbstat[(stdev > quants[it-1]) & (stdev < quants[it])])
+}) # end sapply
+# Calculate the Ljung-Box statistics for low and high volatility stocks
+lowvol <- (stdev < stdevm)
+mean(statm[lowvol, "lbstat"])
+mean(statm[!lowvol, "lbstat"])
+# Compare the Ljung-Box statistics for lowest volatility stocks with VTI
+lbstatq[1]
+Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
       @
     \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.45\paperwidth]{figure/macro_corr-1}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/acf_stocks.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Ljung-Box test statistic for volatility quantiles
+plot(x=quants[-NROW(quants)], y=lbstatq, lwd=1, col="blue", 
+     # xlim=c(0.01, 0.05), ylim=c(0, 100),
+     xlab="volatility", ylab="Ljung-Box Stat", 
+     main="Ljung-Box Statistic For Stock Volatility Quantiles")
+      @
   \end{columns}
 \end{block}
 
 \end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -1997,15 +2052,15 @@ x11(width=6, height=4)
 # Open plot window on Mac
 dev.new(width=6, height=4, noRStudioGD=TRUE)
 # Plot the autocorrelations of minutely SPY returns
-acfv <- rutils::plot_acf(as.numeric(retp), lag=10,
+acfl <- rutils::plot_acf(as.numeric(retp), lag=10,
      xlab="lag", ylab="Autocorrelation", main="")
 title("Autocorrelations of Minutely SPY Returns", line=1)
 # Calculate the sum of autocorrelations
-sum(acfv$acf)
+sum(acfl$acf)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_acf.png}
+      \includegraphics[width=0.4\paperwidth]{figure/acf_hf.png}
   \end{columns}
 \end{block}
 
@@ -2013,7 +2068,7 @@ sum(acfv$acf)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Autocorrelation as Function of Aggregation Interval}
+\subsection{Autocorrelations as Function of Aggregation Interval}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2028,26 +2083,35 @@ sum(acfv$acf)
       As the returns are aggregated to a lower periodicity, they become less autocorrelated, with daily returns having almost insignificant autocorrelations.
       \vskip1ex
       The function \texttt{rutils::to\_period()} aggregates an \emph{OHLC} time series to a lower periodicity.  
-    \column{0.5\textwidth}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Ljung-Box test for minutely SPY returns
 Box.test(retp, lag=10, type="Ljung")
 # Calculate hourly SPY percentage returns
-closeh <- Cl(xts::to.period(x=ohlc, period="hours"))
+closeh <- quantmod::Cl(xts::to.period(x=ohlc, period="hours"))
 retsh <- rutils::diffit(closeh)
 # Ljung-Box test for hourly SPY returns
 Box.test(retsh, lag=10, type="Ljung")
 # Calculate daily SPY percentage returns
-closed <- Cl(xts::to.period(x=ohlc, period="days"))
+closed <- quantmod::Cl(xts::to.period(x=ohlc, period="days"))
 retd <- rutils::diffit(closed)
 # Ljung-Box test for daily SPY returns
 Box.test(retd, lag=10, type="Ljung")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/acf_hf_agg.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Ljung-Box test statistics for aggregated SPY returns
-sapply(list(minutely=retp, hourly=retsh, daily=retd),
+lbstat <- sapply(list(daily=retd, hourly=retsh, minutely=retp),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
+# Plot Ljung-Box test statistic for different aggregation intervals
+plot(lbstat, lwd=6, col="blue", xaxt="n", 
+     xlab="Aggregation interval", ylab="Ljung-Box Stat", 
+     main="Ljung-Box Statistic For Different Aggregations")
+# Add X-axis with labels
+axis(side=1, at=(1:3), labels=c("daily", "hourly", "minutely"))
       @
   \end{columns}
 \end{block}
@@ -3045,9 +3109,9 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 # Simulate AR(1) process
 arimav <- arima.sim(n=1e3, model=list(ar=0.8))
 # ACF of AR(1) process
-acfv <- rutils::plot_acf(arimav, lag=10, xlab="", ylab="",
+acfl <- rutils::plot_acf(arimav, lag=10, xlab="", ylab="",
   main="Autocorrelations of AR(1) process")
-acfv$acf[1:5]
+acfl$acf[1:5]
       @
   \end{columns}
 \end{block}
@@ -3084,10 +3148,10 @@ acfv$acf[1:5]
       An \emph{AR(1)} process has an exponentially decaying \emph{ACF} and a non-zero \emph{PACF} at lag one.
       <<echo=TRUE,eval=FALSE>>=
 # PACF of AR(1) process
-pacfv <- pacf(arimav, lag=10, xlab="", ylab="", main="")
+pacfl <- pacf(arimav, lag=10, xlab="", ylab="", main="")
 title("Partial autocorrelations of AR(1) process", line=1)
-pacfv <- as.numeric(pacfv$acf)
-pacfv[1:5]
+pacfl <- as.numeric(pacfl$acf)
+pacfl[1:5]
       @
   \end{columns}
 \end{block}
@@ -3862,7 +3926,7 @@ arimav <- .Call(stats:::C_rfilter, innov, coeff,
 # Define predictor matrix
 arimav <- (arimav - mean(arimav))
 predm <- sapply(1:3, rutils::lagit, input=arimav)
-# Calculate de-meaned returns matrix
+# Calculate centered returns matrix
 predm <- t(t(predm) - colMeans(predm))
 predinv <- MASS::ginv(predm)
 # Regression coefficients with response equal to arimav
@@ -4064,10 +4128,10 @@ all.equal(arfit$coef, coeff, check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Compute autocorrelation coefficients
-acfv <- rutils::plot_acf(arimav, lag=10, plot=FALSE)
-acfv <- drop(acfv$acf)
-nrows <- NROW(acfv)
-acf1 <- c(1, acfv[-nrows])
+acfl <- rutils::plot_acf(arimav, lag=10, plot=FALSE)
+acfl <- drop(acfl$acf)
+nrows <- NROW(acfl)
+acf1 <- c(1, acfl[-nrows])
 # Define Yule-Walker matrix
 ywmat <- sapply(1:nrows, function(lagg) {
   if (lagg < nrows)
@@ -4078,7 +4142,7 @@ ywmat <- sapply(1:nrows, function(lagg) {
 # Generalized inverse of Yule-Walker matrix
 ywmatinv <- MASS::ginv(ywmat)
 # Solve Yule-Walker equations
-ywcoeff <- drop(ywmatinv %*% acfv)
+ywcoeff <- drop(ywmatinv %*% acfl)
 round(ywcoeff, 5)
 coeff
       @
@@ -4115,28 +4179,28 @@ coeff
     \column{0.5\textwidth}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate PACF from acf using Durbin-Levinson algorithm
-acfv <- rutils::plot_acf(arimav, lag=10, plotobj=FALSE)
-acfv <- drop(acfv$acf)
-nrows <- NROW(acfv)
-pacfv <- numeric(2)
-pacfv[1] <- acfv[1]
-pacfv[2] <- (acfv[2] - acfv[1]^2)/(1 - acfv[1]^2)
+acfl <- rutils::plot_acf(arimav, lag=10, plotobj=FALSE)
+acfl <- drop(acfl$acf)
+nrows <- NROW(acfl)
+pacfl <- numeric(2)
+pacfl[1] <- acfl[1]
+pacfl[2] <- (acfl[2] - acfl[1]^2)/(1 - acfl[1]^2)
 # Calculate PACF recursively in a loop using Durbin-Levinson algorithm
-pacfvl <- matrix(numeric(nrows*nrows), nc=nrows)
-pacfvl[1, 1] <- acfv[1]
+pacfll <- matrix(numeric(nrows*nrows), nc=nrows)
+pacfll[1, 1] <- acfl[1]
 for (it in 2:nrows) {
-  pacfvl[it, it] <- (acfv[it] - pacfvl[it-1, 1:(it-1)] %*% acfv[(it-1):1])/(1 - pacfvl[it-1, 1:(it-1)] %*% acfv[1:(it-1)])
+  pacfll[it, it] <- (acfl[it] - pacfll[it-1, 1:(it-1)] %*% acfl[(it-1):1])/(1 - pacfll[it-1, 1:(it-1)] %*% acfl[1:(it-1)])
   for (it2 in 1:(it-1)) {
-    pacfvl[it, it2] <- pacfvl[it-1, it2] - pacfvl[it, it] %*% pacfvl[it-1, it-it2]
+    pacfll[it, it2] <- pacfll[it-1, it2] - pacfll[it, it] %*% pacfll[it-1, it-it2]
   }  # end for
 }  # end for
-pacfvl <- diag(pacfvl)
+pacfll <- diag(pacfll)
 # Compare with the PACF without loop
-all.equal(pacfv, pacfvl[1:2])
+all.equal(pacfl, pacfll[1:2])
 # Calculate PACF using pacf()
-pacfv <- pacf(arimav, lag=10, plot=FALSE)
-pacfv <- drop(pacfv$acf)
-all.equal(pacfv, pacfvl)
+pacfl <- pacf(arimav, lag=10, plot=FALSE)
+pacfl <- drop(pacfl$acf)
+all.equal(pacfl, pacfll)
       @
   \end{columns}
 \end{block}

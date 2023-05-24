@@ -1,0 +1,4857 @@
+% Define knitr options
+% !Rnw weave=knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="tiny", fig.width=4, fig.height=4)
+options(width=80, dev="pdf")
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[9pt]{beamer}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% mathtools package for math symbols
+\usepackage{mathtools}
+% tikz package for plotting and tables
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{array}
+\usepackage{multirow}
+% bbm and bbold packages for unitary vector or matrix symbol
+\usepackage{bbm}
+\usepackage{bbold}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE_lectures.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+
+% Title page setup
+\title[Univariate Investment Strategies]{Univariate Investment Strategies}
+\subtitle{FRE7241, Spring 2023}
+\institute[NYU Tandon]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
+% \email{jp3900@nyu.edu}
+\date{\today}
+
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Rebalancing Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calculating Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Given a time series of asset prices $p_i$, the dollar returns $r^d_i$, the percentage returns $r^p_i$, and the log returns $r^l_i$ are defined as:
+      \begin{displaymath}
+        r^d_i = p_i - p_{i-1} \quad r^p_i = \frac{p_i - p_{i-1}}{p_{i-1}} \quad r^l_i = \log(\frac{p_i}{p_{i-1}})
+      \end{displaymath}
+      The initial returns are all equal to zero.
+      \vskip1ex
+      If the log returns are small $r^l \ll 1$, then they are approximately equal to the percentage returns: $r^l \approx r^p$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)
+# Extract the ETF prices from rutils::etfenv$prices
+pricev <- rutils::etfenv$prices
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+datev <- zoo::index(pricev)
+# Calculate the simple dollar returns
+retd <- rutils::diffit(pricev)
+# Or
+# retd <- lapply(pricev, rutils::diffit)
+# retd <- rutils::do_call(cbind, retd)
+# Calculate the percentage returns
+retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
+# Calculate the log returns
+retl <- rutils::diffit(log(pricev))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Compounding Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The sum of the dollar returns:
+      $\sum_{i=1}^n r^d_i$
+      represents the wealth path from owning a \emph{fixed number of shares}.
+      \vskip1ex
+      The compounded percentage returns:
+      $\prod_{i=1}^n (1 + r^p_i$)
+      also represent the wealth path from owning a \emph{fixed number of shares}, initially equal to \texttt{\$1} dollar.
+      \vskip1ex
+      The sum of the percentage returns (without compounding):
+      $\sum_{i=1}^n r^p_i$
+      represents the wealth path from owning a \emph{fixed dollar amount} of stock.
+      \vskip1ex
+      Maintaining a \emph{fixed dollar amount} of stock requires periodic \emph{rebalancing} - selling shares when their price goes up, and vice versa.
+      \vskip1ex
+      This \emph{rebalancing} therefore acts as a mean reverting strategy.
+      \vskip1ex
+      The logarithm of the wealth of a \emph{fixed number of shares} is approximately equal to the sum of the percentage returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Set the initial dollar returns
+retd[1, ] <- pricev[1, ]
+# Calculate the prices from dollar returns
+pricen <- cumsum(retd)
+all.equal(pricen, pricev)
+# Compound the percentage returns
+pricen <- cumprod(1 + retp)
+# Set the initial prices
+pricesi <- as.numeric(pricev[1, ])
+pricen <- lapply(1:NCOL(pricen), function (i) pricesi[i]*pricen[, i])
+pricen <- rutils::do_call(cbind, pricen)
+# pricen <- t(t(pricen)*pricesi)
+all.equal(pricen, pricev, check.attributes=FALSE)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_log_vti.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot log VTI prices
+endd <- rutils::calc_endpoints(rutils::etfenv$VTI, interval="weeks")
+dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endd]),
+  main="Logarithm of VTI Prices") %>%
+  dyOptions(colors="blue", strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Funding Costs of Single Asset Rebalancing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The rebalancing of stock requires borrowing from a \emph{margin account}, and it also incurs trading costs.
+      \vskip1ex
+      The wealth accumulated from owning a \emph{fixed dollar amount} of stock is equal to the cash earned from rebalancing, which is proportional to the sum of the percentage returns, and it's kept in a \emph{margin account}: $m_t = \sum_{i=1}^t r^p_i$.
+      \vskip1ex
+      The cash in the \emph{margin account} can be positive (accumulated profits) or negative (losses).
+      \vskip1ex
+      The \emph{funding costs} $c^f_t$ are approximately equal to the \emph{margin account} $m_t$ times the \emph{funding rate} $f$: $c^f_t = f \, m_t = f \, \sum_{i=1}^t r^p_i$.
+      \vskip1ex
+      Positive \emph{funding costs} represent interest profits earned on the \emph{margin account}, while negative costs represent the interest paid for funding stock purchases.
+      \vskip1ex
+      The \emph{cumulative funding costs} $\sum_{i=1}^t c^f_t$ must be added to the \emph{margin account}: $m_t + \sum_{i=1}^t c^f_t$.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the percentage VTI returns
+pricev <- rutils::etfenv$prices$VTI
+pricev <- na.omit(pricev)
+retp <- rutils::diffit(pricev)/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_margin.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Funding rate per day
+frate <- 0.01/252
+# Margin account
+marginv <- cumsum(retp)
+# Cumulative funding costs
+fcosts <- cumsum(frate*marginv)
+# Add funding costs to margin account
+marginv <- (marginv + fcosts)
+# dygraph plot of margin and funding costs
+datav <- cbind(marginv, fcosts)
+colnamev <- c("Margin", "Cumulative Funding")
+colnames(datav) <- colnamev
+endd <- rutils::calc_endpoints(datav, interval="weeks")
+dygraphs::dygraph(datav[endd], main="VTI Margin Funding Costs") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Transaction Costs of Trading}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The total \emph{transaction costs} are the sum of the \emph{broker commissions}, the \emph{bid-offer spread} (for market orders), \emph{lost trades} (for limit orders), and \emph{market impact}.
+      \vskip1ex
+      Broker commissions depend on the broker, the size of the trades, and on the type of investors, with institutional investors usually enjoying smaller commissions.
+      \vskip1ex
+      The \emph{bid-offer spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
+      \vskip1ex
+      Market impact is the effect of large trades pushing the market prices (the limit order book) against the trades, making the filled price worse.
+      \vskip1ex
+      Limit orders are not subject to the bid-offer spread but they are exposed to \emph{lost trades}.
+      \vskip1ex
+      \emph{Lost trades} are limit orders that don't get executed, resulting in lost potential profits.
+      \vskip1ex
+      Limit orders may receive rebates from some exchanges, which may reduce transaction costs.
+    \column{0.5\textwidth}
+      The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
+      \vskip1ex
+      In reality the \emph{bid-offer spread} is not static and depends on many factors, such as market liquidity (trading volume), volatility, and the time of day.
+      \vskip1ex
+      The \emph{transaction costs} due to the \emph{bid-offer spread} are equal to the number of traded shares times their price, times half the \emph{bid-offer spread}.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Transaction Costs of Single Asset Rebalancing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Maintaining a \emph{fixed dollar amount} of stock requires periodic \emph{rebalancing}, selling shares when their price goes up, and vice versa.
+      \vskip1ex
+      The dollar amount of stock that must be traded in a given period is equal to the absolute of the percentage returns: $\left| r_t \right|$.
+      \vskip1ex
+      The \emph{transaction costs} $c^r_t$ due to rebalancing are equal to half the \emph{bid-offer spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} \left| r_t \right|$.
+      \vskip1ex
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{margin account} $m_t$: $m_t - \sum_{i=1}^t c^r_t$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_single_transaction_costs.png}
+      <<echo=TRUE,eval=FALSE>>=
+# bid_offer equal to 10 bps for liquid ETFs
+bid_offer <- 0.001
+# Cumulative transaction costs
+costs <- bid_offer*cumsum(abs(retp))/2
+# Subtract transaction costs from margin account
+marginv <- cumsum(retp)
+marginv <- (marginv - costs)
+# dygraph plot of margin and transaction costs
+datav <- cbind(marginv, costs)
+colnamev <- c("Margin", "Cumulative Transaction Costs")
+colnames(datav) <- colnamev
+dygraphs::dygraph(datav[endd], main="VTI Transaction Costs") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Combining the Returns of Multiple Assets}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiplying the weights times the dollar returns is equivalent to buying a \emph{fixed number of shares} proportional to the weights (aka \emph{Fixed Share Allocation} or FSA).
+      \vskip1ex
+      Multiplying the weights times the percentage returns is equivalent to investing in \emph{fixed dollar amounts of stock} proportional to the weights (aka \emph{Fixed Dollar Allocation} or FDA).
+      \vskip1ex
+      The portfolio allocations must be periodically rebalanced to keep the dollar amounts of the stocks proportional to the weights.
+      \vskip1ex
+      This \emph{rebalancing} acts as a mean reverting strategy - selling shares when their price goes up, and vice versa.
+      \vskip1ex
+      The portfolio with proportional dollar allocations has a slightly higher Sharpe ratio than the portfolio with a fixed number of shares.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VTI and IEF dollar returns
+pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
+pricev <- na.omit(pricev)
+retd <- rutils::diffit(pricev)
+datev <- zoo::index(pricev)
+# Calculate the VTI and IEF percentage returns
+retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
+# Wealth of fixed shares equal to $0.5 each (without rebalancing)
+weightv <- c(0.5, 0.5)  # dollar weights
+wealthfs <- drop(cumprod(1 + retp) %*% weightv)
+# Or using the dollar returns
+pricesi <- as.numeric(pricev[1, ])
+retd[1, ] <- pricev[1, ]
+wealthfs2 <- cumsum(retd %*% (weightv/pricesi))
+all.equal(wealthfs, drop(wealthfs2))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_weighted_wealth.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Wealth of fixed dollars (with rebalancing)
+wealthfd <- cumsum(retp %*% weightv)
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(log(wealthfs), wealthfd)
+wealthv <- xts::xts(wealthv, datev)
+colnames(wealthv) <- c("Fixed shares", "Fixed dollars")
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the log wealth
+colnamev <- colnames(wealthv)
+endd <- rutils::calc_endpoints(retp, interval="weeks")
+dygraphs::dygraph(wealthv[endd], main="Wealth of Weighted Portfolios") %>%
+  dySeries(name=colnamev[1], col="blue", strokeWidth=2) %>%
+  dySeries(name=colnamev[2], col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Transaction Costs of Weighted Portfolio Rebalancing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Maintaining a \emph{fixed dollar allocation} of stock requires periodic \emph{rebalancing}, selling shares when their price goes up, and vice versa.
+      \vskip1ex
+      Adding the weighted percentage returns is equivalent to investing in \emph{fixed dollar amounts of stock} proportional to the weights.
+      \vskip1ex
+      The dollar amount of stock that must be traded in a given period is equal to the weighted sum of the absolute percentage returns: $w1 \left| r^1_t \right| + w2 \left| r^2_t \right|$.
+      \vskip1ex
+      The \emph{transaction costs} $c^r_t$ due to rebalancing are equal to half the \emph{bid-offer spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} (w1 \left| r^1_t \right| + w2 \left| r^2_t \right|)$.
+      \vskip1ex
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{margin account} $m_t$: $m_t - \sum_{i=1}^t c^r_t$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_transaction_costs.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Margin account for fixed dollars (with rebalancing)
+marginv <- cumsum(retp %*% weightv)
+# Cumulative transaction costs
+costs <- bid_offer*cumsum(abs(retp) %*% weightv)/2
+# Subtract transaction costs from margin account
+marginv <- (marginv - costs)
+# dygraph plot of margin and transaction costs
+datav <- cbind(marginv, costs)
+datav <- xts::xts(datav, datev)
+colnamev <- c("Margin", "Cumulative Transaction Costs")
+colnames(datav) <- colnamev
+dygraphs::dygraph(datav[endd], main="Fixed Dollar Portfolio Transaction Costs") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Proportional Dollar Allocations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{proportional dollar allocation} strategy (\emph{PDA}), the total wealth $w_t$ is allocated to the assets $w_i$ proportional to the portfolio weights $\omega_i$: $w_i = \omega_i w_t$.
+      \vskip1ex
+      The total wealth $w_t$ is not fixed and is equal to the portfolio market value $w_t = \sum w_i$, so there's no margin account.
+      \vskip1ex
+      The portfolio is rebalanced daily to maintain the dollar allocations $w_i$ equal to the total wealth $w_t = \sum w_i$ times the portfolio weights: $\omega_i$: $w_i = \omega_i w_t$.
+      \vskip1ex
+      Let $r_t$ be the percentage returns, $\omega_i$ be the portfolio weights, and $\bar{r}_t = \sum_{i=1}^n \omega_i r_t$ be the weighted percentage returns at time $t$.
+      \vskip1ex
+      The total portfolio wealth at time $t$ is equal to the wealth at time $t-1$ multiplied by the weighted returns: $w_t = w_{t-1} (1 + \bar{r}_t)$.
+      \vskip1ex
+      The dollar amount of stock $i$ at time $t$ increases by $\omega_i r_t$ so it's equal to $\omega_i w_{t-1} (1 + r_t)$, while the target amount is $\omega_i w_t = \omega_i w_{t-1} (1 + \bar{r}_t)$
+      \vskip1ex
+      The dollar amount of stock $i$ needed to trade to rebalance back to the target weight is equal to:
+      \begin{flalign*}
+        \varepsilon_i &= \left| \omega_i w_{t-1} (1 + \bar{r}_t) - \omega_i w_{t-1} (1 + r_t) \right|\\
+        &= \omega_i w_{t-1} \left| \bar{r}_t - r_t \right|
+      \end{flalign*}
+      If $\bar{r}_t > r_t$ then an amount $\varepsilon_i$ of the stock $i$ needs to be bought, and if $\bar{r}_t < r_t$ then it needs to be sold.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_allocations.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Wealth of fixed shares (without rebalancing)
+wealthfs <- cumsum(retd %*% (weightv/pricesi))
+# Or compound the percentage returns
+wealthfs <- cumprod(1 + retp) %*% weightv
+# Wealth of proportional allocations (with rebalancing)
+wealthpd <- cumprod(1 + retp %*% weightv)
+wealthv <- cbind(wealthfs, wealthpd)
+wealthv <- xts::xts(wealthv, datev)
+colnames(wealthv) <- c("Fixed shares", "Prop dollars")
+wealthv <- log(wealthv)
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the log wealth
+dygraphs::dygraph(wealthv[endd], 
+  main="Wealth of Proportional Dollar Allocations") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Transaction Costs With Proportional Dollar Allocations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In each period the stocks must be rebalanced to maintain the proportional dollar allocations.
+      \vskip1ex
+      The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = w_{t-1} \sum_{i=1}^n \omega_i \left| \bar{r}_t - r_t \right|$
+      \vskip1ex
+      The \emph{transaction costs} $c^r_t$ are equal to half the \emph{bid-offer spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} \sum_{i=1}^n \varepsilon_i$.
+      \vskip1ex
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{wealth} $w_t$: $w_t - \sum_{i=1}^t c^r_t$.
+      <<echo=TRUE,eval=FALSE>>=
+# Returns in excess of weighted returns
+retw <- retp %*% weightv
+retx <- lapply(retp, function(x) (retw - x))
+retx <- do.call(cbind, retx)
+sum(retx %*% weightv)
+# Calculate the weighted sum of absolute excess returns
+retx <- abs(retx) %*% weightv
+# Total dollar amount of stocks that need to be traded
+retx <- retx*rutils::lagit(wealthpd)
+# Cumulative transaction costs
+costs <- bid_offer*cumsum(retx)/2
+# Subtract transaction costs from wealth
+wealthpd <- (wealthpd - costs)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_allocations_transaction_costs.png}
+      <<echo=TRUE,eval=FALSE>>=
+# dygraph plot of wealth and transaction costs
+wealthv <- cbind(wealthpd, costs)
+wealthv <- xts::xts(wealthv, datev)
+colnamev <- c("Wealth", "Cumulative Transaction Costs")
+colnames(wealthv) <- colnamev
+dygraphs::dygraph(wealthv[endd], 
+  main="Transaction Costs With Proportional Allocations") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Proportional Target Allocation Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{fixed share strategy} (\emph{FSA}), the number of shares is fixed, with their initial dollar value equal to the portfolio weights.
+      \vskip1ex
+      In the \emph{proportional dollar allocation} strategy (\emph{PDA}), the portfolio is rebalanced daily to maintain the dollar allocations $w_i$ equal to the total wealth $w_t = \sum w_i$ times the portfolio weights: $\omega_i$: $w_i = \omega_i w_t$.
+      \vskip1ex
+      In the \emph{proportional target allocation} strategy (\emph{PTA}), the portfolio is rebalanced only if the dollar allocations $w_i$ differ from their targets $\omega_i w_t$ more than the threshold value $\tau$: $\tau > \frac{\sum \left| w_i - \omega_i w_t \right|}{w_t}$.
+      \vskip1ex
+      The \emph{PTA} strategy is path-dependent so it must be simulated using an explicit loop. 
+      \vskip1ex
+      The \emph{PTA} strategy is contrarian, since it sells assets that have outperformed, and it buys assets that have underperformed.
+      \vskip1ex
+      If the threshold level is very small then the \emph{PTA} strategy rebalances daily and it's the same as the \emph{PDA}.
+      \vskip1ex
+      If the threshold level is very large then the \emph{PTA} strategy does not rebalance and it's the same as the \emph{FSA}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Wealth of fixed shares (without rebalancing)
+wealthfs <- drop(apply(retp, 2, function(x) cumprod(1 + x)) %*% weightv)-1
+# Wealth of proportional dollar allocations (with rebalancing)
+wealthpd <- cumprod(1 + retp %*% weightv) - 1
+# Wealth of proportional target allocation (with rebalancing)
+retp <- zoo::coredata(retp)
+threshv <- 0.05
+wealthv <- matrix(nrow=NROW(retp), ncol=2)
+colnames(wealthv) <- colnames(retp)
+wealthv[1, ] <- weightv
+for (it in 2:NROW(retp)) {
+  # Accrue wealth without rebalancing
+  wealthv[it, ] <- wealthv[it-1, ]*(1 + retp[it, ])
+  # Rebalance if wealth allocations differ from weights
+  if (sum(abs(wealthv[it, ] - sum(wealthv[it, ])*weightv))/sum(wealthv[it, ]) > threshv) {
+    # cat("Rebalance at:", it, "\n")
+    wealthv[it, ] <- sum(wealthv[it, ])*weightv
+  } # end if
+} # end for
+wealthv <- rowSums(wealthv) - 1
+wealthv <- cbind(wealthpd, wealthv)
+wealthv <- xts::xts(wealthv, datev)
+colnames(wealthv) <- c("Proportional Allocations", "Proportional Target")
+dygraphs::dygraph(wealthv, main="Wealth of Proportional Target Allocations") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Stock Index Weighting Methods}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Split this slide to explain equal-weighted indices:
+      https://www.investopedia.com/terms/e/equalweight.asp
+      \vskip1ex
+      Stock market indices can be capitalization-weighted (\emph{S\&P500}), price-weighted (\emph{DJIA}), or equal-weighted.
+      \vskip1ex
+      The cap-weighted and price-weighted indices own a fixed number of shares (excluding stock splits).
+      \vskip1ex
+      Equal-weighted indices own the same dollar amount of each stock, so they must be rebalanced as market prices change.
+      \vskip1ex
+      Cap-weighted index = Sum \{ (Stock Price * Number of shares) / Index Divisor \}
+      \vskip1ex
+      Price-weighted index = Sum \{Stock Price / Index Divisor \}
+      \vskip1ex
+      Equal-weighted index = Sum \{ (Stock Price * factor) / Index Divisor \}
+      \vskip1ex
+      Cap-weighted indices are overweight large-cap stocks, while equal-weighted indices are overweight small-cap stocks.
+      \vskip1ex
+      Cap-weighted indices are \emph{trend following}, while equal-weighted indices are \emph{mean reverting} (contrarian).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Create name corresponding to "^GSPC" symbol
+setSymbolLookup(
+  SP500=list(name="^GSPC", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# Download S&P500 prices into etfenv
+quantmod::getSymbols("SP500", env=etfenv,
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
+quantmod::chart_Series(x=etfenv$SP500["2016/"],
+             TA="add_Vo()",
+             name="S&P500 index")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stock and Bond Portfolio With Proportional Dollar Allocations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Portfolios combining stocks and bonds can provide a much better risk versus return tradeoff than either of the assets separately, because the returns of stocks and bonds are usually negatively correlated, so they are natural hedges of each other.
+      \vskip1ex
+      The fixed portfolio weights represent the percentage dollar allocations to stocks and bonds, while the portfolio wealth grows over time.
+      \vskip1ex
+      The weights depend on the investment horizon, with a greater allocation to bonds for a shorter investment horizon.
+      \vskip1ex
+      Active investment strategies are expected to outperform static stock and bond portfolios.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the stock and bond returns
+retp <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
+weightv <- c(0.4, 0.6)
+retp <- cbind(retp, retp %*% weightv)
+colnames(retp)[3] <- "Combined"
+# Calculate the correlations
+cor(retp)
+# Calculate the Sharpe ratios
+sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
+# Calculate the standard deviation, skewness, and kurtosis
+sapply(retp, function(x) {
+  # Calculate the standard deviation
+  stdev <- sd(x)
+  # Standardize the returns
+  x <- (x - mean(x))/stdev
+  c(stdev=stdev, skew=mean(x^3), kurt=mean(x^4))
+})  # end sapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_stocks_bonds.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Wealth of proportional allocations
+wealthv <- cumprod(1 + retp)
+# Calculate the a vector of monthly end points
+endd <- rutils::calc_endpoints(retp, interval="weeks")
+# Plot cumulative log wealth
+dygraphs::dygraph(log(wealthv[endd]), 
+  main="Stocks and Bonds With Proportional Allocations") %>%
+  dyOptions(colors=c("blue", "green", "blue", "red")) %>%
+  dySeries("Combined", color="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stock and Bond Portfolio Allocations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The optimal stock and bond weights can be calculated using optimization.
+      \vskip1ex
+      Using the past \texttt{20} years of data, the optimal \emph{VTI} weight is about \texttt{0.4}.
+      \vskip1ex
+      The comments and conclusions in these slides are based on \texttt{20} years of very positive stock and bond returns, when stocks and bonds have been in a secular bull market.  The conclusions would not hold if stocks and bonds had suffered from a bear market (losses) over that time.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
+# Calculate the Sharpe ratios for vector of weights
+weightv <- seq(0.05, 0.95, 0.05)
+sharpev <- sqrt(252)*sapply(weightv, function(weight) {
+  weightv <- c(weight, 1-weight)
+  retp <- (retp[, 1:2] %*% weightv)
+  mean(retp)/sd(retp)
+})  # end sapply
+# Calculate the optimal VTI weight
+weightm <- weightv[which.max(sharpev)]
+# Calculate the optimal weight using optimization
+calc_sharpe <- function(weight) {
+  weightv <- c(weight, 1-weight)
+  retp <- (retp[, 1:2] %*% weightv)
+  -mean(retp)/sd(retp)
+}  # end calc_sharpe
+optv <- optimize(calc_sharpe, interval=c(0, 1))
+weightm <- optv$minimum
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_sharpe_max.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Sharpe ratios
+plot(x=weightv, y=sharpev, 
+     main="Sharpe Ratio as Function of VTI Weight",
+     xlab="VTI weight", ylab="Sharpe Ratio", 
+     t="l", lwd=3, col="blue")
+abline(v=weightm, lty="dashed", lwd=1, col="blue")
+text(x=weightm, y=0.7*max(sharpev), pos=4, cex=1.2, 
+     labels=paste("optimal VTI weight =", round(weightm, 2)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Wealth Scenarios Using Bootstrap}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The past data represents only one possible future scenario.  We can generate more scenarios using bootstrap simulation.
+      \vskip1ex
+      The bootstrap data is a list of simulated \emph{VTI} and \emph{IEF} returns, which represent possible realizations of future returns, based on past history.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce the returns from xts time series to matrix 
+retp <- zoo::coredata(retp[, 1:2])
+nrows <- NROW(retp)
+# Bootstrap the returns and Calculate the a list of random returns
+nboot <- 1e4
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1  # Number of cores
+# Perform parallel bootstrap under Windows
+cluster <- makeCluster(ncores)  # Initialize compute cluster under Windows
+clusterSetRNGStream(cluster, 1121)  # Reset random number generator in all cores
+clusterExport(cluster, c("retp", "nrows"))
+bootd <- parLapply(cluster, 1:nboot, function(x) {
+  retp[sample.int(nrows, replace=TRUE), ]
+})  # end parLapply
+# Perform parallel bootstrap under Mac-OSX or Linux
+set.seed(1121)
+bootd <- mclapply(1:nboot, function(x) {
+  retp[sample.int(nrows, replace=TRUE), ]
+}, mc.cores=ncores)  # end mclapply
+is.list(bootd); NROW(bootd); dim(bootd[[1]])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Distributions of Terminal Wealth From Bootstrap}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The distribution of \emph{VTI} and \emph{IEF} wealths can be calculated from the bootstrap data.
+      \vskip1ex
+      The distribution of \emph{VTI} wealth is much wider than \emph{IEF}, but it has a much greater mean value.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the distribution of terminal wealths under Windows
+wealthv <- parLapply(cluster, bootd, function(retp) {
+  apply(retp, 2, function(x) prod(1 + x))
+})  # end parLapply
+# Calculate the distribution of terminal wealths under Mac-OSX or Linux
+wealthv <- mclapply(bootd, function(retp) {
+  apply(retp, 2, function(x) prod(1 + x))
+}, mc.cores=ncores)  # end mclapply
+wealthv <- do.call(rbind, wealthv)
+class(wealthv); dim(wealthv); tail(wealthv)
+# Calculate the means and standard deviations of the terminal wealths
+apply(wealthv, 2, mean)
+apply(wealthv, 2, sd)
+# Extract the terminal wealths of VTI and IEF
+wealthvti <- wealthv[, "VTI"]
+wealthief <- wealthv[, "IEF"]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_wealth_vtiief.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the densities of the terminal wealths of VTI and IEF
+meanvti <- mean(wealthvti); meanief <- mean(wealthief)
+densvti <- density(wealthvti); densief <- density(wealthief)
+plot(densvti, col="blue", lwd=3, xlab="wealth",
+     xlim=c(0, 2*max(densief$x)), ylim=c(0, max(densief$y)), 
+     main="Terminal Wealth Distributions of VTI and IEF")
+lines(densief, col="green", lwd=3)
+abline(v=meanvti, col="blue", lwd=2, lty="dashed")
+text(x=meanvti, y=0.5, labels="VTI mean", pos=4, cex=0.8)
+abline(v=meanief, col="green", lwd=2, lty="dashed")
+text(x=meanief, y=0.5, labels="IEF mean", pos=4, cex=0.8)
+legend(x="topright", legend=c("VTI", "IEF"),
+       inset=0.1, cex=1.0, bg="white", bty="n", y.intersp=0.5, 
+       lwd=6, lty=1, col=c("blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+
+\end{frame}
+
+%%%%%%%%%%%%%%%
+\subsection{The Distribution of Stock Wealth and Holding Period}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The distribution of stock wealth for short holding periods is close to symmetric around par (\texttt{1}).
+      \vskip1ex
+      The distribution for long holding periods is highly positively skewed with a much larger mean.
+      \vskip1ex
+      U.S. stocks in the last 40 years have had higher risk-adjusted wealth for longer holding periods.
+      \vskip1ex
+      The downside risk is equal to the mean of the wealth below par (\texttt{1}).
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the distributions of stock wealth
+holdv <- nrows*seq(0.1, 1.0, 0.1)
+wealthm <- mclapply(bootd, function(retp) {
+  sapply(holdv, function(holdp) {
+    prod(1 + retp[1:holdp, "VTI"])
+  })  # end sapply
+}, mc.cores=ncores)  # end mclapply
+wealthm <- do.call(rbind, wealthm)
+dim(wealthm)
+# Define the risk-adjusted wealth measure
+riskretfun <- function(wealthv) {
+  riskv <- 0.01
+  if (min(wealthv) < 1)
+    riskv <- mean((1-wealthv)[wealthv<1])
+  mean(wealthv)/riskv
+}  # end riskretfun
+# Calculate the stock wealth risk-return ratios
+riskrets <- apply(wealthm, 2, riskretfun)
+# Plot the stock wealth risk-return ratios
+plot(x=holdv, y=riskrets, 
+     main="Stock Risk-Return Ratio as Function of Holding Period",
+     xlab="Holding Period", ylab="Ratio", 
+     t="l", lwd=3, col="blue")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_wealth_longshort.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the stock wealth for long and short holding periods
+wealth1 <- wealthm[, 9]
+wealth2 <- wealthm[, 1]
+mean1 <- mean(wealth1); mean2 <- mean(wealth2)
+dens1 <- density(wealth1); dens2 <- density(wealth2)
+plot(dens1, col="blue", lwd=3, xlab="wealth",
+     xlim=c(0, 2*max(dens2$x)), ylim=c(0, max(dens2$y)), 
+     main="Wealth Distributions for Long and Short Holding Periods")
+lines(dens2, col="green", lwd=3)
+abline(v=mean1, col="blue", lwd=2, lty="dashed")
+text(x=mean1, y=0.5, labels="Long", pos=4, cex=0.8)
+abline(v=mean2, col="green", lwd=2, lty="dashed")
+text(x=mean2, y=0.5, labels="Short", pos=4, cex=0.8)
+legend(x="top", legend=c("Long", "Short"),
+       inset=0.1, cex=1.0, bg="white", bty="n", y.intersp=0.5, 
+       lwd=6, lty=1, col=c("blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stock and Bond Portfolio Allocations From Bootstrap}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The optimal stock and bond weights can be calculated using bootstrap simulation.
+      \vskip1ex
+      Bootstrapping the past \texttt{20} years of data, the optimal \emph{VTI} weight is about \texttt{0.3}.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the distributions of portfolio wealth
+weightv <- seq(0.05, 0.95, 0.05)
+wealthm <- mclapply(bootd, function(retp) {
+  sapply(weightv, function(weight) {
+    prod(1 + retp %*% c(weight, 1-weight))
+  })  # end sapply
+}, mc.cores=ncores)  # end mclapply
+wealthm <- do.call(rbind, wealthm)
+dim(wealthm)
+# Calculate the portfolio risk-return ratios
+riskrets <- apply(wealthm, 2, riskretfun)
+# Calculate the optimal VTI weight
+weightm <- weightv[which.max(riskrets)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_riskret_max.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the portfolio risk-return ratios
+plot(x=weightv, y=riskrets, 
+     main="Portfolio Risk-Return Ratio as Function of VTI Weight",
+     xlab="VTI weight", ylab="Ratio", 
+     t="l", lwd=3, col="blue")
+abline(v=weightm, lty="dashed", lwd=1, col="blue")
+text(x=weightm, y=0.7*max(riskrets), pos=4, cex=1.2, 
+     labels=paste("optimal VTI weight =", round(weightm, 2)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{All-Weather} Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{All-Weather} portfolio is a portfolio with proportional allocations of stocks ($30\%$), bonds ($55\%$), and commodities and precious metals ($15\%$) (approximately).
+      \vskip1ex
+      The \emph{All-Weather} portfolio was designed by Bridgewater Associates, the largest hedge fund in the world:\\
+      {\tiny
+      \url{https://www.bridgewater.com/research-library/the-all-weather-strategy/} \\
+      \url{http://www.nasdaq.com/article/remember-the-allweather-portfolio-its-having-a-killer-year-cm685511} \\
+      }
+      The three different asset classes (stocks, bonds, commodities) provide positive returns under different economic conditions (recession, expansion, inflation).
+      \vskip1ex
+      The combination of bonds, stocks, and commodities in the \emph{All-Weather} portfolio is designed to provide positive returns under most economic conditions, without the costs of trading.
+      <<echo=TRUE,eval=FALSE>>=
+# Extract the ETF returns
+symbolv <- c("VTI", "IEF", "DBC")
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+# Calculate the all-weather portfolio wealth
+weightaw <- c(0.30, 0.55, 0.15)
+retp <- cbind(retp, retp %*% weightaw)
+colnames(retp)[4] <- "All Weather"
+# Calculate the Sharpe ratios
+sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_all_weather.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the cumulative wealth from returns
+wealthv <- cumprod(1 + retp)
+# Calculate the a vector of monthly end points
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+# dygraph all-weather wealth
+dygraphs::dygraph(wealthv[endd], main="All-Weather Portfolio") %>%
+  dyOptions(colors=c("blue", "green", "orange", "red")) %>%
+  dySeries("All Weather", color="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Plot all-weather wealth
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue", "green", "red")
+quantmod::chart_Series(wealthv, theme=plot_theme, lwd=c(2, 2, 2, 4),
+             name="All-Weather Portfolio")
+legend("topleft", legend=colnames(wealthv),
+  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5, 
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Constant Proportion Portfolio Insurance Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{Constant Proportion Portfolio Insurance} (CPPI) strategy the portfolio is rebalanced between stocks and zero-coupon bonds, to protect against the loss of principal.
+      \vskip1ex
+      A zero-coupon bond pays no coupon, but it's bought at a discount to par ($100\%$), and pays par at maturity.  The investor receives capital appreciation instead of coupons.
+      \vskip1ex
+      Let $P$ be the investor principal amount (total initial invested dollar amount), and let $F$ be the zero-coupon \emph{bond floor}.  
+      The zero-coupon bond floor $F$ is set so that its value at maturity is equal to the principal $P$.  
+      This guarantees that the investor is paid back at least the full principal $P$.
+      \vskip1ex
+      The stock investment is levered by the \emph{CPPI multiplier} $C$.  
+      The initial dollar amount invested in stocks is equal to the \emph{cushion} $(P - F)$ times the \emph{multiplier} $C$: $C * (P - F)$.
+      The remaining amount of the principal is invested in zero-coupon bonds and is equal to: $P - C * (P - F)$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VTI returns
+retp <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
+datev <- zoo::index(retp)
+nrows <- NROW(retp)
+retp <- drop(zoo::coredata(retp))
+# Bond floor
+bfloor <- 60
+# CPPI multiplier
+coeff <- 2
+# Portfolio market values
+portfv <- numeric(nrows)
+# Initial principal
+portfv[1] <- 100
+# Stock allocation
+stockv <- numeric(nrows)
+stockv[1] <- min(coeff*(portfv[1] - bfloor), portfv[1])
+# Bond allocation
+bondv <- numeric(nrows)
+bondv[1] <- (portfv[1] - stockv[1])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{CPPI Strategy Dynamics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the stock price changes and the portfolio value becomes $P_t$, then the dollar amount invested in stocks must be adjusted to: $C * (P_t - F)$.  
+      The amount invested in stocks changes both because the stock price changes and because of rebalancing with the zero-coupon bonds. 
+      \vskip1ex
+      The amount invested in zero-coupon bonds is then equal to: $P_t - C * (P_t - F)$.
+      If the portfolio value drops to the \emph{bond floor} $P_t = F$, then all the stocks must be sold, with only the zero-coupon bonds remaining.
+      But if the stock price rises, more stocks must be purchased, and vice versa.
+      \vskip1ex
+      Therefore the \emph{CPPI} strategy is a \emph{trend following} strategy, buying stocks when their prices are rising, and selling when their prices are dropping.
+      \vskip1ex
+      The \emph{CPPI} strategy can be considered a dynamic replication of a portfolio with a zero-coupon bond and a stock call option.
+      \vskip1ex
+      The \emph{CPPI} strategy is exposed to \emph{gap risk}, if stock prices drop suddenly by a large amount.  
+      The \emph{gap risk} is exacerbated by high leverage, when the \emph{multiplier} $C$ is large, say greater than $5$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_cppi.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate CPPI strategy
+for (t in 2:nrows) {
+  portfv[t] <- portfv[t-1] + stockv[t-1]*retp[t]
+  stockv[t] <- min(coeff*(portfv[t] - bfloor), portfv[t])
+  bondv[t] <- (portfv[t] - stockv[t])
+}  # end for
+# dygraph plot of CPPI strategy
+pricev <- 100*cumprod(1 + retp)
+datav <- xts::xts(cbind(stockv, bondv, portfv, pricev), datev)
+colnames(datav) <- c("stocks", "bonds", "CPPI", "VTI")
+endd <- rutils::calc_endpoints(datav, interval="weeks")
+dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
+  dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Combining the Standardized Returns of Multiple Assets}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Standardized returns are returns divided by their volatilities.
+      \vskip1ex
+      Multiplying the weights times the \emph{standardized dollar returns} is equivalent to buying \emph{share amounts} such that their dollar volatilities are proportional to the weights.
+      \vskip1ex
+      Multiplying the weights times the \emph{standardized percentage returns} is equivalent to buying \emph{dollar amounts} such that their percentage volatilities are proportional to the weights.
+      \vskip1ex
+      If the volatilities change over time then the portfolio allocations must be rebalanced to ensure that the volatilities remain proportional to the target weights.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the dollar and percentage returns for VTI and IEF
+pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
+pricev <- na.omit(pricev)
+retd <- rutils::diffit(pricev)
+retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
+# Calculate the standardized simple dollar returns
+retstd <- lapply(retd, function(x) x/sd(x))
+retstd <- do.call(cbind, retstd)
+sapply(retstd, sd)
+# Wealth of fixed number of shares (without rebalancing)
+weightv <- c(0.5, 0.5)
+pricesi <- as.numeric(pricev[1, ])
+wealthfs <- cumsum(retd %*% (weightv/pricesi))
+# Calculate the standardized percentage returns
+retstp <- lapply(retp, function(x) x/sd(x))
+retstp <- do.call(cbind, retstp)
+sapply(retstp, sd)
+# Wealth of target dollar allocation of shares (with rebalancing)
+wealthfd <- cumsum(retstp %*% weightv)
+# Plot log wealth
+wealthv <- cbind(wealthfd, log(wealthfs))
+# wealthv <- xts::xts(wealthv, datev)
+colnames(wealthv) <- c("With rebalancing", "Without rebalancing")
+dygraphs::dygraph(wealthv, main="Wealth of Equal Dollar Amount of Shares") %>%
+  dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk Parity Strategy For Stocks and Bonds}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{Risk Parity} strategy the portfolio weights are rebalanced daily so that their dollar volatilities remain equal.
+      \vskip1ex
+      This means that the weights $w_i$ are proportional to the \emph{standardized prices} ($\frac{p_i}{\sigma^d_i}$ - the dollar amounts of stocks with unit dollar volatilities):
+      $w_i \propto \frac{p_i}{\sigma^d_i}$, 
+      where $\sigma^d_i$ is the dollar volatility.
+      \vskip1ex
+      But the \emph{standardized prices} are equal to the inverse of the percentage volatilities $\sigma_i$:
+      $\frac{p_i}{\sigma^d_i} = \frac{1}{\sigma_i}$,
+      so the weights $w_i$ are proportional to the inverse of the percentage volatilities $w_i \propto \frac{1}{\sigma_i}$.
+      \vskip1ex
+      In general, the dollar weights $w_i$ may be set proportional to some target weights $\omega_i$:
+      \begin{displaymath}
+        w_i \propto \frac{\omega_i}{\sigma_i}
+      \end{displaymath}
+      The risk parity strategy is also called the equal risk contributions (ERC) strategy.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the dollar and percentage returns for stocks and bonds
+pricev <- rutils::etfenv$prices[, c("VTI", "TLT")]
+pricev <- na.omit(pricev)
+retd <- rutils::diffit(pricev)
+retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
+# Calculate the wealth of proportional dollar allocations
+weightv <- c(0.5, 0.5)
+retw <- retp %*% weightv
+wealthpd <- cumprod(1 + retw)
+# Calculate the trailing percentage volatility
+lambda <- 0.15
+volat <- HighFreq::run_var(retp, lambda=lambda)
+volat <- sqrt(volat)
+# Calculate the risk parity portfolio weights
+weightv <- ifelse(volat > 1e-4, 1/volat, 0)
+# Scale weights to 1 dollar total
+weightv <- weightv/rowSums(weightv)
+weightv[1, ] <- 0
+# Lag the weights
+weightv <- rutils::lagit(weightv)
+# Calculate the wealth of risk parity
+retw <- rowSums(retp*weightv)
+wealthrp <- cumprod(1 + retw)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk Parity Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The risk parity strategy for stocks and bonds has a slightly higher Sharpe ratio, and also higher absolute returns than the proportional dollar strategy, despite the fact that it's more overweight bonds. 
+      \vskip1ex
+      Risk parity works better for assets with low correlations and very different volatilities, like stocks and bonds.
+      \vskip1ex
+      The shiny app \texttt{app\_risk\_parity\_strat.R} allows users to study the performance of the risk parity strategy as a function of its weight parameters.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the log wealths
+wealthv <- log(cbind(wealthpd, wealthrp))
+wealthv <- xts::xts(wealthv, zoo::index(pricev))
+colnames(wealthv) <- c("PropDollars", "Risk Parity")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot a dygraph of the log wealths
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(wealthv[endd], 
+  main="Log Wealth of Risk Parity vs Proportional Allocations") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk Parity Strategy Market Timing Skill}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The risk parity strategy reduces allocations to assets with rising volatilities, which is often accompanied by negative returns.
+      \vskip1ex
+      This allows the risk parity strategy to better time the markets - selling when prices are about to drop and buying when prices are rising.
+      \vskip1ex
+      The t-value of the \emph{Treynor-Mazuy} test is slightly significant, indicating some market timing skill of the risk parity strategy for \emph{VTI} and \emph{IEF}. 
+      <<echo=TRUE,eval=FALSE>>=
+# Test risk parity market timing of VTI using Treynor-Mazuy test
+retrp <- rutils::diffit(wealthv)
+retvti <- retp$VTI
+desv <- cbind(retrp, retvti, retvti^2)
+desv <- na.omit(desv)
+colnames(desv)[1:2] <- c("fixed", "risk_parity")
+colnames(desv)[4] <- "treynor"
+regmod <- lm(risk_parity ~ VTI + treynor, data=desv)
+summary(regmod)
+# Plot residual scatterplot
+resids <- regmod$residuals
+plot.default(x=retvti, y=resids, xlab="VTI", ylab="residuals")
+title(main="Treynor-Mazuy Market Timing Test\n for Risk Parity vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+coefreg <- summary(regmod)$coeff
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
+tvalue <- round(coefreg["treynor", "t value"], 2)
+points.default(x=retvti, y=fitv, pch=16, col="red")
+text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_timing_skill.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Test for fixed ratio market timing of VTI using Treynor-Mazuy test
+regmod <- lm(fixed ~ VTI + treynor, data=desv)
+summary(regmod)
+# Plot fitted (predicted) response values
+coefreg <- summary(regmod)$coeff
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
+points.default(x=retvti, y=fitv, pch=16, col="blue")
+text(x=0.0, y=0.6*max(resids), paste("Fixed Ratio t-value =", round(coefreg["treynor", "t value"], 2)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Transaction Costs of Risk Parity Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In each period the stocks must be rebalanced to maintain the proportional allocations.
+      \vskip1ex
+      The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = w_{t-1} \sum_{i=1}^n \omega_i \left| \bar{r}_t - r_t \right|$
+      \vskip1ex
+      The \emph{transaction costs} $c^r_t$ are equal to half the \emph{bid-offer spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} \sum_{i=1}^n \varepsilon_i$.
+      \vskip1ex
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{wealth} $w_t$: $w_t - \sum_{i=1}^t c^r_t$.
+      <<echo=TRUE,eval=FALSE>>=
+# Returns in excess of weighted returns
+retx <- lapply(retp, function(x) (retw - x))
+retx <- do.call(cbind, retx)
+sum(retx %*% weightv)
+# Calculate the weighted sum of absolute excess returns
+retx <- abs(retx) %*% weightv
+# Total dollar amount of stocks that need to be traded
+retx <- retx*rutils::lagit(wealthpd)
+# Cumulative transaction costs
+costs <- bid_offer*cumsum(retx)/2
+# Subtract transaction costs from wealth
+wealthpd <- (wealthpd - costs)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_allocations_transaction_costs.png}
+      <<echo=TRUE,eval=FALSE>>=
+# dygraph plot of wealth and transaction costs
+wealthv <- cbind(wealthpd, costs)
+wealthv <- xts::xts(wealthv, datev)
+colnamev <- c("Wealth", "Cumulative Transaction Costs")
+colnames(wealthv) <- colnamev
+dygraphs::dygraph(wealthv, main="Transaction Costs With Proportional Allocations") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Calendar Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sell in May Calendar Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \href{https://en.wikipedia.org/wiki/Sell_in_May}{\emph{Sell in May}} is a \emph{market timing} \emph{calendar strategy}, in which stocks are sold at the beginning of May, and then bought back at the beginning of November.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the positions
+retp <- na.omit(rutils::etfenv$returns$VTI)
+posv <- rep(NA_integer_, NROW(retp))
+datev <- zoo::index(retp)
+datev <- format(datev, "%m-%d")
+posv[datev == "05-01"] <- 0
+posv[datev == "05-03"] <- 0
+posv[datev == "11-01"] <- 1
+posv[datev == "11-03"] <- 1
+# Carry forward and backward non-NA posv
+posv <- zoo::na.locf(posv, na.rm=FALSE)
+posv <- zoo::na.locf(posv, fromLast=TRUE)
+# Calculate the strategy returns
+pnlinmay <- posv*retp
+wealthv <- cbind(retp, pnlinmay)
+colnames(wealthv) <- c("VTI", "sell_in_may")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_sell_inmay.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot wealth of Sell in May strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main="Sell in May Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# OR: Open x11 for plotting
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue", "red")
+quantmod::chart_Series(wealthv, theme=plot_theme, name="Sell in May Strategy")
+legend("topleft", legend=colnames(wealthv),
+  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5, 
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sell in May Strategy Market Timing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sell in May} strategy doesn't demonstrate any ability of \emph{timing} the \emph{VTI} ETF.
+      <<echo=TRUE,eval=FALSE>>=
+# Test if Sell in May strategy can time VTI
+desv <- cbind(wealth$sell_in_may, 0.5*(retp+abs(retp)), retp^2)
+colnames(desv) <- c("VTI", "merton", "treynor")
+# Perform Merton-Henriksson test
+regmod <- lm(pnlinmay ~ VTI + merton, data=desv)
+summary(regmod)
+# Perform Treynor-Mazuy test
+regmod <- lm(pnlinmay ~ VTI + treynor, data=desv)
+summary(regmod)
+# Plot Treynor-Mazuy residual scatterplot
+resids <- (pnlinmay - regmod$coeff["VTI"]*retp)
+plot.default(x=retp, y=resids, xlab="VTI", ylab="residuals")
+title(main="Treynor-Mazuy Market Timing Test\n for Sell in May vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+coefreg <- summary(regmod)$coeff
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retp
+tvalue <- round(coefreg["treynor", "t value"], 2)
+points.default(x=retp, y=fitv, pch=16, col="red")
+text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/timing_skill_sell_inmay.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Seasonal Overnight Market Anomaly}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The 
+      \href{https://quantpedia.com/market-sentiment-and-an-overnight-anomaly/}{\emph{Overnight Market Anomaly}}
+      is the consistent outperformance of overnight returns relative to the daytime returns.
+      \vskip1ex
+      The Overnight Strategy consists of holding a long position only overnight (buying at the close and selling at the open the next day).
+      \vskip1ex
+      The Daytime Strategy consists of holding a long position only during the daytime (buying at the open and selling at the close the same day).
+      \vskip1ex
+      The \emph{Overnight Market Anomaly} has been observed for many decades for most stock market indices, but not always for all stock sectors.
+      \vskip1ex
+      The \emph{Overnight Market Anomaly} has mostly disappeared after the \texttt{2008-2009} financial crisis.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the log of OHLC VTI prices
+ohlc <- log(rutils::etfenv$VTI)
+openp <- quantmod::Op(ohlc)
+highp <- quantmod::Hi(ohlc)
+lowp <- quantmod::Lo(ohlc)
+closep <- quantmod::Cl(ohlc)
+# Calculate the close-to-close log returns, 
+# the daytime open-to-close returns 
+# and the overnight close-to-open returns.
+clcl <- rutils::diffit(closep)
+colnames(clcl) <- "clcl"
+opcl <- (closep - openp)
+colnames(opcl) <- "daytime"
+close_open <- (openp - rutils::lagit(closep, lagg=1, pad_zeros=FALSE))
+colnames(close_open) <- "overnight"
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_overnight.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(clcl, close_open, opcl)
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot log wealth
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Wealth of Close-to-Close, Overnight, and Daytime Strategies") %>%
+  dySeries(name="clcl", label="Close-to-Close (static)", strokeWidth=2, col="blue") %>%
+  dySeries(name="close_open", label="overnight", strokeWidth=2, col="red") %>%
+  dySeries(name="opcl", label="daytime", strokeWidth=2, col="green") %>%
+  dyLegend(width=600)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Turn of the Month Effect}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The 
+      \href{https://quantpedia.com/strategies/turn-of-the-month-in-equity-indexes/}{\emph{Turn of the Month} (TOM) effect}
+      is the outperformance of stocks on the last trading day of the month and on the first three days of the following month.
+      \vskip1ex
+      The \emph{TOM} effect was observed for the period from 1928 to 1975, but it has been less pronounced since the year \texttt{2000}.
+      \vskip1ex
+      The \emph{TOM} effect has been attributed to the investment of funds deposited at the end of the month.
+      \vskip1ex
+      This would explain why the \emph{TOM} effect has been more pronounced for less liquid small-cap stocks.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VTI returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
+datev <- zoo::index(retp)
+# Calculate the first business day of every month
+dayv <- as.numeric(format(datev, "%d"))
+indeks <- which(rutils::diffit(dayv) < 0)
+datev[head(indeks)]
+# Calculate the Turn of the Month dates
+indeks <- lapply((-1):2, function(x) indeks + x)
+indeks <- do.call(c, indeks)
+sum(indeks > NROW(datev))
+indeks <- sort(indeks)
+datev[head(indeks, 11)]
+# Calculate the Turn of the Month pnls
+pnls <- numeric(NROW(retp))
+pnls[indeks] <- retp[indeks, ]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_tom.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Combine data
+wealthv <- cbind(retp, pnls)
+colnamev <- c("VTI", "TOM Strategy")
+colnames(wealthv) <- colnamev
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# dygraph plot VTI Turn of the Month strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Turn of the Month Strategy") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Stop-loss Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Stop-loss Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stop-loss rules are used to reduce losses in case of a significant drawdown in prices.
+      \vskip1ex
+      For example, a simple stop-loss rule is to sell the stock if its price drops below the stop-loss level, equal to the stop-loss percentage times the previous maximum price.
+      \vskip1ex
+      The stock is bought back after the price recovers, for example after the price reaches its previous maximum price.
+      \vskip1ex
+      The stop-loss strategy trades a single \texttt{\$1} of stock, and is either long \texttt{\$1} of stock or it's flat (\texttt{\$0} of stock).
+      \vskip1ex
+      The stop-loss strategy is trend-following because it expects prices to continue dropping.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VTI prices and returns
+pricev <- na.omit(rutils::etfenv$prices$VTI)
+nrows <- NROW(pricev)
+datev <- zoo::index(pricev)
+retp <- rutils::diffit(log(pricev))
+# Simulate stop-loss strategy
+stopl <- 0.05 # Stop-loss percentage
+pricem <- cummax(pricev) # Trailing maximum prices
+# Calculate the drawdown
+dd <- (pricev - pricem)
+pnls <- retp # Initialize PnLs
+for (i in 1:(nrows-1)) {
+# Check for stop-loss
+  if (dd[i] < -stopl*pricem[i])
+    pnls[i+1] <- 0 # Set PnLs = 0 if in stop-loss
+}  # end for
+# Same but without using loops in R
+pnls2 <- retp
+insl <- rutils::lagit(dd < -stopl*pricem)
+pnls2 <- ifelse(insl, 0, pnls2)
+all.equal(pnls, pnls2, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stop-loss Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stop-loss strategy underperforms because it waits too long for prices to recover.
+      \vskip1ex
+      And the stop-loss strategy also underperforms because it gets \emph{"whipsawed"} when prices are range-bound without a trend.  
+      \vskip1ex
+      When prices are range-bound without a trend, the stop-loss strategy often stops because of a drawdown (goes flat risk), but if the prices soon rebound, then it's forced to buy back the stock.  (This is called a \emph{"whipsaw"}.)
+      <<echo=TRUE,eval=FALSE>>=
+# Combine the data
+wealthv <- cbind(retp, pnls)
+colnamev <- c("VTI", "Strategy")
+colnames(wealthv) <- colnamev
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# dygraph plot the stop-loss strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="VTI Stop-loss Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/stop_loss_performance.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph with shading
+# Create colors for background shading
+indic <- (rutils::diffit(insl) != 0) # Indices of stop-loss
+crossd <- c(datev[indic], datev[nrows]) # Dates of stop-loss
+shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
+# Create dygraph object without plotting it
+dyplot <- dygraphs::dygraph(cumsum(wealthv), 
+  main="VTI Stop-loss Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+# Plot the dygraph object
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stop-loss Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stop-loss rules can reduce the largest drawdowns but they also tend to reduce cumulative returns for stocks with good returns.
+      \vskip1ex
+      The best performing stop-loss strategy for \emph{VTI} has the largest stop-loss percentage - i.e. it almost never enters into a stop-loss. 
+      \vskip1ex
+      That's because \emph{VTI} has had positive returns in the last \texttt{20} years, so a stop-loss rule had little benefit.
+      \vskip1ex
+      That's why many quantitative investment funds do not use stop-loss rules if they have strong convictions that the stocks will have positive returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate multiple stop-loss strategies
+dd <- (pricev - pricem)
+stopv <- 0.01*(1:30)
+pnlc <- sapply(stopv, function(stopl) {
+  pnls <- retp
+  insl <- rutils::lagit(dd < -stopl*pricem)
+  pnls <- ifelse(insl, 0, pnls)
+  sum(pnls)
+})  # end sapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/stop_loss_profile.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative pnls for stop-loss strategies
+plot(x=stopv, y=pnlc, 
+   main="Cumulative PnLs for Stop-loss Strategies",
+   xlab="stop-loss percent", ylab="cumulative pnl", 
+   t="l", lwd=3, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stop-Start Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stop-loss strategy can be improved by introducing a start-gain rule: buy back the stock if its price rebounds from the previous minimum and exceeds the start-gain level.
+      \vskip1ex
+      The stop-start strategy implements both stop-loss events due to price drawdowns and start-gain events due to price draw-ups.  
+      \vskip1ex
+      In order to determine the stop-loss and start-gain events, the stop-start strategy follows the trailing maximum and trailing minimum prices.
+      \vskip1ex
+      A start-gain event is when the stock price rebounds from the previous minimum and exceeds the start-gain level, equal to the start-gain percentage times the previous minimum price.
+      \vskip1ex
+      After the start-gain level is crossed, the strategy buys back the stock which was sold under the stop-loss.
+      \vskip1ex
+      The stop-start strategy is trend-following because it profits if price trends are persistent.  But it loses if prices are range-bound.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define function for simulating a stop-start strategy
+sim_stopstart <- function(stopl) {
+  maxp <- pricev[1] # Trailing maximum price
+  minp <- pricev[1] # Trailing minimum price
+  insl <- FALSE # Is in stop-loss?
+  insg <- FALSE # Is in start-gain?
+  pnls <- retp # Initialize PnLs
+  for (i in 1:nrows) {
+    if (insl) { # In stop-loss
+      pnls[i] <- 0 # Set PnLs = 0 if in stop-loss
+      minp <- min(minp, pricev[i]) # Update minimum price to current price
+      if (pricev[i] > ((1 + stopl)*minp)) { # Check for start-gain
+        insg <- TRUE # Is in start-gain?
+        insl <- FALSE # Is in stop-loss?
+        maxp <- pricev[i] # Reset trailing maximum price
+      }  # end if
+    } else if (insg) { # In start-gain
+      maxp <- max(maxp, pricev[i]) # Update maximum price to current price
+      if (pricev[i] < ((1 - stopl)*maxp)) { # Check for stop-loss
+        insl <- TRUE # Is in stop-loss?
+        insg <- FALSE # Is in start-gain?
+        minp <- pricev[i] # Reset trailing minimum price
+      }  # end if
+    } else { # Warmup period
+      # Update the maximum and minimum prices
+      maxp <- max(maxp, pricev[i])
+      minp <- min(minp, pricev[i])
+      # Update the stop-loss and start-gain indicators
+      insl <- (pricev[i] < ((1 - stopl)*maxp)) # Is in stop-loss?
+      insg <- (pricev[i] > ((1 + stopl)*minp)) # Is in start-gain?
+    }  # end if
+  }  # end for
+  return(pnls)
+} # end sim_stopstart
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stop-Start Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stop-start strategy spends less time in a stop-loss because prices tend to rebound sharply after a steep loss.
+      \vskip1ex
+      The start-gain rule tends to quickly override the stop-loss rule, so that the strategy is long the stock after it recovers after a stop-loss.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate stop-start strategy
+pnls <- sim_stopstart(0.1)
+# Combine the data
+wealthv <- cbind(retp, pnls)
+colnamev <- c("VTI", "Strategy")
+colnames(wealthv) <- colnamev
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# dygraph plot the stop-loss strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="VTI Stop-Start Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/stop_start_performance.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph with shading
+# Create colors for background shading
+insl <- (pnls == 0) # Is in stop-loss?
+indic <- (rutils::diffit(insl) != 0) # Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
+shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
+# Create dygraph object without plotting it
+dyplot <- dygraphs::dygraph(cumsum(wealthv), 
+  main="VTI Stop-Start Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+# Plot the dygraph object
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stop-Start Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stop-start strategy performs much better than the stop-loss strategy because it captures stock gains.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate multiple stop-loss strategies
+stopv <- 0.01*(1:30)
+pnlc <- sapply(stopv, function(stopl) {
+  sum(sim_stopstart(stopl))
+})  # end sapply
+stopl <- stopv[which.max(pnlc)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/stop_start_profile.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative pnls for stop-loss strategies
+plot(x=stopv, y=pnlc, 
+   main="Cumulative PnLs for Stop-Start Strategies",
+   xlab="stop-loss percent", ylab="cumulative pnl", 
+   t="l", lwd=3, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stop-Start Strategy for Other ETFs}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stop-start strategy can prevent losses for stocks with significant negative returns, like the \emph{USO} ETF (oil fund).
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the USO prices and returns
+pricev <- na.omit(rutils::etfenv$prices$USO)
+nrows <- NROW(pricev)
+datev <- zoo::index(pricev)
+retp <- rutils::diffit(log(pricev))
+# Simulate multiple stop-start strategies
+stopv <- 0.01*(1:30)
+pnlc <- sapply(stopv, function(stopl) {
+  sum(sim_stopstart(stopl))
+})  # end sapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/stop_start_uso_profile.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative pnls for stop-start strategies
+plot(x=stopv, y=pnlc, 
+   main="Cumulative PnLs for USO Stop-Start Strategies",
+   xlab="stop-loss percent", ylab="cumulative pnl", 
+   t="l", lwd=3, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stop-Start Strategy For \protect\emph{USO}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stop-start strategy for the \emph{USO} ETF has performed well because \emph{USO} has had very negative returns in the last \texttt{20} years.
+      \vskip1ex
+      Stop-start strategies are able to preserve profits for the best performing stocks, and avoid losses for the worst performing stocks.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate optimal stop-start strategy for USO
+stopl <- stopv[which.max(pnlc)]
+pnls <- sim_stopstart(stopl)
+# Combine the data
+wealthv <- cbind(retp, pnls)
+colnamev <- c("USO", "Strategy")
+colnames(wealthv) <- colnamev
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# dygraph plot the stop-start strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="USO Stop-Start Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/stop_start_uso_performance.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph with shading
+# Create colors for background shading
+insl <- (pnls == 0) # Is in stop-loss?
+indic <- (rutils::diffit(insl) != 0) # Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
+shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
+# Create dygraph object without plotting it
+dyplot <- dygraphs::dygraph(cumsum(wealthv), 
+  main="USO Stop-Start Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+# Plot the dygraph object
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Moving Average Crossover Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EWMA Price Technical Indicator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling interval:
+      \begin{displaymath}
+        p^{EWMA}_i = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
+      \end{displaymath}
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      \vskip1ex
+      The function \texttt{HighFreq::roll\_wsum()} calculates the convolution of a time series with a vector of weights.
+      <<echo=TRUE,eval=FALSE>>=
+# Extract the log VTI prices
+ohlc <- log(rutils::etfenv$VTI)
+closep <- quantmod::Cl(ohlc)
+colnames(closep) <- "VTI"
+nrows <- NROW(closep)
+# Calculate the EWMA weights
+look_back <- 111
+lambda <- 0.9
+weightv <- lambda^(0:look_back)
+weightv <- weightv/sum(weights)
+# Calculate the EWMA prices as a convolution
+ewmacpp <- HighFreq::roll_sumw(closep, weightv=weightv)
+pricev <- cbind(closep, ewmacpp)
+colnames(pricev) <- c("VTI", "VTI EWMA")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_feature.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Dygraphs plot with custom line colors
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2008/2009"], main="VTI EWMA Prices") %>%
+  dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=300)
+# Standard plot of  EWMA prices with custom line colors
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+colorv <- c("blue", "red")
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(pricev["2009"], theme=plot_theme,
+             lwd=2, name="VTI EWMA Prices")
+legend("topleft", legend=colnames(pricev), y.intersp=0.5, 
+       inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive EWMA Price Indicator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{EWMA} prices can be calculated recursively as follows:
+      \begin{displaymath}
+        p^{EWMA}_i = (1-\lambda) p_i + \lambda p^{EWMA}_{i-1}
+      \end{displaymath}
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      \vskip1ex
+      The recursive \emph{EWMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
+      \vskip1ex
+      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the exponentially weighted moving average prices recursively.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_mean()} calculates the exponentially weighted moving average prices recursively.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the EWMA prices recursively using C++ code
+ewmar <- .Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep))))[-1]
+# Or R code
+# ewmar <- filter(closep, filter=lambda, init=as.numeric(closep[1, 1])/(1-lambda), method="recursive")
+ewmar <- (1-lambda)*ewmar
+# Calculate the EWMA prices recursively using RcppArmadillo
+ewmacpp <- HighFreq::run_mean(closep, lambda=lambda)
+all.equal(drop(ewmacpp), ewmar)
+# Compare the speed of C++ code with RcppArmadillo
+library(microbenchmark)
+summary(microbenchmark(
+  Rcpp=HighFreq::run_mean(closep, lambda=lambda),
+  rfilter=.Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep)))),
+  times=10))[, c(1, 4, 5)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_recursive.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Dygraphs plot with custom line colors
+pricev <- cbind(closep, ewmacpp)
+colnames(pricev) <- c("VTI", "VTI EWMA")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EWMA Prices") %>%
+  dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=300)
+# Standard plot of  EWMA prices with custom line colors
+plot_theme <- chart_theme()
+colorv <- c("blue", "red")
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(pricev["2009"], theme=plot_theme,
+             lwd=2, name="VTI EWMA Prices")
+legend("topleft", legend=colnames(pricev), y.intersp=0.5, 
+       inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The EWMA Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trend following \emph{EWMA Crossover} strategy switches its stock position depending if the current price is above or below the \emph{EWMA}.
+      \vskip1ex
+      If the stock price is above the \emph{EWMA} price, then the strategy switches to long \texttt{\$1} dollar of stock, and if it is below, to short \texttt{\$1} dollar of stock.
+      \vskip1ex
+      The strategy holds the same position until the \emph{EWMA} crosses over the current price (either from above or below), and then it switches its position.
+      \vskip1ex
+      The strategy is therefore always either long \texttt{\$1} dollar of stock or short \texttt{\$1} dollar of stock.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the EWMA prices recursively using C++ code
+lambda <- 0.984
+ewmacpp <- HighFreq::run_mean(closep, lambda=lambda)
+# Calculate the positions, either: -1, 0, or 1
+indic <- sign(closep - ewmacpp)
+posv <- rutils::lagit(indic, lagg=1)
+# Create colors for background shading
+crossd <- (rutils::diffit(posv) != 0)
+shadev <- posv[crossd]
+crossd <- c(zoo::index(shadev), end(posv))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
+# Create dygraph object without plotting it
+dyplot <- dygraphs::dygraph(pricev, main="VTI EWMA Prices") %>%
+  dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=3, col="red") %>%
+  dyLegend(show="always", width=300)
+      @
+      <<echo=FALSE,eval=FALSE,purl=FALSE>>=
+# Equivalent code to the above
+# Determine trade dates right after EWMA has crossed prices
+indic <- sign(closep - ewmacpp)
+crossd <- (rutils::diffit(indic) != 0)
+crossd <- which(crossd) + 1
+crossd <- crossd[crossd < nrows]
+# Calculate the positions, either: -1, 0, or 1
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv[crossd] <- indic[crossd-1]
+posv <- zoo::na.locf(posv, na.rm=FALSE)
+posv <- xts::xts(posv, order.by=zoo::index(closep))
+# Create indicator for background shading
+shadev <- posv[crossd]
+crossd <- zoo::index(shadev)
+crossd <- c(crossd, end(posv))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_strat.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+# Plot the dygraph object
+dyplot
+# Standard plot of EWMA prices with position shading
+quantmod::chart_Series(pricev, theme=plot_theme,
+             lwd=2, name="VTI EWMA Prices")
+add_TA(posv > 0, on=-1, col="lightgreen", border="lightgreen")
+add_TA(posv < 0, on=-1, col="lightgrey", border="lightgrey")
+legend("topleft", legend=colnames(pricev),
+       inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5, 
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EWMA Crossover Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The crossover strategy trades at the \emph{Close} price on the same day that prices cross the \emph{EWMA}, which may be difficult in practice.
+      \vskip1ex
+      The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the daily profits and losses of EWMA strategy
+retp <- rutils::diffit(closep)  # VTI returns
+pnls <- retp*posv
+colnames(pnls) <- "EWMA"
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("VTI", "EWMA PnL")
+# Annualized Sharpe ratio of EWMA strategy
+sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
+# The crossover strategy has a negative correlation to VTI
+cor(wealthv)[1, 2]
+# Plot dygraph of EWMA strategy wealth
+# Create dygraph object without plotting it
+colorv <- c("blue", "red")
+dyplot <- dygraphs::dygraph(cumsum(wealthv), main="Performance of EWMA Strategy") %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% 
+    dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+# Plot the dygraph object
+dyplot
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_trend.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Standard plot of EWMA strategy wealth
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(cumsum(wealthv), theme=plot_theme,
+             name="Performance of EWMA Strategy")
+add_TA(posv > 0, on=-1, col="lightgreen", border="lightgreen")
+add_TA(posv < 0, on=-1, col="lightgrey", border="lightgrey")
+legend("top", legend=colnames(wealthv), y.intersp=0.5, 
+       inset=0.05, bg="white", lty=1, lwd=6,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EWMA Crossover Strategy Market Timing Skill}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The EWMA crossover strategy shorts the market during significant selloffs, but otherwise doesn't display market timing skill.
+      \vskip1ex
+      The t-value of the \emph{Treynor-Mazuy} test is negative, but not statistically significant. 
+      <<echo=TRUE,eval=FALSE>>=
+# Test EWMA crossover market timing of VTI using Treynor-Mazuy test
+desv <- cbind(pnls, retp, retp^2)
+desv <- na.omit(desv)
+colnames(desv) <- c("EWMA", "VTI", "treynor")
+regmod <- lm(EWMA ~ VTI + treynor, data=desv)
+summary(regmod)
+# Plot residual scatterplot
+resids <- (desv$EWMA - regmod$coeff["VTI"]*retp)
+resids <- regmod$residuals
+plot.default(x=retp, y=resids, xlab="VTI", ylab="residuals")
+title(main="Treynor-Mazuy Market Timing Test\n for EWMA Crossover vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+coefreg <- summary(regmod)$coeff
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retp
+tvalue <- round(coefreg["treynor", "t value"], 2)
+points.default(x=retp, y=fitv, pch=16, col="red")
+text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_timing_skill.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EWMA Crossover Strategy With Lag}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The crossover strategy suffers losses when prices are range-bound without a trend, because whenever it switches position the prices soon change direction.  (This is called a \emph{"whipsaw"}.)
+      \vskip1ex
+      To prevent whipsaws and over-trading, the crossover strategy may choose to delay switching positions until the indicator repeats the same value for several periods.
+      \vskip1ex
+      There's a tradeoff between switching positions too early and risking a whipsaw, and waiting too long and missing an emerging trend.
+      <<echo=TRUE,eval=FALSE>>=
+# Determine trade dates right after EWMA has crossed prices
+indic <- sign(closep - ewmacpp)
+# Calculate the positions from lagged indicator
+lagg <- 2
+indic <- HighFreq::roll_sum(indic, lagg)
+# Calculate the positions, either: -1, 0, or 1
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(indic == lagg, 1, posv)
+posv <- ifelse(indic == (-lagg), -1, posv)
+posv <- zoo::na.locf(posv, na.rm=FALSE)
+posv <- xts::xts(posv, order.by=zoo::index(closep))
+# Lag the positions to trade in next period
+posv <- rutils::lagit(posv, lagg=1)
+# Calculate the PnLs of lagged strategy
+pnlslag <- retp*posv
+colnames(pnlslag) <- "Lagged Strategy"
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ewma_lag.png}
+      <<echo=TRUE,eval=FALSE>>=
+wealthv <- cbind(pnls, pnlslag)
+colnames(wealthv) <- c("EWMA", "Lagged")
+# Annualized Sharpe ratios of EWMA strategies
+sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
+# Plot both strategies
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=paste("EWMA Crossover Strategy", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>% 
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EWMA Strategy Trading at the Open Price}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In practice it may not be possible to trade immediately at the \emph{Close} price on the same day that prices cross the \emph{EWMA}.
+      \vskip1ex
+      Then the strategy may trade at the \emph{Open} price on the next day. 
+      \vskip1ex
+      The Profit and Loss (\emph{PnL}) on a trade date is the sum of the realized \emph{PnL} from closing the old position, plus the unrealized \emph{PnL} after opening the new position.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the positions, either: -1, 0, or 1
+indic <- sign(closep - ewmacpp)
+posv <- rutils::lagit(indic, lagg=1)
+# Calculate the daily pnl for days without trades
+pnls <- retp*posv
+# Determine trade dates right after EWMA has crossed prices
+crossd <- which(rutils::diffit(posv) != 0)
+# Calculate the realized pnl for days with trades
+openp <- quantmod::Op(ohlc)
+closelag <- rutils::lagit(closep)
+poslag <- rutils::lagit(posv)
+pnls[crossd] <- poslag[crossd]*(openp[crossd] - closelag[crossd])
+# Calculate the unrealized pnl for days with trades
+pnls[crossd] <- pnls[crossd] + 
+  posv[crossd]*(closep[crossd] - openp[crossd])
+# Calculate the wealth
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("VTI", "EWMA PnL")
+# Annualized Sharpe ratio of EWMA strategy
+sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
+# The crossover strategy has a negative correlation to VTI
+cor(wealthv)[1, 2]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_strat_open_pnl.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of EWMA strategy wealth
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main="EWMA Strategy Trading at the Open Price") %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Standard plot of EWMA strategy wealth
+quantmod::chart_Series(cumsum(wealthv)[endd], theme=plot_theme,
+             name="EWMA Strategy Trading at the Open Price")
+legend("top", legend=colnames(wealthv),
+       inset=0.05, bg="white", lty=1, lwd=6,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EWMA Crossover Strategy With Transaction Costs}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bid-offer spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
+      \vskip1ex
+      The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
+      \vskip1ex
+      Let $n_t$ be the number of shares of the stock owned at time $t$, and let $p_t$ be their price.
+      \vskip1ex
+      Then the traded dollar amount of the stock is equal to the change in the number of shares times the stock price: $\Delta n_t p_t$.
+      \vskip1ex
+      The the \emph{transaction costs} $c^r$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the stock:
+      \begin{displaymath}
+        c^r = \frac{\delta}{2} \left| \Delta n_t \right| p_t
+      \end{displaymath}
+      If $d_t$ is the dollar amount of the stock owned at time $t$ then the \emph{transaction costs} $c^r$ are equal to:
+      \begin{displaymath}
+        c^r = \frac{\delta}{2} \left| \Delta d_t \right|
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ewma_transcosts.png}
+      <<echo=TRUE,eval=FALSE>>=
+# bid_offer equal to 10 bps for liquid ETFs
+bid_offer <- 0.001
+# Calculate the transaction costs
+costs <- 0.5*bid_offer*abs(poslag - posv)
+# Plot strategy with transaction costs
+wealthv <- cbind(pnls, pnls - costs)
+colnames(wealthv) <- c("EWMA", "EWMA w Costs")
+colorv <- c("blue", "red")
+dygraphs::dygraph(cumsum(wealthv)[endd], main="EWMA Strategy With Transaction Costs") %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulation Function for EWMA Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
+      \vskip1ex
+      The function \texttt{sim\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of pricev, and a decay parameter $\lambda$.
+      \vskip1ex
+      The function \texttt{sim\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bid_offer=0.001, 
+                      trend=1, lagg=1) {
+  closep <- quantmod::Cl(ohlc)
+  retp <- rutils::diffit(closep)
+  nrows <- NROW(ohlc)
+  # Calculate the EWMA prices
+  ewmacpp <- HighFreq::run_mean(closep, lambda=lambda)
+  # Calculate the indicator
+  indic <- trend*sign(closep - ewmacpp)
+  if (lagg > 1) {
+    indic <- HighFreq::roll_sum(indic, lagg)
+    indic[1:lagg] <- 0
+  }  # end if
+  # Calculate the positions, either: -1, 0, or 1
+  posv <- rep(NA_integer_, nrows)
+  posv[1] <- 0
+  posv <- ifelse(indic == lagg, 1, posv)
+  posv <- ifelse(indic == (-lagg), -1, posv)
+  posv <- zoo::na.locf(posv, na.rm=FALSE)
+  posv <- xts::xts(posv, order.by=zoo::index(closep))
+  # Lag the positions to trade on next day
+  posv <- rutils::lagit(posv, lagg=1)
+  # Calculate the PnLs of strategy
+  pnls <- retp*posv
+  costs <- 0.5*bid_offer*abs(rutils::diffit(posv))
+  pnls <- (pnls - costs)
+  # Calculate the strategy returns
+  pnls <- cbind(posv, pnls)
+  colnames(pnls) <- c("positions", "pnls")
+  pnls
+}  # end sim_ewma
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Multiple Trend Following EWMA Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{EWMA} strategies can be simulated by calling the function \texttt{sim\_ewma()} in a loop over a vector of $\lambda$ parameters.
+      \vskip1ex
+      But \texttt{sim\_ewma()} returns an \emph{xts} time series, and \texttt{sapply()} cannot merge \emph{xts} time series together.
+      \vskip1ex
+      So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
+      <<echo=TRUE,eval=FALSE>>=
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
+lambdav <- seq(from=0.97, to=0.99, by=0.004)
+# Perform lapply() loop over lambdav
+pnltrend <- lapply(lambdav, function(lambda) {
+  # Simulate EWMA strategy and Calculate the returns
+  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
+})  # end lapply
+pnltrend <- do.call(cbind, pnltrend)
+colnames(pnltrend) <- paste0("lambda=", lambdav)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_trend_returns.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of multiple EWMA strategies
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnltrend))
+endd <- rutils::calc_endpoints(pnltrend, interval="weeks")
+dygraphs::dygraph(cumsum(pnltrend)[endd], main="Cumulative Returns of Trend Following EWMA Strategies") %>%
+  dyOptions(colors=colorv, strokeWidth=1) %>%
+  dyLegend(show="always", width=400)
+# Plot EWMA strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(cumsum(pnltrend), theme=plot_theme,
+  name="Cumulative Returns of EWMA Strategies")
+legend("topleft", legend=colnames(pnltrend), inset=0.1,
+  bg="white", cex=0.8, lwd=rep(6, NCOL(pnltrend)),
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating EWMA Strategies Using Parallel Computing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulating \emph{EWMA} strategies naturally lends itself to parallel computing, since the simulations are independent from each other.
+      \vskip1ex
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs loops under \emph{Windows} using parallel computing on several CPU cores.
+      \vskip1ex
+      The resulting list of time series can then be collapsed into a single \emph{xts} series using the functions \texttt{rutils::do\_call()} and \texttt{cbind()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Initialize compute cluster under Windows
+library(parallel)
+ncores <- detectCores() - 1  # Number of cores
+cluster <- makeCluster(detectCores()-1)
+clusterExport(cluster,
+  varlist=c("ohlc", "look_back", "sim_ewma"))
+# Perform parallel loop over lambdav under Windows
+pnltrend <- parLapply(cluster, lambdav, function(lambda) {
+  library(quantmod)
+  # Simulate EWMA strategy and Calculate the returns
+  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
+})  # end parLapply
+stopCluster(cluster)  # Stop R processes over cluster under Windows
+# Perform parallel loop over lambdav under Mac-OSX or Linux
+pnltrend <- mclapply(lambdav, function(lambda) {
+  library(quantmod)
+  # Simulate EWMA strategy and Calculate the returns
+  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
+}, mc.cores=ncores)  # end mclapply
+pnltrend <- do.call(cbind, pnltrend)
+colnames(pnltrend) <- paste0("lambda=", lambdav)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Decay Parameter of Trend Following EWMA Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of trend following \emph{EWMA} strategies depends on the $\lambda$ decay parameter, with smaller $\lambda$ parameters performing better than larger ones.
+      \vskip1ex
+      The optimal $\lambda$ parameter applies significant weight to returns \texttt{8 - 12} months in the past, which is consistent with research on trend following strategies.
+      \vskip1ex
+      The \emph{Sharpe ratios} of \emph{EWMA} strategies with different $\lambda$ parameters can be calculated by performing an \texttt{sapply()} loop over the \emph{columns} of returns.
+      \vskip1ex
+      \texttt{sapply()} treats the columns of \emph{xts} time series as list elements, and loops over the columns.
+      \vskip1ex
+      Performing loops in \texttt{R} over the \emph{columns} of returns is acceptable, but \texttt{R} loops over the \emph{rows} of returns should be avoided.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the annualized Sharpe ratios of strategy returns
+sharpetrend <- sqrt(252)*sapply(pnltrend, function(xtsv) {
+  mean(xtsv)/sd(xtsv)
+})  # end sapply
+# Plot Sharpe ratios
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+plot(x=lambdav, y=sharpetrend, t="l",
+     xlab="lambda", ylab="Sharpe",
+     main="Performance of EWMA Trend Following Strategies
+     as Function of the Decay Parameter Lambda")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_trend_performance.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Trend Following EWMA Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The best performing trend following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past pricev), and producing less frequent trading.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the optimal lambda
+lambda <- lambdav[which.max(sharpetrend)]
+# Simulate best performing strategy
+ewmatrend <- sim_ewma(ohlc=ohlc, lambda=lambda, bid_offer=0, lagg=2)
+posv <- ewmatrend[, "positions"]
+trendopt <- ewmatrend[, "pnls"]
+wealthv <- cbind(retp, trendopt)
+colnames(wealthv) <- c("VTI", "EWMA PnL")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+cor(wealthv)[1, 2]
+# Plot dygraph of EWMA strategy wealth
+dygraphs::dygraph(cumsum(wealthv)[endd], main="Performance of Optimal Trend Following EWMA Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_trend_optim.png
+      }
+      <<echo=TRUE,eval=FALSE>>=
+# Plot EWMA PnL with position shading
+# Standard plot of EWMA strategy wealth
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(cumsum(wealthv), theme=plot_theme,
+             name="Performance of EWMA Strategy")
+add_TA(posv > 0, on=-1, col="lightgreen", border="lightgreen")
+add_TA(posv < 0, on=-1, col="lightgrey", border="lightgrey")
+legend("top", legend=colnames(wealthv),
+       inset=0.05, bg="white", lty=1, lwd=6,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mean Reverting EWMA Crossover Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Mean reverting EWMA crossover strategies can be simulated using function \texttt{sim\_ewma()} with argument \texttt{trend=(-1)}.
+      \vskip1ex
+      The profitability of mean reverting strategies can be significantly improved by using limit orders, to reduce transaction costs.
+      <<echo=TRUE,eval=FALSE>>=
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
+lambdav <- seq(0.6, 0.7, 0.01)
+# Perform lapply() loop over lambdav
+pnlrevert <- lapply(lambdav, function(lambda) {
+  # Simulate EWMA strategy and Calculate the returns
+  sim_ewma(ohlc=ohlc, lambda=lambda, bid_offer=0, trend=(-1))[, "pnls"]
+})  # end lapply
+pnlrevert <- do.call(cbind, pnlrevert)
+colnames(pnlrevert) <- paste0("lambda=", lambdav)
+# Plot dygraph of mean reverting EWMA strategies
+colorv <- colorRampPalette(c("blue", "red"))(NROW(lambdav))
+dygraphs::dygraph(cumsum(pnlrevert)[endd], main="Returns of Mean Reverting EWMA Strategies (No Costs)") %>%
+  dyOptions(colors=colorv, strokeWidth=1) %>%
+  dyLegend(show="always", width=400)
+# Plot EWMA strategies with custom line colors
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(pnlrevert,
+  theme=plot_theme, name="Cumulative Returns of Mean Reverting EWMA Strategies")
+legend("topleft", legend=colnames(pnlrevert),
+  inset=0.1, bg="white", cex=0.8, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_notranscosts.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_returns.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performance of Mean Reverting EWMA Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sharpe ratios} of \emph{EWMA} strategies with different $\lambda$ parameters can be calculated by performing an \texttt{sapply()} loop over the \emph{columns} of returns.
+      \vskip1ex
+      \texttt{sapply()} treats the columns of \emph{xts} time series as list elements, and loops over the columns.
+      \vskip1ex
+      Performing loops in \texttt{R} over the \emph{columns} of returns is acceptable, but \texttt{R} loops over the \emph{rows} of returns should be avoided.
+      \vskip1ex
+      The performance of mean reverting \emph{EWMA} strategies depends on the $\lambda$ parameter, with performance decreasing for very small or very large $\lambda$ parameters.
+      \vskip1ex
+      For too large $\lambda$ parameters, the trading frequency is too high, causing high transaction costs.
+      \vskip1ex
+      For too small $\lambda$ parameters, the trading frequency is too low, causing the strategy to miss profitable trades.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_performance.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios of strategy returns
+sharperevert <- sqrt(252)*sapply(pnlrevert, function(xtsv) {
+  mean(xtsv)/sd(xtsv)
+})  # end sapply
+plot(x=lambdav, y=sharperevert, t="l",
+     xlab="lambda", ylab="Sharpe",
+     main="Performance of EWMA Mean Reverting Strategies
+     as Function of the Decay Parameter Lambda")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Mean Reverting EWMA Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Reverting the direction of the trend following \emph{EWMA} strategy creates a mean reverting strategy.
+      \vskip1ex
+      The best performing mean reverting \emph{EWMA} strategy has a relatively large $\lambda$ parameter, corresponding to faster weight decay (giving more weight to recent prices), and producing more frequent trading.
+      \vskip1ex
+      But a too large $\lambda$ parameter also causes very high trading frequency, and high transaction costs.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the optimal lambda
+lambda <- lambdav[which.max(sharperevert)]
+# Simulate best performing strategy
+ewmarevert <- sim_ewma(ohlc=ohlc, bid_offer=0.0,
+  lambda=lambda, trend=(-1))
+posv <- ewmarevert[, "positions"]
+revertopt <- ewmarevert[, "pnls"]
+wealthv <- cbind(retp, revertopt)
+colnames(wealthv) <- c("VTI", "EWMA PnL")
+# Plot dygraph of EWMA strategy wealth
+colorv <- c("blue", "red")
+dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Mean Reverting EWMA Strategy (No Costs)") %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_optim.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Standard plot of EWMA strategy wealth
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(cumsum(wealthv), theme=plot_theme,
+             name="Optimal Mean Reverting EWMA Strategy")
+add_TA(posv > 0, on=-1, col="lightgreen", border="lightgreen")
+add_TA(posv < 0, on=-1, col="lightgrey", border="lightgrey")
+legend("top", legend=colnames(wealthv),
+       inset=0.05, bg="white", lty=1, lwd=6,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Combining Trend Following and Mean Reverting Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The returns of trend following and mean reverting strategies are usually negatively correlated to each other, so combining them can achieve significant diversification of risk.
+      \vskip1ex
+      The main advantage of EWMA crossover strategies is that they provide positive returns and a diversification of risk with respect to static stock portfolios.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the correlation between trend following and mean reverting strategies
+trendopt <- ewmatrend[, "pnls"]
+colnames(trendopt) <- "trend"
+revertopt <- ewmarevert[, "pnls"]
+colnames(revertopt) <- "revert"
+cor(cbind(retp, trendopt, revertopt))
+# Calculate the combined strategy
+combstrat <- (retp + trendopt + revertopt)/3
+colnames(combstrat) <- "combined"
+# Calculate the annualized Sharpe ratio of strategy returns
+retc <- cbind(retp, trendopt, revertopt, combstrat)
+colnames(retc) <- c("VTI", "Trending", "Reverting", "Combined")
+sqrt(252)*sapply(retc, function(xtsv) mean(xtsv)/sd(xtsv))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_combined.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of EWMA strategy wealth
+colorv <- c("blue", "red", "green", "purple")
+dygraphs::dygraph(cumsum(retc)[endd], main="Performance of Combined EWMA Strategies") %>%
+  dyOptions(colors=colorv, strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
+# Standard plot of EWMA strategy wealth
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(pnls, theme=plot_theme,
+             name="Performance of Combined EWMA Strategies")
+legend("topleft", legend=colnames(pnls),
+       inset=0.05, bg="white", lty=1, lwd=6,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ensemble of EWMA Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Instead of selecting the best performing \emph{EWMA} strategy, one can choose a weighted average of strategies (ensemble), which corresponds to allocating positions according to the weights.
+      \vskip1ex
+      The weights can be chosen to be proportional to the Sharpe ratios of the \emph{EWMA} strategies.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the weights proportional to Sharpe ratios
+weightv <- c(sharpetrend, sharperevert)
+weightv[weightv < 0] <- 0
+weightv <- weightv/sum(weights)
+retc <- cbind(pnltrend, pnlrevert)
+retc <- retc %*% weightv
+retc <- cbind(retp, retc)
+colnames(retc) <- c("VTI", "EWMA PnL")
+# Plot dygraph of EWMA strategy wealth
+colorv <- c("blue", "red")
+dygraphs::dygraph(cumsum(retc)[endd], main="Performance of Ensemble of EWMA Strategies") %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Standard plot of EWMA strategy wealth
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(cumsum(retc), theme=plot_theme,
+             name="Performance of Ensemble of EWMA Strategies")
+legend("topleft", legend=colnames(pnls),
+       inset=0.05, bg="white", lty=1, lwd=6,
+       col=plot_theme$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_ensemble.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating the Dual EWMA Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{Dual EWMA Crossover} strategy, the stock position depends on the difference between two moving averages.
+      \vskip1ex
+      The stock position flips when the fast moving \emph{EWMA} crosses the slow moving \emph{EWMA}.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the fast and slow EWMAs
+lambdaf <- 0.89
+lambdas <- 0.95
+# Calculate the EWMA prices
+ewmaf <- HighFreq::run_mean(closep, lambda=lambdaf)
+ewmas <- HighFreq::run_mean(closep, lambda=lambdas)
+# Calculate the EWMA prices
+pricev <- cbind(closep, ewmaf, ewmas)
+colnames(pricev) <- c("VTI", "EWMA fast", "EWMA slow")
+# Calculate the positions, either: -1, 0, or 1
+indic <- sign(ewmaf - ewmas)
+lagg <- 2
+indic <- HighFreq::roll_sum(indic, lagg)
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(indic == lagg, 1, posv)
+posv <- ifelse(indic == (-lagg), -1, posv)
+posv <- zoo::na.locf(posv, na.rm=FALSE)
+posv <- xts::xts(posv, order.by=zoo::index(closep))
+posv <- rutils::lagit(posv, lagg=1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewm_dual_strat.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Create colors for background shading
+crossd <- (rutils::diffit(posv) != 0)
+shadev <- posv[crossd]
+crossd <- c(zoo::index(shadev), end(posv))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
+# Plot dygraph
+colnamev <- colnames(pricev)
+dyplot <- dygraphs::dygraph(pricev[endd], main="VTI Dual EWMA Prices") %>%
+  dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[3], strokeWidth=2, col="purple") %>%
+  dyLegend(show="always", width=300)
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dual EWMA Crossover Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The crossover strategy suffers losses when prices are range-bound without a trend, because whenever it switches position the prices soon change direction.  (This is called a \emph{"whipsaw"}.)
+      \vskip1ex
+      The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the daily profits and losses of strategy
+pnls <- retp*posv
+colnames(pnls) <- "Strategy"
+wealthv <- cbind(retp, pnls)
+# Annualized Sharpe ratio of Dual EWMA strategy
+sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
+# The crossover strategy has a negative correlation to VTI
+cor(wealthv)[1, 2]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_dual_pnl.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Dual EWMA strategy
+dyplot <- dygraphs::dygraph(cumsum(wealthv)[endd], main=paste("EWMA Dual Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>% 
+  dyOptions(colors=c("blue", "red"), strokeWidth=2)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+# Plot the dygraph object
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulation Function for the Dual EWMA Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Dual EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
+      \vskip1ex
+      The function \texttt{sim\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of pricev, and two decay parameters $\lambda_1$ and $\lambda_2$.
+      \vskip1ex
+      The function \texttt{sim\_ewma2()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+sim_ewma2 <- function(ohlc, lambdaf=0.1, lambdas=0.01, 
+                      bid_offer=0.001, trend=1, lagg=1) {
+  if (lambdaf >= lambdas) return(NA)
+  closep <- quantmod::Cl(ohlc)
+  retp <- rutils::diffit(closep)
+  nrows <- NROW(ohlc)
+  # Calculate the EWMA prices
+  ewmaf <- HighFreq::run_mean(closep, lambda=lambdaf)
+  ewmas <- HighFreq::run_mean(closep, lambda=lambdas)
+  # Calculate the positions, either: -1, 0, or 1
+  indic <- sign(ewmaf - ewmas)
+  if (lagg > 1) {
+    indic <- HighFreq::roll_sum(indic, lagg)
+    indic[1:lagg] <- 0
+  }  # end if
+  posv <- rep(NA_integer_, nrows)
+  posv[1] <- 0
+  posv <- ifelse(indic == lagg, 1, posv)
+  posv <- ifelse(indic == (-lagg), -1, posv)
+  posv <- zoo::na.locf(posv, na.rm=FALSE)
+  posv <- xts::xts(posv, order.by=zoo::index(closep))
+  # Lag the positions to trade on next day
+  posv <- rutils::lagit(posv, lagg=1)
+  # Calculate the PnLs of strategy
+  pnls <- retp*posv
+  costs <- 0.5*bid_offer*abs(rutils::diffit(posv))
+  pnls <- (pnls - costs)
+  # Calculate the strategy returns
+  pnls <- cbind(posv, pnls)
+  colnames(pnls) <- c("positions", "pnls")
+  pnls
+}  # end sim_ewma2
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dual EWMA Strategy Performance Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{Dual EWMA} strategies can be simulated by calling the function \texttt{sim\_ewma2()} in two loops over the vectors of $\lambda$ parameters.
+      \vskip1ex
+      The function \texttt{outer()} calculates the values of a function over a grid spanned by two variables, and returns a matrix of function values.
+      \vskip1ex
+      The function \texttt{Vectorize()} performs an \texttt{apply()} loop over the arguments of a function, and returns a vectorized version of the function.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
+lambdafv <- seq(from=0.85, to=0.99, by=0.01)
+lambdasv <- seq(from=0.85, to=0.99, by=0.01)
+# Calculate the Sharpe ratio of dual EWMA strategy
+calc_sharpe <- function(ohlc, lambdaf, lambdas, bid_offer, trend, lagg) {
+  if (lambdaf >= lambdas) return(NA)
+  pnls <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
+    bid_offer=bid_offer, trend=trend, lagg=lagg)[, "pnls"]
+  sqrt(252)*mean(pnls)/sd(pnls)
+}  # end calc_sharpe
+# Vectorize calc_sharpe with respect to lambdaf and lambdas
+calc_sharpe <- Vectorize(FUN=calc_sharpe, 
+  vectorize.args=c("lambdaf", "lambdas"))
+# Calculate the matrix of PnLs
+sharpem <- outer(lambdafv, lambdasv, FUN=calc_sharpe, ohlc=ohlc, 
+                 bid_offer=0.0, trend=1, lagg=2)
+# Or perform two sapply() loops over lambda vectors
+sharpem <- sapply(lambdasv, function(lambdas) {
+  sapply(lambdafv, function(lambdaf) {
+    if (lambdaf >= lambdas) return(NA)
+    calc_sharpe(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
+                bid_offer=0.0, trend=1, lagg=2)
+  })  # end sapply
+})  # end sapply
+colnames(sharpem) <- lambdasv
+rownames(sharpem) <- lambdafv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Dual EWMA Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The best \emph{Dual EWMA} strategy performs better than the best \emph{single EWMA} strategy, because it has an extra parameter that can be adjusted to improve in-sample performance.
+      \vskip1ex
+      But this doesn't guarantee better out-of-sample performance.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the PnLs for the optimal strategy
+whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
+lambdaf <- lambdafv[whichv[1]]
+lambdas <- lambdasv[whichv[2]]
+ewma_opt <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
+  bid_offer=0.0, trend=1, lagg=2)
+pnls <- ewma_opt[, "pnls"]
+wealthv <- cbind(retp, pnls)
+colnames(wealthv)[2] <- "EWMA"
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Annualized Sharpe ratio of Dual EWMA strategy
+sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
+# The crossover strategy has a negative correlation to VTI
+cor(wealthv)[1, 2]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_dual_optim.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Create colors for background shading
+posv <- ewma_opt[, "positions"]
+crossd <- (rutils::diffit(posv) != 0)
+shadev <- posv[crossd]
+crossd <- c(zoo::index(shadev), end(posv))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
+# Plot Optimal Dual EWMA strategy
+dyplot <- dygraphs::dygraph(cumsum(wealthv), main=paste("Optimal Dual EWMA Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>% 
+  dyOptions(colors=c("blue", "red"), strokeWidth=2)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+# Plot the dygraph object
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performance of Dual Crossover Strategy \protect\emph{Out-of-Sample}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In-sample, the best \emph{Dual EWMA} strategy performs better than \emph{VTI}, because it has two parameters that can be adjusted to improve performance.  
+      \vskip1ex
+      But out-of-sample, the best \emph{Dual EWMA} strategy performs worse than \emph{VTI}, because it's been \emph{overfitted} in-sample.
+      <<echo=TRUE,eval=FALSE>>=
+# Define in-sample and out-of-sample intervals
+insample <- 1:(nrows %/% 2)
+outsample <- (nrows %/% 2 + 1):nrows
+# Calculate the matrix of PnLs
+sharpem <- outer(lambdafv, lambdasv, 
+                 FUN=calc_sharpe, ohlc=ohlc[insample, ], 
+                 bid_offer=0.0, trend=1, lagg=2)
+colnames(sharpem) <- lambdasv
+rownames(sharpem) <- lambdafv
+# Calculate the PnLs for the optimal strategy
+whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
+lambdaf <- lambdafv[whichv[1]]
+lambdas <- lambdasv[whichv[2]]
+pnls <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
+                  bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
+wealthv <- cbind(retp, pnls)
+colnames(wealthv)[2] <- "EWMA"
+# Calculate the Sharpe and Sortino ratios in-sample and out-of-sample
+sqrt(252)*sapply(wealthv[insample, ], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv[outsample, ], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_dual_out_sample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Dygraphs plot with custom line colors
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual EWMA Strategy Out-of-Sample") %>%
+  dyEvent(zoo::index(wealthv[last(insample)]), label="in-sample", strokePattern="solid", color="green") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Volume-Weighted Average Price Indicator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Volume-Weighted Average Price (\emph{VWAP}) is defined as the sum of prices multiplied by trading volumes, divided by the sum of volumes:
+      \begin{displaymath}
+        p^{VWAP}_t = \frac{\sum_{j=0}^{n} v_{t-j} p_{t-j}}{\sum_{j=0}^{n} v_{t-j}}
+      \end{displaymath}
+      The \emph{VWAP} applies more weight to prices with higher trading volumes, which allows it to react more quickly to recent market volatility.
+      \vskip1ex
+      The drawback of the \emph{VWAP} indicator is that it applies large weights to prices far in the past.
+      \vskip1ex
+      The \emph{VWAP} is often used as a technical indicator in trend following strategies.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the log OHLC prices and volumes
+ohlc <- rutils::etfenv$VTI
+closep <- log(quantmod::Cl(ohlc))
+colnames(closep) <- "VTI"
+volum <- quantmod::Vo(ohlc)
+colnames(volum) <- "Volume"
+nrows <- NROW(closep)
+# Calculate the VWAP prices
+look_back <- 21
+vwap <- HighFreq::roll_sum(closep*volum, look_back)
+volumr <- HighFreq::roll_sum(volum, look_back)
+vwap <- vwap/volumr
+colnames(vwap) <- "VWAP"
+pricev <- cbind(closep, vwap)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vwap_feature.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Dygraphs plot with custom line colors
+colorv <- c("blue", "red")
+dygraphs::dygraph(pricev["2009"], main="VTI VWAP Prices") %>%
+  dyOptions(colors=colorv, strokeWidth=2)
+# Plot VWAP prices with custom line colors
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colors
+quantmod::chart_Series(pricev["2009"], theme=plot_theme,
+             lwd=2, name="VTI VWAP Prices")
+legend("bottomright", legend=colnames(pricev),
+       inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive VWAP Price Indicator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{VWAP} prices $p^{VWAP}$ can also be calculated as the ratio of the volume weighted prices $\mu^{pv}$ divided by the mean trading volumes $\mu^v$:
+      \begin{displaymath}
+        p^{VWAP} = \frac{\mu^{pv}}{\mu^v}
+      \end{displaymath}
+      The volume weighted prices $\mu^{pv}$ and the mean trading volumes $\mu^v$ are both calculated recursively:
+      \begin{flalign*}
+        \mu^v_t = \lambda \mu^v_{t-1} + (1-\lambda) v_t \\
+        \mu^{pv}_t = \lambda \mu^{pv}_{t-1} + (1-\lambda) v_t p_t
+      \end{flalign*}
+      The recursive \emph{VWAP} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
+      \vskip1ex
+      The advantage of the recursive \emph{VWAP} indicator is that it gradually "forgets" about large trading volumes far in the past.
+      \vskip1ex
+      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the trailing weighted values recursively.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_mean()} also calculates the trailing weighted values recursively.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vwap_recursive.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VWAP prices recursively using C++ code
+lambda <- 0.9
+volumer <- .Call(stats:::C_rfilter, volum, lambda, c(as.numeric(volum[1])/(1-lambda), double(NROW(volum))))[-1]
+pricer <- .Call(stats:::C_rfilter, volum*closep, lambda, c(as.numeric(volum[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
+vwapr <- pricer/volumer
+# Calculate the VWAP prices recursively using RcppArmadillo
+vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=volum)
+all.equal(vwapr, drop(vwapcpp))
+# Dygraphs plot the VWAP prices
+pricev <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
+colnames(pricev) <- c("VWAP rolling", "VWAP recursive")
+dygraphs::dygraph(pricev["2009"], main="VWAP Prices") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating the VWAP Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the trend following \emph{VWAP Crossover} strategy, the stock position switches depending if the current price is above or below the \emph{VWAP}.
+      \vskip1ex
+      If the current price crosses above the \emph{VWAP}, then the strategy switches its stock position to a fixed unit of long risk, and if it crosses below, to a fixed unit of short risk.
+      \vskip1ex
+      To prevent whipsaws and over-trading, the crossover strategy delays switching positions until the indicator repeats the same value for several periods.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VWAP prices recursively using RcppArmadillo
+lambda <- 0.99
+vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=volum)
+# Calculate the positions from lagged indicator
+indic <- sign(closep - vwapcpp)
+lagg <- 2
+indic <- HighFreq::roll_sum(indic, lagg)
+# Calculate the positions, either: -1, 0, or 1
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(indic == lagg, 1, posv)
+posv <- ifelse(indic == (-lagg), -1, posv)
+posv <- zoo::na.locf(posv, na.rm=FALSE)
+posv <- xts::xts(posv, order.by=zoo::index(closep))
+# Lag the positions to trade in next period
+posv <- rutils::lagit(posv, lagg=1)
+# Calculate the PnLs of VWAP strategy
+retp <- rutils::diffit(closep)  # VTI returns
+pnls <- retp*posv
+colnames(pnls) <- "VWAP"
+wealthv <- cbind(retp, pnls)
+colnamev <- colnames(wealthv)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vwap_strat_lag.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Annualized Sharpe ratios of VTI and VWAP strategy
+sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
+# Create colors for background shading
+crossd <- (rutils::diffit(posv) != 0)
+shadev <- posv[crossd]
+crossd <- c(zoo::index(shadev), end(posv))
+shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
+# Plot dygraph of VWAP strategy
+# Create dygraph object without plotting it
+dyplot <- dygraphs::dygraph(cumsum(wealthv), main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  # end for
+# Plot the dygraph object
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Combining VWAP Crossover Strategy with Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Even though the \emph{VWAP} strategy doesn't perform as well as a static buy-and-hold strategy, it can provide risk reduction when combined with it.
+      \vskip1ex
+      This is because the \emph{VWAP} strategy has a negative correlation with respect to the underlying asset.
+      \vskip1ex
+      In addition, the \emph{VWAP} strategy performs well in periods of extreme market selloffs, so it can provide a hedge for a static buy-and-hold strategy.
+      \vskip1ex
+      The \emph{VWAP} strategy serves as a dynamic put option in periods of extreme market selloffs.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the correlation of VWAP strategy with VTI
+cor(retp, pnls)
+# Combine VWAP strategy with VTI
+wealthv <- cbind(retp, pnls, 0.5*(retp+pnls))
+colnames(wealthv) <- c("VTI", "VWAP", "Combined")
+sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vwap_combined.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of VWAP strategy combined with VTI
+colorv <- c("blue", "red", "purple")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  paste("VWAP Strategy Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
+  dyOptions(colors=colorv, strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{VWAP Crossover Strategy Market Timing Skill}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The VWAP crossover strategy shorts the market during significant selloffs, but otherwise doesn't display market timing skill.
+      \vskip1ex
+      The t-value of the \emph{Treynor-Mazuy} test is negative, but not statistically significant. 
+      <<echo=TRUE,eval=FALSE>>=
+# Test VWAP crossover market timing of VTI using Treynor-Mazuy test
+desv <- cbind(pnls, retp, retp^2)
+desv <- na.omit(desv)
+colnames(desv) <- c("VWAP", "VTI", "treynor")
+regmod <- lm(VWAP ~ VTI + treynor, data=desv)
+summary(regmod)
+# Plot residual scatterplot
+resids <- (desv$VWAP - regmod$coeff["VTI"]*retp)
+resids <- regmod$residuals
+# x11(width=6, height=6)
+plot.default(x=retp, y=resids, xlab="VTI", ylab="residuals")
+title(main="Treynor-Mazuy Market Timing Test\n for VWAP Crossover vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+coefreg <- summary(regmod)$coeff
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retp
+tvalue <- round(coefreg["treynor", "t value"], 2)
+points.default(x=retp, y=fitv, pch=16, col="red")
+text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vwap_timing_skill.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulation Function for VWAP Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{VWAP} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
+      \vskip1ex
+      The function \texttt{sim\_vwap()} performs a simulation of the \emph{VWAP} strategy, given an \emph{OHLC} time series of pricev, and the length of the look-back interval (\texttt{look\_back}).
+      \vskip1ex
+      The function \texttt{sim\_vwap()} returns the \emph{VWAP} strategy positions and returns, in a two-column \emph{xts} time series.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+sim_vwap <- function(ohlc, lambda=0.9, bid_offer=0.001, trend=1, lagg=1) {
+  closep <- log(quantmod::Cl(ohlc))
+  volum <- quantmod::Vo(ohlc)
+  retp <- rutils::diffit(closep)
+  nrows <- NROW(ohlc)
+  # Calculate the VWAP prices
+  vwap <- HighFreq::run_mean(closep, lambda=lambda, weightv=volum)
+  # Calculate the indicator
+  indic <- trend*sign(closep - vwap)
+  if (lagg > 1) {
+    indic <- HighFreq::roll_sum(indic, lagg)
+    indic[1:lagg] <- 0
+  }  # end if
+  # Calculate the positions, either: -1, 0, or 1
+  posv <- rep(NA_integer_, nrows)
+  posv[1] <- 0
+  posv <- ifelse(indic == lagg, 1, posv)
+  posv <- ifelse(indic == (-lagg), -1, posv)
+  posv <- zoo::na.locf(posv, na.rm=FALSE)
+  posv <- xts::xts(posv, order.by=zoo::index(closep))
+  # Lag the positions to trade on next day
+  posv <- rutils::lagit(posv, lagg=1)
+  # Calculate the PnLs of strategy
+  pnls <- retp*posv
+  costs <- 0.5*bid_offer*abs(rutils::diffit(posv))
+  pnls <- (pnls - costs)
+  # Calculate the strategy returns
+  pnls <- cbind(posv, pnls)
+  colnames(pnls) <- c("positions", "pnls")
+  pnls
+}  # end sim_vwap
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Multiple Trend Following VWAP Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{VWAP} strategies can be simulated by calling the function \texttt{sim\_vwap()} in a loop over a vector of $\lambda$ parameters.
+      \vskip1ex
+      But \texttt{sim\_vwap()} returns an \emph{xts} time series, and \texttt{sapply()} cannot merge \emph{xts} time series together.
+      \vskip1ex
+      So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
+      <<echo=TRUE,eval=FALSE>>=
+source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
+lambdav <- seq(from=0.97, to=0.995, by=0.004)
+# Perform lapply() loop over lambdav
+pnls <- lapply(lambdav, function(lambda) {
+  # Simulate VWAP strategy and Calculate the returns
+  sim_vwap(ohlc=ohlc, lambda=lambda, bid_offer=0, lagg=2)[, "pnls"]
+})  # end lapply
+pnls <- do.call(cbind, pnls)
+colnames(pnls) <- paste0("lambda=", lambdav)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vwap_trend_returns.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of multiple VWAP strategies
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
+dygraphs::dygraph(cumsum(pnls)[endd], main="Cumulative Returns of Trend Following VWAP Strategies") %>%
+  dyOptions(colors=colorv, strokeWidth=1) %>%
+  dyLegend(show="always", width=500)
+# Plot VWAP strategies with custom line colors
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorv
+quantmod::chart_Series(cumsum(pnls), theme=plot_theme,
+  name="Cumulative Returns of VWAP Strategies")
+legend("topleft", legend=colnames(pnls), inset=0.1,
+  bg="white", cex=0.8, lwd=rep(6, NCOL(pnls)),
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Mean Reverting Strategies}
+% \section{Statistical Arbitrage}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bollinger Bands}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Bollinger Bands} improve the moving average feature by adding information about the volatility.
+      \vskip1ex
+      The Bollinger Bands are three time series, with the middle band equal to the trailing mean prices, the upper band equal to the mean prices plus the trailing standard deviation, and the lower band equal to the mean prices minus the standard deviation.
+      \vskip1ex
+      The Bollinger Bands are often used to indicate that prices are cheap if they are below the lower band, and rich (expensive) if they are above the upper band.
+      \vskip1ex
+      The decay parameter $\lambda$ determines the rate of decay of the weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      \vskip1ex
+      The functions \texttt{HighFreq::run\_mean()} and \texttt{HighFreq::run\_var()} calculate the trailing mean and variance by recursively updating the past estimates with the new values, using the weight decay factor $\lambda$.
+      <<echo=TRUE,eval=FALSE>>=
+# Extract the log VTI prices
+pricev <- log(na.omit(rutils::etfenv$prices$VTI))
+nrows <- NROW(pricev)
+# Calculate the trailing mean prices
+lambda <- 0.9
+meanv <- HighFreq::run_mean(pricev, lambda=lambda)
+# Calculate the trailing volatilities
+volat <- HighFreq::run_var(pricev, lambda=lambda)
+volat <- sqrt(volat)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/bollinger_feature.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Dygraphs plot of Bollinger bands
+priceb <- cbind(pricev, meanv, meanv+volat, meanv-volat)
+colnames(priceb)[2:4] <- c("mean", "upper", "lower")
+colnamev <- colnames(priceb)
+dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Bollinger Bands") %>%
+  dySeries(name=colnamev[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, col="green") %>%
+  dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="red") %>%
+  dySeries(name=colnamev[4], strokeWidth=2, strokePattern="dashed", col="red") %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bollinger Bands With Centered Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Centering (de-meaning) the prices provides a better view of the \emph{Bollinger Bands}.
+      \vskip1ex
+      The centered prices tend to be range-bound between the \emph{Bollinger Bands}.
+      \vskip1ex
+      When the centered price is below the lower band it's considered cheap, and if it's above the upper band it's considered rich (expensive).
+      \vskip1ex
+      When the centered price is close to zero it's considered fair (neutral).
+      <<echo=TRUE,eval=FALSE>>=
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/bollinger_demean.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Center the prices
+pricem <- pricev - meanv
+# Dygraphs plot of Bollinger bands
+priceb <- cbind(pricem, volat, -volat)
+colnames(priceb) <- c("price", "upper", "lower")
+colnamev <- colnames(priceb)
+dygraphs::dygraph(priceb["2008-09/2009-09"], 
+  main="Centered VTI Prices and Bollinger Bands") %>%
+  dySeries(name=colnamev[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, strokePattern="dashed", col="red") %>%
+  dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="green") %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Bollinger Band Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Bollinger Band} strategy switches to long \texttt{\$1} dollar of the stock when prices are cheap (below the lower band), and sells short \texttt{-\$1} dollar of stock when prices are rich (expensive - above the upper band).  It goes flat \texttt{\$0} dollar of stock (unwinds) if the stock reaches a fair (mean) price.
+      \vskip1ex
+      The strategy is therefore always either long \texttt{\$1} dollar of stock, or short \texttt{-\$1} dollar of stock, or flat \texttt{\$0} dollar of stock.
+      \vskip1ex
+      The upper and lower Bollinger bands can be chosen to be a multiple of the standard deviations above and below the mean prices.
+      \vskip1ex
+      The Bollinger Strategy is a \emph{mean reverting} (contrarian) strategy because it bets on prices reverting to their mean value.
+      \vskip1ex
+      The Bollinger Strategy is a type of \emph{statistical arbitrage} strategy.  
+      \vskip1ex
+      \emph{Statistical arbitrage} strategies try to exploit short-term anomalies in prices, when prices diverge from their equilibrium values and then revert back to them.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing mean prices and volatilities
+lambda <- 0.1
+meanv <- HighFreq::run_mean(pricev, lambda=lambda)
+volat <- HighFreq::run_var(pricev, lambda=lambda)
+volat <- sqrt(volat)
+# Prepare the simulation parameters
+pricen <- as.numeric(pricev) # Numeric price
+pricem <- pricen - meanv # Centered price
+threshv <- volat
+posv <- integer(nrows) # Stock positions
+posv[1] <- 0 # Initial position
+# Calculate the positions from Bollinger bands
+for (it in 2:nrows) {
+  if (pricem[it-1] > threshv[it-1]) {
+    # Enter short
+    posv[it] <- (-1)
+  } else if (pricem[it-1] < (-threshv[it-1])) {
+    # Enter long
+    posv[it] <- 1
+  } else if ((posv[it-1] < 0) && (pricem[it-1] < 0)) {
+    # Unwind short
+    posv[it] <- 0
+  } else if ((posv[it-1] > 0) && (pricem[it-1] > 0)) {
+    # Unwind long
+    posv[it] <- 0
+  } else {
+    # Do nothing
+    posv[it] <- posv[it-1]
+  }  # end if
+}  # end for
+# Calculate the number of trades
+ntrades <- sum(abs(rutils::diffit(posv)) > 0)
+# Calculate the pnls
+retp <- rutils::diffit(pricev)
+pnls <- retp*posv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bollinger Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Bollinger Band} strategy has two parameters: the weight decay factor $\lambda$ and the standard deviation multiple $n$.
+      \vskip1ex
+      The best strategy parameters can be found using backtest simulation, but it risks overfitting the parameters to the in-sample data, and poor performance out-of-sample.
+      \vskip1ex
+      The \emph{Bollinger Band} strategy has performed well for \emph{VTI} with $\lambda = 0.1$, but it hasn't performed well for most other stocks.
+      \vskip1ex
+      The \emph{Bollinger Band} strategy had its best performance for \emph{VTI} prior to the financial crisis of \texttt{2008-2009}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of Bollinger strategy
+colnamev <- colnames(wealthv)
+captiont <- paste("Bollinger Strategy", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number of trades=", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Modified Bollinger Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Unwinding the position when the stock reaches a fair (mean) price doesn't necessarily produce better performance.
+      \vskip1ex
+      In the modified Bollinger Strategy the positions are held until the price reaches the opposite extreme, so that the strategy is always either long \texttt{\$1} dollar of stock or short \texttt{\$1} dollar of stock.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate the modified Bollinger strategy
+posv <- integer(nrows) # Stock positions
+posv[1] <- 0 # Initial position
+for (it in 2:nrows) {
+  if (pricem[it-1] > threshv[it-1]) {
+    # Enter short
+    posv[it] <- (-1)
+  } else if (pricem[it-1] < (-threshv[it-1])) {
+    # Enter long
+    posv[it] <- 1
+  } else {
+    # Do nothing
+    posv[it] <- posv[it-1]
+  }  # end if
+}  # end for
+# Calculate the PnLs
+pnls2 <- retp*posv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger_mod.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(pnls, pnls2)
+colnames(wealthv) <- c("Bollinger", "Modified")
+sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of Bollinger strategy
+colnamev <- colnames(wealthv)
+captiont <- paste("Bollinger Strategy", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number of trades=", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fast Bollinger Strategy Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Bollinger Strategy is path-dependent so simulating it requires performing a loop, which can be slow in \texttt{R}.  
+      \vskip1ex
+      The modified Bollinger Strategy can be simulated quickly using the compiled \texttt{C++} functions \texttt{ifelse()} and \texttt{zoo::na.locf()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate the modified Bollinger strategy quickly
+posf <- rep(NA_integer_, nrows)
+posf[1] <- 0
+posf <- ifelse(pricem > threshv, -1, posf)
+posf <- ifelse(pricem < -threshv, 1, posf)
+posf <- zoo::na.locf(posf)
+# Lag the positions to trade in the next period
+posf <- rutils::lagit(posf, lagg=1)
+# Compare the positions
+all.equal(posv, posf)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bollinger Strategy For Intraday Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Bollinger Strategy has performed well for \texttt{1}-minute prices of the \emph{SPY} ETF, because intraday prices exhibit significant mean-reversion.
+      \vskip1ex
+      This simulation doesn't account for transaction costs, which would likely erase all profits if market orders were used for trade executions.  But the strategy could be profitable if limit orders were used for trade executions.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing mean prices and volatilities of SPY
+pricev <- log(quantmod::Cl(HighFreq::SPY))
+nrows <- NROW(pricev)
+lambda <- 0.1
+meanv <- HighFreq::run_mean(pricev, lambda=lambda)
+volat <- HighFreq::run_var(pricev, lambda=lambda)
+volat <- sqrt(volat)
+# Calculate the positions from Bollinger bands
+threshv <- volat
+pricem <- zoo::coredata(pricev - meanv)
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(pricem > threshv, -1, posv)
+posv <- ifelse(pricem < -threshv, 1, posv)
+posv <- zoo::na.locf(posv)
+# Lag the positions to trade in the next period
+posv <- rutils::lagit(posv, lagg=1)
+# Calculate the number of trades and the PnLs
+ntrades <- sum(abs(rutils::diffit(posv)) > 0)
+retp <- rutils::diffit(pricev)
+pnls <- retp*posv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger_intraday.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("SPY", "Strategy")
+nyears <- as.numeric(end(pricev)-start(pricev))/365
+sharper <- sqrt(nrows/nyears)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of Bollinger strategy
+colnamev <- colnames(wealthv)
+captiont <- paste("Bollinger Strategy for Minute SPY", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number of trades=", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Hampel Filter Bands}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Bollinger bands can be improved by using nonparametric measures of location (\emph{median}) and dispersion (\emph{MAD}).
+      \vskip1ex
+      The \emph{Median Absolute Deviation} (\emph{MAD}) is a nonparametric measure of dispersion (variability):
+      \begin{displaymath}
+        \operatorname{MAD} = \operatorname{median}(\operatorname{abs}(p_t - \operatorname{median}(\mathbf{p})))
+      \end{displaymath}
+      The \emph{Hampel z-score} is equal to the deviation from the median divided by the \emph{MAD}:
+      \begin{displaymath}
+        z_i = \frac{p_t - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
+      \end{displaymath}
+      A time series of \emph{z-scores} over past data can be calculated using a trailing look-back window.
+      <<echo=TRUE,eval=FALSE>>=
+# Extract time series of VTI log prices
+pricev <- log(na.omit(rutils::etfenv$prices$VTI))
+nrows <- NROW(pricev)
+# Define look-back window
+look_back <- 11
+# Calculate time series of trailing medians
+medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
+# medianv <- TTR::runMedian(pricev, n=look_back)
+# Calculate time series of MAD
+madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=look_back)
+# Calculate time series of z-scores
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+zscores[1:look_back, ] <- 0
+tail(zscores, look_back)
+range(zscores)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      % \includegraphics[width=0.45\paperwidth]{figure/hampel_zscores.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_bands.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot histogram of z-scores
+histp <- hist(zscores, col="lightgrey",
+  xlab="z-scores", breaks=50, xlim=c(-4, 4),
+  ylab="frequency", freq=FALSE, main="Hampel Z-Scores histogram")
+lines(density(zscores, adjust=1.5), lwd=3, col="blue")
+# Dygraphs plot of Hampel bands
+priceb <- cbind(pricev, medianv, medianv+madv, medianv-madv)
+colnames(priceb)[2:4] <- c("median", "upper", "lower")
+colnamev <- colnames(priceb)
+dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Hampel Bands") %>%
+  dySeries(name=colnamev[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, col="green") %>%
+  dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="red") %>%
+  dySeries(name=colnamev[4], strokeWidth=2, strokePattern="dashed", col="red") %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hampel Filter Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hampel filter strategy is a contrarian strategy that uses Hampel z-scores to establish long and short positions.
+      \vskip1ex
+      The Hampel strategy has two meta-parameters: the look-back interval and the threshold level.
+      \vskip1ex
+      The best choice of the meta-parameters can be determined through simulation.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the time series of trailing medians and MAD
+look_back <- 3
+medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
+madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+# Calculate the time series of z-scores
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+zscores[1:look_back, ] <- 0
+range(zscores)
+# Calculate the positions
+threshv <- 1
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv[zscores > threshv] <- (-1)
+posv[zscores < -threshv] <- 1
+posv <- zoo::na.locf(posv)
+posv <- rutils::lagit(posv)
+# Calculate the number of trades and the PnLs
+ntrades <- sum(abs(rutils::diffit(posv)) > 0)
+retp <- rutils::diffit(pricev)
+pnls <- retp*posv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_hampel.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of Hampel strategy
+captiont <- paste("Hampel Strategy", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number of trades=", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+colnamev <- colnames(wealthv)
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hampel Filter Strategy For Intraday Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hampel Filter strategy has performed well for \texttt{1}-minute prices of the \emph{SPY} ETF, because intraday prices exhibit significant mean-reversion.
+      \vskip1ex
+      This simulation doesn't account for transaction costs, which would likely erase all profits if market orders were used for trade executions.  But the strategy could be profitable if limit orders were used for trade executions.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing mean prices and volatilities of SPY
+pricev <- log(quantmod::Cl(HighFreq::SPY))
+nrows <- NROW(pricev)
+# Calculate the price medians and MAD
+look_back <- 3
+medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
+madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+# Calculate the time series of z-scores
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+zscores[1:look_back, ] <- 0
+# Calculate the positions
+threshv <- 1
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv[zscores < -threshv] <- 1
+posv[zscores > threshv] <- (-1)
+posv <- zoo::na.locf(posv)
+posv <- rutils::lagit(posv)
+# Calculate the number of trades and the PnLs
+ntrades <- sum(abs(rutils::diffit(posv)) > 0)
+retp <- rutils::diffit(pricev)
+pnls <- retp*posv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_hampel_intraday.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("SPY", "Strategy")
+nyears <- as.numeric(end(pricev)-start(pricev))/365
+sharper <- sqrt(nrows/nyears)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of Hampel strategy
+colnamev <- colnames(wealthv)
+captiont <- paste("Hampel Strategy for Minute SPY", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number of trades=", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Classification Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Centered Price Z-scores}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An extreme local price is a price which differs significantly from neighboring prices.
+      \vskip1ex
+      Extreme prices can be identified in-sample using the centered \emph{price z-score} equal to the price difference with neighboring prices divided by the volatility of returns $\sigma_i$:
+      \begin{displaymath}
+        z_i = \frac{2 p_i - p_{i-k} - p_{i+k}}{\sigma_i}
+      \end{displaymath}
+      Where $p_{i-k}$ and $p_{i+k}$ are the lagged and advanced prices.
+      \vskip1ex
+      The lag parameter $k$ determines the scale of the extreme local pricev, with smaller $k$ producing larger z-scores for more local price extremes.
+      <<echo=TRUE,eval=FALSE>>=
+# Extract the VTI log OHLC prices
+ohlc <- log(rutils::etfenv$VTI)
+nrows <- NROW(ohlc)
+closep <- quantmod::Cl(ohlc)
+retp <- rutils::diffit(closep)
+# Calculate the centered volatility
+look_back <- 7
+half_back <- look_back %/% 2
+stdev <- sqrt(HighFreq::roll_var(retp, look_back))
+stdev <- rutils::lagit(stdev, lagg=(-half_back))
+# Calculate the z-scores of prices
+pricez <- (2*closep - 
+  rutils::lagit(closep, half_back, pad_zeros=FALSE) - 
+  rutils::lagit(closep, -half_back, pad_zeros=FALSE))
+pricez <- ifelse(stdev > 0, pricez/stdev, 0)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/features_price_zscores.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of z-scores of VTI prices
+pricev <- cbind(closep, pricez)
+colnames(pricev) <- c("VTI", "Z-scores")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI Price Z-Scores") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Labeling the Tops and Bottoms of Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The local tops and bottoms of prices can be labeled approximately in-sample using the z-scores of prices and threshold values.
+      \vskip1ex
+      The local tops of prices represent \emph{overbought} conditions, while the bottoms represent \emph{oversold} conditions.
+      \vskip1ex
+      The labeled data can be used as a response or target variable in machine learning classifier models.
+      \vskip1ex
+      But it's not feasible to classify the prices out-of-sample exactly according to their in-sample labels.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the thresholds for labeling tops and bottoms
+confl <- c(0.2, 0.8)
+threshv <- quantile(pricez, confl)
+# Calculate the vectors of tops and bottoms
+tops <- zoo::coredata(pricez > threshv[2])
+bottoms <- zoo::coredata(pricez < threshv[1])
+# Simulate in-sample VTI strategy
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv[tops] <- (-1)
+posv[bottoms] <- 1
+posv <- zoo::na.locf(posv)
+posv <- rutils::lagit(posv)
+pnls <- retp*posv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_topsbottoms_insample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of in-sample VTI strategy
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="Price Tops and Bottoms Strategy In-Sample") %>%
+  dyAxis("y", label="VTI", independentTicks=TRUE) %>%
+  dyAxis("y2", label="Strategy", independentTicks=TRUE) %>%
+  dySeries(name="VTI", axis="y", label="VTI", strokeWidth=2, col="blue") %>%
+  dySeries(name="Strategy", axis="y2", label="Strategy", strokeWidth=2, col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictors of Price Extremes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The return volatility and trading volumes may be used as predictors in a classification model, in order to identify \emph{overbought} and \emph{oversold} conditions.
+      \vskip1ex
+      The trailing \emph{volume z-score} is equal to the volume $v_i$ minus the trailing average volumes $\bar{v_i}$ divided by the volatility of the volumes $\sigma_i$:
+      \begin{displaymath}
+        z_i = \frac{v_i - \bar{v_i}}{\sigma_i}
+      \end{displaymath}
+      Trading volumes are typically higher when prices drop and they are also positively correlated with the return volatility.
+      \vskip1ex
+      The \emph{volatility z-score} is equal to the spot volatility $v_i$ minus the trailing average volatility $\bar{v_i}$ divided by the standard deviation of the volatility $\sigma_i$:
+      \begin{displaymath}
+        z_i = \frac{v_i - \bar{v_i}}{\sigma_i}
+      \end{displaymath}
+      Volatility is typically higher when prices drop and it's also positively correlated with the trading volumes.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate the volatility z-scores
+volat <- HighFreq::roll_var_ohlc(ohlc=ohlc, look_back=look_back, scale=FALSE)
+volatm <- HighFreq::roll_mean(volat, look_back)
+volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volat), look_back))
+volatsd[1] <- 0
+volatz <- ifelse(volatsd > 0, (volat - volatm)/volatsd, 0)
+colnames(volatz) <- "volat"
+# Calculate the volume z-scores
+volum <- quantmod::Vo(ohlc)
+volumean <- HighFreq::roll_mean(volum, look_back)
+volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volum), look_back))
+volumsd[1] <- 0
+volumz <- ifelse(volumsd > 0, (volum - volumean)/volumsd, 0)
+colnames(volumz) <- "volume"
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Z-Scores}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trailing \emph{z-score} $z_i$ of a price $p_i$ can be defined as the \emph{standardized residual} of the linear regression with respect to time $t_i$ or some other variable:
+      \begin{displaymath}
+        z_i = \frac{p_i - (\alpha + \beta t_i)}{\sigma_i}
+      \end{displaymath}
+      Where $\alpha$ and $\beta$ are the \emph{regression coefficients}, and $\sigma_i$ is the standard deviation of the residuals.
+      \vskip1ex
+      The regression \emph{z-scores} can be used as rich or cheap indicators, either relative to past pricev, or relative to prices in a stock pair.
+      \vskip1ex
+      The regression residuals must be calculated in a loop, so it's much faster to Calculate the them using functions written in \texttt{C++} code.
+      \vskip1ex
+      The function \texttt{HighFreq::roll\_zscores()} calculates the residuals of a rolling regression.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing price regression z-scores
+datev <- matrix(zoo::index(closep))
+look_back <- 21
+controlv <- HighFreq::param_reg()
+regs <- HighFreq::roll_reg(respv=closep, predm=datev, look_back=look_back, controlv=controlv)
+regs <- drop(regs[, NCOL(regs)])
+regs[1:look_back] <- 0
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/features_regr_zscores.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of z-scores of VTI prices
+pricev <- cbind(closep, regs)
+colnames(pricev) <- c("VTI", "Z-scores")
+colnamev <- colnames(pricev)
+dygraphs::dygraph(pricev["2009"], main="VTI Price Z-Scores") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+% Copied from machine_learning.Rnw
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Logistic} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{logistic} function expresses the probability of a numerical variable ranging over the whole interval of real numbers:
+      \begin{displaymath}
+        p(x) = \frac{1}{1 + \exp(-\lambda x)}
+      \end{displaymath}
+      Where $\lambda$ is the scale (dispersion) parameter.
+      \vskip1ex
+      The \emph{logistic} function is often used as an activation function in neural networks, and logistic regression can be viewed as a perceptron (single neuron network).
+      \vskip1ex
+      The \emph{logistic} function can be inverted to obtain the \emph{Odds Ratio} (the ratio of probabilities for favorable to unfavorable outcomes):
+      \begin{displaymath}
+        \frac{p(x)}{1 - p(x)} = \exp(\lambda x)
+      \end{displaymath}
+      The function \texttt{plogis()} gives the cumulative probability of the \emph{Logistic} distribution,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/logistic_fun.png}
+        <<echo=TRUE,eval=FALSE>>=
+lambdav <- c(0.5, 1, 1.5)
+colorv <- c("red", "blue", "green")
+# Plot three curves in loop
+for (it in 1:3) {
+  curve(expr=plogis(x, scale=lambdav[it]),
+        xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
+        col=colorv[it], add=(it>1))
+}  # end for
+# Add title
+title(main="Logistic function", line=0.5)
+# Add legend
+legend("topleft", title="Scale parameters",
+       paste("lambda", lambdav, sep="="), y.intersp=0.4,
+       inset=0.05, cex=0.8, lwd=6, bty="n", lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Forecasting Stock Price Tops and Bottoms Using Logistic Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Consider a model which uses the weighted average of the volatility, trading volume, and regression z-scores, to forecast a stock top (overbought condition) or a bottom (oversold condition).
+      \vskip1ex
+      The residuals are the differences between the actual response values ($0$ and $1$), and the calculated probabilities of default.
+      \vskip1ex
+      The residuals are not normally distributed, so the data is fitted using the \emph{maximum likelihood} method, instead of least squares.
+      <<echo=TRUE,eval=FALSE>>=
+# Define predictor for tops including intercept column
+predm <- cbind(volatz, volumz, regs)
+predm[1, ] <- 0
+predm <- rutils::lagit(predm)
+# Fit in-sample logistic regression for tops
+logmod <- glm(tops ~ predm, family=binomial(logit))
+summary(logmod)
+coeff <- logmod$coefficients
+fcasts <- drop(cbind(rep(1, nrows), predm) %*% coeff)
+ordern <- order(fcasts)
+# Calculate the in-sample forecasts from logistic regression model
+fcasts <- 1/(1 + exp(-fcasts))
+all.equal(logmod$fitted.values, fcasts, check.attributes=FALSE)
+hist(fcasts)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_stocktops.png}
+      <<echo=TRUE,eval=FALSE>>=
+plot(x=fcasts[ordern], y=tops[ordern],
+     main="Logistic Regression of Stock Tops", 
+     col="orange", xlab="predictor", ylab="top")
+lines(x=fcasts[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n", lwd=6,
+       legend=c("tops", "logit fitted values"), y.intersp=0.5, 
+       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Forecasting Errors of Stock Tops and Bottoms}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
+      \vskip1ex
+      Let the \emph{null hypothesis} be that the data point is not a top: \texttt{tops = FALSE}.
+      \vskip1ex
+      A \emph{positive} result corresponds to rejecting the null hypothesis (\texttt{tops = TRUE}), while a \emph{negative} result corresponds to accepting the null hypothesis (\texttt{tops = FALSE}).
+      \vskip1ex
+      The forecasts are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
+      \vskip1ex
+      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), when \texttt{tops = FALSE} but it's classified as \texttt{tops = TRUE}.
+      \vskip1ex
+      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), when \texttt{tops = TRUE} but it's classified as \texttt{tops = FALSE}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define discrimination threshold value
+threshv <- quantile(fcasts, confl[2])
+# Calculate the confusion matrix in-sample
+confmat <- table(actual=!tops, forecast=(fcasts < threshv))
+confmat
+# Calculate the FALSE positive (type I error)
+sum(tops & (fcasts < threshv))
+# Calculate the FALSE negative (type II error)
+sum(!tops & (fcasts > threshv))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Confusion Matrix of a Binary Classification Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
+      \vskip1ex
+      \newcommand\MyBox[2]{
+        \fbox{\lower0.75cm
+          \vbox to 1.2cm{\vfil
+            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
+            \vfil}
+        }
+      }
+      \renewcommand\arraystretch{0.3}
+      \setlength\tabcolsep{0pt}
+      {\tiny
+      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
+      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
+      & \multicolumn{2}{c}{\bfseries Forecast} & \\
+      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
+      & {\bfseries Null is FALSE} & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
+      & {\bfseries Null is TRUE} & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
+      \end{tabular}}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the FALSE positive and FALSE negative rates
+confmat <- confmat / rowSums(confmat)
+c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+      @
+      <<echo=FALSE,eval=FALSE,results='asis'>>=
+# Below is an unsuccessful attempt to draw confusion matrix using xtable
+confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
+dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
+                                   actual=c("FALSE", "TRUE"))
+print(xtable::xtable(confusion_matrix,
+      caption="Confusion Matrix"),
+      caption.placement="top",
+      comment=FALSE, size="scriptsize",
+      include.rownames=TRUE,
+      include.colnames=TRUE)
+# end unsuccessful attempt to draw confusion table using xtable
+      @
+    \column{0.5\textwidth}
+      Let the \emph{null hypothesis} be that the data point is not a top: \texttt{tops = FALSE}.
+      \vskip1ex
+      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
+      \vskip1ex
+      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
+      \vskip1ex
+      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
+      \vskip1ex
+      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
+      \vskip1ex
+      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
+      \vskip1ex
+      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Receiver Operating Characteristic (ROC) Curve for Stock Tops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      \vskip1ex
+      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
+      \vskip1ex
+      The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
+      <<echo=TRUE,eval=FALSE>>=
+# Confusion matrix as function of threshold
+confun <- function(actual, fcasts, threshv) {
+  forb <- (fcasts < threshv)
+  conf <- matrix(c(sum(!actual & !forb), sum(actual & !forb), 
+                   sum(!actual & forb), sum(actual & forb)), ncol=2)
+  conf <- conf / rowSums(conf)
+  c(typeI=conf[2, 1], typeII=conf[1, 2])
+}  # end confun
+confun(!tops, fcasts, threshv=threshv)
+# Define vector of discrimination thresholds
+threshv <- quantile(fcasts, seq(0.01, 0.99, by=0.01))
+# Calculate the error rates
+errorr <- sapply(threshv, confun,
+  actual=!tops, fcasts=fcasts)  # end sapply
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+# Calculate the informedness
+informv <- 2 - rowSums(errorr)
+plot(threshv, informv, t="l", main="Informedness")
+# Find the threshold corresponding to highest informedness
+threshm <- threshv[which.max(informv)]
+topf <- (fcasts > threshm)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_stocktops_roc.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the area under ROC curve (AUC)
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+# Plot ROC Curve for stock tops
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     main="ROC Curve for Stock Tops", type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Receiver Operating Characteristic (ROC) Curve for Stock Bottoms}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      \vskip1ex
+      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
+      \vskip1ex
+      The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
+      <<echo=TRUE,eval=FALSE>>=
+# Fit in-sample logistic regression for bottoms
+logmod <- glm(bottoms ~ predm, family=binomial(logit))
+summary(logmod)
+# Calculate the in-sample forecast from logistic regression model
+coeff <- logmod$coefficients
+fcasts <- drop(cbind(rep(1, nrows), predm) %*% coeff)
+fcasts <- 1/(1 + exp(-fcasts))
+# Calculate the error rates
+errorr <- sapply(threshv, confun,
+  actual=!bottoms, fcasts=fcasts)  # end sapply
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+# Calculate the informedness
+informv <- 2 - rowSums(errorr)
+plot(threshv, informv, t="l", main="Informedness")
+# Find the threshold corresponding to highest informedness
+threshm <- threshv[which.max(informv)]
+botf <- (fcasts > threshm)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_bottoms_roc.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the area under ROC curve (AUC)
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+# Plot ROC Curve for stock tops
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     main="ROC Curve for Stock Bottoms", type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Logistic Tops and Bottoms Strategy In-sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The logistic strategy forecasts the tops and bottoms of pricev, using a logistic regression model with the volatility and trading volumes as predictors.
+      \vskip1ex
+      Averaging the forecasts over time improves strategy performance because of the bias-variance tradeoff.
+      \vskip1ex
+      It makes sense to average the forecasts over time because they are forecasts for future time intervals, not just a single point in time.
+      <<echo=TRUE,eval=FALSE>>=
+# Average the signals over time
+topsav <- HighFreq::roll_sum(matrix(topf), 5)/5
+botsav <- HighFreq::roll_sum(matrix(botf), 5)/5
+# Simulate in-sample VTI strategy
+posv <- (botsav - topsav)
+# Standard strategy
+# posv <- rep(NA_integer_, NROW(retp))
+# posv[1] <- 0
+# posv[topf] <- (-1)
+# posv[botf] <- 1
+# posv <- zoo::na.locf(posv)
+posv <- rutils::lagit(posv)
+pnls <- retp*posv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_topbottom_insample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of in-sample VTI strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="Logistic Top and Bottom Strategy In-Sample") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Logistic Tops and Bottoms Strategy Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The logistic strategy forecasts the tops and bottoms of pricev, using a logistic regression model with the volatility and trading volumes as predictors.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Define in-sample and out-of-sample intervals
+insample <- 1:(nrows %/% 2)
+outsample <- (nrows %/% 2 + 1):nrows
+# Fit in-sample logistic regression for tops
+logmod <- glm(tops[insample] ~ predm[insample, ], family=binomial(logit))
+fitv <- logmod$fitted.values
+coefftop <- logmod$coefficients
+# Calculate the error rates and best threshold value
+errorr <- sapply(threshv, confun,
+  actual=!tops[insample], fcasts=fitv)  # end sapply
+errorr <- t(errorr)
+informv <- 2 - rowSums(errorr)
+threshtop <- threshv[which.max(informv)]
+# Fit in-sample logistic regression for bottoms
+logmod <- glm(bottoms[insample] ~ predm[insample, ], family=binomial(logit))
+fitv <- logmod$fitted.values
+coeffbot <- logmod$coefficients
+# Calculate the error rates and best threshold value
+errorr <- sapply(threshv, confun,
+  actual=!bottoms[insample], fcasts=fitv)  # end sapply
+errorr <- t(errorr)
+informv <- 2 - rowSums(errorr)
+threshbot <- threshv[which.max(informv)]
+# Calculate the out-of-sample forecasts from logistic regression model
+predictout <- cbind(rep(1, NROW(outsample)), predm[outsample, ])
+fcasts <- drop(predictout %*% coefftop)
+fcasts <- 1/(1 + exp(-fcasts))
+topf <- (fcasts > threshtop)
+fcasts <- drop(predictout %*% coeffbot)
+fcasts <- 1/(1 + exp(-fcasts))
+botf <- (fcasts > threshbot)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_topbottom_outsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate in-sample VTI strategy
+topsav <- HighFreq::roll_sum(matrix(topf), 5)/5
+botsav <- HighFreq::roll_sum(matrix(botf), 5)/5
+posv <- (botsav - topsav)
+posv <- rutils::lagit(posv)
+pnls <- retp[outsample, ]*posv
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retp[outsample, ], pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of in-sample VTI strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="Logistic Strategy Out-of-Sample") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Forecasting Stock Tops and Bottoms Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
+      \vskip1ex
+      The method \texttt{predict.glm()} produces forecasts for a generalized linear (\emph{glm}) model, in the form of \texttt{numeric} probabilities, not the \texttt{Boolean} response variable.
+      \vskip1ex
+      The \texttt{Boolean} forecasts are obtained by comparing the \emph{forecast probabilities} with a \emph{discrimination threshold}.
+      \vskip1ex
+      Let the \emph{null hypothesis} be that the data point is not a top: \texttt{tops = FALSE}.
+      \vskip1ex
+      If the \emph{forecast probability} is greater than the \emph{discrimination threshold}, then the forecast is that the data point is not a top and that the \emph{null hypothesis} is \texttt{TRUE}.
+      \vskip1ex
+      The \emph{in-sample forecasts} are just the \emph{fitted values} of the \emph{glm} model.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Fit logistic regression over training data
+set.seed(1121)  # Reset random number generator
+nrows <- NROW(Default)
+samplev <- sample.int(n=nrows, size=nrows/2)
+trainset <- Default[samplev, ]
+logmod <- glm(formulav, data=trainset, family=binomial(logit))
+# Forecast over test data out-of-sample
+testset <- Default[-samplev, ]
+fcasts <- predict(logmod, newdata=testset, type="response")
+# Calculate the confusion matrix out-of-sample
+table(actual=!testset$default, 
+      forecast=(fcasts < threshv))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Forecasting Returns Using Logistic Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weighted average of the volatility, trading volume, and regression z-scores can be used to forecast the sign of future returns.
+      \vskip1ex
+      The residuals are the differences between the actual response values ($0$ and $1$), and the calculated probabilities of default.
+      \vskip1ex
+      The residuals are not normally distributed, so the data is fitted using the \emph{maximum likelihood} method, instead of least squares.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define response as the multi-day returns
+lagg <- 5
+retsf <- rutils::diffit(closep, lagg=5)
+retsf <- drop(coredata(retsf))
+# Fit in-sample logistic regression for positive returns
+retos <- (retsf > 0)
+logmod <- glm(retspos ~ predm - 1, family=binomial(logit))
+summary(logmod)
+coeff <- logmod$coefficients
+fcasts <- predm %*% coeff
+fcasts <- 1/(1 + exp(-fcasts))
+# Calculate the error rates
+threshv <- quantile(fcasts, seq(0.01, 0.99, by=0.01))
+errorr <- sapply(threshv, confun,
+  actual=!retspos, fcasts=fcasts)  # end sapply
+errorr <- t(errorr)
+# Calculate the threshold corresponding to highest informedness
+informv <- 2 - rowSums(errorr)
+plot(threshv, informv, t="l", main="Informedness")
+threshm <- threshv[which.max(informv)]
+forecastpos <- (fcasts > threshm)
+# Fit in-sample logistic regression for negative returns
+retsneg <- (retsf < 0)
+logmod <- glm(retsneg ~ predm - 1, family=binomial(logit))
+summary(logmod)
+coeff <- logmod$coefficients
+fcasts <- predm %*% coeff
+fcasts <- 1/(1 + exp(-fcasts))
+# Calculate the error rates
+errorr <- sapply(threshv, confun,
+  actual=!retsneg, fcasts=fcasts)  # end sapply
+errorr <- t(errorr)
+# Calculate the threshold corresponding to highest informedness
+informv <- 2 - rowSums(errorr)
+plot(threshv, informv, t="l", main="Informedness")
+threshm <- threshv[which.max(informv)]
+forecastneg <- (fcasts > threshm)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Logistic Forecasting Returns Strategy In-sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Explain why the strategy uses the minus of the signals.
+      \vskip1ex
+      The logistic strategy forecasts the sign of returns, using a logistic regression model with the volatility and trading volumes as predictors.
+      \vskip1ex
+      Averaging the forecasts over time improves strategy performance because of the bias-variance tradeoff.
+      \vskip1ex
+      It makes sense to average the forecasts over time because they are forecasts for future time intervals, not just a single point in time.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate in-sample VTI strategy
+negav <- HighFreq::roll_sum(matrix(forecastneg), lagg)/lagg
+posav <- HighFreq::roll_sum(matrix(forecastpos), lagg)/lagg
+posv <- (negav - posav)
+# posv <- ifelse(forecastpos, 1, 0)
+# posv <- ifelse(forecastneg, -1, posv)
+posv <- rutils::lagit(posv)
+pnls <- retp*posv
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_logistic_rets_insample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of in-sample VTI strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="Logistic Forecasting Returns") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Logistic Strategy Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The logistic strategy forecasts the tops and bottoms of pricev, using a logistic regression model with the volatility and trading volumes as predictors.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Define in-sample and out-of-sample intervals
+insample <- 1:(nrows %/% 2)
+outsample <- (nrows %/% 2 + 1):nrows
+# Fit in-sample logistic regression for tops
+logmod <- glm(tops[insample] ~ predm[insample, ], family=binomial(logit))
+fitv <- logmod$fitted.values
+coefftop <- logmod$coefficients
+# Calculate the error rates and best threshold value
+errorr <- sapply(threshv, confun,
+  actual=!tops[insample], fcasts=fitv)  # end sapply
+errorr <- t(errorr)
+informv <- 2 - rowSums(errorr)
+threshtop <- threshv[which.max(informv)]
+# Fit in-sample logistic regression for bottoms
+logmod <- glm(bottoms[insample] ~ predm[insample, ], family=binomial(logit))
+fitv <- logmod$fitted.values
+coeffbot <- logmod$coefficients
+# Calculate the error rates and best threshold value
+errorr <- sapply(threshv, confun,
+  actual=!bottoms[insample], fcasts=fitv)  # end sapply
+errorr <- t(errorr)
+informv <- 2 - rowSums(errorr)
+threshbot <- threshv[which.max(informv)]
+# Calculate the out-of-sample forecasts from logistic regression model
+predictout <- cbind(rep(1, NROW(outsample)), predm[outsample, ])
+fcasts <- drop(predictout %*% coefftop)
+fcasts <- 1/(1 + exp(-fcasts))
+topf <- (fcasts > threshtop)
+fcasts <- drop(predictout %*% coeffbot)
+fcasts <- 1/(1 + exp(-fcasts))
+botf <- (fcasts > threshbot)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_topbottom_outsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate out-of-sample VTI strategy
+posv <- rep(NA_integer_, NROW(outsample))
+posv[1] <- 0
+posv[topf] <- (-1)
+posv[botf] <- 1
+posv <- zoo::na.locf(posv)
+posv <- rutils::lagit(posv)
+pnls <- retp[outsample, ]*posv
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retp[outsample, ], pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of in-sample VTI strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="Logistic Strategy Out-of-Sample") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%
+% \section{Trend Following Strategies}
+
+\end{document}

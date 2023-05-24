@@ -265,7 +265,7 @@ ratem <- zoo::na.locf(ratem, na.rm=FALSE)
 ratem <- zoo::na.locf(ratem, fromLast=TRUE)
 # Calculate daily percentage rates changes
 retp <- rutils::diffit(log(ratem))
-# De-mean the returns
+# Center (de-mean) the returns
 retp <- lapply(retp, function(x) {x - mean(x)})
 retp <- rutils::do_call(cbind, retp)
 sapply(retp, mean)
@@ -585,7 +585,7 @@ for (ordern in 1:NCOL(pcad$rotation)) {
       \vskip1ex
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
-# Standardize (de-mean and scale) the returns
+# Standardize (center and scale) the returns
 retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
 retp <- rutils::do_call(cbind, retp)
 sapply(retp, mean)
@@ -2359,6 +2359,7 @@ tail(HighFreq::SPY)
 \end{frame}
 
 
+% From machine_learning.Rnw
 %%%%%%%%%%%%%%%
 \subsection{Reading \protect\emph{TAQ} Data From \texttt{.csv} Files}
 \begin{frame}[fragile,t]{\subsecname}
@@ -2366,7 +2367,7 @@ tail(HighFreq::SPY)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{TAQ} data stored in \texttt{.csv} files can be very large, so it's better to read it using the function \texttt{data.table::fread()} which is much faster than the function \texttt{read.csv()}.
+      Trade and Quote (\emph{TAQ}) data stored in \texttt{.csv} files can be very large, so it's better to read it using the function \texttt{data.table::fread()} which is much faster than the function \texttt{read.csv()}.
       \vskip1ex
       Each \emph{trade} or \emph{quote} contributes a \emph{tick} (row) of data, and the number of ticks can be very large (hundred of thousands per day, or more).
       \vskip1ex
@@ -2378,10 +2379,10 @@ tail(HighFreq::SPY)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(rutils)
+library(HighFreq)
 # Read TAQ trade data from csv file
-taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.csv")
-# Inspect the TAQ data
+taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.csv")
+# Inspect the TAQ data in data.table format
 taq
 class(taq)
 colnames(taq)
@@ -2404,13 +2405,12 @@ class(datev)
 last(datev)
 unclass(last(datev))
 as.numeric(last(datev))
+# Calculate the number of seconds
+nsecs <- as.numeric(last(datev)) - as.numeric(first(datev))
 # Calculate the number of ticks per second
-n_secs <- as.numeric(last(datev)) - as.numeric(first(datev))
 NROW(taq)/(6.5*3600)
 # Select TAQ data columns
 taq <- taq[, .(price=PRICE, volume=SIZE)]
-# Add date-time index
-taq <- cbind(index=datev, taq)
       @
   \end{columns}
 \end{block}
@@ -2418,6 +2418,7 @@ taq <- cbind(index=datev, taq)
 \end{frame}
 
 
+% From machine_learning.Rnw
 %%%%%%%%%%%%%%%
 \subsection{Microstructure Noise in High Frequency Data}
 \begin{frame}[fragile,t]{\subsecname}
@@ -2425,33 +2426,32 @@ taq <- cbind(index=datev, taq)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      High frequency data contains \emph{microstructure noise} in the form of \emph{price jumps} and the \emph{bid-ask bounce}.
+      High frequency data contains \emph{microstructure noise} in the form of \emph{price spikes} and the \emph{bid-ask bounce}.
       \vskip1ex
-      \emph{Price jumps} are single ticks with prices far away from the average.
+      \emph{Price spikes} are single ticks with prices far away from the average.
       \vskip1ex
-      \emph{Price jumps} are often caused by data collection errors, but sometimes they represent actual very large lot trades.
+      \emph{Price spikes} are often caused by data collection errors, but sometimes they represent actual trades with very large lot (trade) sizes.
       \vskip1ex
       The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
       \vskip1ex
-      The \emph{bid-ask bounce} creates an illusion of rapidly changing pricev, while in fact the mid price is constant.
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_dygraph.png}
-      % \vspace{-1em}
-      % \includegraphics[width=0.45\paperwidth]{figure/hf_stocks_bounce.png}
+      The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in reality the mid price is unchanged.
       <<echo=TRUE,eval=FALSE>>=
 # Coerce trade ticks to xts series
-xtsv <- xts::xts(taq[, .(price, volume)], taq$index)
-colnames(xtsv) <- paste(symbol, c("Close", "Volume"), sep=".")
-save(xtsv, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xtsv, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# Plot dygraph
-dygraphs::dygraph(xtsv$XLK.Close,
-  main="XLK Trade Ticks for 2020-03-16")
-# Plot in x11 window
-x11(width=6, height=5)
-quantmod::chart_Series(x=xtsv$XLK.Close,
-  name="XLK Trade Ticks for 2020-03-16")
+xlk <- xts::xts(taq[, .(price, volume)], datev)
+colnames(xlk) <- c("price", "volume")
+save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
       @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_raw.png}
+      % \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph
+dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+      @
+      % \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_bounce.png}
   \end{columns}
 \end{block}
 
@@ -2465,33 +2465,41 @@ quantmod::chart_Series(x=xtsv$XLK.Close,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Most of the trade ticks are \emph{odd lots} with a small volume of less than $100$ shares.
+      The trading volumes represent the number of shares traded at a given price.  
+      \vskip1ex
+      The histogram of the trading volumes shows that the highest frequencies are for \texttt{100} shares and for round lots (trades that are multiples of \texttt{100} shares.)
+      \vskip1ex
+      There are also significant frequencies for \emph{odd lots}, with small volumes of less than \texttt{100} shares.
       \vskip1ex
       The \emph{odd lot} ticks are often removed to reduce the size of the \emph{TAQ} data.
       \vskip1ex
       Selecting only the large lot trades reduces microstructure noise (price jumps, bid-ask bounce) in high frequency data.
       <<echo=TRUE,eval=FALSE>>=
-# Select the large lots greater than 100
+# Select the large trade lots of at least 100 shares
 dim(taq)
-big_ticks <- taq[taq$volume > 100]
-dim(big_ticks)
+tickb <- taq[taq$volume >= 100]
+dim(tickb)
 # Number of large lot ticks per second
-NROW(big_ticks)/(6.5*3600)
+NROW(tickb)/(6.5*3600)
+# Plot histogram of the trading volumes
+hist(tickb$volume, main="Histogram of XLK Trading Volumes", 
+     breaks=100000, xlim=c(1, 400), xlab="number of shares")
 # Save trade ticks with large lots
-data.table::fwrite(big_ticks, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316_biglots.csv")
+data.table::fwrite(tickb, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316_biglots.csv")
 # Coerce trade prices to xts
-xtsv <- xts::xts(big_ticks[, .(price, volume)], big_ticks$index)
-colnames(xtsv) <- c("XLK.Close", "XLK.Volume")
+xlkb <- xts::xts(tickb[, .(price, volume)], tickb$index)
+colnames(xlkb) <- c("price", "volume")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_biglots_dygraph.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_biglots.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of the large lots
-dygraphs::dygraph(xtsv$XLK.Close,
-  main="XLK Trade Ticks for 2020-03-16 (large lots only)")
+dygraphs::dygraph(xlkb$price, 
+  main="XLK Prices for Trades of At Least 100 Shares") %>%
+  dyOptions(colors="blue", strokeWidth=1)
 # Plot the large lots
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtsv$XLK.Close,
+quantmod::chart_Series(x=xlk$price,
   name="XLK Trade Ticks for 2020-03-16 (large lots only)")
       @
   \end{columns}
@@ -2516,32 +2524,31 @@ quantmod::chart_Series(x=xtsv$XLK.Close,
       The function \texttt{as.POSIXct()} coerces objects to class \texttt{POSIXct}.
       <<echo=TRUE,eval=FALSE>>=
 # Round time index to seconds
-good_ticks[, zoo::index := as.POSIXct(round.POSIXt(index, "secs"))]
+tickg[, zoo::index := as.POSIXct(round.POSIXt(index, "secs"))]
 # Aggregate to OHLC by seconds
-ohlc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
+ohlc <- tickg[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
 # Round time index to minutes
-good_ticks[, zoo::index := as.POSIXct(round.POSIXt(index, "mins"))]
+tickg[, zoo::index := as.POSIXct(round.POSIXt(index, "mins"))]
 # Aggregate to OHLC by minutes
-ohlc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
+ohlc <- tickg[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_ohlc.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_ohlc.png}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce OHLC prices to xts
-xtsv <- xts::xts(ohlc[, -"index"], ohlc$index)
+ohlc <- xts::xts(ohlc[, -"index"], ohlc$index)
 # Plot dygraph of the OHLC prices
-dygraphs::dygraph(xtsv[, -5], main="XLK Trade Ticks for 2020-03-16 (OHLC)") %>%
+dygraphs::dygraph(ohlc[, -5], main="XLK Trade Ticks for 2020-03-16 (OHLC)") %>%
   dyCandlestick()
 # Plot the OHLC prices
 x11(width=6, height=5)
-quantmod::chart_Series(x=xtsv, TA="add_Vo()",
+quantmod::chart_Series(x=ohlc, TA="add_Vo()",
   name="XLK Trade Ticks for 2020-03-16 (OHLC)")
       @
   \end{columns}
 \end{block}
 
 \end{frame}
-
 
 
 %%%%%%%%%%%%%%%
@@ -2934,7 +2941,7 @@ sapply(vol_rolling, range)
       @
     \column{0.5\textwidth}
       % \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_vol.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_vol_rolling.png}
         <<echo=TRUE,eval=FALSE>>=
 # Plot rolling volatility
 x11(width=6, height=5)
@@ -3040,17 +3047,17 @@ datav <- log(cbind(volumd, volatd))
 colnamev <- colnames(datav)
 dframe <- as.data.frame(datav)
 formulav <- as.formula(paste(colnamev, collapse="~"))
-model <- lm(formulav, data=dframe)
+regmod <- lm(formulav, data=dframe)
 # Durbin-Watson test for autocorrelation of residuals
-lmtest::dwtest(model)
+lmtest::dwtest(regmod)
 # Regress diff log of daily volume vs volatility
 dframe <- as.data.frame(rutils::diffit(datav))
-model <- lm(formulav, data=dframe)
-lmtest::dwtest(model)
-summary(model)
+regmod <- lm(formulav, data=dframe)
+lmtest::dwtest(regmod)
+summary(regmod)
 plot(formulav, data=dframe, main="SPY Daily Trading Volume vs Volatility (log scale)")
-abline(model, lwd=3, col="red")
-mtext(paste("beta =", round(coef(model)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
+abline(regmod, lwd=3, col="red")
+mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3094,13 +3101,13 @@ dframe <- as.data.frame(datav)
       \includegraphics[width=0.45\paperwidth]{figure/hf_hourly_volume_volat_reg.png}
       <<echo=TRUE,eval=FALSE>>=
 formulav <- as.formula(paste(colnames(datav), collapse="~"))
-model <- lm(formulav, data=dframe)
-lmtest::dwtest(model)
-summary(model)
+regmod <- lm(formulav, data=dframe)
+lmtest::dwtest(regmod)
+summary(regmod)
 plot(formulav, data=dframe,
      main="SPY Hourly Trading Volume vs Volatility (log scale)")
-abline(model, lwd=3, col="red")
-mtext(paste("beta =", round(coef(model)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
+abline(regmod, lwd=3, col="red")
+mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
       @
   \end{columns}
 \end{block}
@@ -3222,7 +3229,7 @@ x11(width=6, height=8)
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
 layout(matrix(c(1, 2), ncol=1), widths=c(6, 6), heights=c(4, 4))
 # Plot the partial autocorrelations of minutely SPY returns
-pacfv <- pacf(as.numeric(retp), lag=10,
+pacfl <- pacf(as.numeric(retp), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Minutely SPY Returns", line=1)
 # Plot the partial autocorrelations of scaled SPY returns
@@ -3230,7 +3237,7 @@ pacfs <- pacf(as.numeric(retsc), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Scaled SPY Returns", line=1)
 # Calculate the sums of partial autocorrelations
-sum(pacfv$acf)
+sum(pacfl$acf)
 sum(pacfs$acf)
       @
     \column{0.5\textwidth}
@@ -3512,8 +3519,8 @@ formulav <- as.formula(paste(colnames(datav)[1],
           paste(paste(colnames(datav)[-1],
             collapse=" + "), "- 1"), sep="~"))
 formulav
-model <- lm(formulav, data=datav)
-summary(model)$coef
+regmod <- lm(formulav, data=datav)
+summary(regmod)$coef
 summary(lm(formulav, data=datav["/2011-01-01"]))$coef
 summary(lm(formulav, data=datav["2011-01-01/"]))$coef
       @
@@ -3524,7 +3531,7 @@ interval <- "2013-12-01/"
 plot(formulav, data=datav[interval],
      xlim=c(-2e-09, 2e-09),
      cex=0.6, xlab="skew", ylab="rets")
-abline(model, col="blue", lwd=2)
+abline(regmod, col="blue", lwd=2)
       @
   \end{columns}
 \end{block}
@@ -3586,21 +3593,16 @@ chart_Series(pnl[endpoints(pnl, on="hours"), ],
       The trend following reverses direction when the fast-moving \emph{VWAP} crosses the slow-moving one.
       <<earl_vwap_plot,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 # vwap plot
-vwap_short <- vwapv(xtsv=SPY, look_back=70)
-vwap_long <- vwapv(xtsv=SPY, look_back=225)
-vwap_diff <- vwap_short - vwap_long
-colnames(vwap_diff) <- paste0(symbol, ".vwap")
+vwapf <- vwapv(xtsv=SPY, look_back=70)
+vwaps <- vwapv(xtsv=SPY, look_back=225)
+vwapd <- vwapf - vwaps
+colnames(vwapd) <- paste0(symbol, ".vwap")
 interval <- "2010-05-05/2010-05-07"
-invisible(chart_Series(x=Cl(SPY[interval]),
-               name=paste(symbol, "plus VWAP")))
-invisible(add_TA(vwap_short[interval],
-         on=1, col="red", lwd=2))
-invisible(add_TA(vwap_long[interval],
-         on=1, col="blue", lwd=2))
-invisible(add_TA(vwap_diff[interval] > 0, on=-1,
-         col="lightgreen", border="lightgreen"))
-add_TA(vwap_diff[interval] < 0, on=-1,
-       col="lightgrey", border="lightgrey")
+invisible(chart_Series(x=Cl(SPY[interval]), name=paste(symbol, "plus VWAP")))
+invisible(add_TA(vwapf[interval], on=1, col="red", lwd=2))
+invisible(add_TA(vwaps[interval], on=1, col="blue", lwd=2))
+invisible(add_TA(vwapd[interval] > 0, on=-1, col="lightgreen", border="lightgreen"))
+add_TA(vwapd[interval] < 0, on=-1, col="lightgrey", border="lightgrey")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/earl_vwap_plot-1}
@@ -3621,19 +3623,19 @@ add_TA(vwap_diff[interval] < 0, on=-1,
       <<echo=(-(1:6))>>=
 # vwap scatterplot
 # retp <- calc_rets(xts_data=SPY)
-vwap_short <- vwapv(xtsv=SPY, look_back=70)
-vwap_long <- vwapv(xtsv=SPY, look_back=225)
-vwap_diff <- vwap_short - vwap_long
-colnames(vwap_diff) <- paste0(symbol, ".vwap")
-lag_vwap <- rutils::lag_it(vwap_diff)
+vwapf <- vwapv(xtsv=SPY, look_back=70)
+vwaps <- vwapv(xtsv=SPY, look_back=225)
+vwapd <- vwapf - vwaps
+colnames(vwapd) <- paste0(symbol, ".vwap")
+lag_vwap <- rutils::lag_it(vwapd)
 lag_vwap[1, ] <- 0
 datav <- cbind(retp[, 1], sign(lag_vwap))
 formulav <- as.formula(paste(colnames(datav)[1],
           paste(paste(colnames(datav)[-1],
             collapse=" + "), "- 1"), sep="~"))
 formulav
-model <- lm(formulav, data=datav)
-summary(model)$coef
+regmod <- lm(formulav, data=datav)
+summary(regmod)$coef
 summary(lm(formulav, data=datav["/2011-01-01"]))$coef
 summary(lm(formulav, data=datav["2011-01-01/"]))$coef
       @
@@ -3644,7 +3646,7 @@ summary(lm(formulav, data=datav["2011-01-01/"]))$coef
 interval <- "2013-12-01/"
 plot(formulav, data=cbind(retp[, 1], lag_vwap)[interval],
      cex=0.6, xlab="skew", ylab="rets")
-abline(model, col="blue", lwd=2)
+abline(regmod, col="blue", lwd=2)
       @
   \end{columns}
 \end{block}
@@ -3671,10 +3673,10 @@ abline(model, col="blue", lwd=2)
 # Cumulative PnL
 pnl <- cumsum(sign(lag_vwap)*retp[, 1])
 # Calculate frequency of trades
-50*sum(abs(sign(vwap_diff)-sign(lag_vwap)))/nrow(vwap_diff)
+50*sum(abs(sign(vwapd)-sign(lag_vwap)))/nrow(vwapd)
 # Calculate transaction costs
 bid_offer <- 0.001  # 10 bps for liquid ETFs
-bid_offer*sum(abs(sign(vwap_diff)-sign(lag_vwap)))
+bid_offer*sum(abs(sign(vwapd)-sign(lag_vwap)))
 @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/earl_vwap_strat-1}
