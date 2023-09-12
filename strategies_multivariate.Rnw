@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Multivariate Investment Strategies]{Multivariate Investment Strategies}
-\subtitle{FRE7241, Spring 2023}
+\subtitle{FRE7241, Fall 2023}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -1756,7 +1756,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 btmomtop <- function(retp, objfun, look_back=12, rebalf="months", topstocks=10, 
-                     bid_offer=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
+                     bidask=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
   # Perform loop over end points
   npts <- NROW(endd)
   pnls <- lapply(2:(npts-1), function(tday) {
@@ -1898,7 +1898,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 btmomweight <- function(retp, objfun, look_back=12, rebalf="months", 
-  bid_offer=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
+  bidask=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
   # Perform loop over end points
   npts <- NROW(endd)
   pnls <- lapply(2:(npts-1), function(tday) {
@@ -2016,8 +2016,8 @@ weightv <- rutils::lagit(weightv)
 # Calculate the momentum profits and losses
 pnls <- rowSums(weightv*retp)
 # Calculate the transaction costs
-bid_offer <- 0.0
-costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+bidask <- 0.0
+costs <- 0.5*bidask*rowSums(abs(rutils::diffit(weightv)))
 pnls <- (pnls - costs)
       @
     \column{0.5\textwidth}
@@ -2068,7 +2068,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
-btmomdaily <- function(retp, lambda=0.9, trend=1, bid_offer=0.0, ...) {
+btmomdaily <- function(retp, lambda=0.9, trend=1, bidask=0.0, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate the trailing Kelly ratio
   meanm <- HighFreq::run_mean(retp, lambda=lambda)
@@ -2080,7 +2080,7 @@ btmomdaily <- function(retp, lambda=0.9, trend=1, bid_offer=0.0, ...) {
   # Calculate the momentum profits and losses
   pnls <- trend*rowSums(weightv*retp)
   # Calculate the transaction costs
-  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+  costs <- 0.5*bidask*rowSums(abs(rutils::diffit(weightv)))
   (pnls - costs)
 }  # end btmomdaily
 @
@@ -2168,7 +2168,7 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
-btmomdailyhold <- function(retp, lambda=0.9, trend=1, bid_offer=0.0, ...) {
+btmomdailyhold <- function(retp, lambda=0.9, trend=1, bidask=0.0, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Calculate the trailing Kelly ratio
   meanm <- HighFreq::run_mean(retp, lambda=lambda)
@@ -2182,7 +2182,7 @@ btmomdailyhold <- function(retp, lambda=0.9, trend=1, bid_offer=0.0, ...) {
   # Calculate the momentum profits and losses
   pnls <- trend*rowSums(weightv*retp)
   # Calculate the transaction costs
-  costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+  costs <- 0.5*bidask*rowSums(abs(rutils::diffit(weightv)))
   (pnls - costs)
 }  # end btmomdailyhold
 @
@@ -2961,8 +2961,8 @@ weightv <- rutils::lagit(weightv)
 # Calculate the momentum profits and losses
 pnls <- rowSums(weightv*retp)
 # Calculate the transaction costs
-bid_offer <- 0.0
-costs <- 0.5*bid_offer*rowSums(abs(rutils::diffit(weightv)))
+bidask <- 0.0
+costs <- 0.5*bidask*rowSums(abs(rutils::diffit(weightv)))
 pnls <- (pnls - costs)
       @
     \column{0.5\textwidth}
@@ -3007,11 +3007,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Simulate a daily ETF momentum strategy
 source("/Users/jerzy/Develop/lecture_slides/scripts/back_test.R")
-pnls <- btmomdaily(retp=retp, look_back=152, bid_offer=bid_offer)
+pnls <- btmomdaily(retp=retp, look_back=152, bidask=bidask)
 # Perform sapply loop over look_backs
 look_backs <- seq(90, 190, by=10)
 pnls <- sapply(look_backs, btmomdaily,
-  retp=retp, bid_offer=bid_offer)
+  retp=retp, bidask=bidask)
 # Scale the momentum volatility to all-weather
 pnls <- apply(pnls, MARGIN=2, 
   function(pnl) sd(retaw)*pnl/sd(pnl))
@@ -3068,7 +3068,7 @@ legend("bottomleft", legend=colnames(pnls),
       \vskip1ex
       The \emph{out-of-sample} momentum strategy returns are calculated by multiplying the weights times the future returns.
       \vskip1ex
-      The \emph{transaction costs} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amounts of the \emph{risky assets}.
+      The \emph{transaction costs} are equal to half the \emph{bid-ask spread} $\delta$ times the absolute value of the traded dollar amounts of the \emph{risky assets}.
     \column{0.5\textwidth}
   \end{columns}
 \end{block}
@@ -3845,7 +3845,7 @@ roll_portf <- function(retx, # Excess returns
                        look_back=12, # Look-back interval
                        dimax=3, # Dimension reduction parameter
                        alpha=0.0, # Return shrinkage intensity
-                       bid_offer=0.0, # Bid-offer spread
+                       bidask=0.0, # Bid-offer spread
                        ...) {
   npts <- NROW(endd)
   startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
@@ -4542,7 +4542,7 @@ arma::mat back_test(const arma::mat& retx, // Asset excess returns
                     arma::uvec endp, // End points
                     double lambda = 0.0, // Decay factor for averaging the portfolio weights
                     double coeff = 1.0, // Multiplier of strategy returns
-                    double bid_offer = 0.0) { // The bid-offer spread
+                    double bidask = 0.0) { // The bid-ask spread
   
   double lambda1 = 1-lambda;
   arma::uword nweights = retp.n_cols;
@@ -4560,7 +4560,7 @@ arma::mat back_test(const arma::mat& retx, // Asset excess returns
     // Calculate out-of-sample returns
     pnls.rows(endp(it-1)+1, endp(it)) = retp.rows(endp(it-1)+1, endp(it))*weightv;
     // Add transaction costs
-    pnls.row(endp(it-1)+1) -= bid_offer*sum(abs(weightv - weights_past))/2;
+    pnls.row(endp(it-1)+1) -= bidask*sum(abs(weightv - weights_past))/2;
     // Copy the weights
     weights_past = weightv;
   }  // end for

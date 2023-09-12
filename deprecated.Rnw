@@ -1,0 +1,185 @@
+% Define knitr options
+% !Rnw weave=knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="tiny", fig.width=4, fig.height=4)
+options(width=80, dev="pdf")
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[9pt]{beamer}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% mathtools package for math symbols
+\usepackage{mathtools}
+% tikz package for plotting and tables
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{array}
+\usepackage{multirow}
+% bbm and bbold packages for unitary vector or matrix symbol
+\usepackage{bbm}
+\usepackage{bbold}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE_lectures.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+
+% Title page setup
+\title[Deprecated Slides]{Deprecated Slides}
+\subtitle{FRE7241, Fall 2023}
+\institute[NYU Tandon]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
+% \email{jp3900@nyu.edu}
+\date{\today}
+
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+%%%%%%%%%%%%%%%
+\section{Daily Autoregressive Strategies}
+
+
+
+%%%%%%%%%%%%%%%
+\subsection{depr: Autoregressive Strategy Using Average Past Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{out-of-sample} forecasts can be improved by using the rolling average of the returns as a predictor.
+      \vskip1ex
+      This is because the average of returns has a lower \emph{variance}.
+      \vskip1ex
+      But the average also has a higher \emph{bias} because it includes past returns that may be unrelated to the present.
+      \vskip1ex
+      Using the rolling average of returns as a predictor reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
+      <<echo=TRUE,eval=FALSE>>=
+# Define predictor as a rolling mean
+nagg <- 5
+predm <- HighFreq::roll_mean(matrix(retp), nagg)
+# Define predictor matrix for forecasting
+predm <- sapply(1+nagg*(0:dimax), rutils::lagit, input=predm)
+predm <- cbind(rep(1, nrows), predm)
+# Calculate the forecasts as function of the AR order
+fcasts <- lapply(2:NCOL(predm), function(ordern) {
+  predinv <- MASS::ginv(predm[insample, 1:ordern])
+  coeff <- drop(predinv %*% respv[insample])
+  drop(predm[outsample, 1:ordern] %*% coeff)
+})  # end lapply
+names(fcasts) <- paste0("n=", 2:NCOL(predm))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_sum.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the out-of-sample PnLs
+pnls <- sapply(fcasts, function(x) {
+  cumsum(sign(x)*retp[outsample])
+})  # end sapply
+colnames(pnls) <- names(fcasts)
+pnls <- xts::xts(pnls, datev[outsample])
+# Plot dygraph of out-of-sample PnLs
+colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls))
+dygraphs::dygraph(pnls[endd],
+  main="Autoregressive Strategies Using Rolling Average Predictor") %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyLegend(width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{depr: Autoregressive Strategy Using Average of Past Forecasts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{out-of-sample} forecasts can be further improved by using the average of past forecasts.
+      \vskip1ex
+      This is because the average of forecasts has a lower \emph{variance}.
+      \vskip1ex
+      But the average also has a higher \emph{bias} because it includes past forecasts that may be unrelated to the present.
+      \vskip1ex
+      Using the rolling average of past forecasts reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the PnLs using the average of past forecasts
+nagg <- 5
+pnls <- sapply(fcasts, function(x) {
+  x <- HighFreq::roll_mean(matrix(x), nagg)
+  cumsum(sign(x)*retp[outsample])
+})  # end sapply
+colnames(pnls) <- names(fcasts)
+pnls <- xts::xts(pnls, datev[outsample])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_forecasts.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of out-of-sample PnLs
+dygraphs::dygraph(pnls[endd],
+  main="Autoregressive Strategies Using Rolling Average Forecasts") %>%
+  dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyLegend(width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+
+
+\end{document}

@@ -130,6 +130,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/iter_ations/iterations/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/joincols/join_cols/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/joinumrows/join_rows/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/l_m/regmod/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/regmodsum/regsum/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/l_gd/lgd/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/la_st/lastv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/lag_it/lagit/g' *.R*
@@ -293,6 +294,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/stat_s/stats/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/std_dev/stdev/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/std_err/stderr/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/strik_e/strikep/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/str_ing/strng/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/sum_two/sumtwo/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/vx_x/vxx/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/sym_bol/symbol/g' *.R*

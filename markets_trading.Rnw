@@ -63,7 +63,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Markets and Trading]{Markets and Trading}
-\subtitle{FRE6871 \& FRE7241, Spring 2023}
+\subtitle{FRE6871 \& FRE7241, Fall 2023}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -982,13 +982,13 @@ indeks <- zoo::index(exceeds[indeks])
 ratio <- as.numeric(Cl(ESU8[indeks])/Cl(ESM8[indeks]))
 ESM8[, 1:4] <- ratio*ESM8[, 1:4]
 # Calculate continuous contract prices
-chain_ed <- rbind(ESM8[zoo::index(ESM8) < indeks],
+chaind <- rbind(ESM8[zoo::index(ESM8) < indeks],
                   ESU8[zoo::index(ESU8) >= indeks])
 # Or
-# Chain_ed <- rbind(ESM8[paste0("/", indeks-1)],
+# chaind <- rbind(ESM8[paste0("/", indeks-1)],
 #                   ESU8[paste0(indeks, "/")])
 # Plot continuous contract prices
-chart_Series(x=chain_ed["2018"], TA="add_Vo()",
+chart_Series(x=chaind["2018"], TA="add_Vo()",
   name="S&P500 chained futures")
       @
   \end{columns}
@@ -1233,12 +1233,20 @@ pricec <- (ratiop*priceb + (1-ratiop)*pricef)
       \vskip1ex
       There are several exchange-traded funds (\emph{ETFs}) and exchange traded notes (\emph{ETNs}) which are linked to \emph{VIX} futures.
       \vskip1ex
-      \emph{VXX} is an \emph{ETN} providing the total return of a \emph{long VIX} futures contract (short market risk).
+      The 
+      \href{https://ipathetn.barclays/details.app;instrumentId=341408}{VXX ETN}
+      provides the total return on the long VIX futures index.
       \vskip1ex
-      \emph{SVXY} is an \emph{ETF} providing the total return of a \emph{short VIX} futures contract (long market risk).
+      VXX is short market risk because it's long VIX futures, and the VIX rises when stock prices drop.
+      \vskip1ex
+      The 
+      \href{https://www.proshares.com/our-etfs/strategic/svxy?gad=1&gclid=EAIaIQobChMI4erxxr6egQMVqqNaBR2NKwZcEAAYASAAEgLXofD_BwE}{SVXY ETF}
+      provides the total return of short VIX futures contracts.
+      \vskip1ex
+      SVXY is long market risk because it's short VIX futures, and the VIX drops when stock prices rise.
       \vskip1ex
       Standard and Poor's explains the calculation of the
-      \href{http://us.spindices.com/documents/methodologies/methodology-sp-vix-future-index.pdf?force_download=true}{Total Return on VIX Futures Indices}.
+      \href{https://www.spglobal.com/spdji/en/documents/methodologies/methodology-sp-vix-futures-indices.pdf}{Total Return on VIX Futures Indices}.
       <<echo=(-(1:3)),eval=FALSE>>=
 x11(width=5, height=3)  # Open x11 for plotting
 # Load VIX futures data from binary file
@@ -1315,12 +1323,12 @@ chart_Series(x=Cl(rutils::etfenv$SVXY["2017/2018"]),
       <<echo=(-(1:1)),eval=TRUE>>=
 library(xtable)
 # Read table of fundamental data into data frame
-fundamental_data <-
+dataf <-
   read.csv(file="/Users/jerzy/Develop/lecture_slides/data/fundamental_stock_data.csv")
       @
   \end{columns}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
-print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+print(xtable(dataf), comment=FALSE, size="scriptsize", include.rownames=FALSE)
       @
 \end{block}
 
@@ -1353,12 +1361,12 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
       <<echo=(-(1:1)),eval=TRUE>>=
 library(xtable)
 # Read table of fundamental data into data frame
-fundamental_data <-
+dataf <-
   read.csv(file="/Users/jerzy/Develop/lecture_slides/data/fundamental_stock_data.csv")
       @
   \end{columns}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
-print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+print(xtable(dataf), comment=FALSE, size="scriptsize", include.rownames=FALSE)
       @
 \end{block}
 
@@ -1617,28 +1625,28 @@ detach("package:rwrds")
 library(rwrds)
 library(dplyr)
 # Establish connection to WRDS
-wrds_con <- rwrds::wrds_connect(username="jp3900", password="RipvanWinkle20")
+connv <- rwrds::connvnect(username="jp3900", password="RipvanWinkle20")
 # Download Compustat names table as dplyr object
-namesv_table <- rwrds::compustat_names(wrds=wrds_con, subset=FALSE, dl=TRUE)
-dim(namesv_table)
+namet <- rwrds::compustat_names(wrds=connv, subset=FALSE, dl=TRUE)
+dim(namet)
 # Save names table as csv file
-write.csv(namesv_table, file="/Users/jerzy/Develop/lecture_slides/data/compustat_table.csv", row.names=FALSE)
-# rm(namesv_table)
+write.csv(namet, file="/Users/jerzy/Develop/lecture_slides/data/compustat_table.csv", row.names=FALSE)
+# rm(namet)
 # Read names table from csv file
-namesv_table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/compustat_table.csv")
+namet <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/compustat_table.csv")
 # symbol <- "VTI"
-# match(symbol, namesv_table$tic)
+# match(symbol, namet$tic)
 # Create ETF symbols (tickers)
 symbolv <- c("VTI", "VEU", "EEM")
 # Get cusips of symbolv
-indeks <- match(symbolv, namesv_table$tic)
+indeks <- match(symbolv, namet$tic)
 names(indeks) <- symbolv
-etf_cusips <- namesv_table$cusip[indeks]
+etf_cusips <- namet$cusip[indeks]
 names(etf_cusips) <- symbolv
 # Save cusips into text file
 cat(etf_cusips, file="/Users/jerzy/Develop/lecture_slides/data/etf_cusips.txt", sep="\n")
 # Save gvkeys into text file
-etf_gvkeys <- namesv_table$gvkey[indeks]
+etf_gvkeys <- namet$gvkey[indeks]
 names(etf_gvkeys) <- symbolv
 cat(etf_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
       @
@@ -2637,8 +2645,8 @@ library(HighFreq)
 # Define symbol
 symbol <- "SPY"
 # Load OHLC data
-output_dir <- "/Users/jerzy/Develop/data/hfreq/scrub/"
-symbol <- load(file.path(output_dir, paste0(symbol, ".RData")))
+dirout <- "/Users/jerzy/Develop/data/hfreq/scrub/"
+symbol <- load(file.path(dirout, paste0(symbol, ".RData")))
 interval <-"2013-11-11 09:30:00/2013-11-11 10:30:00"
 chart_Series(SPY[interval], name=symbol)
       @
@@ -2722,25 +2730,25 @@ detach("package:HighFreq")
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# install package HighFreq from github
+# Install package HighFreq from github
 install.packages("devtools")
 library(devtools)
 install_github(repo="algoquant/HighFreq")
 # Load package HighFreq
 library(HighFreq)
-# set data directories
-data_dir <- "/Users/jerzy/Develop/data/hfreq/src/"
-output_dir <- "/Users/jerzy/Develop/data/hfreq/scrub/"
+# Set data directories
+dirin <- "/Users/jerzy/Develop/data/hfreq/src/"
+dirout <- "/Users/jerzy/Develop/data/hfreq/scrub/"
 # Define symbol
 symbol <- "SPY"
 # Load a single day of TAQ data
-symbol <- load(file.path(data_dir, paste0(symbol, "/2014.05.02.", symbol, ".RData")))
-# scrub, aggregate single day of TAQ data to OHLC
+symbol <- load(file.path(dirin, paste0(symbol, "/2014.05.02.", symbol, ".RData")))
+# Scrub, aggregate single day of TAQ data to OHLC
 ohlc_data <- scrub_agg(taq_data=get(symbol))
 # Aggregate TAQ data for symbol, save to file
-save_scrub_agg(symbol,
-               data_dir=data_dir,
-               output_dir=output_dir,
+HighFreq::save_scrub_agg(symbol,
+               dirin=dirin,
+               dirout=dirout,
                period="minutes")
       @
   \end{columns}
@@ -3443,18 +3451,16 @@ season_var <- season_ality(vol_ohlc(ohlc=SPY))
 par(mfrow=c(2,1))  # set plot panels
 library(rutils)  # Load package rutils
 # Rolling variance
-var_iance <-
-  roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
+varv <- roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
 # Rolling skew
-skew <-
-  roll_agg_ohlc(ohlc=SPY, agg_fun="skew_ohlc")
-skew <- skew/(var_iance)^(1.5)
-skew[1, ] <- 0
-skew <- na.locf(skew)
+skewn <- roll_agg_ohlc(ohlc=SPY, agg_fun="skew_ohlc")
+skewn <- skewn/(varv)^(1.5)
+skewn[1, ] <- 0
+skewn <- na.locf(skewn)
 interval <- "2013-11-11/2013-11-15"
-chart_Series(var_iance[interval],
+chart_Series(varv[interval],
             name=paste(symbol, "variance"))
-chart_Series(skew[interval],
+chart_Series(skewn[interval],
             name=paste(symbol, "Skew"),
             ylim=c(-1, 1))
       @
@@ -3506,15 +3512,15 @@ chart_Series(daily_skew[interval],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A regression of lagged skews versus returns appears to be statistically significant, especially in periods of high volatility during the financial crisis of 2008-09.
+      A regression of lagged skews versus returns appears to be statistically significant, especially in periods of high volatility during the financial crisis of \texttt{2008-09}.
       <<echo=(-(1:1))>>=
-# skew scatterplot
+# Skew scatterplot
 retp <- calc_rets(xts_data=SPY)
-skew <- skew_ohlc(log_ohlc=log(SPY[, -5]))
-colnames(skew) <- paste0(symbol, ".skew")
-lag_skew <- rutils::lag_it(skew)
-lag_skew[1, ] <- 0
-datav <- cbind(retp[, 1], sign(lag_skew))
+skewn <- skew_ohlc(log_ohlc=log(SPY[, -5]))
+colnames(skewn) <- paste0(symbol, ".skew")
+skewl <- rutils::lag_it(skewn)
+skewl[1, ] <- 0
+datav <- cbind(retp[, 1], sign(skewl))
 formulav <- as.formula(paste(colnames(datav)[1],
           paste(paste(colnames(datav)[-1],
             collapse=" + "), "- 1"), sep="~"))
@@ -3556,22 +3562,22 @@ abline(regmod, col="blue", lwd=2)
       <<echo=(-(1:1))>>=
 # Contrarian skew trading strategy
 # Lag the skew to get positions
-posit <- -sign(lag_skew)
+posit <- -sign(skewl)
 posit[1, ] <- 0
 # Cumulative PnL
 pnl <- cumsum(posit*retp[, 1])
 # Calculate frequency of trades
-50*sum(abs(sign(skew)-sign(lag_skew)))/nrow(skew)
+50*sum(abs(sign(skewn)-sign(skewl)))/nrow(skewn)
 # Calculate transaction costs
-bid_offer <- 0.001  # 10 bps for liquid ETFs
-bid_offer*sum(abs(sign(skew)-sign(lag_skew)))
+bidask <- 0.001  # 10 bps for liquid ETFs
+bidask*sum(abs(sign(skewn)-sign(skewl)))
 @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/earl_skew_strat-1}
       \vspace{-1em}
       <<earl_skew_strat,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 chart_Series(pnl[endpoints(pnl, on="hours"), ],
-  name=paste(symbol, "contrarian skew strategy pnl"))
+  name=paste(symbol, "Contrarian Skew Strategy PnL"))
 @
   \end{columns}
 \end{block}
@@ -3675,8 +3681,8 @@ pnl <- cumsum(sign(lag_vwap)*retp[, 1])
 # Calculate frequency of trades
 50*sum(abs(sign(vwapd)-sign(lag_vwap)))/nrow(vwapd)
 # Calculate transaction costs
-bid_offer <- 0.001  # 10 bps for liquid ETFs
-bid_offer*sum(abs(sign(vwapd)-sign(lag_vwap)))
+bidask <- 0.001  # 10 bps for liquid ETFs
+bidask*sum(abs(sign(vwapd)-sign(lag_vwap)))
 @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/earl_vwap_strat-1}
@@ -4566,9 +4572,9 @@ eWrapper_realtimebars <- function(n = 1) {
     # Write to file
     cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
     # Write to console
-    # eW$count_er <- eW$count_er + 1
-    eW$assign.Data("count_er", eW$get.Data("count_er")+1)
-    cat(paste0("count_er=", eW$get.Data("count_er"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
+    # eW$countn <- eW$countn + 1
+    eW$assign.Data("countn", eW$get.Data("countn") + 1)
+    cat(paste0("countn=", eW$get.Data("countn"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
     # cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
     ### Trade
     # Cancel previous trade orders
@@ -4642,9 +4648,9 @@ eWrapper_realtimebars <- function(n = 1) {
     # Write to file
     cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
     # Write to console
-    # eW$count_er <- eW$count_er + 1
-    eW$assign.Data("count_er", eW$get.Data("count_er")+1)
-    cat(paste0("count_er=", eW$get.Data("count_er"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
+    # eW$countn <- eW$countn + 1
+    eW$assign.Data("countn", eW$get.Data("countn")+1)
+    cat(paste0("countn=", eW$get.Data("countn"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
     # cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
     ### Trade
     # Cancel previous trade orders
@@ -4800,7 +4806,7 @@ IBrokers::twsDisconnect(raw_connect)
       \vskip1ex
       Or enter the symbol for one of the instruments and select \emph{Combinations} followed by \emph{Option Combos} from the drop down menu, and then click the tab \emph{Pair or Leg-by-leg}.
       \vskip1ex
-      The pairs can be traded as a single instrument, but the execution is not guaranteed, and the bid-offer spread may be very large.
+      The pairs can be traded as a single instrument, but the execution is not guaranteed, and the bid-ask spread may be very large.
       \vskip1ex
       The tab \emph{Multiple} allows selecting a group of combination quotes on the same underlying for comparison.
       \vskip1ex
@@ -4859,7 +4865,7 @@ IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
       \vskip1ex
       Or enter the symbol for one of the instruments and select \emph{Combinations} followed by \emph{Option Combos} from the drop down menu, and then click the tab \emph{Pair or Leg-by-leg}.
       \vskip1ex
-      The pairs can be traded as a single instrument, but the execution is not guaranteed, and the bid-offer spread may be very large.
+      The pairs can be traded as a single instrument, but the execution is not guaranteed, and the bid-ask spread may be very large.
       \vskip1ex
       The tab \emph{Multiple} allows selecting a group of combination quotes on the same underlying for comparison.
       \vskip1ex

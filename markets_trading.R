@@ -1219,16 +1219,16 @@ season_var <- season_ality(vol_ohlc(ohlc=SPY))
 par(mfrow=c(2,1))  # set plot panels
 library(rutils)  # Load package rutils
 # Rolling variance
-var_iance <-
+varv <-
   roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
 # Rolling skew
 skew <-
   roll_agg_ohlc(ohlc=SPY, agg_fun="skew_ohlc")
-skew <- skew/(var_iance)^(1.5)
+skew <- skew/(varv)^(1.5)
 skew[1, ] <- 0
 skew <- na.locf(skew)
 interval <- "2013-11-11/2013-11-15"
-chart_Series(var_iance[interval],
+chart_Series(varv[interval],
       name=paste(symbol, "variance"))
 chart_Series(skew[interval],
       name=paste(symbol, "Skew"),

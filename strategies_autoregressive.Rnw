@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Autoregressive Strategies]{Autoregressive Strategies}
-\subtitle{FRE7241, Spring 2023}
+\subtitle{FRE7241, Fall 2023}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -84,7 +84,7 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Autoregressive Strategies}
+\section{Daily Autoregressive Strategies}
 
 
 %%%%%%%%%%%%%%%
@@ -331,10 +331,10 @@ retp <- na.omit(rutils::etfenv$returns$VTI)
 # Calculate the EWMA returns recursively using C++ code
 retma <- HighFreq::run_mean(retp, lambda=0.1)
 # Calculate the positions and pnls
-posv <- retma
+posv <- sign(retma)
 posv <- rutils::lagit(posv, lagg=1)
 pnls <- (-retp*posv)
-pnls <- pnls*sd(retp)/sd(pnls)
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -368,6 +368,8 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       Dividing the returns by their trailing volatility reduces the effect of time-dependent volatility.
       \vskip1ex
       Scaling the returns by their trailing volatilities reduces the profits in periods of high volatility, but doesn't improve profits in periods of low volatility.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing volatility
 volat <- HighFreq::run_var(retp, lambda=0.5)
@@ -377,10 +379,10 @@ retsc <- ifelse(volat > 0, retp/volat, 0)
 # Calculate the EWMA returns
 retma <- HighFreq::run_mean(retsc, lambda=0.1)
 # Calculate the positions and pnls
-posv <- retma
+posv <- sign(retma)
 posv <- rutils::lagit(posv, lagg=1)
 pnls <- (-retp*posv)
-pnls <- pnls*sd(retp)/sd(pnls)
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -435,6 +437,7 @@ respv <- retp
 orderp <- 5
 predm <- lapply(1:orderp, rutils::lagit, input=respv)
 predm <- rutils::do_call(cbind, predm)
+# Add constant column for intercept coefficient phi0
 predm <- cbind(rep(1, nrows), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
       @
@@ -455,45 +458,78 @@ colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
       \begin{displaymath}
         \mathbb{\varphi} = \mathbb{P}^{-1} \, \mathbf{r}
       \end{displaymath}
-      The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
-      \vskip1ex
-      The \emph{in-sample} forecasts of the \emph{AR(n)} autoregressive model are calculated by multiplying the predictor matrix by the fitted AR coefficients:
+      The \emph{in-sample} autoregressive forecasts of the returns are calculated by multiplying the predictor matrix by the fitted AR coefficients:
       \begin{displaymath}
         f_t = \varphi_0 + \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_n r_{t-n}
       \end{displaymath}
-      The variance of the autoregressive coefficients $\varphi$ is given by:
-      \begin{displaymath}
-        \sigma^2_\varphi = \sigma^2_\varepsilon (\mathbb{P}^T \mathbb{P})^{-1}
-      \end{displaymath}
-      Where $\sigma^2_\varepsilon$ is the variance of the residuals.
+      For \emph{VTI} returns, the intercept coefficient $\varphi_0$ has a small positive value, while the first autoregressive coefficient $\varphi_1$ has a small negative value.
+      \vskip1ex
+      This means that the autoregressive forecasting model is a combination of a static long stock position, plus a mean-reverting model which switches its stock position to the reverse of the previous day's return.
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the fitted autoregressive coefficients
 predinv <- MASS::ginv(predm)
 coeff <- predinv %*% respv
 # Calculate the in-sample forecasts of VTI (fitted values)
 fcasts <- predm %*% coeff
-# Calculate the residuals (forecast errors)
-resids <- (fcasts - respv)
-# The residuals are orthogonal to the predictors and the forecasts
-round(cor(resids, fcasts), 6)
-round(sapply(predm[, -1], function(x) cor(resids, x)), 6)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/ar_coeff.png}
       <<echo=TRUE,eval=FALSE>>=
+# Plot the AR coefficients
+coeffn <- paste0("phi", 0:(NROW(coefft)-1))
+barplot(coeff ~ coeffn, xlab="", ylab="t-value", col="grey",
+  main="Coefficients of AR Forecasting Model")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The t-values of the Autoregressive Coefficients}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The forecast residuals are equal to the differences between the return forecasts minus the actual returns: $\varepsilon = f_t - r_t$
+      \vskip1ex
+      The variance of the autoregressive coefficients $\sigma^2_\varphi$ is equal to the variance of the forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
+      \begin{displaymath}
+        \sigma^2_\varphi = \sigma^2_\varepsilon (\mathbb{P}^T \mathbb{P})^{-1}
+      \end{displaymath}
+      The t-values of the autoregressive coefficients are equal to the coefficient values divided by their volatilities:
+      \begin{displaymath}
+        \varphi_{tval} = \frac{\varphi}{\sigma_\varphi}
+      \end{displaymath}
+      The intercept coefficient $\varphi_0$ and the first autoregressive coefficient $\varphi_1$ have statistically significant t-values.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the residuals (forecast errors)
+resids <- (fcasts - respv)
+# The residuals are orthogonal to the predictors and the forecasts
+round(cor(resids, fcasts), 6)
+round(sapply(predm[, -1], function(x) cor(resids, x)), 6)
 # Calculate the variance of the residuals
-vares <- sum(resids^2)/(nrows-NROW(coeff))
+vars <- sum(resids^2)/(nrows-NROW(coeff))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_coeff.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Calculate the predictor matrix squared
 predm2 <- crossprod(predm)
 # Calculate the covariance matrix of the AR coefficients
-covar <- vares*MASS::ginv(predm2)
+covar <- vars*MASS::ginv(predm2)
 coeffsd <- sqrt(diag(covar))
 # Calculate the t-values of the AR coefficients
 coefft <- drop(coeff/coeffsd)
+coeffn <- paste0("phi", 0:(NROW(coefft)-1))
 # Plot the t-values of the AR coefficients
-lagv <- paste0("phi", 0:(NROW(coefft)-1))
-barplot(coefft ~ lagv, xlab="", ylab="t-value", 
+barplot(coefft ~ coeffn, xlab="", ylab="t-value", col="grey", 
   main="Coefficient t-values of AR Forecasting Model")
       @
   \end{columns}
@@ -512,6 +548,8 @@ barplot(coefft ~ lagv, xlab="", ylab="t-value",
       The autoregressive model assumes stationary returns and residuals, with similar volatility over time.  
       \vskip1ex
       In reality stock volatility is highly time dependent, so the volatility of the residuals is also time dependent.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing volatility of the residuals
 residv <- sqrt(HighFreq::run_var(resids, lambda=0.9))
@@ -527,8 +565,9 @@ endd <- rutils::calc_endpoints(datav, interval="weeks")
 dygraphs::dygraph(datav[endd], main="Volatility of Residuals") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
   dyAxis("y2", label="residual vol", independentTicks=TRUE) %>%
-  dySeries(name="VTI", axis="y", label="VTI", strokeWidth=2, col="blue") %>%
-  dySeries(name="residual vol", axis="y2", label="residual vol", strokeWidth=2, col="red")
+  dySeries(name="VTI", axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name="residual vol", axis="y2", strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -550,11 +589,18 @@ dygraphs::dygraph(datav[endd], main="Volatility of Residuals") %>%
       The in-sample autoregressive strategy performs well during periods of high volatility, but not as well in low volatility periods.
       \vskip1ex
       The dollar allocations of \emph{VTI} stock are too large in periods of high volatility, which causes over-leverage and very high risk.
+      \vskip1ex
+      The leverage can be reduced by scaling (dividing) the forecasts by their trailing volatility.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
       <<echo=TRUE,eval=FALSE>>=
+# Scale the forecasts by their volatility
+fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.2))
+fcastsc <- ifelse(fcastv > 0, fcasts/fcastv, 0)
 # Simulate autoregressive strategy in-sample
-pnls <- retp*fcasts
+pnls <- retp*fcastsc
 # Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp)/sd(pnls)
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -598,9 +644,9 @@ predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, NROW(predm)), predm)
 predinv <- MASS::ginv(predm)
 coeffh <- drop(predinv %*% respv)
-lagv <- paste0("phi", 0:(NROW(coeffh)-1))
-barplot(coeffh ~ lagv, main="High Volatility AR Coefficients", 
-  xlab="", ylab="coefficient", ylim=c(-0.1, 0.05))
+coeffn <- paste0("phi", 0:(NROW(coeffh)-1))
+barplot(coeffh ~ coeffn, main="High Volatility AR Coefficients", 
+  col="grey", xlab="", ylab="coefficient", ylim=c(-0.1, 0.05))
 # Calculate the low volatility AR coefficients
 respv <- retp["2012/2019"]
 predm <- lapply(1:orderp, rutils::lagit, input=respv)
@@ -608,7 +654,7 @@ predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, NROW(predm)), predm)
 predinv <- MASS::ginv(predm)
 coeffl <- drop(predinv %*% respv)
-barplot(coeffl ~ lagv, main="Low Volatility AR Coefficients", 
+barplot(coeffl ~ coeffn, main="Low Volatility AR Coefficients", 
   xlab="", ylab="coefficient", ylim=c(-0.1, 0.05))
       @
     \column{0.5\textwidth}
@@ -637,10 +683,10 @@ predm <- lapply(1:orderp, rutils::lagit, input=retp)
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, nrows), predm)
 fcasts <- predm %*% coeffh
-pnls <- retp*fcasts
-pnls <- pnls*sd(retp)/sd(pnls)
+pnlh <- retp*fcasts
+pnlh <- pnlh*sd(retp[retp<0])/sd(pnlh[pnlh<0])
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
+wealthv <- cbind(retp, pnlh)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -651,10 +697,10 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyLegend(show="always", width=300)
 # Calculate the pnls for the low volatility AR coefficients
 fcasts <- predm %*% coeffl
-pnls <- retp*fcasts
-pnls <- pnls*sd(retp)/sd(pnls)
+pnll <- retp*fcasts
+pnll <- pnll*sd(retp[retp<0])/sd(pnll[pnll<0])
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(retp, pnls)
+wealthv <- cbind(retp, pnll)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -712,8 +758,8 @@ colnames(datav) <- c("VTI", "residuals")
 dygraphs::dygraph(datav[endd], main="Volatility of high Residuals") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
   dyAxis("y2", label="residuals", independentTicks=TRUE) %>%
-  dySeries(name="VTI", axis="y", label="VTI", strokeWidth=2, col="blue") %>%
-  dySeries(name="residuals", axis="y2", label="residuals", strokeWidth=2, col="red")
+  dySeries(name="VTI", axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name="residuals", axis="y2", strokeWidth=2, col="red")
 
 pnlh <- retp*fcasts
 pnlh <- pnlh*sd(retp)/sd(pnlh)
@@ -729,8 +775,8 @@ colnames(datav) <- c("VTI", "residuals")
 dygraphs::dygraph(datav[endd], main="Volatility of low Residuals") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
   dyAxis("y2", label="residuals", independentTicks=TRUE) %>%
-  dySeries(name="VTI", axis="y", label="VTI", strokeWidth=2, col="blue") %>%
-  dySeries(name="residuals", axis="y2", label="residuals", strokeWidth=2, col="red")
+  dySeries(name="VTI", axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name="residuals", axis="y2", strokeWidth=2, col="red")
 
 
 pnll <- retp*fcasts
@@ -834,7 +880,7 @@ fcasts <- predm %*% coeff
 # Simulate autoregressive strategy in-sample
 pnls <- retp*fcasts
 # Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp)/sd(pnls)
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -869,6 +915,8 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The performance of the autoregressive strategy can be improved by fitting its coefficients using returns divided by their trailing volatility.
       \vskip1ex
       Dividing the returns by their trailing volatility reduces the effect of time-dependent volatility.
+      \vskip1ex
+      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
       <<echo=TRUE,eval=FALSE>>=
 # Scale the returns by their trailing volatility
 varv <- HighFreq::run_var(retp, lambda=0.99)
@@ -885,7 +933,7 @@ fcasts <- predm %*% coeff
 # Simulate autoregressive strategy in-sample
 pnls <- retp*fcasts
 # Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp)/sd(pnls)
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -928,11 +976,12 @@ closep <- quantmod::Cl(ohlc)
 retp <- rutils::diffit(log(closep))
 volumv <- quantmod::Vo(ohlc)
 # Calculate trailing average volume
-volumr <- HighFreq::run_mean(volumv, lambda=0.7)
+volumr <- HighFreq::run_mean(volumv, lambda=0.25)
 # Scale the returns using volume clock to trading time
 retsc <- ifelse(volumv > 0, volumr*retp/volumv, 0)
 # Calculate the AR coefficients
 respv <- retsc
+orderp <- 5
 predm <- lapply(1:orderp, rutils::lagit, input=respv)
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, nrows), predm)
@@ -943,7 +992,7 @@ coeff <- predinv %*% respv
 fcasts <- predm %*% coeff
 # Simulate autoregressive strategy in-sample
 pnls <- retp*fcasts
-pnls <- pnls*sd(retp)/sd(pnls)
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1109,11 +1158,11 @@ plot(x=2:NCOL(predm), y=mse[, 1],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autoregressive strategy invests a single dollar amount of \emph{VTI} equal to the sign of the forecasts. 
+      The autoregressive strategy invests a dollar amount of \emph{VTI} proportional to the AR forecasts.
       \vskip1ex
-      The performance of the autoregressive strategy is better with a smaller order parameter \emph{n} of the \emph{AR(n)} model.
+      The out-of-sample, risk-adjusted performance of the autoregressive strategy is better for a smaller order parameter \emph{n} of the \emph{AR(n)} model.
       \vskip1ex
-      The optimal order parameter is equal to \texttt{2}, with a positive intercept coefficient $\varphi_0$ (since the average \emph{VTI} returns were positive), and a negative coefficient $\varphi_1$ (because of strong negative autocorrelations in periods of high volatility).
+      The optimal order parameter is \texttt{n = 2}, with a positive intercept coefficient $\varphi_0$ (since the average \emph{VTI} returns were positive), and a negative coefficient $\varphi_1$ (because of strong negative autocorrelations in periods of high volatility).
       \vskip1ex
       Decreasing the order parameter of the autoregressive model is a form of \emph{shrinkage} because it reduces the number of predictive variables.
       <<echo=TRUE,eval=FALSE>>=
@@ -1121,8 +1170,9 @@ plot(x=2:NCOL(predm), y=mse[, 1],
 predinv <- MASS::ginv(predm[insample, 1:2])
 coeff <- drop(predinv %*% respv[insample])
 # Calculate the out-of-sample PnLs
-pnls <- lapply(fcasts, function(fcasts) {
-  cumsum(fcasts*retp[outsample])
+pnls <- lapply(fcasts, function(fcast) {
+  cumsum(fcast*retp[outsample])
+  pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 })  # end lapply
 pnls <- rutils::do_call(cbind, pnls)
 colnames(pnls) <- names(fcasts)
@@ -1137,98 +1187,6 @@ colnamev <- colnames(pnls)
 endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(pnls[endd],
   main="Autoregressive Strategies Out-of-sample") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{depr: Autoregressive Strategy Using Average Past Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{out-of-sample} forecasts can be improved by using the rolling average of the returns as a predictor.
-      \vskip1ex
-      This is because the average of returns has a lower \emph{variance}.
-      \vskip1ex
-      But the average also has a higher \emph{bias} because it includes past returns that may be unrelated to the present.
-      \vskip1ex
-      Using the rolling average of returns as a predictor reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
-      <<echo=TRUE,eval=FALSE>>=
-# Define predictor as a rolling mean
-nagg <- 5
-predm <- HighFreq::roll_mean(matrix(retp), nagg)
-# Define predictor matrix for forecasting
-predm <- sapply(1+nagg*(0:dimax), rutils::lagit, input=predm)
-predm <- cbind(rep(1, nrows), predm)
-# Calculate the forecasts as function of the AR order
-fcasts <- lapply(2:NCOL(predm), function(ordern) {
-  predinv <- MASS::ginv(predm[insample, 1:ordern])
-  coeff <- drop(predinv %*% respv[insample])
-  drop(predm[outsample, 1:ordern] %*% coeff)
-})  # end lapply
-names(fcasts) <- paste0("n=", 2:NCOL(predm))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_sum.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the out-of-sample PnLs
-pnls <- sapply(fcasts, function(x) {
-  cumsum(sign(x)*retp[outsample])
-})  # end sapply
-colnames(pnls) <- names(fcasts)
-pnls <- xts::xts(pnls, datev[outsample])
-# Plot dygraph of out-of-sample PnLs
-colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls))
-dygraphs::dygraph(pnls[endd],
-  main="Autoregressive Strategies Using Rolling Average Predictor") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(width=300)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{depr: Autoregressive Strategy Using Average of Past Forecasts}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{out-of-sample} forecasts can be further improved by using the average of past forecasts.
-      \vskip1ex
-      This is because the average of forecasts has a lower \emph{variance}.
-      \vskip1ex
-      But the average also has a higher \emph{bias} because it includes past forecasts that may be unrelated to the present.
-      \vskip1ex
-      Using the rolling average of past forecasts reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the PnLs using the average of past forecasts
-nagg <- 5
-pnls <- sapply(fcasts, function(x) {
-  x <- HighFreq::roll_mean(matrix(x), nagg)
-  cumsum(sign(x)*retp[outsample])
-})  # end sapply
-colnames(pnls) <- names(fcasts)
-pnls <- xts::xts(pnls, datev[outsample])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_forecasts.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of out-of-sample PnLs
-dygraphs::dygraph(pnls[endd],
-  main="Autoregressive Strategies Using Rolling Average Forecasts") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=300)
       @
@@ -1290,7 +1248,7 @@ fcasts <- c(rep(0, look_back), fcasts)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Adopt the text
+      Adopt this text to some other slides.
       \vskip1ex
       Forecasting using an autoregressive model is performed by first fitting an \emph{AR(n)} model to past data, and calculating its coefficients.
       \vskip1ex
@@ -1299,32 +1257,6 @@ fcasts <- c(rep(0, look_back), fcasts)
       The forecasting model depends on two unknown \emph{meta-parameters}: the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(rutils)
-# Calculate the a vector of daily VTI log returns
-pricev <- log(quantmod::Cl(rutils::etfenv$VTI))
-retp <- rutils::diffit(pricev)
-retp <- as.numeric(retp)
-nrows <- NROW(retp)
-# Define predictor matrix for forecasting
-dimax <- 5
-desv <- sapply(1:dimax, rutils::lagit, input=respv)
-colnames(desv) <- paste0("pred", 1:NCOL(desv))
-# Add response equal to VTI
-desv <- cbind(retp, desv)
-colnames(desv)[1] <- "response"
-# Specify length of look-back interval
-look_back <- 100
-# Invert the predictor matrix
-rangev <- (nrows-look_back):(nrows-1)
-predinv <- MASS::ginv(desv[rangev, -1])
-# Calculate the fitted AR coefficients
-coeff <- predinv %*% desv[rangev, 1]
-# Calculate the forecast of VTI for nrows
-drop(desv[nrows, -1] %*% coeff)
-# Compare with actual value
-desv[nrows, 1]
-      @
   \end{columns}
 \end{block}
 
@@ -1412,7 +1344,7 @@ fcasts <- mclapply(look_backs, sim_fcasts, ordern=6, mc.cores=ncores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ar_vti_mse.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_vti_mse.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
@@ -1464,7 +1396,7 @@ fcasts <- mclapply(orderv, sim_fcasts,
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ar_vti_mse_order_fixed.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_vti_mse_order_fixed.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
@@ -1505,7 +1437,7 @@ fcasts <- sim_fcasts(look_back=look_back, ordern=ordern)
 # Calculate the strategy PnLs
 pnls <- fcasts*retp
 # Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp)/sd(pnls)
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 wealthv <- cbind(retp, pnls, (retp+pnls)/2)
 colnames(wealthv) <- c("VTI", "AR_Strategy", "Combined")
 cor(wealthv)
@@ -1561,7 +1493,7 @@ fcasts <- mclapply(orderv, sim_fcasts,
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/strat_ar_vti_mse_order_expand.png}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_vti_mse_order_expand.png}
       % \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_order.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the mean squared errors
@@ -1598,7 +1530,7 @@ plot(x=orderv, y=mse[, 1],
 fcasts <- sim_fcasts(look_back=look_back, ordern=ordern, fixedlb=FALSE)
 # Calculate the strategy PnLs
 pnls <- fcasts*retp
-pnls <- pnls*sd(retp)/sd(pnls)
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 wealthv <- cbind(retp, pnls, (retp+pnls)/2)
 colnames(wealthv) <- c("VTI", "AR_Strategy", "Combined")
 cor(wealthv)
@@ -1750,6 +1682,268 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{Intraday and Overnight Stock Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The overnight stock strategy consists of holding a long position only overnight (buying at the market close and selling at the open the next day).
+      \vskip1ex
+      The intraday stock strategy consists of holding a long position only during the daytime (buying at the market open and selling at the close the same day).
+      \vskip1ex
+      The 
+      \href{https://quantpedia.com/market-sentiment-and-an-overnight-anomaly/}{\emph{Overnight Market Anomaly}}
+      is the consistent outperformance of overnight returns relative to the intraday returns.
+      \vskip1ex
+      The \emph{Overnight Market Anomaly} has been observed for many decades for most stock market indices, but not always for all stock sectors.
+      \vskip1ex
+      The \emph{Overnight Market Anomaly} is not as pronounced after the \texttt{2008-2009} financial crisis.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the log of OHLC VTI prices
+ohlc <- log(rutils::etfenv$VTI)
+openp <- quantmod::Op(ohlc)
+highp <- quantmod::Hi(ohlc)
+lowp <- quantmod::Lo(ohlc)
+closep <- quantmod::Cl(ohlc)
+# Calculate the close-to-close log returns, 
+# the daytime open-to-close returns 
+# and the overnight close-to-open returns.
+retp <- rutils::diffit(closep)
+colnames(retp) <- "daily"
+retd <- (closep - openp)
+colnames(retd) <- "intraday"
+reton <- (openp - rutils::lagit(closep, lagg=1, pad_zeros=FALSE))
+colnames(reton) <- "overnight"
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_overnight.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retp, reton, retd)
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot log wealth
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Wealth of Close-to-Close, Overnight, and Intraday Strategies") %>%
+  dySeries(name="daily", strokeWidth=2, col="blue") %>%
+  dySeries(name="overnight", strokeWidth=2, col="red") %>%
+  dySeries(name="intraday", strokeWidth=2, col="green") %>%
+  dyLegend(width=600)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Bid-Ask Spread}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bid-ask spread} is the difference between the best ask (offer) price minus the best bid price in the market.
+      \vskip1ex
+      The \emph{bid-ask spread} can be estimated from the differences between the execution prices of consecutive buy and sell market orders (roundtrip trades).
+      \vskip1ex
+      Market orders are orders to buy or sell a stock immediately at the best available price in the market.
+Market orders guarantee that the trade will be executed, but they do not guarantee the execution price. Market orders are subject to the \emph{bid-ask spread}.
+      \vskip1ex
+      Limit orders are orders to buy or sell a stock at the limit price or better (the investor sets the limit price). Limit orders do not guarantee that the trade will be executed, but they guarantee the execution price. Limit orders are placed only for a certain time when they are "live".
+      \vskip1ex
+      Market orders are executed by matching them with live limit orders through a matching engine at an exchange.
+      \vskip1ex
+      The \emph{bid-ask spread} for many liquid ETFs is about \texttt{1} basis point. For example the 
+\href{https://www.ssga.com/us/en/intermediary/etfs/funds/the-technology-select-sector-spdr-fund-xlk}{\emph{XLK ETF}}
+      \vskip1ex
+      The most liquid
+      \href{https://www.ssga.com/us/en/intermediary/etfs/funds/spdr-sp-500-etf-trust-spy}{\emph{SPY ETF}}
+      usually trades at a \emph{bid-ask spread} of only one tick (cent=\texttt{\$0.01}, or about \texttt{0.2} basis points).
+      \vskip1ex
+      In reality the \emph{bid-ask spread} is not static and depends on many factors, such as market liquidity (trading volume), volatility, and the time of day.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load the roundtrip trades
+dtable <- data.table::fread("/Users/jerzy/Develop/lecture_slides/data/roundtrip_trades.csv")
+nrows <- NROW(dtable)
+class(dtable$timefill)
+# Sort the trades according to the execution time
+dtable <- dtable[order(dtable$timefill)]
+# Calculate the bid-ask spread
+priceb <- dtable$price[dtable$side == "buy"]
+pricese <- dtable$price[dtable$side == "sell"]
+bidask <- mean(priceb-pricese)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EWMA Mean-Reversion Strategy For Intraday Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      After the \texttt{2008-2009} financial crisis, the cumulative intraday stock index returns have been range-bound.  So the intraday returns have more significant negative autocorrelations than overnight returns.
+      \vskip1ex
+      The \emph{EWMA} mean-reversion strategy holds stock positions equal to the \emph{sign} of the trailing \emph{EWMA} of past returns.
+      \vskip1ex
+      The strategy adjusts its stock position at the end of each day, just before the close of the market.
+      \vskip1ex
+      An alternative strategy holds positions proportional to the trailing \emph{EWMA} of past returns.
+      \vskip1ex
+      The strategy takes very large positions in periods of high volatility, when returns are large and highly anti-correlated.
+      \vskip1ex
+      The limitation is that this strategy makes most of its profits in periods of high volatility, but otherwise it's profits are small.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the autocorrelations of intraday and overnight returns
+pacfl <- pacf(retd, lag.max=10, plot=FALSE)
+sum(pacfl$acf)
+pacfl <- pacf(reton, lag.max=10, plot=FALSE)
+sum(pacfl$acf)
+# Calculate the EWMA returns recursively using C++ code
+retma <- HighFreq::run_mean(retd, lambda=0.4)
+# Calculate the positions and pnls
+posv <- rutils::lagit(sign(retma), lagg=1)
+pnls <- (-retd*posv)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_ewma_intraday.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the pnls and the transaction costs
+bidask <- 0.0001 # Bid-ask spread equal to 1 basis point
+costs <- 0.5*bidask*abs(rutils::diffit(posv))
+pnls <- (pnls - costs)
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retd, pnls)
+colnames(wealthv) <- c("VTI intraday", "Strategy")
+sqrt(252)*sapply(wealthv, function(x)
++ c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of EWMA strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="EWMA Strategy For Intraday VTI Returns") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Overnight Trend Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Analysts at 
+      \href{https://www.ft.com/content/5a7e021e-1910-4ba5-8eae-0bd178eabe1b}{\emph{JPMorgan}}
+      and at the 
+      \href{https://libertystreeteconomics.newyorkfed.org/2021/05/the-overnight-drift-in-us-equity-returns/}{\emph{Federal Reserve }}
+      have observed that there is a trend in the overnight returns.
+      \vskip1ex
+      Positive overnight returns are often followed by positive intraday returns, and vice versa.
+      \vskip1ex
+      If the overnight returns were positive, then the strategy buys \texttt{\$1} dollar of stock at the market open and sells it at the market close, or if the overnight returns were negative then it shorts \texttt{-\$1} dollar of stock.
+      \vskip1ex
+      The strategy has performed well immediately after the \texttt{2008-2009} financial crisis, but it has waned in recent years.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the pnls and the transaction costs
+posv <- sign(reton)
+pnls <- posv*retd
+costs <- 0.5*bidask*abs(rutils::diffit(posv))
+pnls <- (pnls - costs)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_overnight_trend.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retd, pnls)
+colnames(wealthv) <- c("VTI intraday", "Strategy")
+sqrt(252)*sapply(wealthv, function(x)
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of EWMA strategy
+dygraphs::dygraph(cumsum(wealthv)[endd],
+main="Overnight Trend For Intraday VTI Returns") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bollinger Strategy For Intraday Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Bollinger \emph{z-score} for intraday returns $z_t$ , is equal to the difference between the cumulative returns $r_t$ minus their trailing mean $\bar{r}_t$, divided by their volatility $\sigma_t$:
+      \begin{displaymath}
+        z_t = \frac{r_t - \bar{r}_t}{\sigma_t}
+      \end{displaymath}
+      The Bollinger strategy switches to \texttt{\$1} dollar long stock after the \emph{z-score} drops below the threshold of \texttt{-1} (indicating the prices are cheap), or switches to \texttt{-\$1} dollar short after the \emph{z-score} exceeds the threshold of \texttt{1} (indicating the prices are rich - expensive).
+      \vskip1ex
+      The Bollinger strategy is a \emph{mean reverting} (contrarian) strategy because it bets on the cumulative returns reverting to their mean value.
+      \vskip1ex
+      The Bollinger strategy has performed well for intraday \emph{VTI} returns because they exhibit significant mean-reversion.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the z-scores of the cumulative intraday returns
+retc <- cumsum(retd)
+lambda <- 0.24
+retm <- rutils::lagit(HighFreq::run_mean(retc, lambda=lambda))
+retv <- sqrt(rutils::lagit(HighFreq::run_var(retc, lambda=lambda)))
+zscores <- ifelse(retv > 0, (retc - retm)/retv, 0)
+# Calculate the positions from the Bollinger z-scores
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(zscores > 1, -1, posv)
+posv <- ifelse(zscores < -1, 1, posv)
+posv <- zoo::na.locf(posv)
+posv <- rutils::lagit(posv, lagg=1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger_intraday.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the pnls and the transaction costs
+pnls <- retd*posv
+costs <- 0.5*bidask*abs(rutils::diffit(posv))
+pnls <- (pnls - costs)
+# Calculate the Sharpe ratios
+wealthv <- cbind(retd, pnls)
+colnames(wealthv) <- c("VTI intraday", "Strategy")
+sqrt(252)*sapply(wealthv, function(x)
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of intraday Bollinger strategy
+dygraphs::dygraph(cumsum(wealthv)[endd],
+  main="Bollinger strategy For Intraday VTI Returns") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%
 \section{Multivariate Autoregressive Strategies}
@@ -1837,8 +2031,8 @@ dygraphs::dygraph(cumsum(datav),
   main="VTI and Yield Curve Steepener") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}

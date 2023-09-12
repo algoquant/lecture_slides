@@ -64,7 +64,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Risk Analysis and Model Construction]{Risk Analysis and Model Construction}
-\subtitle{FRE6871 \& FRE7241, Spring 2023}
+\subtitle{FRE6871 \& FRE7241, Fall 2023}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -808,11 +808,11 @@ legend("topleft", legend=colnames(kelly_paths),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{bid-offer spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
+      The \emph{bid-ask spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
       \vskip1ex
-      The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
+      The \emph{bid-ask spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
       \vskip1ex
-      The \emph{transaction costs} $c^r$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the \emph{risky asset}:
+      The \emph{transaction costs} $c^r$ due to the \emph{bid-ask spread} are equal to half the \emph{bid-ask spread} $\delta$ times the absolute value of the traded dollar amount of the \emph{risky asset}:
       \begin{displaymath}
         c^r = \frac{\delta}{2} \left| \Delta m_t \right|
       \end{displaymath}
@@ -821,22 +821,22 @@ legend("topleft", legend=colnames(kelly_paths),
         c^r = \frac{\delta}{2} k_f (k_f - 1) w_{t-1} \left| r_t \right|
       \end{displaymath}
     \column{0.5\textwidth}
-      The wealth of the Kelly Strategy after accounting for the \emph{bid-offer spread} is then equal to:
+      The wealth of the Kelly Strategy after accounting for the \emph{bid-ask spread} is then equal to:
       \begin{displaymath}
         w_t = \prod_{i=1}^t {(1 + k_f \, r_t - \frac{\delta}{2} k_f (k_f - 1) \left| r_t \right|)}
       \end{displaymath}
-      The effect of the \emph{bid-offer spread} is to reduce the effective asset returns by an amount proportional to the \emph{bid-offer spread}.
+      The effect of the \emph{bid-ask spread} is to reduce the effective asset returns by an amount proportional to the \emph{bid-ask spread}.
       <<echo=TRUE,eval=FALSE>>=
-# bid_offer equal to 10 bps for liquid ETFs
-bid_offer <- 0.001
+# bidask equal to 1 bp for liquid ETFs
+bidask <- 0.001
 # Calculate the wealth paths
 kelly_ratio <- drop(mean(retp)/var(retp))
 wealthv <- cumprod(1 + kelly_ratio*retp)
 wealth_trans <- cumprod(1 + kelly_ratio*retp - 
-  0.5*bid_offer*kelly_ratio*(kelly_ratio-1)*abs(retp))
+  0.5*bidask*kelly_ratio*(kelly_ratio-1)*abs(retp))
 # Calculate the compounded wealth from returns
 wealthv <- cbind(wealthv, wealth_trans)
-colnames(wealthv) <- c("Kelly", "Including bid-offer")
+colnames(wealthv) <- c("Kelly", "Including bid-ask")
 # Plot compounded wealth
 dygraphs::dygraph(wealthv, main="Kelly Strategy With Transaction Costs") %>%
   dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
@@ -1407,19 +1407,19 @@ dygraphs::dygraph(wealthv, main="VTI Strategy Using Rolling Kelly Weight") %>%
     \column{0.5\textwidth}
       The transaction costs as a percentage of wealth are equal to: $c_t/w_t^{nc}$, where $w_t^{nc}$ is the wealth assuming no transaction costs.
       \vskip1ex
-      The wealth of the Kelly Strategy after accounting for the \emph{bid-offer spread} is then equal to:
+      The wealth of the Kelly Strategy after accounting for the \emph{bid-ask spread} is then equal to:
       \begin{displaymath}
         w_t = \prod_{i=1}^t {(1 + k_f \, r_t - \frac{\delta}{2} \frac{\left| \Delta m_i^{nc} \right|}{w_i^{nc}})}
       \end{displaymath}
-      The effect of the \emph{bid-offer spread} is to reduce the effective asset returns by an amount proportional to the \emph{bid-offer spread}.
+      The effect of the \emph{bid-ask spread} is to reduce the effective asset returns by an amount proportional to the \emph{bid-ask spread}.
       <<echo=TRUE,eval=FALSE>>=
-# bid_offer equal to 10 bps for liquid ETFs
-bid_offer <- 0.001
+# bidask equal to 1 bp for liquid ETFs
+bidask <- 0.001
 # Calculate the compounded Kelly wealth and margin
 wealthv <- cumprod(1 + weightv$VTI*retp$VTI)
 marginv <- (retp$VTI - 1)*wealthv + 1
 # Calculate the transaction costs
-costs <- bid_offer*drop(rutils::diffit(marginv))/2
+costs <- bidask*drop(rutils::diffit(marginv))/2
 wealth_diff <- drop(rutils::diffit(wealthv))
 costs_rel <- ifelse(wealth_diff>0, costs/wealth_diff, 0)
 range(costs_rel)
@@ -1430,7 +1430,7 @@ costs <- rutils::lagit(abs(costs)/wealthv)
 wealth_trans <- cumprod(1 + retp$VTI*retp$VTI - costs)
 # Plot compounded wealth
 wealthv <- cbind(wealthv, wealth_trans)
-colnames(wealthv) <- c("Kelly", "Including bid-offer")
+colnames(wealthv) <- c("Kelly", "Including bid-ask")
 dygraphs::dygraph(wealthv, main="Kelly Strategy With Transaction Costs") %>%
   dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)

@@ -60,7 +60,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Numerical Analysis]{Numerical Analysis}
-\subtitle{FRE6871 \& FRE7241, Spring 2023}
+\subtitle{FRE6871 \& FRE7241, Fall 2023}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -2201,7 +2201,7 @@ bootd <- sapply(1:nboot, function(x) median(rnorm(nsimu)))
 set.seed(1121)  # Reset random number generator
 # Calculate matrix of random data
 samplev <- matrix(rnorm(nboot*nsimu), ncol=nboot)
-bootv <- Rfast::colMedians(samplev)
+bootv <- matrixStats::colMedians(samplev)
 all.equal(bootd, bootv)
 # Compare speed of loops with vectorized R code
 library(microbenchmark)
@@ -2209,7 +2209,7 @@ summary(microbenchmark(
   loop = sapply(1:nboot, function(x) median(rnorm(nsimu))),
   cpp = {
     samplev <- matrix(rnorm(nboot*nsimu), ncol=nboot)
-    Rfast::colMedians(samplev)
+    matrixStats::colMedians(samplev)
     },
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -2467,7 +2467,7 @@ set.seed(1121)
 nsimu <- 100
 predm <- rnorm(nsimu, mean=2)
 noisev <- rnorm(nsimu)
-respv <- (-3 + 2*predictor + noisev)
+respv <- (-3 + 2*predm + noisev)
 desv <- cbind(respv, predm)
 # Calculate alpha and beta regression coefficients
 betav <- cov(desv[, 1], desv[, 2])/var(desv[, 2])
@@ -4900,7 +4900,7 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
                     arma::uvec endd, // End points
                     double lambda = 0.0, // Decay factor for averaging the portfolio weights
                     double coeff = 1.0, // Multiplier of strategy returns
-                    double bid_offer = 0.0) { // The bid-offer spread
+                    double bidask = 0.0) { // The bid-ask spread
   
   double lambda1 = 1-lambda;
   arma::uword nweights = returns.n_cols;
@@ -4918,7 +4918,7 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
     // Calculate out-of-sample returns
     pnls.rows(endd(it-1)+1, endd(it)) = returns.rows(endd(it-1)+1, endd(it))*weights;
     // Add transaction costs
-    pnls.row(endd(it-1)+1) -= bid_offer*sum(abs(weightv - weights_past))/2;
+    pnls.row(endd(it-1)+1) -= bidask*sum(abs(weightv - weights_past))/2;
     // Copy the weights
     weights_past = weights;
   }  // end for

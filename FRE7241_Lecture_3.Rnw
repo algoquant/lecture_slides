@@ -65,7 +65,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#3]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#3, Spring 2023}
+\subtitle{Lecture\#3, Fall 2023}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
@@ -496,15 +496,15 @@ legend("top", legend=colnames(wealthv),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{bid-offer spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
+      The \emph{bid-ask spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
       \vskip1ex
-      The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
+      The \emph{bid-ask spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
       \vskip1ex
       Let $n_t$ be the number of shares of the stock owned at time $t$, and let $p_t$ be their price.
       \vskip1ex
       Then the traded dollar amount of the stock is equal to the change in the number of shares times the stock price: $\Delta n_t p_t$.
       \vskip1ex
-      The the \emph{transaction costs} $c^r$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the stock:
+      The the \emph{transaction costs} $c^r$ due to the \emph{bid-ask spread} are equal to half the \emph{bid-ask spread} $\delta$ times the absolute value of the traded dollar amount of the stock:
       \begin{displaymath}
         c^r = \frac{\delta}{2} \left| \Delta n_t \right| p_t
       \end{displaymath}
@@ -516,10 +516,10 @@ legend("top", legend=colnames(wealthv),
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_ewma_transcosts.png}
       <<echo=TRUE,eval=FALSE>>=
-# bid_offer equal to 10 bps for liquid ETFs
-bid_offer <- 0.001
+# bidask equal to 10 bps for liquid ETFs
+bidask <- 0.001
 # Calculate the transaction costs
-costs <- 0.5*bid_offer*abs(poslag - posv)
+costs <- 0.5*bidask*abs(poslag - posv)
 # Plot strategy with transaction costs
 wealthv <- cbind(pnls, pnls - costs)
 colnames(wealthv) <- c("EWMA", "EWMA w Costs")
@@ -549,7 +549,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="EWMA Strategy With Transaction Co
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bid_offer=0.001, 
+sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bidask=0.001, 
                       trend=1, lagg=1) {
   closep <- quantmod::Cl(ohlc)
   retp <- rutils::diffit(closep)
@@ -573,7 +573,7 @@ sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bid_offer=0.001,
   posv <- rutils::lagit(posv, lagg=1)
   # Calculate the PnLs of strategy
   pnls <- retp*posv
-  costs <- 0.5*bid_offer*abs(rutils::diffit(posv))
+  costs <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costs)
   # Calculate the strategy returns
   pnls <- cbind(posv, pnls)
@@ -605,7 +605,7 @@ lambdav <- seq(from=0.97, to=0.99, by=0.004)
 # Perform lapply() loop over lambdav
 pnltrend <- lapply(lambdav, function(lambda) {
   # Simulate EWMA strategy and Calculate the returns
-  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bid_offer=0, lagg=2)[, "pnls"]
+  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bidask=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
@@ -727,7 +727,7 @@ plot(x=lambdav, y=sharpetrend, t="l",
 # Calculate the optimal lambda
 lambda <- lambdav[which.max(sharpetrend)]
 # Simulate best performing strategy
-ewmatrend <- sim_ewma(ohlc=ohlc, lambda=lambda, bid_offer=0, lagg=2)
+ewmatrend <- sim_ewma(ohlc=ohlc, lambda=lambda, bidask=0, lagg=2)
 posv <- ewmatrend[, "positions"]
 trendopt <- ewmatrend[, "pnls"]
 wealthv <- cbind(retp, trendopt)
@@ -781,7 +781,7 @@ lambdav <- seq(0.6, 0.7, 0.01)
 # Perform lapply() loop over lambdav
 pnlrevert <- lapply(lambdav, function(lambda) {
   # Simulate EWMA strategy and Calculate the returns
-  sim_ewma(ohlc=ohlc, lambda=lambda, bid_offer=0, trend=(-1))[, "pnls"]
+  sim_ewma(ohlc=ohlc, lambda=lambda, bidask=0, trend=(-1))[, "pnls"]
 })  # end lapply
 pnlrevert <- do.call(cbind, pnlrevert)
 colnames(pnlrevert) <- paste0("lambda=", lambdav)
@@ -862,7 +862,7 @@ plot(x=lambdav, y=sharperevert, t="l",
 # Calculate the optimal lambda
 lambda <- lambdav[which.max(sharperevert)]
 # Simulate best performing strategy
-ewmarevert <- sim_ewma(ohlc=ohlc, bid_offer=0.0,
+ewmarevert <- sim_ewma(ohlc=ohlc, bidask=0.0,
   lambda=lambda, trend=(-1))
 posv <- ewmarevert[, "positions"]
 revertopt <- ewmarevert[, "pnls"]
@@ -1105,7 +1105,7 @@ dyplot
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 sim_ewma2 <- function(ohlc, lambdaf=0.1, lambdas=0.01, look_back=333, 
-                      bid_offer=0.001, trend=1, lagg=1) {
+                      bidask=0.001, trend=1, lagg=1) {
   if (lambdaf >= lambdas) return(NA)
   closep <- quantmod::Cl(ohlc)
   retp <- rutils::diffit(closep)
@@ -1129,7 +1129,7 @@ sim_ewma2 <- function(ohlc, lambdaf=0.1, lambdas=0.01, look_back=333,
   posv <- rutils::lagit(posv, lagg=1)
   # Calculate the PnLs of strategy
   pnls <- retp*posv
-  costs <- 0.5*bid_offer*abs(rutils::diffit(posv))
+  costs <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costs)
   # Calculate the strategy returns
   pnls <- cbind(posv, pnls)
@@ -1162,10 +1162,10 @@ source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lambdafv <- seq(from=0.85, to=0.99, by=0.01)
 lambdasv <- seq(from=0.85, to=0.99, by=0.01)
 # Calculate the Sharpe ratio of dual EWMA strategy
-calc_sharpe <- function(ohlc, lambdaf, lambdas, look_back, bid_offer, trend, lagg) {
+calc_sharpe <- function(ohlc, lambdaf, lambdas, look_back, bidask, trend, lagg) {
   if (lambdaf >= lambdas) return(NA)
   pnls <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, look_back=look_back, 
-    bid_offer=bid_offer, trend=trend, lagg=lagg)[, "pnls"]
+    bidask=bidask, trend=trend, lagg=lagg)[, "pnls"]
   sqrt(252)*mean(pnls)/sd(pnls)
 }  # end calc_sharpe
 # Vectorize calc_sharpe with respect to lambdaf and lambdas
@@ -1173,13 +1173,13 @@ calc_sharpe <- Vectorize(FUN=calc_sharpe,
   vectorize.args=c("lambdaf", "lambdas"))
 # Calculate the matrix of PnLs
 sharpem <- outer(lambdafv, lambdasv, FUN=calc_sharpe, ohlc=ohlc, 
-                 look_back=look_back, bid_offer=0.0, trend=1, lagg=2)
+                 look_back=look_back, bidask=0.0, trend=1, lagg=2)
 # Or perform two sapply() loops over lambda vectors
 sharpem <- sapply(lambdasv, function(lambdas) {
   sapply(lambdafv, function(lambdaf) {
     if (lambdaf >= lambdas) return(NA)
     calc_sharpe(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
-                look_back=look_back, bid_offer=0.0, trend=1, lagg=2)
+                look_back=look_back, bidask=0.0, trend=1, lagg=2)
   })  # end sapply
 })  # end sapply
 colnames(sharpem) <- lambdasv
@@ -1207,7 +1207,7 @@ whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
 lambdaf <- lambdafv[whichv[1]]
 lambdas <- lambdasv[whichv[2]]
 ewma_opt <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
-  look_back=look_back, bid_offer=0.0, trend=1, lagg=2)
+  look_back=look_back, bidask=0.0, trend=1, lagg=2)
 pnls <- ewma_opt[, "pnls"]
 wealthv <- cbind(retp, pnls)
 colnames(wealthv)[2] <- "EWMA"
@@ -1262,7 +1262,7 @@ outsample <- (nrows %/% 2 + 1):nrows
 # Calculate the matrix of PnLs
 sharpem <- outer(lambdafv, lambdasv, 
                  FUN=calc_sharpe, ohlc=ohlc[insample, ], 
-                 look_back=look_back, bid_offer=0.0, trend=1, lagg=2)
+                 look_back=look_back, bidask=0.0, trend=1, lagg=2)
 colnames(sharpem) <- lambdasv
 rownames(sharpem) <- lambdafv
 # Calculate the PnLs for the optimal strategy
@@ -1270,7 +1270,7 @@ whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
 lambdaf <- lambdafv[whichv[1]]
 lambdas <- lambdasv[whichv[2]]
 pnls <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
-                  look_back=look_back, bid_offer=0.0, trend=1, lagg=2)[, "pnls"]
+                  look_back=look_back, bidask=0.0, trend=1, lagg=2)[, "pnls"]
 wealthv <- cbind(retp, pnls)
 colnames(wealthv)[2] <- "EWMA"
 # Calculate the Sharpe and Sortino ratios in-sample and out-of-sample
@@ -1563,7 +1563,7 @@ text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-sim_vwap <- function(ohlc, lambda=0.9, bid_offer=0.001, trend=1, lagg=1) {
+sim_vwap <- function(ohlc, lambda=0.9, bidask=0.001, trend=1, lagg=1) {
   closep <- log(quantmod::Cl(ohlc))
   volum <- quantmod::Vo(ohlc)
   retp <- rutils::diffit(closep)
@@ -1587,7 +1587,7 @@ sim_vwap <- function(ohlc, lambda=0.9, bid_offer=0.001, trend=1, lagg=1) {
   posv <- rutils::lagit(posv, lagg=1)
   # Calculate the PnLs of strategy
   pnls <- retp*posv
-  costs <- 0.5*bid_offer*abs(rutils::diffit(posv))
+  costs <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costs)
   # Calculate the strategy returns
   pnls <- cbind(posv, pnls)
@@ -1619,7 +1619,7 @@ lambdav <- seq(from=0.97, to=0.995, by=0.004)
 # Perform lapply() loop over lambdav
 pnls <- lapply(lambdav, function(lambda) {
   # Simulate VWAP strategy and Calculate the returns
-  sim_vwap(ohlc=ohlc, lambda=lambda, bid_offer=0, lagg=2)[, "pnls"]
+  sim_vwap(ohlc=ohlc, lambda=lambda, bidask=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdav)
