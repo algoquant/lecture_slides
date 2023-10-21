@@ -69,7 +69,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 24, 2023}
+\date{October 10, 2023}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -118,7 +118,8 @@ knit_theme$set(thm)
 # Define predictor matrix
 nrows <- 100
 ncols <- 5
-set.seed(1121)  # initialize random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 predm <- matrix(runif(nrows*ncols), ncol=ncols)
 # Add column names
 colnames(predm) <- paste0("pred", 1:ncols)
@@ -158,21 +159,21 @@ respv <- (1 + predm %*% weightv + noisev)
         & \hat{\mathbb{X}}^T \hat{y} - \hat{\mathbb{X}}^T \hat{\mathbb{X}} \beta = 0\\
         & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{y} = \hat{\mathbb{X}}^{inv} \hat{y}
       \end{flalign*}
-      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\hat{y} = y - \bar{y} = \hat{\mathbb{X}} \beta + \varepsilon$ are the de-meaned variables.
+      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\hat{y} = y - \bar{y} = \hat{\mathbb{X}} \beta + \varepsilon$ are the centered (de-meaned) variables.
     \column{0.5\textwidth}
-      The matrix $\hat{\mathbb{X}}^{inv}$ is the generalized inverse of the de-meaned \emph{predictor matrix} $\hat{\mathbb{X}}$.
+      The matrix $\hat{\mathbb{X}}^{inv}$ is the generalized inverse of the centered (de-meaned) \emph{predictor matrix} $\hat{\mathbb{X}}$.
       \vskip1ex
       The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
         <<echo=TRUE,eval=TRUE>>=
 # Perform multivariate regression using lm()
 regmod <- lm(respv ~ predm)
 # Solve multivariate regression using matrix algebra
-# Calculate de-meaned predictor matrix and response vector
-predzm <- t(t(predm) - colMeans(predm))
+# Calculate centered (de-meaned) predictor matrix and response vector
+predc <- t(t(predm) - colMeans(predm))
 # predm <- apply(predm, 2, function(x) (x-mean(x)))
-respzm <- respv - mean(respv)
+respc <- respv - mean(respv)
 # Calculate the regression coefficients
-betav <- drop(MASS::ginv(predzm) %*% respzm)
+betav <- drop(MASS::ginv(predc) %*% respc)
 # Calculate the regression alpha
 alpha <- mean(respv) - sum(colSums(predm)*betav)/nrows
 # Compare with coefficients from lm()
@@ -318,7 +319,7 @@ all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Multivariate Regression} With de-Meaned Variables}
+\subsection{\protect\emph{Multivariate Regression} With Centered Variables}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -328,35 +329,32 @@ all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
       \begin{displaymath}
         y = \alpha + \mathbb{X} \beta + \varepsilon
       \end{displaymath}
-      The intercept $\alpha$ can be substituted with its solution: $\alpha = \bar{y} - \bar{\mathbb{X}} \beta$ to obtain the regression model with de-meaned response and predictor matrix:
+      The intercept $\alpha$ can be substituted with its solution: $\alpha = \bar{y} - \bar{\mathbb{X}} \beta$ to obtain the regression model with centered (de-meaned) response and predictor matrix:
       \begin{flalign*}
         & y = \bar{y} - \bar{\mathbb{X}} \beta + \mathbb{X} \beta \\
         & \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
       \end{flalign*}
-      The regression model with a de-meaned \emph{predictor matrix} produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
-has the same influence matrix, and
+      The regression model with a centered (de-meaned) \emph{predictor matrix} produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
       \vskip1ex
-      But the de-meaned regression model has a different \emph{influence matrix}, which maps the de-meaned \emph{response vector} $\hat{y}$ into the de-meaned \emph{fitted values} $\hat{y}_{fit}$.
+      But the centered regression model has a different \emph{influence matrix}, which maps the centered \emph{response vector} $\hat{y}$ into the centered \emph{fitted values} $\hat{y}_{fit}$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-# Calculate zero mean fitted values
-predzm <- t(t(predm) - colMeans(predm))
-fitted_zm <- drop(predzm %*% betav)
-all.equal(fitted_zm,
+# Calculate centered (de-meaned) fitted values
+predc <- t(t(predm) - colMeans(predm))
+fittedc <- drop(predc %*% betav)
+all.equal(fittedc,
   regmod$fitted.values - mean(respv),
   check.attributes=FALSE)
 # Calculate the residuals
-respzm <- respv - mean(respv)
-resids <- drop(respzm - fitted_zm)
+respc <- respv - mean(respv)
+resids <- drop(respc - fittedc)
 all.equal(resids, regmod$residuals,
           check.attributes=FALSE)
 # Calculate the influence matrix
-influence_zm <- predzm %*% MASS::ginv(predzm)
+infmatc <- predc %*% MASS::ginv(predc)
 # Compare the fitted values
-all.equal(fitted_zm,
-          drop(influence_zm %*% respzm),
-          check.attributes=FALSE)
+all.equal(fittedc, drop(infmatc %*% respc), check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -409,11 +407,11 @@ regmod$coefficients
 # Calculate the PCA regression coefficients directly
 colSums(predpca*drop(respv))/colSums(predpca^2)
 # Create almost collinear predictors
-predc <- predm
-predc[, 1] <- (predc[, 1]/1e3 + predc[, 2])
+predcol <- predm
+predcol[, 1] <- (predcol[, 1]/1e3 + predcol[, 2])
 # Calculate the PCA predictors
-pcad <- prcomp(predc, center=FALSE, scale=FALSE)
-predpca <- predc %*% pcad$rotation
+pcad <- prcomp(predcol, center=FALSE, scale=FALSE)
+predpca <- predcol %*% pcad$rotation
 round(t(predpca) %*% predpca, 6)
 # Calculate the PCA regression coefficients
 drop(MASS::ginv(predpca) %*% respv)
@@ -543,13 +541,13 @@ residsd <- sum(resids^2)/degf
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Inverse of predictor matrix squared
-predm2 <- MASS::ginv(crossprod(predm))
-# predm2 <- t(predm) %*% predm
+pred2 <- MASS::ginv(crossprod(predm))
+# pred2 <- t(predm) %*% predm
 # Variance of residuals
 residsd <- sum(resids^2)/degf
 # Calculate covariance matrix of betas
-betacovar <- residsd*predm2
-# Round(betacovar, 3)
+betacovar <- residsd*pred2
+# round(betacovar, 3)
 betasd <- sqrt(diag(betacovar))
 all.equal(betasd, regsum$coeff[, 2], check.attributes=FALSE)
 # Calculate t-values of betas
@@ -640,7 +638,8 @@ formulav <- paste(colnames(retp)[1],
 regmod <- lm(formulav, data=retp)
 regsum <- summary(regmod)
 # Bootstrap of regression
-set.seed(1121)  # initialize random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 bootd <- sapply(1:100, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
   regmod <- lm(formulav, data=retp[samplev, ])
@@ -666,28 +665,28 @@ t(apply(bootd, MARGIN=1,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The forecast $y_{forecast}$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
+      The forecast $y_f$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
       \begin{displaymath}
-        y_{forecast} = \mathbb{X}_{new} \, \beta
+        y_f = \mathbb{X}_{new} \, \beta
       \end{displaymath}
-      The forecast is a \emph{random variable} $\hat{y}_{forecast}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}:
+      The forecast is a \emph{random variable} $\hat{y}_f$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}:
       \begin{align*}
-        \hat{y}_{forecast} = \mathbb{X}_{new} \hat\beta = \mathbb{X}_{new} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = \\
-        y_{forecast} + \mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon
+        \hat{y}_f = \mathbb{X}_{new} \hat\beta = \mathbb{X}_{new} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = \\
+        y_f + \mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon
       \end{align*}
-      The variance $\sigma^2_{forecast}$ of the \emph{forecast value} is:
+      The variance $\sigma^2_f$ of the \emph{forecast value} is:
       \begin{align*}
-        & \sigma^2_{forecast} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
+        & \sigma^2_f = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
         & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
         & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
         & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
         \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
       \end{align*}
     \column{0.5\textwidth}
-      The variance $\sigma^2_{forecast}$ of the \emph{forecast value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
+      The variance $\sigma^2_f$ of the \emph{forecast value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
         <<echo=TRUE,eval=TRUE>>=
 # New data predictor is a data frame or row vector
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
 colnamev <- colnames(predm)
 colnames(newdata) <- colnamev
@@ -864,27 +863,25 @@ all.equal(drop(rsqadj), regsum$adj.r.squared)
     \column{0.5\textwidth}
       Let $\chi^2_m$ and $\chi^2_n$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
       \vskip1ex
-      Then the \emph{F-statistic} random variable:
+      Then the random variable:
       \begin{displaymath}
         F = \frac{\chi^2_m / m}{\chi^2_n / n}
       \end{displaymath}
       Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
       \begin{displaymath}
-        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{m/2-1}}{(n+mF)^{(m+n)/2}}
+        f(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{m/2-1}}{(n+mF)^{(m+n)/2}}
       \end{displaymath}
-      The \emph{F-distribution} depends on the \emph{F-statistic} $F$ and also on the degrees of freedom, $m$ and $n$.
+      The \emph{F-distribution} depends on the ratio $F$ and also on the degrees of freedom, $m$ and $n$.
       \vskip1ex
-      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Plot three curves in loop
-degf <- c(3, 5, 9)  # Degrees of freedom
+      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}. 
+      <<echo=TRUE,eval=FALSE>>=
+# Plot four curves in loop
+degf <- c(3, 5, 9, 21)  # Degrees of freedom
 colorv <- c("black", "red", "blue", "green")
-for (it in 1:NROW(degf)) {
-curve(expr=df(x, df1=degf[it], df2=3),
-      xlim=c(0, 4), xlab="", ylab="", lwd=2,
-      col=colorv[it], add=as.logical(it-1))
+for (indeks in 1:NROW(degf)) {
+  curve(expr=df(x, df1=degf[indeks], df2=3),
+    xlim=c(0, 4), xlab="", ylab="", lwd=2, 
+    col=colorv[indeks], add=as.logical(indeks-1))
 }  # end for
       @
     \column{0.5\textwidth}
@@ -894,9 +891,9 @@ curve(expr=df(x, df1=degf[it], df2=3),
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
-labelv <- paste("df", degf, sep="=")
-legend("topright", inset=0.05, title="degrees of freedom",
-       y.intersp=0.4, bty="n", labelv, cex=0.8, lwd=2, lty=1, col=colorv)
+labelv <- paste("degf", degf, sep=" = ")
+legend("topright", title="Degrees of Freedom", inset=0.0, bty="n",
+       y.intersp=0.4, labelv, cex=1.2, lwd=6, lty=1, col=colorv)
       @
   \end{columns}
 \end{block}
@@ -919,7 +916,7 @@ legend("topright", inset=0.05, title="degrees of freedom",
       \vskip1ex
       The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom.
       \vskip1ex
-      The \emph{F-test} tests the \emph{null hypothesis} that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance $\sigma^2_x$ is not significantly greater than $\sigma^2_y$).
+      The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance $\sigma^2_x$ is not significantly greater than $\sigma^2_y$).
       \vskip1ex
       A large value of the \emph{F-statistic} $F$ indicates that the variances are unlikely to be equal.
       \vskip1ex
@@ -952,7 +949,7 @@ pf(fratio, nrows-1, nrows-1)
     \column{0.5\textwidth}
       The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response}.
       \vskip1ex
-      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_1 > p_2$.
+      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_1 < p_2$.
       \vskip1ex
       Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}:
       \begin{displaymath}
@@ -960,7 +957,7 @@ pf(fratio, nrows-1, nrows-1)
       \end{displaymath}
       Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
     \column{0.5\textwidth}
-      If the \emph{restricted} model only has one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
+      If the \emph{restricted} model has only one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
       \vskip1ex
       Let the \emph{unrestricted} multivariate regression model be defined as:
       \begin{displaymath}
@@ -992,6 +989,10 @@ pf(fratio, nrows-1, nrows-1)
         F = \frac{ESS/(k-1)}{RSS/(n-k)}
       \end{displaymath}
       Follows the \emph{F-distribution} with $(k-1)$ and $(n-k)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance of $ESS$ is not significantly greater than of $RSS$).
+      \vskip1ex
+      A large value of the \emph{F-statistic} $F$ indicates that the variance of $ESS$ is significantly greater than that of $RSS$, and that the regression is statistically significant.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
@@ -1004,6 +1005,695 @@ fstat <- (ess/(ncols-1))/(rss/degf)
 all.equal(fstat, regsum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=fstat, df1=(ncols-1), df2=(nrows-ncols))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Regression Regularized}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularized Inverse of Rectangular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ is defined as the factorization:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{U} \Sigma \mathbb{V}^T
+      \end{displaymath}
+      Where $\mathbb{U}$ and $\mathbb{V}$ are the \emph{singular matrices}, and $\Sigma$ is a diagonal matrix of \emph{singular values}.
+      \vskip1ex
+      The \emph{generalized inverse} matrix $\mathbb{A}^{-1}$ satisfies the inverse equation: $\mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}$, and it can be expressed as a product of the \emph{SVD} matrices as follows:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
+      \end{displaymath}
+      If any of the \emph{singular values} are zero then the \emph{generalized inverse} does not exist.
+      \vskip1ex
+      The \emph{regularized inverse} is obtained by removing very small \emph{singular values}:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
+      \end{displaymath}
+      Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices without very small \emph{singular values}.
+      \vskip1ex
+      The regularized inverse satisfies the inverse equation only approximately (it has \emph{bias}), but it's often used in machine learning because it has lower \emph{variance} than the exact inverse.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate ETF returns
+retp <- na.omit(rutils::etfenv$returns)
+# Perform singular value decomposition
+svdec <- svd(retp)
+barplot(svdec$d, main="Singular Values of ETF Returns")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.35\paperwidth]{figure/reg_svd.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate generalized inverse from SVD
+invmat <- svdec$v %*% (t(svdec$u) / svdec$d)
+# Verify inverse property of inverse
+all.equal(zoo::coredata(retp), retp %*% invmat %*% retp)
+# Calculate regularized inverse from SVD
+dimax <- 1:3
+invreg <- svdec$v[, dimax] %*%
+  (t(svdec$u[, dimax]) / svdec$d[dimax])
+# Calculate regularized inverse using RcppArmadillo
+invcpp <- HighFreq::calc_inv(retp, dimax=3)
+all.equal(invreg, invcpp, check.attributes=FALSE)
+# Calculate regularized inverse from Moore-Penrose pseudo-inverse
+retsq <- t(retp) %*% retp
+eigend <- eigen(retsq)
+inv2 <- eigend$vectors[, dimax] %*% 
+  (t(eigend$vectors[, dimax]) / eigend$values[dimax])
+invmp <- inv2 %*% t(retp)
+all.equal(invreg, invmp, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Transformation of the Predictor Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{multivariate} linear regression model can be transformed by replacing its \emph{predictors} ${x_j}$ with their own linear combinations.
+      \vskip1ex
+      This is equivalent to multiplying the \emph{predictor matrix} $\mathbb{X}$ by a transformation matrix $\mathbb{W}$:
+      \begin{displaymath}
+        \mathbb{X}_{trans} = \mathbb{X} \, \mathbb{W}
+      \end{displaymath}
+      The transformed \emph{predictor matrix} $\mathbb{X}_{trans}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{predictor matrix} $\mathbb{X}$:
+      \begin{flalign*}
+        & \mathbb{H}_{trans} = \mathbb{X}_{trans} (\mathbb{X}^T_{trans} \mathbb{X}_{trans})^{-1} \mathbb{X}^T_{trans} = \\
+        & \mathbb{X}\mathbb{W} (\mathbb{W}^T \mathbb{X}^T \mathbb{X} \mathbb{W})^{-1} \mathbb{W}^T \mathbb{X}^T = \\
+        & \mathbb{X}\mathbb{W} \mathbb{W}^{-1} (\mathbb{X}^T \mathbb{X})^{-1} {\mathbb{W}^T}^{-1} \mathbb{W}^T \mathbb{X}^T = \\
+        & \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{H}
+      \end{flalign*}
+      Since the \emph{influence matrix} $\mathbb{H}$ is the same, the transformed regression model produces the same \emph{fitted values} and \emph{residuals} as the original regression model, so it's equivalent to it.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Define transformation matrix
+matv <- matrix(runif(ncols^2, min=(-1), max=1), ncol=ncols)
+# Calculate linear combinations of predictor columns
+predt <- predm %*% matv
+# Calculate the influence matrix of the transformed predictor
+influencet <- predt %*% MASS::ginv(predt)
+# Compare the influence matrices
+all.equal(infmat, influencet)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In \emph{Principal Component Regression} (\emph{PCR}), the predictor matrix $\mathbb{X}$ is multiplied by the \emph{PCA rotation matrix} $\mathbb{W}$:
+      \begin{displaymath}
+        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+      \end{displaymath}
+      So that the principal component vectors form the columns of the new predictor matrix.
+      \vskip1ex
+      Since the new \emph{PCR} predictors $x^{pca}_i$ are orthogonal, the regression coefficients are simply: 
+      \begin{displaymath}
+        \beta_i = \frac{x^{pca}_i \cdot y}{\sigma^2_i}
+      \end{displaymath}
+      Where $x^{pca}_i \cdot y$ are the inner products of the \emph{PCR} predictors $x^{pca}_i$ times the \emph{response vector} $y$, and $\sigma^2_i = x^{pca}_i \cdot x^{pca}_i$ are the inner products (sum of squares) of the predictors $x^{pca}_i$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Perform PCA of the predictors
+pcad <- prcomp(predm, center=FALSE, scale=FALSE)
+# Calculate the PCA predictors
+predpca <- predm %*% pcad$rotation
+# Principal components are orthogonal to each other
+round(t(predpca) %*% predpca, 2)
+# Calculate the PCA influence matrix
+infmat <- predm %*% MASS::ginv(predm)
+infpca <- predpca %*% MASS::ginv(predpca)
+all.equal(infmat, infpca)
+# Calculate the regression coefficients
+coeffv <- drop(MASS::ginv(predm) %*% respv)
+# Transform the collinear regression coefficients to the PCA
+drop(coeffv %*% pcad$rotation)
+# Calculate the PCA regression coefficients
+drop(MASS::ginv(predpca) %*% respv)
+# Calculate the PCA regression coefficients directly
+colSums(predpca*drop(respv))/colSums(predpca^2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dimension Reduction Using Principal Component Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the predictor columns are \emph{collinear} then some of the \emph{PCR} predictor squares are zero $\sigma^2_i = 0$, and the associated regression coefficients are infinite (indeterminate) and should be discarded.
+      \vskip1ex
+      The regression can also become \emph{singular} if the number of rows of the predictor is too small, or is even less than the number of its columns.
+      \vskip1ex
+      The regression can be \emph{regularized} by removing the infinite or very large \emph{PCR} regression coefficients, and transforming the coefficients back to the original predictor coordinates.
+      \vskip1ex
+      This is called \emph{dimension reduction} - excluding the principal components with very small squares.
+      \vskip1ex
+      \emph{Dimension reduction} can also be applied to reduce model overfitting by reducing the number of effective predictors.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Create almost collinear predictors
+predcol <- predm
+predcol[, 1] <- (predcol[, 1]/1e3 + predcol[, 2])
+# Calculate the collinear regression coefficients
+coeffv <- drop(MASS::ginv(predcol) %*% respv)
+coeffv
+# Calculate the PCA predictors
+pcad <- prcomp(predcol, center=FALSE, scale=FALSE)
+predpca <- predcol %*% pcad$rotation
+round(t(predpca) %*% predpca, 6)
+# Transform the collinear regression coefficients to the PCA
+drop(coeffv %*% pcad$rotation)
+# Calculate the PCA regression coefficients
+coeffpca <- drop(MASS::ginv(predpca) %*% respv)
+# Calculate the PCA regression coefficients directly
+colSums(predpca*drop(respv))/colSums(predpca^2)
+# Transform the PCA regression coefficients to the original coordinates
+drop(coeffpca %*% MASS::ginv(pcad$rotation))
+coeffv
+# Calculate the regression coefficients after dimension reduction
+npca <- NROW(coeffpca)
+drop(coeffpca[-npca] %*% MASS::ginv(pcad$rotation)[-npca, ])
+# Compare with the collinear regression coefficients
+coeffv
+# Calculate the original regression coefficients
+drop(MASS::ginv(predm) %*% respv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{The Hampel Filter}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading \protect\emph{TAQ} Data From \texttt{.csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Trade and Quote (\emph{TAQ}) data stored in \texttt{.csv} files can be very large, so it's better to read it using the function \texttt{data.table::fread()} which is much faster than the function \texttt{read.csv()}.
+      \vskip1ex
+      Each \emph{trade} or \emph{quote} contributes a \emph{tick} (row) of data, and the number of ticks can be very large (hundred of thousands per day, or more).
+      \vskip1ex
+      The function \texttt{strptime()} coerces \texttt{character} strings representing the date and time into \texttt{POSIXlt} \emph{date-time} objects.
+      \vskip1ex
+      The argument \texttt{format="\%H:\%M:\%OS"} allows the parsing of fractional seconds, for example \texttt{"15:59:59.989847074"}.
+      \vskip1ex
+      The function \texttt{as.POSIXct()} coerces objects into \texttt{POSIXct} \emph{date-time} objects, with a \texttt{numeric} value representing the \emph{moment of time} in seconds.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)
+# Read TAQ trade data from csv file
+taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.csv")
+# Inspect the TAQ data in data.table format
+taq
+class(taq)
+colnames(taq)
+sapply(taq, class)
+symbol <- taq$SYM_ROOT[1]
+# Create date-time index
+datev <- paste(taq$DATE, taq$TIME_M)
+# Coerce date-time index to POSIXlt
+datev <- strptime(datev, "%Y%m%d %H:%M:%OS")
+class(datev)
+# Display more significant digits
+# options("digits")
+options(digits=20, digits.secs=10)
+last(datev)
+unclass(last(datev))
+as.numeric(last(datev))
+# Coerce date-time index to POSIXct
+datev <- as.POSIXct(datev)
+class(datev)
+last(datev)
+unclass(last(datev))
+as.numeric(last(datev))
+# Calculate the number of seconds
+nsecs <- as.numeric(last(datev)) - as.numeric(first(datev))
+# Calculate the number of ticks per second
+NROW(taq)/(6.5*3600)
+# Select TAQ data columns
+taq <- taq[, .(price=PRICE, volume=SIZE)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trading Volumes in High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trading volumes represent the number of shares traded at a given price.  
+      \vskip1ex
+      The histogram of the trading volumes shows that the highest frequencies of trades are for \texttt{100} shares and for round lots (trades that are multiples of \texttt{100} shares.)
+      \vskip1ex
+      There are also significant frequencies for \emph{odd lots}, with small volumes of less than \texttt{100} shares.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/hf_ticks_volume_histogram.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce trade ticks to xts series
+xlk <- xts::xts(taq[, .(price, volume)], datev)
+colnames(xlk) <- c("price", "volume")
+save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+# Plot histogram of the trading volumes
+hist(xlk$volume, main="Histogram of XLK Trading Volumes", 
+     breaks=1e5, xlim=c(1, 400), xlab="number of shares")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Microstructure Noise in High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      High frequency data contains \emph{microstructure noise} in the form of \emph{price spikes} and the \emph{bid-ask bounce}.
+      \vskip1ex
+      \emph{Price spikes} are single ticks with prices far away from the average.
+      \vskip1ex
+      \emph{Price spikes} are often caused by data collection errors, but sometimes they represent actual trades with very large lot (trade) sizes.
+      \vskip1ex
+      The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
+      \vskip1ex
+      The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in reality the mid price is unchanged.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_raw.png}
+      % \vspace{-1em}
+      % \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_bounce.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph
+dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot in x11 window
+x11(width=6, height=5)
+quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Microstructure Noise And Trading Volumes in High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The number of the \emph{price spikes} depends on the level of trading volumes, with the number decreasing with higher trading volumes.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_biglots.png}
+      % \vspace{-1em}
+      % \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_bounce.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of trade prices of at least 100 shares
+dygraphs::dygraph(xlk$price[volumv >= 100, ], 
+  main="XLK Prices for Trades of At Least 100 Shares") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Microstructure Noise From High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Microstructure noise in high frequency data can be identified using a \emph{Hampel filter}.
+      \vskip1ex
+      The \emph{z-scores} are equal to the prices minus the median of the prices, divided by the median absolute deviation (\emph{MAD}) of prices:
+      \begin{displaymath}
+        z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
+      \end{displaymath}
+      If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate centered Hampel filter to remove bad prices
+look_back <- 71
+half_back <- look_back %/% 2
+pricev <- xlk$price
+medianv <- roll::roll_median(pricev, width=look_back)
+colnames(medianv) <- c("median")
+# Overwrite leading NA values
+medianv[1:look_back, ] <- pricev[1:look_back, ]
+# medianv <- TTR::runMedian(pricev, n=look_back)
+medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=look_back)
+madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
+# Calculate the Z-scores
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_scrubbed.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Define discrimination threshold value
+threshv <- 6*madz
+# Identify good prices with small z-scores
+isgood <- (abs(zscores) < threshv)
+# Calculate the number of bad prices
+sum(!isgood)
+# Remove bad prices and calculate time series of scrubbed prices
+priceg <- xlk$price[isgood]
+# Plot dygraph of the scrubbed prices
+dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot using chart_Series()
+x11(width=6, height=5)
+quantmod::chart_Series(x=priceg,
+  name="Clean XLK Intraday Prices for 2020-03-16")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Classifying Data Outliers Using the Hampel Filter}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hampel filter is a \emph{classifier} which classifies the prices as either good or bad data points.
+      \vskip1ex
+      In order to measure the performance of the Hampel filter, we add price spikes to the clean prices, to see how accurately they're classified. 
+      \vskip1ex
+      Let the \emph{null hypothesis} be that the given price is a good data point.
+      \vskip1ex
+      A positive result corresponds to rejecting the \emph{null hypothesis}, while a negative result corresponds to accepting the \emph{null hypothesis}.
+      \vskip1ex
+      The classifications are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
+      \vskip1ex
+      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), when good data is classified as bad.
+      \vskip1ex
+      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), when bad data is classified as good.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add 200 random price spikes to the clean prices
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nspikes <- 200
+nrows <- NROW(priceg)
+ispike <- logical(nrows)
+ispike[sample(x=nrows, size=nspikes)] <- TRUE
+priceb <- priceg
+priceb[ispike] <- priceb[ispike]*
+  sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
+# Calculate the z-scores
+medianv <- roll::roll_median(priceb, width=look_back)
+# Plot the bad prices and their medians
+pricem <- cbind(priceb, medianv)
+colnames(pricem) <- c("prices with spikes", "median")
+dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
+  dyOptions(colors=c("red", "blue"))
+# medianv <- TTR::runMedian(priceb, n=look_back)
+madv <- HighFreq::roll_var(priceb, look_back=look_back, method="nonparametric")
+# madv <- TTR::runMAD(priceb, n=look_back)
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+zscores[1:look_back, ] <- 0
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
+# Identify good prices with small z-scores
+threshv <- 5*madz
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Confusion Matrix of a Binary Classification Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
+      \vskip1ex
+      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
+      \vskip1ex
+      \newcommand\MyBox[2]{
+        \fbox{\lower0.75cm
+          \vbox to 1.2cm{\vfil
+            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
+            \vfil}
+        }
+      }
+      \renewcommand\arraystretch{0.3}
+      \setlength\tabcolsep{0pt}
+      {\tiny
+      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
+      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
+      & \multicolumn{2}{c}{\bfseries Forecast} & \\
+      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
+      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
+      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
+      \end{tabular}}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate confusion matrix
+table(actual=!ispike, forecast=isgood)
+sum(!isgood)
+# FALSE positive (type I error)
+sum(!ispike & isgood)
+# FALSE negative (type II error)
+sum(ispike & isgood)
+      @
+    \column{0.5\textwidth}
+      Let the \emph{null hypothesis} be that the given price is a good data point.
+      \vskip1ex
+      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
+      \vskip1ex
+      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
+      \vskip1ex
+      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
+      \vskip1ex
+      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
+      \vskip1ex
+      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
+      \vskip1ex
+      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Receiver Operating Characteristic (ROC) Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      \vskip1ex
+      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
+      <<echo=TRUE,eval=FALSE>>=
+# Confusion matrix as function of threshold
+confun <- function(actualv, zscores, threshv) {
+    confmat <- table(actualv, (abs(zscores) < threshv))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+  }  # end confun
+confun(!ispike, zscores, threshv=threshv)
+# Define vector of discrimination thresholds
+threshv <- madz*seq(from=0.1, to=7, by=0.1)^2
+# Calculate error rates
+errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+# Calculate area under ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot ROC curve for Hampel classifier
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Bad Data From Daily Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Daily stock prices also contain bad data points consisting of mostly single, isolated spikes in prices.
+      \vskip1ex
+      The number of false positives may be too high, so the Hampel filter parameters (the look-back interval and the threshold) need adjustment.
+      \vskip1ex
+      For example, the \emph{VXX} has only one bad price (on \texttt{2010-11-08}), but the Hampel filter identifies many more than that (which are false positives).
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the centered Hampel filter for VXX
+pricev <- log(na.omit(rutils::etfenv$prices$VXX))
+medianv <- roll::roll_median(pricev, width=look_back)
+medianv[1:look_back, ] <- pricev[1:look_back, ]
+medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_falsepos.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Define discrimination threshold value
+threshv <- 10*madz
+# Calculate the bad prices
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+# Dates of the bad prices
+zoo::index(pricev[!isgood])
+# Calculate the false positives
+isfp <- !isgood
+isfp[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
+# Plot dygraph of the prices with bad prices
+dygraphs::dygraph(pricev, main="VXX Prices With False Positives") %>%
+  dyEvent(zoo::index(pricev[isfp]), label=rep("false", sum(isfp)), strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Scrubbing Bad Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Bad stock prices can be scrubbed (replaced) with the previous good price.  
+      \vskip1ex
+      But it's incorrect to replace bad prices with the average of the previous good price and the next good price, since that would cause data snooping.
+      <<echo=TRUE,eval=FALSE>>=
+# Dates of the bad prices
+dates <- zoo::index(pricev)
+dateb <- dates[!isgood]
+# Dates of the previous prices
+datep <- c(!isgood[-1], FALSE)
+dates[datep]
+# Replace bad stock prices with the previous good prices
+priceg <- pricev
+priceg[!isgood] <- pricev[datep]
+# Calculate the Z-scores
+medianv <- roll::roll_median(priceg, width=look_back)
+medianv[1:look_back, ] <- priceg[1:look_back, ]
+medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceg, look_back=look_back, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
+# Calculate the number of bad prices
+threshv <- 10*madz
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+zoo::index(priceg[!isgood])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_scrubbed.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the false positives
+isfp <- !isgood
+isfp[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
+# Plot dygraph of the prices with bad prices
+dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
+  dyEvent(zoo::index(priceg[isfp]), label=rep("false", sum(isfp)), strokePattern="solid", color="red") %>%
+  dyOptions(colors="blue", strokeWidth=1)
       @
   \end{columns}
 \end{block}
@@ -1078,7 +1768,8 @@ legend("topleft", title="Scale parameters",
       \vskip1ex
       The function \texttt{wilcox.test()} with parameter \texttt{paired=FALSE} (the default) calculates the \emph{Mann-Whitney} test statistic and its \emph{p}-value.
       <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Simulate overlapping scores data
 sample1 <- runif(100, max=0.6)
 sample2 <- runif(100, min=0.4)
@@ -1228,21 +1919,21 @@ likefun(coeff, respv, predm)
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
 # Rastrigin function with vector argument for optimization
-rastrigin <- function(vectorv, param=25) {
-  sum(vectorv^2 - param*cos(vectorv))
+rastrigin <- function(vecv, param=25) {
+  sum(vecv^2 - param*cos(vecv))
 }  # end rastrigin
-vectorv <- c(pi/6, pi/6)
-rastrigin(vectorv=vectorv)
+vecv <- c(pi/6, pi/6)
+rastrigin(vecv=vecv)
 # Draw 3d surface plot of Rastrigin function
 options(rgl.useNULL=TRUE); library(rgl)
 rgl::persp3d(
-  x=Vectorize(function(x, y) rastrigin(vectorv=c(x, y))),
+  x=Vectorize(function(x, y) rastrigin(vecv=c(x, y))),
   xlim=c(-10, 10), ylim=c(-10, 10),
   col="green", axes=FALSE, zlab="", main="rastrigin")
 # Render the 3d surface plot of function
 rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
 # Optimize with respect to vector argument
-optiml <- optim(par=vectorv, fn=rastrigin,
+optiml <- optim(par=vecv, fn=rastrigin,
                 method="L-BFGS-B",
                 upper=c(4*pi, 4*pi),
                 lower=c(pi/2, pi/2),
@@ -1357,7 +2048,7 @@ detach("package:ISLR")  # Remove ISLR from search path
       This avoids implicit coercion by the function \texttt{glm()}.
     \column{0.5\textwidth}
       <<echo=TRUE,eval=TRUE>>=
-# Coerce the student and default columns into Boolean
+# Coerce the default and student columns to Boolean
 Default <- ISLR::Default
 Default$default <- (Default$default == "Yes")
 Default$student <- (Default$student == "Yes")
@@ -1659,7 +2350,8 @@ threshv <- 0.7
 # Calculate confusion matrix in-sample
 table(actual=!default, forecast=(fcast < threshv))
 # Fit logistic regression over training data
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nrows <- NROW(Default)
 samplev <- sample.int(n=nrows, size=nrows/2)
 trainset <- Default[samplev, ]
@@ -1819,337 +2511,6 @@ x11(width=5, height=5)
 plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{The Hampel Filter}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading \protect\emph{TAQ} Data From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Trade and Quote (\emph{TAQ}) data stored in \texttt{.csv} files can be very large, so it's better to read it using the function \texttt{data.table::fread()} which is much faster than the function \texttt{read.csv()}.
-      \vskip1ex
-      Each \emph{trade} or \emph{quote} contributes a \emph{tick} (row) of data, and the number of ticks can be very large (hundred of thousands per day, or more).
-      \vskip1ex
-      The function \texttt{strptime()} coerces \texttt{character} strings representing the date and time into \texttt{POSIXlt} \emph{date-time} objects.
-      \vskip1ex
-      The argument \texttt{format="\%H:\%M:\%OS"} allows the parsing of fractional seconds, for example \texttt{"15:59:59.989847074"}.
-      \vskip1ex
-      The function \texttt{as.POSIXct()} coerces objects into \texttt{POSIXct} \emph{date-time} objects, with a \texttt{numeric} value representing the \emph{moment of time} in seconds.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)
-# Read TAQ trade data from csv file
-taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.csv")
-# Inspect the TAQ data
-taq
-class(taq)
-colnames(taq)
-sapply(taq, class)
-symbol <- taq$SYM_ROOT[1]
-# Create date-time index
-datev <- paste(taq$DATE, taq$TIME_M)
-# Coerce date-time index to POSIXlt
-datev <- strptime(datev, "%Y%m%d %H:%M:%OS")
-class(datev)
-# Display more significant digits
-# options("digits")
-options(digits=20, digits.secs=10)
-last(datev)
-unclass(last(datev))
-as.numeric(last(datev))
-# Coerce date-time index to POSIXct
-datev <- as.POSIXct(datev)
-class(datev)
-last(datev)
-unclass(last(datev))
-as.numeric(last(datev))
-# Calculate the number of seconds
-nsecs <- as.numeric(last(datev)) - as.numeric(first(datev))
-# Calculate the number of ticks per second
-NROW(taq)/(6.5*3600)
-# Select TAQ data columns
-taq <- taq[, .(price=PRICE, volume=SIZE)]
-# Add date-time index
-taq <- cbind(index=datev, taq)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Microstructure Noise in High Frequency Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      High frequency data contains \emph{microstructure noise} in the form of \emph{price jumps} and the \emph{bid-ask bounce}.
-      \vskip1ex
-      \emph{Price jumps} are single ticks with prices far away from the average.
-      \vskip1ex
-      \emph{Price jumps} are often caused by data collection errors, but sometimes they represent actual very large lot trades.
-      \vskip1ex
-      The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
-      \vskip1ex
-      The \emph{bid-ask bounce} creates an illusion of rapidly changing pricev, while in fact the mid price is constant.
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce trade ticks to xts series
-xlk <- xts::xts(taq[, .(price, volume)], taq$index)
-colnames(xlk) <- c("price", "volume")
-save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_dygraph.png}
-      % \vspace{-1em}
-      % \includegraphics[width=0.45\paperwidth]{figure/hf_stocks_bounce.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph
-dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16")
-# Plot in x11 window
-x11(width=6, height=5)
-quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Removing Microstructure Noise From High Frequency Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Microstructure noise can be removed from high frequency data by using a \emph{Hampel filter}.
-      \vskip1ex
-      The \emph{z-scores} are equal to the prices minus the median pricev, divided by the median absolute deviation (\emph{MAD}) of prices:
-      \begin{displaymath}
-        z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
-      \end{displaymath}
-      If the \emph{z-score} exceeds the \emph{threshold value} then it's classified as an \emph{outlier} (jump in pricev).
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate centered Hampel filter to remove price jumps
-look_back <- 111
-half_back <- look_back %/% 2
-pricev <- xlk$price
-medianv <- roll::roll_median(pricev, width=look_back)
-colnames(medianv) <- c("median")
-# Overwrite leading NA values
-medianv[1:look_back, ] <- pricev[1:look_back, ]
-# medianv <- TTR::runMedian(pricev, n=look_back)
-medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=look_back)
-madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
-# Calculate Z-scores
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-hist(zscores, breaks=2000, xlim=c(-5*mad(zscores), 5*mad(zscores)))
-# Define discrimination threshold value
-threshv <- 6*mad(zscores)
-# Identify price jumps with large z-scores
-isbad <- (abs(zscores) > threshv)
-# Calculate number of price jumps
-sum(isbad)/NROW(zscores)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_good_ticks_dygraph.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Remove price jumps and calculate time series of clean prices
-cleanp <- taq[!isbad]
-xlkc <- xts::xts(cleanp[, .(price, volume)], cleanp$index)
-colnames(xlkc) <- c("price", "volume")
-# Plot dygraph of the clean prices
-dygraphs::dygraph(xlkc$price,
-  main="Clean XLK Intraday Prices for 2020-03-16")
-# Plot using chart_Series()
-x11(width=6, height=5)
-quantmod::chart_Series(x=xlkc$price,
-  name="Clean XLK Intraday Prices for 2020-03-16")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Classifying Data Outliers Using the Hampel Filter}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The data points whose absolute \emph{z-scores} exceed a \emph{threshold value} are classified as outliers.
-      \vskip1ex
-      This procedure is a \emph{classifier}, which classifies the prices as either good or bad data points.
-      \vskip1ex
-      If the bad data points are not labeled, then we can add jumps to the data to test the performance of the classifier.
-      \vskip1ex
-      Let the \emph{null hypothesis} be that the given price is a good data point.
-      \vskip1ex
-      A positive result corresponds to rejecting the \emph{null hypothesis}, while a negative result corresponds to accepting the \emph{null hypothesis}.
-      \vskip1ex
-      The classifications are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
-      \vskip1ex
-      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), when good data is classified as bad.
-      \vskip1ex
-      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), when bad data is classified as good.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add 200 random price jumps into prices
-set.seed(1121)
-nbad <- 200
-isjump <- logical(NROW(pricev))
-isjump[sample(x=NROW(isjump), size=nbad)] <- TRUE
-pricev <- xlk$price
-pricev[isjump] <- pricev[isjump]*
-  sample(c(0.98, 1.02), size=nbad, replace=TRUE)
-# Calculate time series of z-scores
-medianv <- roll::roll_median(pricev, width=look_back)
-colnames(medianv) <- c("median")
-# Plot the prices and medians
-dygraphs::dygraph(cbind(pricev, medianv), main="VTI Median Prices") %>%
-  dyOptions(colors=c("black", "red"))
-# medianv <- TTR::runMedian(pricev, n=look_back)
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=look_back)
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-zscores[1:look_back, ] <- 0
-zscores <- zscores/(sum(abs(range(zscores)))/2)
-# Identify price jumps with large z-scores
-threshv <- 0.1
-isbad <- (abs(zscores) > threshv)
-sum(isbad)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Confusion Matrix of a Binary Classification Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
-      \vskip1ex
-      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
-      \vskip1ex
-      \newcommand\MyBox[2]{
-        \fbox{\lower0.75cm
-          \vbox to 1.2cm{\vfil
-            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
-            \vfil}
-        }
-      }
-      \renewcommand\arraystretch{0.3}
-      \setlength\tabcolsep{0pt}
-      {\tiny
-      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
-      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
-      & \multicolumn{2}{c}{\bfseries Forecast} & \\
-      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
-      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
-      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
-      \end{tabular}}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate confusion matrix
-table(actual=!isjump, forecast=!isbad)
-sum(isbad)
-# FALSE positive (type I error)
-sum(!isjump & isbad)
-# FALSE negative (type II error)
-sum(isjump & !isbad)
-      @
-    \column{0.5\textwidth}
-      Let the \emph{null hypothesis} be that the given price is a good data point.
-      \vskip1ex
-      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
-      \vskip1ex
-      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
-      \vskip1ex
-      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
-      \vskip1ex
-      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
-      \vskip1ex
-      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
-      \vskip1ex
-      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Receiver Operating Characteristic (ROC) Curve}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
-      \vskip1ex
-      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
-      <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of threshold
-confun <- function(actualv, zscores, threshv) {
-    confmat <- table(!actualv, !(abs(zscores) > threshv))
-    confmat <- confmat / rowSums(confmat)
-    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-  }  # end confun
-confun(isjump, zscores, threshv=threshv)
-# Define vector of discrimination thresholds
-threshv <- seq(from=0.001, to=0.1, by=0.001)
-# Calculate error rates
-errorr <- sapply(threshv, confun, actualv=isjump, zscores=zscores)
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-# Calculate area under ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot ROC curve for Hampel classifier
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Hampel Classifier",
-     type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
       @
   \end{columns}

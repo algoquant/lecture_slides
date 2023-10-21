@@ -280,7 +280,7 @@ colnames(wealthv)[1] <- "All stocks"
 colnamev <- colnames(wealthv)
 dygraphs::dygraph(wealthv[endd], main="All Stocks and Random Sub-Portfolios") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
-  dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=3) %>%
+  dySeries(name=colnamev[1], strokeWidth=3) %>%
   dyLegend(show="always", width=500)
 # Define in-sample and out-of-sample intervals
 cutoff <- nrows %/% 2

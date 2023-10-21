@@ -67,7 +67,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 3, 2023}
+\date{September 25, 2023}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -79,6 +79,7 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
 
 
 %%%%%%%%%%%%%%%
@@ -111,7 +112,7 @@ knit_theme$set(thm)
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate random default probabilities
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nbonds <- 100
 defprobs <- runif(nbonds, max=0.2)
 mean(defprobs)
@@ -120,7 +121,7 @@ unifv <- runif(nbonds)
 sum(unifv < defprobs)
 # Simulate average number of defaults using for() loop (inefficient way)
 nsimu <- 1000
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 defaultv <- numeric(nsimu)
 for (i in 1:nsimu) {  # Perform loop
   unifv <- runif(nbonds)
@@ -129,7 +130,7 @@ for (i in 1:nsimu) {  # Perform loop
 # Calculate average number of defaults
 mean(defaultv)
 # Simulate using vectorized functions (efficient way)
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 unifm <- matrix(runif(nsimu*nbonds), ncol=nsimu)
 defaultv <- colSums(unifm < defprobs)
 mean(defaultv)
@@ -236,7 +237,7 @@ rhos <- sqrt(rho) ; rhosm <- sqrt(1-rho)
 nbonds <- 5 ; nsimu <- 10000
 # Calculate vector of systematic and idiosyncratic factors
 sysv <- rnorm(nsimu)
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 isync <- rnorm(nsimu*nbonds)
 dim(isync) <- c(nbonds, nsimu)
 # Simulate asset values using vectorized functions (efficient way)
@@ -249,7 +250,7 @@ cor(t(assetm))
 # Allocate matrix of assets
 assetn <- matrix(nrow=nbonds, ncol=nsimu)
 # Simulate asset values using for() loop
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 for (i in 1:nsimu) {  # Perform loop
   assetn[, i] <- rhos*sysv[i] + rhosm*rnorm(nbonds)
 }  # end for
@@ -376,7 +377,7 @@ cor(t(defaultm))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A formula for the default distribution under the Vasicek Model can be derived under the simplifying assumptions that the number of assets is very large and that they all have the same default probabilities $p_i=p$.
+      A formula for the default distribution under the Vasicek Model can be derived under the assumption that the number of assets is very large and that they all have the same default probabilities $p_i=p$.
       \vskip1ex
       In that case the single default threshold is equal to $t=\Phi^{-1}(p)$.
       \vskip1ex
@@ -974,7 +975,7 @@ nbonds <- 300; nsimu <- 1000; lgd <- 0.4
 # Define correlation parameters
 rho <- 0.2; rhos <- sqrt(rho); rhosm <- sqrt(1-rho)
 # Calculate default probabilities and thresholds
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 defprobs <- runif(nbonds, max=0.2)
 defthresh <- qnorm(defprobs)
 # Simulate losses under the Vasicek model
@@ -1175,14 +1176,14 @@ calc_var <- function(defthresh, # Default thresholds
 nbonds <- 300; nsimu <- 1000; lgd <- 0.4
 rho <- 0.2; rhos <- sqrt(rho); rhosm <- sqrt(1-rho)
 # Calculate default probabilities and thresholds
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 defprobs <- runif(nbonds, max=0.2)
 defthresh <- qnorm(defprobs)
 confls <- seq(0.93, 0.99, 0.01)
 # Define number of bootstrap simulations
 nboot <- 500
 # Perform bootstrap of calc_var
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 bootd <- sapply(rep(lgd, nboot), calc_var,
   defthresh=defthresh,
   rhos=rhos, rhosm=rhosm,
@@ -1470,7 +1471,6 @@ legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
         <<echo=TRUE,eval=FALSE>>=
 # Create a plotting expression
 expv <- quote({
-  par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
   degf <- 2:20
   rangev <- (1:NROW(degf))
   indeks <- 4
@@ -1524,7 +1524,6 @@ eval(expv)
 library(animation)
 # Create an expression for creating multiple plots
 expv <- quote({
-  par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
   degf <- 2:20
   rangev <- (1:NROW(degf))
   # Set image refesh interval
@@ -1909,6 +1908,905 @@ servfun <- shiny::shinyServer(function(input, output) {
 
 ## Return a Shiny app object
 shiny::shinyApp(ui=uiface, server=servfun)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Linear Algebra}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vector and Matrix Calculus}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+    \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\mathbf{v}$ and $\mathbf{w}$ be vectors, with $\mathbf{v} = \left\{ v_i \right\}_{i=1}^{i=n}$, and let $\mathbbm{1}$ be the unit vector, with $\mathbbm{1} = \left\{ 1 \right\}_{i=1}^{i=n}$.
+      \vskip1ex
+      Then the inner product of $\mathbf{v}$ and $\mathbf{w}$ can be written as $\mathbf{v}^T \mathbf{w} = \mathbf{w}^T \mathbf{v} = {\sum_{i=1}^n {v_i w_i}}$.
+      \vskip1ex
+      We can then express the sum of the elements of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbbm{1} = \mathbbm{1}^T \mathbf{v} = {\sum_{i=1}^n v_i}$.
+      \vskip1ex
+      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v^2_i}$.
+      \vskip1ex
+      Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$.
+      \vskip1ex
+      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as:
+      \begin{displaymath}
+        \mathbf{v}^T \mathbb{A} \, \mathbf{w} = \mathbf{w}^T \mathbb{A}^T \mathbf{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        \frac{d (\mathbf{v}^T \mathbbm{1})}{d \mathbf{v}} = d_v[\mathbf{v}^T \mathbbm{1}] = d_v[\mathbbm{1}^T \mathbf{v}] = \mathbbm{1}^T \\
+        d_v[\mathbf{v}^T \mathbf{w}] = d_v[\mathbf{w}^T \mathbf{v}] = \mathbf{w}^T \\
+        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{w}] = \mathbf{w}^T \mathbb{A}^T \\
+        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{v}] = \mathbf{v}^T \mathbb{A} + \mathbf{v}^T \mathbb{A}^T
+      \end{align*}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvectors and Eigenvalues of Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The vector $w$ is an \emph{eigenvector} of the matrix $\mathbb{A}$, if it satisfies the \emph{eigenvalue} equation:
+      \begin{displaymath}
+        \mathbb{A} \, w = \lambda \, w
+      \end{displaymath}
+      Where $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $w$.
+      \vskip1ex
+      The number of \emph{eigenvalues} of a matrix is equal to its dimension.
+      \vskip1ex
+      Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other.
+      \vskip1ex
+      The \emph{eigenvectors} can be normalized to $1$.
+      \vskip1ex
+      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal.
+      \vskip1ex
+      The function \texttt{eigen()} calculates the \emph{eigenvectors} and \emph{eigenvalues} of numeric matrices.
+      \vskip1ex
+      An excellent interactive visualization of \emph{eigenvectors} and \emph{eigenvalues} is available here:\\
+      \hskip1em\url{http://setosa.io/ev/eigenvectors-and-eigenvalues/}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_values.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Create a random real symmetric matrix
+matv <- matrix(runif(25), nc=5)
+matv <- matv + t(matv)
+# Calculate the eigenvalues and eigenvectors
+eigend <- eigen(matv)
+eigenvec <- eigend$vectors
+dim(eigenvec)
+# Plot eigenvalues
+barplot(eigend$values, xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(eigend$values)),
+  main="Eigenvalues of a real symmetric matrix")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigen Decomposition of Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other.
+      \vskip1ex
+      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal:
+      \begin{displaymath}
+        \Sigma = \mathbb{O}^T \mathbb{A} \, \mathbb{O}
+      \end{displaymath}
+      Where $\Sigma$ is a \emph{diagonal} matrix containing the \emph{eigenvalues} of matrix $\mathbb{A}$, and $\mathbb{O}$ is an \emph{orthogonal} matrix of its \emph{eigenvectors}, with $\mathbb{O}^T \mathbb{O} = \mathbbm{1}$.
+      \vskip1ex
+      Any real symmetric matrix $\mathbb{A}$ can be decomposed into a product of its \emph{eigenvalues} and its \emph{eigenvectors} (the \emph{eigen decomposition}):
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{O} \, \Sigma \, \mathbb{O}^T
+      \end{displaymath}
+      The \emph{eigen decomposition} expresses a matrix as the product of a rotation, followed by a scaling, followed by the inverse rotation.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# eigenvectors form an orthonormal basis
+round(t(eigenvec) %*% eigenvec, digits=4)
+# Diagonalize matrix using eigenvector matrix
+round(t(eigenvec) %*% (matv %*% eigenvec), digits=4)
+eigend$values
+# eigen decomposition of matrix by rotating the diagonal matrix
+matrixe <- eigenvec %*% (eigend$values * t(eigenvec))
+# Create diagonal matrix of eigenvalues
+# diagmat <- diag(eigend$values)
+# matrixe <- eigenvec %*% (diagmat %*% t(eigenvec))
+all.equal(matv, matrixe)
+      @
+      \emph{Orthogonal} matrices represent rotations in \emph{hyperspace}, and their inverse is equal to their transpose: $\mathbb{O}^{-1} = \mathbb{O}^T$.
+      \vskip1ex
+      The \emph{diagonal} matrix $\Sigma$ represents a scaling (stretching) transformation proportional to the \emph{eigenvalues}.
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices.
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Positive Definite} Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Matrices with positive \emph{eigenvalues} are called \emph{positive definite} matrices.
+      \vskip1ex
+      Matrices with non-negative \emph{eigenvalues} are called \emph{positive semi-definite} matrices (some of their \emph{eigenvalues} may be zero).
+      \vskip1ex
+      An example of \emph{positive definite} matrices are the covariance matrices of linearly independent variables.
+      \vskip1ex
+      But the covariance matrices of linearly dependent variables have some \emph{eigenvalues} equal to zero, in which case they are \emph{singular}, and only \emph{positive semi-definite}.
+      \vskip1ex
+      All covariance matrices are \emph{positive semi-definite} and all \emph{positive semi-definite} matrices are the covariance matrix of some multivariate distribution.
+      \vskip1ex
+      Matrices which have some \emph{eigenvalues} equal to zero are called \emph{singular} (degenerate) matrices.
+      \vskip1ex
+      For any real matrix $\mathbb{A}$, the matrix $\mathbb{A}^T \mathbb{A}$ is \emph{positive semi-definite}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_posdef.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Create a random positive semi-definite matrix
+matv <- matrix(runif(25), nc=5)
+matv <- t(matv) %*% matv
+# Calculate the eigenvalues and eigenvectors
+eigend <- eigen(matv)
+eigend$values
+# Plot eigenvalues
+barplot(eigend$values, las=3, xlab="", ylab="",
+  names.arg=paste0("ev", 1:NROW(eigend$values)),
+  main="Eigenvalues of positive semi-definite matrix")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Singular Value Decomposition (\protect\emph{SVD}) of Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Singular Value Decomposition} (\emph{SVD}) is a generalization of the \emph{eigen decomposition} of square matrices.
+      \vskip1ex
+      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ is defined as the factorization:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{U}  \, \Sigma  \, \mathbb{V}^T
+      \end{displaymath}
+      Where $\mathbb{U}$ and $\mathbb{V}$ are the left and right \emph{singular matrices}, and $\Sigma$ is a diagonal matrix of \emph{singular values}.
+      \vskip1ex
+      If $\mathbb{A}$ has \texttt{m} rows and \texttt{n} columns and if (\texttt{m > n}), then $\mathbb{U}$ is an (\texttt{m x n}) \emph{rectangular} matrix, $\Sigma$ is an (\texttt{n x n}) \emph{diagonal} matrix, and $\mathbb{V}$ is an (\texttt{n x n}) \emph{orthogonal} matrix, and if (\texttt{m < n}) then the dimensions are: (\texttt{m x m}), (\texttt{m x m}), and (\texttt{m x n}).
+      \vskip1ex
+      The left $\mathbb{U}$ and right $\mathbb{V}$ singular matrices consist of columns of \emph{orthonormal} vectors, so that $\mathbb{U}^T \mathbb{U} = \mathbb{V}^T \mathbb{V} = \mathbbm{1}$.
+      \vskip1ex
+      In the special case when $\mathbb{A}$ is a square matrix, then $\mathbb{U} = \mathbb{V}$, and the \emph{SVD} reduces to the \emph{eigen decomposition}.
+    \column{0.5\textwidth}
+      The function \texttt{svd()} performs \emph{Singular Value Decomposition} (\emph{SVD}) of a rectangular matrix, and returns a list of three elements: the \emph{singular values}, and the matrices of left-\emph{singular} vectors and the right-\emph{singular} vectors.
+      <<echo=TRUE,eval=FALSE>>=
+# Perform singular value decomposition
+matv <- matrix(rnorm(50), nc=5)
+svdec <- svd(matv)
+# Recompose matv from SVD mat_rices
+all.equal(matv, svdec$u %*% (svdec$d*t(svdec$v)))
+# Columns of U and V are orthonormal
+round(t(svdec$u) %*% svdec$u, 4)
+round(t(svdec$v) %*% svdec$v, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Left and Right Singular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The left $\mathbb{U}$ and right $\mathbb{V}$ singular matrices define rotation transformations into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
+      \begin{displaymath}
+        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
+      \end{displaymath}
+      The columns of $\mathbb{U}$ and $\mathbb{V}$ are called the \emph{singular} vectors, and they are only defined up to a reflection (change in sign), i.e. if \texttt{vec} is a singular vector, then so is \texttt{-vec}.
+      \vskip1ex
+      The left singular matrix $\mathbb{U}$ forms the \emph{eigenvectors} of the matrix $\mathbb{A} \mathbb{A}^T$.
+      \vskip1ex
+      The right singular matrix $\mathbb{V}$ forms the \emph{eigenvectors} of the matrix $\mathbb{A}^T \mathbb{A}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Dimensions of left and right matrices
+nrows <- 6 ; ncols <- 4
+# Calculate left matrix
+leftmat <- matrix(runif(nrows^2), nc=nrows)
+eigend <- eigen(crossprod(leftmat))
+leftmat <- eigend$vectors[, 1:ncols]
+# Calculate right matrix and singular values
+rightmat <- matrix(runif(ncols^2), nc=ncols)
+eigend <- eigen(crossprod(rightmat))
+rightmat <- eigend$vectors
+singval <- sort(runif(ncols, min=1, max=5), decreasing=TRUE)
+# Compose rectangular matrix
+matv <- leftmat %*% (singval * t(rightmat))
+# Perform singular value decomposition
+svdec <- svd(matv)
+# Recompose matv from SVD
+all.equal(matv, svdec$u %*% (svdec$d*t(svdec$v)))
+# Compare SVD with matv components
+all.equal(abs(svdec$u), abs(leftmat))
+all.equal(abs(svdec$v), abs(rightmat))
+all.equal(svdec$d, singval)
+# Eigen decomposition of matv squared
+retsq <- matv %*% t(matv)
+eigend <- eigen(retsq)
+all.equal(eigend$values[1:ncols], singval^2)
+all.equal(abs(eigend$vectors[, 1:ncols]), abs(leftmat))
+# Eigen decomposition of matv squared
+retsq <- t(matv) %*% matv
+eigend <- eigen(retsq)
+all.equal(eigend$values, singval^2)
+all.equal(abs(eigend$vectors), abs(rightmat))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Inverse of Symmetric Square Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The inverse of a square matrix $\mathbb{A}$ is defined as a square matrix $\mathbb{A}^{-1}$ that satisfies the equation:
+      \begin{displaymath}
+        \mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}
+      \end{displaymath}
+      Where $\mathbbm{1}$ is the identity matrix.
+      \vskip1ex
+      The inverse $\mathbb{A}^{-1}$ of a \emph{symmetric} square matrix $\mathbb{A}$ can also be expressed as the product of the inverse of its \emph{eigenvalues} ($\Sigma$) and its \emph{eigenvectors} ($\mathbb{O}$):
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{O} \, \Sigma^{-1} \, \mathbb{O}^T
+      \end{displaymath}
+      But \emph{singular} (degenerate) matrices (which have some \emph{eigenvalues} equal to zero) don't have an inverse.
+      \vskip1ex
+      The inverse of \emph{non-symmetric} matrices can be calculated using \emph{Singular Value Decomposition} (\emph{SVD}).
+      \vskip1ex
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create a random positive semi-definite matrix
+matv <- matrix(runif(25), nc=5)
+matv <- t(matv) %*% matv
+# Calculate the inverse of matv
+invmat <- solve(a=matv)
+# Multiply inverse with matrix
+round(invmat %*% matv, 4)
+round(matv %*% invmat, 4)
+# Calculate the eigenvalues and eigenvectors
+eigend <- eigen(matv)
+eigenvec <- eigend$vectors
+# Calculate inverse from eigen decomposition
+inveigen <- eigenvec %*% (t(eigenvec) / eigend$values)
+all.equal(invmat, inveigen)
+# Decompose diagonal matrix with inverse of eigenvalues
+# diagmat <- diag(1/eigend$values)
+# inveigen <- eigenvec %*% (diagmat %*% t(eigenvec))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generalized Inverse of Rectangular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generalized inverse of an (\texttt{m x n}) rectangular matrix $\mathbb{A}$ is defined as an (\texttt{n x m}) matrix $\mathbb{A}^{-1}$ that satisfies the equation:
+      \begin{displaymath}
+        \mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}
+      \end{displaymath}
+      The generalized inverse matrix $\mathbb{A}^{-1}$ can be expressed as a product of the inverse of its \emph{singular values} ($\Sigma$) and its left and right \emph{singular} matrices ($\mathbb{U}$ and $\mathbb{V}$):
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
+      \end{displaymath}
+      The generalized inverse $\mathbb{A}^{-1}$ can also be expressed as the \emph{Moore-Penrose pseudo-inverse}:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = (\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T
+      \end{displaymath}
+      In the case when the inverse matrix $\mathbb{A}^{-1}$ exists, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T = \mathbb{A}^{-1} (\mathbb{A}^T)^{-1} \mathbb{A}^T = \mathbb{A}^{-1}$
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Random rectangular matrix: nrows > ncols
+nrows <- 6 ; ncols <- 4
+matv <- matrix(runif(nrows*ncols), nc=ncols)
+# Calculate generalized inverse of matv
+invmat <- MASS::ginv(matv)
+round(invmat %*% matv, 4)
+all.equal(matv, matv %*% invmat %*% matv)
+# Random rectangular matrix: nrows < ncols
+nrows <- 4 ; ncols <- 6
+matv <- matrix(runif(nrows*ncols), nc=ncols)
+# Calculate generalized inverse of matv
+invmat <- MASS::ginv(matv)
+all.equal(matv, matv %*% invmat %*% matv)
+round(matv %*% invmat, 4)
+round(invmat %*% matv, 4)
+# Perform singular value decomposition
+svdec <- svd(matv)
+# Calculate generalized inverse from SVD
+invsvd <- svdec$v %*% (t(svdec$u) / svdec$d)
+all.equal(invsvd, invmat)
+# Calculate Moore-Penrose pseudo-inverse
+invmp <- MASS::ginv(t(matv) %*% matv) %*% t(matv)
+all.equal(invmp, invmat)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularized Inverse of Singular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Singular} matrices have some \emph{singular values} equal to zero, so they don't have an inverse matrix which satisfies the equation: $\mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}$
+      \vskip1ex
+      But if the \emph{singular values} that are equal to zero are removed, then a \emph{regularized inverse} for \emph{singular} matrices can be specified by:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
+      \end{displaymath}
+      Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices with the rows and columns corresponding to zero \emph{singular values} removed.
+      <<echo=TRUE,eval=FALSE>>=
+# Create a random singular matrix
+# More columns than rows: ncols > nrows
+nrows <- 4 ; ncols <- 6
+matv <- matrix(runif(nrows*ncols), nc=ncols)
+matv <- t(matv) %*% matv
+# Perform singular value decomposition
+svdec <- svd(matv)
+# Incorrect inverse from SVD because of zero singular values
+invsvd <- svdec$v %*% (t(svdec$u) / svdec$d)
+# Inverse property doesn't hold
+all.equal(matv, matv %*% invsvd %*% matv)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Set tolerance for determining zero singular values
+precv <- sqrt(.Machine$double.eps)
+# Check for zero singular values
+round(svdec$d, 12)
+notzero <- (svdec$d > (precv*svdec$d[1]))
+# Calculate regularized inverse from SVD
+invsvd <- svdec$v[, notzero] %*%
+  (t(svdec$u[, notzero]) / svdec$d[notzero])
+# Verify inverse property of matv
+all.equal(matv, matv %*% invsvd %*% matv)
+# Calculate regularized inverse using MASS::ginv()
+invmat <- MASS::ginv(matv)
+all.equal(invsvd, invmat)
+# Calculate Moore-Penrose pseudo-inverse
+invmp <- MASS::ginv(t(matv) %*% matv) %*% t(matv)
+all.equal(invmp, invmat)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Diagonalizing the Inverse of Singular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The left-\emph{singular} matrix $\mathbb{U}$ combined with the right-\emph{singular} matrix $\mathbb{V}$ define a rotation transformation into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
+      \begin{displaymath}
+        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
+      \end{displaymath}
+      The generalized inverse of \emph{singular} matrices doesn't satisfy the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$, but if it's rotated into the same coordinate system where $\mathbb{A}$ is diagonal, then we have:
+      \begin{displaymath}
+        \mathbb{U}^T (\mathbb{A}^{-1} \mathbb{A}) \, \mathbb{V} = \mathbbm{1}_n
+      \end{displaymath}
+      So that $\mathbb{A}^{-1} \mathbb{A}$ is diagonal in the same coordinate system where $\mathbb{A}$ is diagonal.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Diagonalize the unit matrix
+unitmat <- matv %*% invmat
+round(unitmat, 4)
+round(matv %*% invmat, 4)
+round(t(svdec$u) %*% unitmat %*% svdec$v, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Solving Linear Equations Using \texttt{solve()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A system of linear equations can be defined as:
+      \begin{displaymath}
+        \mathbb{A} \, x = b
+      \end{displaymath}
+      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and \texttt{x} is the unknown vector.
+      \vskip1ex
+      The solution of the system of linear equations is equal to:
+      \begin{displaymath}
+        x = \mathbb{A}^{-1} b
+      \end{displaymath}
+      Where $\mathbb{A}^{-1}$ is the \emph{inverse} of the matrix $\mathbb{A}$.
+      \vskip1ex
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices.
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define a square matrix
+matv <- matrix(c(1, 2, -1, 2), nc=2)
+vecv <- c(2, 1)
+# Calculate the inverse of matv
+invmat <- solve(a=matv)
+invmat %*% matv
+# Calculate solution using inverse of matv
+solutionv <- invmat %*% vecv
+matv %*% solutionv
+# Calculate solution of linear system
+solutionv <- solve(a=matv, b=vecv)
+matv %*% solutionv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fast Matrix Inverse Using \texttt{C++}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Armadillo} \texttt{C++} functions can be several times faster than \texttt{R} functions - even those that are compiled from \texttt{C++} code.
+      \vskip1ex
+      That's because the \emph{Armadillo} \texttt{C++} library calls routines optimized for fast numerical calculations.
+      \vskip1ex
+      The package \emph{RcppArmadillo} allows calling from \texttt{R} the high-level \emph{Armadillo} \texttt{C++} linear algebra library.
+      \vskip1ex
+      The \texttt{C++} \emph{Armadillo} function \texttt{arma::inv()} calculates the matrix inverse several times faster than the function \texttt{solve()}.
+      \vskip1ex
+      The function \texttt{solve()} calculates the matrix inverse several times faster than the function \texttt{MASS::ginv()}.
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h> // include RcppArmadillo header file
+using namespace arma; // use Armadillo C++ namespace
+
+// [[Rcpp::export]]
+arma::mat calc_invmat(arma::mat& matv) {
+  
+  return arma::inv(matv);
+  
+}  // end calc_invmat
+    \end{lstlisting}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create a random matrix
+matv <- matrix(rnorm(100), nc=10)
+# Calculate the matrix inverse using solve()
+invmatr <- solve(a=matv)
+round(invmatr %*% matv, 4)
+# Compile the C++ file using Rcpp
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/Rcpp/test_fun.cpp")
+# Calculate the matrix inverse using C++
+invmat <- calc_invmat(matv)
+all.equal(invmat, invmatr)
+# Compare the speed of RcppArmadillo with R code
+library(microbenchmark)
+summary(microbenchmark(
+  ginv=MASS::ginv(matv),
+  solve=solve(matv),
+  cpp=calc_invmat(matv),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cholesky Decomposition}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Cholesky} decomposition of a \emph{positive definite} matrix $\mathbb{A}$ is defined as:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{L}^T \mathbb{L}
+      \end{displaymath}
+      Where $\mathbb{L}$ is an upper triangular matrix with positive diagonal elements.
+      \vskip1ex
+      The matrix $\mathbb{L}$ can be considered the square root of $\mathbb{A}$.
+      \vskip1ex
+      The vast majority of random \emph{positive semi-definite} matrices are also \emph{positive definite}.
+      \vskip1ex
+      The function \texttt{chol()} calculates the \emph{Cholesky} decomposition of a \emph{positive definite} matrix.
+      \vskip1ex
+      The functions \texttt{chol2inv()} and \texttt{chol()} calculate the inverse of a \emph{positive definite} matrix two times faster than \texttt{solve()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create large random positive semi-definite matrix
+matv <- matrix(runif(1e4), nc=100)
+matv <- t(matv) %*% matv
+# Calculate the eigen decomposition
+eigend <- eigen(matv)
+eigenval <- eigend$values
+eigenvec <- eigend$vectors
+# Set tolerance for determining zero singular values
+precv <- sqrt(.Machine$double.eps)
+# If needed convert to positive definite matrix
+notzero <- (eigenval > (precv*eigenval[1]))
+if (sum(!notzero) > 0) {
+  eigenval[!notzero] <- 2*precv
+  matv <- eigenvec %*% (eigenval * t(eigenvec))
+}  # end if
+# Calculate the Cholesky matv
+cholmat <- chol(matv)
+cholmat[1:5, 1:5]
+all.equal(matv, t(cholmat) %*% cholmat)
+# Calculate inverse from Cholesky
+invchol <- chol2inv(cholmat)
+all.equal(solve(matv), invchol)
+# Compare speed of Cholesky inversion
+library(microbenchmark)
+summary(microbenchmark(
+  solve=solve(matv),
+  cholmat=chol2inv(chol(matv)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Correlated Returns Using Cholesky Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Cholesky} decomposition of a covariance matrix can be used to simulate correlated \emph{Normal} returns following the given covariance matrix: $\mathbb{C} = \mathbb{L}^T \mathbb{L}$
+      \vskip1ex
+      Let $\mathbb{R}$ be a matrix with columns of \emph{uncorrelated} returns following the \emph{Standard Normal} distribution.
+      \vskip1ex
+      The \emph{correlated} returns $\mathbb{R}_c$ can be calculated from the \emph{uncorrelated} returns $\mathbb{R}$ by multiplying them by the \emph{Cholesky} matrix $\mathbb{L}$:
+      \begin{displaymath}
+        \mathbb{R}_c = \mathbb{L}^T \mathbb{R}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate random covariance matrix
+covmat <- matrix(runif(25), nc=5)
+covmat <- t(covmat) %*% covmat
+# Calculate the Cholesky matrix
+cholmat <- chol(covmat)
+cholmat
+# Simulate random uncorrelated returns
+nassets <- 5
+nrows <- 10000
+retp <- matrix(rnorm(nassets*nrows), nc=nassets)
+# Calculate correlated returns by applying Cholesky
+retscorr <- retp %*% cholmat
+# Calculate covariance matrix
+covmat2 <- crossprod(retscorr) /(nrows-1)
+all.equal(covmat, covmat2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvalues of Singular Covariance Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If $\mathbb{R}$ is a matrix of returns (with zero mean) for a portfolio of \texttt{k} stocks (columns), over \texttt{n} time periods (rows), then the sample covariance matrix is equal to:
+      \begin{displaymath}
+        \mathbb{C} = \mathbb{R}^T \mathbb{R} / (n-1)
+      \end{displaymath}
+      If the number of rows is less than the number of stocks, then the returns are \emph{collinear}, and the sample covariance matrix is \emph{singular}, with some \emph{eigenvalues} equal to zero.
+      \vskip1ex
+      The function \texttt{crossprod()} performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but it is slightly faster.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate random stock returns
+nassets <- 10
+nrows <- 100
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+retp <- matrix(rnorm(nassets*nrows), nc=nassets)
+# Calculate centered (de-meaned) returns matrix
+retp <- t(t(retp) - colMeans(retp))
+# Or
+retp <- apply(retp, MARGIN=2, function(x) (x-mean(x)))
+# Calculate covariance matrix
+covmat <- crossprod(retp) /(nrows-1)
+# Calculate the eigenvalues and eigenvectors
+eigend <- eigen(covmat)
+eigend$values
+barplot(eigend$values, # Plot eigenvalues
+  xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(eigend$values)),
+  main="Eigenvalues of Covariance Matrix")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_covmat.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the eigenvalues and eigenvectors
+# as function of number of returns
+ndata <- ((nassets/2):(2*nassets))
+eigenval <- sapply(ndata, function(x) {
+  retp <- retp[1:x, ]
+  retp <- apply(retp, MARGIN=2, function(y) (y - mean(y)))
+  covmat <- crossprod(retp) / (x-1)
+  min(eigen(covmat)$values)
+})  # end sapply
+plot(y=eigenval, x=ndata, t="l", xlab="", ylab="", lwd=3, col="blue",
+  main="Smallest eigenvalue of covariance matrix
+  as function of number of returns")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularized Inverse of Singular Covariance Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{regularization} technique allows calculating the inverse of \emph{singular} covariance matrices while reducing the effects of statistical noise.
+      \vskip1ex
+      If the number of time periods of returns is less than the number of assets (columns), then the covariance matrix of returns is \emph{singular}, and some of its \emph{eigenvalues} are zero, so it doesn't have an inverse.
+      \vskip1ex
+      The \emph{regularized} inverse $\mathbb{C}_n^{-1}$ is calculated by removing the higher order eigenvalues that are almost zero, and keeping only the first $n$ \emph{eigenvalues}:
+      \begin{displaymath}
+        \mathbb{C}_n^{-1} = \mathbb{O}_n \, \Sigma_n^{-1} \, \mathbb{O}_n^T
+      \end{displaymath}
+      Where $\Sigma_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the \emph{regularized} inverse of a matrix.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create rectangular matrix with collinear columns
+matv <- matrix(rnorm(10*8), nc=10)
+# Calculate covariance matrix
+covmat <- cov(matv)
+# Calculate inverse of covmat - error
+invmat <- solve(covmat)
+# Calculate regularized inverse of covmat
+invmat <- MASS::ginv(covmat)
+# Verify inverse property of matv
+all.equal(covmat, covmat %*% invmat %*% covmat)
+# Perform eigen decomposition
+eigend <- eigen(covmat)
+eigenvec <- eigend$vectors
+eigenval <- eigend$values
+# Set tolerance for determining zero singular values
+precv <- sqrt(.Machine$double.eps)
+# Calculate regularized inverse matrix
+notzero <- (eigenval > (precv * eigenval[1]))
+invreg <- eigenvec[, notzero] %*%
+  (t(eigenvec[, notzero]) / eigenval[notzero])
+# Verify that invmat is same as invreg
+all.equal(invmat, invreg)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Bias-Variance Tradeoff of the Regularized Inverse}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Removing the very small higher order eigenvalues can also be used to reduce the propagation of statistical noise and improve the signal-to-noise ratio.
+      \vskip1ex
+      Removing a larger number of eigenvalues further reduces the noise, but it increases the bias of the covariance matrix.
+      \vskip1ex
+      This is an example of the \emph{bias-variance tradeoff}.
+      \vskip1ex
+      Even though the \emph{regularized} inverse $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
+      \vskip1ex
+      The parameter \texttt{dimax} specifies the number of eigenvalues used for calculating the \emph{regularized} inverse of the covariance matrix of returns.
+      \vskip1ex
+      The optimal value of the parameter \texttt{dimax} can be determined using \emph{backtesting} (\emph{cross-validation}).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate regularized inverse matrix using cutoff
+dimax <- 3
+invmat <- eigenvec[, 1:dimax] %*%
+  (t(eigenvec[, 1:dimax]) / eigend$values[1:dimax])
+# Verify that invmat is same as invreg
+all.equal(invmat, invreg)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Shrinkage Estimator of Covariance Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The estimates of the covariance matrix suffer from statistical noise, and those noise are magnified when the covariance matrix is inverted.
+      \vskip1ex
+      In the \emph{shrinkage} technique the covariance matrix $\mathbb{C}_s$ is estimated as a weighted sum of the sample covariance estimator $\mathbb{C}$ plus a target matrix $\mathbb{T}$:
+      \begin{displaymath}
+        \mathbb{C}_s = (1-\alpha) \, \mathbb{C} + \alpha \, \mathbb{T}
+      \end{displaymath}
+      The target matrix $\mathbb{T}$ represents an estimate of the covariance matrix subject to some constraint, such as that all the correlations are equal to each other.
+      \vskip1ex
+      The shrinkage intensity $\alpha$ determines the amount of shrinkage that is applied, with $\alpha = 1$ representing a complete shrinkage towards the target matrix.
+      \vskip1ex
+      The \emph{shrinkage} estimator reduces the estimate variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create a random covariance matrix
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+matv <- matrix(rnorm(5e2), nc=5)
+covmat <- cov(matv)
+cormat <- cor(matv)
+stdev <- sqrt(diag(covmat))
+# Calculate target matrix
+cormean <- mean(cormat[upper.tri(cormat)])
+targetmat <- matrix(cormean, nr=NROW(covmat), nc=NCOL(covmat))
+diag(targetmat) <- 1
+targetmat <- t(t(targetmat * stdev) * stdev)
+# Calculate shrinkage covariance matrix
+alpha <- 0.5
+covshrink <- (1-alpha)*covmat + alpha*targetmat
+# Calculate inverse matrix
+invmat <- solve(covshrink)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Matrix Inverse}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The inverse of a square matrix $\mathbb{A}$ can be calculated approximately using the recursive \emph{Schulz formula}:
+      \begin{displaymath}
+        \mathbb{A}_{i+1}^{-1} \leftarrow 2 \mathbb{A}_i^{-1} - \mathbb{A}_i^{-1} \mathbb{A} \mathbb{A}_i^{-1}
+      \end{displaymath}
+      The \emph{Schulz formula} requires a good initial value for the inverse matrix $\mathbb{A}_1^{-1}$ or else the recursion diverges.
+      \vskip1ex
+      If the initial inverse matrix $\mathbb{A}_1^{-1}$ is very close to the actual inverse $\mathbb{A}^{-1}$, then the \emph{Schulz formula} produces a very good approximation with just a few iterations.
+      \vskip1ex
+      The \emph{Schulz formula} is useful for updating the inverse when the matrix $\mathbb{A}$ changes only slightly.  For example, for updating the inverse of the covariance matrix as it changes slowly over time.
+      \vskip1ex
+      The super-assignment operator \texttt{"<<-"} modifies variables in the \emph{enclosing} environment in which the function was \emph{defined} (\emph{lexical} scoping).
+      <<echo=TRUE,eval=FALSE>>=
+# Create a random matrix
+matv <- matrix(rnorm(100), nc=10)
+# Calculate the inverse of matv
+invmat <- solve(a=matv)
+# Multiply inverse with matrix
+round(invmat %*% matv, 4)
+# Calculate the initial inverse
+invmatr <- invmat + matrix(rnorm(100, sd=0.1), nc=10)
+# Calculate the approximate recursive inverse of matv
+invmatr <- (2*invmatr - invmatr %*% matv %*% invmatr)
+# Calculate the sum of the off-diagonal elements
+sum((invmatr %*% matv)[upper.tri(matv)])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_recursive.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the recursive inverse of matv in a loop
+invmatr <- invmat + matrix(rnorm(100, sd=0.1), nc=10)
+iterv <- sapply(1:5, function(x) {
+# Calculate the recursive inverse of matv
+  invmatr <<- (2*invmatr - invmatr %*% matv %*% invmatr)
+# Calculate the sum of the off-diagonal elements
+  sum((invmatr %*% matv)[upper.tri(matv)])
+})  # end sapply
+# Plot the iterations
+plot(x=1:5, y=iterv, t="l", xlab="iterations", ylab="error",
+     main="Iterations of Recursive Matrix Inverse")
       @
   \end{columns}
 \end{block}

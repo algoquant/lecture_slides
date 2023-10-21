@@ -99,7 +99,7 @@ knit_theme$set(thm)
       \vskip1ex
       The \emph{Merton-Henriksson} market timing test uses a linear \emph{market timing} term:
       \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(0, R_m - R_f)} + {\varepsilon}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(R_m - R_f, 0)} + {\varepsilon}
       \end{displaymath}
       Where $R$ are the strategy returns, $R_m$ are the market returns, and $R_f$ are the risk-free rates.
       \vskip1ex
@@ -115,20 +115,20 @@ knit_theme$set(thm)
 # Test if IEF can time VTI
 retp <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
 retvti <- retp$VTI
-desv <- cbind(retp, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(desv)[3:4] <- c("merton", "treynor")
+desm <- cbind(retp, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(desm)[3:4] <- c("merton", "treynor")
 # Merton-Henriksson test
-regmod <- lm(IEF ~ VTI + merton, data=desv); summary(regmod)
+regmod <- lm(IEF ~ VTI + merton, data=desm); summary(regmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/timing_skill_ief_vti.png}
       <<echo=TRUE,eval=FALSE>>=
 # Treynor-Mazuy test
-regmod <- lm(IEF ~ VTI + treynor, data=desv); summary(regmod)
+regmod <- lm(IEF ~ VTI + treynor, data=desm); summary(regmod)
 # Plot residual scatterplot
 x11(width=6, height=5)
-resids <- (desv$IEF - regmod$coeff["VTI"]*retvti)
+resids <- (desm$IEF - regmod$coeff["VTI"]*retvti)
 plot.default(x=retvti, y=resids, xlab="VTI", ylab="IEF")
 title(main="Treynor-Mazuy Market Timing Test\n for IEF vs VTI", line=0.5)
 # Plot fitted (predicted) response values
@@ -560,7 +560,8 @@ title(main="Wealth of Multiperiod Betting", line=0.1)
 x11(width=5, height=4)
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Simulate asset prices
 calc_pricev <- function(x) cumprod(1 + rnorm(1e3, sd=0.01))
 price_paths <- sapply(1:3, calc_pricev)
@@ -1247,7 +1248,7 @@ unlist(optimize(f=function(x) utilfun(x, bondu=0), interval=c(1, 4)))
 # Kelly weight for bonds
 unlist(optimize(f=function(x) utilfun(x, stocku=0), interval=c(1, 14)))
 # Vectorized utility of stock and bond portfolio
-utility_vec <- function(weights) {
+utility_vec <- function(weightv) {
   utilfun(weightv[1], weightv[2])
 }  # end utility_vec
 # Optimize with respect to vector argument
@@ -1323,10 +1324,10 @@ look_back <- 200
 var_rolling <- HighFreq::roll_var(retp, look_back)
 weightv <- HighFreq::roll_sum(retp, look_back)/look_back
 weightv <- weightv/var_rolling
-weightv[1, ] <- 1/NCOL(weights)
-weightv <- zoo::na.locf(weights)
-sum(is.na(weights))
-range(weights)
+weightv[1, ] <- 1/NCOL(weightv)
+weightv <- zoo::na.locf(weightv)
+sum(is.na(weightv))
+range(weightv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1364,7 +1365,7 @@ legend("topright", legend=c("VTI", "IEF"),
 # Scale and lag the Kelly weights
 weightv <- lapply(weightv, function(x) 10*x/sum(abs(range(x))))
 weightv <- do.call(cbind, weightv)
-weightv <- rutils::lagit(weights)
+weightv <- rutils::lagit(weightv)
 # Calculate the compounded Kelly wealth and VTI
 wealthv <- cbind(cumprod(1 + weightv$VTI*retp$VTI), cumprod(1 + retp$VTI))
 colnames(wealthv) <- c("Kelly Strategy", "VTI")
@@ -1512,9 +1513,9 @@ detach("package:PerformanceAnalytics")
       @
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-perf_data <- unclass(data(
+perfstats <- unclass(data(
     package="PerformanceAnalytics"))$results[, -(1:2)]
-apply(perf_data, 1, paste, collapse=" - ")
+apply(perfstats, 1, paste, collapse=" - ")
 # Load "managers" data set
 data(managers)
 class(managers)
@@ -2231,14 +2232,14 @@ skews <- sapply(retp, calc_mom, moment=3)
 # skews <- sapply(retp, calc_mom, moment=4)
 # skews <- sapply(retp, sd, na.rm=TRUE)
 skews <- sort(skews)
-namesv <- names(skews)
-nrows <- NROW(namesv)
+namev <- names(skews)
+nrows <- NROW(namev)
 # Select high skew and low skew ETFs
 cutoff <- NROW(riskstats %/% 2)
-low_skew <- namesv[1:cutoff]
-high_skew <- namesv[(cutoff+1):nrows]
+low_skew <- namev[1:cutoff]
+high_skew <- namev[(cutoff+1):nrows]
 
-# low_skew <- namesv[1:50]
+# low_skew <- namev[1:50]
 # Calculate returns and log prices
 low_skew <- rowMeans(retp[, low_skew], na.rm=TRUE)
 low_skew[1] <- 0
@@ -2338,8 +2339,8 @@ cvar <- sapply(retp, function(x) {
 # Calculate VTI daily percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(retp)
-# Bootstrap aggregated annual VTI returns
-holdp <- 252
+# Bootstrap aggregated monthly VTI returns
+holdp <- 22
 reta <- sqrt(holdp)*sapply(1:nrows, function(x) {
     mean(retp[sample.int(nrows, size=holdp, replace=TRUE)])
 })  # end sapply
@@ -2360,7 +2361,7 @@ ratiom <- sapply(datav, function(x) {
   mean(x)/c(Sharpe=stdev, Dowd=-varisk, DowdC=-cvar)
 })  # end sapply
 # Annualize the daily risk
-ratiom[, 1] <- sqrt(252)*ratiom[, 1]
+ratiom[, 1] <- sqrt(22)*ratiom[, 1]
 ratiom
       @
     \column{0.5\textwidth}
@@ -2504,7 +2505,7 @@ filter
 # Calculate EWMA weights
 look_back <- 21
 weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+weightv <- weightv/sum(weightv)
 # Calculate convolution using filter()
 pricef <- filter(closep, filter=weightv, method="convolution", sides=1)
 # filter() returns time series of class "ts"
@@ -2555,7 +2556,7 @@ summary(microbenchmark(
 # Simulate AR process using filter()
 nrows <- NROW(closep)
 # Calculate ARIMA coefficients and innovations
-coeff <- matrix(weights)/4
+coeff <- matrix(weightv)/4
 ncoeff <- NROW(coeff)
 innov <- matrix(rnorm(nrows))
 arimav <- filter(x=innov, filter=coeff, method="recursive")
@@ -2600,7 +2601,7 @@ summary(microbenchmark(
 # Calculate trailing EWMA prices using HighFreq::roll_conv()
 look_back <- 21
 weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+weightv <- weightv/sum(weightv)
 pricef <- HighFreq::roll_conv(closep, weightv=weightv)
 # Combine prices with smoothed prices
 pricev <- cbind(closep, pricef)
@@ -2785,7 +2786,7 @@ nrows <- NROW(closep)
 look_back <- 111
 lambda <- 0.9
 weightv <- lambda^(1:look_back)
-weightv <- weightv/sum(weights)
+weightv <- weightv/sum(weightv)
 # Calculate EWMA prices as the convolution
 ewmacpp <- HighFreq::roll_sumw(closep, weightv=weightv)
 pricev <- cbind(closep, ewmacpp)
@@ -3002,11 +3003,11 @@ dygraphs::dygraph(pricev["2008/2009"], main="VWAP Prices") %>%
 look_back <- 21
 lambda <- 0.1
 weightv <- exp(-lambda*1:look_back)
-weightv <- weightv/sum(weights)
+weightv <- weightv/sum(weightv)
 ewmaf <- HighFreq::roll_conv(closep, weightv=weightv)
 lambda <- 0.05
 weightv <- exp(-lambda*1:look_back)
-weightv <- weightv/sum(weights)
+weightv <- weightv/sum(weightv)
 ewmas <- HighFreq::roll_conv(closep, weightv=weightv)
       @
     \column{0.5\textwidth}
@@ -3055,9 +3056,9 @@ dygraphs::dygraph(pricev["2008/2009"], main=paste(symbol, "EWMA Returns")) %>%
 # Calculate the fractional weights
 deltav <- 0.1
 weightv <- (deltav - 0:(look_back-2)) / 1:(look_back-1)
-weightv <- (-1)^(1:(look_back-1))*cumprod(weights)
+weightv <- (-1)^(1:(look_back-1))*cumprod(weightv)
 weightv <- c(1, weightv)
-weightv <- (weightv - mean(weights))
+weightv <- (weightv - mean(weightv))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3126,8 +3127,8 @@ tseries::adf.test(retp)
 deltav <- 0.1*c(1, 3, 5, 7, 9)
 retfrac <- lapply(deltav, function(deltav) {
   weightv <- (deltav - 0:(look_back-2)) / 1:(look_back-1)
-  weightv <- c(1, (-1)^(1:(look_back-1))*cumprod(weights))
-  weightv <- (weightv - mean(weights))
+  weightv <- c(1, (-1)^(1:(look_back-1))*cumprod(weightv))
+  weightv <- (weightv - mean(weightv))
   HighFreq::roll_conv(closep, weightv=weightv)
 })  # end lapply
 retfrac <- do.call(cbind, retfrac)
@@ -3892,7 +3893,7 @@ summary(microbenchmark(
 # Calculate EWMA VTI variance using compiled C++ function
 look_back <- 51
 weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+weightv <- weightv/sum(weightv)
 varv <- .Call(stats:::C_cfilter, retp^2, filter=weightv, sides=1, circular=FALSE)
 varv[1:(look_back-1)] <- varv[look_back]
 # Plot EWMA volatility
@@ -3929,7 +3930,7 @@ quantmod::chart_Series(xtsv, name="VTI EWMA Volatility")
       <<echo=TRUE,eval=FALSE>>=
 # Calculate trailing VTI variance using package roll
 library(roll)  # Load roll
-varv <- roll::roll_var(retp, weights=rev(weights), width=look_back)
+varv <- roll::roll_var(retp, weights=rev(weightv), width=look_back)
 colnames(varv) <- "VTI.variance"
 class(varv)
 head(varv)
@@ -4279,7 +4280,7 @@ alpha <- 0.3; betav <- 0.5;
 omega <- 1e-4*(1-alpha-betav)
 nrows <- 1000
 # Calculate matrix of standard normal innovations
-set.seed(1121)  # Reset random numbers
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 innov <- rnorm(nrows)
 retp <- numeric(nrows)
 varv <- numeric(nrows)
@@ -4335,7 +4336,7 @@ alpha <- 0.3; betav <- 0.5;
 omega <- 1e-4*(1-alpha-betav)
 nrows <- 1000
 # Calculate matrix of standard normal innovations
-set.seed(1121)  # Reset random numbers
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 innov <- rnorm(nrows)
 retp <- numeric(nrows)
 varv <- numeric(nrows)
@@ -5753,7 +5754,7 @@ closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Calculate EWMA prices using filter()
 look_back <- 21
 weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+weightv <- weightv/sum(weightv)
 pricef <- stats::filter(closep, filter=weightv,
                          method="convolution", sides=1)
 pricef <- as.numeric(pricef)
@@ -5807,12 +5808,12 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing maximum and minimum over a vector of data
-roll_maxminr <- function(vectorv, look_back) {
-  nrows <- NROW(vectorv)
+roll_maxminr <- function(vecv, look_back) {
+  nrows <- NROW(vecv)
   max_min <- matrix(numeric(2:nrows), nc=2)
   # Loop over periods
   for (it in 1:nrows) {
-    sub_vec <- vectorv[max(1, it-look_back+1):it]
+    sub_vec <- vecv[max(1, it-look_back+1):it]
     max_min[it, 1] <- max(sub_vec)
     max_min[it, 2] <- min(sub_vec)
   }  # end for
@@ -6021,22 +6022,22 @@ using namespace arma; // use C++ namespace from Armadillo library
 
 // export the function roll_maxmin() to R
 // [[Rcpp::export]]
-arma::mat roll_maxmin(const arma::vec& vectorv,
+arma::mat roll_maxmin(const arma::vec& vecv,
                       const arma::uword& look_back) {
-  arma::uword.n_rows = vectorv.size();
+  arma::uword.n_rows = vecv.size();
   arma::mat max_min[nrows, 2);
   arma::vec sub_vec;
   // startup period
-  max_min(0, 0) = vectorv[0];
-  max_min(0, 1) = vectorv[0];
+  max_min(0, 0) = vecv[0];
+  max_min(0, 1) = vecv[0];
   for (uword it = 1; it < look_back; it++) {
-    sub_vec = vectorv.subvec(0, it);
+    sub_vec = vecv.subvec(0, it);
     max_min(it, 0) = sub_vec.max();
     max_min(it, 1) = sub_vec.min();
   }  // end for
   // remaining periods
   for (uword it = look_back; it <.n_rows; it++) {
-    sub_vec = vectorv.subvec(it- look_back + 1, it);
+    sub_vec = vecv.subvec(it- look_back + 1, it);
     max_min(it, 0) = sub_vec.max();
     max_min(it, 1) = sub_vec.min();
   }  // end for
@@ -6400,7 +6401,8 @@ legend("top", legend=colnames(aggs),
       \vskip1ex
       For example, \texttt{aggregate.zoo()} can calculate the average monthly returns.
       <<echo=(-(1:3)),eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # Load package zoo
 # Create zoo time series of random returns

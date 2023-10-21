@@ -348,7 +348,7 @@ bind_dots <- function(input, ...) {
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "input" bound by position
 bind_dots(2, input=1, 3)  # "input" bound by name
-bind_dots(1, 2, 3, foo=10)  # Named argument bound to dots
+bind_dots(1, 2, 3, argv=10)  # Named argument bound to dots
 bind_dots <- function(arg1, arg2, ...) {
   arg1 + 2*arg2 + sum(...)
 }  # end bind_dots
@@ -385,7 +385,7 @@ bind_dots <- function(..., input) {
 }  # end bind_dots
 # Arguments after dots must be bound by full name
 bind_dots(1, 2, 3, input=10)
-bind_dots(1, 2, 3, input=10, foo=4)  # Dots bound
+bind_dots(1, 2, 3, input=10, argv=4)  # Dots bound
 bind_dots(1, 2, 3)  # "input" not bound
 bind_dots <- function(..., input=10) {
   paste0("input=", input,
@@ -420,11 +420,11 @@ bind_dots(1, 2, 3)  # "input" not bound, but has default
 my_mean <- function(x, na.rm=TRUE, ...) {
   mean(x=x, na.rm=na.rm, ...)
 }  # end my_mean
-foo <- sample(c(1:10, NA, rep(0.1, t=5)))
-mean(c(foo, NA))
-mean(c(foo, NA), na.rm=TRUE)
-my_mean(c(foo, NA))
-my_mean(c(foo, NA), trim=0.4)  # Pass extra argument
+vecv <- sample(c(1:10, NA, rep(0.1, t=5)))
+mean(vecv)
+mean(vecv, na.rm=TRUE)
+my_mean(vecv)
+my_mean(vecv, trim=0.4)  # Pass extra argument
 # Wrapper for saving data into default directory
 save_data <- function(...,
                       file=stop("error: no file name"),
@@ -433,9 +433,9 @@ save_data <- function(...,
   file <- file.path(my_dir, file)
   save(..., file=file)
 }  # end save_data
-foo <- 1:10
-save_data(foo, file="scratch.RData")
-save_data(foo, file="scratch.RData", my_dir="/Users/jerzy/Develop")
+vecv <- 1:10
+save_data(vecv, file="scratch.RData")
+save_data(vecv, file="scratch.RData", my_dir="/Users/jerzy/Develop")
 # Wrapper for testing negative arguments
 stop_if_neg <- function(input) {
   if (!is.numeric(input) || input<0)
@@ -878,10 +878,10 @@ globv
 # Infix operator applied using prefix syntax
 "+"(2, 3)
 # Standard bracket operator
-vectorv <- c(4, 3, 5, 6)
-vectorv[2]
+vecv <- c(4, 3, 5, 6)
+vecv[2]
 # Bracket operator applied using prefix syntax
-"["(vectorv, 2)
+"["(vecv, 2)
 
       @
   \end{columns}
@@ -936,14 +936,14 @@ class(obj_string)
 class(obj_string) <- "string"
 class(obj_string)
 # Define function last()
-last <- function(vectorv) {
-  vectorv[NROW(vectorv)]
+last <- function(vecv) {
+  vecv[NROW(vecv)]
 }  # end last
 last(1:10)
 # Define replacement function last()
-'last<-' <- function(vectorv, value) {
-  vectorv[NROW(vectorv)] <- value
-  vectorv
+'last<-' <- function(vecv, value) {
+  vecv[NROW(vecv)] <- value
+  vecv
 }  # end last
 x <- 1:5
 last(x) <- 11
@@ -978,10 +978,10 @@ x
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Create functional that accepts a function as input argument
-testfun <- function(func_name) {
+testfun <- function(funn) {
 # Calculates statistic on random numbers
   set.seed(1)
-  func_name(runif(1e4))  # Apply the function name
+  funn(runif(1e4))  # Apply the function name
 }  # end testfun
 testfun(mean)
 testfun(sd)
@@ -1191,11 +1191,11 @@ detach(my_account)  # Remove my_account from search path
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Functional accepts function name and additional argument
-testfun <- function(func_name, input) {
+testfun <- function(funn, input) {
 # Produce function name from argument
-  func_name <- match.fun(func_name)
+  funn <- match.fun(funn)
 # Execute function call
-  func_name(input)
+  funn(input)
 }  # end testfun
 testfun(sqrt, 4)
 # String also works because match.fun() converts it to a function
@@ -1224,9 +1224,9 @@ testfun(sum, 1, 2, 3)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Functional accepts function name and dots '...' argument
-testfun <- function(func_name, ...) {
-  func_name <- match.fun(func_name)
-  func_name(...)  # Execute function call
+testfun <- function(funn, ...) {
+  funn <- match.fun(funn)
+  funn(...)  # Execute function call
 }  # end testfun
 testfun(sum, 1, 2, 3)
 testfun(sum, 1, 2, NA, 4, 5)
@@ -1235,9 +1235,8 @@ testfun(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
 testfun <- function(input, param1, param2, ...) {
   c(input=input, param1=param1, param2=param2, dots=c(...))
 }  # end testfun
+testfun(1, 2, 3, 4, 5)
 testfun(1, 2, 3, param2=4, param1=5)
-testfun(testfun, 1, 2, 3, param2=4, param1=5)
-testfun(testfun, 1, 2, 3, 4, 5)
       @
   \end{columns}
 \end{block}
@@ -1283,19 +1282,19 @@ testfun(testfun, 1, 2, 3, 4, 5)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Anonymous function passed to testfun
-testfun(func_name=(function(x) (x + 3)), 5)
+testfun(funn=(function(x) (x + 3)), 5)
 # Anonymous function is default value
 testfun <-
-  function(..., func_name=function(x, y, z) {x+y+z}) {
-    func_name <- match.fun(func_name)
-    func_name(...)  # Execute function call
+  function(..., funn=function(x, y, z) {x+y+z}) {
+    funn <- match.fun(funn)
+    funn(...)  # Execute function call
 }  # end testfun
-testfun(2, 3, 4)  # Use default func_name
+testfun(2, 3, 4)  # Use default funn
 testfun(2, 3, 4, 5)
-# Func_name bound by name
-testfun(func_name=sum, 2, 3, 4, 5)
-# Pass anonymous function to func_name
-testfun(func_name=function(x, y, z) {x*y*z},
+# funn bound by name
+testfun(funn=sum, 2, 3, 4, 5)
+# Pass anonymous function to funn
+testfun(funn=function(x, y, z) {x*y*z},
             2, 3, 4)
       @
   \end{columns}
@@ -1338,9 +1337,9 @@ do.call(sum, list(1, 2, NA, 3, na.rm=TRUE))
 # Functional accepts list with function name and arguments
 testfun <- function(list_arg) {
 # Produce function name from argument
-  func_name <- match.fun(list_arg[[1]])
+  funn <- match.fun(list_arg[[1]])
 # Execute function call uing do.call()
-  do.call(func_name, list_arg[-1])
+  do.call(funn, list_arg[-1])
 }  # end testfun
 arg_list <- list("sum", 1, 2, 3)
 testfun(arg_list)
@@ -1377,16 +1376,16 @@ all.equal(
 rm(list=ls())
 str(apply)  # Get list of arguments
 # Create a matrix
-matrixv <- matrix(6:1, nrow=2, ncol=3)
-matrixv
+matv <- matrix(6:1, nrow=2, ncol=3)
+matv
 # Sum the rows and columns
-rowsumv <- apply(matrixv, 1, sum)
-colsumv <- apply(matrixv, 2, sum)
-matrixv <- cbind(c(sum(rowsumv), rowsumv),
-                  rbind(colsumv, matrixv))
-dimnames(matrixv) <- list(c("colsumv", "row1", "row2"),
+rowsumv <- apply(matv, 1, sum)
+colsumv <- apply(matv, 2, sum)
+matv <- cbind(c(sum(rowsumv), rowsumv),
+                  rbind(colsumv, matv))
+dimnames(matv) <- list(c("colsumv", "row1", "row2"),
                          c("rowsumv", "col1", "col2", "col3"))
-matrixv
+matv
       @
   \end{columns}
 \end{block}
@@ -1406,19 +1405,19 @@ matrixv
       The additional arguments to \texttt{apply()} must be \emph{bound} by their full (complete) names.
       <<echo=TRUE,eval=FALSE>>=
 str(apply)  # Get list of arguments
-matrixv <- matrix(sample(12), nrow=3, ncol=4)  # Create a matrix
-matrixv
-apply(matrixv, 2, sort)  # Sort matrix columns
-apply(matrixv, 2, sort, decreasing=TRUE)  # Sort decreasing order
+matv <- matrix(sample(12), nrow=3, ncol=4)  # Create a matrix
+matv
+apply(matv, 2, sort)  # Sort matrix columns
+apply(matv, 2, sort, decreasing=TRUE)  # Sort decreasing order
       @
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
-matrixv[2, 2] <- NA  # Introduce NA value
-matrixv
+matv[2, 2] <- NA  # Introduce NA value
+matv
 # Calculate median of columns
-apply(matrixv, 2, median)
+apply(matv, 2, median)
 # Calculate median of columns with na.rm=TRUE
-apply(matrixv, 2, median, na.rm=TRUE)
+apply(matv, 2, median, na.rm=TRUE)
       @
   \end{columns}
 \end{block}
@@ -1450,11 +1449,10 @@ moment(x=retp, order=3)
 # 4x1 matrix of moment orders
 orderv <- as.matrix(1:4)
 # Anonymous function allows looping over function parameters
-apply(X=orderv, MARGIN=1,
-      FUN=function(orderp) {
-          moment(x=retp, order=orderp)
-        }  # end anonymous function
-      )  # end apply
+apply(X=orderv, MARGIN=1, FUN=function(orderp) {
+  moment(x=retp, order=orderp)
+}  # end anonymous function
+)  # end apply
 
 # Another way of passing parameters into moment() function
 apply(X=orderv, MARGIN=1, FUN=moment, x=retp)
@@ -1557,19 +1555,19 @@ unlist(sapply(iris, function(column) {
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 sapply(6:10, sqrt)  # Sapply on vector
-sapply(list(6, 7, 8, 9, 10), sqrt)  # Sapply on list
+sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
 
 # Calculate means of iris data frame columns
 sapply(iris, mean)  # Returns NA for Species
 
 # Create a matrix
-matrixv <- matrix(sample(100), ncol=4)
+matv <- matrix(sample(100), ncol=4)
 # Calculate column means using apply
-apply(matrixv, 2, mean)
+apply(matv, 2, mean)
 
 # Calculate column means using sapply, with anonymous function
-sapply(1:NCOL(matrixv), function(colnum) {  # Anonymous function
-         mean(matrixv[, colnum])
+sapply(1:NCOL(matv), function(colnum) {  # Anonymous function
+         mean(matv[, colnum])
   }  # end anonymous function
 )  # end sapply
       @

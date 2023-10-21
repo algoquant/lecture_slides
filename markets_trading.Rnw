@@ -171,7 +171,7 @@ colnames(ycurves) <- substr(colnames(ycurves), start=1, stop=4)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/rates_curve.png}
+      \includegraphics[width=0.45\paperwidth]{figure/yield_curve.png}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -206,9 +206,9 @@ par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
 datev <- xts::endpoints(ratesenv$DGS1["2006/"], on="years")
-datev <- zoo::index(ratesenv$DGS1["2006/"][dates])
+datev <- zoo::index(ratesenv$DGS1["2006/"][datev])
 # Create time series of end-of-year rates
-ycurves <- eapply(ratesenv, function(ratev) ratev[dates])
+ycurves <- eapply(ratesenv, function(ratev) ratev[datev])
 ycurves <- rutils::do_call(cbind, ycurves)
 # Rename columns and rows, sort columns, and transpose into matrix
 colnames(ycurves) <- substr(colnames(ycurves), start=4, stop=11)
@@ -218,7 +218,7 @@ ycurves <- t(ycurves)
 colnames(ycurves) <- substr(colnames(ycurves), start=1, stop=4)
 # Plot matrix using plot.zoo()
 colorv <- colorRampPalette(c("red", "blue"))(NCOL(ycurves))
-plot.zoo(ycurves, main="Yield curve since 2006", lwd=3, xaxt="n",
+plot.zoo(ycurves, main="Yield Curve Since 2006", lwd=3, xaxt="n",
          plot.type="single", xlab="maturity", ylab="yield", col=colorv)
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
@@ -228,7 +228,7 @@ legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/rates_curve_time.png}
+      \includegraphics[width=0.45\paperwidth]{figure/yield_curve_time.png}
       <<echo=TRUE,eval=FALSE>>=
 # Alternative plot using matplot()
 matplot(ycurves, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
@@ -280,7 +280,7 @@ cormat <- cormat[ordern, ordern]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/rates_cor.png}
+      \includegraphics[width=0.4\paperwidth]{figure/yield_cor.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the correlation matrix
 x11(width=6, height=6)
@@ -591,19 +591,19 @@ retp <- rutils::do_call(cbind, retp)
 sapply(retp, mean)
 sapply(retp, sd)
 # Calculate principal component time series
-pcacum <- retp %*% pcad$rotation
-all.equal(pcad$x, pcacum, check.attributes=FALSE)
+retpcac <- retp %*% pcad$rotation
+all.equal(pcad$x, retpcac, check.attributes=FALSE)
 # Calculate products of principal component time series
-round(t(pcacum) %*% pcacum, 2)
+round(t(retpcac) %*% retpcac, 2)
 # Coerce to xts time series
-pcacum <- xts(pcacum, order.by=zoo::index(retp))
-pcacum <- cumsum(pcacum)
+retpcac <- xts(retpcac, order.by=zoo::index(retp))
+retpcac <- cumsum(retpcac)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-rangev <- range(pcacum)
-for (ordern in 1:NCOL(pcacum)) {
-  plot.zoo(pcacum[, ordern], ylim=rangev, xlab="", ylab="")
+rangev <- range(retpcac)
+for (ordern in 1:NCOL(retpcac)) {
+  plot.zoo(retpcac[, ordern], ylim=rangev, xlab="", ylab="")
   title(paste0("PC", ordern), line=-1, col.main="red")
 }  # end for
       @
@@ -699,31 +699,29 @@ for (symbol in symbolv) {
 library(quantmod)  # Load quantmod
 library(RQuantLib)  # Load RQuantLib
 # Specify curve parameters
-curve_params <- list(tradeDate=as.Date("2018-01-17"),
-                     settleDate=as.Date("2018-01-19"),
-                     dt=0.25,
-                     interpWhat="discount",
-                     interpHow="loglinear")
+curvep <- list(tradeDate=as.Date("2018-01-17"),
+               settleDate=as.Date("2018-01-19"),
+               dt=0.25,
+               interpWhat="discount",
+               interpHow="loglinear")
 # Specify market data: prices of FI instruments
-market_data <- list(d3m=0.0363,
-                    fut1=96.2875,
-                    fut2=96.7875,
-                    fut3=96.9875,
-                    fut4=96.6875,
-                    s5y=0.0443,
-                    s10y=0.05165,
-                    s15y=0.055175)
+pricev <- list(d3m=0.0363,
+               fut1=96.2875,
+               fut2=96.7875,
+               fut3=96.9875,
+               fut4=96.6875,
+               s5y=0.0443,
+               s10y=0.05165,
+               s15y=0.055175)
 # Specify dates for calculating the zero rates
-disc_dates <- seq(0, 10, 0.25)
+datev <- seq(0, 10, 0.25)
 # Specify the evaluation (as of) date
 setEvaluationDate(as.Date("2018-01-17"))
 # Calculate the zero rates
-disc_curves <- DiscountCurve(params=curve_params,
-                             tsQuotes=market_data,
-                             times=disc_dates)
+ratev <- DiscountCurve(params=curvep, tsQuotes=pricev, times=datev)
 # Plot the zero rates
 x11()
-plot(x=disc_curves$zerorates, t="l", main="zerorates")
+plot(x=ratev$zerorates, t="l", main="zerorates")
       @
   \end{columns}
 \end{block}
@@ -1104,7 +1102,7 @@ datev[, 1] <- as.Date(datev[, 1])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Futures contracts with different expiration dates trade at different pricev, known as the \emph{futures curve} (or \emph{term structure}).
+      Futures contracts with different expiration dates trade at different prices, known as the \emph{futures curve} (or \emph{term structure}).
       \vskip1ex
       The \emph{VIX} futures curve is similar to the interest rate \emph{yield curve}, which displays yields at different bond maturities.
       \vskip1ex
@@ -1199,7 +1197,7 @@ datev <- as.Date(datev[, 1])
 tday <- as.Date("2018-05-07")
 maturd <- (tday + 30)
 # Find neighboring futures contracts
-indeks <- match(TRUE, dates > maturd)
+indeks <- match(TRUE, datev > maturd)
 frontd <- datev[indeks-1]
 backd <- datev[indeks]
 symbolf <- symbolv[indeks-1]
@@ -1323,12 +1321,11 @@ chart_Series(x=Cl(rutils::etfenv$SVXY["2017/2018"]),
       <<echo=(-(1:1)),eval=TRUE>>=
 library(xtable)
 # Read table of fundamental data into data frame
-dataf <-
-  read.csv(file="/Users/jerzy/Develop/lecture_slides/data/fundamental_stock_data.csv")
+dframe <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/fundamental_stock_data.csv")
       @
   \end{columns}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
-print(xtable(dataf), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+print(xtable(dframe), comment=FALSE, size="scriptsize", include.rownames=FALSE)
       @
 \end{block}
 
@@ -1361,12 +1358,11 @@ print(xtable(dataf), comment=FALSE, size="scriptsize", include.rownames=FALSE)
       <<echo=(-(1:1)),eval=TRUE>>=
 library(xtable)
 # Read table of fundamental data into data frame
-dataf <-
-  read.csv(file="/Users/jerzy/Develop/lecture_slides/data/fundamental_stock_data.csv")
+dframe <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/fundamental_stock_data.csv")
       @
   \end{columns}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
-print(xtable(dataf), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+print(xtable(dframe), comment=FALSE, size="scriptsize", include.rownames=FALSE)
       @
 \end{block}
 
@@ -1416,9 +1412,9 @@ print(xtable(dataf), comment=FALSE, size="scriptsize", include.rownames=FALSE)
       \vskip1ex
       \emph{Headers} are current identifiers, while \emph{historical identifiers} have date ranges when they were valid.
       \vskip1ex
-      Some \emph{universal identifiers} are company namesv, tickers, CUSIP, SEDOL, ISIN, and CIK.
+      Some \emph{universal identifiers} are company namev, tickers, CUSIP, SEDOL, ISIN, and CIK.
       \vskip1ex
-      Most \emph{universal identifiers}, such as company namesv, tickers, CUSIPs, etc. change over time due to corporate events such as mergers, bankruptices, etc.
+      Most \emph{universal identifiers}, such as company namev, tickers, CUSIPs, etc. change over time due to corporate events such as mergers, bankruptices, etc.
       \vskip1ex
       \emph{Tickers} are short and recognizable strings, but are not unique, and can change over time and can be reused by a different company.
       \vskip1ex
@@ -1614,7 +1610,7 @@ detach("package:rwrds")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Compustat} names table is a database containing various company \emph{identifiers} (company namesv, tickers, CUSIPs, GVKEYs).
+      The \emph{Compustat} names table is a database containing various company \emph{identifiers} (company namev, tickers, CUSIPs, GVKEYs).
       \vskip1ex
       The names table can be used to cross-reference the \emph{identifiers}, for example to find the \emph{GVKEYs} from the company \emph{tickers}.
       \vskip1ex
@@ -1675,7 +1671,7 @@ cat(etf_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/etf_gvkeys.txt", 
       The table with the index constituents can be read into \texttt{R} a \texttt{.csv} from the file downloaded from the
       \href{https://wrds-web.wharton.upenn.edu/wrds/ds/compd/index/constituents.cfm?navId=83}{\emph{WRDS Compustat web page}}.
       \vskip1ex
-      The table of constituents is a data frame containing various company \emph{identifiers} (company namesv, tickers, CUSIPs, GVKEYs).
+      The table of constituents is a data frame containing various company \emph{identifiers} (company namev, tickers, CUSIPs, GVKEYs).
       \vskip1ex
       Some \emph{GVKEYs} are duplicates because some companies entered the index more than once.
       \vskip1ex
@@ -1955,11 +1951,11 @@ process_ed <- lapply(sp500_pricev, format_ohlc,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Get end dates of series in sp500env
-endds <- eapply(sp500env, end)
-endds <- unlist(endds)
-endds <- as.Date(endds)
+endd <- eapply(sp500env, end)
+endd <- unlist(endd)
+endd <- as.Date(endd)
 # Remove elements with short end dates
-ishort <- (endds < max(endds))
+ishort <- (endd < max(endd))
 rm(list=names(sp500env)[ishort], envir=sp500env)
 # Rename element "BRK.B" to "BRKB"
 sp500env$BRKB <- sp500env$BRK.B

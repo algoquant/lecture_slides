@@ -972,8 +972,8 @@ colnames(pricev) <- c("VTI", "VTI EWMA")
 # Dygraphs plot with custom line colors
 colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008/2009"], main="VTI EWMA Prices") %>%
-  dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
-  dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Standard plot of  EWMA prices with custom line colors
 x11(width=6, height=5)
@@ -1004,8 +1004,8 @@ pricev <- cbind(closep, ewmacpp)
 colnames(pricev) <- c("VTI", "VTI EWMA")
 colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EWMA Prices") %>%
-  dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
-  dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Standard plot of  EWMA prices with custom line colors
 x11(width=6, height=5)
@@ -1074,8 +1074,8 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008/2009"], main=paste(symbol, "EWMA Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Calculate the fractional weights
 deltav <- 0.1
@@ -1093,8 +1093,8 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008-08/2009-08"], main=paste(symbol, "Fractional Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Perform ADF test for prices
 tseries::adf.test(closep)
@@ -1121,7 +1121,7 @@ colorv <- colorRampPalette(c("blue", "red"))(NCOL(retfrac))
 colnamev <- colnames(retfrac)
 dyplot <- dygraphs::dygraph(retfrac["2008-08/2009-08"], main="Fractional Returns") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col=colorv[1])
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col=colorv[1])
 for (i in 2:NROW(colnamev))
   dyplot <- dyplot %>%
   dyAxis("y2", label=colnamev[i], independentTicks=TRUE) %>%
@@ -1144,8 +1144,8 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008/2009"], main="VTI Volume Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Calculate volatility (true range) z-scores
 volat <- log(quantmod::Hi(ohlc) - quantmod::Lo(ohlc))
@@ -1169,8 +1169,8 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008/2009"], main="VTI Volatility Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Calculate the recursive trailing VTI volatility
 lambdaf <- 0.8
@@ -1196,8 +1196,8 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008/2009"], main="VTI Online Volatility Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Calculate the centered volatility
 look_back <- 21
@@ -1217,8 +1217,8 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2009"], main="VTI Centered Price Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Calculate the thresholds for labeling tops and bottoms
 confl <- c(0.2, 0.8)
@@ -1257,8 +1257,8 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2009"], main="VTI Trailing Price Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Calculate the recursive trailing VTI volatility
 lambda <- 0.9
@@ -1289,8 +1289,8 @@ colnamev <- colnames(datav)
 dygraphs::dygraph(datav["2009"], main="VTI Regression Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Calculate recursive trailing price regression versus time
 lambda <- 0.9
@@ -1305,8 +1305,8 @@ colnamev <- colnames(datav)
 dygraphs::dygraph(datav["2009"], main="VTI Online Regression Slope") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Plot dygraph of z-scores of VTI prices
 datav <- cbind(closep, regz[, "zscores"])
@@ -1315,8 +1315,8 @@ colnamev <- colnames(datav)
 dygraphs::dygraph(datav["2009"], main="VTI Online Regression Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=500)
 # Extract time series of VTI log prices
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
@@ -1486,8 +1486,8 @@ captiont <- "VXX and VTI Volatility"
 dygraphs::dygraph(datav[, 1:2], main=captiont) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=1, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=1, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=1, col="red") %>%
   dyLegend(show="always", width=500)
 # Calculate VXX log prices
 vxx <- na.omit(rutils::etfenv$prices$VXX)
@@ -1516,8 +1516,8 @@ captiont <- "VXX and VTI Volatility"
 dygraphs::dygraph(datav[, 1:2], main=captiont) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=1, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=1, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=1, col="red") %>%
   dyLegend(show="always", width=500)
 x11(width=6, height=5)
 par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))

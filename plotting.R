@@ -539,8 +539,8 @@ servfun <- shiny::shinyServer(function(input, output) {
     dygraphs::dygraph(vwapv(), main=paste(colnamev[1], "VWAP")) %>%
 dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
 dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red")
+dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
   })  # end output plot
 })  # end server code
 Return a Shiny app object

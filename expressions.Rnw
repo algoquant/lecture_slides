@@ -128,7 +128,7 @@ c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
       \end{itemize}
       These operators differ from the short form operators in two ways:
       \begin{itemize}
-        \item They only evaluate the first elements of their vector arguments,
+        \item They only evaluate single Boolean values, not Boolean vectors,
         \item They short-circuit (stop evaluation as soon as the expression is determined),
       \end{itemize}
       {\color{red}{Rule of Thumb}}
@@ -139,20 +139,20 @@ c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
       \vspace{-1em}
         <<echo=(-(1:1))>>=
 rm(list=ls())
-c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
-c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
+FALSE && TRUE
+FALSE || TRUE
 echo_true <- function() {cat("echo_true\t"); TRUE}
 echo_false <- function() {cat("echo_false\t"); FALSE}
 echo_true() | echo_false()
 echo_true() || echo_false()  # echo_false() isn't evaluated at all!
-vectorv <- c(2, 4, 6)
+vecv <- c(2, 4, 6)
 # Works (does nothing) using '&&'
-if (is.matrix(vectorv) && (vectorv[2, 3] > 0)) {
-  vectorv[2, 3] <- 1
+if (is.matrix(vecv) && (vecv[2, 3] > 0)) {
+  vecv[2, 3] <- 1
 }
 # No short-circuit so fails (produces an error)
-if (is.matrix(vectorv) & (vectorv[2, 3] > 0)) {
-  vectorv[2, 3] <- 1
+if (is.matrix(vecv) & (vecv[2, 3] > 0)) {
+  vecv[2, 3] <- 1
 }
       @
   \end{columns}
@@ -220,9 +220,9 @@ identical(numv, NULL)
 # numv==NULL
 is.null(numv)
 
-vectorv <- c(2, 4, 6)
-vectorv==2
-identical(vectorv, 2)
+vecv <- c(2, 4, 6)
+vecv==2
+identical(vecv, 2)
 
 # numv is equal to "1.0" within machine precision
 numv <- 1.0 + 2*sqrt(.Machine$double.eps)
@@ -256,33 +256,33 @@ all.equal(numv, 1.0)
       \vskip1ex
       If it doesn't find an exact match then it returns \texttt{NA}.
       \vskip1ex
-      The expressions \texttt{match(x, vectorv)} and \texttt{min(which(vectorv == x))} produce the same result, but \texttt{match()} can be faster for large vectors.
+      The expressions \texttt{match(x, vecv)} and \texttt{min(which(vecv == x))} produce the same result, but \texttt{match()} can be faster for large vectors.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-vectorv <- sample(1e3, 1e3)
-matrixv <- matrix(vectorv, ncol=4)
-which(vectorv == 5)
-match(5, vectorv)
+vecv <- sample(1e3, 1e3)
+matv <- matrix(vecv, ncol=4)
+which(vecv == 5)
+match(5, vecv)
 # Equivalent but slower than above
-(1:NROW(vectorv))[vectorv == 5]
-which(vectorv < 5)
+(1:NROW(vecv))[vecv == 5]
+which(vecv < 5)
 # Find indices of TRUE elements of Boolean matrix
-which((matrixv == 5)|(matrixv == 6), arr.ind=TRUE)
+which((matv == 5)|(matv == 6), arr.ind=TRUE)
 # Equivalent but slower than above
-arrayInd(which((matrixv == 5)|(matrixv == 6)),
-         dim(matrixv), dimnames(matrixv))
+arrayInd(which((matv == 5)|(matv == 6)),
+         dim(matv), dimnames(matv))
 # Find index of largest element
-which.max(vectorv)
-which(vectorv == max(vectorv))
+which.max(vecv)
+which(vecv == max(vecv))
 # Find index of smallest element
-which.min(vectorv)
+which.min(vecv)
 # Benchmark match() versus which()
-all.equal(match(5, vectorv), min(which(vectorv == 5)))
+all.equal(match(5, vecv), min(which(vecv == 5)))
 library(microbenchmark)
 summary(microbenchmark(
-  match=match(5, vectorv),
-  which=min(which(vectorv == 5)),
+  match=match(5, vecv),
+  which=min(which(vecv == 5)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -311,21 +311,21 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Does 5 belong in vectorv?
-5 %in% vectorv
-match(5, vectorv, nomatch=0) > 0
-# Does (-5) belong in vectorv?
-(-5) %in% vectorv
-c(5, -5) %in% vectorv
-match(-5, vectorv)
-# Equivalent to "5 %in% vectorv"
-any(vectorv == 5)
-# Equivalent to "(-5) %in% vectorv"
-any(vectorv == (-5))
-# Any negative values in vectorv?
-any(vectorv < 0)
+# Does 5 belong in vecv?
+5 %in% vecv
+match(5, vecv, nomatch=0) > 0
+# Does (-5) belong in vecv?
+(-5) %in% vecv
+c(5, -5) %in% vecv
+match(-5, vecv)
+# Equivalent to "5 %in% vecv"
+any(vecv == 5)
+# Equivalent to "(-5) %in% vecv"
+any(vecv == (-5))
+# Any negative values in vecv?
+any(vecv < 0)
 # Example of use in if() statement
-if (any(vectorv < 2))
+if (any(vecv < 2))
   cat("vector contains small values\n")
 # Partial matching of strings
 pmatch("med", c("mean", "median", "mode"))
@@ -733,10 +733,10 @@ rm(list=ls())
 2*3
 1:5}
 
-matrixv <- matrix(nr=3, nc=4)
-matrixv <- 0
+matv <- matrix(nr=3, nc=4)
+matv <- 0
 # Subset whole matrix
-matrixv[] <- 0
+matv[] <- 0
 
 # Parenthesis and braces require a little additional processing time
 library(microbenchmark)
@@ -850,7 +850,7 @@ centra_lity(myvar, "median")
       The \texttt{for()} loop statement:
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-for (indeks in vectorv) {expvs}
+for (indeks in vecv) {expvs}
 @
       \vspace{-1em}
       iterates the \emph{dummy} variable \texttt{indeks} over the elements of the vector or list \texttt{colorl}, and evaluates in a loop the \texttt{ex\_pressions} contained in the body of the \texttt{for()} loop.
@@ -910,28 +910,28 @@ while (indeks < 4) {
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-vectorv <- integer(7)
+vecv <- integer(7)
 # Loop over a vector and overwrite it
-for (i in seq_along(vectorv)) {
+for (i in seq_along(vecv)) {
   cat("Changing element:", i, "\n")
-  vectorv[i] <- i^2
+  vecv[i] <- i^2
 }  # end for
-# Modifying vectorv inside sapply() has no effect
-vectorv <- integer(7)
-vectorv
-sapply(seq_along(vectorv), 
+# Modifying vecv inside sapply() has no effect
+vecv <- integer(7)
+vecv
+sapply(seq_along(vecv), 
        function(i) {
-         vectorv[i] <- i^2
+         vecv[i] <- i^2
        })  # end sapply
-vectorv
-# Super-assignment operator "<<-" allows modifying vectorv
-sapply(seq_along(vectorv), 
+vecv
+# Super-assignment operator "<<-" allows modifying vecv
+sapply(seq_along(vecv), 
        function(i) {
-         vectorv[i] <<- i^2 # "<<-" !!!
+         vecv[i] <<- i^2 # "<<-" !!!
        })  # end sapply
-vectorv
+vecv
 # sapply() loop returns vector of values
-vectorv <- sapply(seq_along(vectorv), function(i) (i^2))
+vecv <- sapply(seq_along(vecv), function(i) (i^2))
       @
   \end{columns}
 \end{block}
@@ -1064,14 +1064,14 @@ is.numeric(matrix(NA_real_, nrow=3, ncol=2))
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE>>=
-vectorv <- sample(1:9)
-vectorv
-vectorv < 5  # Element-wise comparison
-vectorv == 5  # Element-wise comparison
-matrixv <- matrix(vectorv, ncol=3)
-matrixv
-matrixv < 5  # Element-wise comparison
-matrixv == 5  # Element-wise comparison
+vecv <- sample(1:9)
+vecv
+vecv < 5  # Element-wise comparison
+vecv == 5  # Element-wise comparison
+matv <- matrix(vecv, ncol=3)
+matv
+matv < 5  # Element-wise comparison
+matv == 5  # Element-wise comparison
       @
   \end{columns}
 \end{block}
@@ -1094,20 +1094,20 @@ matrixv == 5  # Element-wise comparison
     \column{0.5\textwidth}
       \vspace{-1em}
             <<echo=TRUE,eval=FALSE>>=
-matrixv <- 1:6  # Create a vector
-class(matrixv)  # Get its class
+matv <- 1:6  # Create a vector
+class(matv)  # Get its class
 # Is it vector or matrix?
-c(is.vector(matrixv), is.matrix(matrixv))
-structure(matrixv, dim=c(2, 3))  # Matrix object
+c(is.vector(matv), is.matrix(matv))
+structure(matv, dim=c(2, 3))  # Matrix object
 # Adding dimension attribute coerces into matrix
-dim(matrixv) <- c(2, 3)
-class(matrixv)  # Get its class
+dim(matv) <- c(2, 3)
+class(matv)  # Get its class
 # Is it vector or matrix?
-c(is.vector(matrixv), is.matrix(matrixv))
+c(is.vector(matv), is.matrix(matv))
 # Assign dimnames attribute
-dimnames(matrixv) <- list(rows=c("row1", "row2"),
+dimnames(matv) <- list(rows=c("row1", "row2"),
                         columns=c("col1", "col2", "col3"))
-matrixv
+matv
       @
   \end{columns}
 \end{block}
@@ -1128,15 +1128,15 @@ matrixv
     \column{0.5\textwidth}
       \vspace{-1em}
             <<echo=TRUE,eval=FALSE>>=
-matrixv <- matrix(1:10, 2, 5)  # Create matrix
-matrixv
+matv <- matrix(1:10, 2, 5)  # Create matrix
+matv
 # as.numeric strips dim attribute from matrix
-as.numeric(matrixv)
+as.numeric(matv)
 # Explicitly coerce to "character"
-matrixv <- as.character(matrixv)
-c(typeof(matrixv), mode(matrixv), class(matrixv))
+matv <- as.character(matv)
+c(typeof(matv), mode(matv), class(matv))
 # Coercion converted matrix to vector
-c(is.matrix(matrixv), is.vector(matrixv))
+c(is.matrix(matv), is.vector(matv))
       @
   \end{columns}
 \end{block}
@@ -1238,22 +1238,22 @@ rep(c("a", "b"), length.out=5)
       <<echo=TRUE>>=
 # Define vector and matrix
 vector1 <- c(2, 4, 3)
-matrixv <- matrix(sample(1:12), ncol=3)
+matv <- matrix(sample(1:12), ncol=3)
 # Multiply columns of matrix by vector
-vector1*matrixv
+vector1*matv
 # Or
-matrixv*vector1
+matv*vector1
 # Multiply rows of matrix by vector
-t(vector1*t(matrixv))
+t(vector1*t(matv))
 # Multiply rows of matrix by vector - transpose is very slow
-matrixp <- lapply(1:NCOL(matrixv), 
-  function(x) vector1[x]*matrixv[, x])
+matrixp <- lapply(1:NCOL(matv), 
+  function(x) vector1[x]*matv[, x])
 do.call(cbind, matrixp)
 library(microbenchmark)
 summary(microbenchmark(
-  trans=t(vector1*t(matrixv)),
+  trans=t(vector1*t(matv)),
   lapp={
-    matrixp <- lapply(1:NCOL(matrixv), function(x) vector1[x]*matrixv[, x])
+    matrixp <- lapply(1:NCOL(matv), function(x) vector1[x]*matv[, x])
     do.call(cbind, matrixp)
   },
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -1296,14 +1296,14 @@ vector1 %*% vector2
 # Calculate inner product and drop dimensions
 drop(vector1 %*% vector2)
 # Multiply columns of matrix by vector
-matrixv %*% vector1  # Single column matrix
-drop(matrixv %*% vector1)  # vector
-rowSums(t(vector1 * t(matrixv)))
+matv %*% vector1  # Single column matrix
+drop(matv %*% vector1)  # vector
+rowSums(t(vector1 * t(matv)))
 # using rowSums() and t() is 10 times slower than %*%
 library(microbenchmark)
 summary(microbenchmark(
-  inner=drop(matrixv %*% vector1),
-  transp=rowSums(t(vector1 * t(matrixv))),
+  inner=drop(matv %*% vector1),
+  transp=rowSums(t(vector1 * t(matv))),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -1327,19 +1327,19 @@ summary(microbenchmark(
       <<echo=(-(1:1)),eval=FALSE>>=
 library(microbenchmark)
 # Multiply matrix by vector fails because dimensions aren't conformable
-vector1 %*% matrixv
+vector1 %*% matv
 # Works after transpose
-drop(vector1 %*% t(matrixv))
+drop(vector1 %*% t(matv))
 # Calculate inner product
 crossprod(vector1, vector2)
 # Create matrix and vector
-matrixv <- matrix(1:3000, ncol=3)
-tmatrixv <- t(matrixv)
-vectorv <- 1:3
+matv <- matrix(1:3000, ncol=3)
+tmatv <- t(matv)
+vecv <- 1:3
 # crossprod() is slightly faster than "%*%" operator
 summary(microbenchmark(
-  cross_prod=crossprod(tmatrixv, vectorv),
-  inner_prod=matrixv %*% vectorv,
+  cross_prod=crossprod(tmatv, vecv),
+  inner_prod=matv %*% vecv,
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -1379,12 +1379,12 @@ vector2 <- sample(1:3)
 names(vector2) <- paste0("col", 1:3, "=", vector2)
 vector2
 # Calculate outer product of two vectors
-matrixv <- outer(vector1, vector2)
-matrixv
+matv <- outer(vector1, vector2)
+matv
 # Calculate vectorized function spanned over two vectors
-matrixv <- outer(vector1, vector2,
+matv <- outer(vector1, vector2,
                  FUN=function(x1, x2) x2*sin(x1))
-matrixv
+matv
       @
   \end{columns}
 \end{block}
@@ -1461,8 +1461,8 @@ do.call(cbind, list(1, NA, 3, 4))
       <<echo=(-(1:1)), eval=FALSE>>=
 library(microbenchmark)
 list_vectors <- lapply(1:5, rnorm, n=10)
-matrixv <- do.call(rbind, list_vectors)
-dim(matrixv)
+matv <- do.call(rbind, list_vectors)
+dim(matv)
 do_call_rbind <- function(listv) {
   while (NROW(listv) > 1) {
 # Index of odd list elements
@@ -1476,7 +1476,7 @@ do_call_rbind <- function(listv) {
 # listv has only one element - return it
   listv[[1]]
 }  # end do_call_rbind
-identical(matrixv, do_call_rbind(list_vectors))
+identical(matv, do_call_rbind(list_vectors))
       @
   \end{columns}
 \end{block}
@@ -1526,7 +1526,7 @@ times=10))[, c(1, 4, 5)]  # end microbenchmark summary
     \column{0.5\textwidth}
       The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable).
       \vskip1ex
-      The list's \texttt{namesv} attribute is equal to the \texttt{factor} levels.
+      The list's \texttt{namev} attribute is equal to the \texttt{factor} levels.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1592,7 +1592,7 @@ all.equal(setosa, splitiris$setosa)
       \vskip1ex
       The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable).
       \vskip1ex
-      The list's \texttt{namesv} attribute is equal to the \texttt{factor} levels.
+      The list's \texttt{namev} attribute is equal to the \texttt{factor} levels.
       \vskip1ex
       The functional \texttt{aggregate()} \emph{pivots} the columns of a \emph{data frame}.
       \vskip1ex
@@ -1623,6 +1623,8 @@ aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
 aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate() all columns
 aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
+# Aggregate multiple columns using formula syntax
+aggregate(x=(cbind(mpg, hp) ~ cyl), data=mtcars, FUN=mean)
       @
   \end{columns}
 \end{block}
@@ -1724,7 +1726,7 @@ do.call(cbind, data_cars)
       \vskip1ex
       Each \texttt{Industry} belongs to a single \texttt{Sector}, but each \texttt{Sector} may have several \texttt{Industries} that belong to it.
       \vskip1ex
-      The functional \texttt{aggregate()} allows aggregating over the \texttt{Industry} column, by perforing \emph{data pivoting}.
+      The functional \texttt{aggregate()} allows aggregating over the \texttt{Industry} column, by performing \emph{data pivoting}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1794,9 +1796,9 @@ secind2 <- aggregate(x=(Industry ~ Sector),
 secind2 <- aggregate(x=Industry, by=list(Sector), 
     FUN=function(x) as.vector(unique(x)))
 # Coerce secind2 into a jagged array
-namesv <- secind2[, 1]
+namev <- secind2[, 1]
 secind2 <- secind2[, 2]
-names(secind2) <- namesv
+names(secind2) <- namev
 all.equal(secind2, secind)
 # Or use tapply() (returns an array)
 secind2 <- tapply(X=Industry, INDEX=Sector, FUN=unique)

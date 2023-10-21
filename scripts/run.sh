@@ -99,7 +99,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/f_inv/finv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/f_mat/fmat/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/f_ratio/fratio/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/f_stat/fstat/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tor/factorv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tor/factv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tor/ratio/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tors/factors/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/factor_s/factors/g' *.R*
@@ -150,7 +150,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/log_norm/lognormv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/loss_distr/lossdistr/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/loss_es/losses/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ma_d/madv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/mat_rix/matrixv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/mat_rix/matv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/max_Sharpe/sharpem/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/max_eigen/dimax/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/me_ans/meanv/g' *.R*
@@ -183,8 +183,8 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/n_trades/ntrades/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/n_weights/nweights/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/n_portf/nportf/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/na_ive/naivemc/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/nam_e/name/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/name_s/namesv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/nam_e/namev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/name_s/namev/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/nor_mal/normv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/num_ber/numv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/num_cols/ncols/g' *.R*
@@ -340,7 +340,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/val_id/validp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/vali_date/valido/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/vari_ance/varv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/var_s/varv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/vec_tor/vectorv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/vec_tor/vecv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/versi_color/versi/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/virgin_ica/virgin/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/vol_at/volv/g' *.R*

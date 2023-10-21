@@ -216,9 +216,9 @@ dframe <- data.frame(type=c("rose", "daisy", "tulip"),
   color=c("red", "white", "yellow"),
   price=c(1.5, 0.5, 1.0),
   row.names=c("flower1", "flower2", "flower3"))  # end data.frame
-matrixv <- matrix(sample(1:12), ncol=3,
+matv <- matrix(sample(1:12), ncol=3,
   dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(matrixv) <- paste("row", 1:NROW(matrixv), sep="")
+rownames(matv) <- paste("row", 1:NROW(matv), sep="")
 # Write data frame to text file, and then read it back
 write.table(dframe, file="florist.txt")
 readf <- read.table(file="florist.txt")
@@ -226,15 +226,15 @@ readf  # A data frame
 all.equal(readf, dframe)
 
 # Write matrix to text file, and then read it back
-write.table(matrixv, file="matrix.txt")
+write.table(matv, file="matrix.txt")
 readmat <- read.table(file="matrix.txt")
 readmat  # write.table() coerced matrix to data frame
 class(readmat)
-all.equal(readmat, matrixv)
+all.equal(readmat, matv)
 # Coerce from data frame back to matrix
 readmat <- as.matrix(readmat)
 class(readmat)
-all.equal(readmat, matrixv)
+all.equal(readmat, matv)
       @
   \end{columns}
 \end{block}
@@ -430,18 +430,18 @@ while (isOpen(con_read)) {
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Write matrix to csv file, and then read it back
-write.csv(matrixv, file="matrix.csv")
+write.csv(matv, file="matrix.csv")
 readmat <- read.csv(file="matrix.csv", row.names=1)
 readmat  # Read.csv() reads matrix as data frame
 class(readmat)
 readmat <- as.matrix(readmat)  # Coerce to matrix
-all.equal(readmat, matrixv)
-write.csv(matrixv, row.names=FALSE,
+all.equal(readmat, matv)
+write.csv(matv, row.names=FALSE,
           file="matrix_ex_rows.csv")
 readmat <- read.csv(file="matrix_ex_rows.csv")
 readmat <- as.matrix(readmat)
 readmat  # A matrix without row names
-all.equal(readmat, matrixv)
+all.equal(readmat, matv)
       @
   \end{columns}
 \end{block}
@@ -473,7 +473,7 @@ all.equal(readmat, matrixv)
 setwd("/Users/jerzy/Develop/lecture_slides/data")
 library(MASS)  # Load package "MASS"
 # Write to CSV file by row - it's very SLOW!!!
-MASS::write.matrix(matrixv, file="matrix.csv", sep=",")
+MASS::write.matrix(matv, file="matrix.csv", sep=",")
 # Read using scan() and skip first line with colnames
 readmat <- scan(file="matrix.csv", sep=",", skip=1,
   what=numeric())
@@ -522,24 +522,24 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Read data from a csv file, including row names
-matrixv <- read.csv(file="matrix_bad.csv", row.names=1)
-matrixv
-class(matrixv)
+matv <- read.csv(file="matrix_bad.csv", row.names=1)
+matv
+class(matv)
 # Columns with bad data are character or factor
-sapply(matrixv, class)
+sapply(matv, class)
 # Coerce character column to numeric
-matrixv$col2 <- as.numeric(matrixv$col2)
+matv$col2 <- as.numeric(matv$col2)
 # Or
 # Copy row names
-rownames <- row.names(matrixv)
+rownames <- row.names(matv)
 # sapply loop over columns and coerce to numeric
-matrixv <- sapply(matrixv, as.numeric)
+matv <- sapply(matv, as.numeric)
 # Restore row names
-row.names(matrixv) <- rownames
+row.names(matv) <- rownames
 # Replace NAs with zero
-matrixv[is.na(matrixv)] <- 0
+matv[is.na(matv)] <- 0
 # matrix without NAs
-matrixv
+matv
       @
   \end{columns}
 \end{block}
@@ -566,7 +566,8 @@ matrixv
       <<echo=(-(1:4)),eval=FALSE>>=
 setwd("/Users/jerzy/Develop/lecture_slides/data")
 rm(list=ls())
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
 # Create zoo with Date index
 dates <- seq(from=as.Date("2013-06-15"), by="day",
@@ -652,7 +653,8 @@ all.equal(pricev, drop(pricezoo))
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Create zoo with POSIXct date-time index
 dates <- seq(from=as.POSIXct("2013-06-15"),
               by="hour", length.out=100)
@@ -2655,16 +2657,16 @@ strsplit(colnames(sp500env$LOW), split="[.]")
 do.call(cbind, strsplit(colnames(sp500env$LOW), split="[.]"))
 do.call(cbind, strsplit(colnames(sp500env$LOW), split="[.]"))[2, ]
 # Extract proper names from column names
-namesv <- rutils::get_name(colnames(sp500env$LOW), field=2)
+namev <- rutils::get_name(colnames(sp500env$LOW), field=2)
 # Or
-# namesv <- do.call(rbind, strsplit(colnames(sp500env$LOW),
+# namev <- do.call(rbind, strsplit(colnames(sp500env$LOW),
 #                                   split="[.]"))[, 2]
 # Rename "LOW" colnames to "LOWES"
-colnames(sp500env$LOW) <- paste("LOVES", namesv, sep=".")
+colnames(sp500env$LOW) <- paste("LOVES", namev, sep=".")
 sp500env$LOWES <- sp500env$LOW
 rm(LOW, envir=sp500env)
 # Rename BF-B colnames to "BFB"
-colnames(sp500env$"BF-B") <- paste("BFB", namesv, sep=".")
+colnames(sp500env$"BF-B") <- paste("BFB", namev, sep=".")
 sp500env$BFB <- sp500env$"BF-B"
 rm("BF-B", envir=sp500env)
 # Rename BRK-B colnames
@@ -2675,7 +2677,7 @@ colnames(sp500env$BRKB) <- gsub("BRK-B", "BRKB", colnames(sp500env$BRKB))
 save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 # Download "BRK.B" separately with auto.assign=FALSE
 # BRKB <- quantmod::getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
-# colnames(BRKB) <- paste("BRKB", namesv, sep=".")
+# colnames(BRKB) <- paste("BRKB", namev, sep=".")
 # sp500env$BRKB <- BRKB
       @
     \column{0.5\textwidth}
@@ -2723,7 +2725,7 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 # retp <- xts::diff.xts(log(pricev))
 retp <- xts::diff.xts(pricev)/
   rutils::lagit(pricev, pad_zeros=FALSE)
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 samplev <- sample(NCOL(retp), s=100, replace=FALSE)
 prices100 <- pricev[, samplev]
 returns100 <- retp[, samplev]
@@ -2948,6 +2950,11 @@ for (symbol in ls(sp500env)) {
     \column{0.5\textwidth}
       The \emph{S\&P500} stock market index is a capitalization-weighted average of the 500 largest U.S. companies, and covers about 80\% of the U.S. stock market capitalization.
       \vskip1ex
+      Notice: 
+      \href{https://algotrading101.com/learn/yahoo-finance-api-guide/}{\emph{Yahoo} no longer provides a public API for data}.
+      \vskip1ex
+      There are workarounds but they're tedious.
+      \vskip1ex
       \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{S\&P500} index (symbol \emph{\textasciicircum{}GSPC}), and for the \emph{S\&P500} total return index (symbol \emph{\textasciicircum{}SP500TR}).
       \vskip1ex
       But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names.
@@ -2962,14 +2969,15 @@ for (symbol in ls(sp500env)) {
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Assign name SP500 to ^GSPC symbol
-setSymbolLookup(SP500=list(name="^GSPC", src="yahoo"))
-getSymbolLookup()
-# view and clear options
+quantmod::setSymbolLookup(SP500=list(name="^GSPC", src="yahoo"))
+quantmod::getSymbolLookup()
+# View and clear options
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download S&P500 prices into etfenv
 quantmod::getSymbols("SP500", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
+
 chart_Series(x=etfenv$SP500["2016/"],
              TA="add_Vo()", name="S&P500 index")
       @
@@ -3049,7 +3057,7 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 retp <- xts::diff.xts(pricev)/
   rutils::lagit(pricev, pad_zeros=FALSE)
 # Select a random sample of 100 prices and returns
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 samplev <- sample(NCOL(retp), s=100, replace=FALSE)
 prices100 <- pricev[, samplev]
 returns100 <- retp[, samplev]
@@ -3335,8 +3343,8 @@ lapply(sp500, colnames)
 sp500 <- sp500[[1]]
 head(sp500)
 # Create valid R names from symbols containing "-" or "."characters
-sp500$namesv <- gsub("-", "_", sp500$Ticker)
-sp500$namesv <- gsub("[.]", "_", sp500$names)
+sp500$namev <- gsub("-", "_", sp500$Ticker)
+sp500$namev <- gsub("[.]", "_", sp500$names)
 # Write data frame of S&P500 constituents to CSV file
 write.csv(sp500,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_Yahoo.csv",
@@ -3849,10 +3857,10 @@ xtsv <- zoo::na.locf(xtsv, fromLast=TRUE)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Read names of all the sheets in an Excel spreadsheet
-namesv <- readxl::excel_sheets(filev)
+namev <- readxl::excel_sheets(filev)
 # Read all the sheets from an Excel spreadsheet
-sheets <- lapply(namesv, read_xlsx, path=filev)
-names(sheets) <- namesv
+sheets <- lapply(namev, read_xlsx, path=filev)
+names(sheets) <- namev
 # sheets is a list of tibbles
 sapply(sheets, class)
 # Create function to coerce tibble to xts

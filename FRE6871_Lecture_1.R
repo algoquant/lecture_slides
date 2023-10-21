@@ -1332,8 +1332,7 @@ moment(x=retp, order=3)
 # 4x1 matrix of moment orders
 orderv <- as.matrix(1:4)
 # Anonymous function allows looping over function parameters
-apply(X=orderv, MARGIN=1,
-      FUN=function(orderp) {
+apply(X=orderv, MARGIN=1, FUN=function(orderp) {
   moment(x=retp, order=orderp)
 }  # end anonymous function
       )  # end apply

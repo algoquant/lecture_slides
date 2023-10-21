@@ -306,8 +306,8 @@ colnames(pricev) <- colnamev
 # dygraphs plot with two y-axes
 library(dygraphs)
 dygraphs::dygraph(pricev, main=paste(colnamev, collapse=" and ")) %>%
-  dyAxis(name="y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis(name="y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dyAxis(name="y", independentTicks=TRUE) %>%
+  dyAxis(name="y2", independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="red") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="blue")
 # Load package qmao

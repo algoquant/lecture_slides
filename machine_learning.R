@@ -721,8 +721,8 @@ dygraphs::dygraph(stdcor,
   main="Monthly Stock Volatilities and Correlations") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
 # Calculate the median VTI volatility
 medianv <- median(stdcor[, "stdev"])
@@ -776,8 +776,8 @@ endd <- rutils::calc_endpoints(retp, interval="weeks")
 dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
 # Scatterplot of trailing stock volatilities and correlations
 volv <- sqrt(covarv[, 2])
@@ -799,8 +799,8 @@ colnamev <- colnames(datav)
 dygraphs::dygraph(datav[endd], main="AAPL Trailing Stock Volatility and Correlation") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
 # Calculate portfolio returns
 retvti <- na.omit(rutils::etfenv$returns$VTI)
@@ -834,8 +834,8 @@ dygraphs::dygraph(datav[endd],
   main="Trailing Stock Volatilities and Correlations") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
 # Formula of linear model with zero intercept
 formulav <- z ~ x + y - 1

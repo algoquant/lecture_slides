@@ -1346,7 +1346,7 @@ look_back <- 121
 varv <- HighFreq::roll_var_ohlc(log(ohlc), method="close", look_back=look_back, scale=FALSE)
 varv[1:look_back, ] <- varv[look_back+1, ]
 # Calculate trailing average volume
-volumr <- HighFreq::roll_var(volumv, look_back=look_back)/look_back
+volumr <- HighFreq::roll_sum(volumv, look_back=look_back)/look_back
 # dygraph plot of VTI variance and trading volumes
 datav <- xts::xts(cbind(varv, volumr), zoo::index(ohlc))
 colnamev <- c("variance", "volume")

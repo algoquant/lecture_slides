@@ -71,7 +71,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{April 4, 2023}
+\date{September 19, 2023}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -106,16 +106,16 @@ knit_theme$set(thm)
       The function \texttt{HighFreq::roll\_wsum()} calculates the convolution of a time series with a vector of weights.
       <<echo=TRUE,eval=FALSE>>=
 # Extract the log VTI prices
-ohlc <- rutils::etfenv$VTI
-closep <- log(quantmod::Cl(ohlc))
+ohlc <- log(rutils::etfenv$VTI)
+closep <- quantmod::Cl(ohlc)
 colnames(closep) <- "VTI"
 nrows <- NROW(closep)
 # Calculate the EWMA weights
 look_back <- 111
 lambda <- 0.9
 weightv <- lambda^(0:look_back)
-weightv <- weightv/sum(weights)
-# Calculate the EWMA prices as the convolution
+weightv <- weightv/sum(weightv)
+# Calculate the EWMA prices as a convolution
 ewmacpp <- HighFreq::roll_sumw(closep, weightv=weightv)
 pricev <- cbind(closep, ewmacpp)
 colnames(pricev) <- c("VTI", "VTI EWMA")
@@ -241,7 +241,7 @@ dyplot <- dygraphs::dygraph(pricev, main="VTI EWMA Prices") %>%
   dySeries(name=colnamev[2], strokeWidth=3, col="red") %>%
   dyLegend(show="always", width=200)
       @
-      <<echo=FALSE,eval=FALSE>>=
+      <<echo=FALSE,eval=FALSE,purl=FALSE>>=
 # Equivalent code to the above
 # Determine trade dates right after EWMA has crossed prices
 indic <- sign(closep - ewmacpp)
@@ -266,7 +266,7 @@ shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
       <<echo=TRUE,eval=FALSE>>=
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
-    dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -314,8 +314,8 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv), main="Performance of EWMA Strategy"
   dyLegend(show="always", width=200)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
-    dyplot <- dyplot %>% 
-      dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+  dyplot <- dyplot %>% 
+    dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -354,13 +354,13 @@ legend("top", legend=colnames(wealthv), y.intersp=0.5,
       The t-value of the \emph{Treynor-Mazuy} test is negative, but not statistically significant. 
       <<echo=TRUE,eval=FALSE>>=
 # Test EWMA crossover market timing of VTI using Treynor-Mazuy test
-desv <- cbind(pnls, retp, retp^2)
-desv <- na.omit(desv)
-colnames(desv) <- c("EWMA", "VTI", "treynor")
-regmod <- lm(EWMA ~ VTI + treynor, data=desv)
+desm <- cbind(pnls, retp, retp^2)
+desm <- na.omit(desm)
+colnames(desm) <- c("EWMA", "VTI", "treynor")
+regmod <- lm(EWMA ~ VTI + treynor, data=desm)
 summary(regmod)
 # Plot residual scatterplot
-resids <- (desv$EWMA - regmod$coeff["VTI"]*retp)
+resids <- (desm$EWMA - regmod$coeff["VTI"]*retp)
 resids <- regmod$residuals
 plot.default(x=retp, y=resids, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for EWMA Crossover vs VTI", line=0.5)
@@ -496,9 +496,10 @@ legend("top", legend=colnames(wealthv),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{bid-ask spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
+      The \emph{bid-ask spread} is the percentage difference between the \emph{ask} (offer) minus the \emph{bid} prices, divided by the \emph{mid} price.
       \vskip1ex
-      The \emph{bid-ask spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
+      The bid-ask spread for many liquid ETFs is about \texttt{1} basis point. For example the 
+\href{https://www.ssga.com/us/en/intermediary/etfs/funds/the-technology-select-sector-spdr-fund-xlk}{\emph{XLK ETF}}
       \vskip1ex
       Let $n_t$ be the number of shares of the stock owned at time $t$, and let $p_t$ be their price.
       \vskip1ex
@@ -516,7 +517,7 @@ legend("top", legend=colnames(wealthv),
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_ewma_transcosts.png}
       <<echo=TRUE,eval=FALSE>>=
-# bidask equal to 10 bps for liquid ETFs
+# bidask equal to 1 bp for liquid ETFs
 bidask <- 0.001
 # Calculate the transaction costs
 costs <- 0.5*bidask*abs(poslag - posv)
@@ -662,7 +663,7 @@ pnltrend <- parLapply(cluster, lambdav, function(lambda) {
   # Simulate EWMA strategy and Calculate the returns
   sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
 })  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster under Windows
+stretduster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel loop over lambdav under Mac-OSX or Linux
 pnltrend <- mclapply(lambdav, function(lambda) {
   library(quantmod)
@@ -733,8 +734,8 @@ trendopt <- ewmatrend[, "pnls"]
 wealthv <- cbind(retp, trendopt)
 colnames(wealthv) <- c("VTI", "EWMA PnL")
 # Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, 
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 cor(wealthv)[1, 2]
 # Plot dygraph of EWMA strategy wealth
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Performance of Optimal Trend Following EWMA Strategy") %>%
@@ -802,7 +803,7 @@ legend("topleft", legend=colnames(pnlrevert),
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_notranscosts.png}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_returns.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_withcosts.png}
   \end{columns}
 \end{block}
 
@@ -928,11 +929,9 @@ sqrt(252)*sapply(retc, function(xtsv) mean(xtsv)/sd(xtsv))
 # Plot dygraph of EWMA strategy wealth
 colorv <- c("blue", "red", "green", "purple")
 dygraphs::dygraph(cumsum(retc)[endd], main="Performance of Combined EWMA Strategies") %>%
-  dySeries("VTI", color="blue", strokeWidth=1) %>%
-  dySeries("Trending", color="red", strokeWidth=1) %>%
-  dySeries("Reverting", color="green", strokeWidth=1) %>%
-  dySeries("Combined", color="purple", strokeWidth=3) %>%
-  dyLegend(show="always", width=400)
+  dyOptions(colors=colorv, strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=200)
 # Standard plot of EWMA strategy wealth
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorv
@@ -961,8 +960,8 @@ legend("topleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the weights proportional to Sharpe ratios
 weightv <- c(sharpetrend, sharperevert)
-weightv[weightv<0] <- 0
-weightv <- weightv/sum(weights)
+weightv[weightv < 0] <- 0
+weightv <- weightv/sum(weightv)
 retc <- cbind(pnltrend, pnlrevert)
 retc <- retc %*% weightv
 retc <- cbind(retp, retc)
@@ -1037,9 +1036,9 @@ dyplot <- dygraphs::dygraph(pricev[endd], main="VTI Dual EWMA Prices") %>%
   dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
   dySeries(name=colnamev[3], strokeWidth=2, col="purple") %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
 for (i in 1:NROW(shadev)) {
-    dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
 }  # end for
 dyplot
       @
@@ -1078,7 +1077,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv)[endd], main=paste("EWMA Dual Crossov
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
-    dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -1104,7 +1103,7 @@ dyplot
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-sim_ewma2 <- function(ohlc, lambdaf=0.1, lambdas=0.01, look_back=333, 
+sim_ewma2 <- function(ohlc, lambdaf=0.1, lambdas=0.01, 
                       bidask=0.001, trend=1, lagg=1) {
   if (lambdaf >= lambdas) return(NA)
   closep <- quantmod::Cl(ohlc)
@@ -1162,9 +1161,9 @@ source("/Users/jerzy/Develop/lecture_slides/scripts/ewma_model.R")
 lambdafv <- seq(from=0.85, to=0.99, by=0.01)
 lambdasv <- seq(from=0.85, to=0.99, by=0.01)
 # Calculate the Sharpe ratio of dual EWMA strategy
-calc_sharpe <- function(ohlc, lambdaf, lambdas, look_back, bidask, trend, lagg) {
+calc_sharpe <- function(ohlc, lambdaf, lambdas, bidask, trend, lagg) {
   if (lambdaf >= lambdas) return(NA)
-  pnls <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, look_back=look_back, 
+  pnls <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
     bidask=bidask, trend=trend, lagg=lagg)[, "pnls"]
   sqrt(252)*mean(pnls)/sd(pnls)
 }  # end calc_sharpe
@@ -1173,13 +1172,13 @@ calc_sharpe <- Vectorize(FUN=calc_sharpe,
   vectorize.args=c("lambdaf", "lambdas"))
 # Calculate the matrix of PnLs
 sharpem <- outer(lambdafv, lambdasv, FUN=calc_sharpe, ohlc=ohlc, 
-                 look_back=look_back, bidask=0.0, trend=1, lagg=2)
+                 bidask=0.0, trend=1, lagg=2)
 # Or perform two sapply() loops over lambda vectors
 sharpem <- sapply(lambdasv, function(lambdas) {
   sapply(lambdafv, function(lambdaf) {
     if (lambdaf >= lambdas) return(NA)
     calc_sharpe(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
-                look_back=look_back, bidask=0.0, trend=1, lagg=2)
+                bidask=0.0, trend=1, lagg=2)
   })  # end sapply
 })  # end sapply
 colnames(sharpem) <- lambdasv
@@ -1207,13 +1206,13 @@ whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
 lambdaf <- lambdafv[whichv[1]]
 lambdas <- lambdasv[whichv[2]]
 ewma_opt <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
-  look_back=look_back, bidask=0.0, trend=1, lagg=2)
+  bidask=0.0, trend=1, lagg=2)
 pnls <- ewma_opt[, "pnls"]
 wealthv <- cbind(retp, pnls)
 colnames(wealthv)[2] <- "EWMA"
 # Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, 
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Annualized Sharpe ratio of Dual EWMA strategy
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
@@ -1234,7 +1233,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv), main=paste("Optimal Dual EWMA Strat
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
-    dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -1262,7 +1261,7 @@ outsample <- (nrows %/% 2 + 1):nrows
 # Calculate the matrix of PnLs
 sharpem <- outer(lambdafv, lambdasv, 
                  FUN=calc_sharpe, ohlc=ohlc[insample, ], 
-                 look_back=look_back, bidask=0.0, trend=1, lagg=2)
+                 bidask=0.0, trend=1, lagg=2)
 colnames(sharpem) <- lambdasv
 rownames(sharpem) <- lambdafv
 # Calculate the PnLs for the optimal strategy
@@ -1270,14 +1269,14 @@ whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
 lambdaf <- lambdafv[whichv[1]]
 lambdas <- lambdasv[whichv[2]]
 pnls <- sim_ewma2(ohlc=ohlc, lambdaf=lambdaf, lambdas=lambdas, 
-                  look_back=look_back, bidask=0.0, trend=1, lagg=2)[, "pnls"]
+                  bidask=0.0, trend=1, lagg=2)[, "pnls"]
 wealthv <- cbind(retp, pnls)
 colnames(wealthv)[2] <- "EWMA"
 # Calculate the Sharpe and Sortino ratios in-sample and out-of-sample
-sqrt(252)*sapply(wealthv[insample, ], 
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-sqrt(252)*sapply(wealthv[outsample, ], 
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv[insample, ], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv[outsample, ], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1379,7 +1378,7 @@ legend("bottomright", legend=colnames(pricev),
       \includegraphics[width=0.45\paperwidth]{figure/vwap_recursive.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VWAP prices recursively using C++ code
-lambda <- 0.995
+lambda <- 0.9
 volumer <- .Call(stats:::C_rfilter, volum, lambda, c(as.numeric(volum[1])/(1-lambda), double(NROW(volum))))[-1]
 pricer <- .Call(stats:::C_rfilter, volum*closep, lambda, c(as.numeric(volum[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
 vwapr <- pricer/volumer
@@ -1391,7 +1390,7 @@ pricev <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
 colnames(pricev) <- c("VWAP rolling", "VWAP recursive")
 dygraphs::dygraph(pricev["2009"], main="VWAP Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -1450,10 +1449,10 @@ shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
-    dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
 }  # end for
 # Plot the dygraph object
 dyplot
@@ -1491,17 +1490,12 @@ sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
       \includegraphics[width=0.45\paperwidth]{figure/vwap_combined.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of VWAP strategy combined with VTI
-colnamev <- colnames(wealthv)
-dygraphs::dygraph(cumsum(wealthv)[endd], paste("VWAP Strategy Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
-  dySeries(name=colnamev[1], col="blue", strokeWidth=1) %>%
-  dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
-  dySeries(name=colnamev[3], col="purple", strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-# Or
+colorv <- c("blue", "red", "purple")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
-  main=paste("VWAP Strategy Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
-  dyOptions(colors=c("blue", "red", "purple"), strokeWidth=1) %>%
-  dyLegend(show="always", width=300)
+  paste("VWAP Strategy Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
+  dyOptions(colors=colorv, strokeWidth=1) %>%
+  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -1521,13 +1515,13 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The t-value of the \emph{Treynor-Mazuy} test is negative, but not statistically significant. 
       <<echo=TRUE,eval=FALSE>>=
 # Test VWAP crossover market timing of VTI using Treynor-Mazuy test
-desv <- cbind(pnls, retp, retp^2)
-desv <- na.omit(desv)
-colnames(desv) <- c("VWAP", "VTI", "treynor")
-regmod <- lm(VWAP ~ VTI + treynor, data=desv)
+desm <- cbind(pnls, retp, retp^2)
+desm <- na.omit(desm)
+colnames(desm) <- c("VWAP", "VTI", "treynor")
+regmod <- lm(VWAP ~ VTI + treynor, data=desm)
 summary(regmod)
 # Plot residual scatterplot
-resids <- (desv$VWAP - regmod$coeff["VTI"]*retp)
+resids <- (desm$VWAP - regmod$coeff["VTI"]*retp)
 resids <- regmod$residuals
 # x11(width=6, height=6)
 plot.default(x=retp, y=resids, xlab="VTI", ylab="residuals")
@@ -1652,6 +1646,7 @@ legend("topleft", legend=colnames(pnls), inset=0.1,
 
 %%%%%%%%%%%%%%%
 \section{Mean Reverting Strategies}
+% \section{Statistical Arbitrage}
 
 
 %%%%%%%%%%%%%%%
@@ -1694,7 +1689,46 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Bollinger Band
   dySeries(name=colnamev[2], strokeWidth=2, col="green") %>%
   dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="red") %>%
   dySeries(name=colnamev[4], strokeWidth=2, strokePattern="dashed", col="red") %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bollinger Bands With Centered Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Centering (de-meaning) the prices provides a better view of the \emph{Bollinger Bands}.
+      \vskip1ex
+      The centered prices tend to be range-bound between the \emph{Bollinger Bands}.
+      \vskip1ex
+      When the centered price is below the lower band it's considered cheap, and if it's above the upper band it's considered rich (expensive).
+      \vskip1ex
+      When the centered price is close to zero it's considered fair (neutral).
+      <<echo=TRUE,eval=FALSE>>=
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/bollinger_demean.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Center the prices
+pricem <- pricev - meanv
+# Dygraphs plot of Bollinger bands
+priceb <- cbind(pricem, volat, -volat)
+colnames(priceb) <- c("price", "upper", "lower")
+colnamev <- colnames(priceb)
+dygraphs::dygraph(priceb["2008-09/2009-09"], 
+  main="Centered VTI Prices and Bollinger Bands") %>%
+  dySeries(name=colnamev[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, strokePattern="dashed", col="red") %>%
+  dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="green") %>%
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -1715,9 +1749,11 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Bollinger Band
       \vskip1ex
       The upper and lower Bollinger bands can be chosen to be a multiple of the standard deviations above and below the mean prices.
       \vskip1ex
-      The Bollinger Strategy is a \emph{mean reverting} (contrarian) strategy because it bets on prices reverting to their mean value.
+      The Bollinger strategy is a \emph{mean reverting} (contrarian) strategy because it bets on prices reverting to their mean value.
       \vskip1ex
-      The Bollinger Strategy is a type of \emph{statistical arbitrage} strategy.  \emph{Statistical arbitrage} strategies exploit short-term statistical anomalies in prices, usually prices diverging from their equilibrium values and then reverting back to them.
+      The Bollinger strategy is a type of \emph{statistical arbitrage} strategy.  
+      \vskip1ex
+      \emph{Statistical arbitrage} strategies try to exploit short-term anomalies in prices, when prices diverge from their equilibrium values and then revert back to them.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1728,7 +1764,7 @@ volat <- HighFreq::run_var(pricev, lambda=lambda)
 volat <- sqrt(volat)
 # Prepare the simulation parameters
 pricen <- as.numeric(pricev) # Numeric price
-pricem <- pricen - meanv # De-meaned price
+pricem <- pricen - meanv # Centered price
 threshv <- volat
 posv <- integer(nrows) # Stock positions
 posv[1] <- 0 # Initial position
@@ -1790,11 +1826,11 @@ sharper <- round(sharper, 3)
 colnamev <- colnames(wealthv)
 captiont <- paste("Bollinger Strategy", "/ \n", 
   paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
-  "Number of trades=", ntrades)
+  "Number trades =", ntrades)
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -1844,11 +1880,11 @@ sharper <- round(sharper, 3)
 colnamev <- colnames(wealthv)
 captiont <- paste("Bollinger Strategy", "/ \n", 
   paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
-  "Number of trades=", ntrades)
+  "Number trades =", ntrades)
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -1887,7 +1923,72 @@ all.equal(posv, posf)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Bollinger Strategy For Intraday Data}
+\subsection{Bollinger Strategy For Intraday VTI Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Bollinger Strategy has performed well for intraday returns of the \emph{VTI} ETF, because intraday prices exhibit significant mean-reversion.
+      \vskip1ex
+      This simulation doesn't account for transaction costs, which would likely erase all profits if market orders were used for trade executions.  But the strategy could be profitable if limit orders were used for trade executions.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the intraday open-to-close VTI returns
+ohlc <- rutils::etfenv$VTI
+openp <- quantmod::Op(ohlc)
+highp <- quantmod::Hi(ohlc)
+lowp <- quantmod::Lo(ohlc)
+closep <- quantmod::Cl(ohlc)
+retp <- (closep - openp)
+# Calculate the cumulative VTI returns
+pricev <- cumsum(retp)
+nrows <- NROW(pricev)
+lambda <- 0.1
+meanv <- HighFreq::run_mean(pricev, lambda=lambda)
+volat <- HighFreq::run_var(pricev, lambda=lambda)
+volat <- sqrt(volat)
+# Calculate the positions from Bollinger bands
+threshv <- volat
+pricem <- zoo::coredata(pricev - meanv)
+posv <- rep(NA_integer_, nrows)
+posv[1] <- 0
+posv <- ifelse(pricem > threshv, -1, posv)
+posv <- ifelse(pricem < -threshv, 1, posv)
+posv <- zoo::na.locf(posv)
+# Lag the positions to trade in the next period
+posv <- rutils::lagit(posv, lagg=1)
+# Calculate the number of trades and the PnLs
+ntrades <- sum(abs(rutils::diffit(posv)) > 0)
+pnls <- retp*posv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger_intraday_vti.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe ratios
+wealthv <- cbind(retp, pnls)
+colnames(wealthv) <- c("VTI", "Strategy")
+nyears <- as.numeric(end(pricev)-start(pricev))/365
+sharper <- sqrt(nrows/nyears)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
+sharper <- round(sharper, 3)
+# Dygraphs plot of Bollinger strategy
+colnamev <- colnames(wealthv)
+captiont <- paste("Bollinger Strategy for Intraday VTI", "/ \n", 
+  paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
+  "Number trades =", ntrades)
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=200)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bollinger Strategy For Intraday SPY Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1921,7 +2022,7 @@ pnls <- retp*posv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger_intraday.png}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger_intraday_spy.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
 wealthv <- cbind(retp, pnls)
@@ -1933,11 +2034,11 @@ sharper <- round(sharper, 3)
 colnamev <- colnames(wealthv)
 captiont <- paste("Bollinger Strategy for Minute SPY", "/ \n", 
   paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
-  "Number of trades=", ntrades)
+  "Number trades =", ntrades)
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -2001,7 +2102,7 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Hampel Bands")
   dySeries(name=colnamev[2], strokeWidth=2, col="green") %>%
   dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="red") %>%
   dySeries(name=colnamev[4], strokeWidth=2, strokePattern="dashed", col="red") %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -2055,12 +2156,12 @@ sharper <- round(sharper, 3)
 # Dygraphs plot of Hampel strategy
 captiont <- paste("Hampel Strategy", "/ \n", 
   paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
-  "Number of trades=", ntrades)
+  "Number trades =", ntrades)
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 colnamev <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
@@ -2069,7 +2170,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Hampel Filter Strategy For Intraday Data}
+\subsection{Hampel Filter Strategy For Intraday SPY Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2116,17 +2217,16 @@ sharper <- round(sharper, 3)
 colnamev <- colnames(wealthv)
 captiont <- paste("Hampel Strategy for Minute SPY", "/ \n", 
   paste0(paste(colnamev[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
-  "Number of trades=", ntrades)
+  "Number trades =", ntrades)
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=200)
       @
   \end{columns}
 \end{block}
 
 \end{frame}
-
 
 
 

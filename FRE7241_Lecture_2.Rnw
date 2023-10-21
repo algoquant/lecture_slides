@@ -70,7 +70,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{September 19, 2023}
+\date{September 12, 2023}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -101,7 +101,7 @@ knit_theme$set(thm)
       \vskip1ex
       The \emph{Merton-Henriksson} market timing test uses a linear \emph{market timing} term:
       \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(0, R_m - R_f)} + {\varepsilon}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(R_m - R_f, 0)} + {\varepsilon}
       \end{displaymath}
       Where $R$ are the strategy returns, $R_m$ are the market returns, and $R_f$ are the risk-free rates.
       \vskip1ex
@@ -174,7 +174,7 @@ pricev <- rutils::etfenv$prices
 pricev <- zoo::na.locf(pricev, na.rm=FALSE)
 pricev <- zoo::na.locf(pricev, fromLast=TRUE)
 datev <- zoo::index(pricev)
-# Calculate the simple dollar returns
+# Calculate the dollar returns
 retd <- rutils::diffit(pricev)
 # Or
 # retd <- lapply(pricev, rutils::diffit)
@@ -678,11 +678,11 @@ sapply(retp, function(x) {
       \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_stocks_bonds.png}
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of proportional allocations
-wealthv <- cumprod(1 + retp)
+wealthv <- cumsum(retp)
 # Calculate the a vector of monthly end points
 endd <- rutils::calc_endpoints(retp, interval="weeks")
 # Plot cumulative log wealth
-dygraphs::dygraph(log(wealthv[endd]), 
+dygraphs::dygraph(wealthv[endd], 
   main="Stocks and Bonds With Proportional Allocations") %>%
   dyOptions(colors=c("blue", "green", "blue", "red")) %>%
   dySeries("Combined", color="red", strokeWidth=2) %>%
@@ -703,7 +703,7 @@ dygraphs::dygraph(log(wealthv[endd]),
     \column{0.5\textwidth}
       The optimal stock and bond weights can be calculated using optimization.
       \vskip1ex
-      Using the past \texttt{20} years of data, the optimal \emph{VTI} weight is about \texttt{0.4}.
+      Using the past \texttt{20} years of data, the optimal \emph{VTI} weight is about \texttt{0.43}.
       \vskip1ex
       The comments and conclusions in these slides are based on \texttt{20} years of very positive stock and bond returns, when stocks and bonds have been in a secular bull market.  The conclusions would not hold if stocks and bonds had suffered from a bear market (losses) over that time.
       <<echo=TRUE,eval=FALSE>>=
@@ -756,6 +756,8 @@ text(x=weightm, y=0.7*max(sharpev), pos=4, cex=1.2,
       The past data represents only one possible future scenario.  We can generate more scenarios using bootstrap simulation.
       \vskip1ex
       The bootstrap data is a list of simulated \emph{VTI} and \emph{IEF} returns, which represent possible realizations of future returns, based on past history.
+      \vskip1ex
+      For sampling from rows of data, it's better to convert time series to matrices.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -774,7 +776,7 @@ bootd <- parLapply(cluster, 1:nboot, function(x) {
   retp[sample.int(nrows, replace=TRUE), ]
 })  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 bootd <- mclapply(1:nboot, function(x) {
   retp[sample.int(nrows, replace=TRUE), ]
 }, mc.cores=ncores)  # end mclapply
@@ -849,10 +851,6 @@ legend(x="topright", legend=c("VTI", "IEF"),
       The distribution of stock wealth for short holding periods is close to symmetric around par (\texttt{1}).
       \vskip1ex
       The distribution for long holding periods is highly positively skewed with a much larger mean.
-      \vskip1ex
-      U.S. stocks in the last 40 years have had higher risk-adjusted wealth for longer holding periods.
-      \vskip1ex
-      The downside risk is equal to the mean of the wealth below par (\texttt{1}).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the distributions of stock wealth
 holdv <- nrows*seq(0.1, 1.0, 0.1)
@@ -863,20 +861,6 @@ wealthm <- mclapply(bootd, function(retp) {
 }, mc.cores=ncores)  # end mclapply
 wealthm <- do.call(rbind, wealthm)
 dim(wealthm)
-# Define the risk-adjusted wealth measure
-riskretfun <- function(wealthv) {
-  riskv <- 0.01
-  if (min(wealthv) < 1)
-    riskv <- mean((1-wealthv)[wealthv<1])
-  mean(wealthv)/riskv
-}  # end riskretfun
-# Calculate the stock wealth risk-return ratios
-riskrets <- apply(wealthm, 2, riskretfun)
-# Plot the stock wealth risk-return ratios
-plot(x=holdv, y=riskrets, 
-     main="Stock Risk-Return Ratio as Function of Holding Period",
-     xlab="Holding Period", ylab="Ratio", 
-     t="l", lwd=3, col="blue")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -898,6 +882,52 @@ text(x=mean2, y=0.5, labels="Short", pos=4, cex=0.8)
 legend(x="top", legend=c("Long", "Short"),
        inset=0.1, cex=1.0, bg="white", bty="n", y.intersp=0.5, 
        lwd=6, lty=1, col=c("blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk-adjusted Stock Wealth and Holding Period}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The downside risk is equal to the mean of the wealth below par (\texttt{1}).
+      \vskip1ex
+      The risk-adjusted wealth measure is equal to the mean wealth divided by the downside risk.
+      \vskip1ex
+      U.S. stocks in the last 40 years have had higher risk-adjusted wealth for longer holding periods.
+      \vskip1ex
+      The risk-adjusted wealth is also higher for very short holding periods because the risk is low - there's not enough time for the wealth to significantly drop below par (\texttt{1}).
+      \vskip1ex
+      The risk increases for intermediate holding periods, so the risk-adjusted wealth drops.
+      \vskip1ex
+      The mean wealth increases for longer holding periods, so the risk-adjusted wealth also increases.
+      <<echo=TRUE,eval=FALSE>>=
+# Define the risk-adjusted wealth measure
+riskretfun <- function(wealthv) {
+  riskv <- 0.01 # Risk floor
+  if (min(wealthv) < 1) # Some wealth is below par
+    # Calculate the mean stock wealth below par
+    riskv <- mean((1-wealthv)[wealthv<1])
+  mean(wealthv)/riskv
+}  # end riskretfun
+# Calculate the stock wealth risk-return ratios
+riskrets <- apply(wealthm, 2, riskretfun)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_wealth_riskreturn.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the stock wealth risk-return ratios
+plot(x=holdv, y=riskrets, 
+     main="Stock Risk-Return Ratio as Function of Holding Period",
+     xlab="Holding Period", ylab="Ratio", 
+     t="l", lwd=3, col="blue")
       @
   \end{columns}
 \end{block}
@@ -982,14 +1012,14 @@ sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
       \includegraphics[width=0.45\paperwidth]{figure/portf_all_weather.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the cumulative wealth from returns
-wealthv <- cumprod(1 + retp)
+wealthv <- cumsum(retp)
 # Calculate the a vector of monthly end points
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 # dygraph all-weather wealth
 dygraphs::dygraph(wealthv[endd], main="All-Weather Portfolio") %>%
   dyOptions(colors=c("blue", "green", "orange", "red")) %>%
   dySeries("All Weather", color="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
+  dyLegend(show="always", width=400)
 # Plot all-weather wealth
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue", "green", "red")
@@ -1098,47 +1128,70 @@ dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Combining the Standardized Returns of Multiple Assets}
+\subsection{The Standardized Stock Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Standardized returns are returns divided by their volatilities.
+      The \emph{standardized price} is the dollar amount of stock with unit dollar volatility.  The \emph{standardized price} is equal to the ratio of the stock price divided by its dollar volatility: $\frac{p}{\sigma_d}$
       \vskip1ex
-      Multiplying the weights times the \emph{standardized dollar returns} is equivalent to buying \emph{share amounts} such that their dollar volatilities are proportional to the weights.
+      Multiplying the weights times the dollar returns of the \emph{standardized prices} is equivalent to buying \emph{share amounts} such that their dollar volatilities are proportional to the weights.
       \vskip1ex
-      Multiplying the weights times the \emph{standardized percentage returns} is equivalent to buying \emph{dollar amounts} such that their percentage volatilities are proportional to the weights.
-      \vskip1ex
-      If the volatilities change over time then the portfolio allocations must be rebalanced to ensure that the volatilities remain proportional to the target weights.
+      The equal volatility portfolio has lower returns because it's overweight bonds.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the dollar returns of VTI and IEF
+pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
+retd <- rutils::diffit(pricev)
+# Scale the stock prices to $1 at beginning
+pricesi <- as.numeric(pricev[1, ]) # Initial stock prices
+pricesc <- pricev
+pricesc$VTI <- pricesc$VTI/pricesi[1]
+pricesc$IEF <- pricesc$IEF/pricesi[2]
+sum(pricesc[1, ])
+retsc <- rutils::diffit(pricesc)
+# Wealth of fixed number of shares (without rebalancing)
+weightv <- c(0.5, 0.5) # Buy $0.5 of each stock
+wealthed <- 1 + cumsum(retsc %*% weightv)
+# Calculate the stock prices with unit dollar volatility
+stdev <- sapply(retd, sd)
+pricesd <- pricev
+pricesd$VTI <- pricev$VTI/stdev["VTI"]
+pricesd$IEF <- pricev$IEF/stdev["IEF"]
+retsd <- rutils::diffit(pricesd)
+sapply(retsd, sd)
+      @
+      <<echo=FALSE,eval=FALSE>>=
+# Or equivalent using lapply()
+# Calculate the standardized dollar returns
+retsd <- lapply(retd, function(x) x/sd(x))
+retsd <- do.call(cbind, retsd)
+sapply(retsd, sd)
+# Initial stock prices with unit dollar volatility
+pricesi <- as.numeric(pricev[1, ])/sapply(retd, sd)
+# Wealth of shares with equal dollar volatilities
+wealthev <- 1 + cumsum(retsd %*% weightv)/sum(pricesi*weightv)
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_equal_volatility.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the dollar and percentage returns for VTI and IEF
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
-pricev <- na.omit(pricev)
-retd <- rutils::diffit(pricev)
-retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
-# Calculate the standardized simple dollar returns
-retstd <- lapply(retd, function(x) x/sd(x))
-retstd <- do.call(cbind, retstd)
-sapply(retstd, sd)
-# Wealth of fixed number of shares (without rebalancing)
-weightv <- c(0.5, 0.5)
-pricesi <- as.numeric(pricev[1, ])
-wealthfs <- cumsum(retd %*% (weightv/pricesi))
-# Calculate the standardized percentage returns
-retstp <- lapply(retp, function(x) x/sd(x))
-retstp <- do.call(cbind, retstp)
-sapply(retstp, sd)
-# Wealth of target dollar allocation of shares (with rebalancing)
-wealthfd <- cumsum(retstp %*% weightv)
-# Plot log wealth
-wealthv <- cbind(wealthfd, log(wealthfs))
-# wealthv <- xts::xts(wealthv, datev)
-colnames(wealthv) <- c("With rebalancing", "Without rebalancing")
-dygraphs::dygraph(wealthv, main="Wealth of Equal Dollar Amount of Shares") %>%
-  dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
+# Scale the sum of stock prices at beginning to $2
+pricesd <- 2*pricesd/sum(pricesd[1, ])
+retsd <- rutils::diffit(pricesd)
+sapply(retsd, sd)
+# Wealth of shares with equal dollar volatilities
+wealthev <- 1 + cumsum(retsd %*% weightv)
+# Calculate the Sharpe and Sortino ratios
+wealthv <- xts::xts(cbind(wealthed, wealthev), zoo::index(pricev))
+colnames(wealthv) <- c("Equal dollar", "Equal volatility")
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the log wealth
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(log(wealthv[endd]), 
+  main="Wealth of Equal Dollar And Equal Volatility") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -1156,45 +1209,33 @@ dygraphs::dygraph(wealthv, main="Wealth of Equal Dollar Amount of Shares") %>%
     \column{0.5\textwidth}
       In the \emph{Risk Parity} strategy the portfolio weights are rebalanced daily so that their dollar volatilities remain equal.
       \vskip1ex
-      This means that the weights $w_i$ are proportional to the \emph{standardized prices} ($\frac{p_i}{\sigma^d_i}$ - the dollar amounts of stocks with unit dollar volatilities):
-      $w_i \propto \frac{p_i}{\sigma^d_i}$, 
-      where $\sigma^d_i$ is the dollar volatility.
+      If the volatility changes over time, then the standardized prices with unit dollar volatility also change over time.
       \vskip1ex
-      But the \emph{standardized prices} are equal to the inverse of the percentage volatilities $\sigma_i$:
-      $\frac{p_i}{\sigma^d_i} = \frac{1}{\sigma_i}$,
-      so the weights $w_i$ are proportional to the inverse of the percentage volatilities $w_i \propto \frac{1}{\sigma_i}$.
+      So the portfolio allocations must be rebalanced to ensure that their volatilities remain equal.
       \vskip1ex
-      In general, the dollar weights $w_i$ may be set proportional to some target weights $\omega_i$:
-      \begin{displaymath}
-        w_i \propto \frac{\omega_i}{\sigma_i}
-      \end{displaymath}
+      The risk parity dollar returns are equal to the standardized prices times their percentage returns.
+      \vskip1ex
       The risk parity strategy is also called the equal risk contributions (ERC) strategy.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the dollar and percentage returns for stocks and bonds
-pricev <- rutils::etfenv$prices[, c("VTI", "TLT")]
-pricev <- na.omit(pricev)
-retd <- rutils::diffit(pricev)
+# Calculate the wealth of proportional dollar allocations (with rebalancing)
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
-# Calculate the wealth of proportional dollar allocations
 weightv <- c(0.5, 0.5)
-retw <- retp %*% weightv
-wealthpd <- cumprod(1 + retw)
-# Calculate the trailing percentage volatility
-lambda <- 0.15
-volat <- HighFreq::run_var(retp, lambda=lambda)
+wealthpd <- cumprod(1 + retp %*% weightv)
+# Calculate the trailing dollar volatility
+volat <- HighFreq::run_var(retd, lambda=0.2)
 volat <- sqrt(volat)
-# Calculate the risk parity portfolio weights
-weightv <- ifelse(volat > 1e-4, 1/volat, 0)
-# Scale weights to 1 dollar total
-weightv <- weightv/rowSums(weightv)
-weightv[1, ] <- 0
-# Lag the weights
-weightv <- rutils::lagit(weightv)
+volat <- rutils::lagit(volat)
+volat[1:2, ] <- 1
+# Calculate the standardized prices with unit dollar volatility
+pricerp <- pricev/volat
+# Scale the sum of stock prices to $2
+pricerp <- 2*pricerp/rowSums(pricerp)
+# Calculate the risk parity returns
+retrp <- retp*pricerp
 # Calculate the wealth of risk parity
-retw <- rowSums(retp*weightv)
-wealthrp <- cumprod(1 + retw)
+wealthrp <- 1 + cumsum(retrp %*% weightv)
       @
   \end{columns}
 \end{block}
@@ -1209,7 +1250,7 @@ wealthrp <- cumprod(1 + retw)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The risk parity strategy for stocks and bonds has a slightly higher Sharpe ratio, and also higher absolute returns than the proportional dollar strategy, despite the fact that it's more overweight bonds. 
+      The risk parity strategy for stocks and bonds has a higher Sharpe ratio, but lower absolute returns than the proportional dollar strategy. 
       \vskip1ex
       Risk parity works better for assets with low correlations and very different volatilities, like stocks and bonds.
       \vskip1ex
@@ -1219,7 +1260,7 @@ wealthrp <- cumprod(1 + retw)
       \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the log wealths
-wealthv <- log(cbind(wealthpd, wealthrp))
+wealthv <- cbind(wealthpd, wealthrp)
 wealthv <- xts::xts(wealthv, zoo::index(pricev))
 colnames(wealthv) <- c("PropDollars", "Risk Parity")
 # Calculate the Sharpe and Sortino ratios
@@ -1227,7 +1268,7 @@ sqrt(252)*sapply(rutils::diffit(wealthv), function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot a dygraph of the log wealths
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(wealthv[endd], 
+dygraphs::dygraph(log(wealthv[endd]), 
   main="Log Wealth of Risk Parity vs Proportional Allocations") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -1245,20 +1286,21 @@ dygraphs::dygraph(wealthv[endd],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The t-value of the \emph{Treynor-Mazuy} test is positive and significant, indicating market timing skill of the risk parity strategy for \emph{VTI} and \emph{IEF}. 
+      \vskip1ex
       The risk parity strategy reduces allocations to assets with rising volatilities, which is often accompanied by negative returns.
       \vskip1ex
       This allows the risk parity strategy to better time the markets - selling when prices are about to drop and buying when prices are rising.
       \vskip1ex
-      The t-value of the \emph{Treynor-Mazuy} test is slightly significant, indicating some market timing skill of the risk parity strategy for \emph{VTI} and \emph{IEF}. 
+      The t-value of the proportional allocations strategy is negative, because it buys the stock as its prices drop, the opposite of risk parity.
       <<echo=TRUE,eval=FALSE>>=
 # Test risk parity market timing of VTI using Treynor-Mazuy test
 retrp <- rutils::diffit(wealthv)
 retvti <- retp$VTI
-desv <- cbind(retrp, retvti, retvti^2)
-desv <- na.omit(desv)
-colnames(desv)[1:2] <- c("fixed", "risk_parity")
-colnames(desv)[4] <- "treynor"
-regmod <- lm(risk_parity ~ VTI + treynor, data=desv)
+desm <- cbind(retrp, retvti, retvti^2)
+colnames(desm)[1:2] <- c("prop", "riskp")
+colnames(desm)[4] <- "treynor"
+regmod <- lm(riskp ~ VTI + treynor, data=desm)
 summary(regmod)
 # Plot residual scatterplot
 resids <- regmod$residuals
@@ -1275,19 +1317,20 @@ text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_timing_skill.png}
       <<echo=TRUE,eval=FALSE>>=
-# Test for fixed ratio market timing of VTI using Treynor-Mazuy test
-regmod <- lm(fixed ~ VTI + treynor, data=desv)
+# Test for proportional allocations market timing of VTI using Treynor-Mazuy test
+regmod <- lm(prop ~ VTI + treynor, data=desm)
 summary(regmod)
 # Plot fitted (predicted) response values
 coefreg <- summary(regmod)$coeff
 fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 points.default(x=retvti, y=fitv, pch=16, col="blue")
-text(x=0.0, y=0.6*max(resids), paste("Fixed Ratio t-value =", round(coefreg["treynor", "t value"], 2)))
+text(x=0.0, y=0.6*max(resids), paste("Prop Alloc t-value =", round(coefreg["treynor", "t value"], 2)))
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -1358,13 +1401,13 @@ legend("topleft", legend=colnames(wealthv),
       The \emph{Sell in May} strategy doesn't demonstrate any ability of \emph{timing} the \emph{VTI} ETF.
       <<echo=TRUE,eval=FALSE>>=
 # Test if Sell in May strategy can time VTI
-desv <- cbind(wealth$sell_in_may, 0.5*(retp+abs(retp)), retp^2)
-colnames(desv) <- c("VTI", "merton", "treynor")
+desm <- cbind(wealth$sell_in_may, 0.5*(retp+abs(retp)), retp^2)
+colnames(desm) <- c("VTI", "merton", "treynor")
 # Perform Merton-Henriksson test
-regmod <- lm(pnlinmay ~ VTI + merton, data=desv)
+regmod <- lm(pnlinmay ~ VTI + merton, data=desm)
 summary(regmod)
 # Perform Treynor-Mazuy test
-regmod <- lm(pnlinmay ~ VTI + treynor, data=desv)
+regmod <- lm(pnlinmay ~ VTI + treynor, data=desm)
 summary(regmod)
 # Plot Treynor-Mazuy residual scatterplot
 resids <- (pnlinmay - regmod$coeff["VTI"]*retp)
@@ -1429,7 +1472,7 @@ colnames(reton) <- "overnight"
 wealthv <- cbind(retp, reton, retd)
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot log wealth
+# Plot the log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Wealth of Close-to-Close, Overnight, and Intraday Strategies") %>%
