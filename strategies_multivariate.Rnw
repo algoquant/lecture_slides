@@ -1393,8 +1393,7 @@ perfstat <- sapply(retp, objfun)
 sum(is.na(perfstat))
 sum(!is.finite(perfstat))
 hist(perfstat)
-perfstat <- sort(perfstat, decreasing=TRUE)
-perfstat
+sort(perfstat, decreasing=TRUE)
       @
   \end{columns}
 \end{block}
@@ -1627,13 +1626,13 @@ pnls2 <- HighFreq::mult_mat(weightv, retp)
 all.equal(pnls, pnls2, check.attributes=FALSE)
 pnls <- rowMeans(pnls, na.rm=TRUE)
 # Scale weights so in-sample pnl volatility is same as equal weight
-indeks <- rowMeans(retp, na.rm=TRUE)
-scalev <- sd(indeks)/sd(pnls)
+retew <- rowMeans(retp, na.rm=TRUE)
+scalev <- sd(retew)/sd(pnls)
 weightv <- scalev*weightv
 # Calculate the momentum strategy pnls
 pnls <- HighFreq::mult_mat(weightv, retp)
 pnls <- rowMeans(pnls, na.rm=TRUE)
-all.equal(sd(indeks), sd(pnls))
+all.equal(sd(retew), sd(pnls))
       @
   \end{columns}
 \end{block}
@@ -1714,11 +1713,11 @@ pnls <- rutils::do_call(c, pnls)
       The momentum strategy may be improved by a better choice of the model parameters: the length of look-back interval and the number of stocks.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the average of all stock returns
-indeks <- rowMeans(retp, na.rm=TRUE)
+retew <- rowMeans(retp, na.rm=TRUE)
 # Add initial startup interval to the momentum returns
-pnls <- c(indeks[endd[1]:endd[3]], pnls)
+pnls <- c(retew[endd[1]:endd[3]], pnls)
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls)
+wealthv <- cbind(retew, pnls)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnames(wealthv) <- c("Index", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
@@ -1858,9 +1857,9 @@ whichmax <- which.max(sharper)
 look_backs[whichmax]
 pnls <- pnll[[whichmax]]
 # Add initial startup interval to the momentum returns
-pnls <- c(indeks[endd[1]:endd[3]], pnls)
+pnls <- c(retew[endd[1]:endd[3]], pnls)
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls)
+wealthv <- cbind(retew, pnls)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnames(wealthv) <- c("Index", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
@@ -1966,9 +1965,9 @@ whichmax <- which.max(sharper)
 look_backs[whichmax]
 pnls <- pnll[[whichmax]]
 # Add initial startup interval to the momentum returns
-pnls <- c(indeks[endd[1]:endd[3]], pnls)
+pnls <- c(retew[endd[1]:endd[3]], pnls)
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls, 0.5*(indeks+pnls))
+wealthv <- cbind(retew, pnls, 0.5*(retew + pnls))
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnames(wealthv) <- c("Index", "Momentum", "Combined")
 cor(wealthv)
@@ -2025,10 +2024,10 @@ pnls <- (pnls - costs)
       \includegraphics[width=0.45\paperwidth]{figure/momentum_stocks_daily.png}
       <<echo=TRUE,eval=FALSE>>=
 # Scale the momentum volatility to the equal weight index
-indeksd <- sd(indeks)
-pnls <- indeksd*pnls/sd(pnls)
+volew <- sd(retew)
+pnls <- volew*pnls/sd(pnls)
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls, 0.5*(indeks+pnls))
+wealthv <- cbind(retew, pnls, 0.5*(retew + pnls))
 wealthv <- xts::xts(wealthv, datev)
 colnames(wealthv) <- c("Index", "Momentum", "Combined")
 cor(wealthv)
@@ -2108,7 +2107,7 @@ btmomdaily <- function(retp, lambda=0.9, trend=1, bidask=0.0, ...) {
 lambdas <- seq(0.98, 0.996, 0.002)
 pnls <- sapply(lambdas, btmomdaily, retp=retp)
 # Scale the momentum volatility to the equal weight index
-pnls <- apply(pnls, MARGIN=2, function(pnl) indeksd*pnl/sd(pnl))
+pnls <- apply(pnls, MARGIN=2, function(pnl) volew*pnl/sd(pnl))
 colnames(pnls) <- paste0("lambda=", lambdas)
 pnls <- xts::xts(pnls, datev)
 tail(pnls)
@@ -2210,7 +2209,7 @@ btmomdailyhold <- function(retp, lambda=0.9, trend=1, bidask=0.0, ...) {
 lambdas <- seq(0.98, 0.996, 0.002)
 pnls <- sapply(lambdas, btmomdailyhold, retp=retp)
 # Scale the momentum volatility to the equal weight index
-pnls <- apply(pnls, MARGIN=2, function(pnl) indeksd*pnl/sd(pnl))
+pnls <- apply(pnls, MARGIN=2, function(pnl) volew*pnl/sd(pnl))
 colnames(pnls) <- paste0("lambda=", lambdas)
 pnls <- xts::xts(pnls, datev)
       @
@@ -2257,7 +2256,7 @@ whichmax <- which.max(sharper)
 lambdas[whichmax]
 pnls <- pnls[, whichmax]
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls, 0.5*(indeks+pnls))
+wealthv <- cbind(retew, pnls, 0.5*(retew + pnls))
 colnames(wealthv) <- c("Index", "Momentum", "Combined")
 cor(wealthv)
 sqrt(252)*sapply(wealthv, function(x) 
@@ -2302,7 +2301,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 lambdas <- seq(0.2, 0.7, 0.1)
 pnls <- sapply(lambdas, btmomdaily, retp=retp, trend=(-1))
 # Scale the momentum volatility to the equal weight index
-pnls <- apply(pnls, MARGIN=2, function(pnl) indeksd*pnl/sd(pnl))
+pnls <- apply(pnls, MARGIN=2, function(pnl) volew*pnl/sd(pnl))
 colnames(pnls) <- paste0("lambda=", lambdas)
 pnls <- xts::xts(pnls, datev)
       @
@@ -2429,7 +2428,7 @@ retpca <- xts::xts(retpca, order.by=datev)
 dimax <- 11
 lambdas <- seq(0.98, 0.99, 0.003)
 pnls <- mclapply(lambdas, btmomdailyhold, retp=retpca[, 1:dimax], mc.cores=ncores)
-pnls <- lapply(pnls, function(pnl) indeksd*pnl/sd(pnl))
+pnls <- lapply(pnls, function(pnl) volew*pnl/sd(pnl))
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdas)
 pnls <- xts::xts(pnls, datev)
@@ -2475,7 +2474,7 @@ whichmax <- which.max(sharper)
 lambdas[whichmax]
 pnls <- pnls[, whichmax]
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls, 0.5*(indeks+pnls))
+wealthv <- cbind(retew, pnls, 0.5*(retew + pnls))
 colnames(wealthv) <- c("Index", "Momentum", "Combined")
 cor(wealthv)
 sqrt(252)*sapply(wealthv, function(x) 
@@ -2519,7 +2518,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 lambdas <- seq(0.4, 0.8, 0.1)
 pnls <- mclapply(lambdas, btmomdailyhold, retp=retpca[, (dimax+1):NCOL(retpca)], 
    trend=(-1), mc.cores=ncores)
-pnls <- lapply(pnls, function(pnl) indeksd*pnl/sd(pnl))
+pnls <- lapply(pnls, function(pnl) volew*pnl/sd(pnl))
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdas)
 pnls <- xts::xts(pnls, datev)
@@ -2569,7 +2568,7 @@ retpca <- xts::xts(retp[outsample] %*% pcad$rotation, order.by=datev[outsample])
 # Simulate daily PCA momentum strategies for multiple lambda parameters
 lambdas <- seq(0.98, 0.99, 0.003)
 pnls <- mclapply(lambdas, btmomdailyhold, retp=retpca[, 1:dimax], mc.cores=ncores)
-pnls <- lapply(pnls, function(pnl) indeksd*pnl/sd(pnl))
+pnls <- lapply(pnls, function(pnl) volew*pnl/sd(pnl))
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdas)
 pnls <- xts::xts(pnls, datev[outsample])
@@ -2615,7 +2614,7 @@ dygraphs::dygraph(cumsum(pnls)[endd],
 lambdas <- seq(0.4, 0.8, 0.1)
 pnls <- mclapply(lambdas, btmomdailyhold, retp=retpca[, (dimax+1):(nstocks-10)], 
    trend=(-1), mc.cores=ncores)
-pnls <- lapply(pnls, function(pnl) indeksd*pnl/sd(pnl))
+pnls <- lapply(pnls, function(pnl) volew*pnl/sd(pnl))
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdas)
 pnls <- xts::xts(pnls, datev[outsample])
@@ -2671,7 +2670,7 @@ dygraphs::dygraph(cumsum(pnls)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Extract ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
-retp <- na.omit(rutils::etfenv$returns[-1, symbolv])
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
 datev <- zoo::index(retp)
 # Calculate a vector of monthly end points
 endd <- rutils::calc_endpoints(retp, interval="months")
@@ -2712,8 +2711,8 @@ plot(x=look_backs, y=sharper, t="l",
 whichmax <- which.max(sharper)
 look_backs[whichmax]
 pnls <- pnll[[whichmax]]
-indeks <- rowMeans(retp)
-pnls <- c(indeks[endd[1]:endd[3]], pnls)
+retew <- rowMeans(retp)
+pnls <- c(retew[endd[1]:endd[3]], pnls)
 # Calculate returns of all-weather benchmark
 weightaw <- c(0.30, 0.55, 0.15)
 retaw <- retp %*% weightaw
@@ -3339,20 +3338,20 @@ barplot(sort(weightv), main="Maximum Sharpe Weights", cex.names=0.7)
       The function \texttt{HighFreq::mult\_mat()} multiplies element-wise the rows or columns of a matrix times a vector.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the equal weight index
-indeks <- xts::xts(rowMeans(retis, na.rm=TRUE), zoo::index(retis))
+retew <- xts::xts(rowMeans(retis, na.rm=TRUE), zoo::index(retis))
 # Calculate the in-sample weighted returns using transpose
 pnlis <- unname(t(t(retis)*weightv))
 # Or using Rcpp
 # pnlis <- HighFreq::mult_mat(weightv, retis)
 pnlis <- rowMeans(pnlis, na.rm=TRUE)
-pnlis <- pnlis*sd(indeks)/sd(pnlis)
+pnlis <- pnlis*sd(retew)/sd(pnlis)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_etf_in_sample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraph cumulative wealth
-wealthv <- cbind(indeks, pnlis, (pnlis + indeks)/2)
+wealthv <- cbind(retew, pnlis, (pnlis + retew)/2)
 colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
@@ -3384,12 +3383,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the equal weight index
 retos <- retp["2015/"]
-indeks <- xts::xts(rowMeans(retos, na.rm=TRUE), zoo::index(retos))
+retew <- xts::xts(rowMeans(retos, na.rm=TRUE), zoo::index(retos))
 # Calculate out-of-sample portfolio returns
 pnlos <- HighFreq::mult_mat(weightv, retos)
 pnlos <- rowMeans(pnlos, na.rm=TRUE)
-pnlos <- pnlos*sd(indeks)/sd(pnlos)
-wealthv <- cbind(indeks, pnlos, (pnlos + indeks)/2)
+pnlos <- pnlos*sd(retew)/sd(pnlos)
+wealthv <- cbind(retew, pnlos, (pnlos + retew)/2)
 colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
@@ -3438,9 +3437,9 @@ pnlos <- HighFreq::mult_mat(weightv, retos)
 pnlos <- rowMeans(pnlos, na.rm=TRUE)
 # Calculate cumulative wealth
 pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-indeks <- xts::xts(rowMeans(retp, na.rm=TRUE), datev)
-wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
+pnls <- pnls*sd(retew)/sd(pnls)
+retew <- xts::xts(rowMeans(retp, na.rm=TRUE), datev)
+wealthv <- cbind(retew, pnls, (pnls + retew)/2)
 colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
@@ -3533,8 +3532,8 @@ weightv <- weightv*0.01/sd(pnlis)
 pnlos <- HighFreq::mult_mat(weightv, retos)
 pnlos <- rowMeans(pnlos, na.rm=TRUE)
 pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
+pnls <- pnls*sd(retew)/sd(pnls)
+wealthv <- cbind(retew, pnls, (pnls + retew)/2)
 colnames(wealthv) <- c("Equal Weight", "DimReduction", "Combined")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
@@ -3590,8 +3589,8 @@ weightv <- weightv*0.01/sd(pnlis)
 pnlos <- HighFreq::mult_mat(weightv, retos)
 pnlos <- rowMeans(pnlos, na.rm=TRUE)
 pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
+pnls <- pnls*sd(retew)/sd(pnls)
+wealthv <- cbind(retew, pnls, (pnls + retew)/2)
 colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
       @
     \column{0.5\textwidth}
@@ -3660,7 +3659,7 @@ pnls <- lapply(1:(npts-1), function(tday) {
     xts::xts(pnlos, zoo::index(retos))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
+pnls <- rbind(retew[paste0("/", start(pnls)-1)], pnls)
 @
   \end{columns}
 \end{block}
@@ -3678,8 +3677,8 @@ pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
       In a \emph{rolling portfolio optimization strategy}, the portfolio is optimized periodically and held out-of-sample.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
+pnls <- pnls*sd(retew)/sd(pnls)
+wealthv <- cbind(retew, pnls, (pnls + retew)/2)
 colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -3737,15 +3736,15 @@ pnls <- lapply(1:(npts-1), function(tday) {
     xts::xts(pnlos, zoo::index(retos))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
+pnls <- rbind(retew[paste0("/", start(pnls)-1)], pnls)
 @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_monthly_dimred.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
+pnls <- pnls*sd(retew)/sd(pnls)
+wealthv <- cbind(retew, pnls, (pnls + retew)/2)
 colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -3802,15 +3801,15 @@ pnls <- lapply(1:(npts-1), function(tday) {
     xts::xts(pnlos, zoo::index(retos))
 })  # end lapply
 pnls <- do.call(rbind, pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
+pnls <- rbind(retew[paste0("/", start(pnls)-1)], pnls)
 @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_monthly_shrinkrets.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
+pnls <- pnls*sd(retew)/sd(pnls)
+wealthv <- cbind(retew, pnls, (pnls + retew)/2)
 colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -3864,7 +3863,7 @@ pnls <- do.call(rbind, pnls)
       \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_etf_weekly_dimred.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of weekly rolling ETF portfolio strategy
-vti <- rutils::diffit(cumsum(indeks)[zoo::index(pnls),])
+vti <- rutils::diffit(cumsum(retew)[zoo::index(pnls),])
 wealthv <- cbind(vti, pnls)
 colnames(wealthv) <- c("Index", "Strategy")
 colnamev <- colnames(wealthv)
@@ -3932,7 +3931,7 @@ roll_portf <- function(retx, # Excess returns
   })  # end lapply
   pnls <- do.call(rbind, pnls)
   # Add warmup period to pnls
-  rbind(indeks[paste0("/", start(pnls)-1)], pnls)
+  rbind(retew[paste0("/", start(pnls)-1)], pnls)
 }  # end roll_portf
 @
     \column{0.2\textwidth}
@@ -4091,10 +4090,8 @@ legend("bottomleft", legend=colnames(pnls),
       <<echo=TRUE,eval=FALSE>>=
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Overwrite NA values in returns
-retp <- returns
+retp <- retstock
 nstocks <- NCOL(retp)
-retp[is.na(retp)] <- 0
-sum(is.na(retp))
 datev <- zoo::index(retp)
 riskf <- 0.03/252
 retx <- (retp - riskf)
@@ -4111,11 +4108,11 @@ pnlis <- (retis %*% weightv)
 weightv <- weightv*0.01/sd(pnlis)
 # Calculate out-of-sample portfolio returns
 pnlos <- (retos %*% weightv)
-indeks <- xts::xts(rowMeans(retp), datev)
+retew <- xts::xts(rowMeans(retp), datev)
 # Combine in-sample and out-of-sample returns
 pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls)
+pnls <- pnls*sd(retew)/sd(pnls)
+wealthv <- cbind(retew, pnls)
 colnames(wealthv) <- c("Equal Weight", "Optimal")
       @
     \column{0.5\textwidth}
@@ -4176,8 +4173,8 @@ pnlos <- (retos %*% weightv)
       <<echo=TRUE,eval=FALSE>>=
 # Combine in-sample and out-of-sample returns
 pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls)
+pnls <- pnls*sd(retew)/sd(pnls)
+wealthv <- cbind(retew, pnls)
 colnames(wealthv) <- c("Equal Weight", "Optimal")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv[index(retos)],
@@ -4231,8 +4228,8 @@ pnlos <- (retos %*% weightv)
       <<echo=TRUE,eval=FALSE>>=
 # Combine in-sample and out-of-sample returns
 pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls)
+pnls <- pnls*sd(retew)/sd(pnls)
+wealthv <- cbind(retew, pnls)
 colnames(wealthv) <- c("Equal Weight", "Optimal")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv[index(retos)],
@@ -4314,10 +4311,10 @@ pnls <- rutils::do_call(rbind, pnls)
       The performance of the \emph{rolling portfolio optimization} strategy can be improved by applying dimension reduction and return shrinkage.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate returns of equal weight portfolio
-indeks <- xts::xts(rowMeans(retp), datev)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
+retew <- xts::xts(rowMeans(retp), datev)
+pnls <- rbind(retew[paste0("/", start(pnls)-1)], pnls*sd(retew)/sd(pnls))
 # Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls)
+wealthv <- cbind(retew, pnls)
 colnames(wealthv) <- c("Equal Weight", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -4654,14 +4651,14 @@ controlv <- HighFreq::param_portf(method="maxsharpe", dimax=dimax, alpha=alpha)
 # Perform backtest in Rcpp
 pnls <- HighFreq::back_test(retx=retx, retp=retp,
   startp=startp, endd=endd, controlv=controlv)
-pnls <- pnls*sd(indeks)/sd(pnls)
+pnls <- pnls*sd(retew)/sd(pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_sp500_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative strategy returns
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
+wealthv <- cbind(retew, pnls, (pnls + retew)/2)
 colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
@@ -4793,14 +4790,14 @@ plot(x=look_backs, y=profilev, t="l", main="Strategy PnL as Function of Look-bac
 whichmax <- which.max(profilev)
 look_back <- look_backs[whichmax]
 pnls <- pnls[[whichmax]]
-pnls <- pnls*sd(indeks)/sd(pnls)
+pnls <- pnls*sd(retew)/sd(pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_rolling_sp500_lookback_optim.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the out-of-sample Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
+wealthv <- cbind(retew, pnls, (pnls + retew)/2)
 colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))

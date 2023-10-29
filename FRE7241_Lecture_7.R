@@ -1,654 +1,3 @@
-# Select all the ETF symbols except "VXX", "SVXY" "MTUM", "QUAL", "VLUE", "USMV", and "AIEQ"
-symbolv <- colnames(rutils::etfenv$returns)
-# VYM has bad data in 2006
-symbolv <- symbolv[!(symbolv %in% c("VXX", "SVXY", "MTUM", "QUAL", "VLUE", "USMV", "AIEQ", "VYM"))]
-# Extract columns of rutils::etfenv$returns and overwrite NA values
-retp <- rutils::etfenv$returns[, symbolv]
-retp[1, ] <- 0.01
-nstocks <- NCOL(retp)
-datev <- zoo::index(retp)
-# Calculate the covariance ignoring NA values
-covmat <- cov(retp, use="pairwise.complete.obs")
-sum(is.na(covmat))
-# Calculate the inverse of covmat
-invmat <- solve(covmat)
-# Calculate the generalized inverse of covmat
-invreg <- MASS::ginv(covmat)
-all.equal(unname(invmat), invreg)
-# Create rectangular matrix with collinear columns
-matrixv <- matrix(rnorm(10*8), nc=10)
-# Calculate covariance matrix
-covmat <- cov(matrixv)
-# Calculate inverse of covmat - error
-invmat <- solve(covmat)
-# Perform eigen decomposition
-eigend <- eigen(covmat)
-eigenvec <- eigend$vectors
-eigenval <- eigend$values
-# Set tolerance for determining zero singular values
-precv <- sqrt(.Machine$double.eps)
-# Calculate generalized inverse from the eigen decomposition
-notzero <- (eigenval > (precv*eigenval[1]))
-inveigen <- eigenvec[, notzero] %*%
-  (t(eigenvec[, notzero]) / eigenval[notzero])
-# Verify inverse property of invreg
-all.equal(covmat, inveigen %*% covmat)
-# Verify generalized inverse property of invreg
-all.equal(covmat, covmat %*% inveigen %*% covmat)
-# Calculate generalized inverse of covmat
-invreg <- MASS::ginv(covmat)
-# Verify that inveigen is the same as invreg
-all.equal(inveigen, invreg)
-# Returns in excess of risk-free rate
-riskf <- 0.03/252
-retx <- (retp - riskf)
-# Maximum Sharpe weights in-sample interval
-retis <- retp["/2014"]
-invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))
-weightv <- invreg %*% colMeans(retx["/2014"], na.rm=TRUE)
-weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
-# Plot portfolio weights
-barplot(sort(weightv), main="Maximum Sharpe Weights", cex.names=0.7)
-# Calculate the equal weight index
-indeks <- xts::xts(rowMeans(retis, na.rm=TRUE), zoo::index(retis))
-# Calculate the in-sample weighted returns using transpose
-pnlis <- unname(t(t(retis)*weightv))
-# Or using Rcpp
-# pnlis <- HighFreq::mult_mat(weightv, retis)
-pnlis <- rowMeans(pnlis, na.rm=TRUE)
-pnlis <- pnlis*sd(indeks)/sd(pnlis)
-# Dygraph cumulative wealth
-wealthv <- cbind(indeks, pnlis, (pnlis + indeks)/2)
-colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
-# Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph cumulative wealth
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="In-Sample Optimal Portfolio Returns") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyLegend(width=300)
-# Calculate the equal weight index
-retos <- retp["2015/"]
-indeks <- xts::xts(rowMeans(retos, na.rm=TRUE), zoo::index(retos))
-# Calculate out-of-sample portfolio returns
-pnlos <- HighFreq::mult_mat(weightv, retos)
-pnlos <- rowMeans(pnlos, na.rm=TRUE)
-pnlos <- pnlos*sd(indeks)/sd(pnlos)
-wealthv <- cbind(indeks, pnlos, (pnlos + indeks)/2)
-colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
-# Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph cumulative wealth
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Out-of-Sample Optimal Portfolio Returns") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyLegend(width=300)
-# Maximum Sharpe weights in-sample interval
-invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))
-weightv <- invreg %*% colMeans(retx["/2014"], na.rm=TRUE)
-weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
-# Calculate in-sample portfolio returns
-pnlis <- HighFreq::mult_mat(weightv, retis)
-pnlis <- rowMeans(pnlis, na.rm=TRUE)
-# Calculate out-of-sample portfolio returns
-pnlos <- HighFreq::mult_mat(weightv, retos)
-pnlos <- rowMeans(pnlos, na.rm=TRUE)
-# Calculate cumulative wealth
-pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-indeks <- xts::xts(rowMeans(retp, na.rm=TRUE), datev)
-wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
-colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
-# Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph cumulative wealth
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Out-of-Sample Optimal Portfolio Returns for ETFs") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=300)
-# Calculate in-sample covariance matrix
-covmat <- cov(retis, use="pairwise.complete.obs")
-eigend <- eigen(covmat)
-eigenvec <- eigend$vectors
-eigenval <- eigend$values
-# Negative eigenvalues
-eigenval
-# Calculate reduced inverse of covariance matrix
-dimax <- 11
-invred <- eigenvec[, 1:dimax] %*%
-  (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-# Verify inverse property of inverse
-all.equal(covmat, covmat %*% invred %*% covmat)
-# Calculate portfolio weights
-weightv <- invred %*% colMeans(retis, na.rm=TRUE)
-weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
-# Calculate portfolio returns
-pnlis <- HighFreq::mult_mat(weightv, retis)
-pnlis <- rowMeans(pnlis, na.rm=TRUE)
-pnlos <- HighFreq::mult_mat(weightv, retos)
-pnlos <- rowMeans(pnlos, na.rm=TRUE)
-pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
-colnames(wealthv) <- c("Equal Weight", "DimReduction", "Combined")
-# Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph cumulative wealth
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Optimal Portfolio Returns With Dimension Reduction") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=300)
-# Shrink the in-sample returns to their mean
-alpha <- 0.7
-retxm <- rowMeans(retx["/2014"], na.rm=TRUE)
-retxis <- (1-alpha)*retx["/2014"] + alpha*retxm
-# Calculate portfolio weights
-weightv <- invred %*% colMeans(retxis, na.rm=TRUE)
-weightv <- drop(weightv/sqrt(sum(weightv^2)))
-# Calculate portfolio returns
-pnlis <- HighFreq::mult_mat(weightv, retis)
-pnlis <- rowMeans(pnlis, na.rm=TRUE)
-pnlos <- HighFreq::mult_mat(weightv, retos)
-pnlos <- rowMeans(pnlos, na.rm=TRUE)
-pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls + indeks)/2)
-colnames(wealthv) <- c("Equal Weight", "Optimal", "Combined")
-# Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph cumulative wealth
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Optimal Portfolio With Dimension Reduction and Return Shrinkage") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=300)
-# Define monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
-endd <- endd[endd > (nstocks+1)]
-npts <- NROW(endd)
-look_back <- 3
-startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
-# Perform loop over end points
-pnls <- lapply(1:(npts-1), function(tday) {
-    # Calculate the portfolio weights
-    retis <- retx[startp[tday]:endd[tday], ]
-    covmat <- cov(retis, use="pairwise.complete.obs")
-    covmat[is.na(covmat)] <- 0
-    invreg <- MASS::ginv(covmat)
-    colm <- colMeans(retis, na.rm=TRUE)
-    colm[is.na(colm)] <- 0
-    weightv <- invreg %*% colm
-    weightv <- drop(weightv/sqrt(sum(weightv^2)))
-    # Calculate the out-of-sample portfolio returns
-    retos <- retp[(endd[tday]+1):endd[tday+1], ]
-    pnlos <- HighFreq::mult_mat(weightv, retos)
-    pnlos <- rowMeans(pnlos, na.rm=TRUE)
-    pnlos <- pnlos*0.01/sd(pnlos)
-    xts::xts(pnlos, zoo::index(retos))
-})  # end lapply
-pnls <- do.call(rbind, pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
-# Calculate the Sharpe and Sortino ratios
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph cumulative wealth
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Monthly ETF Rolling Portfolio Strategy") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyLegend(show="always", width=300)
-# Perform loop over end points
-dimax <- 9
-pnls <- lapply(1:(npts-1), function(tday) {
-    # Calculate the portfolio weights
-    retis <- retx[startp[tday]:endd[tday], ]
-    covmat <- cov(retis, use="pairwise.complete.obs")
-    covmat[is.na(covmat)] <- 0
-    eigend <- eigen(covmat)
-    eigenvec <- eigend$vectors
-    eigenval <- eigend$values
-    invred <- eigenvec[, 1:dimax] %*% (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-    colm <- colMeans(retis, na.rm=TRUE)
-    colm[is.na(colm)] <- 0
-    weightv <- invred %*% colm
-    weightv <- drop(weightv/sqrt(sum(weightv^2)))
-    # Calculate the out-of-sample portfolio returns
-    retos <- retp[(endd[tday]+1):endd[tday+1], ]
-    pnlos <- HighFreq::mult_mat(weightv, retos)
-    pnlos <- rowMeans(pnlos, na.rm=TRUE)
-    pnlos <- pnlos*0.01/sd(pnlos)
-    xts::xts(pnlos, zoo::index(retos))
-})  # end lapply
-pnls <- do.call(rbind, pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
-# Calculate the Sharpe and Sortino ratios
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph cumulative wealth
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With Dimension Reduction") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyLegend(show="always", width=300)
-alpha <- 0.7 # Return shrinkage intensity
-# Perform loop over end points
-pnls <- lapply(1:(npts-1), function(tday) {
-    # Shrink the in-sample returns to their mean
-    retis <- retx[startp[tday]:endd[tday], ]
-    rowm <- rowMeans(retis, na.rm=TRUE)
-    rowm[is.na(rowm)] <- 0
-    retis <- (1-alpha)*retis + alpha*rowm
-    # Calculate the portfolio weights
-    covmat <- cov(retis, use="pairwise.complete.obs")
-    covmat[is.na(covmat)] <- 0
-    eigend <- eigen(covmat)
-    eigenvec <- eigend$vectors
-    eigenval <- eigend$values
-    invred <- eigenvec[, 1:dimax] %*%
-(t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-    colm <- colMeans(retis, na.rm=TRUE)
-    colm[is.na(colm)] <- 0
-    weightv <- invred %*% colm
-    weightv <- drop(weightv/sqrt(sum(weightv^2)))
-    # Calculate the in-sample portfolio returns
-    pnlis <- HighFreq::mult_mat(weightv, retis)
-    pnlis <- rowMeans(pnlis, na.rm=TRUE)
-    # Calculate the out-of-sample portfolio returns
-    retos <- retp[(endd[tday]+1):endd[tday+1], ]
-    pnlos <- HighFreq::mult_mat(weightv, retos)
-    pnlos <- rowMeans(pnlos, na.rm=TRUE)
-    pnlos <- pnlos*0.01/sd(pnlos)
-    xts::xts(pnlos, zoo::index(retos))
-})  # end lapply
-pnls <- do.call(rbind, pnls)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls)
-# Calculate the Sharpe and Sortino ratios
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph cumulative wealth
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With Return Shrinkage") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyLegend(show="always", width=300)
-# Define backtest functional for rolling portfolio strategy
-roll_portf <- function(retx, # Excess returns
-                 retp, # Stock returns
-                 endd, # End points
-                 look_back=12, # Look-back interval
-                 dimax=3, # Dimension reduction parameter
-                 alpha=0.0, # Return shrinkage intensity
-                 bid_offer=0.0, # Bid-offer spread
-                 ...) {
-  npts <- NROW(endd)
-  startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
-  pnls <- lapply(1:(npts-1), function(tday) {
-    retis <- retx[startp[tday]:endd[tday], ]
-    # Shrink the in-sample returns to their mean
-    if (alpha > 0) {
-rowm <- rowMeans(retis, na.rm=TRUE)
-rowm[is.na(rowm)] <- 0
-retis <- (1-alpha)*retis + alpha*rowm
-    } # end if
-    # Calculate the portfolio weights
-    covmat <- cov(retis, use="pairwise.complete.obs")
-    covmat[is.na(covmat)] <- 0
-    eigend <- eigen(covmat)
-    eigenvec <- eigend$vectors
-    eigenval <- eigend$values
-    invred <- eigenvec[, 1:dimax] %*% (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-    colm <- colMeans(retis, na.rm=TRUE)
-    colm[is.na(colm)] <- 0
-    weightv <- invred %*% colm
-    weightv <- drop(weightv/sqrt(sum(weightv^2)))
-    # Calculate the out-of-sample portfolio returns
-    retos <- retp[(endd[tday]+1):endd[tday+1], ]
-    pnlos <- HighFreq::mult_mat(weightv, retos)
-    pnlos <- rowMeans(pnlos, na.rm=TRUE)
-    pnlos <- pnlos*0.01/sd(pnlos)
-    xts::xts(pnlos, zoo::index(retos))
-  })  # end lapply
-  pnls <- do.call(rbind, pnls)
-  # Add warmup period to pnls
-  rbind(indeks[paste0("/", start(pnls)-1)], pnls)
-}  # end roll_portf
-# Simulate a monthly ETF portfolio strategy
-pnls <- roll_portf(retx=retx, retp=retp, endd=endd,
-  look_back=look_back, dimax=dimax)
-# Perform sapply loop over look_backs
-look_backs <- seq(2, 15, by=1)
-pnls <- lapply(look_backs, roll_portf,
-  retp=retp, retx=retx, endd=endd, dimax=dimax)
-pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lookb=", look_backs)
-pnlsums <- sapply(pnls, sum)
-look_back <- look_backs[which.max(pnlsums)]
-# Plot dygraph of monthly ETF portfolio strategies
-colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
-dygraphs::dygraph(cumsum(pnls)[endd], main="Rolling Portfolio Strategies") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=600)
-# Plot EWMA strategies using quantmod
-plot_theme <- chart_theme()
-plot_theme$col$line.col <-
-  colorRampPalette(c("blue", "red"))(NCOL(pnls))
-quantmod::chart_Series(cumsum(pnls),
-  theme=plot_theme, name="Rolling Portfolio Strategies")
-legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
-  col=plot_theme$col$line.col, bty="n")
-# Perform backtest for different dimax values
-dimaxs <- 2:11
-pnls <- lapply(dimaxs, roll_portf, retx=retx,
-  retp=retp, endd=endd, look_back=look_back)
-pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("dimax=", dimaxs)
-pnlsums <- sapply(pnls, sum)
-dimax <- dimaxs[which.max(pnlsums)]
-# Plot dygraph of monthly ETF portfolio strategies
-colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
-dygraphs::dygraph(cumsum(pnls)[endd],
-  main="Rolling Portfolio Strategies With Dimension Reduction") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
-# Plot EWMA strategies using quantmod
-plot_theme <- chart_theme()
-plot_theme$col$line.col <-
-  colorRampPalette(c("blue", "red"))(NCOL(pnls))
-quantmod::chart_Series(cumsum(pnls),
-  theme=plot_theme, name="Rolling Portfolio Strategies")
-legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
-  col=plot_theme$col$line.col, bty="n")
-# Perform backtest over vector of return shrinkage intensities
-alphav <- seq(from=0.0, to=0.9, by=0.1)
-pnls <- lapply(alphav, roll_portf, retx=retx,
-  retp=retp, endd=endd, look_back=look_back, dimax=dimax)
-pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("alpha=", alphav)
-pnlsums <- sapply(pnls, sum)
-alpha <- alphav[which.max(pnlsums)]
-# Plot dygraph of monthly ETF portfolio strategies
-colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
-dygraphs::dygraph(cumsum(pnls)[endd],
-  main="Rolling Portfolio Strategies With Return Shrinkage") %>%
-  dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
-# Plot EWMA strategies using quantmod
-plot_theme <- chart_theme()
-plot_theme$col$line.col <-
-  colorRampPalette(c("blue", "red"))(NCOL(pnls))
-quantmod::chart_Series(cumsum(pnls),
-  theme=plot_theme, name="Rolling Portfolio Strategies")
-legend("bottomleft", legend=colnames(pnls),
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
-  col=plot_theme$col$line.col, bty="n")
-load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-# Overwrite NA values in returns
-retp <- returns
-nstocks <- NCOL(retp)
-retp[is.na(retp)] <- 0
-sum(is.na(retp))
-datev <- zoo::index(retp)
-riskf <- 0.03/252
-retx <- (retp - riskf)
-retis <- retp["/2010"]
-retos <- retp["2011/"]
-# Maximum Sharpe weights in-sample interval
-covmat <- cov(retis, use="pairwise.complete.obs")
-invreg <- MASS::ginv(covmat)
-weightv <- invreg %*% colMeans(retx["/2010"], na.rm=TRUE)
-weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
-# Calculate portfolio returns
-pnlis <- (retis %*% weightv)
-pnlos <- (retos %*% weightv)
-indeks <- xts::xts(rowMeans(retp), datev)
-# Combine in-sample and out-of-sample returns
-pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls)
-colnames(wealthv) <- c("Equal Weight", "Optimal")
-# Calculate the in-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv[index(retis)],
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv[index(retos)],
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot of cumulative portfolio returns
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Out-of-Sample Optimal Portfolio Returns for Stocks") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=300)
-# Calculate reduced inverse of covariance matrix
-dimax <- 11
-eigend <- eigen(cov(retis, use="pairwise.complete.obs"))
-eigenvec <- eigend$vectors
-eigenval <- eigend$values
-invred <- eigenvec[, 1:dimax] %*%
-  (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-# Calculate portfolio weights
-weightv <- invred %*% colMeans(retx["/2010"], na.rm=TRUE)
-weightv <- drop(weightv/sqrt(sum(weightv^2)))
-names(weightv) <- colnames(retp)
-# Calculate portfolio returns
-pnlis <- (retis %*% weightv)
-pnlos <- (retos %*% weightv)
-# Combine in-sample and out-of-sample returns
-pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls)
-colnames(wealthv) <- c("Equal Weight", "Optimal")
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv[index(retos)],
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot of cumulative portfolio returns
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Out-of-Sample Returns for Stocks with Dimension Reduction") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=300)
-# Shrink the in-sample returns to their mean
-alpha <- 0.7
-retxm <- rowMeans(retx["/2010"])
-retxis <- (1-alpha)*retx["/2010"] + alpha*retxm
-# Calculate portfolio weights
-weightv <- invred %*% colMeans(retxis, na.rm=TRUE)
-weightv <- drop(weightv/sqrt(sum(weightv^2)))
-# Calculate portfolio returns
-pnlis <- (retis %*% weightv)
-pnlos <- (retos %*% weightv)
-# Combine in-sample and out-of-sample returns
-pnls <- c(pnlis, pnlos)
-pnls <- pnls*sd(indeks)/sd(pnls)
-wealthv <- cbind(indeks, pnls)
-colnames(wealthv) <- c("Equal Weight", "Optimal")
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv[index(retos)],
-  function(x) c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot of cumulative portfolio returns
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Out-of-Sample Returns for Stocks with Return Shrinkage") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(zoo::index(last(retis[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
-  dyLegend(width=300)
-library(RcppArmadillo)
-# Source Rcpp functions from file
-Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/back_test.cpp")
-# Create random matrix of returns
-matrixv <- matrix(rnorm(300), nc=5)
-# Reduced inverse of covariance matrix
-dimax <- 11
-eigend <- eigen(covmat)
-invred <- eigend$vectors[, 1:dimax] %*%
-  (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
-# Reduced inverse using RcppArmadillo
-invarma <- calc_inv(covmat, dimax)
-all.equal(invred, invarma)
-# Microbenchmark RcppArmadillo code
-library(microbenchmark)
-summary(microbenchmark(
-  rcode={eigend <- eigen(covmat)
-    eigend$vectors[, 1:dimax] %*%
-(t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
-  },
-  rcpp=calc_inv(covmat, dimax),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Overwrite NA values in returns
-retp <- returns100
-retp[is.na(retp)] <- 0
-retx <- (retp - riskf)
-nstocks <- NCOL(retp) ; datev <- zoo::index(retp)
-# Define monthly end points
-endd <- rutils::calc_endpoints(retp, interval="months")
-endd <- endd[endd > (nstocks+1)]
-npts <- NROW(endd) ; look_back <- 12
-startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
-# Perform loop over end points - takes long
-pnls <- lapply(1:(npts-1), function(tday) {
-    # Subset the excess returns
-    retis <- retx[startp[tday]:endd[tday], ]
-    invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))
-    # Calculate the maximum Sharpe ratio portfolio weights
-    weightv <- invreg %*% colMeans(retis, na.rm=TRUE)
-    weightv <- drop(weightv/sqrt(sum(weightv^2)))
-    # Calculate the out-of-sample portfolio returns
-    retos <- retp[(endd[tday]+1):endd[tday+1], ]
-    xts::xts(retos %*% weightv, zoo::index(retos))
-})  # end lapply
-pnls <- rutils::do_call(rbind, pnls)
-# Calculate returns of equal weight portfolio
-indeks <- xts::xts(rowMeans(retp), datev)
-pnls <- rbind(indeks[paste0("/", start(pnls)-1)], pnls*sd(indeks)/sd(pnls))
-# Calculate the Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls)
-colnames(wealthv) <- c("Equal Weight", "Strategy")
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot cumulative strategy returns
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Rolling Portfolio Strategy for S&P500 Stocks") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=300)
-# Shift end points to C++ convention
-endd <- (endd - 1)
-endd[endd < 0] <- 0
-startp <- (startp - 1)
-startp[startp < 0] <- 0
-# Specify dimension reduction and return shrinkage using list of portfolio optimization parameters
-controlv <- HighFreq::param_portf(method="maxsharpe", dimax=dimax, alpha=0.7)
-# Perform backtest in Rcpp
-pnls <- HighFreq::back_test(retx=retx, retp=retp,
-  startp=startp, endd=endd, controlv=controlv)
-pnls <- pnls*sd(indeks)/sd(pnls)
-# Plot cumulative strategy returns
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Rolling S&P500 Portfolio Strategy With Shrinkage") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyLegend(show="always", width=300)
-# Perform backtest over vector of return shrinkage intensities
-alphav <- seq(from=0.01, to=0.91, by=0.1)
-pnls <- lapply(alphav, function(alpha) {
-  controlv <- HighFreq::param_portf(method="maxsharpe",
-      dimax=dimax, alpha=alpha)
-  HighFreq::back_test(retx=retx, retp=retp,
-      startp=startp, endd=endd, controlv=controlv)
-})  # end lapply
-profilev <- sapply(pnls, sum)
-plot(x=alphav, y=profilev, t="l",
-  main="Rolling Strategy as Function of Return Shrinkage",
-  xlab="Shrinkage Intensity Alpha", ylab="pnl")
-whichmax <- which.max(profilev)
-alpha <- alphav[whichmax]
-pnls <- pnls[[whichmax]]
-# Perform backtest over vector of dimension reduction parameters
-dimaxs <- seq(from=3, to=40, by=2)
-pnls <- lapply(dimaxs, function(dimax) {
-  controlv <- HighFreq::param_portf(method="maxsharpe",
-    dimax=dimax, alpha=alpha)
-  HighFreq::back_test(retx=retx, retp=retp,
-    startp=startp, endd=endd, controlv=controlv)
-})  # end lapply
-profilev <- sapply(pnls, sum)
-plot(x=dimaxs, y=profilev, t="l", xlab="dimax", ylab="pnl",
-  main="Strategy PnL as Function of dimax")
-whichmax <- which.max(profilev)
-dimax <- dimaxs[whichmax]
-pnls <- pnls[[whichmax]]
-pnls <- pnls*sd(indeks)/sd(pnls)
-# Plot cumulative strategy returns
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
-# Calculate the out-of-sample Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Optimal Rolling S&P500 Stock Portfolio Strategy") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyLegend(show="always", width=300)
-# Create list of model parameters
-controlv <- HighFreq::param_portf(method="maxsharpe",
-      dimax=dimax, alpha=alpha)
-# Perform backtest over look-backs
-look_backs <- seq(from=5, to=16, by=1)
-pnls <- lapply(look_backs, function(look_back) {
-  startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
-  startp <- (startp - 1)
-  startp[startp < 0] <- 0
-  HighFreq::back_test(retx=retx, retp=retp,
-    startp=startp, endd=endd, controlv=controlv)
-})  # end lapply
-profilev <- sapply(pnls, sum)
-plot(x=look_backs, y=profilev, t="l", main="Strategy PnL as Function of Look-back Interval",
-  xlab="Look-back Interval", ylab="pnl")
-whichmax <- which.max(profilev)
-look_back <- look_backs[whichmax]
-pnls <- pnls[[whichmax]]
-pnls <- pnls*sd(indeks)/sd(pnls)
-# Calculate the out-of-sample Sharpe and Sortino ratios
-wealthv <- cbind(indeks, pnls, (pnls+indeks)/2)
-colnames(wealthv) <- c("Index", "PortfStrat", "Combined")
-sqrt(252)*sapply(wealthv, function(x)
-  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Dygraph the cumulative wealth
-dygraphs::dygraph(cumsum(wealthv)[endd],
-  main="Optimal Rolling S&P500 Portfolio Strategy") %>%
-  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-  dySeries(name="Combined", label="Combined", strokeWidth=3) %>%
-  dyLegend(show="always", width=300)
 # Calculate daily stock returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
@@ -667,6 +16,7 @@ all.equal(retmv, (retp %*% covinv %*% unitv)/c11)
 all.equal(var(retmv),
   t(weightmv) %*% covmat %*% weightmv,
   1/(t(unitv) %*% covinv %*% unitv))
+
 # Calculate vector of mean returns
 retm <- colMeans(retp)
 # Specify the target return
@@ -681,8 +31,9 @@ lagm <- solve(a=fmat, b=c(2, 2*retarget))
 # Calculate the efficient portfolio weights
 weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
 # Calculate constraints
-all.equal(1, sum(weights))
+all.equal(1, sum(weightv))
 all.equal(retarget, sum(retm*weightv))
+
 # Calculate the efficient portfolio returns
 reteff <- drop(retp %*% weightv)
 reteffm <- mean(reteff)
@@ -694,6 +45,7 @@ detf <- (c11*crr-cr1^2)  # det(fmat)
 all.equal(var(reteff),
   drop(t(uu) %*% finv %*% uu),
   (c11*reteffm^2-2*cr1*reteffm+crr)/detf)
+
 # Calculate the daily and mean minvar portfolio returns
 c11 <- drop(t(unitv) %*% covinv %*% unitv)
 weightv <- drop(covinv %*% unitv/c11)
@@ -708,6 +60,7 @@ stdevs <- sapply(targetv, function(rett) {
   uu <- c(1, rett)
   sqrt(drop(t(uu) %*% finv %*% uu))
 })  # end sapply
+
 # Plot the efficient frontier
 plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2,
      main="Efficient Frontier and Minimum Variance Portfolio",
@@ -715,6 +68,7 @@ plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2,
 points(x=stdevmv, y=retmvm, col="green", lwd=6)
 text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
      pos=4, cex=0.8)
+
 # Calculate standard deviation of efficient portfolio
 uu <- c(1, retarget)
 stdeveff <- sqrt(drop(t(uu) %*% finv %*% uu))
@@ -726,6 +80,7 @@ riskf <- retarget - sharper*stdeveff
 # Calculate the risk-free rate from target return
 all.equal(riskf,
   (retarget*cr1-crr)/(retarget*c11-cr1))
+
 # Plot efficient frontier
 aspratio <- 1.0*max(stdevs)/diff(range(targetv))
 plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2, asp=aspratio,
@@ -736,6 +91,7 @@ plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2, asp=aspratio,
 points(x=stdevmv, y=retmvm, col="green", lwd=6)
 text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
      pos=4, cex=0.8)
+
 # Plot the tangent portfolio
 points(x=stdeveff, y=retarget, col="red", lwd=6)
 text(x=stdeveff, y=retarget, labels="tangency\nportfolio", pos=2, cex=0.8)
@@ -747,6 +103,7 @@ abline(a=riskf, b=sharper, lwd=2, col="green")
 text(x=0.6*stdev, y=0.8*retarget,
      labels="Capital Market Line", pos=2, cex=0.8,
      srt=180/pi*atan(aspratio*sharper))
+
 # Calculate the mean excess returns
 riskf <- retarget - sharper*stdeveff
 retx <- (retm - riskf)
@@ -763,14 +120,15 @@ retd <- (retp %*% weightms)
 # Calculate the maximum Sharpe variance in four ways
 detf <- (c11*crr-cr1^2)  # det(fmat)
 all.equal(var(retd),
-  t(weights) %*% covmat %*% weightv,
+  t(weightv) %*% covmat %*% weightv,
   (t(retx) %*% covinv %*% retx)/sum(covinv %*% retx)^2,
   (c11*retarget^2-2*cr1*retarget+crr)/detf)
 # Calculate the maximum Sharpe ratio
 sqrt(252)*sum(weightv*retx)/
-  sqrt(drop(t(weights) %*% covmat %*% weightv))
+  sqrt(drop(t(weightv) %*% covmat %*% weightv))
 # Calculate the stock Sharpe ratios
 sqrt(252)*sapply((retp - riskf), function(x) mean(x)/sd(x))
+
 # Calculate optimal portfolio returns
 wealthv <- cbind(retp %*% weightms, retp %*% weightmv)
 wealthv <- xts::xts(wealthv, zoo::index(retp))
@@ -784,6 +142,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Maximum Sharpe and Minimum Variance Portfolios") %>%
   dyOptions(colors=c("blue", "green"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
+
 # Calculate the maximum Sharpe portfolios for different risk-free rates
 detf <- (c11*crr-cr1^2)  # det(fmat)
 riskfv <- retmvm*seq(from=1.3, to=20, by=0.1)
@@ -806,6 +165,7 @@ plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2, asp=aspratio,
 # Plot the minimum variance portfolio
 points(x=stdevmv, y=retmvm, col="green", lwd=6)
 text(x=stdevmv, y=retmvm, labels="minimum \nvariance", pos=4, cex=0.8)
+
 # Calculate the maximum Sharpe return and standard deviation
 riskf <- min(reteffv)
 retmax <- (cr1*riskf-crr)/(c11*riskf-cr1)
@@ -821,6 +181,7 @@ sharper <- (stdevmax*detf)/(c11*retmax-cr1)
 abline(a=riskf, b=sharper, lwd=2, col="green")
 text(x=0.6*stdevmax, y=0.8*retmax, labels="Capital Market Line",
      pos=2, cex=0.8, srt=180/pi*atan(aspratio*sharper))
+
 # Plot the efficient frontier
 reteffv <- effront["return", ]
 stdevs <- effront["stdev", ]
@@ -828,6 +189,7 @@ plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2,
   xlim=c(0.0, max(stdevs)),
   main="Efficient Frontier and Tangent Lines",
   xlab="standard deviation", ylab="return")
+
 # Calculate vector of mean returns
 reteffv <- min(reteffv) + diff(range(reteffv))*c(0.2, 0.4, 0.6, 0.8)
 # Plot the tangent lines
@@ -843,11 +205,12 @@ for (reteffm in reteffv) {
   # Plot the tangent line
   abline(a=riskf, b=sharper, lwd=2, col="green")
 } # end for
+
 # Calculate random portfolios
 nportf <- 1000
 randportf <- sapply(1:nportf, function(it) {
   weightv <- runif(nstocks-1, min=-0.25, max=1.0)
-  weightv <- c(weightv, 1-sum(weights))
+  weightv <- c(weightv, 1-sum(weightv))
   # Portfolio returns and standard deviation
   c(return=252*sum(weightv*retm),
     stdev=sqrt(252*drop(weightv %*% covmat %*% weightv)))
@@ -870,12 +233,14 @@ points(x=effront[marketp, "stdev"],
  y=effront[marketp, "return"], col="green", lwd=6)
 text(x=effront[marketp, "stdev"], y=effront[marketp, "return"],
      labels="market\nportfolio", pos=2, cex=0.8)
+
 # Plot individual assets
 points(x=sqrt(252*diag(covmat)),
  y=252*retm, col="blue", lwd=6)
 text(x=sqrt(252*diag(covmat)), y=252*retm,
      labels=names(retm),
      col="blue", pos=1, cex=0.8)
+
 riskf <- 0.03
 retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
@@ -906,6 +271,7 @@ text(x=portfsd[whichmax], y=retp[whichmax],
  structure(c(weightv[whichmax], 1-weightv[whichmax]),
          names=names(retp))), collapse=" "),
      pos=2, cex=0.8)
+
 # Plot individual assets
 points(stdevs, retp, col="green", lwd=3)
 text(stdevs, retp, labels=names(retp), pos=4, cex=0.8)
@@ -919,6 +285,7 @@ text(portfsd[whichmax]/2, (retp[whichmax]+riskf)/2,
      srt=45*atan(sharpem*(rangev[2]-rangev[1])/
              (rangev[4]-rangev[3])*
              heightp/widthp)/(0.25*pi))
+
 # Plot portfolios in x11() window
 x11(widthp <- 6, heightp <- 5)
 par(oma=c(0, 0, 0, 0), mar=c(3,3,2,1)+0.1, mgp=c(2, 1, 0), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
@@ -929,7 +296,7 @@ weightv <- seq(from=(-1), to=2, length.out=31)
 weightv <- cbind(weightv, 1-weightv)
 # Calculate portfolio returns and volatilities
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
-retp <- retp %*% t(weights)
+retp <- retp %*% t(weightv)
 portfv <- cbind(252*colMeans(retp),
   sqrt(252)*matrixStats::colSds(retp))
 colnames(portfv) <- c("returns", "stdev")
@@ -949,6 +316,7 @@ text(x=portfv[whichmax, "stdev"], y=portfv[whichmax, "returns"],
      labels=paste(c("efficient portfolio\n",
   structure(c(weightv[whichmax, 1], weightv[whichmax, 2]), names=symbolv)), collapse=" "),
      pos=3, cex=0.8)
+
 # Plot individual assets
 retm <- 252*sapply(retp, mean)
 stdevs <- sqrt(252)*sapply(retp, sd)
@@ -964,6 +332,7 @@ text(max(portfv[, "stdev"])/3, 0.75*max(portfv[, "returns"]),
      srt=45*atan(sharpem*(rangev[2]-rangev[1])/
              (rangev[4]-rangev[3])*
              heightp/widthp)/(0.25*pi))
+
 # Plot portfolios in x11() window
 x11(widthp <- 6, heightp <- 5)
 # Calculate cumulative returns of VTI and IEF
@@ -983,6 +352,7 @@ chart_Series(retsoptim, theme=plot_theme,
 legend("top", legend=colnames(retsoptim),
    cex=0.8, inset=0.1, bg="white", lty=1,
    lwd=6, col=plot_theme$col$line.col, bty="n")
+
 library(rutils)
 library(Rglpk)
 # Vector of symbol names
@@ -1012,6 +382,7 @@ optiml <- Rglpk::Rglpk_solve_LP(
 all.equal(optiml$optimum, sum(objvec*optiml$solution))
 optiml$solution
 coeffm %*% optiml$solution
+
 # Calculate the VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.1
@@ -1027,6 +398,7 @@ varmin <- (-0.05)
 histp <- hist(retp, col="lightgrey",
   xlab="returns", breaks=100, xlim=c(varmin, 0.01),
   ylab="frequency", freq=FALSE, main="VTI Returns Histogram")
+
 # Plot density of losses
 densv <- density(retp, adjust=1.5)
 lines(densv, lwd=3, col="blue")
@@ -1041,6 +413,7 @@ polygon(
   c(0, densv$y[rangev], 0),
   col=rgb(1, 0, 0,0.5), border=NA)
 text(x=1.5*varisk, y=ymax/7, labels="CVaR", lwd=2, pos=2)
+
 library(rutils)  # Load rutils
 library(Rglpk)
 # Vector of symbol names and returns
@@ -1071,13 +444,14 @@ optiml <- Rglpk_solve_LP(obj=objvec, mat=coeffm, dir=logop, rhs=consv, types=rep
 all.equal(optiml$optimum, sum(objvec*optiml$solution))
 coeffm %*% optiml$solution
 as.numeric(optiml$solution[1:ncols])
+
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
 # Create initial vector of portfolio weights
 weightv <- rep(1, NROW(symbolv))
-names(weights) <- symbolv
+names(weightv) <- symbolv
 # Objective equal to minus Sharpe ratio
 objfun <- function(weightv, retp) {
   retp <- retp %*% weightv
@@ -1093,7 +467,7 @@ optiml <- unlist(optimize(
     objfun(c(1, 1, weight), retp=retp),
   interval=c(-4, 1)))
 # Vectorize objective function with respect to third weight
-objvec <- function(weights) sapply(weightv,
+objvec <- function(weightv) sapply(weightv,
   function(weight) objfun(c(1, 1, weight),
     retp=retp))
 # Or
@@ -1102,6 +476,7 @@ objvec <- Vectorize(FUN=function(weight)
   vectorize.args="weight")  # end Vectorize
 objvec(1)
 objvec(1:3)
+
 x11(width=6, height=5)
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(3, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot objective function with respect to third weight
@@ -1113,6 +488,7 @@ title(main="Objective Function", line=(-1))  # Add title
 points(x=optiml[1], y=optiml[2], col="green", lwd=6)
 text(x=optiml[1], y=optiml[2],
      labels="minimum objective", pos=4, cex=0.8)
+
 #below is simplified code for plotting objective function
 # Create vector of DBC weights
 weightv <- seq(from=-4, to=1, by=0.1)
@@ -1124,6 +500,7 @@ title(main="Objective Function", line=(-1))  # Add title
 points(x=optiml[1], y=optiml[2], col="green", lwd=6)
 text(x=optiml[1], y=optiml[2],
      labels="minimum objective", pos=4, cex=0.8)
+
 # Vectorize function with respect to all weights
 objvec <- Vectorize(
   FUN=function(w1, w2, w3) objfun(c(w1, w2, w3)),
@@ -1139,6 +516,7 @@ persp(w2, w3, -grid_object,
 theta=45, phi=30, shade=0.5,
 col=rainbow(50), border="green",
 main="objective function")
+
 # Interactive perspective plot of objective function
 library(rgl)
 rgl::persp3d(z=-grid_object, zlab="objective",
@@ -1147,6 +525,7 @@ rgl::persp3d(
   x=function(w2, w3) {-objvec(w1=1, w2, w3)},
   xlim=c(-3, 7), ylim=c(-5, 5),
   col="green", axes=FALSE)
+
 # Optimization to find weights with maximum Sharpe ratio
 optiml <- optim(par=weightv,
              fn=objfun,
@@ -1159,6 +538,7 @@ optiml$par
 optiml$par <- optiml$par/sum(optiml$par)
 # Optimal Sharpe ratio
 -objfun(optiml$par)
+
 x11(width=6, height=5)
 par(oma=c(1, 1, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot in two vertical panels
@@ -1188,6 +568,7 @@ legend("top", legend=colnames(retsoptim), cex=1.0,
 PerformanceAnalytics::chart.CumReturns(
   cbind(retp %*% optiml$par, retp),
   lwd=2, ylab="", legend.loc="topleft", main="")
+
 riskf <- 0.03
 retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
@@ -1214,6 +595,7 @@ objfun <- function(x) {
   t(x) %*% covmat %*% x
 }  # end objfun
 unlist(optimize(f=objfun, interval=c(-1, 2)))
+
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
@@ -1239,12 +621,13 @@ optiml <- quadprog::solve.QP(Dmat=2*covmat,
             Amat=a_mat,
             bvec=b_vec,
             meq=1)
+
 # Rastrigin function with vector argument for optimization
-rastrigin <- function(vectorv, param=25){
-  sum(vectorv^2 - param*cos(vectorv))
+rastrigin <- function(vecv, param=25){
+  sum(vecv^2 - param*cos(vecv))
 }  # end rastrigin
-vectorv <- c(pi/6, pi/6)
-rastrigin(vectorv=vectorv)
+vecv <- c(pi/6, pi/6)
+rastrigin(vecv=vecv)
 library(DEoptim)
 # Optimize rastrigin using DEoptim
 optiml <-  DEoptim(rastrigin,
@@ -1255,6 +638,7 @@ optiml$optim$bestmem
 rastrigin(optiml$optim$bestmem)
 summary(optiml)
 plot(optiml)
+
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
@@ -1274,7 +658,8 @@ optiml <- DEoptim::DEoptim(fn=objfun,
   retp=retp,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weights) <- colnames(retp)
+names(weightv) <- colnames(retp)
+
 # Objective with shrinkage penalty
 objfun <- function(weightv, retp, lambda, alpha) {
   retp <- retp %*% weightv
@@ -1282,13 +667,13 @@ objfun <- function(weightv, retp, lambda, alpha) {
     return(0)
   else {
     penaltyv <- lambda*((1-alpha)*sum(weightv^2) +
-alpha*sum(abs(weights)))
+alpha*sum(abs(weightv)))
     -return(mean(retp)/sd(retp) + penaltyv)
   }
 }  # end objfun
 # Objective for equal weight portfolio
 weightv <- rep(1, NROW(symbolv))
-names(weights) <- symbolv
+names(weightv) <- symbolv
 lambda <- 0.5 ; alpha <- 0.5
 objfun(weightv, retp=retp, lambda=lambda, alpha=alpha)
 # Perform optimization using DEoptim
@@ -1300,4 +685,265 @@ optiml <- DEoptim::DEoptim(fn=objfun,
   alpha=alpha,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weights) <- colnames(retp)
+names(weightv) <- colnames(retp)
+
+# Verify that Rtools or XCode are working properly:
+devtools::find_rtools()  # Under Windows
+devtools::has_devel()
+# Install the packages Rcpp and RcppArmadillo
+install.packages(c("Rcpp", "RcppArmadillo"))
+# Load package Rcpp
+library(Rcpp)
+# Get documentation for package Rcpp
+# Get short description
+packageDescription("Rcpp")
+# Load help page
+help(package="Rcpp")
+# List all datasets in "Rcpp"
+data(package="Rcpp")
+# List all objects in "Rcpp"
+ls("package:Rcpp")
+# Remove Rcpp from search path
+detach("package:Rcpp")
+
+# Define Rcpp function
+Rcpp::cppFunction("
+  int times_two(int x)
+    { return 2 * x;}
+  ")  # end cppFunction
+# Run Rcpp function
+times_two(3)
+# Source Rcpp functions from file
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/mult_rcpp.cpp")
+# Multiply two numbers
+mult_rcpp(2, 3)
+mult_rcpp(1:3, 6:4)
+# Multiply two vectors
+mult_vec_rcpp(2, 3)
+mult_vec_rcpp(1:3, 6:4)
+
+# Define Rcpp function with loop
+Rcpp::cppFunction("
+double inner_mult(NumericVector x, NumericVector y) {
+int xsize = x.size();
+int ysize = y.size();
+if (xsize != ysize) {
+    return 0;
+  } else {
+    double total = 0;
+    for(int i = 0; i < xsize; ++i) {
+total += x[i] * y[i];
+  }
+  return total;
+  }
+}")  # end cppFunction
+# Run Rcpp function
+inner_mult(1:3, 6:4)
+inner_mult(1:3, 6:3)
+# Define Rcpp Sugar function with loop
+Rcpp::cppFunction("
+double inner_sugar(NumericVector x, NumericVector y) {
+  return sum(x * y);
+}")  # end cppFunction
+# Run Rcpp Sugar function
+inner_sugar(1:3, 6:4)
+inner_sugar(1:3, 6:3)
+
+# Define R function with loop
+inner_multr <- function(x, y) {
+    sumv <- 0
+    for(i in 1:NROW(x)) {
+sumv <- sumv + x[i] * y[i]
+    }
+    sumv
+}  # end inner_multr
+# Run R function
+inner_multr(1:3, 6:4)
+inner_multr(1:3, 6:3)
+# Compare speed of Rcpp and R
+library(microbenchmark)
+summary(microbenchmark(
+  rcode=inner_multr(1:10000, 1:10000),
+  innerp=1:10000 %*% 1:10000,
+  Rcpp=inner_mult(1:10000, 1:10000),
+  sugar=inner_sugar(1:10000, 1:10000),
+  times=10))[, c(1, 4, 5)]
+
+# Define Ornstein-Uhlenbeck function in R
+sim_our <- function(nrows=1000, eq_price=5.0,
+              volat=0.01, theta=0.01) {
+  retp <- numeric(nrows)
+  pricev <- numeric(nrows)
+  pricev[1] <- eq_price
+  for (i in 2:nrows) {
+    retp[i] <- theta*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    pricev[i] <- pricev[i-1] + retp[i]
+  }  # end for
+  pricev
+}  # end sim_our
+# Simulate Ornstein-Uhlenbeck process in R
+eq_price <- 5.0; sigmav <- 0.01
+thetav <- 0.01; nrows <- 1000
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
+ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+
+# Define Ornstein-Uhlenbeck function in Rcpp
+Rcpp::cppFunction("
+NumericVector sim_oucpp(double eq_price,
+                  double volat,
+                  double thetav,
+                  NumericVector innov) {
+  int nrows = innov.size();
+  NumericVector pricev(nrows);
+  NumericVector retv(nrows);
+  pricev[0] = eq_price;
+  for (int it = 1; it < nrows; it++) {
+    retv[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
+    pricev[it] = pricev[it-1] + retv[it];
+  }  // end for
+  return pricev;
+}")  # end cppFunction
+# Simulate Ornstein-Uhlenbeck process in Rcpp
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
+oucpp <- sim_oucpp(eq_price=eq_price,
+  volat=sigmav, theta=thetav, innov=rnorm(nrows))
+all.equal(ousim, oucpp)
+# Compare speed of Rcpp and R
+library(microbenchmark)
+summary(microbenchmark(
+  rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
+  Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  times=10))[, c(1, 4, 5)]
+
+# Source Rcpp function for Ornstein-Uhlenbeck process from file
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_ou.cpp")
+# Simulate Ornstein-Uhlenbeck process in Rcpp
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
+oucpp <- sim_oucpp(eq_price=eq_price,
+  volat=sigmav,
+  theta=thetav,
+  innov=rnorm(nrows))
+all.equal(ousim, oucpp)
+# Compare speed of Rcpp and R
+library(microbenchmark)
+summary(microbenchmark(
+  rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
+  Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  times=10))[, c(1, 4, 5)]
+
+# Calculate uniformly distributed pseudo-random sequence
+unifun <- function(seedv, nrows=10) {
+  output <- numeric(nrows)
+  output[1] <- seedv
+  for (i in 2:nrows) {
+    output[i] <- 4*output[i-1]*(1-output[i-1])
+  }  # end for
+  acos(1-2*output)/pi
+}  # end unifun
+
+# Source Rcpp functions from file
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifun.cpp")
+# Microbenchmark Rcpp code
+library(microbenchmark)
+summary(microbenchmark(
+  rcode=runif(1e5),
+  rloop=unifun(0.3, 1e5),
+  Rcpp=unifuncpp(0.3, 1e5),
+  times=10))[, c(1, 4, 5)]
+
+library(RcppArmadillo)
+# Source Rcpp functions from file
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
+vec1 <- runif(1e5)
+vec2 <- runif(1e5)
+inner_vec(vec1, vec2)
+vec1 %*% vec2
+
+# Microbenchmark \emph{RcppArmadillo} code
+summary(microbenchmark(
+  rcpp = inner_vec(vec1, vec2),
+  rcode = (vec1 %*% vec2),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# Microbenchmark shows:
+# inner_vec() is several times faster than %*%, especially for longer vectors.
+#     expr     mean   median
+# 1 inner_vec 110.7067 110.4530
+# 2 rcode 585.5127 591.3575
+
+# Source Rcpp functions from file
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_arima.cpp")
+# Define AR(2) coefficients
+coeff <- c(0.9, 0.09)
+nrows <- 1e4
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+innov <- rnorm(nrows)
+# Simulate ARIMA using filter()
+arimar <- filter(x=innov, filter=coeff, method="recursive")
+# Simulate ARIMA using sim_ar()
+innov <- matrix(innov)
+coeff <- matrix(coeff)
+arimav <- sim_ar(coeff, innov)
+all.equal(drop(arimav), as.numeric(arimar))
+# Microbenchmark \emph{RcppArmadillo} code
+summary(microbenchmark(
+  rcpp = sim_ar(coeff, innov),
+  filter = filter(x=innov, filter=coeff, method="recursive"),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+
+library(RcppArmadillo)
+# Source Rcpp functions from file
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
+matv <- matrix(runif(1e5), nc=1e3)
+# Center matrix columns using apply()
+matd <- apply(matv, 2, function(x) (x-mean(x)))
+# Center matrix columns in place using Rcpp demeanr()
+demeanr(matv)
+all.equal(matd, matv)
+# Microbenchmark \emph{RcppArmadillo} code
+library(microbenchmark)
+summary(microbenchmark(
+  rcode = (apply(matv, 2, mean)),
+  rcpp = demeanr(matv),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# Perform matrix inversion
+# Create random positive semi-definite matrix
+matv <- matrix(runif(25), nc=5)
+matv <- t(matv) %*% matv
+# Invert the matrix
+matrixinv <- solve(matv)
+inv_mat(matv)
+all.equal(matrixinv, matv)
+# Microbenchmark \emph{RcppArmadillo} code
+summary(microbenchmark(
+  rcode = solve(matv),
+  rcpp = inv_mat(matv),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+
+library(RcppArmadillo)
+# Source Rcpp functions from file
+Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/HighFreq.cpp")
+# Calculate matrix of random returns
+matv <- matrix(rnorm(300), nc=5)
+# Regularized inverse of correlation matrix
+dimax <- 4
+cormat <- cor(matv)
+eigend <- eigen(cormat)
+invmat <- eigend$vectors[, 1:dimax] %*%
+  (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
+# Regularized inverse using \emph{RcppArmadillo}
+invarma <- calc_inv(cormat, dimax=dimax)
+all.equal(invmat, invarma)
+# Microbenchmark \emph{RcppArmadillo} code
+library(microbenchmark)
+summary(microbenchmark(
+  rcode = {eigend <- eigen(cormat)
+eigend$vectors[, 1:dimax] %*% (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])},
+  rcpp = calc_inv(cormat, dimax=dimax),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Install package reticulate
+install.packages("reticulate")
+# Start Python session
+reticulate::repl_python()
+# Exit Python session
+exit

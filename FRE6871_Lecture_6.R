@@ -443,6 +443,8 @@ t(sapply(panelds, FUN=function(x) sapply(x, mean)))
 aggregate(x=paneld[, c("ROE", "EPS.EXCLUDE.EI")],
   by=list(paneld$Industry), FUN=mean)
 
+
+
 # ?options  # Get info on global options
 getOption("warn")  # Global option for "warn"
 options("warn")  # Global option for "warn"
