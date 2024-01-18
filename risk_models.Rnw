@@ -639,7 +639,7 @@ text(x=200, y=0.5, pos=3, labels="liquidation threshold")
       \vskip1ex
       If the mean returns are positive, then at first the utility increases with leverage, but only up to a point.
       \vskip1ex
-      With higher leverage, the negative utility of time periods with negative returns becomes significant, forcing the aggregate utility to drop.
+      With higher leverage, the negative utility of the time periods with negative returns becomes significant, forcing the aggregate utility to drop.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI returns
 retp <- rutils::etfenv$returns$VTI
@@ -4180,10 +4180,10 @@ closep <- log(closep)
 volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalev=FALSE))
 volat[1:look_back] <- volat[look_back+1]
 # Calculate regression coefficients of XLB ~ XLE
-betav <- drop(cov(vxx, volat)/var(volat))
-alpha <- drop(mean(vxx) - betav*mean(volat))
+betac <- drop(cov(vxx, volat)/var(volat))
+alphac <- drop(mean(vxx) - betac*mean(volat))
 # Calculate regression residuals
-fitv <- (alpha + betav*volat)
+fitv <- (alphac + betac*volat)
 residuals <- (vxx - fitv)
 # Perform ADF test on residuals
 tseries::adf.test(residuals, k=1)
@@ -4276,24 +4276,24 @@ pacf(varv, lag=10, main="PACF of Variance", ylab=NA)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define GARCH parameters
-alpha <- 0.3; betav <- 0.5;
-omega <- 1e-4*(1-alpha-betav)
+alphac <- 0.3; betac <- 0.5;
+omega <- 1e-4*(1 - alphac - betac)
 nrows <- 1000
 # Calculate matrix of standard normal innovations
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 innov <- rnorm(nrows)
 retp <- numeric(nrows)
 varv <- numeric(nrows)
-varv[1] <- omega/(1-alpha-betav)
+varv[1] <- omega/(1 - alphac - betac)
 retp[1] <- sqrt(varv[1])*innov[1]
 # Simulate GARCH model
 for (i in 2:nrows) {
   retp[i] <- sqrt(varv[i-1])*innov[i]
-  varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
+  varv[i] <- omega + alphac*retp[i]^2 + betac*varv[i-1]
 }  # end for
 # Simulate the GARCH process using Rcpp
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,  
-  beta=betav, innov=matrix(innov))
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,  
+  beta=betac, innov=matrix(innov))
 all.equal(garch_data, cbind(retp, varv), check.attributes=FALSE)
       @
       The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
@@ -4332,24 +4332,24 @@ all.equal(garch_data, cbind(retp, varv), check.attributes=FALSE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define GARCH parameters
-alpha <- 0.3; betav <- 0.5;
-omega <- 1e-4*(1-alpha-betav)
+alphac <- 0.3; betac <- 0.5;
+omega <- 1e-4*(1 - alphac - betac)
 nrows <- 1000
 # Calculate matrix of standard normal innovations
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 innov <- rnorm(nrows)
 retp <- numeric(nrows)
 varv <- numeric(nrows)
-varv[1] <- omega/(1-alpha-betav)
+varv[1] <- omega/(1 - alphac - betac)
 retp[1] <- sqrt(varv[1])*innov[1]
 # Simulate GARCH model
 for (i in 2:nrows) {
   retp[i] <- sqrt(varv[i-1])*innov[i]
-  varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
+  varv[i] <- omega + alphac*retp[i]^2 + betac*varv[i-1]
 }  # end for
 # Simulate the GARCH process using Rcpp
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,  
-  beta=betav, innov=matrix(innov))
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,  
+  beta=betac, innov=matrix(innov))
 all.equal(garch_data, cbind(retp, varv), check.attributes=FALSE)
       @
       The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
@@ -4465,7 +4465,7 @@ quartz.save("figure/garch_hist.png", type="png", width=6, height=5)
       <<echo=TRUE,eval=FALSE>>=
 # Specify GARCH model
 garch_spec <- fGarch::garchSpec(model=list(ar=c(0, 0), omega=omega, 
-  alpha=alpha, beta=betav))
+  alpha=alphac, beta=betac))
 # Simulate GARCH model
 garch_sim <- fGarch::garchSim(spec=garch_spec, n=nrows)
 retp <- as.numeric(garch_sim)
@@ -4524,11 +4524,11 @@ legend("topright", inset=0.05, bty="n", y.intersp=0.4,
 # Calculate variance of GARCH returns
 var(retp)
 # Calculate expected value of variance
-omega/(1-alpha-betav)
+omega/(1 - alphac - betac)
 # Calculate kurtosis of GARCH returns
 mean(((retp-mean(retp))/sd(retp))^4)
 # Calculate expected value of kurtosis
-3 + 6*alpha^2/(1-2*alpha^2-(alpha+betav)^2)
+3 + 6*alpha^2/(1-2*alpha^2-(alphac+betac)^2)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4536,8 +4536,8 @@ mean(((retp-mean(retp))/sd(retp))^4)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the distribution of GARCH kurtosis
 kurt <- sapply(1:1e4, function(x) {
-  garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha, 
-    beta=betav, innov=matrix(rnorm(nrows)))
+  garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac, 
+    beta=betac, innov=matrix(rnorm(nrows)))
   retp <- garch_data[, 1]
   c(var(retp), mean(((retp-mean(retp))/sd(retp))^4))
 })  # end sapply
@@ -4550,7 +4550,7 @@ histp <- hist(kurt[, 2], breaks=500, col="lightgrey",
   xlim=c(2, 8), xlab="returns", ylab="frequency", freq=FALSE,
   main="Distribution of GARCH Kurtosis")
 lines(density(kurt[, 2], adjust=1.5), lwd=3, col="blue")
-abline(v=(3 + 6*alpha^2/(1-2*alpha^2-(alpha+betav)^2)), lwd=3, col="red")
+abline(v=(3 + 6*alpha^2/(1-2*alpha^2-(alphac+betac)^2)), lwd=3, col="red")
 text(x=7.0, y=0.4, "Expected Kurtosis")
 quartz.save("figure/garch_kurtosis.png", type="png", width=6, height=5)
       @
@@ -4580,16 +4580,16 @@ quartz.save("figure/garch_kurtosis.png", type="png", width=6, height=5)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the GARCH process using Rcpp
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,  
-  beta=betav, innov=matrix(innov))
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,  
+  beta=betac, innov=matrix(innov))
 # Extract the returns
 retp <- garch_data[, 1]
 # Estimate the trailing variance from the returns
 varv <- numeric(nrows)
-varv[1] <- omega/(1-alpha-betav)
+varv[1] <- omega/(1 - alphac - betac)
 for (i in 2:nrows) {
-  varv[i] <- omega + alpha*retp[i]^2 +
-    betav*varv[i-1]
+  varv[i] <- omega + alphac*retp[i]^2 +
+    betac*varv[i-1]
 }  # end for
 all.equal(garch_data[, 2], varv, check.attributes=FALSE)
       @
@@ -4620,7 +4620,7 @@ garch_fit <- fGarch::garchFit(data=retp)
 # Fitted GARCH parameters
 garch_fit@fit$coef
 # Actual GARCH parameters
-c(mu=mean(retp), omega=omega,alpha=alpha, beta=betav)
+c(mu=mean(retp), omega=omega,alpha=alphac, beta=betac)
 # Plot GARCH fitted volatility
 plot(sqrt(garch_fit@fit$series$h), t="l",
   col="blue", xlab="", ylab="",
@@ -4664,12 +4664,12 @@ quartz.save("figure/garch_fGarch_fitted.png",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define likelihood function
-likefun <- function(omega, alpha, betav) {
+likefun <- function(omega, alphac, betac) {
   # Estimate the trailing variance from the returns
   varv <- numeric(nrows)
-  varv[1] <- omega/(1-alpha-betav)
+  varv[1] <- omega/(1 - alphac - betac)
   for (i in 2:nrows) {
-    varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
+    varv[i] <- omega + alphac*retp[i]^2 + betac*varv[i-1]
   }  # end for
   varv <- ifelse(varv > 0, varv, 0.000001)
   # Lag the variance
@@ -4678,15 +4678,15 @@ likefun <- function(omega, alpha, betav) {
   -sum(retp^2/varv + log(varv))
 }  # end likefun
 # Calculate the likelihood in R
-likefun(omega, alpha, betav)
+likefun(omega, alphac, betac)
 # Calculate the likelihood in Rcpp
-HighFreq::lik_garch(omega=omega, alpha=alpha,
-  beta=betav, returns=matrix(retp))
+HighFreq::lik_garch(omega=omega, alpha=alphac,
+  beta=betac, returns=matrix(retp))
 # Benchmark speed of likelihood calculations
 library(microbenchmark)
 summary(microbenchmark(
-  Rcode=likefun(omega, alpha, betav),
-  Rcpp=HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=matrix(retp))
+  Rcode=likefun(omega, alphac, betac),
+  Rcpp=HighFreq::lik_garch(omega=omega, alpha=alphac, beta=betac, returns=matrix(retp))
   ), times=10)[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4718,16 +4718,16 @@ summary(microbenchmark(
 retp <- garch_data[, 1, drop=FALSE]
 varv <- var(retp)
 retp <- (retp - mean(retp))
-# Calculate likelihood as function of alpha and betav parameters
-likefun <- function(alpha, betav) {
-  omega <- variance*(1 - alpha - betav)
-  -HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=retp)
+# Calculate likelihood as function of alpha and betac parameters
+likefun <- function(alphac, betac) {
+  omega <- variance*(1 - alpha - betac)
+  -HighFreq::lik_garch(omega=omega, alpha=alphac, beta=betac, returns=retp)
 }  # end likefun
 # Calculate matrix of likelihood values
 alphas <- seq(from=0.15, to=0.35, len=50)
-betav <- seq(from=0.35, to=0.5, len=50)
-likmat <- sapply(alphas, function(alpha) sapply(betav,
-  function(betav) likefun(alpha, betav)))
+betac <- seq(from=0.35, to=0.5, len=50)
+likmat <- sapply(alphacs, function(alphac) sapply(betac,
+  function(betac) likefun(alphac, betac)))
       @
   \end{columns}
 \end{block}
@@ -4754,18 +4754,18 @@ options(rgl.useNULL=TRUE); library(rgl)
 ncols <- 100
 color <- rainbow(ncols, start=2/6, end=4/6)
 zcols <- cut(likmat, ncols)
-rgl::persp3d(alphas, betav, likmat, col=color[zcols],
+rgl::persp3d(alphacs, betac, likmat, col=color[zcols],
         xlab="alpha", ylab="beta", zlab="likelihood")
 rgl::rglwidget(elementId="plot3drgl", width=700, height=700)
 # Perform grid search
 coord <- which(likmat == min(likmat), arr.ind=TRUE)
-c(alphas[coord[2]], betav[coord[1]])
+c(alphacs[coord[2]], betac[coord[1]])
 likmat[coord]
-likefun(alphas[coord[2]], betav[coord[1]])
+likefun(alphacs[coord[2]], betac[coord[1]])
 # Optimal and actual parameters
 options(scipen=2)  # Use fixed not scientific notation
-cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
-  optimal=c(alphas[coord[2]], betav[coord[1]], variance*(1 - sum(alphas[coord[2]], betav[coord[1]]))))
+cbind(actual=c(alphac=alphac, beta=betac, omega=omega),
+  optimal=c(alphacs[coord[2]], betac[coord[1]], variance*(1 - sum(alphacs[coord[2]], betac[coord[1]]))))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4802,11 +4802,11 @@ cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
       <<eval=FALSE,echo=TRUE>>=
 # Define vectorized likelihood function
 likefun <- function(x, retp) {
-  alpha <- x[1]; betav <- x[2]; omega <- x[3]
-  -HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=retp)
+  alphac <- x[1]; betac <- x[2]; omega <- x[3]
+  -HighFreq::lik_garch(omega=omega, alpha=alphac, beta=betac, returns=retp)
 }  # end likefun
 # Initial parameters
-initp <- c(alpha=0.2, beta=0.4, omega=varv/0.2)
+initp <- c(alphac=0.2, beta=0.4, omega=varv/0.2)
 # Find max likelihood parameters using steepest descent optimizer
 fitobj <- optim(par=initp,
   fn=likefun, # Log-likelihood function
@@ -4815,7 +4815,7 @@ fitobj <- optim(par=initp,
   upper=c(0.35, 0.55, varv), # Upper constraint
   lower=c(0.15, 0.35, varv/100)) # Lower constraint
 # Optimal and actual parameters
-cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
+cbind(actual=c(alphac=alphac, beta=betac, omega=omega),
       optimal=c(fitobj$par["alpha"], fitobj$par["beta"], fitobj$par["omega"]))
 # Find max likelihood parameters using DEoptim
 optiml <- DEoptim::DEoptim(fn=likefun,
@@ -4824,7 +4824,7 @@ optiml <- DEoptim::DEoptim(fn=likefun,
   returns=retp, 
   control=list(trace=FALSE, itermax=1000, parallelType=1))
 # Optimal and actual parameters
-cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
+cbind(actual=c(alphac=alphac, beta=betac, omega=omega),
       optimal=c(optiml$optim$bestmem[1], optiml$optim$bestmem[2], optiml$optim$bestmem[3]))
       @
   \end{columns}
@@ -4858,10 +4858,10 @@ optiml <- DEoptim::DEoptim(fn=likefun,
   control=list(trace=FALSE, itermax=1000, parallelType=1))
 # Optimal parameters
 par_am <- unname(optiml$optim$bestmem)
-alpha <- par_am[1]; betav <- par_am[2]; omega <- par_am[3]
-c(alpha, betav, omega)
+alphac <- par_am[1]; betac <- par_am[2]; omega <- par_am[3]
+c(alphac, betac, omega)
 # Equilibrium GARCH variance
-omega/(1-alpha-betav)
+omega/(1 - alphac - betac)
 drop(var(retp))
       @
     \column{0.5\textwidth}
@@ -4871,13 +4871,13 @@ drop(var(retp))
 # Estimate the GARCH volatility of VTI returns
 nrows <- NROW(retp)
 varv <- numeric(nrows)
-varv[1] <- omega/(1-alpha-betav)
+varv[1] <- omega/(1 - alphac - betac)
 for (i in 2:nrows) {
-  varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
+  varv[i] <- omega + alphac*retp[i]^2 + betac*varv[i-1]
 }  # end for
 # Estimate the GARCH volatility using Rcpp
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha, 
-  beta=betav, innov=retp, is_random=FALSE)
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac, 
+  beta=betac, innov=retp, is_random=FALSE)
 all.equal(garch_data[, 2], varv, check.attributes=FALSE)
 # Plot dygraph of the estimated GARCH volatility
 dygraphs::dygraph(xts::xts(sqrt(varv), zoo::index(retp)), 
@@ -4912,16 +4912,16 @@ dygraphs::dygraph(xts::xts(sqrt(varv), zoo::index(retp)),
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 # Simulate GARCH model
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha, 
-  beta=betav, innov=matrix(innov))
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac, 
+  beta=betac, innov=matrix(innov))
 varv <- garch_data[, 2]
 # Calculate the equilibrium variance
-vareq <- omega/(1-alpha-betav)
+vareq <- omega/(1 - alphac - betac)
 # Calculate the variance forecasts
 varf <- numeric(10)
-varf[1] <- vareq + (alpha + betav)*(xts::last(varv) - vareq)
+varf[1] <- vareq + (alphac + betac)*(xts::last(varv) - vareq)
 for (i in 2:10) {
-  varf[i] <- vareq + (alpha + betav)*(varf[i-1] - vareq)
+  varf[i] <- vareq + (alphac + betac)*(varf[i-1] - vareq)
 }  # end for
       @
     \column{0.5\textwidth}

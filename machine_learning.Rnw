@@ -920,8 +920,8 @@ targetmat <- matrix(cormean, nr=NROW(covmat), nc=NCOL(covmat))
 diag(targetmat) <- 1
 targetmat <- t(t(targetmat * stdev) * stdev)
 # Calculate the shrinkage covariance matrix
-alpha <- 0.5
-covshrink <- (1-alpha)*covmat + alpha*targetmat
+alphac <- 0.5
+covshrink <- (1-alphac)*covmat + alphac*targetmat
 # Calculate the inverse matrix
 invmat <- solve(covshrink)
       @
@@ -2245,9 +2245,9 @@ respv <- (-3 + 2*predm + noisev)
       The expected value of the \emph{RSS} is equal to the \emph{degrees of freedom} $(n-2)$ times the variance $\sigma^2_\varepsilon$ of the \emph{residuals} $\varepsilon_i$: $\mathbb{E}[RSS] = (n-2) \sigma^2_\varepsilon$.
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the regression beta
-betav <- cov(predm, respv)/var(predm)
+betac <- cov(predm, respv)/var(predm)
 # Calculate the regression alpha
-alpha <- mean(respv) - betav*mean(predm)
+alphac <- mean(respv) - betac*mean(predm)
       @
   \end{columns}
 \end{block}
@@ -2285,7 +2285,7 @@ class(regmod)  # Regressions have class lm
 attributes(regmod)
 eval(regmod$call$formula)  # Regression formula
 regmod$coeff  # Regression coefficients
-all.equal(coef(regmod), c(alpha, betav),
+all.equal(coef(regmod), c(alphac, betac),
       check.attributes=FALSE)
       @
   \end{columns}
@@ -2313,7 +2313,7 @@ all.equal(coef(regmod), c(alpha, betav),
 # x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 # par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
-fitv <- (alpha + betav*predm)
+fitv <- (alphac + betac*predm)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
 # Plot scatterplot using formula
 plot(formulav, xlab="predictor", ylab="response")
@@ -2353,7 +2353,7 @@ legend(x="topleft", # Add legend
       \end{displaymath}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the residuals
-fitv <- (alpha + betav*predm)
+fitv <- (alphac + betac*predm)
 resids <- (respv - fitv)
 all.equal(resids, regmod$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to the predictor
@@ -2883,8 +2883,8 @@ all.equal(infmat, infmat %*% infmat)
       \includegraphics[width=0.45\paperwidth]{figure/reg_fitsd.png}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the covariance and standard deviations of fitted values
-betav <- predinv %*% respv
-fitv <- drop(predm %*% betav)
+betac <- predinv %*% respv
+fitv <- drop(predm %*% betac)
 resids <- drop(respv - fitv)
 degf <- (NROW(predm) - NCOL(predm))
 residsd <- sqrt(sum(resids^2)/degf)
@@ -2979,7 +2979,7 @@ legend(x="topleft", # Add legend
 newdata <- (max(predm[, 2]) + 10*(1:5)/nrows)
 predn <- cbind(rep(1, NROW(newdata)), newdata)
 # Calculate the forecast values
-fcast <- drop(predn %*% betav)
+fcast <- drop(predn %*% betac)
 # Calculate the inverse of the predictor matrix squared
 pred2 <- MASS::ginv(crossprod(predm))
 # Calculate the standard errors
@@ -3223,13 +3223,13 @@ regmod <- lm(respv ~ predm)
 predc <- apply(predm, 2, function(x) (x-mean(x)))
 respc <- respv - mean(respv)
 # Calculate the regression coefficients
-betav <- drop(MASS::ginv(predc) %*% respc)
+betac <- drop(MASS::ginv(predc) %*% respc)
 # Calculate the regression alpha
-alpha <- mean(respv) - sum(colSums(predm)*betav)/nrows
+alphac <- mean(respv) - sum(colSums(predm)*betac)/nrows
 # Compare with coefficients from lm()
-all.equal(coef(regmod), c(alpha, betav), check.attributes=FALSE)
+all.equal(coef(regmod), c(alphac, betac), check.attributes=FALSE)
 # Compare with actual coefficients
-all.equal(c(1, weightv), c(alpha, betav), check.attributes=FALSE)
+all.equal(c(1, weightv), c(alphac, betac), check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -3272,10 +3272,10 @@ colnames(predm)[1] <- "intercept"
 # Calculate the generalized inverse of the predictor matrix
 predinv <- MASS::ginv(predm)
 # Calculate the regression coefficients
-betav <- predinv %*% respv
+betac <- predinv %*% respv
 # Perform multivariate regression without intercept term
 regmod <- lm(respv ~ predm - 1)
-all.equal(drop(betav), coef(regmod), check.attributes=FALSE)
+all.equal(drop(betac), coef(regmod), check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -3311,7 +3311,7 @@ all.equal(drop(betav), coef(regmod), check.attributes=FALSE)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the fitted values from regression coefficients
-fitv <- drop(predm %*% betav)
+fitv <- drop(predm %*% betac)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate the residuals
 resids <- drop(respv - fitv)
@@ -3359,7 +3359,7 @@ all.equal(infmat, infmat %*% infmat)
 fitv <- drop(infmat %*% respv)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate the fitted values from regression coefficients
-fitv <- drop(predm %*% betav)
+fitv <- drop(predm %*% betac)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
       @
   \end{columns}
@@ -3392,7 +3392,7 @@ all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the centered (de-meaned) fitted values
 predc <- t(t(predm) - colMeans(predm))
-fittedc <- drop(predc %*% betav)
+fittedc <- drop(predc %*% betac)
 all.equal(fittedc, regmod$fitted.values - mean(respv),
   check.attributes=FALSE)
 # Calculate the residuals
@@ -3555,7 +3555,7 @@ betacovar <- residsd*pred2
 betasd <- sqrt(diag(betacovar))
 all.equal(betasd, regsum$coeff[, 2], check.attributes=FALSE)
 # Calculate the t-values of betas
-betatvals <- drop(betav)/betasd
+betatvals <- drop(betac)/betasd
 all.equal(betatvals, regsum$coeff[, 3], check.attributes=FALSE)
 # Calculate the two-sided p-values of betas
 betapvals <- 2*pt(-abs(betatvals), df=degf)
@@ -3695,7 +3695,7 @@ newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
 colnamev <- colnames(predm)
 colnames(newdata) <- colnamev
 newdata <- as.matrix(newdata)
-fcast <- drop(newdata %*% betav)
+fcast <- drop(newdata %*% betac)
 predsd <- drop(sqrt(newdata %*% betacovar %*% t(newdata)))
       @
   \end{columns}
