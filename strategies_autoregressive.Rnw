@@ -149,7 +149,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The daily mean reverting strategy with a holding period performs better than the simple daily strategy because of risk diversification.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate mean reverting strategy with two day holding period
-posv <- rutils::lagit(rutils::roll_sum(sign(retp), look_back=2))/2
+posv <- rutils::lagit(rutils::roll_sum(sign(retp), lookb=2))/2
 pnls <- (-retp*posv)
       @
     \column{0.5\textwidth}
@@ -190,7 +190,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retp <- na.omit(retstock$MSFT)
 rutils::plot_acf(retp)
 # Simulate mean reverting strategy with two day holding period
-posv <- rutils::lagit(rutils::roll_sum(sign(retp), look_back=2))/2
+posv <- rutils::lagit(rutils::roll_sum(sign(retp), lookb=2))/2
 pnls <- (-retp*posv)
       @
     \column{0.5\textwidth}
@@ -231,7 +231,7 @@ library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
 pnll <- mclapply(retstock, function(retp) {
   retp <- na.omit(retp)
-  posv <- rutils::roll_sum(sign(retp), look_back=2)/2
+  posv <- rutils::roll_sum(sign(retp), lookb=2)/2
   posv <- rutils::lagit(posv)
   pnls <- (-retp*posv)
   pnls
@@ -1232,9 +1232,9 @@ dygraphs::dygraph(cumsum(pnls)[endd],
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define the look-back range
-look_back <- 100
+lookb <- 100
 tday <- nrows
-startp <- max(1, tday-look_back)
+startp <- max(1, tday-lookb)
 rangev <- startp:(tday-1)
 # Subset the response and predictors
 resps <- respv[rangev]
@@ -1287,15 +1287,15 @@ fcast/sqrt(varf)
       \vskip1ex
       The coefficients of the \emph{AR(n)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
       \vskip1ex
-      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{look\_back}).
+      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{lookb}).
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Perform rolling forecasting
-look_back <- 100
-fcasts <- sapply((look_back+1):nrows, function(tday) {
+lookb <- 100
+fcasts <- sapply((lookb+1):nrows, function(tday) {
   # Define the rolling look-back range
-  startp <- max(1, tday-look_back)
+  startp <- max(1, tday-lookb)
   # startp <- 1 # Expanding look-back range
   rangev <- startp:(tday-1) # In-sample range
   # Subset the response and predictors
@@ -1325,7 +1325,7 @@ fcasts <- sapply((look_back+1):nrows, function(tday) {
 # Coerce fcasts to a time series
 fcasts <- t(fcasts)
 colnames(fcasts) <- c("volvti", "fcasts", "fstderr", colnames(predm))
-fcasts <- xts::xts(fcasts, zoo::index(retp)[-(1:look_back)])
+fcasts <- xts::xts(fcasts, zoo::index(retp)[-(1:lookb)])
       @
   \end{columns}
 \end{block}
@@ -1385,7 +1385,7 @@ dyLegend(show="always", width=300)
       \vskip1ex
       The fitted AR coefficients are then applied to calculating the \emph{out-of-sample} forecasts.
       \vskip1ex
-      The forecasting model depends on two unknown \emph{meta-parameters}: the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
+      The forecasting model depends on two unknown \emph{meta-parameters}: the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{lookb}).
     \column{0.5\textwidth}
     \vspace{-1em}
   \end{columns}
@@ -1401,7 +1401,7 @@ dyLegend(show="always", width=300)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{meta-parameters} of the \emph{backtesting} function are the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
+      The \emph{meta-parameters} of the \emph{backtesting} function are the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{lookb}).
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       \vskip1ex
@@ -1413,16 +1413,16 @@ dyLegend(show="always", width=300)
       \vskip1ex
       The coefficients of the \emph{AR(n)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
       \vskip1ex
-      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{look\_back}).
+      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{lookb}).
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
-sim_fcasts <- function(look_back=100, ordern=5, fixedlb=TRUE) {
+sim_fcasts <- function(lookb=100, ordern=5, fixedlb=TRUE) {
   # Perform rolling forecasting
-  fcasts <- sapply((look_back+1):nrows, function(tday) {
+  fcasts <- sapply((lookb+1):nrows, function(tday) {
   # Define the rolling look-back range
-  startp <- max(1, tday-look_back)
+  startp <- max(1, tday-lookb)
   # Expanding look-back range
   # startp <- 1
   rangev <- startp:(tday-1) # In-sample range
@@ -1437,10 +1437,10 @@ sim_fcasts <- function(look_back=100, ordern=5, fixedlb=TRUE) {
   drop(predm[tday, ] %*% coeff)
   })  # end sapply
   # Add warmup period
-  fcasts <- c(rep(0, look_back), fcasts)
+  fcasts <- c(rep(0, lookb), fcasts)
 }  # end sim_fcasts
 # Simulate the rolling autoregressive forecasts
-fcasts <- sim_fcasts(look_back=100, ordern=5)
+fcasts <- sim_fcasts(lookb=100, ordern=5)
 c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
       @
   \end{columns}
@@ -1460,9 +1460,9 @@ c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       \vskip1ex
-      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{look\_back}).
+      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{lookb}).
       \vskip1ex
-      The accuracy of the forecasting model increases with longer look-back intervals (\texttt{look\_back}), because more data improves the estimates of the autoregressive coefficients.
+      The accuracy of the forecasting model increases with longer look-back intervals (\texttt{lookb}), because more data improves the estimates of the autoregressive coefficients.
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # Load package parallel
 # Calculate the number of available cores
@@ -1470,10 +1470,10 @@ ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
 cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
-look_backs <- seq(20, 600, 40)
-fcasts <- parLapply(cluster, look_backs, sim_fcasts, ordern=6)
+lookbs <- seq(20, 600, 40)
+fcasts <- parLapply(cluster, lookbs, sim_fcasts, ordern=6)
 # Perform parallel bootstrap under Mac-OSX or Linux
-fcasts <- mclapply(look_backs, sim_fcasts, ordern=6, mc.cores=ncores)
+fcasts <- mclapply(lookbs, sim_fcasts, ordern=6, mc.cores=ncores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1484,11 +1484,11 @@ mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
 })  # end sapply
 mse <- t(mse)
-rownames(mse) <- look_backs
-# Select optimal look_back interval
-look_back <- look_backs[which.min(mse[, 1])]
+rownames(mse) <- lookbs
+# Select optimal lookb interval
+lookb <- lookbs[which.min(mse[, 1])]
 # Plot forecasting MSE
-plot(x=look_backs, y=mse[, 1],
+plot(x=lookbs, y=mse[, 1],
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR Forecasting Model As Function of Look-back")
       @
@@ -1509,7 +1509,7 @@ plot(x=look_backs, y=mse[, 1],
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       \vskip1ex
-      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{look\_back}).
+      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{lookb}).
       \vskip1ex
       The accuracy of the forecasting model decreases for larger AR order parameters, because of overfitting in-sample.
       <<echo=TRUE,eval=FALSE>>=
@@ -1521,11 +1521,11 @@ cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
 orderv <- 2:6
 fcasts <- parLapply(cluster, orderv, sim_fcasts, 
-  look_back=look_back)
+  lookb=lookb)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts, 
-  look_back=look_back, mc.cores=ncores)
+  lookb=lookb, mc.cores=ncores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1566,7 +1566,7 @@ plot(x=orderv, y=mse[, 1],
       To reduce excessive risk, a binary strategy can be used, with portfolio weights equal to the sign of the forecasts.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the rolling autoregressive forecasts
-fcasts <- sim_fcasts(look_back=look_back, ordern=ordern)
+fcasts <- sim_fcasts(lookb=lookb, ordern=ordern)
 # Calculate the strategy PnLs
 pnls <- fcasts*retp
 # Scale the PnL volatility to that of VTI
@@ -1606,7 +1606,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vskip1ex
       The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model.
       \vskip1ex
-      Longer look-back intervals (\texttt{look\_back}) are usually better for the autoregressive forecasting model.
+      Longer look-back intervals (\texttt{lookb}) are usually better for the autoregressive forecasting model.
       \vskip1ex
       The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
       <<echo=TRUE,eval=FALSE>>=
@@ -1618,11 +1618,11 @@ cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
 orderv <- 2:6
 fcasts <- parLapply(cluster, orderv, sim_fcasts, 
-  look_back=look_back, fixedlb=FALSE)
+  lookb=lookb, fixedlb=FALSE)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts, 
-  look_back=look_back, fixedlb=FALSE, mc.cores=ncores)
+  lookb=lookb, fixedlb=FALSE, mc.cores=ncores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1660,7 +1660,7 @@ plot(x=orderv, y=mse[, 1],
       The autoregressive strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the autoregressive forecasts with expanding look-back
-fcasts <- sim_fcasts(look_back=look_back, ordern=ordern, fixedlb=FALSE)
+fcasts <- sim_fcasts(lookb=lookb, ordern=ordern, fixedlb=FALSE)
 # Calculate the strategy PnLs
 pnls <- fcasts*retp
 # Scale the PnL volatility to that of VTI
@@ -2574,7 +2574,7 @@ dygraphs::dygraph(cumsum(pnls), main="Out-of-Sample Returns of Shrinkage YC Stra
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter \texttt{look\_back} intervals since it suppresses the response noise.
+      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter \texttt{lookb} intervals since it suppresses the response noise.
       \vskip1ex
       In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{6} months.
       The coefficients are applied to perform out-of-sample forecasts in the following month.
@@ -2584,11 +2584,11 @@ format(datev[1], "%m-%Y")
 format(datev[NROW(datev)], "%m-%Y")
 months <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month")
 # Perform loop over monthly dates
-look_back <- 6
+lookb <- 6
 dimax <- 3
-pnls <- lapply((look_back+1):(NROW(months)-1), function(tday) {
+pnls <- lapply((lookb+1):(NROW(months)-1), function(tday) {
   # Define in-sample and out-of-sample intervals
-  insample <- (datev > months[tday-look_back]) & (datev < months[tday])
+  insample <- (datev > months[tday-lookb]) & (datev < months[tday])
   outsample <- (datev > months[tday]) & (datev < months[tday+1])
   # Calculate forecasts and PnLs out-of-sample
   invred <- HighFreq::calc_invsvd(predm[insample, ], dimax=dimax)
@@ -2634,11 +2634,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 # Define weekly dates
 weeks <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks")
 # Perform loop over weekly dates
-look_back <- 4
+lookb <- 4
 dimax <- 4
-pnls <- lapply((look_back+1):(NROW(weeks)-1), function(tday) {
+pnls <- lapply((lookb+1):(NROW(weeks)-1), function(tday) {
   # Define in-sample and out-of-sample intervals
-  insample <- (datev > weeks[tday-look_back]) & (datev < weeks[tday])
+  insample <- (datev > weeks[tday-lookb]) & (datev < weeks[tday])
   outsample <- (datev > weeks[tday]) & (datev < weeks[tday+1])
   # Calculate forecasts and PnLs out-of-sample
   invred <- HighFreq::calc_invsvd(predm[insample, ], dimax=dimax)
@@ -2805,7 +2805,7 @@ dygraphs::dygraph(cumsum(pnls), main="Out-of-Sample Returns of Combined Strategi
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter \texttt{look\_back} intervals since it suppresses the response noise.
+      The shrinkage rolling monthly strategy performs better than the standard strategy because regularization allows using shorter \texttt{lookb} intervals since it suppresses the response noise.
       \vskip1ex
       In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{6} months.
       The coefficients are applied to perform out-of-sample forecasts in the following month.
@@ -2815,11 +2815,11 @@ format(datev[1], "%m-%Y")
 format(datev[NROW(datev)], "%m-%Y")
 months <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month")
 # Perform loop over monthly dates
-look_back <- 6
+lookb <- 6
 dimax <- 3
-pnls <- lapply((look_back+1):(NROW(months)-1), function(tday) {
+pnls <- lapply((lookb+1):(NROW(months)-1), function(tday) {
   # Define in-sample and out-of-sample intervals
-  insample <- (datev > months[tday-look_back]) & (datev < months[tday])
+  insample <- (datev > months[tday-lookb]) & (datev < months[tday])
   outsample <- (datev > months[tday]) & (datev < months[tday+1])
   # Calculate forecasts and PnLs out-of-sample
   invred <- HighFreq::calc_invsd(predm[insample, ], dimax=dimax)
@@ -2865,11 +2865,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 # Define weekly dates
 weeks <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks")
 # Perform loop over weekly dates
-look_back <- 8
+lookb <- 8
 dimax <- 4
-pnls <- lapply((look_back+1):(NROW(weeks)-1), function(tday) {
+pnls <- lapply((lookb+1):(NROW(weeks)-1), function(tday) {
   # Define in-sample and out-of-sample intervals
-  insample <- (datev > weeks[tday-look_back]) & (datev < weeks[tday])
+  insample <- (datev > weeks[tday-lookb]) & (datev < weeks[tday])
   outsample <- (datev > weeks[tday]) & (datev < weeks[tday+1])
   # Calculate forecasts and PnLs out-of-sample
   invred <- HighFreq::calc_invsd(predm[insample, ], dimax=dimax)
@@ -2918,7 +2918,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 # Find optimal nagg for predictor
 naggs <- 5:100
 tvalues <- sapply(naggs, function(nagg) {
-  predm <- HighFreq::roll_mean(retr, look_back=nagg)
+  predm <- HighFreq::roll_mean(retr, lookb=nagg)
   predm <- cbind(rep(1, NROW(predm)), predm)
   predm <- rutils::lagit(predm)
   regmod <- lm(respv ~ predm - 1)
@@ -2929,7 +2929,7 @@ naggs[which.max(tvalues)]
 plot(naggs, tvalues, t="l", col="blue", lwd=2)
 # Calculate aggregated predictor
 nagg <- 53
-predm <- HighFreq::roll_mean(retr, look_back=nagg)
+predm <- HighFreq::roll_mean(retr, lookb=nagg)
 predm <- rutils::lagit(predm)
 predm <- cbind(rep(1, NROW(predm)), predm)
 regmod <- lm(respv ~ predm - 1)

@@ -4435,14 +4435,14 @@ dygraphs::dygraph(xlk$price[xlk$volume >= 100, ],
       If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the centered Hampel filter to remove bad prices
-look_back <- 71
-half_back <- look_back %/% 2
+lookb <- 71
+half_back <- lookb %/% 2
 pricev <- xlk$price
 # Calculate the trailing median and MAD
-medianv <- HighFreq::roll_mean(pricev, look_back=look_back, method="nonparametric")
+medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
 colnames(medianv) <- c("median")
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=look_back)
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=lookb)
 # Center the median and the MAD
 medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
 madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
@@ -4514,15 +4514,15 @@ priceb <- priceg
 priceb[ispike] <- priceb[ispike]*
   sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
 # Calculate the z-scores
-medianv <- HighFreq::roll_mean(priceb, look_back=look_back, method="nonparametric")
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
 # Plot the bad prices and their medians
 pricem <- cbind(priceb, medianv)
 colnames(pricem) <- c("prices with spikes", "median")
 dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
   dyOptions(colors=c("red", "blue"))
-# medianv <- TTR::runMedian(priceb, n=look_back)
-madv <- HighFreq::roll_var(priceb, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(priceb, n=look_back)
+# medianv <- TTR::runMedian(priceb, n=lookb)
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(priceb, n=lookb)
 zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
 # Z-scores have very fat tails
 range(zscores); mad(zscores)
@@ -4660,13 +4660,13 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       For example, the \emph{VXX} has only one bad price (on \texttt{2010-11-08}), but the Hampel filter identifies many more than that (which are false positives).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the centered Hampel filter for VXX
-look_back <- 71
-half_back <- look_back %/% 2
+lookb <- 71
+half_back <- lookb %/% 2
 pricev <- log(na.omit(rutils::etfenv$prices$VXX))
-medianv <- roll::roll_median(pricev, width=look_back)
-medianv[1:look_back, ] <- pricev[1:look_back, ]
+medianv <- roll::roll_median(pricev, width=lookb)
+medianv[1:lookb, ] <- pricev[1:lookb, ]
 medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
 zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
 range(zscores); mad(zscores)
@@ -4720,10 +4720,10 @@ dygraphs::dygraph(pricev, main="VXX Prices With False Positives") %>%
 priceb <- pricev
 priceb["2017-11-20"] <- 1.2*priceb["2017-11-20"]
 # Calculate the Z-scores
-medianv <- roll::roll_median(priceb, width=look_back)
-medianv[1:look_back, ] <- priceb[1:look_back, ]
+medianv <- roll::roll_median(priceb, width=lookb)
+medianv[1:lookb, ] <- priceb[1:lookb, ]
 medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceb, look_back=look_back, method="nonparametric")
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
 zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
 madz <- mad(zscores[abs(zscores) > 0])
@@ -4737,10 +4737,10 @@ priceb <- pricev
 priceb["2017-11-20"] <- 1.2*priceb["2017-11-21"]
 priceb["2017-11-21"] <- 1.2*priceb["2017-11-21"]
 # Calculate the Z-scores
-medianv <- roll::roll_median(priceb, width=look_back)
-medianv[1:look_back, ] <- priceb[1:look_back, ]
+medianv <- roll::roll_median(priceb, width=lookb)
+medianv[1:lookb, ] <- priceb[1:lookb, ]
 medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceb, look_back=look_back, method="nonparametric")
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
 zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
 madz <- mad(zscores[abs(zscores) > 0])
@@ -4776,10 +4776,10 @@ datev[datep]
 priceg <- pricev
 priceg[!isgood] <- pricev[datep]
 # Calculate the Z-scores
-medianv <- roll::roll_median(priceg, width=look_back)
-medianv[1:look_back, ] <- priceg[1:look_back, ]
+medianv <- roll::roll_median(priceg, width=lookb)
+medianv[1:lookb, ] <- priceg[1:lookb, ]
 medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceg, look_back=look_back, method="nonparametric")
+madv <- HighFreq::roll_var(priceg, lookb=lookb, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
 zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
 madz <- mad(zscores[abs(zscores) > 0])
@@ -5755,28 +5755,28 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       \vskip1ex
       The system variables (matrices) $g_t$ and $f_t$ are deterministic functions of time.
       \vskip1ex
-      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
+      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EMA} \emph{realized} variance estimator can be written approxiamtely as:
       $\sigma^2_t$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
       \vskip1ex
-      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa.
+      The parameter $\lambda$ determines the rate of decay of the \emph{EMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa.
       \vskip1ex
       The function \texttt{stats:::C\_cfilter()} calculates the convolution of a vector or a time series with a filter of coefficients (weights).
       \vskip1ex
       The function \texttt{stats:::C\_cfilter()} is very fast because it's compiled \texttt{C++} code.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/vol_vti_ewma.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vol_vti_ema.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the EWMA VTI variance using compiled C++ function
-look_back <- 51
-weightv <- exp(-0.1*1:look_back)
+# Calculate the EMA VTI variance using compiled C++ function
+lookb <- 51
+weightv <- exp(-0.1*1:lookb)
 weightv <- weightv/sum(weightv)
 varv <- .Call(stats:::C_cfilter, retp^2, filter=weightv, sides=1, circular=FALSE)
-varv[1:(look_back-1)] <- varv[look_back]
-# Plot EWMA volatility
+varv[1:(lookb-1)] <- varv[lookb]
+# Plot EMA volatility
 varv <- xts:::xts(sqrt(varv), order.by=zoo::index(retp))
-dygraphs::dygraph(varv, main="VTI EWMA Volatility")
-quantmod::chart_Series(varv, name="VTI EWMA Volatility")
+dygraphs::dygraph(varv, main="VTI EMA Volatility")
+quantmod::chart_Series(varv, name="VTI EMA Volatility")
       @
   \end{columns}
 \end{block}
@@ -6036,13 +6036,13 @@ legend(x="topright", legend=colnames(pricev),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The update equation can also be written as the \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) of the observed values $o_t$:
+      The update equation can also be written as the \emph{Exponential Moving Average} (\emph{EMA}) of the observed values $o_t$:
       \begin{displaymath}
         \bar{p}_t = (1 - k) \bar{p}_{t-1} + k o_t = k \sum_{j=0}^n (1 - k)^j o_{t-j}
       \end{displaymath}
-      The Kalman filtered prices are equal to the \emph{EWMA} of the observed values $o_t$ even for more complex processes than Brownian motion, like \emph{ARIMA} processes.
+      The Kalman filtered prices are equal to the \emph{EMA} of the observed values $o_t$ even for more complex processes than Brownian motion, like \emph{ARIMA} processes.
       \vskip1ex
-      The function \texttt{HighFreq::run\_mean()} calculates the \emph{EWMA} using the \texttt{C++} \emph{Armadillo} numerical library.
+      The function \texttt{HighFreq::run\_mean()} calculates the \emph{EMA} using the \texttt{C++} \emph{Armadillo} numerical library.
       \vskip1ex
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 arma::mat run_mean(const arma::mat& tseries, 
@@ -6052,7 +6052,7 @@ arma::mat run_mean(const arma::mat& tseries,
   double lambda1 = 1-lambda;
   
   meanm.row(0) = tseries.row(0);
-  // Calculate the EWMA
+  // Calculate the EMA
   for (arma::uword it = 1; it < nrows; it++) {
     // Calculate the means using the decay factor
     meanm.row(it) = lambda*meanm.row(it-1) + 
@@ -6066,21 +6066,21 @@ arma::mat run_mean(const arma::mat& tseries,
       \includegraphics[width=0.45\paperwidth]{figure/kalman_solution.png}
       <<echo=TRUE,eval=FALSE>>=
 # Initialize the price estimates
-pricewma <- numeric(nrows)
-pricewma[1] <- prico[1]
-# Calculate the EWMA prices in R
+pricema <- numeric(nrows)
+pricema[1] <- prico[1]
+# Calculate the EMA prices in R
 for (it in 2:nrows) {
-  pricewma[it] <- (1-kgain)*pricewma[it-1] + kgain*prico[it]
+  pricema[it] <- (1-kgain)*pricema[it-1] + kgain*prico[it]
 }  # end for
-all.equal(pricewma, priceb)
-# Calculate the EWMA prices using RcppArmadillo C++
+all.equal(pricema, priceb)
+# Calculate the EMA prices using RcppArmadillo C++
 pricpp <- HighFreq::run_mean(matrix(prico), 1-kgain)
 all.equal(drop(pricpp), priceb)
 # Compare the speed of RcppArmadillo C++ with R code
 library(microbenchmark)
 summary(microbenchmark(
   rcode={for (it in 2:nrows) {
-    pricewma[it] <- (1-kgain)*pricewma[it-1] + kgain*prico[it]
+    pricema[it] <- (1-kgain)*pricema[it-1] + kgain*prico[it]
   }},
   cpp=HighFreq::run_mean(matrix(prico), 1-kgain),
   times=10))[, c(1, 4, 5)]

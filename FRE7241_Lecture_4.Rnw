@@ -115,9 +115,9 @@ nrows <- NROW(ohlc)
 closep <- quantmod::Cl(ohlc)
 retp <- rutils::diffit(closep)
 # Calculate the centered volatility
-look_back <- 7
-half_back <- look_back %/% 2
-stdev <- sqrt(HighFreq::roll_var(retp, look_back))
+lookb <- 7
+half_back <- lookb %/% 2
+stdev <- sqrt(HighFreq::roll_var(retp, lookb))
 stdev <- rutils::lagit(stdev, lagg=(-half_back))
 # Calculate the z-scores of prices
 pricez <- (2*closep - 
@@ -220,16 +220,16 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the volatility z-scores
-volat <- HighFreq::roll_var_ohlc(ohlc=ohlc, look_back=look_back, scale=FALSE)
-volatm <- HighFreq::roll_mean(volat, look_back)
-volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volat), look_back))
+volat <- HighFreq::roll_var_ohlc(ohlc=ohlc, lookb=lookb, scale=FALSE)
+volatm <- HighFreq::roll_mean(volat, lookb)
+volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volat), lookb))
 volatsd[1] <- 0
 volatz <- ifelse(volatsd > 0, (volat - volatm)/volatsd, 0)
 colnames(volatz) <- "volat"
 # Calculate the volume z-scores
 volum <- quantmod::Vo(ohlc)
-volumean <- HighFreq::roll_mean(volum, look_back)
-volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volum), look_back))
+volumean <- HighFreq::roll_mean(volum, lookb)
+volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volum), lookb))
 volumsd[1] <- 0
 volumz <- ifelse(volumsd > 0, (volum - volumean)/volumsd, 0)
 colnames(volumz) <- "volume"
@@ -261,11 +261,11 @@ colnames(volumz) <- "volume"
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing price regression z-scores
 datev <- matrix(zoo::index(closep))
-look_back <- 21
+lookb <- 21
 controlv <- HighFreq::param_reg()
-regs <- HighFreq::roll_reg(respv=closep, predm=datev, look_back=look_back, controlv=controlv)
+regs <- HighFreq::roll_reg(respv=closep, predm=datev, lookb=lookb, controlv=controlv)
 regs <- drop(regs[, NCOL(regs)])
-regs[1:look_back] <- 0
+regs[1:lookb] <- 0
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -809,7 +809,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The daily mean reverting strategy with a holding period performs better than the simple daily strategy because of risk diversification.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate mean reverting strategy with two day holding period
-posv <- rutils::lagit(rutils::roll_sum(sign(retp), look_back=2))/2
+posv <- rutils::lagit(rutils::roll_sum(sign(retp), lookb=2))/2
 pnls <- (-retp*posv)
       @
     \column{0.5\textwidth}
@@ -850,7 +850,7 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retp <- na.omit(retstock$MSFT)
 rutils::plot_acf(retp)
 # Simulate mean reverting strategy with two day holding period
-posv <- rutils::lagit(rutils::roll_sum(sign(retp), look_back=2))/2
+posv <- rutils::lagit(rutils::roll_sum(sign(retp), lookb=2))/2
 pnls <- (-retp*posv)
       @
     \column{0.5\textwidth}
@@ -891,7 +891,7 @@ library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
 pnll <- mclapply(retstock, function(retp) {
   retp <- na.omit(retp)
-  posv <- rutils::roll_sum(sign(retp), look_back=2)/2
+  posv <- rutils::roll_sum(sign(retp), lookb=2)/2
   posv <- rutils::lagit(posv)
   pnls <- (-retp*posv)
   pnls
@@ -1796,10 +1796,10 @@ dygraphs::dygraph(cumsum(pnls)[endd],
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Perform rolling forecasting
-look_back <- 100
-fcasts <- sapply((look_back+1):nrows, function(tday) {
+lookb <- 100
+fcasts <- sapply((lookb+1):nrows, function(tday) {
   # Define rolling look-back range
-  startp <- max(1, tday-look_back)
+  startp <- max(1, tday-lookb)
   # Or expanding look-back range
   # startp <- 1
   rangev <- startp:(tday-1) # In-sample range
@@ -1811,7 +1811,7 @@ fcasts <- sapply((look_back+1):nrows, function(tday) {
   predm[tday, ] %*% coeff
 })  # end sapply
 # Add warmup period
-fcasts <- c(rep(0, look_back), fcasts)
+fcasts <- c(rep(0, lookb), fcasts)
       @
   \end{columns}
 \end{block}
@@ -1843,12 +1843,12 @@ fcasts <- c(rep(0, look_back), fcasts)
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
-sim_fcasts <- function(look_back=100, ordern=5, fixedlb=TRUE) {
+sim_fcasts <- function(lookb=100, ordern=5, fixedlb=TRUE) {
   # Perform rolling forecasting
-  fcasts <- sapply((look_back+1):nrows, function(tday) {
+  fcasts <- sapply((lookb+1):nrows, function(tday) {
     # Define rolling look-back range
     if (fixedlb)
-      startp <- max(1, tday-look_back) # Fixed look-back
+      startp <- max(1, tday-lookb) # Fixed look-back
     else
       startp <- 1 # Expanding look-back
     rangev <- startp:(tday-1) # In-sample range
@@ -1860,10 +1860,10 @@ sim_fcasts <- function(look_back=100, ordern=5, fixedlb=TRUE) {
     predm[tday, 1:ordern] %*% coeff
   })  # end sapply
   # Add warmup period
-  fcasts <- c(rep(0, look_back), fcasts)
+  fcasts <- c(rep(0, lookb), fcasts)
 }  # end sim_fcasts
 # Simulate the rolling autoregressive forecasts
-fcasts <- sim_fcasts(look_back=100, ordern=5)
+fcasts <- sim_fcasts(lookb=100, ordern=5)
 c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
       @
   \end{columns}
@@ -1893,10 +1893,10 @@ ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
 cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
-look_backs <- seq(20, 600, 40)
-fcasts <- parLapply(cluster, look_backs, sim_fcasts, ordern=6)
+lookbs <- seq(20, 600, 40)
+fcasts <- parLapply(cluster, lookbs, sim_fcasts, ordern=6)
 # Perform parallel bootstrap under Mac-OSX or Linux
-fcasts <- mclapply(look_backs, sim_fcasts, ordern=6, mc.cores=ncores)
+fcasts <- mclapply(lookbs, sim_fcasts, ordern=6, mc.cores=ncores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1907,11 +1907,11 @@ mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
 })  # end sapply
 mse <- t(mse)
-rownames(mse) <- look_backs
-# Select optimal look_back interval
-look_back <- look_backs[which.min(mse[, 1])]
+rownames(mse) <- lookbs
+# Select optimal lookb interval
+lookb <- lookbs[which.min(mse[, 1])]
 # Plot forecasting MSE
-plot(x=look_backs, y=mse[, 1],
+plot(x=lookbs, y=mse[, 1],
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR Forecasting Model As Function of Look-back")
       @
@@ -1944,11 +1944,11 @@ cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
 orderv <- 2:6
 fcasts <- parLapply(cluster, orderv, sim_fcasts, 
-  look_back=look_back)
+  lookb=lookb)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts, 
-  look_back=look_back, mc.cores=ncores)
+  lookb=lookb, mc.cores=ncores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1989,7 +1989,7 @@ plot(x=orderv, y=mse[, 1],
       To reduce excessive risk, a binary strategy can be used, with portfolio weights equal to the sign of the forecasts.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the rolling autoregressive forecasts
-fcasts <- sim_fcasts(look_back=look_back, ordern=ordern)
+fcasts <- sim_fcasts(lookb=lookb, ordern=ordern)
 # Calculate the strategy PnLs
 pnls <- fcasts*retp
 # Scale the PnL volatility to that of VTI
@@ -2041,11 +2041,11 @@ cluster <- makeCluster(ncores)
 # Perform parallel loop under Windows
 orderv <- 2:6
 fcasts <- parLapply(cluster, orderv, sim_fcasts, 
-  look_back=look_back, fixedlb=FALSE)
+  lookb=lookb, fixedlb=FALSE)
 stopCluster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts, 
-  look_back=look_back, fixedlb=FALSE, mc.cores=ncores)
+  lookb=lookb, fixedlb=FALSE, mc.cores=ncores)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2083,7 +2083,7 @@ plot(x=orderv, y=mse[, 1],
       The autoregressive strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the autoregressive forecasts with expanding look-back
-fcasts <- sim_fcasts(look_back=look_back, ordern=ordern, fixedlb=FALSE)
+fcasts <- sim_fcasts(lookb=lookb, ordern=ordern, fixedlb=FALSE)
 # Calculate the strategy PnLs
 pnls <- fcasts*retp
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])

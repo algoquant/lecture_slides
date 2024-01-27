@@ -356,6 +356,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/whi_ch/whichv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/wil_cox/wilcoxt/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/wilcox_w/wilcoxw/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/win_dow/look_back/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/look_back/lookb/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/x_lim/xlim/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/x_ts/xtsv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/x_var/xvar/g' *.R*

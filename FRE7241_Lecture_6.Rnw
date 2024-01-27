@@ -399,10 +399,10 @@ all.equal(sd(indeks), sd(pnls))
 endd <- rutils::calc_endpoints(retp, interval="months")
 npts <- NROW(endd)
 # Perform loop over the end points
-look_back <- 8
+lookb <- 8
 pnls <- lapply(3:(npts-1), function(tday) {
   # Select the look-back returns
-  startp <- endd[max(1, tday-look_back)]
+  startp <- endd[max(1, tday-lookb)]
   retis <- retp[startp:endd[tday], ]
   # Calculate the best and worst performing stocks in-sample
   perfstat <- sapply(retis, objfun)
@@ -485,13 +485,13 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-btmomtop <- function(retp, objfun, look_back=12, rebalf="months", topstocks=10, 
+btmomtop <- function(retp, objfun, lookb=12, rebalf="months", topstocks=10, 
        bidask=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
   # Perform loop over end points
   npts <- NROW(endd)
   pnls <- lapply(3:(npts-1), function(tday) {
     # Select the look-back returns
-    startp <- endd[max(1, tday-look_back)]
+    startp <- endd[max(1, tday-lookb)]
     retis <- retp[startp:endd[tday], ]
     # Calculate the best and worst performing stocks in-sample
     perfstat <- sapply(retis, objfun)
@@ -543,14 +543,14 @@ btmomtop <- function(retp, objfun, look_back=12, rebalf="months", topstocks=10,
       Performing many \emph{backtests} on multiple trading strategies risks identifying inherently unprofitable trading strategies as profitable, purely by chance (known as \emph{p-value hacking}).
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtests for vector of look-back intervals
-look_backs <- seq(3, 15, by=1)
+lookbs <- seq(3, 15, by=1)
 endd <- rutils::calc_endpoints(retp, interval="months")
 # Warning - takes very long
-pnll <- lapply(look_backs, btmomtop, retp=retp, endd=endd, objfun=objfun)
+pnll <- lapply(lookbs, btmomtop, retp=retp, endd=endd, objfun=objfun)
 # Perform parallel loop under Mac-OSX or Linux
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
-pnll <- mclapply(look_backs, btmomtop, retp=retp, endd=endd, objfun=objfun, mc.cores=ncores)
+pnll <- mclapply(lookbs, btmomtop, retp=retp, endd=endd, objfun=objfun, mc.cores=ncores)
 sharper <- sqrt(252)*sapply(pnll, function(pnl) mean(pnl)/sd(pnl))
       @
     \column{0.5\textwidth}
@@ -558,7 +558,7 @@ sharper <- sqrt(252)*sapply(pnll, function(pnl) mean(pnl)/sd(pnl))
       \includegraphics[width=0.4\paperwidth]{figure/momentum_stocks_profile.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot Sharpe ratios of momentum strategies
-plot(x=look_backs, y=sharper, t="l",
+plot(x=lookbs, y=sharper, t="l",
   main="Momentum Sharpe as Function of Look-back Interval",
   xlab="look-back (months)", ylab="Sharpe")
       @
@@ -585,7 +585,7 @@ plot(x=look_backs, y=sharper, t="l",
       <<echo=TRUE,eval=FALSE>>=
 # Calculate best pnls of momentum strategy
 whichmax <- which.max(sharper)
-look_backs[whichmax]
+lookbs[whichmax]
 pnls <- pnll[[whichmax]]
 # Add initial startup interval to the momentum returns
 pnls <- c(indeks[endd[1]:endd[3]], pnls)
@@ -627,13 +627,13 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-btmomweight <- function(retp, objfun, look_back=12, rebalf="months", 
+btmomweight <- function(retp, objfun, lookb=12, rebalf="months", 
   bidask=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
   # Perform loop over end points
   npts <- NROW(endd)
   pnls <- lapply(3:(npts-1), function(tday) {
     # Select the look-back returns
-    startp <- endd[max(1, tday-look_back)]
+    startp <- endd[max(1, tday-lookb)]
     retis <- retp[startp:endd[tday], ]
     # Calculate weights proportional to performance
     perfstat <- sapply(retis, objfun)
@@ -675,15 +675,15 @@ btmomweight <- function(retp, objfun, look_back=12, rebalf="months",
       But the advantage of using the \emph{backtest} meta-model is that it can reduce the number of parameters that need to be optimized.
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtests for vector of look-back intervals
-look_backs <- seq(3, 15, by=1)
-pnll <- lapply(look_backs, btmomweight, retp=retp, endd=endd, objfun=objfun)
+lookbs <- seq(3, 15, by=1)
+pnll <- lapply(lookbs, btmomweight, retp=retp, endd=endd, objfun=objfun)
 # Or perform parallel loop under Mac-OSX or Linux
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
-pnll <- mclapply(look_backs, btmomweight, retp=retp, endd=endd, objfun=objfun, mc.cores=ncores)
+pnll <- mclapply(lookbs, btmomweight, retp=retp, endd=endd, objfun=objfun, mc.cores=ncores)
 sharper <- sqrt(252)*sapply(pnll, function(pnl) mean(pnl)/sd(pnl))
 # Plot Sharpe ratios of momentum strategies
-plot(x=look_backs, y=sharper, t="l",
+plot(x=lookbs, y=sharper, t="l",
   main="Momentum Sharpe as Function of Look-back Interval",
   xlab="look-back (months)", ylab="Sharpe")
       @
@@ -693,7 +693,7 @@ plot(x=look_backs, y=sharper, t="l",
       <<echo=TRUE,eval=FALSE>>=
 # Calculate best pnls of momentum strategy
 whichmax <- which.max(sharper)
-look_backs[whichmax]
+lookbs[whichmax]
 pnls <- pnll[[whichmax]]
 # Add initial startup interval to the momentum returns
 pnls <- c(indeks[endd[1]:endd[3]], pnls)
@@ -1028,7 +1028,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vskip1ex
       This simulation doesn't account for transaction costs, which could erase all profits if market orders were used for trade executions.  But the strategy could be profitable if limit orders were used for trade executions.
       <<echo=TRUE,eval=FALSE>>=
-# Perform sapply loop over look_backs
+# Perform sapply loop over lookbs
 lambdas <- seq(0.2, 0.7, 0.1)
 pnls <- sapply(lambdas, btmomdaily, retp=retp, trend=(-1))
 # Scale the momentum volatility to the equal weight index
@@ -1407,11 +1407,11 @@ datev <- zoo::index(retp)
 endd <- rutils::calc_endpoints(retp, interval="months")
 npts <- NROW(endd)
 # Perform backtests for vector of look-back intervals
-look_backs <- seq(3, 12, by=1)
-pnll <- lapply(look_backs, btmomweight, retp=retp, endd=endd, objfun=objfun)
+lookbs <- seq(3, 12, by=1)
+pnll <- lapply(lookbs, btmomweight, retp=retp, endd=endd, objfun=objfun)
 sharper <- sqrt(252)*sapply(pnll, function(pnl) mean(pnl)/sd(pnl))
 # Plot Sharpe ratios of momentum strategies
-plot(x=look_backs, y=sharper, t="l",
+plot(x=lookbs, y=sharper, t="l",
   main="Momentum Sharpe as Function of Look-back Interval",
   xlab="look-back (months)", ylab="Sharpe")
       @
@@ -1440,7 +1440,7 @@ plot(x=look_backs, y=sharper, t="l",
       <<echo=TRUE,eval=FALSE>>=
 # Calculate best pnls of momentum strategy
 whichmax <- which.max(sharper)
-look_backs[whichmax]
+lookbs[whichmax]
 pnls <- pnll[[whichmax]]
 indeks <- rowMeans(retp)
 pnls <- c(indeks[endd[1]:endd[3]], pnls)
@@ -1487,10 +1487,10 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The weights are scaled to limit the portfolio \emph{leverage} and its market \emph{beta}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the momentum weights
-look_back <- look_backs[whichmax]
+lookb <- lookbs[whichmax]
 weightv <- lapply(2:npts, function(tday) {
   # Select the look-back returns
-  startp <- endd[max(1, tday-look_back)]
+  startp <- endd[max(1, tday-lookb)]
   retis <- retp[startp:endd[tday], ]
   # Calculate weights proportional to performance
   perfstat <- sapply(retis, objfun)
@@ -1680,10 +1680,10 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The momentum strategy with \emph{daily rebalancing} performs worse than the strategy with \emph{monthly rebalancing} because of the daily variance of the weights.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing variance
-look_back <- 152
-varm <- HighFreq::roll_var(retp, look_back=look_back)
+lookb <- 152
+varm <- HighFreq::roll_var(retp, lookb=lookb)
 # Calculate the trailing Kelly ratio
-meanv <- HighFreq::roll_mean(retp, look_back=look_back)
+meanv <- HighFreq::roll_mean(retp, lookb=lookb)
 weightv <- ifelse(varm > 0, meanv/varm, 0)
 sum(is.na(weightv))
 weightv <- weightv/sqrt(rowSums(weightv^2))
@@ -2276,8 +2276,8 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 endd <- rutils::calc_endpoints(retp, interval="months")
 endd <- endd[endd > (nstocks+1)]
 npts <- NROW(endd)
-look_back <- 3
-startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
+lookb <- 3
+startp <- c(rep_len(0, lookb), endd[1:(npts-lookb)])
 # Perform loop over end points
 pnls <- lapply(1:(npts-1), function(tday) {
     # Calculate the portfolio weights
@@ -2478,13 +2478,13 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Rolling Portfolio Strategy With R
 roll_portf <- function(retx, # Excess returns
                        retp, # Stock returns
                        endd, # End points
-                       look_back=12, # Look-back interval
+                       lookb=12, # Look-back interval
                        dimax=3, # Dimension reduction parameter
                        alpha=0.0, # Return shrinkage intensity
                        bidask=0.0, # Bid-offer spread
                        ...) {
   npts <- NROW(endd)
-  startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
+  startp <- c(rep_len(0, lookb), endd[1:(npts-lookb)])
   pnls <- lapply(1:(npts-1), function(tday) {
     retis <- retx[startp[tday]:endd[tday], ]
     # Shrink the in-sample returns to their mean
@@ -2536,15 +2536,15 @@ roll_portf <- function(retx, # Excess returns
       <<echo=TRUE,eval=FALSE>>=
 # Simulate a monthly ETF portfolio strategy
 pnls <- roll_portf(retx=retx, retp=retp, endd=endd, 
-  look_back=look_back, dimax=dimax)
-# Perform sapply loop over look_backs
-look_backs <- seq(2, 15, by=1)
-pnls <- lapply(look_backs, roll_portf,
+  lookb=lookb, dimax=dimax)
+# Perform sapply loop over lookbs
+lookbs <- seq(2, 15, by=1)
+pnls <- lapply(lookbs, roll_portf,
   retp=retp, retx=retx, endd=endd, dimax=dimax)
 pnls <- do.call(cbind, pnls)
-colnames(pnls) <- paste0("lookb=", look_backs)
+colnames(pnls) <- paste0("lookb=", lookbs)
 pnlsums <- sapply(pnls, sum)
-look_back <- look_backs[which.max(pnlsums)]
+lookb <- lookbs[which.max(pnlsums)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2583,7 +2583,7 @@ legend("bottomleft", legend=colnames(pnls),
 # Perform backtest for different dimax values
 dimaxs <- 2:11
 pnls <- lapply(dimaxs, roll_portf, retx=retx, 
-  retp=retp, endd=endd, look_back=look_back)
+  retp=retp, endd=endd, lookb=lookb)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("dimax=", dimaxs)
 pnlsums <- sapply(pnls, sum)
@@ -2629,7 +2629,7 @@ legend("bottomleft", legend=colnames(pnls),
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.0, to=0.9, by=0.1)
 pnls <- lapply(alphav, roll_portf, retx=retx, 
-  retp=retp, endd=endd, look_back=look_back, dimax=dimax)
+  retp=retp, endd=endd, lookb=lookb, dimax=dimax)
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("alpha=", alphav)
 pnlsums <- sapply(pnls, sum)
@@ -2859,8 +2859,8 @@ datev <- zoo::index(retp)
 # Define monthly end points
 endd <- rutils::calc_endpoints(retp, interval="months")
 endd <- endd[endd > (nstocks+1)]
-npts <- NROW(endd) ; look_back <- 12
-startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
+npts <- NROW(endd) ; lookb <- 12
+startp <- c(rep_len(0, lookb), endd[1:(npts-lookb)])
 # Perform loop over end points - takes long
 pnls <- lapply(1:(npts-1), function(tday) {
     # Subset the excess returns
@@ -3363,18 +3363,18 @@ plot(x=alphav, y=profilev, t="l",
 controlv <- HighFreq::param_portf(method="maxsharpe", 
             dimax=dimax, alpha=alpha)
 # Perform backtest over look-backs
-look_backs <- seq(from=5, to=16, by=1)
-pnls <- lapply(look_backs, function(look_back) {
-  startp <- c(rep_len(0, look_back), endd[1:(npts-look_back)])
+lookbs <- seq(from=5, to=16, by=1)
+pnls <- lapply(lookbs, function(lookb) {
+  startp <- c(rep_len(0, lookb), endd[1:(npts-lookb)])
   startp <- (startp - 1) ; startp[startp < 0] <- 0
   HighFreq::back_test(retx=retx, retp=retp,
     startp=startp, endd=endd, controlv=controlv)
 })  # end lapply
 profilev <- sapply(pnls, sum)
-plot(x=look_backs, y=profilev, t="l", main="Strategy PnL as Function of Look-back Interval",
+plot(x=lookbs, y=profilev, t="l", main="Strategy PnL as Function of Look-back Interval",
   xlab="Look-back Interval", ylab="pnl")
 whichmax <- which.max(profilev)
-look_back <- look_backs[whichmax]
+lookb <- lookbs[whichmax]
 pnls <- pnls[[whichmax]]
 pnls <- pnls*sd(indeks)/sd(pnls)
       @

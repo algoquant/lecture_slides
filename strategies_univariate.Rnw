@@ -1988,7 +1988,7 @@ dyplot
       \begin{displaymath}
         p^{EWMA}_i = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      Where the decay factor $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       \vskip1ex
       The function \texttt{HighFreq::roll\_wsum()} calculates the convolution of a time series with a vector of weights.
       <<echo=TRUE,eval=FALSE>>=
@@ -1998,9 +1998,9 @@ closep <- quantmod::Cl(ohlc)
 colnames(closep) <- "VTI"
 nrows <- NROW(closep)
 # Calculate the EWMA weights
-look_back <- 111
+lookb <- 111
 lambda <- 0.9
-weightv <- lambda^(0:look_back)
+weightv <- lambda^(0:lookb)
 weightv <- weightv/sum(weightv)
 # Calculate the EWMA prices as a convolution
 ewmacpp <- HighFreq::roll_sumw(closep, weightv=weightv)
@@ -2045,7 +2045,7 @@ legend("topleft", legend=colnames(pricev), y.intersp=0.5,
       \begin{displaymath}
         p^{EWMA}_i = (1-\lambda) p_i + \lambda p^{EWMA}_{i-1}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      Where the decay factor $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       \vskip1ex
       The recursive \emph{EWMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
       \vskip1ex
@@ -2431,13 +2431,13 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="EWMA Strategy With Transaction Co
     \column{0.5\textwidth}
       The \emph{EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{sim\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay parameter $\lambda$.
+      The function \texttt{sim\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay factor $\lambda$.
       \vskip1ex
       The function \texttt{sim\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bidask=0.001, 
+sim_ewma <- function(ohlc, lambda=0.9, lookb=333, bidask=0.001, 
                       trend=1, lagg=1) {
   closep <- quantmod::Cl(ohlc)
   retp <- rutils::diffit(closep)
@@ -2492,7 +2492,7 @@ lambdav <- seq(from=0.97, to=0.99, by=0.004)
 # Perform lapply() loop over lambdav
 pnltrend <- lapply(lambdav, function(lambda) {
   # Simulate EWMA strategy and Calculate the returns
-  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bidask=0, lagg=2)[, "pnls"]
+  sim_ewma(ohlc=ohlc, lambda=lambda, lookb=lookb, bidask=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
@@ -2542,19 +2542,19 @@ library(parallel)
 ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(detectCores()-1)
 clusterExport(cluster,
-  varlist=c("ohlc", "look_back", "sim_ewma"))
+  varlist=c("ohlc", "lookb", "sim_ewma"))
 # Perform parallel loop over lambdav under Windows
 pnltrend <- parLapply(cluster, lambdav, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and Calculate the returns
-  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
+  sim_ewma(ohlc=ohlc, lambda=lambda, lookb=lookb)[, "pnls"]
 })  # end parLapply
 stretduster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel loop over lambdav under Mac-OSX or Linux
 pnltrend <- mclapply(lambdav, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and Calculate the returns
-  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
+  sim_ewma(ohlc=ohlc, lambda=lambda, lookb=lookb)[, "pnls"]
 }, mc.cores=ncores)  # end mclapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
@@ -2566,13 +2566,13 @@ colnames(pnltrend) <- paste0("lambda=", lambdav)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimal Decay Parameter of Trend Following EWMA Strategies}
+\subsection{Optimal Decay Factor of Trend Following EWMA Strategies}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of trend following \emph{EWMA} strategies depends on the $\lambda$ decay parameter, with smaller $\lambda$ parameters performing better than larger ones.
+      The performance of trend following \emph{EWMA} strategies depends on the $\lambda$ decay factor, with smaller $\lambda$ parameters performing better than larger ones.
       \vskip1ex
       The optimal $\lambda$ parameter applies significant weight to returns \texttt{8 - 12} months in the past, which is consistent with research on trend following strategies.
       \vskip1ex
@@ -2591,7 +2591,7 @@ dev.new(width=6, height=5, noRStudioGD=TRUE)
 plot(x=lambdav, y=sharpetrend, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EWMA Trend Following Strategies
-     as Function of the Decay Parameter Lambda")
+     as Function of the Decay Factor Lambda")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2724,7 +2724,7 @@ sharperevert <- sqrt(252)*sapply(pnlrevert, function(xtsv) {
 plot(x=lambdav, y=sharperevert, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EWMA Mean Reverting Strategies
-     as Function of the Decay Parameter Lambda")
+     as Function of the Decay Factor Lambda")
       @
   \end{columns}
 \end{block}
@@ -2983,7 +2983,7 @@ dyplot
     \column{0.5\textwidth}
       The \emph{Dual EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{sim\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of prices, and two decay parameters $\lambda_1$ and $\lambda_2$.
+      The function \texttt{sim\_ewma2()} performs a simulation of the \emph{Dual EWMA} strategy, given an \emph{OHLC} time series of prices, and two decay factors $\lambda_1$ and $\lambda_2$.
       \vskip1ex
       The function \texttt{sim\_ewma2()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
@@ -3204,9 +3204,9 @@ volum <- quantmod::Vo(ohlc)
 colnames(volum) <- "Volume"
 nrows <- NROW(closep)
 # Calculate the VWAP prices
-look_back <- 21
-vwap <- HighFreq::roll_sum(closep*volum, look_back)
-volumr <- HighFreq::roll_sum(volum, look_back)
+lookb <- 21
+vwap <- HighFreq::roll_sum(closep*volum, lookb)
+volumr <- HighFreq::roll_sum(volum, lookb)
 vwap <- vwap/volumr
 colnames(vwap) <- "VWAP"
 pricev <- cbind(closep, vwap)
@@ -3437,7 +3437,7 @@ text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
     \column{0.5\textwidth}
       The \emph{VWAP} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
       \vskip1ex
-      The function \texttt{sim\_vwap()} performs a simulation of the \emph{VWAP} strategy, given an \emph{OHLC} time series of prices, and the length of the look-back interval (\texttt{look\_back}).
+      The function \texttt{sim\_vwap()} performs a simulation of the \emph{VWAP} strategy, given an \emph{OHLC} time series of prices, and the length of the look-back interval (\texttt{lookb}).
       \vskip1ex
       The function \texttt{sim\_vwap()} returns the \emph{VWAP} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.5\textwidth}
@@ -3586,7 +3586,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sa
       \vskip1ex
       The Bollinger Bands are often used to indicate that prices are cheap if they are below the lower band, and rich (expensive) if they are above the upper band.
       \vskip1ex
-      The decay parameter $\lambda$ determines the rate of decay of the weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      The decay factor $\lambda$ determines the rate of decay of the weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       \vskip1ex
       The functions \texttt{HighFreq::run\_mean()} and \texttt{HighFreq::run\_var()} calculate the trailing mean and variance by recursively updating the past estimates with the new values, using the weight decay factor $\lambda$.
       <<echo=TRUE,eval=FALSE>>=
@@ -3993,17 +3993,17 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
 pricev <- log(na.omit(rutils::etfenv$prices$VTI))
 nrows <- NROW(pricev)
 # Define look-back window
-look_back <- 11
+lookb <- 11
 # Calculate time series of trailing medians
-medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
-# medianv <- TTR::runMedian(pricev, n=look_back)
+medianv <- HighFreq::roll_mean(pricev, lookb, method="nonparametric")
+# medianv <- TTR::runMedian(pricev, n=lookb)
 # Calculate time series of MAD
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=look_back)
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=lookb)
 # Calculate time series of z-scores
 zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-zscores[1:look_back, ] <- 0
-tail(zscores, look_back)
+zscores[1:lookb, ] <- 0
+tail(zscores, lookb)
 range(zscores)
       @
     \column{0.5\textwidth}
@@ -4048,12 +4048,12 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Hampel Bands")
       The best choice of the meta-parameters can be determined through simulation.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the time series of trailing medians and MAD
-look_back <- 3
-medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+lookb <- 3
+medianv <- HighFreq::roll_mean(pricev, lookb, method="nonparametric")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
 # Calculate the time series of z-scores
 zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-zscores[1:look_back, ] <- 0
+zscores[1:lookb, ] <- 0
 range(zscores)
 # Calculate the positions
 threshv <- 1
@@ -4108,12 +4108,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
 pricev <- log(quantmod::Cl(HighFreq::SPY))
 nrows <- NROW(pricev)
 # Calculate the price medians and MAD
-look_back <- 3
-medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+lookb <- 3
+medianv <- HighFreq::roll_mean(pricev, lookb, method="nonparametric")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
 # Calculate the time series of z-scores
 zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-zscores[1:look_back, ] <- 0
+zscores[1:lookb, ] <- 0
 # Calculate the positions
 threshv <- 1
 posv <- rep(NA_integer_, nrows)
@@ -4181,9 +4181,9 @@ nrows <- NROW(ohlc)
 closep <- quantmod::Cl(ohlc)
 retp <- rutils::diffit(closep)
 # Calculate the centered volatility
-look_back <- 7
-half_back <- look_back %/% 2
-stdev <- sqrt(HighFreq::roll_var(retp, look_back))
+lookb <- 7
+half_back <- lookb %/% 2
+stdev <- sqrt(HighFreq::roll_var(retp, lookb))
 stdev <- rutils::lagit(stdev, lagg=(-half_back))
 # Calculate the z-scores of prices
 pricez <- (2*closep - 
@@ -4286,16 +4286,16 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the volatility z-scores
-volat <- HighFreq::roll_var_ohlc(ohlc=ohlc, look_back=look_back, scale=FALSE)
-volatm <- HighFreq::roll_mean(volat, look_back)
-volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volat), look_back))
+volat <- HighFreq::roll_var_ohlc(ohlc=ohlc, lookb=lookb, scale=FALSE)
+volatm <- HighFreq::roll_mean(volat, lookb)
+volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volat), lookb))
 volatsd[1] <- 0
 volatz <- ifelse(volatsd > 0, (volat - volatm)/volatsd, 0)
 colnames(volatz) <- "volat"
 # Calculate the volume z-scores
 volum <- quantmod::Vo(ohlc)
-volumean <- HighFreq::roll_mean(volum, look_back)
-volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volum), look_back))
+volumean <- HighFreq::roll_mean(volum, lookb)
+volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volum), lookb))
 volumsd[1] <- 0
 volumz <- ifelse(volumsd > 0, (volum - volumean)/volumsd, 0)
 colnames(volumz) <- "volume"
@@ -4327,12 +4327,12 @@ colnames(volumz) <- "volume"
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing price regression z-scores
 datev <- matrix(zoo::index(closep))
-look_back <- 21
+lookb <- 21
 controlv <- HighFreq::param_reg()
 regs <- HighFreq::roll_reg(respv=closep, predm=datev, 
-   look_back=look_back, controlv=controlv)
+   lookb=lookb, controlv=controlv)
 regs <- drop(regs[, NCOL(regs)])
-regs[1:look_back] <- 0
+regs[1:lookb] <- 0
       @
     \column{0.5\textwidth}
       \vspace{-1em}

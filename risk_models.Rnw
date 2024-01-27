@@ -1320,9 +1320,9 @@ dygraphs::dygraph(wealthv, main="Stock and Bond Portfolio") %>%
       <<echo=TRUE,eval=FALSE>>=
 retp <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 # Calculate the rolling returns and variance
-look_back <- 200
-var_rolling <- HighFreq::roll_var(retp, look_back)
-weightv <- HighFreq::roll_sum(retp, look_back)/look_back
+lookb <- 200
+var_rolling <- HighFreq::roll_var(retp, lookb)
+weightv <- HighFreq::roll_sum(retp, lookb)/lookb
 weightv <- weightv/var_rolling
 weightv[1, ] <- 1/NCOL(weightv)
 weightv <- zoo::na.locf(weightv)
@@ -2502,9 +2502,9 @@ colnames(closep) <- "VTI"
 nrows <- NROW(closep)
 # Inspect the R code of the function filter()
 filter
-# Calculate EWMA weights
-look_back <- 21
-weightv <- exp(-0.1*1:look_back)
+# Calculate EMA weights
+lookb <- 21
+weightv <- exp(-0.1*1:lookb)
 weightv <- weightv/sum(weightv)
 # Calculate convolution using filter()
 pricef <- filter(closep, filter=weightv, method="convolution", sides=1)
@@ -2516,9 +2516,9 @@ getAnywhere(C_cfilter)
 priceff <- .Call(stats:::C_cfilter, closep, filter=weightv,
                      sides=1, circular=FALSE)
 all.equal(as.numeric(pricef), priceff, check.attributes=FALSE)
-# Calculate EWMA prices using HighFreq::roll_conv()
+# Calculate EMA prices using HighFreq::roll_conv()
 pricecpp <- HighFreq::roll_conv(closep, weightv=weightv)
-all.equal(priceff[-(1:look_back)], as.numeric(pricecpp)[-(1:look_back)])
+all.equal(priceff[-(1:lookb)], as.numeric(pricecpp)[-(1:lookb)])
 # Benchmark speed of trailing calculations
 library(microbenchmark)
 summary(microbenchmark(
@@ -2555,7 +2555,7 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Simulate AR process using filter()
 nrows <- NROW(closep)
-# Calculate ARIMA coefficients and innovations
+# Calculate AR coefficients and innovations
 coeff <- matrix(weightv)/4
 ncoeff <- NROW(coeff)
 innov <- matrix(rnorm(nrows))
@@ -2598,9 +2598,9 @@ summary(microbenchmark(
       \vskip1ex
       In engineering, smoothing is called a \emph{low-pass filter}, since it eliminates high frequency signals, and it passes through low frequency signals.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate trailing EWMA prices using HighFreq::roll_conv()
-look_back <- 21
-weightv <- exp(-0.1*1:look_back)
+# Calculate trailing EMA prices using HighFreq::roll_conv()
+lookb <- 21
+weightv <- exp(-0.1*1:lookb)
 weightv <- weightv/sum(weightv)
 pricef <- HighFreq::roll_conv(closep, weightv=weightv)
 # Combine prices with smoothed prices
@@ -2618,7 +2618,7 @@ dygraphs::dygraph(pricev["2009"], main="VTI Prices and Trailing Smoothed Prices"
       \includegraphics[width=0.45\paperwidth]{figure/features_smooth.png}
       <<echo=TRUE,eval=FALSE>>=
 # Center the smoothed prices
-pricef <- rutils::lagit(pricef, -(look_back %/% 2), pad_zeros=FALSE)
+pricef <- rutils::lagit(pricef, -(lookb %/% 2), pad_zeros=FALSE)
 # Combine prices with smoothed prices
 pricev <- cbind(closep, pricef)
 colnames(pricev)[2] <- "VTI Smooth"
@@ -2715,7 +2715,7 @@ title(main="ACF of Smoothed VTI Returns", line=-1)
       \begin{displaymath}
         p^{RSI}_t = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) p_{t-j}
       \end{displaymath}
-      The decay parameter $\lambda$ determines the rate of decay of the \emph{RSI} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa,
+      The decay factor $\lambda$ determines the rate of decay of the \emph{RSI} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Get close prices and calculate close-to-close returns
@@ -2762,17 +2762,17 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[endd], lwd=c(2, 2, 2),
 
 
 %%%%%%%%%%%%%%%
-\subsection{EWMA Price Technical Indicator}
+\subsection{EMA Price Technical Indicator}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a trailing interval:
+      The \emph{Exponentially Weighted Moving Average Price} (\emph{EMA}) is defined as the weighted average of prices over a trailing interval:
       \begin{displaymath}
-        p^{EWMA}_t = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j p_{t-j}
+        p^{EMA}_t = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j p_{t-j}
       \end{displaymath}
-      The decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      The decay factor $\lambda$ determines the rate of decay of the \emph{EMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       \vskip1ex
       The function \texttt{HighFreq::roll\_wsum()} calculates the convolution of a time series with a vector of weights.
       <<echo=TRUE,eval=FALSE>>=
@@ -2782,33 +2782,33 @@ datev <- zoo::index(ohlc)
 closep <- log(quantmod::Cl(ohlc))
 colnames(closep) <- "VTI"
 nrows <- NROW(closep)
-# Calculate EWMA weights
-look_back <- 111
-lambda <- 0.9
-weightv <- lambda^(1:look_back)
+# Calculate EMA weights
+lookb <- 111
+lambdaf <- 0.9
+weightv <- lambdaf^(1:lookb)
 weightv <- weightv/sum(weightv)
-# Calculate EWMA prices as the convolution
-ewmacpp <- HighFreq::roll_sumw(closep, weightv=weightv)
-pricev <- cbind(closep, ewmacpp)
-colnames(pricev) <- c("VTI", "VTI EWMA")
+# Calculate EMA prices as the convolution
+emacpp <- HighFreq::roll_sumw(closep, weightv=weightv)
+pricev <- cbind(closep, emacpp)
+colnames(pricev) <- c("VTI", "VTI EMA")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_feature.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ema_feature.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main="VTI EWMA Prices") %>%
+dygraphs::dygraph(pricev["2008/2009"], main="VTI EMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
-# Standard plot of  EWMA prices with custom line colors
+# Standard plot of  EMA prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
 plot_theme$col$line.col <- colors
 quantmod::chart_Series(pricev["2008/2009"], theme=plot_theme,
-             lwd=2, name="VTI EWMA Prices")
+             lwd=2, name="VTI EMA Prices")
 legend("topleft", legend=colnames(pricev), y.intersp=0.4,
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
        col=plot_theme$col$line.col, bty="n")
@@ -2820,58 +2820,58 @@ legend("topleft", legend=colnames(pricev), y.intersp=0.4,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Recursive EWMA Price Indicator}
+\subsection{Recursive EMA Price Indicator}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{EWMA} prices can be calculated recursively as follows:
+      The \emph{EMA} prices can be calculated recursively as follows:
       \begin{displaymath}
-        p^{EWMA}_t = \lambda p^{EWMA}_{t-1} + (1-\lambda) p_t
+        p^{EMA}_t = \lambda p^{EMA}_{t-1} + (1-\lambda) p_t
       \end{displaymath}
-      The decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      The decay factor $\lambda$ determines the rate of decay of the \emph{EMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       \vskip1ex
-      The recursive \emph{EWMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
+      The recursive \emph{EMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
       \vskip1ex
-      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the EWMA prices recursively.
+      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the EMA prices recursively.
       \vskip1ex
-      The function \texttt{HighFreq::run\_mean()} calculates the EWMA prices recursively using the \texttt{C++} \emph{Armadillo} numerical library.
+      The function \texttt{HighFreq::run\_mean()} calculates the EMA prices recursively using the \texttt{C++} \emph{Armadillo} numerical library.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate EWMA prices recursively using C++ code
-ewmar <- .Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep))))[-1]
+# Calculate EMA prices recursively using C++ code
+emar <- .Call(stats:::C_rfilter, closep, lambdaf, c(as.numeric(closep[1])/(1-lambdaf), double(NROW(closep))))[-1]
 # Or R code
-# ewmar <- filter(closep, filter=lambda, init=as.numeric(closep[1, 1])/(1-lambda), method="recursive")
-ewmar <- (1-lambda)*ewmar
-# Calculate EWMA prices recursively using RcppArmadillo C++
-ewmacpp <- HighFreq::run_mean(closep, lambda=lambda)
-all.equal(drop(ewmacpp), ewmar)
+# emar <- filter(closep, filter=lambdaf, init=as.numeric(closep[1, 1])/(1-lambdaf), method="recursive")
+emar <- (1-lambdaf)*emar
+# Calculate EMA prices recursively using RcppArmadillo C++
+emacpp <- HighFreq::run_mean(closep, lambda=lambdaf)
+all.equal(drop(emacpp), emar)
 # Compare the speed of C++ code with RcppArmadillo C++
 library(microbenchmark)
 summary(microbenchmark(
-  filtercpp=HighFreq::run_mean(closep, lambda=lambda),
-  rfilter=.Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep)))),
+  filtercpp=HighFreq::run_mean(closep, lambda=lambdaf),
+  rfilter=.Call(stats:::C_rfilter, closep, lambdaf, c(as.numeric(closep[1])/(1-lambdaf), double(NROW(closep)))),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_recursive.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ema_recursive.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
-pricev <- cbind(closep, ewmacpp)
-colnames(pricev) <- c("VTI", "VTI EWMA")
+pricev <- cbind(closep, emacpp)
+colnames(pricev) <- c("VTI", "VTI EMA")
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EWMA Prices") %>%
+dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EMA Prices") %>%
   dySeries(name=colnamev[1], label=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], label=colnamev[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
-# Standard plot of  EWMA prices with custom line colors
+# Standard plot of  EMA prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
 plot_theme$col$line.col <- colors
 quantmod::chart_Series(pricev["2008/2009"], theme=plot_theme,
-             lwd=2, name="VTI EWMA Prices")
+             lwd=2, name="VTI EMA Prices")
 legend("topleft", legend=colnames(pricev),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
        col=plot_theme$col$line.col, bty="n")
@@ -2904,8 +2904,8 @@ volumv <- quantmod::Vo(ohlc)
 colnames(volumv) <- "Volume"
 nrows <- NROW(closep)
 # Calculate the VWAP prices
-look_back <- 21
-vwap <- HighFreq::roll_sum(closep, look_back=look_back, weightv=volumv)
+lookb <- 21
+vwap <- HighFreq::roll_sum(closep, lookb=lookb, weightv=volumv)
 colnames(vwap) <- "VWAP"
 pricev <- cbind(closep, vwap)
       @
@@ -2961,12 +2961,12 @@ legend("bottomright", legend=colnames(pricev),
       \includegraphics[width=0.45\paperwidth]{figure/vwap_recursive.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VWAP prices recursively using C++ code
-lambda <- 0.9
-volumer <- .Call(stats:::C_rfilter, volumv, lambda, c(as.numeric(volumv[1])/(1-lambda), double(NROW(volumv))))[-1]
-pricer <- .Call(stats:::C_rfilter, volumv*closep, lambda, c(as.numeric(volumv[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
+lambdaf <- 0.9
+volumer <- .Call(stats:::C_rfilter, volumv, lambdaf, c(as.numeric(volumv[1])/(1-lambdaf), double(NROW(volumv))))[-1]
+pricer <- .Call(stats:::C_rfilter, volumv*closep, lambdaf, c(as.numeric(volumv[1]*closep[1])/(1-lambdaf), double(NROW(closep))))[-1]
 vwapr <- pricer/volumer
 # Calculate VWAP prices recursively using RcppArmadillo C++
-vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=volumv)
+vwapcpp <- HighFreq::run_mean(closep, lambda=lambdaf, weightv=volumv)
 all.equal(vwapr, drop(vwapcpp))
 # Dygraphs plot the VWAP prices
 pricev <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
@@ -2999,29 +2999,29 @@ dygraphs::dygraph(pricev["2008/2009"], main="VWAP Prices") %>%
       \vskip1ex
       The difference between moving averages is a \emph{mid-pass filter}, since it eliminates both low and high frequency signals, and it passes through medium frequency signals.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate two EWMA prices
-look_back <- 21
-lambda <- 0.1
-weightv <- exp(-lambda*1:look_back)
+# Calculate two EMA prices
+lookb <- 21
+lambdaf <- 0.1
+weightv <- exp(-lambdaf*1:lookb)
 weightv <- weightv/sum(weightv)
-ewmaf <- HighFreq::roll_conv(closep, weightv=weightv)
-lambda <- 0.05
-weightv <- exp(-lambda*1:look_back)
+emaf <- HighFreq::roll_conv(closep, weightv=weightv)
+lambdas <- 0.05
+weightv <- exp(-lambdas*1:lookb)
 weightv <- weightv/sum(weightv)
-ewmas <- HighFreq::roll_conv(closep, weightv=weightv)
+emas <- HighFreq::roll_conv(closep, weightv=weightv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/features_returns.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI prices
-ewmadiff <- (ewmaf - ewmas)
-pricev <- cbind(closep, ewmadiff)
+emad <- (emaf - emas)
+pricev <- cbind(closep, emad)
 symbol <- "VTI"
 colnames(pricev) <- c(symbol, paste(symbol, "Returns"))
 # Plot dygraph of VTI Returns
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main=paste(symbol, "EWMA Returns")) %>%
+dygraphs::dygraph(pricev["2008/2009"], main=paste(symbol, "EMA Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -3055,8 +3055,8 @@ dygraphs::dygraph(pricev["2008/2009"], main=paste(symbol, "EWMA Returns")) %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the fractional weights
 deltav <- 0.1
-weightv <- (deltav - 0:(look_back-2)) / 1:(look_back-1)
-weightv <- (-1)^(1:(look_back-1))*cumprod(weightv)
+weightv <- (deltav - 0:(lookb-2)) / 1:(lookb-1)
+weightv <- (-1)^(1:(lookb-1))*cumprod(weightv)
 weightv <- c(1, weightv)
 weightv <- (weightv - mean(weightv))
       @
@@ -3126,8 +3126,8 @@ tseries::adf.test(retp)
 # Calculate fractional VTI returns
 deltav <- 0.1*c(1, 3, 5, 7, 9)
 retfrac <- lapply(deltav, function(deltav) {
-  weightv <- (deltav - 0:(look_back-2)) / 1:(look_back-1)
-  weightv <- c(1, (-1)^(1:(look_back-1))*cumprod(weightv))
+  weightv <- (deltav - 0:(lookb-2)) / 1:(lookb-1)
+  weightv <- c(1, (-1)^(1:(lookb-1))*cumprod(weightv))
   weightv <- (weightv - mean(weightv))
   HighFreq::roll_conv(closep, weightv=weightv)
 })  # end lapply
@@ -3182,9 +3182,9 @@ dyplot
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volume z-scores
 volumv <- quantmod::Vo(ohlc)
-look_back <- 21
-volumean <- HighFreq::roll_mean(volumv, look_back=look_back)
-volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volumv), look_back=look_back))
+lookb <- 21
+volumean <- HighFreq::roll_mean(volumv, lookb=lookb)
+volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volumv), lookb=lookb))
 volumsd[1] <- 0
 volumz <- ifelse(volumsd > 0, (volumv - volumean)/volumsd, 0)
 # Plot histogram of volume z-scores
@@ -3232,10 +3232,10 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI Volume Z-Scores") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volatility (true range) z-scores
 volat <- log(quantmod::Hi(ohlc) - quantmod::Lo(ohlc))
-look_back <- 21
-volatm <- HighFreq::roll_mean(volat, look_back=look_back)
+lookb <- 21
+volatm <- HighFreq::roll_mean(volat, lookb=lookb)
 volat <- (volat - volatm)
-volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volat), look_back=look_back))
+volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volat), lookb=lookb))
 volatsd[1] <- 0
 volatz <- ifelse(volatsd > 0, volat/volatsd, 0)
 # Plot histogram of the volatility z-scores
@@ -3342,9 +3342,9 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI Online Volatility Z-Scores") %>
       The lag parameter $k$ is the interval for calculating the volatility of returns $\sigma_t$.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the centered volatility
-look_back <- 21
-half_back <- look_back %/% 2
-volat <- HighFreq::roll_var(closep, look_back=look_back)
+lookb <- 21
+half_back <- lookb %/% 2
+volat <- HighFreq::roll_var(closep, lookb=lookb)
 volat <- sqrt(volat)
 volat <- rutils::lagit(volat, lagg=(-half_back))
 # Calculate the z-scores of prices
@@ -3441,10 +3441,10 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The trailing price z-scores represent the first derivative (slope) of the prices, since the price level is subtracted.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing VTI volatility
-volat <- HighFreq::roll_var(closep, look_back=look_back)
+volat <- HighFreq::roll_var(closep, lookb=lookb)
 volat <- sqrt(volat)
 # Calculate the trailing z-scores of VTI prices
-pricez <- (closep - rutils::lagit(closep, look_back, pad_zeros=FALSE))
+pricez <- (closep - rutils::lagit(closep, lookb, pad_zeros=FALSE))
 pricez <- ifelse(volat > 0, pricez/volat, 0)
       @
     \column{0.5\textwidth}
@@ -3492,11 +3492,11 @@ dygraphs::dygraph(pricev["2009"],
       \includegraphics[width=0.45\paperwidth]{figure/features_price_zscores_rec.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the recursive trailing VTI volatility
-lambda <- 0.9
-volat <- HighFreq::run_var(closep, lambda=lambda)
+lambdaf <- 0.9
+volat <- HighFreq::run_var(closep, lambda=lambdaf)
 volat <- sqrt(volat)
 # Calculate the recursive trailing z-scores of VTI prices
-pricer <- (closep - HighFreq::run_mean(closep, lambda=lambda))
+pricer <- (closep - HighFreq::run_mean(closep, lambda=lambdaf))
 pricer <- ifelse(volat > 0, pricer/volat, 0)
 # Plot dygraph of the trailing z-scores of VTI prices
 pricev <- xts::xts(cbind(pricez, pricer), datev)
@@ -3539,12 +3539,12 @@ dygraphs::dygraph(pricev["2009"], main="VTI Online Trailing Price Z-Scores") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate trailing price regression z-scores
 datev <- matrix(zoo::index(closep))
-look_back <- 21
+lookb <- 21
 # Create a default list of regression parameters
 controlv <- HighFreq::param_reg()
 regs <- HighFreq::roll_reg(respv=closep, predm=datev, 
-   look_back=look_back, controlv=controlv)
-regs[1:look_back, ] <- 0
+   lookb=lookb, controlv=controlv)
+regs[1:lookb, ] <- 0
 # Plot dygraph of z-scores of VTI prices
 datav <- cbind(closep, regs[, NCOL(regs)])
 colnames(datav) <- c("VTI", "Z-Scores")
@@ -3588,10 +3588,10 @@ dygraphs::dygraph(datav["2009"], main="VTI Regression Z-Scores") %>%
       The function \texttt{HighFreq::run\_reg()} recursively calculates trailing regressions and their residuals.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate recursive trailing price regression versus time
-lambda <- 0.9
+lambdaf <- 0.9
 # Create a list of regression parameters
 controlv <- HighFreq::param_reg(residscale="standardize")
-regs <- HighFreq::run_reg(closep, matrix(datev), lambda=lambda, controlv=controlv)
+regs <- HighFreq::run_reg(closep, matrix(datev), lambda=lambdaf, controlv=controlv)
 colnames(regs) <- c("alpha", "beta", "zscores")
 tail(regs)
       @
@@ -3674,17 +3674,17 @@ dygraphs::dygraph(datav["2009"], main="VTI Online Regression Z-Scores") %>%
 # Extract time series of VTI log prices
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Define look-back window
-look_back <- 11
+lookb <- 11
 # Calculate time series of trailing medians
-medianv <- roll::roll_median(closep, width=look_back)
-# medianv <- TTR::runMedian(closep, n=look_back)
+medianv <- roll::roll_median(closep, width=lookb)
+# medianv <- TTR::runMedian(closep, n=lookb)
 # Calculate time series of MAD
-madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(closep, n=look_back)
+madv <- HighFreq::roll_var(closep, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(closep, n=lookb)
 # Calculate time series of z-scores
 zscores <- (closep - medianv)/madv
-zscores[1:look_back, ] <- 0
-tail(zscores, look_back)
+zscores[1:lookb, ] <- 0
+tail(zscores, lookb)
 range(zscores)
       @
     \column{0.5\textwidth}
@@ -3731,21 +3731,21 @@ lines(density(zscores, adjust=1.5), lwd=3, col="blue")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate one-sided Hampel z-scores
-medianv <- roll::roll_median(closep, width=look_back)
-# medianv <- TTR::runMedian(closep, n=look_back)
-madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(closep, n=look_back)
+medianv <- roll::roll_median(closep, width=lookb)
+# medianv <- TTR::runMedian(closep, n=lookb)
+madv <- HighFreq::roll_var(closep, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(closep, n=lookb)
 zscores <- (closep - medianv)/madv
-zscores[1:look_back, ] <- 0
-tail(zscores, look_back)
+zscores[1:lookb, ] <- 0
+tail(zscores, lookb)
 range(zscores)
 # Calculate two-sided Hampel z-scores
-half_back <- look_back %/% 2
+half_back <- lookb %/% 2
 medianv <- rutils::lagit(medianv, lagg=(-half_back))
 madv <- rutils::lagit(madv, lagg=(-half_back))
 zscores <- (closep - medianv)/madv
-zscores[1:look_back, ] <- 0
-tail(zscores, look_back)
+zscores[1:lookb, ] <- 0
+tail(zscores, lookb)
 range(zscores)
       @
   \end{columns}
@@ -3786,24 +3786,24 @@ nrows <- NROW(retp)
 # Define end points
 endd <- 1:NROW(retp)
 # Start points are multi-period lag of endd
-look_back <- 11
-startp <- c(rep_len(0, look_back-1), endd[1:(nrows-look_back+1)])
+lookb <- 11
+startp <- c(rep_len(0, lookb-1), endd[1:(nrows-lookb+1)])
 # Calculate trailing variance in sapply() loop - takes long
 varv <- sapply(1:nrows, function(it) {
   retp <- retp[startp[it]:endd[it]]
-  sum((retp - mean(retp))^2)/look_back
+  sum((retp - mean(retp))^2)/lookb
 })  # end sapply
 # Use only vectorized functions
 retc <- cumsum(retp)
-retc <- (retc - c(rep_len(0, look_back), retc[1:(nrows-look_back)]))
+retc <- (retc - c(rep_len(0, lookb), retc[1:(nrows-lookb)]))
 retc2 <- cumsum(retp^2)
-retc2 <- (retc2 - c(rep_len(0, look_back), retc2[1:(nrows-look_back)]))
-var2 <- (retc2 - retc^2/look_back)/look_back
-all.equal(varv[-(1:look_back)], as.numeric(var2)[-(1:look_back)])
+retc2 <- (retc2 - c(rep_len(0, lookb), retc2[1:(nrows-lookb)]))
+var2 <- (retc2 - retc^2/lookb)/lookb
+all.equal(varv[-(1:lookb)], as.numeric(var2)[-(1:lookb)])
 # Or using package rutils
-retc <- rutils::roll_sum(retp, look_back=look_back)
-retc2 <- rutils::roll_sum(retp^2, look_back=look_back)
-var2 <- (retc2 - retc^2/look_back)/look_back
+retc <- rutils::roll_sum(retp, lookb=lookb)
+retc2 <- rutils::roll_sum(retp^2, lookb=lookb)
+var2 <- (retc2 - retc^2/lookb)/lookb
 # Coerce variance into xts
 tail(varv)
 class(varv)
@@ -3846,18 +3846,18 @@ head(varv)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate trailing VTI variance using package HighFreq
-varv <- roll::roll_var(retp, width=look_back)
+varv <- roll::roll_var(retp, width=lookb)
 colnames(varv) <- "Variance"
 head(varv)
 sum(is.na(varv))
-varv[1:(look_back-1)] <- 0
+varv[1:(lookb-1)] <- 0
 # Benchmark calculation of trailing variance
 library(microbenchmark)
 summary(microbenchmark(
   sapply=sapply(1:nrows, function(it) {
     var(retp[startp[it]:endd[it]])
   }),
-  roll=roll::roll_var(retp, width=look_back),
+  roll=roll::roll_var(retp, width=lookb),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -3867,40 +3867,40 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Trailing \protect\emph{EWMA} Realized Volatility Estimator}
+\subsection{Trailing \protect\emph{EMA} Realized Volatility Estimator}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) variance estimator.
+      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EMA}) variance estimator.
       \vskip1ex
-      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
+      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EMA} \emph{realized} variance estimator can be written approxiamtely as:
       \begin{displaymath}
         \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) r^2_t = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j r^2_{t-j}
       \end{displaymath}
       $\sigma^2_t$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
       \vskip1ex
-      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa.
+      The parameter $\lambda$ determines the rate of decay of the \emph{EMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa.
       \vskip1ex
       The function \texttt{stats:::C\_cfilter()} calculates the convolution of a vector or a time series with a filter of coefficients (weights).
       \vskip1ex
       The function \texttt{stats:::C\_cfilter()} is very fast because it's compiled \texttt{C++} code.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/vol_vti_ewma.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vol_vti_ema.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate EWMA VTI variance using compiled C++ function
-look_back <- 51
-weightv <- exp(-0.1*1:look_back)
+# Calculate EMA VTI variance using compiled C++ function
+lookb <- 51
+weightv <- exp(-0.1*1:lookb)
 weightv <- weightv/sum(weightv)
 varv <- .Call(stats:::C_cfilter, retp^2, filter=weightv, sides=1, circular=FALSE)
-varv[1:(look_back-1)] <- varv[look_back]
-# Plot EWMA volatility
+varv[1:(lookb-1)] <- varv[lookb]
+# Plot EMA volatility
 varv <- xts:::xts(sqrt(varv), order.by=zoo::index(retp))
-dygraphs::dygraph(varv, main="VTI EWMA Volatility") %>%
+dygraphs::dygraph(varv, main="VTI EMA Volatility") %>%
   dyOptions(colors="blue") %>% dyLegend(show="always", width=300)
-quantmod::chart_Series(xtsv, name="VTI EWMA Volatility")
+quantmod::chart_Series(xtsv, name="VTI EMA Volatility")
       @
   \end{columns}
 \end{block}
@@ -3909,13 +3909,13 @@ quantmod::chart_Series(xtsv, name="VTI EWMA Volatility")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Estimating \protect\emph{EWMA} Variance Using Package \protect\emph{roll}}
+\subsection{Estimating \protect\emph{EMA} Variance Using Package \protect\emph{roll}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If the \emph{time series} has non-zero \emph{expected} mean, then the trailing \emph{EWMA} variance is a vector given by the estimator:
+      If the \emph{time series} has non-zero \emph{expected} mean, then the trailing \emph{EMA} variance is a vector given by the estimator:
       \begin{flalign*}
         \sigma^2_t &= \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{t-j}-\bar{r_t})^2} \\
         \bar{r_t} &= \frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{t-j}}}
@@ -3924,18 +3924,18 @@ quantmod::chart_Series(xtsv, name="VTI EWMA Volatility")
       \begin{displaymath}
         w_j = \frac{\lambda^j}{\sum_{j=0}^{k-1} \lambda^j}
       \end{displaymath}
-      The function \texttt{roll\_var()} from package \emph{roll} calculates the trailing \emph{EWMA} variance.
+      The function \texttt{roll\_var()} from package \emph{roll} calculates the trailing \emph{EMA} variance.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate trailing VTI variance using package roll
 library(roll)  # Load roll
-varv <- roll::roll_var(retp, weights=rev(weightv), width=look_back)
+varv <- roll::roll_var(retp, weights=rev(weightv), width=lookb)
 colnames(varv) <- "VTI.variance"
 class(varv)
 head(varv)
 sum(is.na(varv))
-varv[1:(look_back-1)] <- 0
+varv[1:(lookb-1)] <- 0
       @
   \end{columns}
 \end{block}
@@ -3961,10 +3961,10 @@ varv[1:(look_back-1)] <- 0
       \includegraphics[width=0.45\paperwidth]{figure/vol_vti_rec.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate realized variance recursively
-lambda <- 0.9
-volat <- HighFreq::run_var(retp, lambda=lambda)
+lambdaf <- 0.9
+volat <- HighFreq::run_var(retp, lambda=lambdaf)
 volat <- sqrt(volat)
-# Plot EWMA volatility
+# Plot EMA volatility
 volat <- xts:::xts(volat, order.by=datev)
 dygraphs::dygraph(volat, main="VTI Realized Volatility") %>%
   dyOptions(colors="blue") %>% dyLegend(show="always", width=300)
@@ -4089,7 +4089,7 @@ sqrt((6.5*60)*mean(na.omit(
   TTR::volatility(spy, N=1, calc="yang.zhang"))^2))
 # Calculate trailing SPY variance using package HighFreq
 varv <- HighFreq::roll_var_ohlc(log(spy), method="yang_zhang", 
-  look_back=look_back)
+  lookb=lookb)
 # Plot range volatility
 varv <- xts:::xts(sqrt(varv), order.by=zoo::index(spy))
 dygraphs::dygraph(varv["2009-02"], main="SPY Trailing Range Volatility") %>%
@@ -4123,13 +4123,13 @@ summary(microbenchmark(
 # Calculate VXX log prices
 vxx <- na.omit(rutils::etfenv$prices$VXX)
 datev <- zoo::index(vxx)
-look_back <- 41
+lookb <- 41
 vxx <- log(vxx)
 # Calculate trailing VTI volatility
 closep <- get("VTI", rutils::etfenv)[datev]
 closep <- log(closep)
-volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalev=FALSE))
-volat[1:look_back] <- volat[look_back+1]
+volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, lookb=lookb, scalev=FALSE))
+volat[1:lookb] <- volat[lookb+1]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4170,15 +4170,15 @@ dygraphs::dygraph(datav[, 1:2], main=captiont) %>%
 # Calculate VXX log prices
 vxx <- na.omit(rutils::etfenv$prices$VXX)
 datev <- zoo::index(vxx)
-look_back <- 41
+lookb <- 41
 vxx <- log(vxx)
-vxx <- (vxx - HighFreq::roll_mean(vxx, look_back=look_back))
-vxx[1:look_back] <- vxx[look_back+1]
+vxx <- (vxx - HighFreq::roll_mean(vxx, lookb=lookb))
+vxx[1:lookb] <- vxx[lookb+1]
 # Calculate trailing VTI volatility
 closep <- get("VTI", rutils::etfenv)[datev]
 closep <- log(closep)
-volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalev=FALSE))
-volat[1:look_back] <- volat[look_back+1]
+volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, lookb=lookb, scalev=FALSE))
+volat[1:lookb] <- volat[lookb+1]
 # Calculate regression coefficients of XLB ~ XLE
 betac <- drop(cov(vxx, volat)/var(volat))
 alphac <- drop(mean(vxx) - betac*mean(volat))
@@ -4224,14 +4224,14 @@ par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 # Calculate trailing VTI variance using package roll
-look_back <- 21
-varv <- HighFreq::roll_var(retp, look_back=look_back)
+lookb <- 21
+varv <- HighFreq::roll_var(retp, lookb=lookb)
 colnames(varv) <- "Variance"
-# Number of look_backs that fit over returns
+# Number of lookbs that fit over returns
 nrows <- NROW(retp)
-nagg <- nrows %/% look_back
+nagg <- nrows %/% lookb
 # Define end points with beginning stub
-endd <- c(0, nrows-look_back*nagg + (0:nagg)*look_back)
+endd <- c(0, nrows-lookb*nagg + (0:nagg)*lookb)
 nrows <- NROW(endd)
 # Subset variance to end points
 varv <- varv[endd]
@@ -4846,7 +4846,7 @@ cbind(actual=c(alphac=alphac, beta=betac, omega=omega),
       \begin{displaymath}
         \sigma^2_t = \omega + \beta \sigma^2_{t-1} + \alpha r_t^2
       \end{displaymath}
-      The \emph{GARCH} formula can be viewed as a generalization of the \emph{EWMA} trailing variance.
+      The \emph{GARCH} formula can be viewed as a generalization of the \emph{EMA} trailing variance.
       <<eval=FALSE,echo=TRUE>>=
 # Calculate VTI returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
@@ -5291,10 +5291,10 @@ ohlc <- rutils::etfenv$VTI
 nrows <- NROW(ohlc["2018-06/"])
 # Define endd at each point in time
 endd <- 0:nrows
-# Number of data points in look_back interval
-look_back <- 22
-# startp are endd lagged by look_back
-startp <- c(rep_len(0, look_back), endd[1:(NROW(endd)-look_back)])
+# Number of data points in lookb interval
+lookb <- 22
+# startp are endd lagged by lookb
+startp <- c(rep_len(0, lookb), endd[1:(NROW(endd)-lookb)])
 head(startp, 33)
       @
   \end{columns}
@@ -5379,14 +5379,14 @@ endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
     \column{0.5\textwidth}
       The length of the \emph{look-back interval} can be defined either as the number of data points, or as the number of \emph{end points} to look back over.
       <<echo=TRUE,eval=FALSE>>=
-# look_back defined as number of data points
-look_back <- 252
-# startp are endd lagged by look_back
-startp <- (endd - look_back + 1)
+# lookb defined as number of data points
+lookb <- 252
+# startp are endd lagged by lookb
+startp <- (endd - lookb + 1)
 startp <- ifelse(startp < 0, 0, startp)
-# look_back defined as number of endd
-look_back <- 12
-startp <- c(rep_len(0, look_back), endd[1:(NROW(endd)- look_back)])
+# lookb defined as number of endd
+lookb <- 12
+startp <- c(rep_len(0, lookb), endd[1:(NROW(endd)- lookb)])
 # Bind startp with endd
 cbind(startp, endd)
       @
@@ -5450,7 +5450,7 @@ startp <- c(0, endd[1:(NROW(endd)-1)]+1)
       \vskip1ex
       The vector or matrix returned by \texttt{sapply()} therefore needs to be coerced into an \emph{xts} series.
       \vskip1ex
-      The variable \texttt{look\_back} is the size of the look-back interval, equal to the number of data points used for applying the aggregation function (including the current point).
+      The variable \texttt{lookb} is the size of the look-back interval, equal to the number of data points used for applying the aggregation function (including the current point).
     \column{0.5\textwidth}
       \vspace{-1em}
       <<TRUE,eval=FALSE>>=
@@ -5458,18 +5458,18 @@ startp <- c(0, endd[1:(NROW(endd)-1)]+1)
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
 endd <- 0:NROW(closep)  # End points at each point
 npts <- NROW(endd)
-look_back <- 22  # Number of data points per look-back interval
+lookb <- 22  # Number of data points per look-back interval
 # startp are multi-period lag of endd
-startp <- c(rep_len(0, look_back), endd[1:(npts - look_back)])
+startp <- c(rep_len(0, lookb), endd[1:(npts - lookb)])
 # Define list of look-back intervals for aggregations over past
-look_backs <- lapply(2:npts, function(it) {
+lookbs <- lapply(2:npts, function(it) {
     startp[it]:endd[it]
 })  # end lapply
 # Define aggregation function
 aggfun <- function(xtsv) c(max=max(xtsv), min=min(xtsv))
-# Perform aggregations over look_backs list
-aggs <- sapply(look_backs,
-    function(look_back) aggfun(closep[look_back])
+# Perform aggregations over lookbs list
+aggs <- sapply(lookbs,
+    function(lookb) aggfun(closep[lookb])
 )  # end sapply
 # Coerce aggs into matrix and transpose it
 if (is.vector(aggs))
@@ -5508,9 +5508,9 @@ aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
-# Perform aggregations over look_backs list
-aggs <- lapply(look_backs,
-    function(look_back) aggfun(closep[look_back])
+# Perform aggregations over lookbs list
+aggs <- lapply(lookbs,
+    function(lookb) aggfun(closep[lookb])
 )  # end lapply
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
@@ -5540,33 +5540,33 @@ legend("top", legend=colnames(aggs),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The functional \texttt{roll\_agg()} performs trailing aggregations of its function argument \texttt{FUN}, over an \emph{xts} series (\texttt{x\_ts}), and a look-back interval (\texttt{look\_back}).
+      The functional \texttt{roll\_agg()} performs trailing aggregations of its function argument \texttt{FUN}, over an \emph{xts} series (\texttt{x\_ts}), and a look-back interval (\texttt{lookb}).
       \vskip1ex
       The argument \texttt{FUN} is an aggregation function over a subset of \texttt{x\_ts} series.
       \vskip1ex
       The dots \texttt{"..."} argument is passed into \texttt{FUN} as additional arguments.
       \vskip1ex
-      The argument \texttt{look\_back} is equal to the number of periods of \texttt{x\_ts} series which are passed to the aggregation function \texttt{FUN}.
+      The argument \texttt{lookb} is equal to the number of periods of \texttt{x\_ts} series which are passed to the aggregation function \texttt{FUN}.
       \vskip1ex
       The functional \texttt{roll\_agg()} calls \texttt{lapply()}, which loops over the length of series \texttt{x\_ts}.
       \vskip1ex
       Note that two different intervals may be used with \texttt{roll\_agg()}.
       \vskip1ex
-      The first interval is the argument \texttt{look\_back}.
+      The first interval is the argument \texttt{lookb}.
       \vskip1ex
-      A second interval may be one of the variables bound to the dots \texttt{"..."} argument, and passed to the aggregation function \texttt{FUN} (for example, an \emph{EWMA} window).
+      A second interval may be one of the variables bound to the dots \texttt{"..."} argument, and passed to the aggregation function \texttt{FUN} (for example, an \emph{EMA} window).
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(rutils)  # Load package rutils
 # Define functional for trailing aggregations
-roll_agg <- function(xtsv, look_back, FUN, ...) {
+roll_agg <- function(xtsv, lookb, FUN, ...) {
 # Define end points at every period
   endd <- 0:NROW(xtsv)
   npts <- NROW(endd)
 # Define starting points as lag of endd
-  startp <- c(rep_len(0, look_back), endd[1:(npts- look_back)])
-# Perform aggregations over look_backs list
+  startp <- c(rep_len(0, lookb), endd[1:(npts- lookb)])
+# Perform aggregations over lookbs list
   aggs <- lapply(2:npts, function(it)
     FUN(xtsv[startp[it]:endd[it]], ...)
   )  # end lapply
@@ -5581,7 +5581,7 @@ roll_agg <- function(xtsv, look_back, FUN, ...) {
 aggfun <- function(xtsv)
   c(max=max(xtsv), min=min(xtsv))
 # Perform aggregations over trailing interval
-aggs <- roll_agg(closep, look_back=look_back, FUN=aggfun)
+aggs <- roll_agg(closep, lookb=lookb, FUN=aggfun)
 class(aggs)
 dim(aggs)
       @
@@ -5614,8 +5614,8 @@ agg_xts <- function(xtsv)
 # Benchmark the speed of aggregation functions
 library(microbenchmark)
 summary(microbenchmark(
-  agg_vector=roll_agg(closep, look_back=look_back, FUN=agg_vector),
-  agg_xts=roll_agg(closep, look_back=look_back, FUN=agg_xts),
+  agg_vector=roll_agg(closep, lookb=lookb, FUN=agg_vector),
+  agg_xts=roll_agg(closep, lookb=lookb, FUN=agg_xts),
   times=10))[, c(1, 4, 5)]
 @
   \end{columns}
@@ -5653,17 +5653,17 @@ summary(microbenchmark(
 # Define aggregation function that returns a single value
 aggfun <- function(xtsv)  max(xtsv)
 # Perform aggregations over a trailing interval
-aggs <- xts:::rollapply.xts(closep, width=look_back,
+aggs <- xts:::rollapply.xts(closep, width=lookb,
                     FUN=aggfun, align="right")
 # Perform aggregations over a trailing interval
 library(PerformanceAnalytics)  # Load package PerformanceAnalytics
-aggs <- apply.rolling(closep, width=look_back, FUN=aggfun)
+aggs <- apply.rolling(closep, width=lookb, FUN=aggfun)
 # Benchmark the speed of the functionals
 library(microbenchmark)
 summary(microbenchmark(
-  roll_agg=roll_agg(closep, look_back=look_back, FUN=max),
-  roll_xts=xts:::rollapply.xts(closep, width=look_back, FUN=max, align="right"),
-  apply_rolling=apply.rolling(closep, width=look_back, FUN=max),
+  roll_agg=roll_agg(closep, lookb=lookb, FUN=max),
+  roll_xts=xts:::rollapply.xts(closep, width=lookb, FUN=max, align="right"),
+  apply_rolling=apply.rolling(closep, width=lookb, FUN=max),
   times=10))[, c(1, 4, 5)]
 @
   \end{columns}
@@ -5692,14 +5692,14 @@ summary(microbenchmark(
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(rutils)  # Load package rutils
 # Trailing sum using cumsum()
-roll_sum <- function(xtsv, look_back) {
+roll_sum <- function(xtsv, lookb) {
   cumsumv <- cumsum(na.omit(xtsv))
-  output <- cumsumv - rutils::lagit(x=cumsumv, lagg=look_back)
-  output[1:look_back, ] <- cumsumv[1:look_back, ]
+  output <- cumsumv - rutils::lagit(x=cumsumv, lagg=lookb)
+  output[1:lookb, ] <- cumsumv[1:lookb, ]
   colnames(output) <- paste0(colnames(xtsv), "_stdev")
   output
 }  # end roll_sum
-aggs <- roll_sum(closep, look_back=look_back)
+aggs <- roll_sum(closep, lookb=lookb)
 # Perform trailing aggregations using lapply loop
 aggs <- lapply(2:npts, function(it)
     sum(closep[startp[it]:endd[it]])
@@ -5711,9 +5711,9 @@ tail(aggs)
 # Benchmark the speed of both methods
 library(microbenchmark)
 summary(microbenchmark(
-  roll_sum=roll_sum(closep, look_back=look_back),
-  s_apply=sapply(look_backs,
-    function(look_back) sum(closep[look_back])),
+  roll_sum=roll_sum(closep, lookb=lookb),
+  s_apply=sapply(lookbs,
+    function(lookb) sum(closep[lookb])),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -5751,9 +5751,9 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
-# Calculate EWMA prices using filter()
-look_back <- 21
-weightv <- exp(-0.1*1:look_back)
+# Calculate EMA prices using filter()
+lookb <- 21
+weightv <- exp(-0.1*1:lookb)
 weightv <- weightv/sum(weightv)
 pricef <- stats::filter(closep, filter=weightv,
                          method="convolution", sides=1)
@@ -5766,10 +5766,10 @@ str(stats:::C_cfilter)
 priceff <- .Call(stats:::C_cfilter, closep, 
                      filter=weightv, sides=1, circular=FALSE)
 all.equal(as.numeric(pricef), priceff, check.attributes=FALSE)
-# Calculate EWMA prices using HighFreq::roll_conv()
+# Calculate EMA prices using HighFreq::roll_conv()
 pricecpp <- HighFreq::roll_conv(closep, weightv=weightv)
-all.equal(pricef[-(1:look_back)],
-          as.numeric(pricecpp)[-(1:look_back)],
+all.equal(pricef[-(1:lookb)],
+          as.numeric(pricecpp)[-(1:lookb)],
           check.attributes=FALSE)
 # Benchmark speed of trailing calculations
 library(microbenchmark)
@@ -5808,34 +5808,34 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing maximum and minimum over a vector of data
-roll_maxminr <- function(vecv, look_back) {
+roll_maxminr <- function(vecv, lookb) {
   nrows <- NROW(vecv)
   max_min <- matrix(numeric(2:nrows), nc=2)
   # Loop over periods
   for (it in 1:nrows) {
-    sub_vec <- vecv[max(1, it-look_back+1):it]
+    sub_vec <- vecv[max(1, it-lookb+1):it]
     max_min[it, 1] <- max(sub_vec)
     max_min[it, 2] <- min(sub_vec)
   }  # end for
   return(max_min)
 }  # end roll_maxminr
-max_minr <- roll_maxminr(closep, look_back)
+max_minr <- roll_maxminr(closep, lookb)
 max_minr <- xts::xts(max_minr, zoo::index(closep))
 library(TTR)  # Load package TTR
-max_min <- cbind(TTR::runMax(x=closep, n=look_back),
-                 TTR::runMin(x=closep, n=look_back))
-all.equal(max_min[-(1:look_back), ], max_minr[-(1:look_back), ], check.attributes=FALSE)
+max_min <- cbind(TTR::runMax(x=closep, n=lookb),
+                 TTR::runMin(x=closep, n=lookb))
+all.equal(max_min[-(1:lookb), ], max_minr[-(1:lookb), ], check.attributes=FALSE)
 # Benchmark the speed of TTR::runMax
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=roll_maxminr(closep, look_back),
-  ttr=TTR::runMax(closep, n=look_back),
+  rcode=roll_maxminr(closep, lookb),
+  ttr=TTR::runMax(closep, n=lookb),
   times=10))[, c(1, 4, 5)]
 # Benchmark the speed of TTR::runSum
 summary(microbenchmark(
   vector_r=cumsum(coredata(closep)),
-  rutils=rutils::roll_sum(closep, look_back=look_back),
-  ttr=TTR::runSum(closep, n=look_back),
+  rutils=rutils::roll_sum(closep, lookb=lookb),
+  ttr=TTR::runSum(closep, n=lookb),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -5871,20 +5871,20 @@ library(rutils)
 # Calculate trailing VTI variance using package roll
 library(roll)  # Load roll
 retp <- na.omit(rutils::etfenv$returns$VTI)
-look_back <- 22
+lookb <- 22
 # Calculate trailing sum using roll::roll_sum
-sum_roll <- roll::roll_sum(retp, width=look_back, min_obs=1)
+sum_roll <- roll::roll_sum(retp, width=lookb, min_obs=1)
 # Calculate trailing sum using rutils
-sum_rutils <- rutils::roll_sum(retp, look_back=look_back)
-all.equal(sum_roll[-(1:look_back), ], 
-          sum_rutils[-(1:look_back), ], check.attributes=FALSE)
+sum_rutils <- rutils::roll_sum(retp, lookb=lookb)
+all.equal(sum_roll[-(1:lookb), ], 
+          sum_rutils[-(1:lookb), ], check.attributes=FALSE)
 # Benchmark speed of trailing calculations
 library(microbenchmark)
 summary(microbenchmark(
   cumsumv=cumsum(retp),
-  roll=roll::roll_sum(retp, width=look_back),
-  RcppRoll=RcppRoll::roll_sum(retp, n=look_back),
-  rutils=rutils::roll_sum(retp, look_back=look_back),
+  roll=roll::roll_sum(retp, width=lookb),
+  RcppRoll=RcppRoll::roll_sum(retp, n=lookb),
+  rutils=rutils::roll_sum(retp, lookb=lookb),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -5919,34 +5919,34 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 library(RcppRoll)  # Load package RcppRoll
 # Calculate trailing sum using RcppRoll
-sum_roll <- RcppRoll::roll_sum(retp, align="right", n=look_back)
+sum_roll <- RcppRoll::roll_sum(retp, align="right", n=lookb)
 # Calculate trailing sum using rutils
-sum_rutils <- rutils::roll_sum(retp, look_back=look_back)
-all.equal(sum_roll, coredata(sum_rutils[-(1:(look_back-1))]), 
+sum_rutils <- rutils::roll_sum(retp, lookb=lookb)
+all.equal(sum_roll, coredata(sum_rutils[-(1:(lookb-1))]), 
           check.attributes=FALSE)
 # Benchmark speed of trailing calculations
 library(microbenchmark)
 summary(microbenchmark(
   cumsumv=cumsum(retp),
-  RcppRoll=RcppRoll::roll_sum(retp, n=look_back),
-  rutils=rutils::roll_sum(retp, look_back=look_back),
+  RcppRoll=RcppRoll::roll_sum(retp, n=lookb),
+  rutils=rutils::roll_sum(retp, lookb=lookb),
   times=10))[, c(1, 4, 5)]
-# Calculate EWMA prices using RcppRoll
+# Calculate EMA prices using RcppRoll
 closep <- quantmod::Cl(rutils::etfenv$VTI)
-weightv <- exp(0.1*1:look_back)
-pricewma <- RcppRoll::roll_mean(closep,
-      align="right", n=look_back, weights=weightv)
-pricewma <- cbind(closep,
-  rbind(coredata(closep[1:(look_back-1), ]), pricewma))
-colnames(pricewma) <- c("VTI", "VTI EWMA")
+weightv <- exp(0.1*1:lookb)
+pricema <- RcppRoll::roll_mean(closep,
+      align="right", n=lookb, weights=weightv)
+pricema <- cbind(closep,
+  rbind(coredata(closep[1:(lookb-1), ]), pricema))
+colnames(pricema) <- c("VTI", "VTI EMA")
 # Plot an interactive dygraph plot
-dygraphs::dygraph(pricewma)
-# Or static plot of EWMA prices with custom line colors
+dygraphs::dygraph(pricema)
+# Or static plot of EMA prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red")
-quantmod::chart_Series(pricewma, theme=plot_theme, name="EWMA prices")
-legend("top", legend=colnames(pricewma),
+quantmod::chart_Series(pricema, theme=plot_theme, name="EMA prices")
+legend("top", legend=colnames(pricema),
        bg="white", lty=1, lwd=6,
        col=plot_theme$col$line.col, bty="n")
 @
@@ -5989,14 +5989,14 @@ data(package="caTools")  # List all datasets in "caTools"
 ls("package:caTools")  # List all objects in "caTools"
 detach("package:caTools")  # Remove caTools from search path
 # Median filter
-look_back <- 2
+lookb <- 2
 closep <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
-med_ian <- runmed(x=closep, k=look_back)
+med_ian <- runmed(x=closep, k=lookb)
 # Vector of trailing volatilities
-sigmav <- runsd(x=closep, k=look_back,
+sigmav <- runsd(x=closep, k=lookb,
                 endrule="constant", align="center")
 # Vector of trailing quantiles
-quantvs <- runquantile(x=closep, k=look_back,
+quantvs <- runquantile(x=closep, k=lookb,
   probs=0.9, endrule="constant", align="center")
       @
   \end{columns}
@@ -6023,21 +6023,21 @@ using namespace arma; // use C++ namespace from Armadillo library
 // export the function roll_maxmin() to R
 // [[Rcpp::export]]
 arma::mat roll_maxmin(const arma::vec& vecv,
-                      const arma::uword& look_back) {
+                      const arma::uword& lookb) {
   arma::uword.n_rows = vecv.size();
   arma::mat max_min[nrows, 2);
   arma::vec sub_vec;
   // startup period
   max_min(0, 0) = vecv[0];
   max_min(0, 1) = vecv[0];
-  for (uword it = 1; it < look_back; it++) {
+  for (uword it = 1; it < lookb; it++) {
     sub_vec = vecv.subvec(0, it);
     max_min(it, 0) = sub_vec.max();
     max_min(it, 1) = sub_vec.min();
   }  // end for
   // remaining periods
-  for (uword it = look_back; it <.n_rows; it++) {
-    sub_vec = vecv.subvec(it- look_back + 1, it);
+  for (uword it = lookb; it <.n_rows; it++) {
+    sub_vec = vecv.subvec(it- lookb + 1, it);
     max_min(it, 0) = sub_vec.max();
     max_min(it, 1) = sub_vec.min();
   }  // end for
@@ -6050,16 +6050,16 @@ arma::mat roll_maxmin(const arma::vec& vecv,
       <<echo=TRUE,eval=FALSE>>=
 # Compile Rcpp functions
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/roll_maxmin.cpp")
-max_minarma <- roll_maxmin(closep, look_back)
+max_minarma <- roll_maxmin(closep, lookb)
 max_minarma <- xts::xts(max_minr, zoo::index(closep))
-max_min <- cbind(TTR::runMax(x=closep, n=look_back),
-                 TTR::runMin(x=closep, n=look_back))
-all.equal(max_min[-(1:look_back), ], max_minarma[-(1:look_back), ], check.attributes=FALSE)
+max_min <- cbind(TTR::runMax(x=closep, n=lookb),
+                 TTR::runMin(x=closep, n=lookb))
+all.equal(max_min[-(1:lookb), ], max_minarma[-(1:lookb), ], check.attributes=FALSE)
 # Benchmark the speed of TTR::runMax
 library(microbenchmark)
 summary(microbenchmark(
-  arma=roll_maxmin(closep, look_back),
-  ttr=TTR::runMax(closep, n=look_back),
+  arma=roll_maxmin(closep, lookb),
+  ttr=TTR::runMax(closep, n=lookb),
   times=10))[, c(1, 4, 5)]
 # Dygraphs plot with max_min lines
 datav <- cbind(closep, max_minarma)
@@ -6141,22 +6141,22 @@ closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Number of data points
 nrows <- NROW(closep)
 # Number of data points per interval
-look_back <- 22
-# Number of look_backs that fit over nrows
-nagg <- nrows %/% look_back
+lookb <- 22
+# Number of lookbs that fit over nrows
+nagg <- nrows %/% lookb
 # Define endd with beginning stub
-endd <- c(0, nrows-look_back*nagg + (0:nagg)*look_back)
+endd <- c(0, nrows-lookb*nagg + (0:nagg)*lookb)
 # Define contiguous startp
 startp <- c(0, endd[1:(NROW(endd)-1)])
 # Define list of look-back intervals for aggregations over past
-look_backs <- lapply(2:NROW(endd), function(it) {
+lookbs <- lapply(2:NROW(endd), function(it) {
     startp[it]:endd[it]
 })  # end lapply
-look_backs[[1]]
-look_backs[[2]]
-# Perform sapply() loop over look_backs list
-aggs <- sapply(look_backs, function(look_back) {
-  xtsv <- closep[look_back]
+lookbs[[1]]
+lookbs[[2]]
+# Perform sapply() loop over lookbs list
+aggs <- sapply(lookbs, function(lookb) {
+  xtsv <- closep[lookb]
   c(max=max(xtsv), min=min(xtsv))
 })  # end sapply
 # Coerce aggs into matrix and transpose it
@@ -6197,9 +6197,9 @@ legend("top", legend=colnames(aggs),
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(rutils)  # Load package rutils
-# Perform lapply() loop over look_backs list
-aggs <- lapply(look_backs, function(look_back) {
-  xtsv <- closep[look_back]
+# Perform lapply() loop over lookbs list
+aggs <- lapply(lookbs, function(lookb) {
+  xtsv <- closep[lookb]
   c(max=max(xtsv), min=min(xtsv))
 })  # end lapply
 # rbind list into single xts or matrix
@@ -6248,9 +6248,9 @@ roll_agg <- function(xtsv, endd, FUN, ...) {
   nrows <- NROW(endd)
 # startp are single-period lag of endd
   startp <- c(1, endd[1:(nrows-1)])
-# Perform aggregations over look_backs list
-  aggs <- lapply(look_backs,
-    function(look_back) FUN(xtsv[look_back], ...))  # end lapply
+# Perform aggregations over lookbs list
+  aggs <- lapply(lookbs,
+    function(lookb) FUN(xtsv[lookb], ...))  # end lapply
 # rbind list into single xts or matrix
   aggs <- rutils::do_call(rbind, aggs)
   if (!is.xts(aggs))
@@ -6324,7 +6324,7 @@ head(aggs)
       \vskip1ex
       Each point in time has an associated \emph{look-back interval}, which starts at a certain number of periods in the past (\emph{start\_point}) and ends at that point (\emph{end\_point}).
       \vskip1ex
-      The variable \texttt{look\_back} is equal to the number of end points in the \emph{look-back interval}, while (\texttt{look\_back - 1}) is equal to the number of intervals in the look-back.
+      The variable \texttt{lookb} is equal to the number of end points in the \emph{look-back interval}, while (\texttt{lookb - 1}) is equal to the number of intervals in the look-back.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -6333,12 +6333,12 @@ npoints <- 5
 nrows <- NROW(closep)
 nagg <- nrows %/% npoints
 endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
-# Number of data points in look_back interval
-look_back <- 22
-# startp are endd lagged by look_back
-startp <- (endd - look_back + 1)
+# Number of data points in lookb interval
+lookb <- 22
+# startp are endd lagged by lookb
+startp <- (endd - lookb + 1)
 startp <- ifelse(startp < 0, 0, startp)
-# Perform lapply() loop over look_backs list
+# Perform lapply() loop over lookbs list
 aggs <- lapply(2:NROW(endd), function(it) {
       xtsv <- closep[startp[it]:endd[it]]
       c(max=max(xtsv), min=min(xtsv))

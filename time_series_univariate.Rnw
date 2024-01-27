@@ -4510,7 +4510,7 @@ legend(x="topright", legend=c("series", "forecasts"),
       \vskip1ex
       The fitted coefficients are then applied to calculating the \emph{out-of-sample} forecasts.
       \vskip1ex
-      The model fitting procedure depends on two unknown \emph{meta-parameters}: the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
+      The model fitting procedure depends on two unknown \emph{meta-parameters}: the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{lookb}).
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -4526,9 +4526,9 @@ ordern <- 5
 predm <- sapply(1:ordern, rutils::lagit, input=arimav)
 colnames(predm) <- paste0("pred", 1:NCOL(predm))
 # Specify length of look-back interval
-look_back <- 100
+lookb <- 100
 # Invert the predictor matrix
-rangev <- (nrows-look_back):(nrows-1)
+rangev <- (nrows-lookb):(nrows-1)
 predinv <- MASS::ginv(predm[rangev, ])
 # Calculate fitted coefficients
 coeff <- drop(predinv %*% arimav[rangev])
@@ -4581,10 +4581,10 @@ maxorder <- 5
 predm <- sapply(1:maxorder, rutils::lagit, input=retp)
 predm <- cbind(rep(1, nrows), predm)
 # Perform rolling forecasting
-look_back <- 100
-fcast <- sapply((look_back+1):nrows, function(endd) {
+lookb <- 100
+fcast <- sapply((lookb+1):nrows, function(endd) {
   # Define rolling look-back range
-  startp <- max(1, endd-look_back)
+  startp <- max(1, endd-lookb)
   # Or expanding look-back range
   # startp <- 1
   rangev <- startp:(endd-1)
@@ -4596,7 +4596,7 @@ fcast <- sapply((look_back+1):nrows, function(endd) {
   drop(predm[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
-fcast <- c(rep(0, look_back), fcast)
+fcast <- c(rep(0, lookb), fcast)
       @
   \end{columns}
 \end{block}
@@ -4651,7 +4651,7 @@ dygraphs::dygraph(datav,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{meta-parameters} of the \emph{backtesting} function are the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{look\_back}).
+      The \emph{meta-parameters} of the \emph{backtesting} function are the order \emph{n} of the \emph{AR(n)} model and the length of the look-back interval (\texttt{lookb}).
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       \vskip1ex
@@ -4663,24 +4663,24 @@ dygraphs::dygraph(datav,
       \vskip1ex
       The coefficients of the \emph{AR(n)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
       \vskip1ex
-      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{look\_back}).
+      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order \emph{n} of the \emph{AR(n)} model and the length of look-back interval (\texttt{lookb}).
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
 sim_fcasts <- function(respv, nagg=5, ordern=5, 
-                       look_back=100, rollp=TRUE) {
+                       lookb=100, rollp=TRUE) {
   nrows <- NROW(respv)
   # Define predictor as a rolling sum
-  predm <- rutils::roll_sum(respv, look_back=nagg)
+  predm <- rutils::roll_sum(respv, lookb=nagg)
   # Define predictor matrix for forecasting
   predm <- sapply(1+nagg*(0:ordern), rutils::lagit, input=predm)
   predm <- cbind(rep(1, nrows), predm)
   # Perform rolling forecasting
-  fcast <- sapply((look_back+1):nrows, function(endd) {
+  fcast <- sapply((lookb+1):nrows, function(endd) {
     # Define rolling look-back range
     if (rollp)
-      startp <- max(1, endd-look_back)
+      startp <- max(1, endd-lookb)
     else
     # Or expanding look-back range
       startp <- 1
@@ -4693,12 +4693,12 @@ sim_fcasts <- function(respv, nagg=5, ordern=5,
     drop(predm[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
-  fcast <- c(rep(0, look_back), fcast)
+  fcast <- c(rep(0, lookb), fcast)
   # Aggregate the forecasts
-  rutils::roll_sum(fcast, look_back=nagg)
+  rutils::roll_sum(fcast, lookb=nagg)
 }  # end sim_fcasts
 # Simulate the rolling autoregressive forecasts
-fcast <- sim_fcasts(respv=retp, ordern=5, look_back=100)
+fcast <- sim_fcasts(respv=retp, ordern=5, lookb=100)
 c(mse=mean((retp - fcast)^2), cor=cor(retp, fcast))
       @
   \end{columns}
@@ -4717,17 +4717,17 @@ c(mse=mean((retp - fcast)^2), cor=cor(retp, fcast))
     \column{0.5\textwidth}
       The \emph{backtesting} function can be used to find the optimal \emph{meta-parameters} of the autoregressive forecasting model.
       \vskip1ex
-      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{look\_back}).
+      The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{lookb}).
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       <<echo=TRUE,eval=FALSE>>=
-look_backs <- seq(20, 200, 20)
-fcast <- sapply(look_backs, sim_fcasts, respv=retp, 
+lookbs <- seq(20, 200, 20)
+fcast <- sapply(lookbs, sim_fcasts, respv=retp, 
                      nagg=5, ordern=5)
-colnames(fcast) <- look_backs
+colnames(fcast) <- lookbs
 msev <- apply(fcast, 2, function(x) mean((retp - x)^2))
 # Plot forecasting series with legend
-plot(x=look_backs, y=msev,
+plot(x=lookbs, y=msev,
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")
       @

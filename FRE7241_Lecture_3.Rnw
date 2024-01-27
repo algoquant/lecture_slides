@@ -111,9 +111,9 @@ closep <- quantmod::Cl(ohlc)
 colnames(closep) <- "VTI"
 nrows <- NROW(closep)
 # Calculate the EWMA weights
-look_back <- 111
+lookb <- 111
 lambda <- 0.9
-weightv <- lambda^(0:look_back)
+weightv <- lambda^(0:lookb)
 weightv <- weightv/sum(weightv)
 # Calculate the EWMA prices as a convolution
 ewmacpp <- HighFreq::roll_sumw(closep, weightv=weightv)
@@ -550,7 +550,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="EWMA Strategy With Transaction Co
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-sim_ewma <- function(ohlc, lambda=0.9, look_back=333, bidask=0.001, 
+sim_ewma <- function(ohlc, lambda=0.9, lookb=333, bidask=0.001, 
                       trend=1, lagg=1) {
   closep <- quantmod::Cl(ohlc)
   retp <- rutils::diffit(closep)
@@ -606,7 +606,7 @@ lambdav <- seq(from=0.97, to=0.99, by=0.004)
 # Perform lapply() loop over lambdav
 pnltrend <- lapply(lambdav, function(lambda) {
   # Simulate EWMA strategy and Calculate the returns
-  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back, bidask=0, lagg=2)[, "pnls"]
+  sim_ewma(ohlc=ohlc, lambda=lambda, lookb=lookb, bidask=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
@@ -656,19 +656,19 @@ library(parallel)
 ncores <- detectCores() - 1  # Number of cores
 cluster <- makeCluster(detectCores()-1)
 clusterExport(cluster,
-  varlist=c("ohlc", "look_back", "sim_ewma"))
+  varlist=c("ohlc", "lookb", "sim_ewma"))
 # Perform parallel loop over lambdav under Windows
 pnltrend <- parLapply(cluster, lambdav, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and Calculate the returns
-  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
+  sim_ewma(ohlc=ohlc, lambda=lambda, lookb=lookb)[, "pnls"]
 })  # end parLapply
 stretduster(cluster)  # Stop R processes over cluster under Windows
 # Perform parallel loop over lambdav under Mac-OSX or Linux
 pnltrend <- mclapply(lambdav, function(lambda) {
   library(quantmod)
   # Simulate EWMA strategy and Calculate the returns
-  sim_ewma(ohlc=ohlc, lambda=lambda, look_back=look_back)[, "pnls"]
+  sim_ewma(ohlc=ohlc, lambda=lambda, lookb=lookb)[, "pnls"]
 }, mc.cores=ncores)  # end mclapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
@@ -1319,9 +1319,9 @@ volum <- quantmod::Vo(ohlc)
 colnames(volum) <- "Volume"
 nrows <- NROW(closep)
 # Calculate the VWAP prices
-look_back <- 21
-vwap <- HighFreq::roll_sum(closep*volum, look_back)
-volumr <- HighFreq::roll_sum(volum, look_back)
+lookb <- 21
+vwap <- HighFreq::roll_sum(closep*volum, lookb)
+volumr <- HighFreq::roll_sum(volum, lookb)
 vwap <- vwap/volumr
 colnames(vwap) <- "VWAP"
 pricev <- cbind(closep, vwap)
@@ -2069,17 +2069,17 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
 pricev <- log(na.omit(rutils::etfenv$prices$VTI))
 nrows <- NROW(pricev)
 # Define look-back window
-look_back <- 11
+lookb <- 11
 # Calculate time series of trailing medians
-medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
-# medianv <- TTR::runMedian(pricev, n=look_back)
+medianv <- HighFreq::roll_mean(pricev, lookb, method="nonparametric")
+# medianv <- TTR::runMedian(pricev, n=lookb)
 # Calculate time series of MAD
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=look_back)
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=lookb)
 # Calculate time series of z-scores
 zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-zscores[1:look_back, ] <- 0
-tail(zscores, look_back)
+zscores[1:lookb, ] <- 0
+tail(zscores, lookb)
 range(zscores)
       @
     \column{0.5\textwidth}
@@ -2124,12 +2124,12 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Hampel Bands")
       The best choice of the meta-parameters can be determined through simulation.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the time series of trailing medians and MAD
-look_back <- 3
-medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+lookb <- 3
+medianv <- HighFreq::roll_mean(pricev, lookb, method="nonparametric")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
 # Calculate the time series of z-scores
 zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-zscores[1:look_back, ] <- 0
+zscores[1:lookb, ] <- 0
 range(zscores)
 # Calculate the positions
 threshv <- 1
@@ -2184,12 +2184,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
 pricev <- log(quantmod::Cl(HighFreq::SPY))
 nrows <- NROW(pricev)
 # Calculate the price medians and MAD
-look_back <- 3
-medianv <- HighFreq::roll_mean(pricev, look_back, method="nonparametric")
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
+lookb <- 3
+medianv <- HighFreq::roll_mean(pricev, lookb, method="nonparametric")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
 # Calculate the time series of z-scores
 zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-zscores[1:look_back, ] <- 0
+zscores[1:lookb, ] <- 0
 # Calculate the positions
 threshv <- 1
 posv <- rep(NA_integer_, nrows)
