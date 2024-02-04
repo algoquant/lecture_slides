@@ -3017,11 +3017,11 @@ emas <- HighFreq::roll_conv(closep, weightv=weightv)
 # Calculate VTI prices
 emad <- (emaf - emas)
 pricev <- cbind(closep, emad)
-symbol <- "VTI"
-colnames(pricev) <- c(symbol, paste(symbol, "Returns"))
+symboln <- "VTI"
+colnames(pricev) <- c(symboln, paste(symboln, "Returns"))
 # Plot dygraph of VTI Returns
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main=paste(symbol, "EMA Returns")) %>%
+dygraphs::dygraph(pricev["2008/2009"], main=paste(symboln, "EMA Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -3067,11 +3067,11 @@ weightv <- (weightv - mean(weightv))
 # Calculate the fractional VTI returns
 retf <- HighFreq::roll_conv(closep, weightv=weightv)
 pricev <- cbind(closep, retf)
-symbol <- "VTI"
-colnames(pricev) <- c(symbol, paste(symbol, "Returns"))
+symboln <- "VTI"
+colnames(pricev) <- c(symboln, paste(symboln, "Returns"))
 # Plot dygraph of VTI Returns
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008-08/2009-08"], main=paste(symbol, "Fractional Returns")) %>%
+dygraphs::dygraph(pricev["2008-08/2009-08"], main=paste(symboln, "Fractional Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
@@ -3343,14 +3343,14 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI Online Volatility Z-Scores") %>
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the centered volatility
 lookb <- 21
-half_back <- lookb %/% 2
+halfb <- lookb %/% 2
 volat <- HighFreq::roll_var(closep, lookb=lookb)
 volat <- sqrt(volat)
-volat <- rutils::lagit(volat, lagg=(-half_back))
+volat <- rutils::lagit(volat, lagg=(-halfb))
 # Calculate the z-scores of prices
 pricez <- (closep - 
-  0.5*(rutils::lagit(closep, half_back, pad_zeros=FALSE) + 
-  rutils::lagit(closep, -half_back, pad_zeros=FALSE)))
+  0.5*(rutils::lagit(closep, halfb, pad_zeros=FALSE) + 
+  rutils::lagit(closep, -halfb, pad_zeros=FALSE)))
 pricez <- ifelse(volat > 0, pricez/volat, 0)
       @
     \column{0.5\textwidth}
@@ -3740,9 +3740,9 @@ zscores[1:lookb, ] <- 0
 tail(zscores, lookb)
 range(zscores)
 # Calculate two-sided Hampel z-scores
-half_back <- lookb %/% 2
-medianv <- rutils::lagit(medianv, lagg=(-half_back))
-madv <- rutils::lagit(madv, lagg=(-half_back))
+halfb <- lookb %/% 2
+medianv <- rutils::lagit(medianv, lagg=(-halfb))
+madv <- rutils::lagit(madv, lagg=(-halfb))
 zscores <- (closep - medianv)/madv
 zscores[1:lookb, ] <- 0
 tail(zscores, lookb)
@@ -5873,11 +5873,11 @@ library(roll)  # Load roll
 retp <- na.omit(rutils::etfenv$returns$VTI)
 lookb <- 22
 # Calculate trailing sum using roll::roll_sum
-sum_roll <- roll::roll_sum(retp, width=lookb, min_obs=1)
+sumroll <- roll::roll_sum(retp, width=lookb, min_obs=1)
 # Calculate trailing sum using rutils
-sum_rutils <- rutils::roll_sum(retp, lookb=lookb)
-all.equal(sum_roll[-(1:lookb), ], 
-          sum_rutils[-(1:lookb), ], check.attributes=FALSE)
+sumrutils <- rutils::roll_sum(retp, lookb=lookb)
+all.equal(sumroll[-(1:lookb), ], 
+          sumrutils[-(1:lookb), ], check.attributes=FALSE)
 # Benchmark speed of trailing calculations
 library(microbenchmark)
 summary(microbenchmark(
@@ -5919,10 +5919,10 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 library(RcppRoll)  # Load package RcppRoll
 # Calculate trailing sum using RcppRoll
-sum_roll <- RcppRoll::roll_sum(retp, align="right", n=lookb)
+sumroll <- RcppRoll::roll_sum(retp, align="right", n=lookb)
 # Calculate trailing sum using rutils
-sum_rutils <- rutils::roll_sum(retp, lookb=lookb)
-all.equal(sum_roll, coredata(sum_rutils[-(1:(lookb-1))]), 
+sumrutils <- rutils::roll_sum(retp, lookb=lookb)
+all.equal(sumroll, coredata(sumrutils[-(1:(lookb-1))]), 
           check.attributes=FALSE)
 # Benchmark speed of trailing calculations
 library(microbenchmark)

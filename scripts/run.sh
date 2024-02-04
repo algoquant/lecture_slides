@@ -60,6 +60,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/c_var/cvar/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/day_s/dayv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fram_e/dframe/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/da_ta/datav/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/data_env/datenv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/date time/datet/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/date_s/datev/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/de_sign/desv/g' *.R*
@@ -104,7 +105,8 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tor/ratio/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fac_tors/factors/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/factor_s/factors/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fibo_nacci/fibonacci/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/fil_e/filev/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/fil_e/filen/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/file_name/filen/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/filter_ed/filtered/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fir_st/firstv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/fit_ted/fitv/g' *.R*
@@ -157,7 +159,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/me_ans/meanv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/medi_an/medianv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/meth_od/method/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/mo_ment/moment/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/mod_el/model/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/mod_el/modelt/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/model_sum/modelsum/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/month_codes/codes/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/month_s/months/g' *.R*
@@ -297,7 +299,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/strik_e/strikep/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/str_ing/strng/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/sum_two/sumtwo/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/vx_x/vxx/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/sym_bol/symbol/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/sym_bol/symboln/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/sym_bols/symbolv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/symbol_s/symbolv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/system_atic/sysv/g' *.R*
@@ -355,7 +357,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/weight_s/weightv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/whi_ch/whichv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/wil_cox/wilcoxt/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/wilcox_w/wilcoxw/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/win_dow/look_back/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/win_dow/lookb/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/look_back/lookb/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/x_lim/xlim/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/x_ts/xtsv/g' *.R*

@@ -20,6 +20,11 @@ knit_theme$set(thm)
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
 % \usepackage{caption}
+% tikz package for plotting and tables
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{array}
+\usepackage{multirow}
 % mathtools package for math symbols
 \usepackage{mathtools}
 % bbm package for unitary vector or matrix symbol
@@ -664,7 +669,7 @@ for (symbol in symbolv) {
   plot.zoo(cbind(retc[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n", y.intersp=0.1,
-         legend=paste0(symbol, c("", " solved")),
+         legend=paste0(symboln, c("", " solved")),
          title=NULL, inset=0.0, cex=1.0, lwd=6,
          lty=1, col=c("black", "blue"))
 }  # end for
@@ -1126,8 +1131,8 @@ symbolv <- symbolv[2:9]
 startd <- as.Date("2018-01-11")
 endd <- as.Date("2018-02-05")
 # Extract all VIX futures prices on the dates
-futcurves <- lapply(symbolv, function(symbol) {
-  xtsv <- get(x=symbol, envir=vixenv)
+futcurves <- lapply(symbolv, function(symboln) {
+  xtsv <- get(x=symboln, envir=vixenv)
   Cl(xtsv[c(startd, endd)])
 })  # end lapply
 futcurves <- rutils::do_call(cbind, futcurves)
@@ -1225,7 +1230,7 @@ pricec <- (ratiop*priceb + (1-ratiop)*pricef)
     \column{0.5\textwidth}
       The volatility index moves in the opposite direction to the underlying asset price.
       \vskip1ex
-      An increase in the \emph{VIX} index coincides with a drop in stock pricev, and vice versa.
+      An increase in the \emph{VIX} index coincides with a drop in stock prices, and vice versa.
       \vskip1ex
       Taking a \emph{long} position in \emph{VIX} futures is similar to a \emph{short} position in stocks, and vice versa.
       \vskip1ex
@@ -1461,7 +1466,7 @@ print(xtable(dframe), comment=FALSE, size="scriptsize", include.rownames=FALSE)
       \vskip1ex
       \emph{WRDS} provides time series of security prices and fundamental company data, and other financial, econometric, and social datasets.
       \vskip1ex
-      \emph{WRDS} provides stock pricev, options and implied volatilities, stock fundamentals, financial ratios, zoo::indexes, earnings estimates, analyst ratings, etc.
+      \emph{WRDS} provides stock prices, options and implied volatilities, stock fundamentals, financial ratios, zoo::indexes, earnings estimates, analyst ratings, etc.
       \vskip1ex
       \emph{WRDS} redistributes fundamental company data from \href{http://www.compustat.com}{\emph{Compustat}}, \href{http://www.capitaliq.com}{\emph{S\&P Capital IQ}}, \href{https://www.thomsonreuters.com/en.html}{\emph{Thomson Reuters}}, \href{http://www.factset.com/}{\emph{FactSet}}, \emph{Hedge Fund Research}, \href{https://ihsmarkit.com/index.html}{\emph{Markit}}, etc.
       \vskip1ex
@@ -1526,7 +1531,7 @@ print(xtable(dframe), comment=FALSE, size="scriptsize", include.rownames=FALSE)
   \begin{columns}[T]
     \column{0.5\textwidth}
       The two main databases on \emph{WRDS} are the
-      \href{https://wrds-web.wharton.upenn.edu/wrds/query_forms/navigation.cfm?navId=60}{\emph{Compustat}} database of fundamental company data and security pricev,
+      \href{https://wrds-web.wharton.upenn.edu/wrds/query_forms/navigation.cfm?navId=60}{\emph{Compustat}} database of fundamental company data and security prices,
       and the
       \href{https://wrds-web.wharton.upenn.edu/wrds/query_forms/navigation.cfm?navId=118}{\emph{CRSP}} database of security prices.
       \vskip1ex
@@ -1549,7 +1554,7 @@ print(xtable(dframe), comment=FALSE, size="scriptsize", include.rownames=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \href{http://www.compustat.com}{\emph{Compustat}} is a provider of fundamental company data, and also security pricev, and other data such as credit ratings.
+      \href{http://www.compustat.com}{\emph{Compustat}} is a provider of fundamental company data, and also security prices, and other data such as credit ratings.
       \vskip1ex
       Daily North American security prices can be downloaded from the
       \href{https://wrds-web.wharton.upenn.edu/wrds/ds/compd/secd/index.cfm?navId=83}{\emph{Compustat Daily Prices}} database, which can be reached by navigating from the \href{https://wrds-www.wharton.upenn.edu}{\emph{WRDS}} home page to
@@ -1630,8 +1635,8 @@ write.csv(namet, file="/Users/jerzy/Develop/lecture_slides/data/compustat_table.
 # rm(namet)
 # Read names table from csv file
 namet <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/compustat_table.csv")
-# symbol <- "VTI"
-# match(symbol, namet$tic)
+# symboln <- "VTI"
+# match(symboln, namet$tic)
 # Create ETF symbols (tickers)
 symbolv <- c("VTI", "VEU", "EEM")
 # Get cusips of symbolv
@@ -1824,7 +1829,7 @@ tickers %in% sp500_tickers
 # Select data only for sp500_tickers
 ohlc <- ohlc[ohlc$tic %in% sp500_tickers, ]
 # Select ticker from sp500table
-symbol <- sp500table$co_tic[match(ohlc$gvkey[1], sp500table$gvkey)]
+symboln <- sp500table$co_tic[match(ohlc$gvkey[1], sp500table$gvkey)]
 # Adjustment factor and total return factor
 factadj <- drop(ohlc[, "ajexdi"])
 factr <- drop(ohlc[, "trfd"])
@@ -1833,7 +1838,7 @@ datev <- drop(ohlc[, "datadate"])
 datev <- lubridate::ymd(datev)
 # Select only OHLCV data columns
 ohlc <- ohlc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
-colnames(ohlc) <- paste(symbol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
+colnames(ohlc) <- paste(symboln, c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Coerce to xts series
 ohlc <- xts::xts(ohlc, datev)
 # Fill the missing (NA) Open prices
@@ -1865,7 +1870,7 @@ plot(quantmod::Cl(ohlc), main="TAP Stock")
 # Define formatting function for OHLC prices
 format_ohlc <- function(ohlc, environ_ment) {
   # Select ticker from sp500table
-  symbol <- sp500table$co_tic[match(ohlc$gvkey[1], sp500table$gvkey)]
+  symboln <- sp500table$co_tic[match(ohlc$gvkey[1], sp500table$gvkey)]
   # Split adjustment and total return factors
   factadj <- drop(ohlc[, c("ajexdi")])
   factr <- drop(ohlc[, "trfd"])
@@ -1875,7 +1880,7 @@ format_ohlc <- function(ohlc, environ_ment) {
   datev <- lubridate::ymd(datev)
   # Select only OHLCV data
   ohlc <- ohlc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
-  colnames(ohlc) <- paste(symbol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
+  colnames(ohlc) <- paste(symboln, c("Open", "High", "Low", "Close", "Volume"), sep=".")
   # Coerce to xts series
   ohlc <- xts::xts(ohlc, datev)
   # Fill NA prices
@@ -1885,7 +1890,7 @@ format_ohlc <- function(ohlc, environ_ment) {
   ohlc[, 1:4] <- factr*ohlc[, 1:4]/factadj/factr[NROW(factr)]
   # Copy the OHLCV data to environ_ment
   ohlc <- na.omit(ohlc)
-  assign(x=symbol, value=ohlc, envir=environ_ment)
+  assign(x=symboln, value=ohlc, envir=environ_ment)
   symbol
 }  # end format_ohlc
       @
@@ -2027,7 +2032,7 @@ plot(quantmod::Cl(sp500env$MSFT))
       \emph{WRDS} provides online help and a guide to its datasets:\\
       \hskip1em\url{https://wrds-www.wharton.upenn.edu}\\
       \vskip1ex
-      \emph{WRDS} provides stock pricev, stock fundamentals, financial ratios, zoo::indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
+      \emph{WRDS} provides stock prices, stock fundamentals, financial ratios, zoo::indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
       \hskip1em\url{https://www.WRDS.com/blog/api-for-stock-data}
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2101,9 +2106,9 @@ viewFinancials(funda_mentals)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Center for Research in Security Prices (\href{http://www.crsp.org/}{\emph{CRSP}}) is a provider of historical security pricev, and is an affiliate of the University of Chicago Booth School of Business.
+      The Center for Research in Security Prices (\href{http://www.crsp.org/}{\emph{CRSP}}) is a provider of historical security prices, and is an affiliate of the University of Chicago Booth School of Business.
       \vskip1ex
-      \emph{CRSP} data provides daily pricev, but it's updated only monthly, quarterly, and annually.
+      \emph{CRSP} data provides daily prices, but it's updated only monthly, quarterly, and annually.
       \vskip1ex
       \emph{CRSP} provides very long time series of data starting in $1926$.
       \vskip1ex
@@ -2140,7 +2145,7 @@ names(col_class) <- "TICKER"
 # Read .csv file with Ford OHLC prices
 ohlc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/F_CRSP.csv",
   colClasses=col_class)
-symbol <- ohlc[1, "TICKER"]
+symboln <- ohlc[1, "TICKER"]
 # Adjustment factor
 factadj <- drop(ohlc[, "CFACPR"])
 # Extract dates index
@@ -2148,7 +2153,7 @@ datev <- drop(ohlc[, "date"])
 datev <- lubridate::ymd(datev)
 # Select only OHLCV data
 ohlc <- ohlc[, c("OPENPRC", "ASKHI", "BIDLO", "PRC", "VOL")]
-colnames(ohlc) <- paste(symbol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
+colnames(ohlc) <- paste(symboln, c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Coerce to xts series
 ohlc <- xts::xts(ohlc, datev)
 # Fill missing Open NA prices
@@ -2233,7 +2238,7 @@ print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE
 library(rutils)  # Load package rutils
 # Read .csv file with TAP OHLC prices
 ohlc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/TAP.csv")
-symbol <- ohlc[1, "tic"]
+symboln <- ohlc[1, "tic"]
 # Adjustment factor and total return factor
 factadj <- drop(ohlc[, "ajexdi"])
 factr <- drop(ohlc[, "trfd"])
@@ -2242,7 +2247,7 @@ datev <- drop(ohlc[, "datadate"])
 datev <- lubridate::ymd(datev)
 # Select only OHLCV data
 ohlc <- ohlc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
-colnames(ohlc) <- paste(symbol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
+colnames(ohlc) <- paste(symboln, c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Coerce to xts series
 ohlc <- xts::xts(ohlc, datev)
 # Fill missing Open NA prices
@@ -2299,7 +2304,7 @@ chart_Series(cumsum(factors["2001/", 1]/100),
 
 
 %%%%%%%%%%%%%%%
-\section{High Frequency and Intraday Time Series Data}
+\section{High Frequency and Intraday Stock Prices}
 
 
 %%%%%%%%%%%%%%%
@@ -2317,7 +2322,7 @@ chart_Series(cumsum(factors["2001/", 1]/100),
       \vskip1ex
       The \emph{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives.
       \vskip1ex
-      Each row of \emph{TAQ} data may contain the quote and trade pricev, and the corresponding quote size or trade volume:
+      Each row of \emph{TAQ} data may contain the quote and trade prices, and the corresponding quote size or trade volume:
       \emph{Bid.Price, Bid.Size, Ask.Price, Ask.Size, Trade.Price, Volume}.
       \vskip1ex
       \emph{TAQ} data is often split into \emph{trade} data and \emph{quote} data.
@@ -2363,7 +2368,6 @@ tail(HighFreq::SPY)
 \end{frame}
 
 
-% From machine_learning.Rnw
 %%%%%%%%%%%%%%%
 \subsection{Reading \protect\emph{TAQ} Data From \texttt{.csv} Files}
 \begin{frame}[fragile,t]{\subsecname}
@@ -2385,13 +2389,13 @@ tail(HighFreq::SPY)
       <<echo=TRUE,eval=FALSE>>=
 library(HighFreq)
 # Read TAQ trade data from csv file
-taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.csv")
+taq <- data.table::fread(file="/Users/jerzy/Develop/lecture_slides/data/xlk_tick_trades_20200316.csv")
 # Inspect the TAQ data in data.table format
 taq
 class(taq)
 colnames(taq)
 sapply(taq, class)
-symbol <- taq$SYM_ROOT[1]
+symboln <- taq$SYM_ROOT[1]
 # Create date-time index
 datev <- paste(taq$DATE, taq$TIME_M)
 # Coerce date-time index to POSIXlt
@@ -2422,7 +2426,37 @@ taq <- taq[, .(price=PRICE, volume=SIZE)]
 \end{frame}
 
 
-% From machine_learning.Rnw
+%%%%%%%%%%%%%%%
+\subsection{Trading Volumes in High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trading volumes represent the number of shares traded at a given price.  
+      \vskip1ex
+      The histogram of the trading volumes shows that the highest frequencies of trades are for \texttt{100} shares and for round lots (trades that are multiples of \texttt{100} shares.)
+      \vskip1ex
+      There are also significant frequencies for \emph{odd lots}, with small volumes of less than \texttt{100} shares.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/hf_ticks_volume_histogram.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce trade ticks to xts series
+xlk <- xts::xts(taq[, .(price, volume)], datev)
+colnames(xlk) <- c("price", "volume")
+save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+# Plot histogram of the trading volumes
+hist(xlk$volume, main="Histogram of XLK Trading Volumes", 
+     breaks=1e5, xlim=c(1, 400), xlab="number of shares")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 %%%%%%%%%%%%%%%
 \subsection{Microstructure Noise in High Frequency Data}
 \begin{frame}[fragile,t]{\subsecname}
@@ -2439,23 +2473,77 @@ taq <- taq[, .(price=PRICE, volume=SIZE)]
       The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
       \vskip1ex
       The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in reality the mid price is unchanged.
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce trade ticks to xts series
-xlk <- xts::xts(taq[, .(price, volume)], datev)
-colnames(xlk) <- c("price", "volume")
-save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-      @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_raw.png}
       % \vspace{-1em}
+      % \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_bounce.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph
 dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
   dyOptions(colors="blue", strokeWidth=1)
+# Plot in x11 window
+x11(width=6, height=5)
+quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Bid-ask Bounce of High Frequency Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
+      \vskip1ex
+      The \emph{bid-ask bounce} is prominent at very high frequency time scales or in periods of low volatility.
+      \vskip1ex
+      The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in fact the mid price is constant.
+      \vskip1ex
+      The \emph{bid-ask bounce} inflates the estimates of realized volatility, above the actual volatility.
+      \vskip1ex
+      The \emph{bid-ask bounce} creates the appearance of mean reversion (negative autocorrelation), that isn't tradeable for most traders.
+      <<echo=TRUE,eval=FALSE>>=
+pricev <- read.zoo(file="/Users/jerzy/Develop/lecture_slides/data/bid_ask_bounce.csv",
+  header=TRUE, sep=",")
+pricev <- as.xts(pricev)
+dygraphs::dygraph(pricev$Close, 
+  main="S&P500 Futures Prices Bid-Ask Bounce") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_futures_bounce.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Price Spikes And Trading Volumes in High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The number of the \emph{price spikes} depends on the level of trading volumes, with the number decreasing with higher trading volumes.
+      \vskip1ex
+      The number of price spikes is lower for trade prices with larger trading volumes.
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_biglots.png}
+      % \vspace{-1em}
       % \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_bounce.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot dygraph of trade prices of at least 100 shares
+dygraphs::dygraph(xlk$price[xlk$volume >= 100, ],
+  main="XLK Prices for Trades of At Least 100 Shares") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+      @
   \end{columns}
 \end{block}
 
@@ -2477,7 +2565,7 @@ dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
       \vskip1ex
       The \emph{odd lot} ticks are often removed to reduce the size of the \emph{TAQ} data.
       \vskip1ex
-      Selecting only the large lot trades reduces microstructure noise (price jumps, bid-ask bounce) in high frequency data.
+      Selecting only the large lot trades reduces microstructure noise (price spikes, bid-ask bounce) in high frequency data.
       <<echo=TRUE,eval=FALSE>>=
 # Select the large trade lots of at least 100 shares
 dim(taq)
@@ -2510,6 +2598,527 @@ quantmod::chart_Series(x=xlk$price,
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Identifying Isolated Price Spikes In Intraday Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Isolated price spikes in high frequency data can be identified using a \emph{three-point filter} (tri-filter).
+      histogram of returns
+      \vskip1ex
+      The tri-filter compares two price ratios of three neighboring prices: 
+      
+      p0, p1, p2
+      is a median filter that replaces the central value with the median of the three values.
+      Create three-point classifier for bad prices.
+Identify bad prices in-sample using 
+
+      \emph{z-scores} are equal to the prices minus the median of the prices, divided by the median absolute deviation (\emph{MAD}) of prices:
+      \begin{displaymath}
+        z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
+      \end{displaymath}
+      If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the centered Hampel filter to remove bad prices
+lookb <- 71
+halfb <- lookb %/% 2
+pricev <- xlk$price
+# Calculate the trailing median and MAD
+medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
+colnames(medianv) <- c("median")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=lookb)
+# Center the median and the MAD
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+# Calculate the Z-scores
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_scrubbed.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Define discrimination threshold value
+threshv <- 6*madz
+# Identify good prices with small z-scores
+isgood <- (abs(zscores) < threshv)
+# Calculate the number of bad prices
+sum(!isgood)
+# Overwrite bad prices and calculate time series of scrubbed prices
+priceg <- pricev
+priceg[!isgood] <- NA
+priceg <- na.locf(priceg)
+# Plot dygraph of the scrubbed prices
+dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot using chart_Series()
+x11(width=6, height=5)
+quantmod::chart_Series(x=priceg,
+  name="Clean XLK Intraday Prices for 2020-03-16")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Hampel Filter For Filtering Price Spikes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Price spikes in high frequency data can be identified using a \emph{Hampel filter}.
+      \vskip1ex
+      The \emph{z-scores} are equal to the prices minus the median of the prices, divided by the median absolute deviation (\emph{MAD}) of prices:
+      \begin{displaymath}
+        z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
+      \end{displaymath}
+      If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the centered Hampel filter to remove bad prices
+lookb <- 71
+halfb <- lookb %/% 2
+pricev <- xlk$price
+# Calculate the trailing median and MAD
+medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
+colnames(medianv) <- c("median")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=lookb)
+# Center the median and the MAD
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+# Calculate the Z-scores
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_scrubbed.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Define discrimination threshold value
+threshv <- 6*madz
+# Identify good prices with small z-scores
+isgood <- (abs(zscores) < threshv)
+# Calculate the number of bad prices
+sum(!isgood)
+# Overwrite bad prices and calculate time series of scrubbed prices
+priceg <- pricev
+priceg[!isgood] <- NA
+priceg <- na.locf(priceg)
+# Plot dygraph of the scrubbed prices
+dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot using chart_Series()
+x11(width=6, height=5)
+quantmod::chart_Series(x=priceg,
+  name="Clean XLK Intraday Prices for 2020-03-16")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Classifying Data Outliers Using the Hampel Filter}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hampel filter is a \emph{classifier} which classifies the prices as either good or bad data points.
+      \vskip1ex
+      In order to measure the performance of the Hampel filter, we add price spikes to the clean prices, to see how accurately they're classified. 
+      \vskip1ex
+      Let the \emph{null hypothesis} be that the given price is a good data point.
+      \vskip1ex
+      A positive result corresponds to rejecting the \emph{null hypothesis}, while a negative result corresponds to accepting the \emph{null hypothesis}.
+      \vskip1ex
+      The classifications are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
+      \vskip1ex
+      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), when good data is classified as bad.
+      \vskip1ex
+      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), when bad data is classified as good.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add 200 random price spikes to the clean prices
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nspikes <- 200
+nrows <- NROW(priceg)
+ispike <- logical(nrows)
+ispike[sample(x=nrows, size=nspikes)] <- TRUE
+priceb <- priceg
+priceb[ispike] <- priceb[ispike]*
+  sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
+# Calculate the z-scores
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
+# Plot the bad prices and their medians
+pricem <- cbind(priceb, medianv)
+colnames(pricem) <- c("prices with spikes", "median")
+dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
+  dyOptions(colors=c("red", "blue"))
+# medianv <- TTR::runMedian(priceb, n=lookb)
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(priceb, n=lookb)
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
+# Identify good prices with small z-scores
+threshv <- 3*madz
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Confusion Matrix of a Binary Classification Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
+      \vskip1ex
+      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
+      \vskip1ex
+      \newcommand\MyBox[2]{
+        \fbox{\lower0.75cm
+          \vbox to 1.2cm{\vfil
+            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
+            \vfil}
+        }
+      }
+      \renewcommand\arraystretch{0.3}
+      \setlength\tabcolsep{0pt}
+      {\tiny
+      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
+      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
+      & \multicolumn{2}{c}{\bfseries Forecast} & \\
+      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
+      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
+      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
+      \end{tabular}}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the confusion matrix
+table(actual=!ispike, forecast=isgood)
+sum(!isgood)
+# FALSE positive (type I error)
+sum(!ispike & !isgood)
+# FALSE negative (type II error)
+sum(ispike & isgood)
+      @
+    \column{0.5\textwidth}
+      Let the \emph{null hypothesis} be that the given price is a good data point.
+      \vskip1ex
+      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
+      \vskip1ex
+      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
+      \vskip1ex
+      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
+      \vskip1ex
+      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
+      \vskip1ex
+      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
+      \vskip1ex
+      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Receiver Operating Characteristic (ROC) Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      \vskip1ex
+      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
+      <<echo=TRUE,eval=FALSE>>=
+# Confusion matrix as function of threshold
+confun <- function(actualv, zscores, threshv) {
+    confmat <- table(actualv, (abs(zscores) < threshv))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+}  # end confun
+confun(!ispike, zscores, threshv=threshv)
+# Define vector of discrimination thresholds
+threshv <- madz*seq(from=0.1, to=5.0, by=0.1)/2
+# Calculate the error rates
+errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+# Calculate the area under the ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot ROC curve for Hampel classifier
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Bad Data From Daily Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Daily stock prices also contain bad data points consisting of mostly single, isolated spikes in prices.
+      \vskip1ex
+      The number of false positives may be too high, so the Hampel filter parameters (the look-back interval and the threshold) need adjustment.
+      \vskip1ex
+      For example, the \emph{VXX} has only one bad price (on \texttt{2010-11-08}), but the Hampel filter identifies many more than that (which are false positives).
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the centered Hampel filter for VXX
+lookb <- 71
+halfb <- lookb %/% 2
+pricev <- log(na.omit(rutils::etfenv$prices$VXX))
+medianv <- roll::roll_median(pricev, width=lookb)
+medianv[1:lookb, ] <- pricev[1:lookb, ]
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_falsepos.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Define discrimination threshold value
+threshv <- 10*madz
+# Calculate the bad prices
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+# Dates of the bad prices
+zoo::index(pricev[!isgood])
+# Calculate the false positives
+falsep <- !isgood
+falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
+# Plot dygraph of the prices with bad prices
+dygraphs::dygraph(pricev, main="VXX Prices With False Positives") %>%
+  dyEvent(zoo::index(pricev[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Filtering Combined Spikes From Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The narrow Hampel filter isn't very good anyway
+      \vskip1ex
+      The narrow Hampel filter using the median of \texttt{3} prices can only identify single isolated spikes. 
+      \vskip1ex
+      But sometimes several bad prices occur in a row, one after another.
+      \vskip1ex
+      The narrow Hampel filter cannot identify multiple bad prices in a row, and will therefore produce false negatives (bad prices identified as good).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add single isolated spike to the prices 
+priceb <- pricev
+priceb["2017-11-20"] <- 1.2*priceb["2017-11-20"]
+# Calculate the Z-scores
+medianv <- roll::roll_median(priceb, width=lookb)
+medianv[1:lookb, ] <- priceb[1:lookb, ]
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
+# Calculate the number of bad prices
+threshv <- 10*madz
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+zoo::index(priceb[!isgood])
+# Add two neighboring spikes to the prices
+priceb <- pricev
+priceb["2017-11-20"] <- 1.2*priceb["2017-11-21"]
+priceb["2017-11-21"] <- 1.2*priceb["2017-11-21"]
+# Calculate the Z-scores
+medianv <- roll::roll_median(priceb, width=lookb)
+medianv[1:lookb, ] <- priceb[1:lookb, ]
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
+# Calculate the number of bad prices
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+zoo::index(priceb[!isgood])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Scrubbing Bad Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Bad stock prices can be scrubbed (replaced) with the previous good price.  
+      \vskip1ex
+      But it's incorrect to replace bad prices with the average of the previous good price and the next good price, since that would cause data snooping.
+      <<echo=TRUE,eval=FALSE>>=
+# Dates of the bad prices
+datev <- zoo::index(pricev)
+dateb <- datev[!isgood]
+# Dates of the previous prices
+datep <- c(!isgood[-1], FALSE)
+datev[datep]
+# Replace bad stock prices with the previous good prices
+priceg <- pricev
+priceg[!isgood] <- pricev[datep]
+# Calculate the Z-scores
+medianv <- roll::roll_median(priceg, width=lookb)
+medianv[1:lookb, ] <- priceg[1:lookb, ]
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceg, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
+# Calculate the number of bad prices
+threshv <- 10*madz
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+zoo::index(priceg[!isgood])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_scrubbed.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the false positives
+falsep <- !isgood
+falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
+# Plot dygraph of the prices with bad prices
+dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
+  dyEvent(zoo::index(priceg[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Receiver Operating Characteristic (ROC) Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of the Hampel noise classification model depends on the length of the look-back time interval.
+      a binary.
+      \emph{area under the ROC curve} (AUC) is a measure of 
+      a binary.
+      The optimal \emph{threshold value} can be determined using \emph{cross-validation}. 
+      \vskip1ex
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      \vskip1ex
+      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
+      <<echo=TRUE,eval=FALSE>>=
+# Confusion matrix as function of threshold
+confun <- function(actualv, zscores, threshv) {
+    confmat <- table(!actualv, !(abs(zscores) > threshv))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+  }  # end confun
+confun(ispike, zscores, threshv=threshv)
+# Define vector of discrimination thresholds
+threshv <- seq(from=0.2, to=5.0, by=0.2)
+# Calculate the error rates
+errorr <- sapply(threshv, confun,
+  actualv=ispike, zscores=zscores)  # end sapply
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+# Calculate the area under ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot ROC curve for Hampel classifier
+x11(width=6, height=5)
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Modeling of Intraday Stock Prices}
 
 
 %%%%%%%%%%%%%%%
@@ -2572,9 +3181,9 @@ quantmod::chart_Series(x=ohlc, TA="add_Vo()",
       \vskip1ex
       The \emph{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives.
       \vskip1ex
-      Each row of \emph{TAQ} data contains both the quote and trade pricev, and the corresponding quote size or trade volume.
+      Each row of \emph{TAQ} data contains both the quote and trade prices, and the corresponding quote size or trade volume.
       \vskip1ex
-      Each row of \emph{TAQ} data contains both the quote and trade pricev, and the corresponding quote size or trade volume:
+      Each row of \emph{TAQ} data contains both the quote and trade prices, and the corresponding quote size or trade volume:
       \emph{Bid.Price, Bid.Size, Ask.Price, Ask.Size, Trade.Price, Volume}.
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2639,12 +3248,12 @@ head(HighFreq::SPY)
 # Load package HighFreq
 library(HighFreq)
 # Define symbol
-symbol <- "SPY"
+symboln <- "SPY"
 # Load OHLC data
 dirout <- "/Users/jerzy/Develop/data/hfreq/scrub/"
-symbol <- load(file.path(dirout, paste0(symbol, ".RData")))
+symboln <- load(file.path(dirout, paste0(symboln, ".RData")))
 interval <-"2013-11-11 09:30:00/2013-11-11 10:30:00"
-chart_Series(SPY[interval], name=symbol)
+chart_Series(SPY[interval], name=symboln)
       @
       The package \emph{HighFreq} contains both \emph{TAQ} data and \emph{Open-High-Low-Close} (\emph{OHLC}) data.
       \vskip1ex
@@ -2736,13 +3345,13 @@ library(HighFreq)
 dirin <- "/Users/jerzy/Develop/data/hfreq/src/"
 dirout <- "/Users/jerzy/Develop/data/hfreq/scrub/"
 # Define symbol
-symbol <- "SPY"
+symboln <- "SPY"
 # Load a single day of TAQ data
-symbol <- load(file.path(dirin, paste0(symbol, "/2014.05.02.", symbol, ".RData")))
+symboln <- load(file.path(dirin, paste0(symboln, "/2014.05.02.", symboln, ".RData")))
 # Scrub, aggregate single day of TAQ data to OHLC
-ohlc_data <- scrub_agg(taq_data=get(symbol))
-# Aggregate TAQ data for symbol, save to file
-HighFreq::save_scrub_agg(symbol,
+ohlc_data <- scrub_agg(taq_data=get(symboln))
+# Aggregate TAQ data for the symbol, and save to file
+HighFreq::save_scrub_agg(symboln,
                dirin=dirin,
                dirout=dirout,
                period="minutes")
@@ -2957,36 +3566,6 @@ legend("topright", legend=colnames(vol_rolling),
   inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.1,
   col=plot_theme$col$line.col, bty="n")
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Bid-ask Bounce of High Frequency Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
-      \vskip1ex
-      The \emph{bid-ask bounce} is prominent at very high frequency time scales or in periods of low volatility.
-      \vskip1ex
-      The \emph{bid-ask bounce} creates an illusion of rapidly changing pricev, while in fact the mid price is constant.
-      \vskip1ex
-      The \emph{bid-ask bounce} produces very high realized volatility and the appearance of mean reversion (negative autocorrelation), that isn't tradeable for most traders.
-      <<echo=TRUE,eval=FALSE>>=
-pricev <- read.zoo(file="/Users/jerzy/Develop/lecture_slides/data/bid_ask_bounce.csv",
-  header=TRUE, sep=",")
-pricev <- as.xts(pricev)
-x11(width=6, height=4)
-par(mar=c(2, 2, 0, 0), oma=c(1, 1, 0, 0))
-chart_Series(x=pricev, name="S&P500 Futures Bid-Ask Bounce")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_futures_bounce.png}
   \end{columns}
 \end{block}
 
@@ -3375,10 +3954,8 @@ chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
       <<daily_volat_hurst,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 par(mfrow=c(2,1))  # set plot panels
 library(rutils)  # Load package rutils
-chart_Series(roll_sum(volatd, 10)[-(1:10)]/10,
-             name=paste(symbol, "variance"))
-chart_Series(roll_sum(hurst_daily, 10)[-(1:10)]/10,
-             name=paste(symbol, "Hurst"))
+chart_Series(roll_sum(volatd, 10)[-(1:10)]/10, name=paste(symboln, "variance"))
+chart_Series(roll_sum(hurstd, 10)[-(1:10)]/10, name=paste(symboln, "Hurst"))
 abline(h=0.5, col="blue", lwd=2)
       @
     \column{0.5\textwidth}
@@ -3405,7 +3982,7 @@ library(rutils)  # Load package rutils
 interval <- "2013"
 season_hurst <- season_ality(hurst_ohlc(ohlc=SPY[interval, 1:4]))
 season_hurst <- season_hurst[-(nrow(season_hurst))]
-colnames(season_hurst) <- paste0(colname(get(symbol)), ".season_hurst")
+colnames(season_hurst) <- paste0(colname(get(symboln)), ".season_hurst")
 plot_theme <- chart_theme()
 plot_theme$format.labels <- "%H:%M"
 chobj <- chart_Series(x=season_hurst,
@@ -3455,9 +4032,9 @@ skewn[1, ] <- 0
 skewn <- na.locf(skewn)
 interval <- "2013-11-11/2013-11-15"
 chart_Series(varv[interval],
-            name=paste(symbol, "variance"))
+            name=paste(symboln, "variance"))
 chart_Series(skewn[interval],
-            name=paste(symbol, "Skew"),
+            name=paste(symboln, "Skew"),
             ylim=c(-1, 1))
       @
     \column{0.5\textwidth}
@@ -3482,16 +4059,16 @@ library(rutils)  # Load package rutils
 # Daily variance and skew
 volatd <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
                         agg_fun="vol_ohlc")
-colnames(volatd) <- paste0(symbol, ".var")
+colnames(volatd) <- paste0(symboln, ".var")
 daily_skew <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
                         agg_fun="skew_ohlc")
 daily_skew <- daily_skew/(volatd)^(1.5)
-colnames(daily_skew) <- paste0(symbol, ".skew")
+colnames(daily_skew) <- paste0(symboln, ".skew")
 interval <- "2013-06-01/"
 chart_Series(volatd[interval],
-             name=paste(symbol, "variance"))
+             name=paste(symboln, "variance"))
 chart_Series(daily_skew[interval],
-             name=paste(symbol, "skew"))
+             name=paste(symboln, "skew"))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/earl_dailyskew-1}
@@ -3513,7 +4090,7 @@ chart_Series(daily_skew[interval],
 # Skew scatterplot
 retp <- calc_rets(xts_data=SPY)
 skewn <- skew_ohlc(log_ohlc=log(SPY[, -5]))
-colnames(skewn) <- paste0(symbol, ".skew")
+colnames(skewn) <- paste0(symboln, ".skew")
 skewl <- rutils::lag_it(skewn)
 skewl[1, ] <- 0
 datav <- cbind(retp[, 1], sign(skewl))
@@ -3573,7 +4150,7 @@ bidask*sum(abs(sign(skewn)-sign(skewl)))
       \vspace{-1em}
       <<earl_skew_strat,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 chart_Series(pnl[endpoints(pnl, on="hours"), ],
-  name=paste(symbol, "Contrarian Skew Strategy PnL"))
+  name=paste(symboln, "Contrarian Skew Strategy PnL"))
 @
   \end{columns}
 \end{block}
@@ -3598,9 +4175,9 @@ chart_Series(pnl[endpoints(pnl, on="hours"), ],
 vwapf <- vwapv(xtsv=SPY, lookb=70)
 vwaps <- vwapv(xtsv=SPY, lookb=225)
 vwapd <- vwapf - vwaps
-colnames(vwapd) <- paste0(symbol, ".vwap")
+colnames(vwapd) <- paste0(symboln, ".vwap")
 interval <- "2010-05-05/2010-05-07"
-invisible(chart_Series(x=Cl(SPY[interval]), name=paste(symbol, "plus VWAP")))
+invisible(chart_Series(x=Cl(SPY[interval]), name=paste(symboln, "plus VWAP")))
 invisible(add_TA(vwapf[interval], on=1, col="red", lwd=2))
 invisible(add_TA(vwaps[interval], on=1, col="blue", lwd=2))
 invisible(add_TA(vwapd[interval] > 0, on=-1, col="lightgreen", border="lightgreen"))
@@ -3628,7 +4205,7 @@ add_TA(vwapd[interval] < 0, on=-1, col="lightgrey", border="lightgrey")
 vwapf <- vwapv(xtsv=SPY, lookb=70)
 vwaps <- vwapv(xtsv=SPY, lookb=225)
 vwapd <- vwapf - vwaps
-colnames(vwapd) <- paste0(symbol, ".vwap")
+colnames(vwapd) <- paste0(symboln, ".vwap")
 lag_vwap <- rutils::lag_it(vwapd)
 lag_vwap[1, ] <- 0
 datav <- cbind(retp[, 1], sign(lag_vwap))
@@ -3686,7 +4263,7 @@ bidask*sum(abs(sign(vwapd)-sign(lag_vwap)))
       <<earl_vwap_strat,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 chart_Series(
   pnl[endpoints(pnl, on="hours"), ],
-  name=paste(symbol, "VWAP Trend Following Strategy PnL"))
+  name=paste(symboln, "VWAP Trend Following Strategy PnL"))
 @
   \end{columns}
 \end{block}
@@ -3717,16 +4294,12 @@ chart_Series(
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hf_daily_volat_volume.png}\\
-      <<hurst_daily,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<hurstd,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 library(rutils)  # Load package rutils
 # Daily Hurst exponents
-hurst_daily <- xts::apply.daily(x=HighFreq::SPY,
-                           FUN=agg_ohlc,
-                           agg_fun="hurst_ohlc")
-colnames(hurst_daily) <-
-  paste(colname(get(symbol)), ".Hurst")
-chart_Series(roll_sum(hurst_daily, 10)[-(1:10)]/10,
-             name=paste(symbol, "Hurst"))
+hurstd <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc, agg_fun="hurst_ohlc")
+colnames(hurstd) <- paste(colname(get(symboln)), ".Hurst")
+chart_Series(roll_sum(hurstd, 10)[-(1:10)]/10, name=paste(symboln, "Hurst"))
 abline(h=0.5, col="blue", lwd=2)
       @
   \end{columns}
@@ -4003,9 +4576,9 @@ IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
       \vskip1ex
       In order to uniquely specify a \emph{VIX} futures contract, the parameter \texttt{"local"} should be passed into the function \texttt{twsFuture()}, with the local security name.
       \vskip1ex
-      For example, \emph{VXV8} is the local security name (symbol) for the monthly \emph{VIX} futures contract expiring on October 17th, 2018.
+      For example, \emph{VXV8} is the local security name (symboln) for the monthly \emph{VIX} futures contract expiring on October 17th, 2018.
       \vskip1ex
-      \emph{VX40V8} is the local security name (symbol) for the weekly \emph{VIX} futures contract expiring on October 3rd, 2018.
+      \emph{VX40V8} is the local security name (symboln) for the weekly \emph{VIX} futures contract expiring on October 3rd, 2018.
       \vskip1ex
       The function \texttt{reqContractDetails()} returns a list with information on the IB instrument.
       \vskip1ex
@@ -4014,14 +4587,14 @@ IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define VIX monthly and weekly futures June 2019 contract
-symbol <- "VIX"
-contractobj <- IBrokers::twsFuture(symbol=symbol,
+symboln <- "VIX"
+contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="CFE", expiry="201906")
 # Define VIX monthly futures June 2019 contract
-contractobj <- IBrokers::twsFuture(symbol=symbol,
+contractobj <- IBrokers::twsFuture(symbol=symboln,
   local="VXV8", exch="CFE", expiry="201906")
 # Define VIX weekly futures October 3rd 2018 contract
-contractobj <- IBrokers::twsFuture(symbol=symbol,
+contractobj <- IBrokers::twsFuture(symbol=symboln,
   local="VX40V8", exch="CFE", expiry="201906")
 # Get list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect,
@@ -4051,18 +4624,18 @@ IBrokers::reqContractDetails(conn=ib_connect,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define S&P Emini futures June 2019 contract
-symbol <- "ES"
-contractobj <- IBrokers::twsFuture(symbol=symbol,
+symboln <- "ES"
+contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file for data download
 dir_name <- "/Users/jerzy/Develop/data/ib_data"
 dir.create(dir_name)
-file_name <- file.path(dir_name, paste0(symbol, "201906.csv"))
+file_name <- file.path(dir_name, paste0(symboln, "201906.csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Write header to file
-cat(paste(paste(symbol, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "Count"), sep="."), collapse=","), "\n", file=file_connect)
+cat(paste(paste(symboln, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "Count"), sep="."), collapse=","), "\n", file=file_connect)
 # Download historical data to file
 IBrokers::reqHistoricalData(conn=ib_connect,
   Contract=contractobj,
@@ -4104,12 +4677,12 @@ file_connects <- lapply(file_names, function(file_name) file(file_name, open="w"
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Download historical 1-minute bar data to files
 for (it in 1:NROW(symbolv)) {
-  symbol <- symbolv[it]
+  symboln <- symbolv[it]
   file_connect <- file_connects[[it]]
   contractobj <- contractv[[it]]
-  cat("Downloading data for: ", symbol, "\n")
+  cat("Downloading data for: ", symboln, "\n")
   # Write header to file
-  cat(paste(paste(symbol, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "XTRA", "Count"), sep="."), collapse=","), "\n", file=file_connect)
+  cat(paste(paste(symboln, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "XTRA", "Count"), sep="."), collapse=","), "\n", file=file_connect)
   IBrokers::reqHistoricalData(conn=ib_connect,
                                Contract=contractobj,
                                barSize="1 min", duration="2 D",
@@ -4139,12 +4712,12 @@ IBrokers::twsDisconnect(ib_connect)
       For example, \emph{ESM8} is the symbol for the \emph{S\&P500} emini futures expiring in June 2018.
       <<echo=TRUE,eval=FALSE>>=
 # Define S&P Emini futures June 2018 contract
-symbol <- "ES"
-contractobj <- IBrokers::twsFuture(symbol=symbol,
+symboln <- "ES"
+contractobj <- IBrokers::twsFuture(symbol=symboln,
   include_expired="1",
   exch="GLOBEX", expiry="201806")
 # Open file connection for ESM8 data download
-file_name <- file.path(dir_name, paste0(symbol, "M8.csv"))
+file_name <- file.path(dir_name, paste0(symboln, "M8.csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
@@ -4193,7 +4766,7 @@ dygraphs::dygraph(pricev[, 1:4], main="S&P500 ESM8 futures") %>%
       Continuous futures require passing the parameter: contract.secType = "CONTFUT", which isn't currently included in package IBrokers.\\
       \hskip1em\url{http://interactivebrokers.github.io/tws-api/basic_contracts.html}
       \vskip1ex
-      A continuous futures contract is a synthetic time series of pricev, created by splicing together prices from several futures contracts with different expiration dates.
+      A continuous futures contract is a synthetic time series of prices, created by splicing together prices from several futures contracts with different expiration dates.
       \vskip1ex
       At any point in time, the price of the continuous contract is equal to the most liquid contract times a normalization factor.
       \vskip1ex
@@ -4218,14 +4791,14 @@ dygraphs::dygraph(pricev[, 1:4], main="S&P500 ESM8 futures") %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define S&P Emini futures June 2018 contract
-symbol <- "ES"
-contractobj <- IBrokers::twsFuture(symbol=symbol,
+symboln <- "ES"
+contractobj <- IBrokers::twsFuture(symbol=symboln,
   include_expired="1",
   exch="GLOBEX", expiry="201806")
 # Open file connection for data download
 dir_name <- "/Users/jerzy/Develop/data/ib_data"
 dir.create(dir_name)
-file_name <- file.path(dir_name, paste0(symbol, ".csv"))
+file_name <- file.path(dir_name, paste0(symboln, ".csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
@@ -4267,13 +4840,13 @@ IBrokers::twsDisconnect(ib_connect)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define S&P Emini futures June 2019 contract
-symbol <- "ES"
-contractobj <- IBrokers::twsFuture(symbol=symbol,
+symboln <- "ES"
+contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file connection for data download
 dir_name <- "/Users/jerzy/Develop/data/ib_data"
 # Dir.create(dir_name)
-file_name <- file.path(dir_name, paste0(symbol, "_taq_live.csv"))
+file_name <- file.path(dir_name, paste0(symboln, "_taq_live.csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
@@ -4309,13 +4882,13 @@ IBrokers::twsDisconnect(ib_connect)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define S&P Emini futures June 2019 contract
-symbol <- "ES"
-contractobj <- IBrokers::twsFuture(symbol=symbol,
+symboln <- "ES"
+contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file connection for data download
 dir_name <- "/Users/jerzy/Develop/data/ib_data"
 # Dir.create(dir_name)
-file_name <- file.path(dir_name, paste0(symbol, "_ohlc_live.csv"))
+file_name <- file.path(dir_name, paste0(symboln, "_ohlc_live.csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)

@@ -789,13 +789,13 @@ loadobj <- load(file="my_data.RData")
 loadobj  # vector of loaded objects
 ls()  # List objects
 # Assign new values to objects in  global environment
-sapply(loadobj, function(symbol) {
-  assign(symbol, runif(1), envir=globalenv())
+sapply(loadobj, function(symboln) {
+  assign(symboln, runif(1), envir=globalenv())
 })  # end sapply
 ls()  # List objects
 # Assign new values to objects using for loop
-for (symbol in loadobj) {
-  assign(symbol, runif(1))
+for (symboln in loadobj) {
+  assign(symboln, runif(1))
 }  # end for
 ls()  # List objects
 # Save vector of objects
@@ -1984,7 +1984,7 @@ pricev <- suppressWarnings(
 pricev <- rutils::do_call(cbind, pricev)
 # Or
 # pricev <- do.call(cbind, pricev)
-# Assign names in format "symbol.Close", "symbol.Volume"
+# Assign names in format "symboln.Close", "symboln.Volume"
 names(pricev) <- as.numeric(sapply(symbolv,
     paste, c("Close", "Volume"), sep="."))
 # Save pricev to a comma-separated CSV file
@@ -2167,15 +2167,15 @@ while ((sum(!isdownloaded) > 0) & (nattempts<10)) {
   # Download data and copy it into environment
   nattempts <- nattempts + 1
   cat("Download attempt = ", nattempts, "\n")
-  for (symbol in na.omit(symbolv[!isdownloaded][1:5])) {
-    cat("Processing: ", symbol, "\n")
+  for (symboln in na.omit(symbolv[!isdownloaded][1:5])) {
+    cat("Processing: ", symboln, "\n")
     tryCatch(  # With error handler
-      quantmod::getSymbols.av(symbol, adjust=TRUE, env=etfenv, auto.assign=TRUE, output.size="full", api.key="T7JPW54ES8G75310"),
+      quantmod::getSymbols.av(symboln, adjust=TRUE, env=etfenv, auto.assign=TRUE, output.size="full", api.key="T7JPW54ES8G75310"),
       # Error handler captures error condition
       error=function(msg) {
         print(paste0("Error handler: ", msg))
       },  # end error handler
-      finally=print(paste0("symbol = ", symbol))
+      finally=print(paste0("Symbol = ", symboln))
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
@@ -2263,9 +2263,9 @@ assign(symbolv[1], adjustOHLC(
   envir=etfenv)
 
 # Adjust objects in environment using vector of strings
-for (symbol in ls(etfenv)) {
-  assign(symbol,
-         adjustOHLC(get(symbol, envir=etfenv), use.Adjusted=TRUE),
+for (symboln in ls(etfenv)) {
+  assign(symboln,
+         adjustOHLC(get(symboln, envir=etfenv), use.Adjusted=TRUE),
          envir=etfenv)
 }  # end for
       @
@@ -2322,8 +2322,8 @@ dim(pricev)
 pricev <- do.call(cbind, lapply(
   mget(symbolv, envir=rutils::etfenv), quantmod::Cl))
 # Or extract and bind all data, subset by symbolv
-pricev <- lapply(symbolv, function(symbol) {
-    quantmod::Cl(get(symbol, envir=rutils::etfenv))
+pricev <- lapply(symbolv, function(symboln) {
+    quantmod::Cl(get(symboln, envir=rutils::etfenv))
 })  # end lapply
 # Or loop over etfenv without anonymous function
 pricev <- do.call(cbind,
@@ -2463,11 +2463,11 @@ new_env <- as.environment(
          paste(startd, endd, sep="/")))
 # Extract and cbind Close prices and return to environment
 assign("prices", rutils::do_call(cbind,
-               lapply(ls(etfenv), function(symbol) {
-                 xtsv <- quantmod::Cl(get(symbol, etfenv))
-                 colnames(xtsv) <- symbol
-                 xtsv
-               })), envir=new_env)
+  lapply(ls(etfenv), function(symboln) {
+    xtsv <- quantmod::Cl(get(symboln, etfenv))
+    colnames(xtsv) <- symboln
+    xtsv
+  })), envir=new_env)
 # Get sizes of OHLC xts series in etfenv
 sapply(mget(symbolv, envir=etfenv), object.size)
 # Extract and cbind adjusted prices and return to environment
@@ -2577,16 +2577,16 @@ while ((sum(!isdownloaded) > 0) & (nattempts<3)) {
   # Download data and copy it into environment
   nattempts <- nattempts + 1
   cat("Download attempt = ", nattempts, "\n")
-  for (symbol in symbolv[!isdownloaded]) {
-    cat("processing: ", symbol, "\n")
+  for (symboln in symbolv[!isdownloaded]) {
+    cat("processing: ", symboln, "\n")
     tryCatch(  # With error handler
-      quantmod::getSymbols(symbol, src="tiingo", adjust=TRUE, auto.assign=TRUE,
+      quantmod::getSymbols(symboln, src="tiingo", adjust=TRUE, auto.assign=TRUE,
                  from="1990-01-01", env=sp500env, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
       # Error handler captures error condition
       error=function(msg) {
         print(paste0("Error handler: ", msg))
       },  # end error handler
-      finally=print(paste0("Symbol = ", symbol))
+      finally=print(paste0("Symbol = ", symboln))
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
@@ -2611,7 +2611,7 @@ symbolv[!isdownloaded]
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The date-time indices of the \emph{OHLC} stock prices are in the \texttt{POSIXct} format suitable for intraday pricev, not daily prices.
+      The date-time indices of the \emph{OHLC} stock prices are in the \texttt{POSIXct} format suitable for intraday prices, not daily prices.
       \vskip1ex
       The function \texttt{as.Date()} coerces \texttt{POSIXct} objects into \texttt{Date} objects.
       \vskip1ex
@@ -2628,10 +2628,10 @@ class(zoo::index(sp500env$AAPL))
 # Coerce the date-time index of AAPL to Date
 zoo::index(sp500env$AAPL) <- as.Date(zoo::index(sp500env$AAPL))
 # Coerce all the date-time indices to Date
-for (symbol in ls(sp500env)) {
-  ohlc <- get(symbol, envir=sp500env)
+for (symboln in ls(sp500env)) {
+  ohlc <- get(symboln, envir=sp500env)
   zoo::index(ohlc) <- as.Date(zoo::index(ohlc))
-  assign(symbol, ohlc, envir=sp500env)
+  assign(symboln, ohlc, envir=sp500env)
 }  # end for
       @
   \end{columns}
@@ -2810,14 +2810,14 @@ dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
 save(sp500env, file=paste0(dir_name, "sp500.RData"))
 # Save the ETF prices into CSV files
 dir_name <- "/Users/jerzy/Develop/lecture_slides/data/SP500/"
-for (symbol in ls(sp500env)) {
-  zoo::write.zoo(sp500env$symbol, file=paste0(dir_name, symbol, ".csv"))
+for (symboln in ls(sp500env)) {
+  zoo::write.zoo(sp500env$symbol, file=paste0(dir_name, symboln, ".csv"))
 }  # end for
 # Or using lapply()
-file_names <- lapply(ls(sp500env), function(symbol) {
-  xtsv <- get(symbol, envir=sp500env)
-  zoo::write.zoo(xtsv, file=paste0(dir_name, symbol, ".csv"))
-  symbol
+file_names <- lapply(ls(sp500env), function(symboln) {
+  xtsv <- get(symboln, envir=sp500env)
+  zoo::write.zoo(xtsv, file=paste0(dir_name, symboln, ".csv"))
+  symboln
 })  # end lapply
 unlist(file_names)
 # Or using eapply() and data.table::fwrite()
@@ -2865,17 +2865,17 @@ file_names <- Sys.glob(paste0(dir_name, "*.csv"))
 sp500env <- new.env()
 for (file_name in file_names) {
   xtsv <- xts::as.xts(zoo::read.csv.zoo(file_name))
-  symbol <- rutils::get_name(colnames(xtsv)[1])
-  # symbol <- strsplit(colnames(xtsv), split="[.]")[[1]][1]
-  assign(symbol, xtsv, envir=sp500env)
+  symboln <- rutils::get_name(colnames(xtsv)[1])
+  # symboln <- strsplit(colnames(xtsv), split="[.]")[[1]][1]
+  assign(symboln, xtsv, envir=sp500env)
 }  # end for
 # Or using fread()
 for (file_name in file_names) {
   xtsv <- data.table::fread(file_name)
   data.table::setDF(xtsv)
   xtsv <- xts::xts(xtsv[, -1], as.Date(xtsv[, 1]))
-  symbol <- rutils::get_name(colnames(xtsv)[1])
-  assign(symbol, xtsv, envir=sp500env)
+  symboln <- rutils::get_name(colnames(xtsv)[1])
+  assign(symboln, xtsv, envir=sp500env)
 }  # end for
 @
   \end{columns}
@@ -2912,16 +2912,16 @@ nattempts <- 0
 while ((sum(!isdownloaded) > 0) & (nattempts<10)) {
   # Download data and copy it into environment
   nattempts <- nattempts + 1
-  for (symbol in symbolv[!isdownloaded]) {
-    cat("processing: ", symbol, "\n")
+  for (symboln in symbolv[!isdownloaded]) {
+    cat("processing: ", symboln, "\n")
     tryCatch(  # With error handler
-      quantmod::getSymbols(symbol, src="av", adjust=TRUE, auto.assign=TRUE, env=sp500env,
+      quantmod::getSymbols(symboln, src="av", adjust=TRUE, auto.assign=TRUE, env=sp500env,
                  output.size="full", api.key="T7JPW54ES8G75310"),
       # error handler captures error condition
       error=function(msg) {
         print(paste0("Error handler: ", msg))
       },  # end error handler
-      finally=print(paste0("Symbol = ", symbol))
+      finally=print(paste0("Symbol = ", symboln))
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
@@ -2929,9 +2929,9 @@ while ((sum(!isdownloaded) > 0) & (nattempts<10)) {
   Sys.sleep(2)  # Wait 2 seconds until next attempt
 }  # end while
 # Adjust all OHLC prices in environment
-for (symbol in ls(sp500env)) {
-  assign(symbol,
-    adjustOHLC(get(x=symbol, envir=sp500env), use.Adjusted=TRUE),
+for (symboln in ls(sp500env)) {
+  assign(symboln,
+    adjustOHLC(get(x=symboln, envir=sp500env), use.Adjusted=TRUE),
     envir=sp500env)
 }  # end for
       @
@@ -3103,14 +3103,14 @@ save(retp, returns100,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Setup code
-symbol <- "SPY"
+symboln <- "SPY"
 startd <- as.Date("1990-01-01")
 todayd <- Sys.Date()
 tspan <- "day"
 # Replace below your own Polygon API key
 apikey <- "SEpnsBpiRyONMJdl48r6dOo0_pjmCu5r"
 # Create url for download
-urll <- paste0("https://api.polygon.io/v2/aggs/ticker/", symbol, "/range/1/", tspan, "/", startd, "/", todayd, "?adjusted=true&sort=asc&limit=50000&apiKey=", apikey)
+urll <- paste0("https://api.polygon.io/v2/aggs/ticker/", symboln, "/range/1/", tspan, "/", startd, "/", todayd, "?adjusted=true&sort=asc&limit=50000&apiKey=", apikey)
 # Download SPY OHLC prices in JSON format from Polygon
 ohlc <- jsonlite::read_json(urll)
 class(ohlc)
@@ -3134,7 +3134,7 @@ tail(ohlc)
 # Save the xts time series to compressed RData file
 save(ohlc, file="/Users/jerzy/Data/spy_daily.RData")
 # Candlestick plot of SPY OHLC prices
-dygraphs::dygraph(ohlc[, 1:4], main=paste("Candlestick Plot of", symbol, "OHLC prices")) %>% 
+dygraphs::dygraph(ohlc[, 1:4], main=paste("Candlestick Plot of", symboln, "OHLC prices")) %>% 
   dygraphs::dyCandlestick()
       @
   \end{columns}
@@ -3167,11 +3167,11 @@ isdownloaded <- symbolv %in% ls(etfenv)
       <<echo=TRUE,eval=FALSE>>=
 # Download data from Polygon using while loop
 while (sum(!isdownloaded) > 0) {
-  for (symbol in symbolv[!isdownloaded]) {
-    cat("Processing:", symbol, "\n")
+  for (symboln in symbolv[!isdownloaded]) {
+    cat("Processing:", symboln, "\n")
     tryCatch({  # With error handler
       # Download OHLC bars from Polygon into JSON format file
-      urll <- paste0("https://api.polygon.io/v2/aggs/ticker/", symbol, "/range/1/", tspan, "/", startd, "/", todayd, "?adjusted=true&sort=asc&limit=50000&apiKey=", apikey)
+      urll <- paste0("https://api.polygon.io/v2/aggs/ticker/", symboln, "/range/1/", tspan, "/", startd, "/", todayd, "?adjusted=true&sort=asc&limit=50000&apiKey=", apikey)
       ohlc <- jsonlite::read_json(urll)
       # Extract list of prices from json object
       ohlc <- ohlc$results
@@ -3184,14 +3184,14 @@ while (sum(!isdownloaded) > 0) {
       dates <- as.Date(dates)
       # Coerce from matrix to xts
       ohlc <- ohlc[, c("o","h","l","c","v","vw")]
-      colnames(ohlc) <- paste0(symbol, ".", c("Open", "High", "Low", "Close", "Volume", "VWAP"))
+      colnames(ohlc) <- paste0(symboln, ".", c("Open", "High", "Low", "Close", "Volume", "VWAP"))
       ohlc <- xts::xts(ohlc, order.by=dates)
       # Save to environment
-      assign(symbol, ohlc, envir=etfenv)
+      assign(symboln, ohlc, envir=etfenv)
       Sys.sleep(1)
       },
     error={function(msg) print(paste0("Error handler: ", msg))},
-    finally=print(paste0("Symbol = ", symbol))
+    finally=print(paste0("Symbol = ", symboln))
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
@@ -3388,9 +3388,9 @@ rm(list=ls(sp500env), envir=sp500env)
 rutils::get_data(sp500$names,
    env_out=sp500env, startd="1990-01-01")
 # Or download in loop
-for (symbol in sp500$names) {
-  cat("processing: ", symbol, "\n")
-  rutils::get_data(symbol,
+for (symboln in sp500$names) {
+  cat("processing: ", symboln, "\n")
+  rutils::get_data(symboln,
    env_out=sp500env, startd="1990-01-01")
 }  # end for
 save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
@@ -3455,7 +3455,7 @@ quantmod::chart_Series(unrate["1990/"], name="U.S. Unemployment Rate")
       \hskip1em\url{https://www.quandl.com/blog/getting-started-with-the-quandl-api}\\
       \hskip1em\url{https://www.quandl.com/blog/stock-market-data-guide}
       \vskip1ex
-      \href{https://www.quandl.com/}{Quandl} provides stock pricev, stock fundamentals, financial ratios, zoo::indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
+      \href{https://www.quandl.com/}{Quandl} provides stock prices, stock fundamentals, financial ratios, zoo::indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
       \hskip1em\url{https://www.quandl.com/blog/api-for-stock-data}
     \column{0.5\textwidth}
       \vspace{-1em}

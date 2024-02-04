@@ -3200,14 +3200,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual EWMA Strategy Out-of-Sample"
 ohlc <- rutils::etfenv$VTI
 closep <- log(quantmod::Cl(ohlc))
 colnames(closep) <- "VTI"
-volum <- quantmod::Vo(ohlc)
-colnames(volum) <- "Volume"
+volumv <- quantmod::Vo(ohlc)
+colnames(volumv) <- "Volume"
 nrows <- NROW(closep)
 # Calculate the VWAP prices
 lookb <- 21
-vwap <- HighFreq::roll_sum(closep*volum, lookb)
-volumr <- HighFreq::roll_sum(volum, lookb)
-vwap <- vwap/volumr
+vwap <- HighFreq::roll_sum(closep, lookb=lookb, weightv=volumv)
 colnames(vwap) <- "VWAP"
 pricev <- cbind(closep, vwap)
       @
@@ -3264,11 +3262,11 @@ legend("bottomright", legend=colnames(pricev),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VWAP prices recursively using C++ code
 lambda <- 0.9
-volumer <- .Call(stats:::C_rfilter, volum, lambda, c(as.numeric(volum[1])/(1-lambda), double(NROW(volum))))[-1]
-pricer <- .Call(stats:::C_rfilter, volum*closep, lambda, c(as.numeric(volum[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
+volumer <- .Call(stats:::C_rfilter, volumv, lambda, c(as.numeric(volumv[1])/(1-lambda), double(NROW(volumv))))[-1]
+pricer <- .Call(stats:::C_rfilter, volumv*closep, lambda, c(as.numeric(volumv[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
 vwapr <- pricer/volumer
 # Calculate the VWAP prices recursively using RcppArmadillo
-vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=volum)
+vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=volumv)
 all.equal(vwapr, drop(vwapcpp))
 # Dygraphs plot the VWAP prices
 pricev <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
@@ -3298,7 +3296,7 @@ dygraphs::dygraph(pricev["2009"], main="VWAP Prices") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VWAP prices recursively using RcppArmadillo
 lambda <- 0.99
-vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=volum)
+vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=volumv)
 # Calculate the positions from lagged indicator
 indic <- sign(closep - vwapcpp)
 lagg <- 2
@@ -3445,11 +3443,11 @@ text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
       <<echo=TRUE,eval=FALSE>>=
 sim_vwap <- function(ohlc, lambda=0.9, bidask=0.001, trend=1, lagg=1) {
   closep <- log(quantmod::Cl(ohlc))
-  volum <- quantmod::Vo(ohlc)
+  volumv <- quantmod::Vo(ohlc)
   retp <- rutils::diffit(closep)
   nrows <- NROW(ohlc)
   # Calculate the VWAP prices
-  vwap <- HighFreq::run_mean(closep, lambda=lambda, weightv=volum)
+  vwap <- HighFreq::run_mean(closep, lambda=lambda, weightv=volumv)
   # Calculate the indicator
   indic <- trend*sign(closep - vwap)
   if (lagg > 1) {
@@ -4182,13 +4180,13 @@ closep <- quantmod::Cl(ohlc)
 retp <- rutils::diffit(closep)
 # Calculate the centered volatility
 lookb <- 7
-half_back <- lookb %/% 2
+halfb <- lookb %/% 2
 stdev <- sqrt(HighFreq::roll_var(retp, lookb))
-stdev <- rutils::lagit(stdev, lagg=(-half_back))
+stdev <- rutils::lagit(stdev, lagg=(-halfb))
 # Calculate the z-scores of prices
 pricez <- (2*closep - 
-  rutils::lagit(closep, half_back, pad_zeros=FALSE) - 
-  rutils::lagit(closep, -half_back, pad_zeros=FALSE))
+  rutils::lagit(closep, halfb, pad_zeros=FALSE) - 
+  rutils::lagit(closep, -halfb, pad_zeros=FALSE))
 pricez <- ifelse(stdev > 0, pricez/stdev, 0)
       @
     \column{0.5\textwidth}
@@ -4293,11 +4291,11 @@ volatsd[1] <- 0
 volatz <- ifelse(volatsd > 0, (volat - volatm)/volatsd, 0)
 colnames(volatz) <- "volat"
 # Calculate the volume z-scores
-volum <- quantmod::Vo(ohlc)
-volumean <- HighFreq::roll_mean(volum, lookb)
-volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volum), lookb))
+volumv <- quantmod::Vo(ohlc)
+volumean <- HighFreq::roll_mean(volumv, lookb)
+volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volumv), lookb))
 volumsd[1] <- 0
-volumz <- ifelse(volumsd > 0, (volum - volumean)/volumsd, 0)
+volumz <- ifelse(volumsd > 0, (volumv - volumean)/volumsd, 0)
 colnames(volumz) <- "volume"
       @
   \end{columns}
