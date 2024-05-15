@@ -66,13 +66,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#4]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#4, Fall 2023}
+\subtitle{Lecture\#4, Spring 2024}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{October 2, 2023}
+\date{April 15, 2024}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -85,1096 +85,6 @@ knit_theme$set(thm)
 %%%%%%%%%%%%%%%
 \maketitle
 
-
-%%%%%%%%%%%%%%%
-\section{Optimization}
-
-
-%%%%%%%%%%%%%%%
-\subsection{One-dimensional Optimization Using The Functional \texttt{optimize()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functional \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable.
-      \vskip1ex
-      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval.
-      \vskip1ex
-      \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
-      \vskip1ex
-      The argument \texttt{tol} specifies the numerical accuracy, with smaller values of \texttt{tol} requiring more computations.
-        <<echo=TRUE,eval=FALSE>>=
-# Display the structure of optimize()
-str(optimize)
-# Objective function with multiple minima
-objfun <- function(input, param1=0.01) {
-  sin(0.25*pi*input) + param1*(input-1)^2
-}  # end objfun
-optiml <- optimize(f=objfun, interval=c(-4, 2))
-class(optiml)
-unlist(optiml)
-# Find minimum in different interval
-unlist(optimize(f=objfun, interval=c(0, 8)))
-# Find minimum with less accuracy
-accl <- 1e4*.Machine$double.eps^0.25
-unlist(optimize(f=objfun, interval=c(0, 8), tol=accl))
-# Microbenchmark optimize() with less accuracy
-library(microbenchmark)
-summary(microbenchmark(
-  more_accurate = optimize(f=objfun, interval=c(0, 8)),
-  less_accurate = optimize(f=objfun, interval=c(0, 8), tol=accl),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/optim_one_dim-1}
-      \vspace{-4em}
-        <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Plot the objective function
-curve(expr=objfun, type="l", xlim=c(-8, 9),
-xlab="", ylab="", lwd=2)
-# Add title
-title(main="Objective Function", line=-1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{rgl} for Interactive 3d Surface Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{rgl} creates \emph{interactive} 3d scatter plots and surface plots by calling the 
-      \href{https://www.khronos.org/webgl/wiki/Main_Page}{\emph{WebGL}}
-      \href{https://en.wikipedia.org/wiki/JavaScript}{\emph{JavaScript}}
-      library.
-      \vskip1ex
-      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a \emph{vectorized} function or a matrix.
-      <<eval=FALSE,echo=TRUE>>=
-# Rastrigin function
-rastrigin <- function(x, y, param=25) {
-  x^2 + y^2 - param*(cos(x) + cos(y))
-}  # end rastrigin
-# Rastrigin function is vectorized!
-rastrigin(c(-10, 5), c(-10, 5))
-# Set rgl options and load package rgl
-library(rgl)
-options(rgl.useNULL=TRUE)
-# Draw 3d surface plot of function
-rgl::persp3d(x=rastrigin, xlim=c(-10, 10), ylim=c(-10, 10),
-        col="green", axes=FALSE, param=15)
-# Render the 3d surface plot of function
-rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/rgl_rastrigin.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multi-dimensional Optimization Using \texttt{optim()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{optim()} performs \emph{multi-dimensional} optimization.
-      \vskip1ex
-      The argument \texttt{fn} is the objective function to be minimized.
-      \vskip1ex
-      The argument of \texttt{fn} that is to be optimized, must be a vector argument.
-      \vskip1ex
-      The argument \texttt{par} is the initial vector argument value.
-      \vskip1ex
-      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
-      \vskip1ex
-      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
-      \vskip1ex
-      \texttt{method="L-BFGS-B"} specifies the quasi-Newton \emph{gradient} optimization method.
-      \vskip1ex
-      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
-      \vskip1ex
-      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum.
-    \column{0.5\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vecv, param=25) {
-  sum(vecv^2 - param*cos(vecv))
-}  # end rastrigin
-vecv <- c(pi, pi/4)
-rastrigin(vecv=vecv)
-# Draw 3d surface plot of Rastrigin function
-rgl::persp3d(
-  x=Vectorize(function(x, y) rastrigin(vecv=c(x, y))),
-  xlim=c(-10, 10), ylim=c(-10, 10),
-  col="green", axes=FALSE, zlab="", main="rastrigin")
-# Optimize with respect to vector argument
-optiml <- optim(par=vecv, fn=rastrigin,
-                method="L-BFGS-B",
-                upper=c(14*pi, 14*pi),
-                lower=c(pi/2, pi/2),
-                param=1)
-# Optimal parameters and value
-optiml$par
-optiml$value
-rastrigin(optiml$par, param=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Likelihood Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the parameters of a statistical model $\theta$, given a sample of observed values $\bar{x}$, taken under the model's probability distribution $p(x|\theta)$:
-      \begin{displaymath}
-        \mathcal{L}(\theta|x) = \prod_{i=1}^n p(x_i|\theta)
-      \end{displaymath}
-      The \emph{likelihood} function measures how \emph{likely} are the parameters of a statistical model, given a sample of observed values $\bar{x}$.
-      \vskip1ex
-      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the model's parameters are those that maximize the \emph{likelihood} function:
-      \begin{displaymath}
-        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
-      \end{displaymath}
-      In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself.
-      \vskip1ex
-      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Sample of normal variables
-datav <- rnorm(1000, mean=4, sd=2)
-# Objective function is log-likelihood
-objfun <- function(parv, datav) {
-  sum(2*log(parv[2]) +
-    ((datav - parv[1])/parv[2])^2)
-}  # end objfun
-# Objective function on parameter grid
-parmean <- seq(1, 6, length=50)
-parsd <- seq(0.5, 3.0, length=50)
-objective_grid <- sapply(parmean, function(m) {
-  sapply(parsd, function(sd) {
-    objfun(c(m, sd), datav)
-  })  # end sapply
-})  # end sapply
-# Perform grid search for minimum
-objective_min <- which(
-  objective_grid==min(objective_grid),
-  arr.ind=TRUE)
-objective_min
-parmean[objective_min[1]]  # mean
-parsd[objective_min[2]]  # sd
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1),
-               (objective_min[, 2] + -1:1)]
-# Or create parameter grid using function outer()
-objvecive <- Vectorize(
-  FUN=function(mean, sd, datav)
-    objfun(c(mean, sd), datav),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-objective_grid <- outer(parmean, parsd,
-        objvecive, datav=datav)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Perspective Plot of Likelihood Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values.
-      \vskip1ex
-      The argument \texttt{"z"} accepts a matrix containing the function values.
-      \vskip1ex
-      \texttt{persp()} belongs to the base \texttt{graphics} package, and doesn't create interactive plots.
-      \vskip1ex
-      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix.
-      \vskip1ex
-      \texttt{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework.
-      <<optim_objective,echo=(-(1:1)),eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
-# Perspective plot of log-likelihood function
-persp(z=-objective_grid,
-      theta=45, phi=30, shade=0.5,
-      border="green", zlab="objective",
-      main="objective function")
-# Interactive perspective plot of log-likelihood function
-library(rgl)  # Load package rgl
-rgl::par3d(cex=2.0)  # Scale text by factor of 2
-rgl::persp3d(z=-objective_grid, zlab="objective",
-        col="green", main="objective function")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/optim_objective-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimization of Objective Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{optim()} performs optimization of an objective function.
-      \vskip1ex
-      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization.
-      <<echo=TRUE,eval=FALSE>>=
-# Initial parameters
-initp <- c(mean=0, sd=1)
-# Perform optimization using optim()
-optiml <- optim(par=initp,
-  fn=objfun, # Log-likelihood function
-  datav=datav,
-  method="L-BFGS-B", # Quasi-Newton method
-  upper=c(10, 10), # Upper constraint
-  lower=c(-10, 0.1)) # Lower constraint
-# Optimal parameters
-optiml$par
-# Perform optimization using MASS::fitdistr()
-optiml <- MASS::fitdistr(datav, densfun="normal")
-optiml$estimate
-optiml$sd
-# Plot histogram
-histp <- hist(datav, plot=FALSE)
-plot(histp, freq=FALSE, main="histogram of sample")
-curve(expr=dnorm(x, mean=optiml$par["mean"], sd=optiml$par["sd"]),
-      add=TRUE, type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL, y.intersp=0.4,
-       leg="optimal parameters", lwd=2, bg="white", col="red")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/optim_basic-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Mixture Model Likelihood Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Sample from mixture of normal distributions
-datav <- c(rnorm(100, sd=1.0),
-            rnorm(100, mean=4, sd=1.0))
-# Objective function is log-likelihood
-objfun <- function(parv, datav) {
-  likev <- parv[1]/parv[3] *
-  dnorm((datav-parv[2])/parv[3]) +
-  (1-parv[1])/parv[5]*dnorm((datav-parv[4])/parv[5])
-  if (any(likev <= 0)) Inf else
-    -sum(log(likev))
-}  # end objfun
-# Vectorize objective function
-objvecive <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, datav)
-    objfun(c(w, m1, s1, mean, sd), datav),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-# Objective function on parameter grid
-parmean <- seq(3, 5, length=50)
-parsd <- seq(0.5, 1.5, length=50)
-objective_grid <- outer(parmean, parsd,
-          objvecive, datav=datav,
-          w=0.5, m1=2.0, s1=2.0)
-rownames(objective_grid) <- round(parmean, 2)
-colnames(objective_grid) <- round(parsd, 2)
-objective_min <- which(objective_grid==
-  min(objective_grid), arr.ind=TRUE)
-objective_min
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1),
-               (objective_min[, 2] + -1:1)]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<optim_mix_like,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-# Perspective plot of objective function
-persp(parmean, parsd, -objective_grid,
-      theta=45, phi=30,
-      shade=0.5,
-      col=rainbow(50),
-      border="green",
-      main="objective function")
-      @
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/optim_mix_like-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimization of Mixture Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Initial parameters
-initp <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
-# Perform optimization
-optiml <- optim(par=initp,
-            fn=objfun,
-            datav=datav,
-            method="L-BFGS-B",
-            upper=c(1,10,10,10,10),
-            lower=c(0,-10,0.2,-10,0.2))
-optiml$par
-# Plot histogram
-histp <- hist(datav, plot=FALSE)
-plot(histp, freq=FALSE,
-     main="histogram of sample")
-fitfun <- function(x, parv) {
-  parv["weight"]*dnorm(x, mean=parv["m1"], sd=parv["s1"]) +
-  (1-parv["weight"])*dnorm(x, mean=parv["m2"], sd=parv["s2"])
-}  # end fitfun
-curve(expr=fitfun(x, parv=optiml$par), add=TRUE,
-      type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL,
-       leg="optimal parameters", y.intersp=0.4,
-       lwd=2, bg="white", col="red")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/optim_mixture-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{DEoptim} for Global Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
-      \vskip1ex
-      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations:\\
-      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
-      \vskip1ex
-      The first generation of solutions is selected randomly.
-      \vskip1ex
-      Each new generation is obtained by combining the best solutions from the previous generation.
-      \vskip1ex
-      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
-      \vskip1ex
-      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima.
-    \column{0.5\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vecv, param=25) {
-  sum(vecv^2 - param*cos(vecv))
-}  # end rastrigin
-vecv <- c(pi/6, pi/6)
-rastrigin(vecv=vecv)
-library(DEoptim)
-# Optimize rastrigin using DEoptim
-optiml <-  DEoptim(rastrigin,
-  upper=c(6, 6), lower=c(-6, -6),
-  DEoptim.control(trace=FALSE, itermax=50))
-# Optimal parameters and value
-optiml$optim$bestmem
-rastrigin(optiml$optim$bestmem)
-summary(optiml)
-plot(optiml)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Bonds and Interest Rates}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Treasury Bond Rates from \protect\emph{FRED}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The constant maturity Treasury rates are yields of hypothetical fixed-maturity bonds, interpolated from the market yields of actual Treasury bonds.
-      \vskip1ex
-      The \emph{FRED} database contains current and historical constant maturity Treasury rates, \\
-      \hskip1em\url{https://fred.stlouisfed.org/series/DGS5}
-      \vskip1ex
-      \texttt{quantmod::getSymbols()} creates objects in the specified \emph{environment} from the input strings (names).
-      \vskip1ex
-      It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect}.
-      <<echo=TRUE,eval=FALSE>>=
-# Symbols for constant maturity Treasury rates
-symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
-# Create new environment for time series
-ratesenv <- new.env()
-# Download time series for symbolv into ratesenv
-quantmod::getSymbols(symbolv, env=ratesenv, src="FRED")
-# List files in ratesenv
-ls(ratesenv)
-# Get class of all objects in ratesenv
-sapply(ratesenv, class)
-# Get class of all objects in R workspace
-sapply(ls(), function(name) class(get(name)))
-# Save the time series environment into a binary .RData file
-save(ratesenv, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/treas_10y_rate.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Get class of time series object DGS10
-class(get(x="DGS10", envir=ratesenv))
-# Another way
-class(ratesenv$DGS10)
-# Get first 6 rows of time series
-head(ratesenv$DGS10)
-# Plot dygraphs of 10-year Treasury rate
-dygraphs::dygraph(ratesenv$DGS10, main="10-year Treasury Rate") %>%
-  dyOptions(colors="blue", strokeWidth=2)
-# Plot 10-year constant maturity Treasury rate
-x11(width=6, height=5)
-par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
-chart_Series(ratesenv$DGS10["1990/"], name="10-year Treasury Rate")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Treasury Yield Curve}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{yield curve} is a vector of interest rates at different maturities, on a given date.
-      \vskip1ex
-      The \emph{yield curve} shape changes depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens.
-      <<echo=TRUE,eval=FALSE>>=
-# Load constant maturity Treasury rates
-load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
-# Get most recent yield curve
-ycnow <- eapply(ratesenv, xts::last)
-class(ycnow)
-ycnow <- do.call(cbind, ycnow)
-# Check if 2020-03-25 is not a holiday
-date2020 <- as.Date("2020-03-25")
-weekdays(date2020)
-# Get yield curve from 2020-03-25
-yc2020 <- eapply(ratesenv, function(x) x[date2020])
-yc2020 <- do.call(cbind, yc2020)
-# Combine the yield curves
-ycurves <- c(yc2020, ycnow)
-# Rename columns and rows, sort columns, and transpose into matrix
-colnames(ycurves) <- substr(colnames(ycurves), start=4, stop=11)
-ycurves <- ycurves[, order(as.numeric(colnames(ycurves)))]
-colnames(ycurves) <- paste0(colnames(ycurves), "yr")
-ycurves <- t(ycurves)
-colnames(ycurves) <- substr(colnames(ycurves), start=1, stop=4)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/rates_curve.png}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-# Plot using matplot()
-colorv <- c("blue", "red")
-matplot(ycurves, main="Yield Curves in 2020 and 2023", xaxt="n", lwd=3, lty=1,
-        type="l", xlab="maturity", ylab="yield", col=colorv)
-# Add x-axis
-axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
-# Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
-       bty="n", col=colorv, lty=1, lwd=6, inset=0.05, cex=1.0)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Treasury Yield Curve Over Time}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{yield curve} has changed shape dramatically depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-# Load constant maturity Treasury rates
-load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
-# Get end-of-year dates since 2006
-datev <- xts::endpoints(ratesenv$DGS1["2006/"], on="years")
-datev <- zoo::index(ratesenv$DGS1["2006/"][dates])
-# Create time series of end-of-year rates
-ycurves <- eapply(ratesenv, function(ratev) ratev[dates])
-ycurves <- rutils::do_call(cbind, ycurves)
-# Rename columns and rows, sort columns, and transpose into matrix
-colnames(ycurves) <- substr(colnames(ycurves), start=4, stop=11)
-ycurves <- ycurves[, order(as.numeric(colnames(ycurves)))]
-colnames(ycurves) <- paste0(colnames(ycurves), "yr")
-ycurves <- t(ycurves)
-colnames(ycurves) <- substr(colnames(ycurves), start=1, stop=4)
-# Plot matrix using plot.zoo()
-colorv <- colorRampPalette(c("red", "blue"))(NCOL(ycurves))
-plot.zoo(ycurves, main="Yield curve since 2006", lwd=3, xaxt="n",
-         plot.type="single", xlab="maturity", ylab="yield", col=colorv)
-# Add x-axis
-axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
-# Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
-       bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/rates_curve_time.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Alternative plot using matplot()
-matplot(ycurves, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
-        type="l", xlab="maturity", ylab="yield", col=colorv)
-# Add x-axis
-axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
-# Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
-       bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Covariance Matrix of Interest Rates}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The covariance matrix $\mathbb{C}$, of the interest rate matrix $\mathbf{r}$ is given by:
-      \begin{displaymath}
-        \mathbb{C} = \frac{(\mathbf{r} - \bar{\mathbf{r}})^T (\mathbf{r} - \bar{\mathbf{r}})} {n-1}
-      \end{displaymath}
-      <<echo=TRUE,eval=FALSE>>=
-# Extract rates from ratesenv
-symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
-ratem <- mget(symbolv, envir=ratesenv)
-ratem <- rutils::do_call(cbind, ratem)
-ratem <- zoo::na.locf(ratem, na.rm=FALSE)
-ratem <- zoo::na.locf(ratem, fromLast=TRUE)
-# Calculate daily percentage rates changes
-retp <- rutils::diffit(log(ratem))
-# Center (de-mean) the returns
-retp <- lapply(retp, function(x) {x - mean(x)})
-retp <- rutils::do_call(cbind, retp)
-sapply(retp, mean)
-# Covariance and Correlation matrices of Treasury rates
-covmat <- cov(retp)
-cormat <- cor(retp)
-# Reorder correlation matrix based on clusters
-library(corrplot)
-ordern <- corrMatOrder(cormat, order="hclust",
-  hclust.method="complete")
-cormat <- cormat[ordern, ordern]
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/rates_cor.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the correlation matrix
-x11(width=6, height=6)
-colorv <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cormat, title=NA, tl.col="black",
-    method="square", col=colorv(NCOL(cormat)), tl.cex=0.8,
-    cl.offset=0.75, cl.cex=0.7, cl.align.text="l", cl.ratio=0.25)
-title("Correlation of Treasury Rates", line=1)
-# Draw rectangles on the correlation matrix plot
-corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
-  method="complete", col="red")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Principal Component Vectors}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Principal components} are linear combinations of the \texttt{k} return vectors $\mathbf{r}_i$:
-      \begin{displaymath}
-        \mathbf{pc}_j = \sum_{i=1}^k {w_{ij} \, \mathbf{r}_i}
-      \end{displaymath}
-      Where $\mathbf{w}_j$ is a vector of weights (loadings) of the \emph{principal component} \texttt{j}, with $\mathbf{w}_j^T \mathbf{w}_j = 1$.
-      \vskip1ex
-      The weights $\mathbf{w}_j$ are chosen to maximize the variance of the \emph{principal components}, under the condition that they are orthogonal:
-      \begin{align*}
-        \mathbf{w}_j = {\operatorname{\arg \, \max}} \, \left\{ \mathbf{pc}_j^T \, \mathbf{pc}_j \right\} \\
-        \mathbf{pc}_i^T \, \mathbf{pc}_j = 0 \> (i \neq j)
-      \end{align*}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create initial vector of portfolio weights
-nweights <- NROW(symbolv)
-weightv <- rep(1/sqrt(nweights), nweights)
-names(weightv) <- symbolv
-# Objective function equal to minus portfolio variance
-objfun <- function(weightv, retp) {
-  retp <- retp %*% weightv
-  -1e7*var(retp) + 1e7*(1 - sum(weightv*weightv))^2
-}  # end objfun
-# Objective function for equal weight portfolio
-objfun(weightv, retp)
-# Compare speed of vector multiplication methods
-library(microbenchmark)
-summary(microbenchmark(
-  transp=t(retp) %*% retp,
-  sumv=sum(retp*retp),
-  times=10))[, c(1, 4, 5)]
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.35\paperwidth]{figure/pca_rates_load1.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Find weights with maximum variance
-optiml <- optim(par=weightv,
-  fn=objfun,
-  retp=retp,
-  method="L-BFGS-B",
-  upper=rep(5.0, nweights),
-  lower=rep(-5.0, nweights))
-# Optimal weights and maximum variance
-weights1 <- optiml$par
-objfun(weights1, retp)
-# Plot first principal component loadings
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-barplot(weights1, names.arg=names(weights1),
-  xlab="", ylab="", main="First Principal Component Loadings")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Higher Order Principal Components}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{second principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the \emph{first principal component}.
-      \vskip1ex
-      Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}.
-      \vskip1ex
-      The number of principal components is equal to the dimension of the covariance matrix.
-      <<echo=TRUE,eval=FALSE>>=
-# pc1 weights and returns
-pc1 <- drop(retp %*% weights1)
-# Redefine objective function
-objfun <- function(weightv, retp) {
-  retp <- retp %*% weightv
-  -1e7*var(retp) + 1e7*(1 - sum(weightv^2))^2 +
-    1e7*sum(weights1*weightv)^2
-}  # end objfun
-# Find second principal component weights
-optiml <- optim(par=weightv,
-                   fn=objfun,
-                   retp=retp,
-                   method="L-BFGS-B",
-                   upper=rep(5.0, nweights),
-                   lower=rep(-5.0, nweights))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.35\paperwidth]{figure/pca_rates_load2.png}
-      <<echo=TRUE,eval=FALSE>>=
-# pc2 weights and returns
-weights2 <- optiml$par
-pc2 <- drop(retp %*% weights2)
-sum(pc1*pc2)
-# Plot second principal component loadings
-barplot(weights2, names.arg=names(weights2),
-        xlab="", ylab="", main="Second Principal Component Loadings")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Eigenvalues of the Covariance Matrix}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The portfolio variance: $\mathbf{w}^T \mathbb{C} \, \mathbf{w}$ can be maximized under the \emph{quadratic} weights constraint $\mathbf{w}^T \mathbf{w} = 1$, by maximizing the \emph{Lagrangian} $\mathcal{L}$:
-      \begin{displaymath}
-        \mathcal{L} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} \, - \, \lambda \, (\mathbf{w}^T \mathbf{w} - 1)
-      \end{displaymath}
-      Where $\lambda$ is a \emph{Lagrange multiplier}.
-      \vskip1ex
-      The maximum variance portfolio weights can be found by differentiating $\mathcal{L}$ with respect to $\mathbf{w}$ and setting it to zero:
-      \begin{displaymath}
-        \mathbb{C} \, \mathbf{w} = \lambda \, \mathbf{w}
-      \end{displaymath}
-      The above is the \emph{eigenvalue} equation of the covariance matrix $\mathbb{C}$, with the optimal weights $\mathbf{w}$ forming an \emph{eigenvector}, and $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $\mathbf{w}$.
-      \vskip1ex
-      The \emph{eigenvalues} are the variances of the \emph{eigenvectors}, and their sum is equal to the sum of the return variances:
-      \begin{displaymath}
-        \sum_{i=1}^k \lambda_i = \frac{1}{1-k} \sum_{i=1}^k {\mathbf{r}_i^T \mathbf{r}_i}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.35\paperwidth]{figure/pca_rates_eigenvalues.png}
-      <<echo=TRUE,eval=FALSE>>=
-eigend <- eigen(covmat)
-eigend$vectors
-# Compare with optimization
-all.equal(sum(diag(covmat)), sum(eigend$values))
-all.equal(abs(eigend$vectors[, 1]), abs(weights1), check.attributes=FALSE)
-all.equal(abs(eigend$vectors[, 2]), abs(weights2), check.attributes=FALSE)
-all.equal(eigend$values[1], var(pc1), check.attributes=FALSE)
-all.equal(eigend$values[2], var(pc2), check.attributes=FALSE)
-# Eigenvalue equations are satisfied approximately
-(covmat %*% weights1) / weights1 / var(pc1)
-(covmat %*% weights2) / weights2 / var(pc2)
-# Plot eigenvalues
-barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
-  las=3, xlab="", ylab="", main="Principal Component Variances")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Principal Component Analysis} Versus \protect\emph{Eigen Decomposition}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Principal Component Analysis} (\emph{PCA}) is equivalent to the \emph{eigen decomposition} of either the correlation or the covariance matrix.
-      \vskip1ex
-      If the input time series \emph{are} scaled, then \emph{PCA} is equivalent to the eigen decomposition of the \emph{correlation matrix}.
-      \vskip1ex
-      If the input time series \emph{are not} scaled, then \emph{PCA} is equivalent to the eigen decomposition of the \emph{covariance matrix}.
-      \vskip1ex
-      Scaling the input time series improves the accuracy of the \emph{PCA dimension reduction}, allowing a smaller number of \emph{principal components} to more accurately capture the data contained in the input time series.
-      \vskip1ex
-      The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data (with the time series as columns), and returns the results as a list of class \texttt{prcomp}.
-      \vskip1ex
-      The \texttt{prcomp()} argument \texttt{scale=TRUE} specifies that the input time series should be scaled by their standard deviations.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Eigen decomposition of correlation matrix
-eigend <- eigen(cormat)
-# Perform PCA with scaling
-pcad <- prcomp(retp, scale=TRUE)
-# Compare outputs
-all.equal(eigend$values, pcad$sdev^2)
-all.equal(abs(eigend$vectors), abs(pcad$rotation),
-          check.attributes=FALSE)
-# Eigen decomposition of covariance matrix
-eigend <- eigen(covmat)
-# Perform PCA without scaling
-pcad <- prcomp(retp, scale=FALSE)
-# Compare outputs
-all.equal(eigend$values, pcad$sdev^2)
-all.equal(abs(eigend$vectors), abs(pcad$rotation),
-          check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Principal Component Analysis of the Yield Curve}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Principal Component Analysis} (\emph{PCA}) is a \emph{dimension reduction} technique, that explains the returns of a large number of correlated time series as linear combinations of a smaller number of principal component time series.
-      \vskip1ex
-      The input time series are often scaled by their standard deviations, to improve the accuracy of \emph{PCA dimension reduction}, so that more information is retained by the first few \emph{principal component} time series.
-      \vskip1ex
-      If the input time series are not scaled, then \emph{PCA} analysis is equivalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equivalent to the \emph{eigen decomposition} of the correlation matrix.
-      \vskip1ex
-      The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data (with the time series as columns), and returns the results as a list of class \texttt{prcomp}.
-      \vskip1ex
-      The \texttt{prcomp()} argument \texttt{scale=TRUE} specifies that the input time series should be scaled by their standard deviations.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.35\paperwidth]{figure/pca_rates_scree.png}\\
-      A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}.
-      <<echo=TRUE,eval=FALSE>>=
-# Perform principal component analysis PCA
-pcad <- prcomp(retp, scale=TRUE)
-# Plot standard deviations
-barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
-  las=3, xlab="", ylab="",
-  main="Scree Plot: Volatilities of Principal Components
-  of Treasury rates")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Yield Curve Principal Component Loadings (Weights)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Principal component} loadings are the weights of portfolios which have mutually orthogonal returns.
-      \vskip1ex
-      The \emph{principal component} portfolios represent the different orthogonal modes of the data variance.
-      \vskip1ex
-      The first \emph{principal component} of the \emph{yield curve} is the correlated movement of all rates up and down.
-      \vskip1ex
-      The second \emph{principal component} is \emph{yield curve} steepening and flattening.
-      \vskip1ex
-      The third \emph{principal component} is the \emph{yield curve} butterfly movement.
-      <<echo=(-(1:1)),eval=FALSE>>=
-x11(width=6, height=7)
-# Calculate principal component loadings (weights)
-pcad$rotation
-# Plot loading barplots in multiple panels
-par(mfrow=c(3,2))
-par(mar=c(3.5, 2, 2, 1), oma=c(0, 0, 0, 0))
-for (ordern in 1:NCOL(pcad$rotation)) {
-  barplot(pcad$rotation[, ordern], las=3, xlab="", ylab="", main="")
-  title(paste0("PC", ordern), line=-2.0, col.main="red")
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_loadings.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Yield Curve Principal Component Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The time series of the \emph{principal components} can be calculated by multiplying the loadings (weights) times the original data.
-      \vskip1ex
-      The \emph{principal component} time series have mutually orthogonal returns.
-      \vskip1ex
-      Higher order \emph{principal components} are gradually less volatile.
-      <<echo=TRUE,eval=FALSE>>=
-# Standardize (center and scale) the returns
-retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
-retp <- rutils::do_call(cbind, retp)
-sapply(retp, mean)
-sapply(retp, sd)
-# Calculate principal component time series
-retpcac <- retp %*% pcad$rotation
-all.equal(pcad$x, retpcac, check.attributes=FALSE)
-# Calculate products of principal component time series
-round(t(retpcac) %*% retpcac, 2)
-# Coerce to xts time series
-retpcac <- xts(retpcac, order.by=zoo::index(retp))
-retpcac <- cumsum(retpcac)
-# Plot principal component time series in multiple panels
-par(mfrow=c(3,2))
-par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-rangev <- range(retpcac)
-for (ordern in 1:NCOL(retpcac)) {
-  plot.zoo(retpcac[, ordern], ylim=rangev, xlab="", ylab="")
-  title(paste0("PC", ordern), line=-1, col.main="red")
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_series.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Inverting Principal Component Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The original time series can be calculated \emph{exactly} from the time series of all the \emph{principal components}, by inverting the loadings matrix.
-      \vskip1ex
-      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Invert all the principal component time series
-retpca <- retp %*% pcad$rotation
-solved <- retpca %*% solve(pcad$rotation)
-all.equal(coredata(retp), solved)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Dimension Reduction} Using Principal Component Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The original time series can be calculated \emph{approximately} from just the first few \emph{principal components}, which demonstrates that \emph{PCA} is a form of \emph{dimension reduction}.
-      \vskip1ex
-      A popular rule of thumb is to use the \emph{principal components} with the largest variances, which sum up to \texttt{80\%} of the total variance of returns.
-      \vskip1ex
-      The \emph{Kaiser-Guttman} rule uses only \emph{principal components} with variance greater than $1$.
-      <<echo=TRUE,eval=FALSE>>=
-# Invert first 3 principal component time series
-solved <- retpca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
-solved <- xts::xts(solved, zoo::index(retp))
-solved <- cumsum(solved)
-retc <- cumsum(retp)
-# Plot the solved returns
-par(mfrow=c(3,2))
-par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-for (symbol in symbolv) {
-  plot.zoo(cbind(retc[, symbol], solved[, symbol]),
-    plot.type="single", col=c("black", "blue"), xlab="", ylab="")
-  legend(x="topleft", bty="n", y.intersp=0.1,
-         legend=paste0(symbol, c("", " solved")),
-         title=NULL, inset=0.0, cex=1.0, lwd=6,
-         lty=1, col=c("black", "blue"))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_series_solved.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Calibrating Yield Curve Using Package \protect\emph{RQuantLib}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/RQuantLib/index.html}{\emph{RQuantLib}}
-      is an interface to the
-      \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
-      open source \texttt{C/C++} library for quantitative finance, mostly designed for pricing fixed-income instruments and options.
-      \vskip1ex
-      The function \texttt{DiscountCurve()} calibrates a \emph{zero coupon yield curve} from \emph{money market} rates, \emph{Eurodollar} futures, and \emph{swap} rates.
-      \vskip1ex
-      The function \texttt{DiscountCurve()} interpolates the \emph{zero coupon} rates into a vector of dates specified by the \texttt{times} argument.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # Load quantmod
-library(RQuantLib)  # Load RQuantLib
-# Specify curve parameters
-curve_params <- list(tradeDate=as.Date("2018-01-17"),
-                     settleDate=as.Date("2018-01-19"),
-                     dt=0.25,
-                     interpWhat="discount",
-                     interpHow="loglinear")
-# Specify market data: prices of FI instruments
-market_data <- list(d3m=0.0363,
-                    fut1=96.2875,
-                    fut2=96.7875,
-                    fut3=96.9875,
-                    fut4=96.6875,
-                    s5y=0.0443,
-                    s10y=0.05165,
-                    s15y=0.055175)
-# Specify dates for calculating the zero rates
-disc_dates <- seq(0, 10, 0.25)
-# Specify the evaluation (as of) date
-setEvaluationDate(as.Date("2018-01-17"))
-# Calculate the zero rates
-disc_curves <- DiscountCurve(params=curve_params,
-                             tsQuotes=market_data,
-                             times=disc_dates)
-# Plot the zero rates
-x11()
-plot(x=disc_curves$zerorates, t="l", main="zerorates")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 
@@ -1345,13 +255,10 @@ respv <- (-3 + 2*predm + noisev)
       \vskip1ex
       The expected value of the \emph{RSS} is equal to the \emph{degrees of freedom} $(n-2)$ times the variance $\sigma^2_\varepsilon$ of the \emph{residuals} $\varepsilon_i$: $\mathbb{E}[RSS] = (n-2) \sigma^2_\varepsilon$.
         <<echo=TRUE,eval=TRUE>>=
-# Calculate centered (de-meaned) predictor and response vectors
-predc <- predm - mean(predm)
-respc <- respv - mean(respv)
 # Calculate the regression beta
-betav <- cov(predm, respv)/var(predm)
+betac <- cov(predm, respv)/var(predm)
 # Calculate the regression alpha
-alpha <- mean(respv) - betav*mean(predm)
+alphac <- mean(respv) - betac*mean(predm)
       @
   \end{columns}
 \end{block}
@@ -1389,7 +296,7 @@ class(regmod)  # Regressions have class lm
 attributes(regmod)
 eval(regmod$call$formula)  # Regression formula
 regmod$coeff  # Regression coefficients
-all.equal(coef(regmod), c(alpha, betav),
+all.equal(coef(regmod), c(alphac, betac),
       check.attributes=FALSE)
       @
   \end{columns}
@@ -1417,7 +324,7 @@ all.equal(coef(regmod), c(alpha, betav),
 # x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 # par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
-fitv <- (alpha + betav*predm)
+fitv <- (alphac + betac*predm)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
 # Plot scatterplot using formula
 plot(formulav, xlab="predictor", ylab="response")
@@ -1457,7 +364,7 @@ legend(x="topleft", # Add legend
       \end{displaymath}
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the residuals
-fitv <- (alpha + betav*predm)
+fitv <- (alphac + betac*predm)
 resids <- (respv - fitv)
 all.equal(resids, regmod$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to the predictor
@@ -1510,6 +417,9 @@ abline(h=0, lwd=3, col="red")
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
+# Calculate the centered (de-meaned) predictor and response vectors
+predc <- predm - mean(predm)
+respc <- respv - mean(respv)
 # Degrees of freedom of residuals
 degf <- regmod$df.residual
 # Standard deviation of residuals
@@ -1849,7 +759,7 @@ x11(width=6, height=5)  # Open x11 for plotting
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 # Add unit column to the predictor matrix
 predm <- cbind(rep(1, nrows), predm)
-# Calculate generalized inverse of the predictor matrix
+# Calculate the generalized inverse of the predictor matrix
 predinv <- MASS::ginv(predm)
 # Calculate the influence matrix
 infmat <- predm %*% predinv
@@ -1897,9 +807,9 @@ all.equal(infmat, infmat %*% infmat)
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/reg_fitsd.png}
         <<echo=TRUE,eval=FALSE>>=
-# Calculate covariance and standard deviations of fitted values
-betav <- predinv %*% respv
-fitv <- drop(predm %*% betav)
+# Calculate the covariance and standard deviations of fitted values
+betac <- predinv %*% respv
+fitv <- drop(predm %*% betac)
 resids <- drop(respv - fitv)
 degf <- (NROW(predm) - NCOL(predm))
 residsd <- sqrt(sum(resids^2)/degf)
@@ -1931,14 +841,14 @@ plot(fitdata, type="l", lwd=3, col="blue",
       \vskip1ex
       The fitted values for different realizations of random noise can be calculated using the influence matrix.
         <<echo=TRUE,eval=FALSE>>=
-# Calculate response without random noise for univariate regression,
+# Calculate the response without random noise for univariate regression,
 # equal to weighted sum over columns of predictor.
 respn <- predm %*% c(-1, 1)
 # Perform loop over different realizations of random noise
 fitm <- lapply(1:50, function(it) {
   # Add random noise to response
   respv <- respn + rnorm(nrows, sd=1.0)
-  # Calculate fitted values using influence matrix
+  # Calculate the fitted values using influence matrix
   infmat %*% respv
 })  # end lapply
 fitm <- rutils::do_call(cbind, fitm)
@@ -1975,13 +885,13 @@ legend(x="topleft", # Add legend
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The forecast $y_{forecast}$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
+      The forecast $y_f$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
       \begin{displaymath}
-        y_{forecast} = \mathbb{X}_{new} \, \beta
+        y_f = \mathbb{X}_{new} \, \beta
       \end{displaymath}
-      The variance $\sigma^2_{forecast}$ of the \emph{forecast value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$:
+      The variance $\sigma^2_f$ of the \emph{forecast value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$:
       \begin{align*}
-        & \sigma^2_{forecast} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
+        & \sigma^2_f = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
         & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = 
         \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
         & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
@@ -1993,11 +903,14 @@ legend(x="topleft", # Add legend
 # Define new predictor
 newdata <- (max(predm[, 2]) + 10*(1:5)/nrows)
 predn <- cbind(rep(1, NROW(newdata)), newdata)
-# Calculate the forecast values and standard errors
-predm2 <- MASS::ginv(crossprod(predm)) # Inverse of predictor matrix squared
-predsd <- residsd*sqrt(predn %*% predm2 %*% t(predn))
-fcast <- cbind(forecast=drop(predn %*% betav),
-  stdev=diag(predsd))
+# Calculate the forecast values
+fcast <- drop(predn %*% betac)
+# Calculate the inverse of the predictor matrix squared
+pred2 <- MASS::ginv(crossprod(predm))
+# Calculate the standard errors
+predsd <- residsd*sqrt(predn %*% pred2 %*% t(predn))
+# Combine the forecast values and standard errors
+fcast <- cbind(forecast=fcast, stdev=diag(predsd))
       @
   \end{columns}
 \end{block}
@@ -2012,12 +925,12 @@ fcast <- cbind(forecast=drop(predn %*% betav),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{forecast value} $y_{forecast}$ follows the \emph{t-distribution}.
+      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{forecast value} $y_f$ follows the \emph{t-distribution}.
         <<echo=TRUE,eval=FALSE>>=
 # Prepare plot data
 xdata <- c(predm[, 2], newdata)
 ydata <- c(fitv, fcast[, 1])
-# Calculate t-quantile
+# Calculate the t-quantile
 tquant <- qt(pnorm(2), df=degf)
 fcastl <- fcast[, 1] - tquant*fcast[, 2]
 fcasth <- fcast[, 1] + tquant*fcast[, 2]
@@ -2060,7 +973,7 @@ legend(x="topleft", # Add legend
 # Perform univariate regression
 dframe <- data.frame(resp=respv, pred=predm[, 2])
 regmod <- lm(resp ~ pred, data=dframe)
-# Calculate forecasts from regression
+# Calculate the forecasts from regression
 newdf <- data.frame(pred=predn[, 2]) # Same column name
 fcastlm <- predict.lm(object=regmod,
   newdata=newdf, confl=1-2*(1-pnorm(2)),
@@ -2142,6 +1055,1753 @@ plot(regmod, which=2, ask=FALSE)  # Plot just Q-Q
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Multivariate Regression}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Multivariate} Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{multivariate} linear regression model with $k$ \emph{predictors} ${x_j}$, is defined by the formula:
+      \begin{displaymath}
+        y_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $k$.
+      \vskip1ex
+      The \emph{residuals} $\varepsilon_i$ are assumed to be normally distributed $\phi(0, \sigma_\varepsilon)$, independent, and stationary.
+      \vskip1ex
+      The data consists of $n$ observations, with each observation containing $k$ \emph{predictors} and one \emph{response} value.
+      \vskip1ex
+      The \emph{response vector} $y$, the \emph{predictor} vectors ${x_j}$, and the \emph{residuals} $\varepsilon$ are vectors of length $n$.
+      \vskip1ex
+      The $k$ \emph{predictors} ${x_j}$ form the columns of the $(n,k)$-dimensional \emph{predictor matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{flalign*}
+        & y = \alpha + \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
+        & y_{fit} = \alpha + \mathbb{X} \beta
+      \end{flalign*}
+      Where $y_{fit}$ are the \emph{fitted values} of the model.
+        <<echo=TRUE,eval=TRUE>>=
+# Define predictor matrix
+nrows <- 100
+ncols <- 5
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+predm <- matrix(runif(nrows*ncols), ncol=ncols)
+# Add column names
+colnames(predm) <- paste0("pred", 1:ncols)
+# Define the predictor weights
+weightv <- runif(3:(ncols+2), min=(-1), max=1)
+# Response equals weighted predictor plus random noise
+noisev <- rnorm(nrows, sd=2)
+respv <- (1 + predm %*% weightv + noisev)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Solution of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Residual Sum of Squares} (\emph{RSS}) is defined as the sum of the squared \emph{residuals}:
+      \begin{align*}
+        RSS &= \varepsilon^T \varepsilon = (y - y_{fit})^T (y - y_{fit}) = \\
+        & (y - \alpha + \mathbb{X} \beta)^T (y - \alpha + \mathbb{X} \beta)
+      \end{align*}
+      The \emph{OLS} solution for the regression coefficients is found by equating the \emph{RSS} derivatives to zero:
+      \begin{flalign*}
+        RSS_\alpha = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbbm{1} = 0 \\
+        RSS_\beta = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbb{X} = 0
+      \end{flalign*}
+      The solutions for $\alpha$ and $\beta$ are given by:
+      \begin{flalign*}
+        & \alpha = \bar{y} - \bar{\mathbb{X}} \beta\\
+        & RSS_\beta = -2 (\hat{y} - \hat{\mathbb{X}} \beta)^T \hat{\mathbb{X}} = 0\\
+        & \hat{\mathbb{X}}^T \hat{y} - \hat{\mathbb{X}}^T \hat{\mathbb{X}} \beta = 0\\
+        & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{y} = \hat{\mathbb{X}}^{inv} \hat{y}
+      \end{flalign*}
+      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\hat{y} = y - \bar{y} = \hat{\mathbb{X}} \beta + \varepsilon$ are the centered (de-meaned) variables.
+    \column{0.5\textwidth}
+      The matrix $\hat{\mathbb{X}}^{inv}$ is the generalized inverse of the centered (de-meaned) \emph{predictor matrix} $\hat{\mathbb{X}}$.
+      \vskip1ex
+      The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
+        <<echo=TRUE,eval=TRUE>>=
+# Perform multivariate regression using lm()
+regmod <- lm(respv ~ predm)
+# Solve multivariate regression using matrix algebra
+# Calculate the centered (de-meaned) predictor matrix and response vector
+# predc <- t(t(predm) - colMeans(predm))
+predc <- apply(predm, 2, function(x) (x-mean(x)))
+respc <- respv - mean(respv)
+# Calculate the regression coefficients
+betac <- drop(MASS::ginv(predc) %*% respc)
+# Calculate the regression alpha
+alphac <- mean(respv) - sum(colSums(predm)*betac)/nrows
+# Compare with coefficients from lm()
+all.equal(coef(regmod), c(alphac, betac), check.attributes=FALSE)
+# Compare with actual coefficients
+all.equal(c(1, weightv), c(alphac, betac), check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multivariate Regression in Homogeneous Form}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      We can add an extra unit column to the \emph{predictor matrix} $\mathbb{X}$ to represent the intercept term, and express the \emph{linear regression} formula in \emph{homogeneous form}:
+      \begin{displaymath}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      Where the \emph{regression coefficients} $\beta$ now contain the intercept $\alpha$: $\beta = (\alpha, \beta_1, \ldots, \beta_k)$, and the \emph{predictor matrix} $\mathbb{X}$ has $k+1$ columns and $n$ rows.
+      \vskip1ex
+      The \emph{OLS} solution for the $\beta$ coefficients is found by equating the \emph{RSS} derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = -2 (y - \mathbb{X} \beta)^T \mathbb{X} = 0\\
+        & \mathbb{X}^T y - \mathbb{X}^T \mathbb{X} \beta = 0\\
+        & \beta = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X}_{inv} y
+      \end{flalign*}
+      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
+      \vskip1ex
+      The coefficients $\beta$ can be interpreted as the projections of the \emph{response vector} $y$ onto the columns of the \emph{predictor matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      The \emph{predictor matrix} $\mathbb{X}$ maps the \emph{regression coefficients} $\beta$ into the \emph{response vector} $y$.
+      \vskip1ex
+      The generalized inverse of the \emph{predictor matrix} $\mathbb{X}_{inv}$ maps the \emph{response vector} $y$ into the \emph{regression coefficients} $\beta$.
+        <<echo=TRUE,eval=TRUE>>=
+# Add intercept column to predictor matrix
+predm <- cbind(rep(1, nrows), predm)
+ncols <- NCOL(predm)
+# Add column name
+colnames(predm)[1] <- "intercept"
+# Calculate the generalized inverse of the predictor matrix
+predinv <- MASS::ginv(predm)
+# Calculate the regression coefficients
+betac <- predinv %*% respv
+# Perform multivariate regression without intercept term
+regmod <- lm(respv ~ predm - 1)
+all.equal(drop(betac), coef(regmod), check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Residuals} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{flalign*}
+        & y = \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
+        & y_{fit} = \mathbb{X} \beta
+      \end{flalign*}
+      Where $y_{fit}$ are the \emph{fitted values} of the model.
+      \vskip1ex
+      The \emph{residuals} are equal to the \emph{response vector} minus the \emph{fitted values}: $\varepsilon = y - y_{fit}$.
+      \vskip1ex
+      The \emph{residuals} $\varepsilon$ are orthogonal to the columns of the \emph{predictor matrix} $\mathbb{X}$ (the \emph{predictors}):
+      \begin{flalign*}
+        & \varepsilon^T \mathbb{X} = (y - \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y)^T \mathbb{X} = \\
+        & y^T \mathbb{X} - y^T \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbb{X} = y^T \mathbb{X} - y^T \mathbb{X} = 0
+      \end{flalign*}
+      Therefore the \emph{residuals} are also orthogonal to the \emph{fitted values}: $\varepsilon^T y_{fit} = \varepsilon^T \mathbb{X} \beta = 0$.
+      \vskip1ex
+      Since the first column of the \emph{predictor matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate the fitted values from regression coefficients
+fitv <- drop(predm %*% betac)
+all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
+# Calculate the residuals
+resids <- drop(respv - fitv)
+all.equal(resids, regmod$residuals, check.attributes=FALSE)
+# Residuals are orthogonal to predictor columns (predms)
+sapply(resids %*% predm, all.equal, target=0)
+# Residuals are orthogonal to the fitted values
+all.equal(sum(resids*fitv), target=0)
+# Sum of residuals is equal to zero
+all.equal(sum(resids), target=0)
+      @
+      \vspace{-1em}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Influence Matrix} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The vector $y_{fit} = \mathbb{X} \beta$ are the \emph{fitted values} corresponding to the \emph{response vector} $y$:
+      \begin{displaymath}
+        y_{fit} = \mathbb{X} \beta = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X} \mathbb{X}_{inv} y = \mathbb{H} y
+      \end{displaymath}
+      Where $\mathbb{H} = \mathbb{X} \mathbb{X}_{inv} = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the \emph{influence matrix} (or hat matrix), which maps the \emph{response vector} $y$ into the \emph{fitted values} $y_{fit}$.
+      \vskip1ex
+      The \emph{influence matrix} $\mathbb{H}$ is a projection matrix, and it measures the changes in the \emph{fitted values} $y_{fit}$ due to changes in the \emph{response vector} $y$.
+      \begin{displaymath}
+        \mathbb{H}_{ij} = \frac{\partial{y^{fit}_i}}{\partial{y_j}}
+      \end{displaymath}
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate the influence matrix
+infmat <- predm %*% predinv
+# The influence matrix is idempotent
+all.equal(infmat, infmat %*% infmat)
+# Calculate the fitted values using influence matrix
+fitv <- drop(infmat %*% respv)
+all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
+# Calculate the fitted values from regression coefficients
+fitv <- drop(predm %*% betac)
+all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multivariate Regression With Centered Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{displaymath}
+        y = \alpha + \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      The intercept $\alpha$ can be substituted with its solution: $\alpha = \bar{y} - \bar{\mathbb{X}} \beta$ to obtain the regression model with centered (de-meaned) response and predictor matrix:
+      \begin{flalign*}
+        & y = \bar{y} - \bar{\mathbb{X}} \beta + \mathbb{X} \beta \\
+        & \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
+      \end{flalign*}
+      The regression model with a centered (de-meaned) \emph{predictor matrix} produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
+      \vskip1ex
+      But the centered regression model has a different \emph{influence matrix}, which maps the centered \emph{response vector} $\hat{y}$ into the centered \emph{fitted values} $\hat{y}_{fit}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate the centered (de-meaned) fitted values
+predc <- t(t(predm) - colMeans(predm))
+fittedc <- drop(predc %*% betac)
+all.equal(fittedc, regmod$fitted.values - mean(respv),
+  check.attributes=FALSE)
+# Calculate the residuals
+respc <- respv - mean(respv)
+resids <- drop(respc - fittedc)
+all.equal(resids, regmod$residuals, check.attributes=FALSE)
+# Calculate the influence matrix
+infmatc <- predc %*% MASS::ginv(predc)
+# Compare the fitted values
+all.equal(fittedc, drop(infmatc %*% respc), check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multivariate Regression for Orthogonal Predictors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generalized inverse can be written as:
+      \begin{displaymath}
+        \mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{C}^{-1} \mathbb{X}^T
+      \end{displaymath}
+      Where $\mathbb{C} = \mathbb{X}^T \mathbb{X}$ is the matrix of inner products of the predictors $\mathbb{X}$.
+      \vskip1ex
+      If the predictors are orthogonal ($x_i \cdot x_j = 0$ for $i \neq j$, and $x_i \cdot x_i = \sigma^2_i$) then the squared predictor matrix $\mathbb{C}$ is diagonal:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma^2_1 & 0 & \cdots & 0 \\
+          0 & \sigma^2_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^2_n
+        \end{pmatrix}
+      \end{displaymath}
+      And the inverse of the squared predictor matrix $\mathbb{C}^{-1}$ is also diagonal, so the \emph{regression coefficients} can then be written simply as: 
+      \begin{displaymath}
+        \beta_i = \frac{x_i \cdot y}{\sigma^2_i}
+      \end{displaymath}
+      Where $x_i \cdot y$ are the inner products of the predictors $x_i$ times the \emph{response vector} $y$.
+      \vskip1ex
+      Conversely, if the predictors are \emph{collinear} then their squared predictor matrix is \emph{singular} and the regression is also singular.  Predictors are \emph{collinear} if there's a linear combination that is constant.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Perform PCA of the predictors
+pcad <- prcomp(predm, center=FALSE, scale=FALSE)
+# Calculate the PCA predictors
+predpca <- predm %*% pcad$rotation
+# Principal components are orthogonal to each other
+round(t(predpca) %*% predpca, 2)
+# Calculate the PCA regression coefficients using lm()
+regmod <- lm(respv ~ predpca - 1)
+summary(regmod)
+regmod$coefficients
+# Calculate the PCA regression coefficients directly
+colSums(predpca*drop(respv))/colSums(predpca^2)
+# Create almost collinear predictors
+predcol <- predm
+predcol[, 1] <- (predcol[, 1]/1e3 + predcol[, 2])
+# Calculate the PCA predictors
+pcad <- prcomp(predcol, center=FALSE, scale=FALSE)
+predpca <- predcol %*% pcad$rotation
+round(t(predpca) %*% predpca, 6)
+# Calculate the PCA regression coefficients
+drop(MASS::ginv(predpca) %*% respv)
+# Calculate the PCA regression coefficients directly
+colSums(predpca*drop(respv))/colSums(predpca^2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Regression Diagnostics}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Coefficients as \protect\emph{Random Variables}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{residuals} $\hat\varepsilon$ can be considered to be \emph{random variables}, with expected value equal to zero $\mathbbm{E}[\hat\varepsilon] = 0$, and variance equal to $\sigma^2_\varepsilon$.
+      \vskip1ex
+      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}:
+      \begin{displaymath}
+        \sigma^2_\varepsilon = \frac{\mathbbm{E}[\varepsilon^T \varepsilon]}{d_{free}}
+      \end{displaymath}
+      Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}, equal to the number of observations $n$, minus the number of \emph{predictors} $k$ (including the intercept term).
+      \vskip1ex
+      The \emph{response vector} $y$ can also be considered to be a \emph{random variable} $\hat{y}$, equal to the sum of the deterministic \emph{fitted values} $y_{fit}$ plus the random \emph{residuals} $\hat\varepsilon$:
+      \begin{displaymath}
+        \hat{y} = \mathbb{X} \beta + \hat\varepsilon = y_{fit} + \hat\varepsilon
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The \emph{regression coefficients} $\beta$ can also be considered to be \emph{random variables} $\hat\beta$:
+      \begin{flalign*}
+        & \hat\beta = \mathbb{X}_{inv} \hat{y} = \mathbb{X}_{inv} (y_{fit} + \hat\varepsilon) = \\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat\varepsilon) =
+        \beta + \mathbb{X}_{inv} \hat\varepsilon
+      \end{flalign*}
+      Where $\beta$ is equal to the expected value of $\hat\beta$: $\beta = \mathbbm{E}[\hat\beta] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
+        <<echo=TRUE,eval=TRUE>>=
+# Regression model summary
+regsum <- summary(regmod)
+# Degrees of freedom of residuals
+nrows <- NROW(predm)
+ncols <- NCOL(predm)
+degf <- (nrows - ncols)
+all.equal(degf, regsum$df[2])
+# Variance of residuals
+residsd <- sum(resids^2)/degf
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of the Regression Coefficients}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{covariance matrix} of the \emph{regression coefficients} $\hat\beta$ is given by:
+      \begin{align*}
+        & \sigma^2_\beta = \frac{\mathbbm{E}[(\hat\beta - \beta) (\hat\beta - \beta)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon (\mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T]}{d_{free}} = \\
+        & \frac{(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1}}{d_{free}} = \\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \sigma^2_\varepsilon \mathbbm{1} \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} =
+        \sigma^2_\varepsilon (\mathbb{X}^T \mathbb{X})^{-1}
+      \end{align*}
+      Where the expected values of the squared residuals are proportional to the diagonal unit matrix $\mathbbm{1}$: $\frac{\mathbbm{E}[\hat\varepsilon \hat\varepsilon^T]}{d_{free}} = \sigma^2_\varepsilon \mathbbm{1}$
+      \vskip1ex
+      If the predictors are close to being \emph{collinear}, then the squared predictor matrix becomes singular, and the covariance of their regression coefficients becomes very large.
+      \vskip1ex
+      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Inverse of predictor matrix squared
+pred2 <- MASS::ginv(crossprod(predm))
+# pred2 <- t(predm) %*% predm
+# Variance of residuals
+residsd <- sum(resids^2)/degf
+# Calculate the covariance matrix of betas
+betacovar <- residsd*pred2
+# round(betacovar, 3)
+betasd <- sqrt(diag(betacovar))
+all.equal(betasd, regsum$coeff[, 2], check.attributes=FALSE)
+# Calculate the t-values of betas
+betatvals <- drop(betac)/betasd
+all.equal(betatvals, regsum$coeff[, 3], check.attributes=FALSE)
+# Calculate the two-sided p-values of betas
+betapvals <- 2*pt(-abs(betatvals), df=degf)
+all.equal(betapvals, regsum$coeff[, 4], check.attributes=FALSE)
+# The square of the generalized inverse is equal
+# to the inverse of the square
+all.equal(MASS::ginv(crossprod(predm)), predinv %*% t(predinv))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of the Fitted Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{fitted values} $y_{fit}$ can also be considered to be \emph{random variables} $\hat{y}_{fit}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: $\hat{y}_{fit} = \mathbb{X} \hat\beta = \mathbb{X} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = y_{fit} + \mathbb{X} \mathbb{X}_{inv} \hat\varepsilon$.
+      \vskip1ex
+      The \emph{covariance matrix} of the \emph{fitted values} $\sigma^2_{fit}$ is:
+      \begin{align*}
+        & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat\varepsilon \hat\varepsilon^T \mathbb{H}^T]}{d_{free}} = \\
+        & \frac{\mathbb{H} \, \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{H}^T}{d_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
+      \end{align*}
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+      \vskip1ex
+      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
+      \vskip1ex
+      This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate the influence matrix
+infmat <- predm %*% predinv
+# The influence matrix is idempotent
+all.equal(infmat, infmat %*% infmat)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/regm_fitsd.png}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate the covariance and standard deviations of fitted values
+fitcovar <- residsd*infmat
+fitsd <- sqrt(diag(fitcovar))
+# Sort the standard deviations
+fitsd <- cbind(fitted=fitv, stdev=fitsd)
+fitsd <- fitsd[order(fitv), ]
+# Plot the standard deviations
+plot(fitsd, type="l", lwd=3, col="blue",
+     xlab="Fitted Value", ylab="Standard Deviation",
+     main="Standard Deviations of Fitted Values\nin Multivariate Regression")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Time Series Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Bootstrapping the regression of asset returns shows that the actual standard errors can be over twice as large as those reported by the function \texttt{lm()}.
+      \vskip1ex
+      This is because the function \texttt{lm()} assumes that the data is normally distributed, while in reality asset returns have very large skewness and kurtosis.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load time series of ETF percentage returns
+retp <- rutils::etfenv$returns[, c("XLF", "XLE")]
+retp <- na.omit(retp)
+nrows <- NROW(retp)
+head(retp)
+# Define regression formula
+formulav <- paste(colnames(retp)[1],
+  paste(colnames(retp)[-1], collapse="+"),
+  sep=" ~ ")
+# Standard regression
+regmod <- lm(formulav, data=retp)
+regsum <- summary(regmod)
+# Bootstrap of regression
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+bootd <- sapply(1:100, function(x) {
+  samplev <- sample.int(nrows, replace=TRUE)
+  regmod <- lm(formulav, data=retp[samplev, ])
+  regmod$coefficients
+})  # end sapply
+# Means and standard errors from regression
+regsum$coefficients
+# Means and standard errors from bootstrap
+dim(bootd)
+t(apply(bootd, MARGIN=1,
+      function(x) c(mean=mean(x), stderror=sd(x))))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Forecasts From Multivariate Regression Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The forecast $y_f$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
+      \begin{displaymath}
+        y_f = \mathbb{X}_{new} \, \beta
+      \end{displaymath}
+      The forecast is a \emph{random variable} $\hat{y}_f$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}:
+      \begin{align*}
+        \hat{y}_f = \mathbb{X}_{new} \hat\beta = \mathbb{X}_{new} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = \\
+        y_f + \mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon
+      \end{align*}
+      The variance $\sigma^2_f$ of the \emph{forecast value} is:
+      \begin{align*}
+        & \sigma^2_f = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
+        & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
+        \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
+      \end{align*}
+    \column{0.5\textwidth}
+      The variance $\sigma^2_f$ of the \emph{forecast value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
+        <<echo=TRUE,eval=TRUE>>=
+# New data predictor is a data frame or row vector
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
+colnamev <- colnames(predm)
+colnames(newdata) <- colnamev
+newdata <- as.matrix(newdata)
+fcast <- drop(newdata %*% betac)
+predsd <- drop(sqrt(newdata %*% betacovar %*% t(newdata)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Forecasts From Multivariate Regression Using \texttt{lm()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
+      \vskip1ex
+      \texttt{predict.lm()} is the forecasting method for linear models (regressions) produced by the function \texttt{lm()}.
+      \vskip1ex
+      In order for \texttt{predict.lm()} to work properly, the multivariate regression must be specified using a formula.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Create formula from text string
+formulav <- paste0("respv ~ ",
+  paste(colnames(predm), collapse=" + "), " - 1")
+# Specify multivariate regression using formula
+regmod <- lm(formulav, data=data.frame(cbind(respv, predm)))
+regsum <- summary(regmod)
+# Predict from lm object
+fcastlm <- predict.lm(object=model, newdata=newdata,
+           interval="confidence", confl=1-2*(1-pnorm(2)))
+# Calculate the t-quantile
+tquant <- qt(pnorm(2), df=degf)
+fcasth <- (fcast + tquant*predsd)
+fcastl <- (fcast - tquant*predsd)
+# Compare with matrix calculations
+all.equal(fcastlm[1, "fit"], fcast)
+all.equal(fcastlm[1, "lwr"], fcastl)
+all.equal(fcastlm[1, "upr"], fcasth)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Total Sum of Squares} and \protect\emph{Explained Sum of Squares}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
+      \begin{flalign*}
+        & TSS = (y - \bar{y})^T (y - \bar{y})\\
+        & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
+        & RSS = (y - y_{fit})^T (y - y_{fit})
+      \end{flalign*}
+      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$:
+      \begin{displaymath}
+        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
+      \end{displaymath}
+      Therefore the \emph{TSS} can be expressed as the sum of the \emph{ESS} plus the \emph{RSS}:
+      \begin{displaymath}
+        TSS = ESS + RSS
+      \end{displaymath}
+      It also follows that the $RSS$ and the $ESS$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
+      \vskip1ex
+      The degrees of freedom of the \emph{Total Sum of Squares} is equal to the sum of the $RSS$ plus the $ESS$: $d^{TSS}_{free} = (n-k) + (k-1) = n-1$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_tss.png}
+        <<echo=TRUE,eval=TRUE>>=
+# TSS = ESS + RSS
+tss <- sum((respv-mean(respv))^2)
+ess <- sum((fitv-mean(fitv))^2)
+rss <- sum(resids^2)
+all.equal(tss, ess + rss)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{R-squared} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{R-squared} is the fraction of the \emph{Explained Sum of Squares} (\emph{ESS}) divided by the \emph{Total Sum of Squares} (\emph{TSS}):
+      \begin{displaymath}
+        R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
+      \end{displaymath}
+      The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to $1$ for models fitting the data very well, and \emph{R-squared} close to $0$ for poorly fitting models.
+      \vskip1ex
+      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
+      \begin{flalign*}
+        & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
+        & \frac{(y_{fit} - \bar{y})^T (y_{fit} - \bar{y})}{\sqrt{TSS \cdot ESS}} = \sqrt{\frac{ESS}{TSS}}
+      \end{flalign*}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Set regression attribute for intercept
+attributes(regmod$terms)$intercept <- 1
+# Regression summary
+regsum <- summary(regmod)
+# Regression R-squared
+rsquared <- ess/tss
+all.equal(rsquared, regsum$r.squared)
+# Correlation between response and fitted values
+corfit <- drop(cor(respv, fitv))
+# Squared correlation between response and fitted values
+all.equal(corfit^2, rsquared)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Adjusted R-squared} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weakness of \emph{R-squared} is that it increases with the number of predictors (even for predictors which are purely random), so it may provide an inflated measure of the quality of a model with many predictors.
+      \vskip1ex
+      This is remedied by using the \emph{residual variance} ($\sigma^2_\varepsilon = \frac{RSS}{d_{free}}$) instead of the \emph{RSS}, and the \emph{response variance} ($\sigma^2_y = \frac{TSS}{n-1}$) instead of the \emph{TSS}.
+      \vskip1ex
+      The \emph{adjusted R-squared} is equal to $1$ minus the fraction of the \emph{residual variance} divided by the \emph{response variance}:
+      \begin{displaymath}
+        R^2_{adj} = 1 - \frac{\sigma^2_\varepsilon}{\sigma^2_y} = 1 - \frac{RSS/d_{free}}{TSS/(n-1)}
+      \end{displaymath}
+      Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}.
+      \vskip1ex
+      The \emph{adjusted R-squared} is always smaller than the \emph{R-squared}.
+    \column{0.5\textwidth}
+      The performance of two different models can be compared by comparing their \emph{adjusted R-squared}, since the model with the larger \emph{adjusted R-squared} has a smaller \emph{residual variance}, so it's better able to explain the \emph{response}.
+      <<echo=TRUE,eval=TRUE>>=
+nrows <- NROW(predm)
+ncols <- NCOL(predm)
+# Degrees of freedom of residuals
+degf <- (nrows - ncols)
+# Adjusted R-squared
+rsqadj <- (1-sum(resids^2)/degf/var(respv))
+# Compare adjusted R-squared from lm()
+all.equal(drop(rsqadj), regsum$adj.r.squared)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fisher's \protect\emph{F-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\chi^2_m$ and $\chi^2_n$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      Then the random variable:
+      \begin{displaymath}
+        F = \frac{\chi^2_m / m}{\chi^2_n / n}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        f(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{m/2-1}}{(n+mF)^{(m+n)/2}}
+      \end{displaymath}
+      The \emph{F-distribution} depends on the ratio $F$ and also on the degrees of freedom, $m$ and $n$.
+      \vskip1ex
+      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}. 
+      <<echo=TRUE,eval=FALSE>>=
+# Plot four curves in loop
+degf <- c(3, 5, 9, 21)  # Degrees of freedom
+colorv <- c("black", "red", "blue", "green")
+for (indeks in 1:NROW(degf)) {
+  curve(expr=df(x, df1=degf[indeks], df2=3),
+    xlim=c(0, 4), xlab="", ylab="", lwd=2, 
+    col=colorv[indeks], add=as.logical(indeks-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/f_dist.png}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="F-Distributions", line=0.5)
+# Add legend
+labelv <- paste("degf", degf, sep=" = ")
+legend("topright", title="Degrees of Freedom", inset=0.0, bty="n",
+       y.intersp=0.4, labelv, cex=1.2, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-test} For the Variance Ratio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $x$ and $y$ be independent standard \emph{Normal} variables, and let
+      $\sigma^2_x = \frac{1}{m-1} \sum_{i=1}^m (x_i-\bar{x})^2$
+      and
+      $\sigma^2_y = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar{y})^2$
+      be their sample variances.
+      \vskip1ex
+      The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance $\sigma^2_x$ is not significantly greater than $\sigma^2_y$).
+      \vskip1ex
+      A large value of the \emph{F-statistic} $F$ indicates that the variances are unlikely to be equal.
+      \vskip1ex
+      The function \texttt{pf(q)} returns the cumulative probability of the \emph{F-distribution}, i.e. the cumulative probability that the \emph{F-statistic} $F$ is less than the quantile $q$.
+      \vskip1ex
+      This \emph{F-test} is very sensitive to the assumption of the normality of the variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+sigmax <- var(rnorm(nrows))
+sigmay <- var(rnorm(nrows))
+fratio <- sigmax/sigmay
+# Cumulative probability for q = fratio
+pf(fratio, nrows-1, nrows-1)
+# p-value for fratios
+1-pf((10:20)/10, nrows-1, nrows-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-statistic} for Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response}.
+      \vskip1ex
+      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_1 > p_2$.
+      \vskip1ex
+      Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}:
+      \begin{displaymath}
+        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+    \column{0.5\textwidth}
+      If the \emph{restricted} model has only one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
+      \vskip1ex
+      Let the \emph{unrestricted} multivariate regression model be defined as:
+      \begin{displaymath}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      Where $y$ is the \emph{response}, $\mathbb{X}$ is the \emph{predictor matrix} (with $k$ \emph{predictors}, including the intercept term), and $\beta$ are the $k$ \emph{regression coefficients}.
+      \vskip1ex
+      So the \emph{unrestricted} model has $k$ parameters ($p_2 = k$), and $RSS_2 = RSS$ and $ESS_2 = ESS$, and then the \emph{F}-statistic can be written as:
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-test} for Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
+      \vskip1ex
+      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}:
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(k-1)$ and $(n-k)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance of $ESS$ is not significantly greater than of $RSS$).
+      \vskip1ex
+      A large value of the \emph{F-statistic} $F$ indicates that the variance of $ESS$ is significantly greater than that of $RSS$, and that the regression is statistically significant.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# F-statistic from lm()
+regsum$fstatistic
+# Degrees of freedom of residuals
+degf <- (nrows - ncols)
+# F-statistic from ESS and RSS
+fstat <- (ess/(ncols-1))/(rss/degf)
+all.equal(fstat, regsum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=fstat, df1=(ncols-1), df2=(nrows-ncols))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Omitted Variable Bias}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Omitted Variable Bias} occurs in a regression model that omits important predictors.
+      \vskip1ex
+      The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression.
+      \vskip1ex
+      But the Durbin-Watson test shows that the residuals are autocorrelated, which means that the regression coefficients may not be statistically significant (different from zero).
+        <<echo=TRUE,eval=FALSE>>=
+library(lmtest)  # Load lmtest
+# Define predictor matrix
+predm <- 1:30
+omitv <- sin(0.2*1:30)
+# Response depends on both predictors
+respv <- 0.2*predm + omitv + 0.2*rnorm(30)
+# Mis-specified regression only one predictor
+modovb <- lm(respv ~ predm)
+regsum <- summary(modovb)
+regsum$coeff
+regsum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+lmtest::dwtest(modovb)
+# Plot the regression diagnostic plots
+x11(width=5, height=7)
+par(mfrow=c(2,1))  # Set plot panels
+par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
+plot(respv ~ predm)
+abline(modovb, lwd=2, col="red")
+title(main="Omitted Variable Regression", line=-1)
+plot(modovb, which=2, ask=FALSE)  # Plot just Q-Q
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_ovb.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Classification Using Logistic Regression}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Logistic} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{logistic} function expresses the probability of a numerical variable ranging over the whole interval of real numbers:
+      \begin{displaymath}
+        p(x) = \frac{1}{1 + \exp(-\lambda x)}
+      \end{displaymath}
+      Where $\lambda$ is the scale (dispersion) parameter.
+      \vskip1ex
+      The \emph{logistic} function is often used as an activation function in neural networks, and logistic regression can be viewed as a perceptron (single neuron network).
+      \vskip1ex
+      The \emph{logistic} function can be inverted to obtain the \emph{Odds Ratio} (the ratio of probabilities for favorable to unfavorable outcomes):
+      \begin{displaymath}
+        \frac{p(x)}{1 - p(x)} = \exp(\lambda x)
+      \end{displaymath}
+      The function \texttt{plogis()} gives the cumulative probability of the \emph{Logistic} distribution,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_fun.png}
+        <<echo=TRUE,eval=FALSE>>=
+lambdav <- c(0.5, 1, 1.5)
+colorv <- c("red", "blue", "green")
+# Plot three curves in loop
+for (it in 1:3) {
+  curve(expr=plogis(x, scale=lambdav[it]),
+        xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
+        col=colorv[it], add=(it>1))
+}  # end for
+# Add title
+title(main="Logistic function", line=0.5)
+# Add legend
+legend("topleft", title="Scale parameters",
+       paste("lambda", lambdav, sep="="), y.intersp=0.4,
+       inset=0.05, cex=0.8, lwd=6, bty="n", lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing \protect\emph{Logistic} Regression Using the Function \texttt{glm()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Logistic} regression (\emph{logit}) is used when the response are discrete variables (like \texttt{factors} or \texttt{integers}), when \emph{linear} regression can't be applied.
+      \vskip1ex
+      The function \texttt{glm()} fits generalized linear models, including \emph{logistic} regressions.
+      \vskip1ex
+      The parameter \texttt{family=binomial(logit)} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
+      \vskip1ex
+      The \emph{Mann-Whitney} test \emph{null hypothesis} is that the two samples, $x_i$ and $y_i$, were obtained from probability distributions with the same median (location).
+      \vskip1ex
+      The function \texttt{wilcox.test()} with parameter \texttt{paired=FALSE} (the default) calculates the \emph{Mann-Whitney} test statistic and its \emph{p}-value.
+      <<echo=TRUE,eval=FALSE>>=
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+# Simulate overlapping scores data
+sample1 <- runif(100, max=0.6)
+sample2 <- runif(100, min=0.4)
+# Perform Mann-Whitney test for data location
+wilcox.test(sample1, sample2)
+# Combine scores and add categorical variable
+predm <- c(sample1, sample2)
+respv <- c(logical(100), !logical(100))
+# Perform logit regression
+logmod <- glm(respv ~ predm, family=binomial(logit))
+class(logmod)
+summary(logmod)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/logistic_density.png}
+      <<echo=TRUE,eval=FALSE>>=
+ordern <- order(predm)
+plot(x=predm[ordern], y=logmod$fitted.values[ordern],
+     main="Category Densities and Logistic Function",
+     type="l", lwd=4, col="orange", xlab="predictor", ylab="density")
+densv <- density(predm[respv])
+densv$y <- densv$y/max(densv$y)
+lines(densv, col="red")
+polygon(c(min(densv$x), densv$x, max(densv$x)), c(min(densv$y), densv$y, min(densv$y)), col=rgb(1, 0, 0, 0.2), border=NA)
+densv <- density(predm[!respv])
+densv$y <- densv$y/max(densv$y)
+lines(densv, col="blue")
+polygon(c(min(densv$x), densv$x, max(densv$x)), c(min(densv$y), densv$y, min(densv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
+# Add legend
+legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
+       lwd=c(6, NA, NA), pch=c(NA, 15, 15), y.intersp=0.4,
+       legend=c("logistic fit", "TRUE", "FALSE"),
+       col=c("orange", "red", "blue"),
+       text.col=c("black", "red", "blue"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Likelihood Function of the Binomial Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $b$ be a binomial random variable, which either has the value $b = 1$ with probability $p$, or $b = 0$ with probability $(1-p)$.
+      \vskip1ex
+      Then $b$ follows the binomial distribution:
+      \begin{displaymath}
+        f(b) = b \, p + (1-b) \, (1-p)
+      \end{displaymath}
+      The \emph{log-likelihood function} $\mathcal{L}(p | b)$ of the probability $p$ given the value $b$ is obtained from the logarithms of the binomial probabilities:
+      \begin{displaymath}
+        \mathcal{L}(p | b) = b \, \log(p) + (1-b) \, \log(1-p)
+      \end{displaymath}
+      The \emph{log-likelihood function} measures how \emph{likely} are the distribution parameters, given the observed values.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_likelihood.png}
+        <<echo=TRUE,eval=FALSE>>=
+# Likelihood function of binomial distribution
+likefun <- function(prob, b) {
+  b*log(prob) + (1-b)*log(1-prob)
+}  # end likefun
+likefun(prob=0.25, b=1)
+# Plot binomial likelihood function
+curve(expr=likefun(x, b=1), xlim=c(0, 1), lwd=3, 
+      xlab="prob", ylab="likelihood", col="blue",
+      main="Binomial Likelihood Function")
+curve(expr=likefun(x, b=0), lwd=3, col="red", add=TRUE)
+legend(x="top", legend=c("b = 1", "b = 0"),
+       title=NULL, inset=0.3, cex=1.0, lwd=6, y.intersp=0.4,
+       bty="n", lty=1, col=c("blue", "red"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Likelihood Function of the Logistic Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $b_i$ be binomial random variables, with probabilities $p_i$ that depend on the numerical variables $s_i$ through the logistic function: 
+      \begin{displaymath}
+        p_i = \frac{1}{1 + \exp(- \lambda_0 - \lambda_1 s_i)}
+      \end{displaymath}
+      Let's assume that the $b_i$ and $s_i$ values are known (observed), and we want to find the parameters $\lambda_0$ and $\lambda_1$ that best fit the observations.
+      \vskip1ex
+      The \emph{log-likelihood function} $\mathcal{L}$ is equal to the sum of the individual \emph{log-likelihoods}:
+      \begin{multline*}
+        \mathcal{L}(\lambda_0, \lambda_1 | b_i) = \sum_{i=1}^n {b_i \log(p_i) + (1-b_i) \log(1-p_i)}
+      \end{multline*}
+      The \emph{log-likelihood function} measures how \emph{likely} are the distribution parameters, given the observed values.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add intercept column to the predictor matrix
+predm <- cbind(intercept=rep(1, NROW(respv)), predm)
+# Likelihood function of the logistic model
+likefun <- function(coeff, respv, predm) {
+  probs <- plogis(drop(predm %*% coeff))
+  -sum(respv*log(probs) + (1-respv)*log((1-probs)))
+}  # end likefun
+# Run likelihood function
+coeff <- c(1, 1)
+likefun(coeff, respv, predm)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multi-dimensional Optimization Using \texttt{optim()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{optim()} performs \emph{multi-dimensional} optimization.
+      \vskip1ex
+      The argument \texttt{fn} is the objective function to be minimized.
+      \vskip1ex
+      The argument of \texttt{fn} that is to be optimized, must be a vector argument.
+      \vskip1ex
+      The argument \texttt{par} is the initial vector argument value.
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton \emph{gradient} optimization method.
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
+      \vskip1ex
+      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum.
+    \column{0.5\textwidth}
+        <<echo=TRUE,eval=FALSE>>=
+# Rastrigin function with vector argument for optimization
+rastrigin <- function(vecv, param=25) {
+  sum(vecv^2 - param*cos(vecv))
+}  # end rastrigin
+vecv <- c(pi/6, pi/6)
+rastrigin(vecv=vecv)
+# Draw 3d surface plot of Rastrigin function
+options(rgl.useNULL=TRUE); library(rgl)
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastrigin(vecv=c(x, y))),
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastrigin")
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
+# Optimize with respect to vector argument
+optiml <- optim(par=vecv, fn=rastrigin,
+                method="L-BFGS-B",
+                upper=c(4*pi, 4*pi),
+                lower=c(pi/2, pi/2),
+                param=1)
+# Optimal parameters and value
+optiml$par
+optiml$value
+rastrigin(optiml$par, param=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Maximum Likelihood Calibration of the Logistic Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The logistic model depends on the unknown parameters $\lambda_0$ and $\lambda_1$, which can be calibrated by maximizing the likelihood function.
+      \vskip1ex
+      The function \texttt{optim()} with the argument \texttt{hessian=TRUE} returns the Hessian matrix.
+      \vskip1ex
+      The Hessian is a matrix of the second-order partial derivatives of the likelihood function with respect to the optimization parameters:
+      \begin{displaymath}
+        H = \frac{\partial^2 \mathcal{L}}{\partial \lambda^2}
+      \end{displaymath}
+      The Hessian matrix measures the convexity of the likelihood surface - it's large if the likelihood surface is highly convex, and it's small if the likelihood surface is flat.
+      \vskip1ex
+      If the likelihood surface is highly convex, then the coefficients can be determined with greater precision, so their standard errors are small.  If the likelihood surface is flat, then the coefficients have large standard errors.
+      \vskip1ex
+      The inverse of the Hessian matrix provides the standard errors of the logistic parameters: $\sigma_{SE} = \sqrt{H^{-1}}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Initial parameters
+initp <- c(1, 1)
+# Find max likelihood parameters using steepest descent optimizer
+optiml <- optim(par=initp,
+                fn=likefun, # Log-likelihood function
+                method="L-BFGS-B", # Quasi-Newton method
+                respv=respv,
+                predm=predm, 
+                upper=c(20, 20), # Upper constraint
+                lower=c(-20, -20), # Lower constraint
+                hessian=TRUE)
+# Optimal logistic parameters
+optiml$par
+unname(logmod$coefficients)
+# Standard errors of parameters
+sqrt(diag(solve(optiml$hessian)))
+regsum <- summary(logmod)
+regsum$coefficients[, 2]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{ISLR} With Datasets for Machine Learning}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{ISLR} contains datasets used in the book
+      \href{https://www.statlearning.com}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
+    \vskip1ex
+      The book introduces machine learning techniques using \texttt{R}, and it's a must for advanced finance applications.
+      % \fullcite{islbook}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(ISLR)  # Load package ISLR
+# get documentation for package tseries
+packageDescription("ISLR")  # get short description
+
+help(package="ISLR")  # Load help page
+
+library(ISLR)  # Load package ISLR
+
+data(package="ISLR")  # list all datasets in ISLR
+
+ls("package:ISLR")  # list all objects in ISLR
+
+detach("package:ISLR")  # Remove ISLR from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{Default} Dataset}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The data frame \texttt{Default} in the package \emph{ISLR} contains credit default data.
+      \vskip1ex
+      The \texttt{Default} data frame contains two columns of categorical data (\texttt{factors}): \texttt{default} and \texttt{student}, and two columns of numerical data: \texttt{balance} and \texttt{income}.
+      \vskip1ex
+      The columns \texttt{default} and \texttt{student} contain factor data, and they can be converted to \texttt{Boolean} values, with \texttt{TRUE} if \texttt{default == "Yes"} and \texttt{student == "Yes"}, and \texttt{FALSE} otherwise.
+      \vskip1ex
+      This avoids implicit coercion by the function \texttt{glm()}.
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=TRUE>>=
+# Coerce the default and student columns to Boolean
+Default <- ISLR::Default
+Default$default <- (Default$default == "Yes")
+Default$student <- (Default$student == "Yes")
+colnames(Default)[1:2] <- c("default", "student")
+attach(Default)  # Attach Default to search path
+# Explore credit default data
+summary(Default)
+sapply(Default, class)
+dim(Default)
+head(Default)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Dependence of \texttt{default} on The \texttt{balance} and \texttt{income}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The columns \texttt{student}, \texttt{balance}, and \texttt{income} can be used as \emph{predictors} to predict the \texttt{default} column.
+      \vskip1ex
+      The scatterplot of \texttt{income} versus \texttt{balance} shows that the \texttt{balance} column is able to separate the data points of \texttt{default = TRUE} from \texttt{default = FALSE}.
+      \vskip1ex
+      But there is very little difference in \texttt{income} between the \texttt{default = TRUE} versus \texttt{default = FALSE} data points.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/islr_default_data.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot data points for non-defaulters
+xlim <- range(balance); ylim <- range(income)
+plot(income ~ balance,
+     main="Default Dataset from Package ISLR",
+     xlim=xlim, ylim=ylim, pch=4, col="blue",
+     data=Default[!default, ])
+# Plot data points for defaulters
+points(income ~ balance, pch=4, lwd=2, col="red",
+       data=Default[default, ])
+# Add legend
+legend(x="topright", legend=c("non-defaulters", "defaulters"),
+       y.intersp=0.4, bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Boxplots of the \texttt{Default} Dataset}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{Box Plot} (box-and-whisker plot) is a graphical display of a distribution of data:
+      \vskip1ex
+      The \emph{box} represents the upper and lower quartiles, \\
+      The vertical lines (whiskers) represent values beyond the quartiles, \\
+      Open circles represent values beyond the nominal range (outliers).
+      \vskip1ex
+      The function \texttt{boxplot()} plots a box-and-whisker plot for a distribution of data.
+      \vskip1ex
+      \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (involving categorical variables), and another for \texttt{data frames}.
+      \vskip1ex
+      The \emph{Mann-Whitney} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
+      <<echo=TRUE,eval=FALSE>>=
+# Perform Mann-Whitney test for the location of the balances
+wilcox.test(balance[default], balance[!default])
+# Perform Mann-Whitney test for the location of the incomes
+wilcox.test(income[default], income[!default])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/islr_default_boxplot.png}
+      <<echo=TRUE,eval=FALSE>>=
+x11(width=6, height=5)
+# Set 2 plot panels
+par(mfrow=c(1,2))
+# Balance boxplot
+boxplot(formula=balance ~ default,
+        col="lightgrey", main="balance", xlab="Default")
+# Income boxplot
+boxplot(formula=income ~ default,
+        col="lightgrey", main="income", xlab="Default")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Modeling Credit Defaults Using \protect\emph{Logistic} Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{balance} column can be used to calculate the probability of default using \emph{logistic} regression.
+      \vskip1ex
+      The residuals are the differences between the actual response values ($0$ and $1$), and the calculated probabilities of default.
+      \vskip1ex
+      The residuals are not normally distributed, so the data is fitted using the \emph{maximum likelihood} method, instead of least squares.
+      <<echo=TRUE,eval=TRUE>>=
+# Fit logistic regression model
+logmod <- glm(default ~ balance, family=binomial(logit))
+class(logmod)
+summary(logmod)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/islr_logistic_reg.png}
+      <<echo=TRUE,eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
+plot(x=balance, y=default,
+     main="Logistic Regression of Credit Defaults", 
+     col="orange", xlab="credit balance", ylab="defaults")
+ordern <- order(balance)
+lines(x=balance[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n", lwd=6, y.intersp=0.4,
+       legend=c("defaults", "logit fitted values"),
+       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Modeling Cumulative Defaults Using \protect\emph{Logistic} Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{glm()} can model a \emph{logistic} regression using either a \texttt{Boolean} response variable, or using a response variable specified as a frequency.
+      \vskip1ex
+      In the second case, the response variable should be defined as a two-column matrix, with the cumulative frequency of success (\texttt{TRUE}) and a cumulative frequency of failure (\texttt{FALSE}).
+      \vskip1ex
+      These two different ways of specifying the \emph{logistic} regression are related, but they are not equivalent, because they have different error terms.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the cumulative defaults
+sumd <- sum(default)
+defaultv <- sapply(balance, function(balv) {
+    sum(default[balance <= balv])
+})  # end sapply
+# Perform logit regression
+logmod <- glm(cbind(defaultv, sumd-defaultv) ~ balance,
+  family=binomial(logit))
+summary(logmod)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/islr_logistic_count.png}
+      <<echo=TRUE,eval=FALSE>>=
+plot(x=balance, y=defaultv/sumd, col="orange", lwd=1,
+     main="Cumulative Defaults Versus Balance",
+     xlab="credit balance", ylab="cumulative defaults")
+ordern <- order(balance)
+lines(x=balance[ordern], y=logmod$fitted.values[ordern],
+      col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n", y.intersp=0.4,
+       legend=c("cumulative defaults", "fitted values"),
+       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multifactor \protect\emph{Logistic} Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Logistic} regression calculates the probability of categorical variables, from the \emph{Odds Ratio} of continuous \emph{predictors}:
+      \begin{displaymath}
+        p = \frac{1}{1 + \exp(- \lambda_0 - \sum_{i=1}^n \lambda_i x_i)}
+      \end{displaymath}
+      The \emph{generic} function \texttt{summary()} produces a list of regression model summary and diagnostic statistics:
+      \begin{itemize}
+        \item coefficients: matrix with estimated coefficients, their \emph{z}-values, and \emph{p}-values,
+        \item \emph{Null} deviance: measures the differences between the response values and the probabilities calculated using only the intercept,
+        \item \emph{Residual} deviance: measures the differences between the response values and the model probabilities,
+      \end{itemize}
+      The \texttt{balance} and \texttt{student} columns are statistically significant, but the \texttt{income} column is not.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Fit multifactor logistic regression model
+colnamev <- colnames(Default)
+formulav <- as.formula(paste(colnamev[1],
+  paste(colnamev[-1], collapse="+"), sep=" ~ "))
+formulav
+logmod <- glm(formulav, data=Default, family=binomial(logit))
+summary(logmod)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Confounding Variables in Multifactor \protect\emph{Logistic} Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{student} column alone can be used to calculate the probability of default using single-factor \emph{logistic} regression.
+      \vskip1ex
+      But the coefficient from the single-factor regression is positive (indicating that students are more likely to default), while the coefficient from the multifactor regression is negative (indicating that students are less likely to default).
+      \vskip1ex
+      The reason that students are more likely to default is because they have higher credit balances than non-students - which is what the single-factor regression shows.
+      \vskip1ex
+      But students are less likely to default than non-students that have the same credit balance - which is what the multifactor model shows.
+      \vskip1ex
+      The \texttt{student} column is a confounding variable since it's correlated with the \texttt{balance} column.
+      \vskip1ex
+      That's why the multifactor regression coefficient for \texttt{student} is negative, while the single factor coefficient for \texttt{student} is positive.
+      <<echo=TRUE,eval=FALSE>>=
+# Fit single-factor logistic model with student as predictor
+glm_student <- glm(default ~ student, family=binomial(logit))
+summary(glm_student)
+# Multifactor coefficient is negative
+logmod$coefficients
+# Single-factor coefficient is positive
+glm_student$coefficients
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/islr_student_boxplot.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the cumulative defaults
+cum_defaults <- sapply(balance, function(balv) {
+c(student=sum(default[student & (balance <= balv)]),
+  non_student=sum(default[!student & (balance <= balv)]))
+})  # end sapply
+total_defaults <- c(student=sum(student & default), 
+            student=sum(!student & default))
+cum_defaults <- t(cum_defaults / total_defaults)
+# Plot cumulative defaults
+par(mfrow=c(1,2))  # Set plot panels
+ordern <- order(balance)
+plot(x=balance[ordern], y=cum_defaults[ordern, 1],
+     col="red", t="l", lwd=2, xlab="credit balance", ylab="",
+     main="Cumulative defaults of\n students and non-students")
+lines(x=balance[ordern], y=cum_defaults[ordern, 2], col="blue", lwd=2)
+legend(x="topleft", bty="n", y.intersp=0.4,
+       legend=c("students", "non-students"),
+       col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
+# Balance boxplot for student factor
+boxplot(formula=balance ~ !student,
+        col="lightgrey", main="balance", xlab="Student")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Forecasting Credit Defaults using Logistic Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
+      \vskip1ex
+      The method \texttt{predict.glm()} produces forecasts for a generalized linear (\emph{glm}) model, in the form of \texttt{numeric} probabilities, not the \texttt{Boolean} response variable.
+      \vskip1ex
+      The \texttt{Boolean} forecasts are obtained by comparing the \emph{forecast probabilities} with a \emph{discrimination threshold}.
+      \vskip1ex
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{default = FALSE}.
+      \vskip1ex
+      If the \emph{forecast probability} is \emph{less} than the \emph{discrimination threshold}, then the forecast is that the subject will not default and that the \emph{null hypothesis} is \texttt{TRUE}.
+      \vskip1ex
+      The \emph{in-sample forecasts} are just the \emph{fitted values} of the \emph{glm} model.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Perform in-sample forecast from logistic regression model
+fcast <- predict(logmod, type="response")
+all.equal(logmod$fitted.values, fcast)
+# Define discrimination threshold value
+threshv <- 0.7
+# Calculate the confusion matrix in-sample
+table(actual=!default, forecast=(fcast < threshv))
+# Fit logistic regression over training data
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nrows <- NROW(Default)
+samplev <- sample.int(n=nrows, size=nrows/2)
+trainset <- Default[samplev, ]
+logmod <- glm(formulav, data=trainset, family=binomial(logit))
+# Forecast over test data out-of-sample
+testset <- Default[-samplev, ]
+fcast <- predict(logmod, newdata=testset, type="response")
+# Calculate the confusion matrix out-of-sample
+table(actual=!testset$default, forecast=(fcast < threshv))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Forecasting Errors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
+      \vskip1ex
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{default = FALSE}.
+      \vskip1ex
+      A \emph{positive} result corresponds to rejecting the null hypothesis, while a \emph{negative} result corresponds to accepting the null hypothesis.
+      \vskip1ex
+      The forecasts are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
+      \vskip1ex
+      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), when there is no default but it's classified as a default.
+      \vskip1ex
+      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), when there is a default but it's classified as no default.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Calculate the confusion matrix out-of-sample
+confmat <- table(actual=!testset$default, 
+      forecast=(fcast < threshv))
+confmat
+# Calculate the FALSE positive (type I error)
+sum(!testset$default & (fcast < threshv))
+# Calculate the FALSE negative (type II error)
+sum(testset$default & (fcast > threshv))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Confusion Matrix of a Binary Classification Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
+      \vskip1ex
+      \newcommand\MyBox[2]{
+        \fbox{\lower0.75cm
+          \vbox to 1.2cm{\vfil
+            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
+            \vfil}
+        }
+      }
+      \renewcommand\arraystretch{0.3}
+      \setlength\tabcolsep{0pt}
+      {\tiny
+      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
+      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
+      & \multicolumn{2}{c}{\bfseries Forecast} & \\
+      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
+      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
+      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
+      \end{tabular}}
+      <<echo=TRUE,eval=TRUE>>=
+# Calculate the FALSE positive and FALSE negative rates
+confmat <- confmat / rowSums(confmat)
+c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+detach(Default)
+      @
+      <<echo=FALSE,eval=FALSE,results='asis'>>=
+# Below is an unsuccessful attempt to draw confusion matrix using xtable
+confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
+dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
+                                   actual=c("FALSE", "TRUE"))
+print(xtable::xtable(confusion_matrix,
+      caption="Confusion Matrix"),
+      caption.placement="top",
+      comment=FALSE, size="scriptsize",
+      include.rownames=TRUE,
+      include.colnames=TRUE)
+# end unsuccessful attempt to draw confusion table using xtable
+      @
+    \column{0.5\textwidth}
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{default = FALSE}.
+      \vskip1ex
+      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
+      \vskip1ex
+      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
+      \vskip1ex
+      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
+      \vskip1ex
+      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
+      \vskip1ex
+      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
+      \vskip1ex
+      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Receiver Operating Characteristic (ROC) Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      \vskip1ex
+      The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
+      <<echo=TRUE,eval=FALSE>>=
+# Confusion matrix as function of threshold
+confun <- function(actualv, fcast, threshv) {
+    confmat <- table(actualv, (fcast < threshv))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+  }  # end confun
+confun(!testset$default, fcast, threshv=threshv)
+# Define vector of discrimination thresholds
+threshv <- seq(0.05, 0.95, by=0.05)^2
+# Calculate the error rates
+errorr <- sapply(threshv, confun,
+  actualv=!testset$default, fcast=fcast)  # end sapply
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+# Calculate the area under ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/islr_defaults_roc.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot ROC Curve for Defaults
+x11(width=5, height=5)
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%

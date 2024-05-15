@@ -61,13 +61,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#7]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#7, Fall 2023}
+\subtitle{Lecture\#7, Spring 2024}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{October 24, 2023}
+\date{April 30, 2024}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -79,6 +79,435 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series of Asset Prices}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the percentage asset returns $r_t \mathrm{d} t = \mathrm{d} \log{p_t}$ follow \emph{Brownian motion}:
+      \begin{displaymath}
+        r_t \mathrm{d} t = \mathrm{d} \log{p_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} W_t
+      \end{displaymath}
+      Then asset prices $p_t$ follow \emph{Geometric Brownian motion} (GBM):
+      \begin{displaymath}
+        \mathrm{d} p_t = \mu p_t \mathrm{d}t + \sigma \, p_t \mathrm{d} W_t
+      \end{displaymath}
+      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian Motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      \vskip1ex
+      The solution of \emph{Geometric Brownian motion} is equal to:
+      \begin{displaymath}
+        p_t = p_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, W_t]
+      \end{displaymath}
+      The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (according to Ito's lemma).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/brown_geom.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigmav <- 0.01; drift <- 0.0; nrows <- 1000
+# Simulate geometric Brownian motion
+retp <- sigmav*rnorm(nrows) + drift - sigmav^2/2
+pricev <- exp(cumsum(retp))
+plot(pricev, type="l", xlab="time", ylab="prices",
+     main="geometric Brownian motion")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Random \protect\emph{OHLC} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Random \emph{OHLC} prices are useful for testing financial models.
+      \vskip1ex
+      The function \texttt{sample()} selects a random sample from a vector of data elements.
+      \vskip1ex
+      The function \texttt{sample()} with \texttt{replace=TRUE} selects samples with replacement (the default is \texttt{replace=FALSE}).
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate geometric Brownian motion
+sigmav <- 0.01/sqrt(48)
+drift <- 0.0
+nrows <- 1e4
+datev <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+  length.out=nrows, by="30 min")
+pricev <- exp(cumsum(sigmav*rnorm(nrows) + drift - sigmav^2/2))
+pricev <- xts(pricev, order.by=datev)
+pricev <- cbind(pricev,
+  volume=sample(x=10*(2:18), size=nrows, replace=TRUE))
+# Aggregate to daily OHLC data
+ohlc <- xts::to.daily(pricev)
+quantmod::chart_Series(ohlc, name="random prices")
+# dygraphs candlestick plot using pipes syntax
+library(dygraphs)
+dygraphs::dygraph(ohlc[, 1:4]) %>% dyCandlestick()
+# dygraphs candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(ohlc[, 1:4]))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/random_ohlc.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Log-normal} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If \texttt{x} follows the \emph{Normal} distribution $\phi(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution $\log\phi()$:
+      \begin{displaymath}
+        \log\phi(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \, \sqrt{2 \pi}}
+      \end{displaymath}
+      With mean equal to: $\bar{y} = \mathbb{E}[y] = e^{(\mu + \sigma^2/2)}$, and median equal to: $\tilde{y} = e^\mu$
+      \vskip1ex
+      With variance equal to: $\sigma_y^2 = (e^{\sigma^2}-1) e^{(2\mu + \sigma^2)}$, and skewness (third moment) equal to: $\varsigma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
+      <<echo=TRUE,eval=FALSE>>=
+# Standard deviations of log-normal distribution
+sigmavs <- c(0.5, 1, 1.5)
+# Create plot colors
+colorv <- c("black", "red", "blue")
+# Plot all curves
+for (indeks in 1:NROW(sigmavs)) {
+  curve(expr=dlnorm(x, sdlog=sigmavs[indeks]),
+        type="l", lwd=2, xlim=c(0, 3),
+        xlab="", ylab="", col=colorv[indeks],
+        add=as.logical(indeks-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/log_norm_dist.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+       paste("sigma", sigmavs, sep="="),
+       cex=0.8, lwd=2, lty=rep(1, NROW(sigmavs)),
+       col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Standard Deviation of \protect\emph{Log-normal} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vskip1ex
+      If percentage asset returns are \emph{normally} distributed and follow \emph{Brownian motion}, then asset prices follow \emph{Geometric Brownian motion}, and they are \emph{Log-normally} distributed at every point in time.
+      \vskip1ex
+      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
+      \vskip1ex
+      The \emph{Log-normal} distribution has a strong positive skewness (third moment) equal to: $\varsigma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
+      \vskip1ex
+      For large standard deviation, the skewness increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 4, 3, 1))
+# Return volatility of VTI etf
+sigmav <- sd(rutils::diffit(log(rutils::etfenv$VTI[, 4])))
+sigma2 <- sigmav^2
+nrows <- NROW(rutils::etfenv$VTI)
+# Standard deviation of log-normal prices
+sqrt(nrows)*sigmav
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/log_norm_skew.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Skewness of log-normal prices
+calcskew <- function(t) {
+  expv <- exp(t*sigma2)
+  (expv + 2)*sqrt(expv - 1)
+}  # end calcskew
+curve(expr=calcskew, xlim=c(1, nrows), lwd=3,
+      xlab="Number of days", ylab="Skewness", col="blue",
+      main="Skewness of Log-normal Prices
+      as a Function of Time")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Mean and Median of \protect\emph{Log-normal} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The mean of the \emph{Log-normal} distribution: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$ is greater than its median, which is equal to: $\tilde{y} = \exp(\mu)$.
+      \vskip1ex
+      So if stock prices follow \emph{Geometric Brownian motion} and are distributed \emph{log-normally}, then a stock selected at random will have a high probability of havng a lower price than the mean expected price.
+      \vskip1ex
+      The cumulative \emph{Log-normal} probability distribution is equal to $\operatorname{F}(x) = \Phi(\frac{\log{y}-\mu}{\sigma})$, where $\Phi()$ is the cumulative standard normal distribution.
+      \vskip1ex
+      So the probability that the price of a randomly selected stock will be lower than the mean price is equal to $\operatorname{F}(\bar{y}) = \Phi(\sigma/2)$.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/log_norm_prob.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Probability that random log-normal price will be lower than the mean price
+curve(expr=pnorm(sigmav*sqrt(x)/2),
+      xlim=c(1, nrows), lwd=3,
+      xlab="Number of days", ylab="Probability", col="blue",
+      main="Probability That Random Log-normal Price
+      Will be Lower Than the Mean Price")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard deviation of \emph{log-normal} prices $\sigma$ is equal to the volatility of returns $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
+      \vskip1ex
+      For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigmav <- 0.01; drift <- 0.0; nrows <- 5000
+npaths <- 10
+# Simulate multiple paths of geometric Brownian motion
+pricev <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+pricev <- matrix(pricev, nc=npaths)
+pricev <- exp(matrixStats::colCumsums(pricev))
+# Create xts time series
+pricev <- xts(pricev, order.by=seq.Date(Sys.Date()-nrows+1, Sys.Date(), by=1))
+# Sort the columns according to largest terminal values
+pricev <- pricev[, order(pricev[nrows, ])]
+# Plot xts time series
+colorv <- colorRampPalette(c("red", "blue"))(NCOL(pricev))
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(pricev, main="Multiple paths of geometric Brownian motion",
+         xlab=NA, ylab=NA, plot.type="single", col=colorv)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/brown_geom_paths.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value.
+      \vskip1ex
+      For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigmav <- 0.01; drift <- 0.0; nrows <- 10000
+npaths <- 100
+# Simulate multiple paths of geometric Brownian motion
+pricev <- rnorm(npaths*nrows, sd=sigmav) + drift - sigmav^2/2
+pricev <- matrix(pricev, nc=npaths)
+pricev <- exp(matrixStats::colCumsums(pricev))
+# Calculate fraction of paths below the expected value
+fractv <- rowSums(pricev < 1.0) / npaths
+# Create xts time series of percentage of paths below the expected value
+fractv <- xts(fractv, order.by=seq.Date(Sys.Date()-NROW(fractv)+1, Sys.Date(), by=1))
+# Plot xts time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(fractv, main="Percentage of GBM paths below mean",
+         xlab=NA, ylab=NA, col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/brown_geom_percent.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Evolution of Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stock prices evolve over time similar to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+ls(sp500env)
+# Extract the closing prices
+pricev <- eapply(sp500env, quantmod::Cl)
+# Flatten the prices into a single xts series
+pricev <- rutils::do_call(cbind, pricev)
+# Carry forward and backward non-NA prices
+pricev <- zoo::na.locf(pricev, na.rm=FALSE)
+pricev <- zoo::na.locf(pricev, fromLast=TRUE)
+sum(is.na(pricev))
+# Drop ".Close" from column names
+colnames(pricev)
+colnames(pricev) <- rutils::get_name(colnames(pricev))
+# Or
+# colnames(pricev) <- do.call(rbind,
+#   strsplit(colnames(pricev), split="[.]"))[, 1]
+# Select prices after the year 2000
+pricev <- pricev["2000/", ]
+# Scale the columns so that prices start at 1
+pricev <- lapply(pricev, function(x) x/as.numeric(x[1]))
+pricev <- rutils::do_call(cbind, pricev)
+# Sort the columns according to the final prices
+nrows <- NROW(pricev)
+ordern <- order(pricev[nrows, ])
+pricev <- pricev[, ordern]
+# Select 20 symbols
+symbolv <- colnames(pricev)
+symbolv <- symbolv[round(seq.int(from=1, to=NROW(symbolv), length.out=20))]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/sp500_price_paths.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot xts time series of prices
+colorv <- colorRampPalette(c("red", "blue"))(NROW(symbolv))
+endd <- rutils::calc_endpoints(pricev, interval="weeks")
+plot.zoo(pricev[endd, symbolv], main="20 S&P500 Stock Prices (scaled)",
+         xlab=NA, ylab=NA, plot.type="single", col=colorv)
+legend(x="topleft", inset=0.02, cex=0.5, bty="n", y.intersp=0.5,
+       legend=rev(symbolv), col=rev(colorv), lwd=6, lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Final Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The distribution of the final stock prices is extremely skewed, with over \texttt{80\%} of the \emph{S\&P500} constituent stocks from \texttt{1990} now below the average price of that portfolio.
+      \vskip1ex
+      The \emph{mean} of the final stock prices is much greater than the \emph{median}.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the final stock prices
+pricef <- drop(zoo::coredata(pricev[nrows, ]))
+# Calculate the mean and median stock prices
+max(pricef); min(pricef)
+which.max(pricef)
+which.min(pricef)
+mean(pricef)
+median(pricef)
+# Calculate the percentage of stock prices below the mean
+sum(pricef < mean(pricef))/NROW(pricef)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/sp500_price_hist.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot a histogram of final stock prices
+hist(pricef, breaks=1e3, xlim=c(0, 300), 
+     xlab="Stock price", ylab="Count", 
+     main="Histogram of Final Stock Prices")
+# Plot a histogram of final stock prices
+abline(v=median(pricef), lwd=3, col="blue")
+text(x=median(pricef), y=150, lab="median", pos=4)
+abline(v=mean(pricef), lwd=3, col="red")
+text(x=mean(pricef), y=100, lab="mean", pos=4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Stock Prices Over Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Usually, a small number of stocks in an index reach very high prices, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
+      \vskip1ex
+      For example, the current prices of over \texttt{80\%} of the \emph{S\&P500} constituent stocks from \texttt{1990} are now below the average price of that portfolio.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate average of valid stock prices
+validp <- (pricev != 1)  # Valid stocks
+nstocks <- rowSums(validp)
+nstocks[1] <- NCOL(pricev)
+indeks <- rowSums(pricev*validp)/nstocks
+# Calculate fraction of stock prices below the average price
+fractv <- rowSums((pricev < indeks) & validp)/nstocks
+# Create xts time series of average stock prices
+indeks <- xts(indeks, order.by=zoo::index(pricev))
+      @
+    \column{0.5\textwidth}
+    % \vspace{-1em}
+    %   \includegraphics[width=0.45\paperwidth]{figure/stock_index_prices.png}
+    % \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/sp500_price_percent.png}
+      <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=4, noRStudioGD=TRUE)
+# x11(width=6, height=4)
+# Plot xts time series of average stock prices
+plot.zoo(indeks, main="Average S&P500 Stock Prices (normalized from 1990)",
+         xlab=NA, ylab=NA, col="blue")
+# Create xts time series of percentage of stock prices below the average price
+fractv <- xts(fractv, order.by=zoo::index(pricev))
+# Plot percentage of stock prices below the average price
+plot.zoo(fractv[-(1:2),],
+         main="Percentage of S&P500 Stock Prices 
+         Below the Average Price",
+         xlab=NA, ylab=NA, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -1717,12 +2146,12 @@ names(weightv) <- colnames(retp)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Objective with shrinkage penalty
-objfun <- function(weightv, retp, lambda, alpha) {
+objfun <- function(weightv, retp, lambdaf, alpha) {
   retp <- retp %*% weightv
   if (sd(retp) == 0)
     return(0)
   else {
-    penaltyv <- lambda*((1-alpha)*sum(weightv^2) +
+    penaltyv <- lambdaf*((1-alpha)*sum(weightv^2) +
         alpha*sum(abs(weightv)))
     -return(mean(retp)/sd(retp) + penaltyv)
   }
@@ -1730,14 +2159,14 @@ objfun <- function(weightv, retp, lambda, alpha) {
 # Objective for equal weight portfolio
 weightv <- rep(1, NROW(symbolv))
 names(weightv) <- symbolv
-lambda <- 0.5 ; alpha <- 0.5
-objfun(weightv, retp=retp, lambda=lambda, alpha=alpha)
+lambdaf <- 0.5 ; alpha <- 0.5
+objfun(weightv, retp=retp, lambdaf=lambdaf, alpha=alpha)
 # Perform optimization using DEoptim
 optiml <- DEoptim::DEoptim(fn=objfun,
   upper=rep(10, NCOL(retp)),
   lower=rep(-10, NCOL(retp)),
   retp=retp,
-  lambda=lambda,
+  lambdaf=lambdaf,
   alpha=alpha,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
@@ -1781,7 +2210,7 @@ names(weightv) <- colnames(retp)
       \begin{displaymath}
         w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
       \end{displaymath}
-      The \emph{maximum Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
+      The \emph{maximum Sharpe} portfolio weights are proportional to the ratio of the excess returns divided by the individual variances:
       \begin{displaymath}
         w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
       \end{displaymath}
@@ -2092,12 +2521,12 @@ NumericVector sim_oucpp(double eq_price,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate uniformly distributed pseudo-random sequence
 unifun <- function(seedv, nrows=10) {
-  output <- numeric(nrows)
-  output[1] <- seedv
+  datav <- numeric(nrows)
+  datav[1] <- seedv
   for (i in 2:nrows) {
-    output[i] <- 4*output[i-1]*(1-output[i-1])
+    datav[i] <- 4*datav[i-1]*(1-datav[i-1])
   }  # end for
-  acos(1-2*output)/pi
+  acos(1-2*datav)/pi
 }  # end unifun
 
 # Source Rcpp functions from file
@@ -2134,15 +2563,15 @@ NumericVector unifuncpp(double seedv, int(nrows) {
 // define pi
 static const double pi = 3.14159265;
 // allocate output vector
-  NumericVector output(nrows);
+  NumericVector datav(nrows);
 // initialize output vector
-  output[0] = seedv;
+  datav[0] = seedv;
 // perform loop
   for (int i=1; i < nrows; ++i) {
-    output[i] = 4*output[i-1]*(1-output[i-1]);
+    datav[i] = 4*datav[i-1]*(1-datav[i-1]);
   }  // end for
 // rescale output vector and return it
-  return acos(1-2*output)/pi;
+  return acos(1-2*datav)/pi;
 }
     \end{lstlisting}
   \end{columns}
@@ -2612,11 +3041,11 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
                     Rcpp::List controlv, // List of portfolio optimization model parameters
                     arma::uvec startp, // Start points
                     arma::uvec endd, // End points
-                    double lambda = 0.0, // Decay factor for averaging the portfolio weights
+                    double lambdaf = 0.0, // Decay factor for averaging the portfolio weights
                     double coeff = 1.0, // Multiplier of strategy returns
                     double bidask = 0.0) { // The bid-ask spread
   
-  double lambda1 = 1-lambda;
+  double lambda1 = 1-lambdaf;
   arma::uword nweights = returns.n_cols;
   arma::vec weights(nweights, fill::zeros);
   arma::vec weights_past = ones(nweights)/stdev::sqrt(nweights);
@@ -2628,7 +3057,7 @@ arma::mat back_test(const arma::mat& excess, // Asset excess returns
     // Calculate the portfolio weights
     weights = coeff*calc_weights(excess.rows(startp(it-1), endd(it-1)), controlv);
     // Calculate the weights as the weighted sum with past weights
-    weights = lambda1*weights + lambda*weights_past;
+    weights = lambda1*weights + lambdaf*weights_past;
     // Calculate out-of-sample returns
     pnls.rows(endd(it-1)+1, endd(it)) = returns.rows(endd(it-1)+1, endd(it))*weights;
     // Add transaction costs

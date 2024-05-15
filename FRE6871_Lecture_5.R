@@ -1,905 +1,779 @@
-# Define predictor matrix
-nrows <- 100
-ncols <- 5
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-predm <- matrix(runif(nrows*ncols), ncol=ncols)
-# Add column names
-colnames(predm) <- paste0("pred", 1:ncols)
-# Define the predictor weights
-weightv <- runif(3:(ncols+2), min=(-1), max=1)
-# Response equals weighted predictor plus random noise
-noisev <- rnorm(nrows, sd=2)
-respv <- (1 + predm %*% weightv + noisev)
-
-# Perform multivariate regression using lm()
-regmod <- lm(respv ~ predm)
-# Solve multivariate regression using matrix algebra
-# Calculate centered (de-meaned) predictor matrix and response vector
-predc <- t(t(predm) - colMeans(predm))
-# predm <- apply(predm, 2, function(x) (x-mean(x)))
-respc <- respv - mean(respv)
-# Calculate the regression coefficients
-betav <- drop(MASS::ginv(predc) %*% respc)
-# Calculate the regression alpha
-alpha <- mean(respv) - sum(colSums(predm)*betav)/nrows
-# Compare with coefficients from lm()
-all.equal(coef(regmod), c(alpha, betav), check.attributes=FALSE)
-# Compare with actual coefficients
-all.equal(c(1, weightv), c(alpha, betav), check.attributes=FALSE)
-
-# Add intercept column to predictor matrix
-predm <- cbind(rep(1, nrows), predm)
-ncols <- NCOL(predm)
-# Add column name
-colnames(predm)[1] <- "intercept"
-# Calculate generalized inverse of the predictor matrix
-predinv <- MASS::ginv(predm)
-# Calculate the regression coefficients
-betav <- predinv %*% respv
-# Perform multivariate regression without intercept term
-regmod <- lm(respv ~ predm - 1)
-all.equal(drop(betav), coef(regmod), check.attributes=FALSE)
-
-# Calculate fitted values from regression coefficients
-fitv <- drop(predm %*% betav)
-all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
-# Calculate the residuals
-resids <- drop(respv - fitv)
-all.equal(resids, regmod$residuals, check.attributes=FALSE)
-# Residuals are orthogonal to predictor columns (predms)
-sapply(resids %*% predm, all.equal, target=0)
-# Residuals are orthogonal to the fitted values
-all.equal(sum(resids*fitv), target=0)
-# Sum of residuals is equal to zero
-all.equal(sum(resids), target=0)
-
-# Calculate the influence matrix
-infmat <- predm %*% predinv
-# The influence matrix is idempotent
-all.equal(infmat, infmat %*% infmat)
-# Calculate fitted values using influence matrix
-fitv <- drop(infmat %*% respv)
-all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
-# Calculate fitted values from regression coefficients
-fitv <- drop(predm %*% betav)
-all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
-
-# Calculate centered (de-meaned) fitted values
-predc <- t(t(predm) - colMeans(predm))
-fittedc <- drop(predc %*% betav)
-all.equal(fittedc,
-  regmod$fitted.values - mean(respv),
-  check.attributes=FALSE)
-# Calculate the residuals
-respc <- respv - mean(respv)
-resids <- drop(respc - fittedc)
-all.equal(resids, regmod$residuals,
-  check.attributes=FALSE)
-# Calculate the influence matrix
-infmatc <- predc %*% MASS::ginv(predc)
-# Compare the fitted values
-all.equal(fittedc, drop(infmatc %*% respc), check.attributes=FALSE)
-
-# Perform PCA of the predictors
-pcad <- prcomp(predm, center=FALSE, scale=FALSE)
-# Calculate the PCA predictors
-predpca <- predm %*% pcad$rotation
-# Principal components are orthogonal to each other
-round(t(predpca) %*% predpca, 2)
-# Calculate the PCA regression coefficients using lm()
-regmod <- lm(respv ~ predpca - 1)
-summary(regmod)
-regmod$coefficients
-# Calculate the PCA regression coefficients directly
-colSums(predpca*drop(respv))/colSums(predpca^2)
-# Create almost collinear predictors
-predcol <- predm
-predcol[, 1] <- (predcol[, 1]/1e3 + predcol[, 2])
-# Calculate the PCA predictors
-pcad <- prcomp(predcol, center=FALSE, scale=FALSE)
-predpca <- predcol %*% pcad$rotation
-round(t(predpca) %*% predpca, 6)
-# Calculate the PCA regression coefficients
-drop(MASS::ginv(predpca) %*% respv)
-# Calculate the PCA regression coefficients directly
-colSums(predpca*drop(respv))/colSums(predpca^2)
-
-library(lmtest)  # Load lmtest
-# Define predictor matrix
-predm <- 1:30
-omitv <- sin(0.2*1:30)
-# Response depends on both predictors
-respv <- 0.2*predm + omitv + 0.2*rnorm(30)
-# Mis-specified regression only one predictor
-modovb <- lm(respv ~ predm)
-regsum <- summary(modovb)
-regsum$coeff
-regsum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-lmtest::dwtest(modovb)
-# Plot the regression diagnostic plots
-x11(width=5, height=7)
-par(mfrow=c(2,1))  # Set plot panels
-par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-plot(respv ~ predm)
-abline(modovb, lwd=2, col="red")
-title(main="Omitted Variable Regression", line=-1)
-plot(modovb, which=2, ask=FALSE)  # Plot just Q-Q
-
-# Regression model summary
-regsum <- summary(regmod)
-# Degrees of freedom of residuals
-nrows <- NROW(predm)
-ncols <- NCOL(predm)
-degf <- (nrows - ncols)
-all.equal(degf, regsum$df[2])
-# Variance of residuals
-residsd <- sum(resids^2)/degf
-
-# Inverse of predictor matrix squared
-pred2 <- MASS::ginv(crossprod(predm))
-# pred2 <- t(predm) %*% predm
-# Variance of residuals
-residsd <- sum(resids^2)/degf
-# Calculate covariance matrix of betas
-betacovar <- residsd*pred2
-# round(betacovar, 3)
-betasd <- sqrt(diag(betacovar))
-all.equal(betasd, regsum$coeff[, 2], check.attributes=FALSE)
-# Calculate t-values of betas
-betatvals <- drop(betav)/betasd
-all.equal(betatvals, regsum$coeff[, 3], check.attributes=FALSE)
-# Calculate two-sided p-values of betas
-betapvals <- 2*pt(-abs(betatvals), df=degf)
-all.equal(betapvals, regsum$coeff[, 4], check.attributes=FALSE)
-# The square of the generalized inverse is equal
-# to the inverse of the square
-all.equal(MASS::ginv(crossprod(predm)), predinv %*% t(predinv))
-
-# Calculate the influence matrix
-infmat <- predm %*% predinv
-# The influence matrix is idempotent
-all.equal(infmat, infmat %*% infmat)
-
-# Calculate covariance and standard deviations of fitted values
-fitcovar <- residsd*infmat
-fitsd <- sqrt(diag(fitcovar))
-# Sort the standard deviations
-fitsd <- cbind(fitted=fitv, stdev=fitsd)
-fitsd <- fitsd[order(fitv), ]
-# Plot the standard deviations
-plot(fitsd, type="l", lwd=3, col="blue",
-     xlab="Fitted Value", ylab="Standard Deviation",
-     main="Standard Deviations of Fitted Values\nin Multivariate Regression")
-
-# Load time series of ETF percentage returns
-retp <- rutils::etfenv$returns[, c("XLF", "XLE")]
-retp <- na.omit(retp)
-nrows <- NROW(retp)
-head(retp)
-# Define regression formula
-formulav <- paste(colnames(retp)[1],
-  paste(colnames(retp)[-1], collapse="+"),
-  sep=" ~ ")
-# Standard regression
-regmod <- lm(formulav, data=retp)
-regsum <- summary(regmod)
-# Bootstrap of regression
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-bootd <- sapply(1:100, function(x) {
-  samplev <- sample.int(nrows, replace=TRUE)
-  regmod <- lm(formulav, data=retp[samplev, ])
-  regmod$coefficients
+# Create a list with two elements
+listv <- list(c("a", "b"), 1:4)
+listv
+c(typeof(listv), mode(listv), class(listv))
+# Lists are also vectors
+c(is.vector(listv), is.list(listv))
+NROW(listv)
+# Create named list
+listv <- list(first=c("a", "b"), second=1:4)
+listv
+names(listv)
+unlist(listv)
+listv[2]  # Extract second element as sublist
+listv[[2]]  # Extract second element
+listv[[2]][3]  # Extract third element of second element
+listv[[c(2, 3)]]  # Third element of second element
+listv$second  # Extract second element
+listv$s  # Extract second element - partial name matching
+listv$second[3]  # Third element of second element
+listv <- list()  # Empty list
+listv$a <- 1
+listv[2] <- 2
+listv
+names(listv)
+# Convert vector elements to list elements
+as.list(1:3)
+# Convert whole vector to single list element
+list(1:3)
+dframe <- data.frame(  # Create a data frame
+                type=c("rose", "daisy", "tulip"),
+                color=c("red", "white", "yellow"),
+                price=c(1.5, 0.5, 1.0)
+              )  # end data.frame
+dframe
+dim(dframe)  # Get dimension attribute
+colnames(dframe)  # Get the colnames attribute
+rownames(dframe)  # Get the rownames attribute
+class(dframe)  # Get object class
+typeof(dframe)  # Data frames are listv
+is.data.frame(dframe)
+class(dframe$type)  # Get column class
+class(dframe$price)  # Get column class
+dframe[, 3]  # Extract third column as vector
+dframe[[3]]  # Extract third column as vector
+dframe[3]  # Extract third column as data frame
+dframe[, 3, drop=FALSE]  # Extract third column as data frame
+dframe[[3]][2]  # Second element from third column
+dframe$price[2]  # Second element from "price" column
+is.data.frame(dframe[[3]]); is.vector(dframe[[3]])
+dframe[2, ]  # Extract second row
+dframe[2, ][3]  # Third element from second column
+dframe[2, 3]  # Third element from second column
+unlist(dframe[2, ])  # Coerce to vector
+is.data.frame(dframe[2, ]); is.vector(dframe[2, ])
+dframe <- data.frame(  # Create a data frame
+                type=c("rose", "daisy", "tulip"),
+                color=c("red", "white", "yellow"),
+                price=c(1.5, 0.5, 1.0),
+                row.names=c("flower1", "flower2", "flower3")
+              )  # end data.frame
+dframe
+class(dframe$type)  # Get column class
+class(dframe$price)  # Get column class
+# Set option to not coerce character vectors to factors - that was old default
+options("stringsAsFactors")
+options(stringsAsFactors=FALSE)
+options("stringsAsFactors")
+str(dframe)  # Display the object structure
+dim(cars)  # The cars data frame has 50 rows
+head(cars, n=5)  # Get first five rows
+tail(cars, n=5)  # Get last five rows
+# Create a named vector of student scores
+scorev <- sample(round(runif(5, min=1, max=10), digits=2))
+names(scorev) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
+# Sort the vector into ascending order
+sort(scorev)
+# Calculate index to sort into ascending order
+order(scorev)
+# Sort the vector into ascending order
+scorev[order(scorev)]
+# Calculate the sorted (ordered) vector
+sortv <- scorev[order(scorev)]
+# Calculate index to sort into unsorted (original) order
+order(order(scorev))
+sortv[order(order(scorev))]
+scorev
+# Examples for sort() with ties
+order(c(2, 1:4))  # There's a tie
+order(c(2, 1:4), 1:5)  # There's a tie
+# Create a vector of student ranks
+rankv <- c("fifth", "fourth", "third", "second", "first")
+# Reverse sort the student ranks according to students
+rankv[order(order(scorev))]
+# Create a data frame of students and their ranks
+rosterdf <- data.frame(score=scorev, 
+  rank=rankv[order(order(scorev))])
+rosterdf
+# Permutation index on price column
+order(dframe$price)
+# Sort dframe on price column
+dframe[order(dframe$price), ]
+# Sort dframe on color column
+dframe[order(dframe$color), ]
+as.matrix(dframe)
+vecv <- sample(9)
+matrix(vecv, ncol=3)
+as.matrix(vecv, ncol=3)
+matv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
+rownames(matv) <- c("row1", "row2")  # Rownames attribute
+colnames(matv) <- c("col1", "col2", "col3")  # Colnames attribute
+library(microbenchmark)
+# Call method instead of generic function
+as.data.frame.matrix(matv)
+# A few methods for generic function as.data.frame()
+sample(methods(as.data.frame), size=4)
+# Function method is faster than generic function
+summary(microbenchmark(
+  as_dframem=as.data.frame.matrix(matv),
+  as_dframe=as.data.frame(matv),
+  dframe=data.frame(matv),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+library(microbenchmark)
+# lapply is faster than coercion function
+summary(microbenchmark(
+  aslist=as.list(as.data.frame.matrix(matv)),
+  lapply=lapply(seq_along(matv[1, ]),
+     function(indeks) matv[, indeks]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# ?iris  # Get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # List of unique elements of iris
+class(unique(iris$Species))
+# Find which columns of iris are numeric
+sapply(iris, is.numeric)
+# Calculate means of iris columns
+sapply(iris, mean)  # Returns NA for Species
+# ?mtcars  # mtcars data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp	 Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # Extract list of car cylinders
+sapply(mtcars, mean)  # Calculate means of mtcars columns
+library(MASS)
+# ?Cars93  # Get information on Cars93
+dim(Cars93)
+head(colnames(Cars93))
+# head(Cars93, 2)
+unique(Cars93$Type)  # Extract list of car types
+# sapply(Cars93, mean)  # Calculate means of Cars93 columns
+# Plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1",
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+rm(list=ls())
+as.numeric(c(1:3, "a"))  # NA from coercion
+0/0  # NaN from ambiguous math
+1/0  # Inf from divide by zero
+is.na(c(NA, NaN, 0/0, 1/0))  # Test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # Test for NaN
+NA*1:4  # Create vector of Nas
+# Create vector with some NA values
+datav <- c(1, 2, NA, 4, NA, 5)
+datav
+mean(datav)  # Returns NA, when NAs are input
+mean(datav, na.rm=TRUE)  # remove NAs from input data
+datav[!is.na(datav)]  # Delete the NA values
+sum(!is.na(datav))  # Count non-NA values
+# airquality data has some NAs
+head(airquality)
+dim(airquality)
+# Number of NA elements
+sum(is.na(airquality))
+# Number of rows with NA elements
+sum(!complete.cases(airquality))
+# Display rows containing NAs
+head(airquality[!complete.cases(airquality), ])
+# Create vector containing NA values
+vecv <- sample(22)
+vecv[sample(NROW(vecv), 4)] <- NA
+# Replace NA values with the most recent non-NA values
+zoo::na.locf(vecv)
+# Remove rows containing NAs
+goodair <- airquality[complete.cases(airquality), ]
+dim(goodair)
+# NAs removed
+head(goodair)
+# Another way of removing NAs
+freshair <- na.omit(airquality)
+all.equal(freshair, goodair, check.attributes=FALSE)
+# Replace NAs
+goodair <- zoo::na.locf(airquality)
+dim(goodair)
+# NAs replaced
+head(goodair)
+# Replace NAs in xts time series
+library(rutils)  # load package rutils
+pricev <- rutils::etfenv$prices[, 1]
+head(pricev, 3)
+sum(is.na(pricev))
+pricez <- zoo::na.locf(pricev, fromLast=TRUE)
+pricex <- xts:::na.locf.xts(pricev, fromLast=TRUE)
+all.equal(pricez, pricex, check.attributes=FALSE)
+head(pricex, 3)
+library(microbenchmark)
+summary(microbenchmark(
+  zoo=zoo::na.locf(pricev, fromLast=TRUE),
+  xts=xts:::na.locf.xts(pricev, fromLast=TRUE),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# NULL values have no mode or type
+c(mode(NULL), mode(NA))
+c(typeof(NULL), typeof(NA))
+c(NROW(NULL), NROW(NA))
+# Check for NULL values
+is.null(NULL)
+# NULL values are ignored when combined into a vector
+c(1, 2, NULL, 4, 5)
+# But NA value isn't ignored
+c(1, 2, NA, 4, 5)
+# Vectors can be initialized to NULL
+vecv <- NULL
+is.null(vecv)
+# Grow the vector in a loop - very bad code!!!
+for (indeks in 1:5)
+  vecv <- c(vecv, indeks)
+# Initialize empty vector
+vecv <- numeric()
+# Grow the vector in a loop - very bad code!!!
+for (indeks in 1:5)
+  vecv <- c(vecv, indeks)
+# Allocate vector
+vecv <- numeric(5)
+# Assign to vector in a loop - good code
+for (indeks in 1:5)
+  vecv[indeks] <- runif(1)
+# Create list of vectors
+listv <- lapply(1:3, function(x) sample(6))
+# Bind list elements into matrix - doesn't work
+rbind(listv)
+# Bind list elements into matrix - tedious
+rbind(listv[[1]], listv[[2]], listv[[3]])
+# Bind list elements into matrix - works!
+do.call(rbind, listv)
+# Create numeric list
+listv <- list(1, 2, 3, 4)
+do.call(rbind, listv)  # Returns single column matrix
+do.call(cbind, listv)  # Returns single row matrix
+# Recycling rule applied
+do.call(cbind, list(1:2, 3:5))
+# NULL element is skipped
+do.call(cbind, list(1, NULL, 3, 4))
+# NA element isn't skipped
+do.call(cbind, list(1, NA, 3, 4))
+library(microbenchmark)
+list_vectors <- lapply(1:5, rnorm, n=10)
+matv <- do.call(rbind, list_vectors)
+dim(matv)
+do_call_rbind <- function(listv) {
+  while (NROW(listv) > 1) {
+# Index of odd list elements
+    odd_index <- seq(from=1, to=NROW(listv), by=2)
+# Bind odd and even elements, and divide listv by half
+    listv <- lapply(odd_index, function(indeks) {
+if (indeks==NROW(listv)) return(listv[[indeks]])
+rbind(listv[[indeks]], listv[[indeks+1]])
+    })  # end lapply
+  }  # end while
+# listv has only one element - return it
+  listv[[1]]
+}  # end do_call_rbind
+identical(matv, do_call_rbind(list_vectors))
+library(microbenchmark)
+airquality[(airquality$Solar.R > 320 &
+        !is.na(airquality$Solar.R)), ]
+subset(x=airquality, subset=(Solar.R > 320))
+summary(microbenchmark(
+    subset=subset(x=airquality, subset=(Solar.R > 320)),
+    brackets=airquality[(airquality$Solar.R > 320 &
+            !is.na(airquality$Solar.R)), ],
+times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+unique(iris$Species)  # Species has three distinct values
+# Split into separate data frames by hand
+setosa <- iris[iris$Species=="setosa", ]
+versi <- iris[iris$Species=="versicolor", ]
+virgin <- iris[iris$Species=="virginica", ]
+dim(setosa)
+head(setosa, 2)
+# Split iris into list based on Species
+splitiris <- split(iris, iris$Species)
+str(splitiris, max.confl=1)
+names(splitiris)
+dim(splitiris$setosa)
+head(splitiris$setosa, 2)
+all.equal(setosa, splitiris$setosa)
+unique(mtcars$cyl)  # cyl has three unique values
+# Split mpg column based on number of cylinders
+split(mtcars$mpg, mtcars$cyl)
+# Split mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.confl=1)
+names(split_cars)
+# Aggregate the mean mpg over split mtcars data frame
+sapply(split_cars, function(x) mean(x$mpg))
+# Or: split mpg column and aggregate the mean
+sapply(split(mtcars$mpg, mtcars$cyl), mean)
+# Same but using with()
+with(mtcars, sapply(split(mpg, cyl), mean))
+# Or: aggregate() using formula syntax
+aggregate(x=(mpg ~ cyl), data=mtcars, FUN=mean)
+# Or: aggregate() using data frame syntax
+aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
+# Or: using name for mpg
+aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
+# Aggregate() all columns
+aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
+# Aggregate multiple columns using formula syntax
+aggregate(x=(cbind(mpg, hp) ~ cyl), data=mtcars, FUN=mean)
+# Mean mpg for each cylinder group
+tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
+# using with() environment
+with(mtcars, tapply(X=mpg, INDEX=cyl, FUN=mean))
+# Function sapply() instead of tapply()
+with(mtcars, sapply(sort(unique(cyl)), function(x) {
+ structure(mean(mpg[x==cyl]), names=x)
+     }))  # end with
+# Function by() instead of tapply()
+with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
+# Get several mpg stats for each cylinder group
+cardata <- sapply(split_cars, function(x) {
+  c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+}  # end anonymous function
+)  # end sapply
+cardata  # sapply() produces a matrix
+# Now same using lapply
+cardata <- lapply(split_cars, function(x) {
+  c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+}  # end anonymous function
+)  # end sapply
+is.list(cardata)  # lapply produces a list
+# do.call flattens list into a matrix
+do.call(cbind, cardata)
+# Download CRSPpanel.txt from the NYU share drive
+# Read the file using read.table() with header and sep arguments
+paneld <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt",
+                   header=TRUE, sep="\t")
+paneld[1:5, 1:5]
+attach(paneld)
+# Split paneld based on Industry column
+panelds <- split(paneld, paneld$Industry)
+# Number of companies in each Industry
+sapply(panelds, NROW)
+# Number of Sectors that each Industry belongs to
+sapply(panelds, function(x) {
+  NROW(unique(x$Sector))
 })  # end sapply
-# Means and standard errors from regression
-regsum$coefficients
-# Means and standard errors from bootstrap
-dim(bootd)
-t(apply(bootd, MARGIN=1,
-function(x) c(mean=mean(x), stderror=sd(x))))
-
-# New data predictor is a data frame or row vector
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
-colnamev <- colnames(predm)
-colnames(newdata) <- colnamev
-newdata <- as.matrix(newdata)
-fcast <- drop(newdata %*% betav)
-predsd <- drop(sqrt(newdata %*% betacovar %*% t(newdata)))
-
-# Create formula from text string
-formulav <- paste0("respv ~ ",
-  paste(colnames(predm), collapse=" + "), " - 1")
-# Specify multivariate regression using formula
-regmod <- lm(formulav, data=data.frame(cbind(respv, predm)))
-regsum <- summary(regmod)
-# Predict from lm object
-fcastlm <- predict.lm(object=model, newdata=newdata,
-   interval="confidence", confl=1-2*(1-pnorm(2)))
-# Calculate t-quantile
-tquant <- qt(pnorm(2), df=degf)
-fcasth <- (fcast + tquant*predsd)
-fcastl <- (fcast - tquant*predsd)
-# Compare with matrix calculations
-all.equal(fcastlm[1, "fit"], fcast)
-all.equal(fcastlm[1, "lwr"], fcastl)
-all.equal(fcastlm[1, "upr"], fcasth)
-
-# TSS = ESS + RSS
-tss <- sum((respv-mean(respv))^2)
-ess <- sum((fitv-mean(fitv))^2)
-rss <- sum(resids^2)
-all.equal(tss, ess + rss)
-
-# Set regression attribute for intercept
-attributes(regmod$terms)$intercept <- 1
-# Regression summary
-regsum <- summary(regmod)
-# Regression R-squared
-rsquared <- ess/tss
-all.equal(rsquared, regsum$r.squared)
-# Correlation between response and fitted values
-corfit <- drop(cor(respv, fitv))
-# Squared correlation between response and fitted values
-all.equal(corfit^2, rsquared)
-
-nrows <- NROW(predm)
-ncols <- NCOL(predm)
-# Degrees of freedom of residuals
-degf <- (nrows - ncols)
-# Adjusted R-squared
-rsqadj <- (1-sum(resids^2)/degf/var(respv))
-# Compare adjusted R-squared from lm()
-all.equal(drop(rsqadj), regsum$adj.r.squared)
-
-# Plot four curves in loop
-degf <- c(3, 5, 9, 21)  # Degrees of freedom
-colorv <- c("black", "red", "blue", "green")
-for (indeks in 1:NROW(degf)) {
-  curve(expr=df(x, df1=degf[indeks], df2=3),
-    xlim=c(0, 4), xlab="", ylab="", lwd=2,
-    col=colorv[indeks], add=as.logical(indeks-1))
-}  # end for
-
-# Add title
-title(main="F-Distributions", line=0.5)
-# Add legend
-labelv <- paste("degf", degf, sep=" = ")
-legend("topright", title="Degrees of Freedom", inset=0.0, bty="n",
-       y.intersp=0.4, labelv, cex=1.2, lwd=6, lty=1, col=colorv)
-
-sigmax <- var(rnorm(nrows))
-sigmay <- var(rnorm(nrows))
-fratio <- sigmax/sigmay
-# Cumulative probability for q = fratio
-pf(fratio, nrows-1, nrows-1)
-# p-value for fratios
-1-pf((10:20)/10, nrows-1, nrows-1)
-
-# F-statistic from lm()
-regsum$fstatistic
-# Degrees of freedom of residuals
-degf <- (nrows - ncols)
-# F-statistic from ESS and RSS
-fstat <- (ess/(ncols-1))/(rss/degf)
-all.equal(fstat, regsum$fstatistic[1], check.attributes=FALSE)
-# p-value of F-statistic
-1-pf(q=fstat, df1=(ncols-1), df2=(nrows-ncols))
-
-# Calculate ETF returns
-retp <- na.omit(rutils::etfenv$returns)
-# Perform singular value decomposition
-svdec <- svd(retp)
-barplot(svdec$d, main="Singular Values of ETF Returns")
-
-# Calculate generalized inverse from SVD
-invmat <- svdec$v %*% (t(svdec$u) / svdec$d)
-# Verify inverse property of inverse
-all.equal(zoo::coredata(retp), retp %*% invmat %*% retp)
-# Calculate regularized inverse from SVD
-dimax <- 1:3
-invreg <- svdec$v[, dimax] %*%
-  (t(svdec$u[, dimax]) / svdec$d[dimax])
-# Calculate regularized inverse using RcppArmadillo
-invcpp <- HighFreq::calc_inv(retp, dimax=3)
-all.equal(invreg, invcpp, check.attributes=FALSE)
-# Calculate regularized inverse from Moore-Penrose pseudo-inverse
-retsq <- t(retp) %*% retp
-eigend <- eigen(retsq)
-inv2 <- eigend$vectors[, dimax] %*%
-  (t(eigend$vectors[, dimax]) / eigend$values[dimax])
-invmp <- inv2 %*% t(retp)
-all.equal(invreg, invmp, check.attributes=FALSE)
-
-# Define transformation matrix
-matv <- matrix(runif(ncols^2, min=(-1), max=1), ncol=ncols)
-# Calculate linear combinations of predictor columns
-predt <- predm %*% matv
-# Calculate the influence matrix of the transformed predictor
-influencet <- predt %*% MASS::ginv(predt)
-# Compare the influence matrices
-all.equal(infmat, influencet)
-
-# Perform PCA of the predictors
-pcad <- prcomp(predm, center=FALSE, scale=FALSE)
-# Calculate the PCA predictors
-predpca <- predm %*% pcad$rotation
-# Principal components are orthogonal to each other
-round(t(predpca) %*% predpca, 2)
-# Calculate the PCA influence matrix
-infmat <- predm %*% MASS::ginv(predm)
-infpca <- predpca %*% MASS::ginv(predpca)
-all.equal(infmat, infpca)
-# Calculate the regression coefficients
-coeffv <- drop(MASS::ginv(predm) %*% respv)
-# Transform the collinear regression coefficients to the PCA
-drop(coeffv %*% pcad$rotation)
-# Calculate the PCA regression coefficients
-drop(MASS::ginv(predpca) %*% respv)
-# Calculate the PCA regression coefficients directly
-colSums(predpca*drop(respv))/colSums(predpca^2)
-
-# Create almost collinear predictors
-predcol <- predm
-predcol[, 1] <- (predcol[, 1]/1e3 + predcol[, 2])
-# Calculate the collinear regression coefficients
-coeffv <- drop(MASS::ginv(predcol) %*% respv)
-coeffv
-# Calculate the PCA predictors
-pcad <- prcomp(predcol, center=FALSE, scale=FALSE)
-predpca <- predcol %*% pcad$rotation
-round(t(predpca) %*% predpca, 6)
-# Transform the collinear regression coefficients to the PCA
-drop(coeffv %*% pcad$rotation)
-# Calculate the PCA regression coefficients
-coeffpca <- drop(MASS::ginv(predpca) %*% respv)
-# Calculate the PCA regression coefficients directly
-colSums(predpca*drop(respv))/colSums(predpca^2)
-# Transform the PCA regression coefficients to the original coordinates
-drop(coeffpca %*% MASS::ginv(pcad$rotation))
-coeffv
-# Calculate the regression coefficients after dimension reduction
-npca <- NROW(coeffpca)
-drop(coeffpca[-npca] %*% MASS::ginv(pcad$rotation)[-npca, ])
-# Compare with the collinear regression coefficients
-coeffv
-# Calculate the original regression coefficients
-drop(MASS::ginv(predm) %*% respv)
-
-library(HighFreq)
-# Read TAQ trade data from csv file
-taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.csv")
-# Inspect the TAQ data in data.table format
-taq
-class(taq)
-colnames(taq)
-sapply(taq, class)
-symbol <- taq$SYM_ROOT[1]
-# Create date-time index
-datev <- paste(taq$DATE, taq$TIME_M)
-# Coerce date-time index to POSIXlt
-datev <- strptime(datev, "%Y%m%d %H:%M:%OS")
-class(datev)
-# Display more significant digits
-# options("digits")
-options(digits=20, digits.secs=10)
-last(datev)
-unclass(last(datev))
-as.numeric(last(datev))
-# Coerce date-time index to POSIXct
-datev <- as.POSIXct(datev)
-class(datev)
-last(datev)
-unclass(last(datev))
-as.numeric(last(datev))
-# Calculate the number of seconds
-nsecs <- as.numeric(last(datev)) - as.numeric(first(datev))
-# Calculate the number of ticks per second
-NROW(taq)/(6.5*3600)
-# Select TAQ data columns
-taq <- taq[, .(price=PRICE, volume=SIZE)]
-
-# Coerce trade ticks to xts series
-xlk <- xts::xts(taq[, .(price, volume)], datev)
-colnames(xlk) <- c("price", "volume")
-save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# Plot histogram of the trading volumes
-hist(xlk$volume, main="Histogram of XLK Trading Volumes",
-     breaks=1e5, xlim=c(1, 400), xlab="number of shares")
-
-# Plot dygraph
-dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-# Plot in x11 window
-x11(width=6, height=5)
-quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
-
-# Plot dygraph of trade prices of at least 100 shares
-dygraphs::dygraph(xlk$price[volume >= 100, ],
-  main="XLK Prices for Trades of At Least 100 Shares") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-
-# Calculate centered Hampel filter to remove bad prices
-look_back <- 71
-half_back <- look_back %/% 2
-pricev <- xlk$price
-medianv <- roll::roll_median(pricev, width=look_back)
-colnames(medianv) <- c("median")
-# Overwrite leading NA values
-medianv[1:look_back, ] <- pricev[1:look_back, ]
-# medianv <- TTR::runMedian(pricev, n=look_back)
-medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=look_back)
-madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
-# Calculate the Z-scores
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
-
-# Define discrimination threshold value
-threshv <- 6*madz
-# Identify good prices with small z-scores
-isgood <- (abs(zscores) < threshv)
-# Calculate the number of bad prices
-sum(!isgood)
-# Remove bad prices and calculate time series of scrubbed prices
-priceg <- xlk$price[isgood]
-# Plot dygraph of the scrubbed prices
-dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-# Plot using chart_Series()
-x11(width=6, height=5)
-quantmod::chart_Series(x=priceg,
-  name="Clean XLK Intraday Prices for 2020-03-16")
-
-# Add 200 random price spikes to the clean prices
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nspikes <- 200
-nrows <- NROW(priceg)
-ispike <- logical(nrows)
-ispike[sample(x=nrows, size=nspikes)] <- TRUE
-priceb <- priceg
-priceb[ispike] <- priceb[ispike]*
-  sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
-# Calculate the z-scores
-medianv <- roll::roll_median(priceb, width=look_back)
-# Plot the bad prices and their medians
-pricem <- cbind(priceb, medianv)
-colnames(pricem) <- c("prices with spikes", "median")
-dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
-  dyOptions(colors=c("red", "blue"))
-# medianv <- TTR::runMedian(priceb, n=look_back)
-madv <- HighFreq::roll_var(priceb, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(priceb, n=look_back)
-zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
-zscores[1:look_back, ] <- 0
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
-# Identify good prices with small z-scores
-threshv <- 5*madz
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-
-# Calculate confusion matrix
-table(actual=!ispike, forecast=isgood)
-sum(!isgood)
-# FALSE positive (type I error)
-sum(!ispike & isgood)
-# FALSE negative (type II error)
-sum(ispike & isgood)
-
-# Confusion matrix as function of threshold
-confun <- function(actualv, zscores, threshv) {
-    confmat <- table(actualv, (abs(zscores) < threshv))
-    confmat <- confmat / rowSums(confmat)
-    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-  }  # end confun
-confun(!ispike, zscores, threshv=threshv)
-# Define vector of discrimination thresholds
-threshv <- madz*seq(from=0.1, to=7, by=0.1)^2
-# Calculate error rates
-errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-# Calculate area under ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
-
-# Plot ROC curve for Hampel classifier
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Hampel Classifier",
-     type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
-
-# Calculate the centered Hampel filter for VXX
-pricev <- log(na.omit(rutils::etfenv$prices$VXX))
-medianv <- roll::roll_median(pricev, width=look_back)
-medianv[1:look_back, ] <- pricev[1:look_back, ]
-medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(pricev, look_back=look_back, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
-
-# Define discrimination threshold value
-threshv <- 10*madz
-# Calculate the bad prices
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-# Dates of the bad prices
-zoo::index(pricev[!isgood])
-# Calculate the false positives
-isfp <- !isgood
-isfp[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
-# Plot dygraph of the prices with bad prices
-dygraphs::dygraph(pricev, main="VXX Prices With False Positives") %>%
-  dyEvent(zoo::index(pricev[isfp]), label=rep("false", sum(isfp)), strokePattern="solid", color="red") %>%
-  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-
-# Dates of the bad prices
-dates <- zoo::index(pricev)
-dateb <- dates[!isgood]
-# Dates of the previous prices
-datep <- c(!isgood[-1], FALSE)
-dates[datep]
-# Replace bad stock prices with the previous good prices
-priceg <- pricev
-priceg[!isgood] <- pricev[datep]
-# Calculate the Z-scores
-medianv <- roll::roll_median(priceg, width=look_back)
-medianv[1:look_back, ] <- priceg[1:look_back, ]
-medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceg, look_back=look_back, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
-madz <- mad(zscores[abs(zscores) > 0])
-# Calculate the number of bad prices
-threshv <- 10*madz
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-zoo::index(priceg[!isgood])
-
-# Calculate the false positives
-isfp <- !isgood
-isfp[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
-# Plot dygraph of the prices with bad prices
-dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
-  dyEvent(zoo::index(priceg[isfp]), label=rep("false", sum(isfp)), strokePattern="solid", color="red") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-
-lambdav <- c(0.5, 1, 1.5)
-colorv <- c("red", "blue", "green")
-# Plot three curves in loop
-for (it in 1:3) {
-  curve(expr=plogis(x, scale=lambdav[it]),
-xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
-col=colorv[it], add=(it>1))
-}  # end for
-# Add title
-title(main="Logistic function", line=0.5)
-# Add legend
-legend("topleft", title="Scale parameters",
-       paste("lambda", lambdav, sep="="), y.intersp=0.4,
-       inset=0.05, cex=0.8, lwd=6, bty="n", lty=1, col=colorv)
-
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-# Simulate overlapping scores data
-sample1 <- runif(100, max=0.6)
-sample2 <- runif(100, min=0.4)
-# Perform Mann-Whitney test for data location
-wilcox.test(sample1, sample2)
-# Combine scores and add categorical variable
-predm <- c(sample1, sample2)
-respv <- c(logical(100), !logical(100))
-# Perform logit regression
-logmod <- glm(respv ~ predm, family=binomial(logit))
-class(logmod)
-summary(logmod)
-
-ordern <- order(predm)
-plot(x=predm[ordern], y=logmod$fitted.values[ordern],
-     main="Category Densities and Logistic Function",
-     type="l", lwd=4, col="orange", xlab="predictor", ylab="density")
-densv <- density(predm[respv])
-densv$y <- densv$y/max(densv$y)
-lines(densv, col="red")
-polygon(c(min(densv$x), densv$x, max(densv$x)), c(min(densv$y), densv$y, min(densv$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-densv <- density(predm[!respv])
-densv$y <- densv$y/max(densv$y)
-lines(densv, col="blue")
-polygon(c(min(densv$x), densv$x, max(densv$x)), c(min(densv$y), densv$y, min(densv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
-# Add legend
-legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
- lwd=c(6, NA, NA), pch=c(NA, 15, 15), y.intersp=0.4,
- legend=c("logistic fit", "TRUE", "FALSE"),
- col=c("orange", "red", "blue"),
- text.col=c("black", "red", "blue"))
-
-# Likelihood function of binomial distribution
-likefun <- function(prob, b) {
-  b*log(prob) + (1-b)*log(1-prob)
-}  # end likefun
-likefun(prob=0.25, b=1)
-# Plot binomial likelihood function
-curve(expr=likefun(x, b=1), xlim=c(0, 1), lwd=3,
-      xlab="prob", ylab="likelihood", col="blue",
-      main="Binomial Likelihood Function")
-curve(expr=likefun(x, b=0), lwd=3, col="red", add=TRUE)
-legend(x="top", legend=c("b = 1", "b = 0"),
-       title=NULL, inset=0.3, cex=1.0, lwd=6, y.intersp=0.4,
-       bty="n", lty=1, col=c("blue", "red"))
-
-# Specify predictor matrix
-predm <- cbind(intercept=rep(1, NROW(respv)), predm)
-# Likelihood function of the logistic model
-likefun <- function(coeff, respv, predm) {
-  probs <- plogis(drop(predm %*% coeff))
-  -sum(respv*log(probs) + (1-respv)*log((1-probs)))
-}  # end likefun
-# Run likelihood function
-coeff <- c(1, 1)
-likefun(coeff, respv, predm)
-
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vecv, param=25) {
-  sum(vecv^2 - param*cos(vecv))
-}  # end rastrigin
-vecv <- c(pi/6, pi/6)
-rastrigin(vecv=vecv)
-# Draw 3d surface plot of Rastrigin function
-options(rgl.useNULL=TRUE); library(rgl)
-rgl::persp3d(
-  x=Vectorize(function(x, y) rastrigin(vecv=c(x, y))),
-  xlim=c(-10, 10), ylim=c(-10, 10),
-  col="green", axes=FALSE, zlab="", main="rastrigin")
-# Render the 3d surface plot of function
-rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
-# Optimize with respect to vector argument
-optiml <- optim(par=vecv, fn=rastrigin,
-        method="L-BFGS-B",
-        upper=c(4*pi, 4*pi),
-        lower=c(pi/2, pi/2),
-        param=1)
-# Optimal parameters and value
-optiml$par
-optiml$value
-rastrigin(optiml$par, param=1)
-
-# Initial parameters
-initp <- c(1, 1)
-# Find max likelihood parameters using steepest descent optimizer
-optiml <- optim(par=initp,
-        fn=likefun, # Log-likelihood function
-        method="L-BFGS-B", # Quasi-Newton method
-        respv=respv,
-        predm=predm,
-        upper=c(20, 20), # Upper constraint
-        lower=c(-20, -20), # Lower constraint
-        hessian=TRUE)
-# Optimal logistic parameters
-optiml$par
-unname(logmod$coefficients)
-# Standard errors of parameters
-sqrt(diag(solve(optiml$hessian)))
-regsum <- summary(logmod)
-regsum$coefficients[, 2]
-
-library(ISLR)  # Load package ISLR
-# get documentation for package tseries
-packageDescription("ISLR")  # get short description
-
-help(package="ISLR")  # Load help page
-
-library(ISLR)  # Load package ISLR
-
-data(package="ISLR")  # list all datasets in ISLR
-
-ls("package:ISLR")  # list all objects in ISLR
-
-detach("package:ISLR")  # Remove ISLR from search path
-
-# Coerce the default and student columns to Boolean
-Default <- ISLR::Default
-Default$default <- (Default$default == "Yes")
-Default$student <- (Default$student == "Yes")
-colnames(Default)[1:2] <- c("default", "student")
-attach(Default)  # Attach Default to search path
-# Explore credit default data
-summary(Default)
-sapply(Default, class)
-dim(Default)
-head(Default)
-
-# Plot data points for non-defaulters
-xlim <- range(balance); ylim <- range(income)
-plot(income ~ balance,
-     main="Default Dataset from Package ISLR",
-     xlim=xlim, ylim=ylim, pch=4, col="blue",
-     data=Default[!default, ])
-# Plot data points for defaulters
-points(income ~ balance, pch=4, lwd=2, col="red",
- data=Default[default, ])
-# Add legend
-legend(x="topright", legend=c("non-defaulters", "defaulters"),
- y.intersp=0.4, bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
-
-# Perform Mann-Whitney test for the location of the balances
-wilcox.test(balance[default], balance[!default])
-# Perform Mann-Whitney test for the location of the incomes
-wilcox.test(income[default], income[!default])
-
-x11(width=6, height=5)
-# Set 2 plot panels
-par(mfrow=c(1,2))
-# Balance boxplot
-boxplot(formula=balance ~ default,
-  col="lightgrey", main="balance", xlab="Default")
-# Income boxplot
-boxplot(formula=income ~ default,
-  col="lightgrey", main="income", xlab="Default")
-
-# Fit logistic regression model
-logmod <- glm(default ~ balance, family=binomial(logit))
-class(logmod)
-summary(logmod)
-
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
-plot(x=balance, y=default,
-     main="Logistic Regression of Credit Defaults",
-     col="orange", xlab="credit balance", ylab="defaults")
-ordern <- order(balance)
-lines(x=balance[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n", lwd=6, y.intersp=0.4,
- legend=c("defaults", "logit fitted values"),
- col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
-
-# Calculate cumulative defaults
-sumd <- sum(default)
-defaultv <- sapply(balance, function(balv) {
-    sum(default[balance <= balv])
+# Or
+aggregate(x=(Sector ~ Industry),
+  data=paneld, FUN=function(x) NROW(unique(x)))
+# Industries and the Sector to which they belong
+aggregate(x=(Sector ~ Industry), data=paneld, FUN=unique)
+# Or
+aggregate(x=Sector, by=list(Industry), FUN=unique)
+# Or
+sapply(unique(Industry), function(x) {
+  Sector[match(x, Industry)]
 })  # end sapply
-# Perform logit regression
-logmod <- glm(cbind(defaultv, sumd-defaultv) ~ balance,
-  family=binomial(logit))
-summary(logmod)
-
-plot(x=balance, y=defaultv/sumd, col="orange", lwd=1,
-     main="Cumulative Defaults Versus Balance",
-     xlab="credit balance", ylab="cumulative defaults")
-ordern <- order(balance)
-lines(x=balance[ordern], y=logmod$fitted.values[ordern],
-col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n", y.intersp=0.4,
- legend=c("cumulative defaults", "fitted values"),
- col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
-
-# Fit multifactor logistic regression model
-colnamev <- colnames(Default)
-formulav <- as.formula(paste(colnamev[1],
-  paste(colnamev[-1], collapse="+"), sep=" ~ "))
-formulav
-logmod <- glm(formulav, data=Default, family=binomial(logit))
-summary(logmod)
-
-# Fit single-factor logistic model with student as predictor
-glm_student <- glm(default ~ student, family=binomial(logit))
-summary(glm_student)
-# Multifactor coefficient is negative
-logmod$coefficients
-# Single-factor coefficient is positive
-glm_student$coefficients
-
-# Calculate cumulative defaults
-cum_defaults <- sapply(balance, function(balv) {
-c(student=sum(default[student & (balance <= balv)]),
-  non_student=sum(default[!student & (balance <= balv)]))
-})  # end sapply
-total_defaults <- c(student=sum(student & default),
-      student=sum(!student & default))
-cum_defaults <- t(cum_defaults / total_defaults)
-# Plot cumulative defaults
-par(mfrow=c(1,2))  # Set plot panels
-ordern <- order(balance)
-plot(x=balance[ordern], y=cum_defaults[ordern, 1],
-     col="red", t="l", lwd=2, xlab="credit balance", ylab="",
-     main="Cumulative defaults of\n students and non-students")
-lines(x=balance[ordern], y=cum_defaults[ordern, 2], col="blue", lwd=2)
-legend(x="topleft", bty="n", y.intersp=0.4,
- legend=c("students", "non-students"),
- col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
-# Balance boxplot for student factor
-boxplot(formula=balance ~ !student,
-  col="lightgrey", main="balance", xlab="Student")
-
-# Perform in-sample forecast from logistic regression model
-fcast <- predict(logmod, type="response")
-all.equal(logmod$fitted.values, fcast)
-# Define discrimination threshold value
-threshv <- 0.7
-# Calculate confusion matrix in-sample
-table(actual=!default, forecast=(fcast < threshv))
-# Fit logistic regression over training data
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nrows <- NROW(Default)
-samplev <- sample.int(n=nrows, size=nrows/2)
-trainset <- Default[samplev, ]
-logmod <- glm(formulav, data=trainset, family=binomial(logit))
-# Forecast over test data out-of-sample
-testset <- Default[-samplev, ]
-fcast <- predict(logmod, newdata=testset, type="response")
-# Calculate confusion matrix out-of-sample
-table(actual=!testset$default, forecast=(fcast < threshv))
-
-# Calculate confusion matrix out-of-sample
-confmat <- table(actual=!testset$default, 
-forecast=(fcast < threshv))
-confmat
-# Calculate FALSE positive (type I error)
-sum(!testset$default & (fcast > threshv))
-# Calculate FALSE negative (type II error)
-sum(testset$default & (fcast < threshv))
-
-# Calculate FALSE positive and FALSE negative rates
-confmat <- confmat / rowSums(confmat)
-c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-detach(Default)
-# Below is an unsuccessful attempt to draw confusion matrix using xtable
-confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
-dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
-                             actual=c("FALSE", "TRUE"))
-print(xtable::xtable(confusion_matrix,
-caption="Confusion Matrix"),
-caption.placement="top",
-comment=FALSE, size="scriptsize",
-include.rownames=TRUE,
-include.colnames=TRUE)
-# end unsuccessful attempt to draw confusion table using xtable
-
-# Confusion matrix as function of threshold
-confun <- function(actualv, fcast, threshv) {
-    confmat <- table(actualv, (fcast < threshv))
-    confmat <- confmat / rowSums(confmat)
-    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-  }  # end confun
-confun(!testset$default, fcast, threshv=threshv)
-# Define vector of discrimination thresholds
-threshv <- seq(0.05, 0.95, by=0.05)^2
-# Calculate error rates
-errorr <- sapply(threshv, confun,
-  actualv=!testset$default, fcast=fcast)  # end sapply
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-# Calculate area under ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
-
-# Plot ROC Curve for Defaults
-x11(width=5, height=5)
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Split paneld based on Sector column
+panelds <- split(paneld, paneld$Sector)
+# Number of companies in each Sector
+sapply(panelds, NROW)
+# Industries belonging to each Sector (jagged array)
+secind <- sapply(panelds, function(x) unique(x$Industry))
+# Or use aggregate() (returns a data frame)
+secind2 <- aggregate(x=(Industry ~ Sector),
+  data=paneld, FUN=function(x) unique(x))
+# Or use aggregate() with "by" argument
+secind2 <- aggregate(x=Industry, by=list(Sector),
+    FUN=function(x) as.vector(unique(x)))
+# Coerce secind2 into a jagged array
+namev <- secind2[, 1]
+secind2 <- secind2[, 2]
+names(secind2) <- namev
+all.equal(secind2, secind)
+# Or use tapply() (returns an array)
+secind2 <- tapply(X=Industry, INDEX=Sector, FUN=unique)
+# Coerce secind2 into a jagged array
+secind2 <- drop(as.matrix(secind2))
+all.equal(secind2, secind)
+# Average ROE in each Industry
+sapply(split(ROE, Industry), mean)
+# Average, min, and max ROE in each Industry
+t(sapply(split(ROE, Industry), FUN=function(x)
+  c(mean=mean(x), max=max(x), min=min(x))))
+# Split paneld based on Industry column
+panelds <- split(paneld, paneld$Industry)
+# Average ROE and EPS in each Industry
+t(sapply(panelds, FUN=function(x)
+  c(mean_roe=mean(x$ROE),
+    mean_eps=mean(x$EPS.EXCLUDE.EI))))
+# Or: split paneld based on Industry column
+panelds <- split(paneld[, c("ROE", "EPS.EXCLUDE.EI")],
+  paneld$Industry)
+# Average ROE and EPS in each Industry
+t(sapply(panelds, FUN=function(x) sapply(x, mean)))
+# Average ROE and EPS using aggregate()
+aggregate(x=paneld[, c("ROE", "EPS.EXCLUDE.EI")],
+  by=list(paneld$Industry), FUN=mean)
+# ?options  # Get info on global options
+getOption("warn")  # Global option for "warn"
+options("warn")  # Global option for "warn"
+getOption("error")  # Global option for "error"
+calc_sqrt <- function(inputv) {
+# Returns its argument
+  if (inputv < 0) {
+    warning("calc_sqrt: input is negative")
+    NULL  # Return NULL for negative argument
+  } else {
+    sqrt(inputv)
+  }  # end if
+}  # end calc_sqrt
+calc_sqrt(5)
+calc_sqrt(-1)
+options(warn=-1)
+calc_sqrt(-1)
+options(warn=0)
+calc_sqrt()
+options(warn=1)
+calc_sqrt()
+options(warn=3)
+calc_sqrt()
+# Function valido validates its arguments
+valido <- function(inputv=NULL) {
+# Check if argument is valid and return double
+  if (is.null(inputv)) {
+    return("valido: input is missing")
+  } else if (is.numeric(inputv)) {
+    2*inputv
+  } else cat("valido: input not numeric")
+}  # end valido
+valido(3)
+valido("a")
+valido()
+# valido validates arguments using missing()
+valido <- function(inputv) {
+# Check if argument is valid and return double
+  if (missing(inputv)) {
+    return("valido: input is missing")
+  } else if (is.numeric(inputv)) {
+    2*inputv
+  } else cat("valido: input is not numeric")
+}  # end valido
+valido(3)
+valido("a")
+valido()
+# valido() validates its arguments and assertions
+valido <- function(inputv) {
+# Check if argument is valid and return double
+  if (missing(inputv)) {
+    stop("valido: input is missing")
+  } else if (!is.numeric(inputv)) {
+    cat("input =", inputv, "\n")
+    stop("valido: input is not numeric")
+  } else 2*inputv
+}  # end valido
+valido(3)
+valido("a")
+valido()
+# Print the call stack
+traceback()
+valido <- function(inputv) {
+# Check argument using long form '&&' operator
+  stopifnot(!missing(inputv) && is.numeric(inputv))
+  2*inputv
+}  # end valido
+valido(3)
+valido()
+valido("a")
+valido <- function(inputv) {
+# Check argument using logical '&' operator
+  stopifnot(!missing(inputv) & is.numeric(inputv))
+  2*inputv
+}  # end valido
+valido()
+valido("a")
+# sumtwo() returns the sum of its two arguments
+sumtwo <- function(input1, input2) {  # Even more robust
+# Check if at least one argument is not missing
+  stopifnot(!missing(input1) && !missing(input2))
+# Check if arguments are valid and return sum
+  if (is.numeric(input1) && is.numeric(input2)) {
+    input1 + input2  # Both valid
+  } else if (is.numeric(input1)) {
+    cat("input2 is not numeric\n")
+    input1  # input1 is valid
+  } else if (is.numeric(input2)) {
+    cat("input1 is not numeric\n")
+    input2  # input2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sumtwo
+sumtwo(1, 2)
+sumtwo(5, 'a')
+sumtwo('a', 5)
+sumtwo('a', 'b')
+sumtwo()
+# Flag "valido" for debugging
+debug(valido)
+# Calling "valido" starts debugger
+valido(3)
+# unflag "valido" for debugging
+undebug(valido)
+valido <- function(inputv) {
+  browser()  # Pause and invoke debugger
+# Check argument using long form '&&' operator
+  stopifnot(!missing(inputv) && is.numeric(inputv))
+  2*inputv
+}  # end valido
+valido()  # Invokes debugger
+options("error")  # Show default NULL "error" option
+options(error=recover)  # Set "error" option to "recover"
+options(error=NULL)  # Set back to default "error" option
+str(tryCatch)  # Get arguments of tryCatch()
+tryCatch(  # Without error handler
+  {  # Evaluate expressions
+    numv <- 101  # Assign
+    stop("my error")  # Produce error
+  },
+  finally=print(paste0("numv = ", numv))
+)  # end tryCatch
+tryCatch(  # With error handler
+  {  # Evaluate expressions
+    numv <- 101  # Assign
+    stop("my error")  # Produce error
+  },
+  # Error handler captures error condition
+  error=function(msg) {
+    print(paste0("Error handler: ", msg))
+  },  # end error handler
+  # Warning handler captures warning condition
+  warning=function(msg) {
+    print(paste0("Warning handler: ", msg))
+  },  # end warning handler
+  finally=print(paste0("numv = ", numv))
+)  # end tryCatch
+# Apply loop without tryCatch
+apply(matrix(1:5), 1, function(numv) {  # Anonymous function
+    stopifnot(!(numv = 3))  # Check for error
+    # Broadcast message to console
+    cat("(cat) numv = ", numv, "\n")
+    # Return a value
+    paste0("(return) numv = ", numv)
+  }  # end anonymous function
+)  # end apply
+# Apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(numv) {  # Anonymous function
+    tryCatch(  # With error handler
+{  # Body
+  stopifnot(numv != 3)  # Check for error
+  # Broadcast message to console
+  cat("(cat) numv = ", numv, "\t")
+  # Return a value
+  paste0("(return) numv = ", numv)
+},
+# Error handler captures error condition
+error=function(msg)
+  paste0("handler: ", msg),
+finally=print(paste0("(finally) numv = ", numv))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+Sys.Date()  # Get today's date
+as.Date(1e3)  # Coerce numeric into date object
+datetime <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
+datetime
+class(datetime)  # Date object
+as.Date("07-14-2014", "%m-%d-%Y")  # Specify format
+datetime + 20  # Add 20 days
+# Extract internal representation to integer
+as.numeric(datetime)
+datep <- as.Date("07/14/2013", "%m/%d/%Y")
+datep
+# Difference between dates
+difftime(datetime, datep, units="weeks")
+weekdays(datetime)  # Get day of the week
+# Coerce numeric into date-times
+datetime <- 0
+attributes(datetime) <- list(class="Date")
+datetime  # "Date" object
+structure(0, class="Date")  # "Date" object
+structure(10000.25, class="Date")
+datetime <- Sys.time()  # Get today's date and time
+datetime
+class(datetime)  # POSIXct object
+# POSIXct stored as integer moment of time
+as.numeric(datetime)
+# Parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+datetime <- as.POSIXct("2014-07-14 13:30:10")
+# Different time zones can have same clock time
+as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
+as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# Format argument allows parsing different date-time string formats
+as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
+     tz="America/New_York")
+# Same moment of time corresponds to different clock times
+timeny <- as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
+timeldn <- as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# Add five hours to POSIXct
+timeny + 5*60*60
+# Subtract POSIXct
+timeny - timeldn
+class(timeny - timeldn)
+# Compare POSIXct
+timeny > timeldn
+# Create vector of POSIXct times during trading hours
+timev <- seq(
+  from=as.POSIXct("2014-07-14 09:30:00", tz="America/New_York"),
+  to=as.POSIXct("2014-07-14 16:00:00", tz="America/New_York"),
+  by="10 min")
+head(timev, 3)
+tail(timev, 3)
+# POSIXct is stored as integer moment of time
+datetimen <- as.numeric(datetime)
+# Same moment of time corresponds to different clock times
+as.POSIXct(datetimen, origin="1970-01-01", tz="America/New_York")
+as.POSIXct(datetimen, origin="1970-01-01", tz="UTC")
+# Same clock time corresponds to different moments of time
+as.POSIXct("2014-07-14 13:30:10", tz="America/New_York") -
+  as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# Add 20 seconds to POSIXct
+datetime + 20
+datetime  # POSIXct date and time
+# Parse POSIXct to string representing the clock time
+format(datetime)
+class(format(datetime))  # Character string
+# Get clock times in different time zones
+format(datetime, tz="America/New_York")
+format(datetime, tz="UTC")
+# Format with custom format strings
+format(datetime, "%m/%Y")
+format(datetime, "%m-%d-%Y %H hours")
+# Trunc to hour
+format(datetime, "%m-%d-%Y %H:00:00")
+# Date converted to midnight UTC moment of time
+as.POSIXct(Sys.Date())
+as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
+     origin="1970-01-01",
+     tz="UTC")
+# Parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+datetime <- as.POSIXlt("2014-07-14 18:30:10")
+datetime
+class(datetime)  # POSIXlt object
+as.POSIXct(datetime)  # Coerce to POSIXct object
+# Extract internal list representation to vector
+unlist(datetime)
+datetime + 20  # Add 20 seconds
+class(datetime + 20)  # Implicit coercion to POSIXct
+trunc(datetime, units="hours")  # Truncate to closest hour
+trunc(datetime, units="days")  # Truncate to closest day
+methods(trunc)  # Trunc methods
+trunc.POSIXt
+# Set time-zone to UTC
+Sys.setenv(TZ="UTC")
+Sys.timezone()  # Get time-zone
+Sys.time()  # Today's date and time
+# Set time-zone back to New York
+Sys.setenv(TZ="America/New_York")
+Sys.time()  # Today's date and time
+# Standard Time in effect
+as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
+# Daylight Savings Time in effect
+as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
+datetime <- Sys.time()  # Today's date and time
+# Convert to character in different TZ
+format(datetime, tz="America/New_York")
+format(datetime, tz="UTC")
+# Parse back to POSIXct
+as.POSIXct(format(datetime, tz="America/New_York"))
+# Difference between New_York time and UTC
+as.POSIXct(format(Sys.time(), tz="UTC")) -
+  as.POSIXct(format(Sys.time(), tz="America/New_York"))
+library(lubridate)  # Load lubridate
+# Parse strings into date-times
+as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
+datetime <- lubridate::mdy("07-14-2014", tz="America/New_York")
+datetime
+class(datetime)  # POSIXct object
+lubridate::dmy("14.07.2014", tz="America/New_York")
+# Parse numeric into date-times
+as.POSIXct(as.character(14072014), format="%d%m%Y",
+                  tz="America/New_York")
+lubridate::dmy(14072014, tz="America/New_York")
+# Parse decimal to date-times
+lubridate::decimal_date(datetime)
+lubridate::date_decimal(2014.25, tz="America/New_York")
+date_decimal(decimal_date(datetime), tz="America/New_York")
+library(lubridate)  # Load lubridate
+datetime <- lubridate::ymd_hms(20140714142010,
+               tz="America/New_York")
+datetime
+# Get same moment of time in "UTC" time zone
+lubridate::with_tz(datetime, "UTC")
+as.POSIXct(format(datetime, tz="UTC"), tz="UTC")
+# Get same clock time in "UTC" time zone
+lubridate::force_tz(datetime, "UTC")
+as.POSIXct(format(datetime, tz="America/New_York"),
+     tz="UTC")
+# Same moment of time
+datetime - with_tz(datetime, "UTC")
+# Different moments of time
+datetime - force_tz(datetime, "UTC")
+library(lubridate)  # Load lubridate
+# Daylight Savings Time handling periods vs durations
+datetime <- as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
+datetime
+datetime + lubridate::ddays(1)  # Add duration
+datetime + lubridate::days(1)  # Add period
+leap_year(2012)  # Leap year
+datetime <- lubridate::dmy(01012012, tz="America/New_York")
+datetime
+datetime + lubridate::dyears(1)  # Add duration
+datetime + lubridate::years(1)  # Add period
+library(lubridate)  # Load lubridate
+datetime <- lubridate::ymd_hms(20140714142010, tz="America/New_York")
+datetime
+# Add periods to a date-time
+c(datetime + lubridate::seconds(1), datetime + lubridate::minutes(1),
+  datetime + lubridate::days(1), datetime + period(months=1))
+# Create vectors of dates
+datetime <- lubridate::ymd(20140714, tz="America/New_York")
+datetime + 0:2 * period(months=1)  # Monthly dates
+datetime + period(months=0:2)
+datetime + 0:2 * period(months=2)  # bi-monthly dates
+datetime + seq(0, 5, by=2) * period(months=1)
+seq(datetime, length=3, by="2 months")
+library(lubridate)  # Load lubridate
+# Adding monthly periods can create invalid dates
+datetime <- lubridate::ymd(20120131, tz="America/New_York")
+datetime + 0:2 * period(months=1)
+datetime + period(months=1)
+datetime + period(months=2)
+# Create vector of end-of-month dates
+datetime %m-% lubridate::months(13:1)
+library(zoo)  # Load zoo
+library(RQuantLib)  # Load RQuantLib
+# Create daily date series of class "Date"
+dates <- Sys.Date() + -5:2
+dates
+# Create Boolean vector of business days
+# Use RQuantLib calendar
+is_busday <- RQuantLib::isBusinessDay(
+  calendar="UnitedStates/GovernmentBond", dates)
+# Create daily series of business days
+bus_index <- dates[is_busday]
+bus_index
+library(zoo)  # Load package zoo
+datetime <- Sys.Date()  # Create date series of class "Date"
+dates <- datetime + 0:365  # Daily series over one year
+head(dates, 4)  # Print first few dates
+format(head(dates, 4), "%m/%d/%Y")  # Print first few dates
+# Create daily date-time series of class "POSIXct"
+dates <- seq(Sys.time(), by="days", length.out=365)
+head(dates, 4)  # Print first few dates
+format(head(dates, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
+# Create series of monthly dates of class "zoo"
+monthly_index <- yearmon(2010+0:36/12)
+head(monthly_index, 4)  # Print first few dates
+# Create series of quarterly dates of class "zoo"
+qrtly_index <- yearqtr(2010+0:16/4)
+head(qrtly_index, 4)  # Print first few dates
+# Parse quarterly "zoo" dates to POSIXct
+Sys.setenv(TZ="UTC")
+as.POSIXct(head(qrtly_index, 4))

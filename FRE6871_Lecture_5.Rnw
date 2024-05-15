@@ -63,13 +63,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#5]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#5, Fall 2023}
+\subtitle{Lecture\#5, Spring 2024}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{October 10, 2023}
+\date{April 22, 2024}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -84,855 +84,42 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Multivariate Regression}
+\section{Recursive Data Objects}
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Multivariate} Linear Regression}
+\subsection{Lists}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A \emph{multivariate} linear regression model with $k$ \emph{predictors} ${x_j}$, is defined by the formula:
-      \begin{displaymath}
-        y_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
-      \end{displaymath}
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $k$.
+      Lists are a type of vector that contain elements of different \emph{types}.
       \vskip1ex
-      The \emph{residuals} $\varepsilon_i$ are assumed to be normally distributed $\phi(0, \sigma_\varepsilon)$, independent, and stationary.
+      Lists are recursive object types, meaning each list element can contain other vectors or lists.
       \vskip1ex
-      The data consists of $n$ observations, with each observation containing $k$ \emph{predictors} and one \emph{response} value.
+      The function \texttt{list()} creates a list from a list of vectors.
       \vskip1ex
-      The \emph{response vector} $y$, the \emph{predictor} vectors ${x_j}$, and the \emph{residuals} $\varepsilon$ are vectors of length $n$.
+      \texttt{list()} creates a named list from a list of symbol-value pairs.
       \vskip1ex
-      The $k$ \emph{predictors} ${x_j}$ form the columns of the $(n,k)$-dimensional \emph{predictor matrix} $\mathbb{X}$.
-    \column{0.5\textwidth}
-      The \emph{multivariate regression} model can be written in vector notation as:
-      \begin{flalign*}
-        & y = \alpha + \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
-        & y_{fit} = \alpha + \mathbb{X} \beta
-      \end{flalign*}
-      Where $y_{fit}$ are the \emph{fitted values} of the model.
-        <<echo=TRUE,eval=TRUE>>=
-# Define predictor matrix
-nrows <- 100
-ncols <- 5
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-predm <- matrix(runif(nrows*ncols), ncol=ncols)
-# Add column names
-colnames(predm) <- paste0("pred", 1:ncols)
-# Define the predictor weights
-weightv <- runif(3:(ncols+2), min=(-1), max=1)
-# Response equals weighted predictor plus random noise
-noisev <- rnorm(nrows, sd=2)
-respv <- (1 + predm %*% weightv + noisev)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Solution of \protect\emph{Multivariate Regression}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Residual Sum of Squares} (\emph{RSS}) is defined as the sum of the squared \emph{residuals}:
-      \begin{align*}
-        RSS &= \varepsilon^T \varepsilon = (y - y_{fit})^T (y - y_{fit}) = \\
-        & (y - \alpha + \mathbb{X} \beta)^T (y - \alpha + \mathbb{X} \beta)
-      \end{align*}
-      The \emph{OLS} solution for the regression coefficients is found by equating the \emph{RSS} derivatives to zero:
-      \begin{flalign*}
-        RSS_\alpha = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbbm{1} = 0 \\
-        RSS_\beta = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbb{X} = 0
-      \end{flalign*}
-      The solutions for $\alpha$ and $\beta$ are given by:
-      \begin{flalign*}
-        & \alpha = \bar{y} - \bar{\mathbb{X}} \beta\\
-        & RSS_\beta = -2 (\hat{y} - \hat{\mathbb{X}} \beta)^T \hat{\mathbb{X}} = 0\\
-        & \hat{\mathbb{X}}^T \hat{y} - \hat{\mathbb{X}}^T \hat{\mathbb{X}} \beta = 0\\
-        & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{y} = \hat{\mathbb{X}}^{inv} \hat{y}
-      \end{flalign*}
-      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\hat{y} = y - \bar{y} = \hat{\mathbb{X}} \beta + \varepsilon$ are the centered (de-meaned) variables.
-    \column{0.5\textwidth}
-      The matrix $\hat{\mathbb{X}}^{inv}$ is the generalized inverse of the centered (de-meaned) \emph{predictor matrix} $\hat{\mathbb{X}}$.
+      The function \texttt{is.list()} returns \texttt{TRUE} if its argument is a list, and \texttt{FALSE} otherwise.
       \vskip1ex
-      The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
-        <<echo=TRUE,eval=TRUE>>=
-# Perform multivariate regression using lm()
-regmod <- lm(respv ~ predm)
-# Solve multivariate regression using matrix algebra
-# Calculate centered (de-meaned) predictor matrix and response vector
-predc <- t(t(predm) - colMeans(predm))
-# predm <- apply(predm, 2, function(x) (x-mean(x)))
-respc <- respv - mean(respv)
-# Calculate the regression coefficients
-betav <- drop(MASS::ginv(predc) %*% respc)
-# Calculate the regression alpha
-alpha <- mean(respv) - sum(colSums(predm)*betav)/nrows
-# Compare with coefficients from lm()
-all.equal(coef(regmod), c(alpha, betav), check.attributes=FALSE)
-# Compare with actual coefficients
-all.equal(c(-1, weightv), c(alpha, betav), check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Multivariate Regression} in Homogeneous Form}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      We can add an extra unit column to the \emph{predictor matrix} $\mathbb{X}$ to represent the intercept term, and express the \emph{linear regression} formula in \emph{homogeneous form}:
-      \begin{displaymath}
-        y = \mathbb{X} \beta + \varepsilon
-      \end{displaymath}
-      Where the \emph{regression coefficients} $\beta$ now contain the intercept $\alpha$: $\beta = (\alpha, \beta_1, \ldots, \beta_k)$, and the \emph{predictor matrix} $\mathbb{X}$ has $k+1$ columns and $n$ rows.
-      \vskip1ex
-      The \emph{OLS} solution for the $\beta$ coefficients is found by equating the \emph{RSS} derivative to zero:
-      \begin{flalign*}
-        & RSS_\beta = -2 (y - \mathbb{X} \beta)^T \mathbb{X} = 0\\
-        & \mathbb{X}^T y - \mathbb{X}^T \mathbb{X} \beta = 0\\
-        & \beta = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X}_{inv} y
-      \end{flalign*}
-      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
-      \vskip1ex
-      The coefficients $\beta$ can be interpreted as the projections of the \emph{response vector} $y$ onto the columns of the \emph{predictor matrix} $\mathbb{X}$.
-    \column{0.5\textwidth}
-      The \emph{predictor matrix} $\mathbb{X}$ maps the \emph{regression coefficients} $\beta$ into the \emph{response vector} $y$.
-      \vskip1ex
-      The generalized inverse of the \emph{predictor matrix} $\mathbb{X}_{inv}$ maps the \emph{response vector} $y$ into the \emph{regression coefficients} $\beta$.
-        <<echo=TRUE,eval=TRUE>>=
-# Add intercept column to predictor matrix
-predm <- cbind(rep(1, nrows), predm)
-ncols <- NCOL(predm)
-# Add column name
-colnames(predm)[1] <- "intercept"
-# Calculate generalized inverse of the predictor matrix
-predinv <- MASS::ginv(predm)
-# Calculate the regression coefficients
-betav <- predinv %*% respv
-# Perform multivariate regression without intercept term
-regmod <- lm(respv ~ predm - 1)
-all.equal(drop(betav), coef(regmod), check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Residuals} of Multivariate Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{multivariate regression} model can be written in vector notation as:
-      \begin{flalign*}
-        & y = \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
-        & y_{fit} = \mathbb{X} \beta
-      \end{flalign*}
-      Where $y_{fit}$ are the \emph{fitted values} of the model.
-      \vskip1ex
-      The \emph{residuals} are equal to the \emph{response vector} minus the \emph{fitted values}: $\varepsilon = y - y_{fit}$.
-      \vskip1ex
-      The \emph{residuals} $\varepsilon$ are orthogonal to the columns of the \emph{predictor matrix} $\mathbb{X}$ (the \emph{predictors}):
-      \begin{flalign*}
-        & \varepsilon^T \mathbb{X} = (y - \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y)^T \mathbb{X} = \\
-        & y^T \mathbb{X} - y^T \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbb{X} = y^T \mathbb{X} - y^T \mathbb{X} = 0
-      \end{flalign*}
-      Therefore the \emph{residuals} are also orthogonal to the \emph{fitted values}: $\varepsilon^T y_{fit} = \varepsilon^T \mathbb{X} \beta = 0$.
-      \vskip1ex
-      Since the first column of the \emph{predictor matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Calculate fitted values from regression coefficients
-fitv <- drop(predm %*% betav)
-all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
-# Calculate the residuals
-resids <- drop(respv - fitv)
-all.equal(resids, regmod$residuals, check.attributes=FALSE)
-# Residuals are orthogonal to predictor columns (predms)
-sapply(resids %*% predm, all.equal, target=0)
-# Residuals are orthogonal to the fitted values
-all.equal(sum(resids*fitv), target=0)
-# Sum of residuals is equal to zero
-all.equal(sum(resids), target=0)
-      @
-      \vspace{-1em}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Influence Matrix} of Multivariate Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The vector $y_{fit} = \mathbb{X} \beta$ are the \emph{fitted values} corresponding to the \emph{response vector} $y$:
-      \begin{displaymath}
-        y_{fit} = \mathbb{X} \beta = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X} \mathbb{X}_{inv} y = \mathbb{H} y
-      \end{displaymath}
-      Where $\mathbb{H} = \mathbb{X} \mathbb{X}_{inv} = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the \emph{influence matrix} (or hat matrix), which maps the \emph{response vector} $y$ into the \emph{fitted values} $y_{fit}$.
-      \vskip1ex
-      The \emph{influence matrix} $\mathbb{H}$ is a projection matrix, and it measures the changes in the \emph{fitted values} $y_{fit}$ due to changes in the \emph{response vector} $y$.
-      \begin{displaymath}
-        \mathbb{H}_{ij} = \frac{\partial{y^{fit}_i}}{\partial{y_j}}
-      \end{displaymath}
-      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Calculate the influence matrix
-infmat <- predm %*% predinv
-# The influence matrix is idempotent
-all.equal(infmat, infmat %*% infmat)
-# Calculate fitted values using influence matrix
-fitv <- drop(infmat %*% respv)
-all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
-# Calculate fitted values from regression coefficients
-fitv <- drop(predm %*% betav)
-all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Multivariate Regression} With Centered Variables}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{multivariate regression} model can be written in vector notation as:
-      \begin{displaymath}
-        y = \alpha + \mathbb{X} \beta + \varepsilon
-      \end{displaymath}
-      The intercept $\alpha$ can be substituted with its solution: $\alpha = \bar{y} - \bar{\mathbb{X}} \beta$ to obtain the regression model with centered (de-meaned) response and predictor matrix:
-      \begin{flalign*}
-        & y = \bar{y} - \bar{\mathbb{X}} \beta + \mathbb{X} \beta \\
-        & \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
-      \end{flalign*}
-      The regression model with a centered (de-meaned) \emph{predictor matrix} produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
-      \vskip1ex
-      But the centered regression model has a different \emph{influence matrix}, which maps the centered \emph{response vector} $\hat{y}$ into the centered \emph{fitted values} $\hat{y}_{fit}$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Calculate centered (de-meaned) fitted values
-predc <- t(t(predm) - colMeans(predm))
-fittedc <- drop(predc %*% betav)
-all.equal(fittedc,
-  regmod$fitted.values - mean(respv),
-  check.attributes=FALSE)
-# Calculate the residuals
-respc <- respv - mean(respv)
-resids <- drop(respc - fittedc)
-all.equal(resids, regmod$residuals,
-          check.attributes=FALSE)
-# Calculate the influence matrix
-infmatc <- predc %*% MASS::ginv(predc)
-# Compare the fitted values
-all.equal(fittedc, drop(infmatc %*% respc), check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Multivariate Regression} for Orthogonal Predictors}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The generalized inverse can be written as:
-      \begin{displaymath}
-        \mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{C}^{-1} \mathbb{X}^T
-      \end{displaymath}
-      Where $\mathbb{C} = \mathbb{X}^T \mathbb{X}$ is the matrix of inner products of the predictors $\mathbb{X}$.
-      \vskip1ex
-      If the predictors are orthogonal ($x_i \cdot x_j = 0$ for $i \neq j$, and $x_i \cdot x_i = \sigma^2_i$) then the squared predictor matrix $\mathbb{C}$ is diagonal:
-      \begin{displaymath}
-        \mathbb{C} = \begin{pmatrix}
-          \sigma^2_1 & 0 & \cdots & 0 \\
-          0 & \sigma^2_2 & \cdots & 0 \\
-          \vdots  & \vdots  & \ddots & \vdots \\
-          0 & 0 & \cdots & \sigma^2_n
-        \end{pmatrix}
-      \end{displaymath}
-      And the inverse of the squared predictor matrix $\mathbb{C}^{-1}$ is also diagonal, so the \emph{regression coefficients} can then be written simply as: 
-      \begin{displaymath}
-        \beta_i = \frac{x_i \cdot y}{\sigma^2_i}
-      \end{displaymath}
-      Where $x_i \cdot y$ are the inner products of the predictors $x_i$ times the \emph{response vector} $y$.
-      \vskip1ex
-      Conversely, if the predictors are \emph{collinear} then their squared predictor matrix is \emph{singular} and the regression is also singular.  Predictors are \emph{collinear} if there's a linear combination that is constant.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Perform PCA of the predictors
-pcad <- prcomp(predm, center=FALSE, scale=FALSE)
-# Calculate the PCA predictors
-predpca <- predm %*% pcad$rotation
-# Principal components are orthogonal to each other
-round(t(predpca) %*% predpca, 2)
-# Calculate the PCA regression coefficients using lm()
-regmod <- lm(respv ~ predpca - 1)
-summary(regmod)
-regmod$coefficients
-# Calculate the PCA regression coefficients directly
-colSums(predpca*drop(respv))/colSums(predpca^2)
-# Create almost collinear predictors
-predcol <- predm
-predcol[, 1] <- (predcol[, 1]/1e3 + predcol[, 2])
-# Calculate the PCA predictors
-pcad <- prcomp(predcol, center=FALSE, scale=FALSE)
-predpca <- predcol %*% pcad$rotation
-round(t(predpca) %*% predpca, 6)
-# Calculate the PCA regression coefficients
-drop(MASS::ginv(predpca) %*% respv)
-# Calculate the PCA regression coefficients directly
-colSums(predpca*drop(respv))/colSums(predpca^2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Omitted Variable Bias}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Omitted Variable Bias} occurs in a regression model that omits important predictors.
-      \vskip1ex
-      The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression.
-      \vskip1ex
-      But the Durbin-Watson test shows that the residuals are autocorrelated, which means that the regression coefficients may not be statistically significant (different from zero).
-        <<echo=TRUE,eval=FALSE>>=
-library(lmtest)  # Load lmtest
-# Define predictor matrix
-predm <- 1:30
-omitv <- sin(0.2*1:30)
-# Response depends on both predictors
-respv <- 0.2*predm + omitv + 0.2*rnorm(30)
-# Mis-specified regression only one predictor
-modovb <- lm(respv ~ predm)
-regsum <- summary(modovb)
-regsum$coeff
-regsum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-lmtest::dwtest(modovb)
-# Plot the regression diagnostic plots
-x11(width=5, height=7)
-par(mfrow=c(2,1))  # Set plot panels
-par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
-plot(respv ~ predm)
-abline(modovb, lwd=2, col="red")
-title(main="Omitted Variable Regression", line=-1)
-plot(modovb, which=2, ask=FALSE)  # Plot just Q-Q
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/reg_ovb.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Regression Diagnostics}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Regression Coefficients as \protect\emph{Random Variables}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{residuals} $\hat\varepsilon$ can be considered to be \emph{random variables}, with expected value equal to zero $\mathbbm{E}[\hat\varepsilon] = 0$, and variance equal to $\sigma^2_\varepsilon$.
-      \vskip1ex
-      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}:
-      \begin{displaymath}
-        \sigma^2_\varepsilon = \frac{\mathbbm{E}[\varepsilon^T \varepsilon]}{d_{free}}
-      \end{displaymath}
-      Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}, equal to the number of observations $n$, minus the number of \emph{predictors} $k$ (including the intercept term).
-      \vskip1ex
-      The \emph{response vector} $y$ can also be considered to be a \emph{random variable} $\hat{y}$, equal to the sum of the deterministic \emph{fitted values} $y_{fit}$ plus the random \emph{residuals} $\hat\varepsilon$:
-      \begin{displaymath}
-        \hat{y} = \mathbb{X} \beta + \hat\varepsilon = y_{fit} + \hat\varepsilon
-      \end{displaymath}
-    \column{0.5\textwidth}
-      The \emph{regression coefficients} $\beta$ can also be considered to be \emph{random variables} $\hat\beta$:
-      \begin{flalign*}
-        & \hat\beta = \mathbb{X}_{inv} \hat{y} = \mathbb{X}_{inv} (y_{fit} + \hat\varepsilon) = \\
-        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat\varepsilon) =
-        \beta + \mathbb{X}_{inv} \hat\varepsilon
-      \end{flalign*}
-      Where $\beta$ is equal to the expected value of $\hat\beta$: $\beta = \mathbbm{E}[\hat\beta] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
-        <<echo=TRUE,eval=TRUE>>=
-# Regression model summary
-regsum <- summary(regmod)
-# Degrees of freedom of residuals
-nrows <- NROW(predm)
-ncols <- NCOL(predm)
-degf <- (nrows - ncols)
-all.equal(degf, regsum$df[2])
-# Variance of residuals
-residsd <- sum(resids^2)/degf
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Covariance Matrix} of the Regression Coefficients}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{covariance matrix} of the \emph{regression coefficients} $\hat\beta$ is given by:
-      \begin{align*}
-        & \sigma^2_\beta = \frac{\mathbbm{E}[(\hat\beta - \beta) (\hat\beta - \beta)^T]}{d_{free}} = \\
-        & \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon (\mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T]}{d_{free}} = \\
-        & \frac{(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1}}{d_{free}} = \\
-        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \sigma^2_\varepsilon \mathbbm{1} \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} =
-        \sigma^2_\varepsilon (\mathbb{X}^T \mathbb{X})^{-1}
-      \end{align*}
-      Where the expected values of the squared residuals are proportional to the diagonal unit matrix $\mathbbm{1}$: $\frac{\mathbbm{E}[\hat\varepsilon \hat\varepsilon^T]}{d_{free}} = \sigma^2_\varepsilon \mathbbm{1}$
-      \vskip1ex
-      If the predictors are close to being \emph{collinear}, then the squared predictor matrix becomes singular, and the covariance of their regression coefficients becomes very large.
-      \vskip1ex
-      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Inverse of predictor matrix squared
-pred2 <- MASS::ginv(crossprod(predm))
-# pred2 <- t(predm) %*% predm
-# Variance of residuals
-residsd <- sum(resids^2)/degf
-# Calculate covariance matrix of betas
-betacovar <- residsd*pred2
-# round(betacovar, 3)
-betasd <- sqrt(diag(betacovar))
-all.equal(betasd, regsum$coeff[, 2], check.attributes=FALSE)
-# Calculate t-values of betas
-betatvals <- drop(betav)/betasd
-all.equal(betatvals, regsum$coeff[, 3], check.attributes=FALSE)
-# Calculate two-sided p-values of betas
-betapvals <- 2*pt(-abs(betatvals), df=degf)
-all.equal(betapvals, regsum$coeff[, 4], check.attributes=FALSE)
-# The square of the generalized inverse is equal
-# to the inverse of the square
-all.equal(MASS::ginv(crossprod(predm)), predinv %*% t(predinv))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Covariance Matrix} of the Fitted Values}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{fitted values} $y_{fit}$ can also be considered to be \emph{random variables} $\hat{y}_{fit}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: $\hat{y}_{fit} = \mathbb{X} \hat\beta = \mathbb{X} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = y_{fit} + \mathbb{X} \mathbb{X}_{inv} \hat\varepsilon$.
-      \vskip1ex
-      The \emph{covariance matrix} of the \emph{fitted values} $\sigma^2_{fit}$ is:
-      \begin{align*}
-        & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat\varepsilon \hat\varepsilon^T \mathbb{H}^T]}{d_{free}} = \\
-        & \frac{\mathbb{H} \, \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{H}^T}{d_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
-      \end{align*}
-      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
-      \vskip1ex
-      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
-      \vskip1ex
-      This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate the influence matrix
-infmat <- predm %*% predinv
-# The influence matrix is idempotent
-all.equal(infmat, infmat %*% infmat)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/regm_fitsd.png}
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate covariance and standard deviations of fitted values
-fitcovar <- residsd*infmat
-fitsd <- sqrt(diag(fitcovar))
-# Sort the standard deviations
-fitsd <- cbind(fitted=fitv, stdev=fitsd)
-fitsd <- fitsd[order(fitv), ]
-# Plot the standard deviations
-plot(fitsd, type="l", lwd=3, col="blue",
-     xlab="Fitted Value", ylab="Standard Deviation",
-     main="Standard Deviations of Fitted Values\nin Multivariate Regression")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of Time Series Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrapping the regression of asset returns shows that the actual standard errors can be over twice as large as those reported by the function \texttt{lm()}.
-      \vskip1ex
-      This is because the function \texttt{lm()} assumes that the data is normally distributed, while in reality asset returns have very large skewness and kurtosis.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Load time series of ETF percentage returns
-retp <- rutils::etfenv$returns[, c("XLF", "XLE")]
-retp <- na.omit(retp)
-nrows <- NROW(retp)
-head(retp)
-# Define regression formula
-formulav <- paste(colnames(retp)[1],
-  paste(colnames(retp)[-1], collapse="+"),
-  sep=" ~ ")
-# Standard regression
-regmod <- lm(formulav, data=retp)
-regsum <- summary(regmod)
-# Bootstrap of regression
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-bootd <- sapply(1:100, function(x) {
-  samplev <- sample.int(nrows, replace=TRUE)
-  regmod <- lm(formulav, data=retp[samplev, ])
-  regmod$coefficients
-})  # end sapply
-# Means and standard errors from regression
-regsum$coefficients
-# Means and standard errors from bootstrap
-dim(bootd)
-t(apply(bootd, MARGIN=1,
-      function(x) c(mean=mean(x), stderror=sd(x))))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Forecasts From \protect\emph{Multivariate Regression} Models}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The forecast $y_f$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
-      \begin{displaymath}
-        y_f = \mathbb{X}_{new} \, \beta
-      \end{displaymath}
-      The forecast is a \emph{random variable} $\hat{y}_f$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}:
-      \begin{align*}
-        \hat{y}_f = \mathbb{X}_{new} \hat\beta = \mathbb{X}_{new} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = \\
-        y_f + \mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon
-      \end{align*}
-      The variance $\sigma^2_f$ of the \emph{forecast value} is:
-      \begin{align*}
-        & \sigma^2_f = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
-        & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
-        & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
-        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
-        \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
-      \end{align*}
-    \column{0.5\textwidth}
-      The variance $\sigma^2_f$ of the \emph{forecast value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
-        <<echo=TRUE,eval=TRUE>>=
-# New data predictor is a data frame or row vector
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
-colnamev <- colnames(predm)
-colnames(newdata) <- colnamev
-newdata <- as.matrix(newdata)
-fcast <- drop(newdata %*% betav)
-predsd <- drop(sqrt(newdata %*% betacovar %*% t(newdata)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Forecasts From \protect\emph{Multivariate Regression} Using \texttt{lm()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
-      \vskip1ex
-      \texttt{predict.lm()} is the forecasting method for linear models (regressions) produced by the function \texttt{lm()}.
-      \vskip1ex
-      In order for \texttt{predict.lm()} to work properly, the multivariate regression must be specified using a formula.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Create formula from text string
-formulav <- paste0("respv ~ ",
-  paste(colnames(predm), collapse=" + "), " - 1")
-# Specify multivariate regression using formula
-regmod <- lm(formulav, data=data.frame(cbind(respv, predm)))
-regsum <- summary(regmod)
-# Predict from lm object
-fcastlm <- predict.lm(object=model, newdata=newdata,
-           interval="confidence", confl=1-2*(1-pnorm(2)))
-# Calculate t-quantile
-tquant <- qt(pnorm(2), df=degf)
-fcasth <- (fcast + tquant*predsd)
-fcastl <- (fcast - tquant*predsd)
-# Compare with matrix calculations
-all.equal(fcastlm[1, "fit"], fcast)
-all.equal(fcastlm[1, "lwr"], fcastl)
-all.equal(fcastlm[1, "upr"], fcasth)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Total Sum of Squares} and \protect\emph{Explained Sum of Squares}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
-      \begin{flalign*}
-        & TSS = (y - \bar{y})^T (y - \bar{y})\\
-        & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
-        & RSS = (y - y_{fit})^T (y - y_{fit})
-      \end{flalign*}
-      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$:
-      \begin{displaymath}
-        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
-      \end{displaymath}
-      Therefore the \emph{TSS} can be expressed as the sum of the \emph{ESS} plus the \emph{RSS}:
-      \begin{displaymath}
-        TSS = ESS + RSS
-      \end{displaymath}
-      It also follows that the $RSS$ and the $ESS$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
-      \vskip1ex
-      The degrees of freedom of the \emph{Total Sum of Squares} is equal to the sum of the $RSS$ plus the $ESS$: $d^{TSS}_{free} = (n-k) + (k-1) = n-1$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/reg_tss.png}
-        <<echo=TRUE,eval=TRUE>>=
-# TSS = ESS + RSS
-tss <- sum((respv-mean(respv))^2)
-ess <- sum((fitv-mean(fitv))^2)
-rss <- sum(resids^2)
-all.equal(tss, ess + rss)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{R-squared} of Multivariate Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{R-squared} is the fraction of the \emph{Explained Sum of Squares} (\emph{ESS}) divided by the \emph{Total Sum of Squares} (\emph{TSS}):
-      \begin{displaymath}
-        R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
-      \end{displaymath}
-      The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to $1$ for models fitting the data very well, and \emph{R-squared} close to $0$ for poorly fitting models.
-      \vskip1ex
-      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
-      \begin{flalign*}
-        & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
-        & \frac{(y_{fit} - \bar{y})^T (y_{fit} - \bar{y})}{\sqrt{TSS \cdot ESS}} = \sqrt{\frac{ESS}{TSS}}
-      \end{flalign*}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Set regression attribute for intercept
-attributes(regmod$terms)$intercept <- 1
-# Regression summary
-regsum <- summary(regmod)
-# Regression R-squared
-rsquared <- ess/tss
-all.equal(rsquared, regsum$r.squared)
-# Correlation between response and fitted values
-corfit <- drop(cor(respv, fitv))
-# Squared correlation between response and fitted values
-all.equal(corfit^2, rsquared)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Adjusted R-squared} of Multivariate Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The weakness of \emph{R-squared} is that it increases with the number of predictors (even for predictors which are purely random), so it may provide an inflated measure of the quality of a model with many predictors.
-      \vskip1ex
-      This is remedied by using the \emph{residual variance} ($\sigma^2_\varepsilon = \frac{RSS}{d_{free}}$) instead of the \emph{RSS}, and the \emph{response variance} ($\sigma^2_y = \frac{TSS}{n-1}$) instead of the \emph{TSS}.
-      \vskip1ex
-      The \emph{adjusted R-squared} is equal to $1$ minus the fraction of the \emph{residual variance} divided by the \emph{response variance}:
-      \begin{displaymath}
-        R^2_{adj} = 1 - \frac{\sigma^2_\varepsilon}{\sigma^2_y} = 1 - \frac{RSS/d_{free}}{TSS/(n-1)}
-      \end{displaymath}
-      Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}.
-      \vskip1ex
-      The \emph{adjusted R-squared} is always smaller than the \emph{R-squared}.
-    \column{0.5\textwidth}
-      The performance of two different models can be compared by comparing their \emph{adjusted R-squared}, since the model with the larger \emph{adjusted R-squared} has a smaller \emph{residual variance}, so it's better able to explain the \emph{response}.
-      <<echo=TRUE,eval=TRUE>>=
-nrows <- NROW(predm)
-ncols <- NCOL(predm)
-# Degrees of freedom of residuals
-degf <- (nrows - ncols)
-# Adjusted R-squared
-rsqadj <- (1-sum(resids^2)/degf/var(respv))
-# Compare adjusted R-squared from lm()
-all.equal(drop(rsqadj), regsum$adj.r.squared)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fisher's \protect\emph{F-distribution}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $\chi^2_m$ and $\chi^2_n$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
-      \vskip1ex
-      Then the random variable:
-      \begin{displaymath}
-        F = \frac{\chi^2_m / m}{\chi^2_n / n}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
-      \begin{displaymath}
-        f(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{m/2-1}}{(n+mF)^{(m+n)/2}}
-      \end{displaymath}
-      The \emph{F-distribution} depends on the ratio $F$ and also on the degrees of freedom, $m$ and $n$.
-      \vskip1ex
-      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}. 
-      <<echo=TRUE,eval=FALSE>>=
-# Plot four curves in loop
-degf <- c(3, 5, 9, 21)  # Degrees of freedom
-colorv <- c("black", "red", "blue", "green")
-for (indeks in 1:NROW(degf)) {
-  curve(expr=df(x, df1=degf[indeks], df2=3),
-    xlim=c(0, 4), xlab="", ylab="", lwd=2, 
-    col=colorv[indeks], add=as.logical(indeks-1))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/f_dist.png}
-        <<echo=TRUE,eval=FALSE>>=
-# Add title
-title(main="F-Distributions", line=0.5)
-# Add legend
-labelv <- paste("degf", degf, sep=" = ")
-legend("topright", title="Degrees of Freedom", inset=0.0, bty="n",
-       y.intersp=0.4, labelv, cex=1.2, lwd=6, lty=1, col=colorv)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{F-test} For the Variance Ratio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $x$ and $y$ be independent standard \emph{Normal} variables, and let
-      $\sigma^2_x = \frac{1}{m-1} \sum_{i=1}^m (x_i-\bar{x})^2$
-      and
-      $\sigma^2_y = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar{y})^2$
-      be their sample variances.
-      \vskip1ex
-      The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom.
-      \vskip1ex
-      The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance $\sigma^2_x$ is not significantly greater than $\sigma^2_y$).
-      \vskip1ex
-      A large value of the \emph{F-statistic} $F$ indicates that the variances are unlikely to be equal.
-      \vskip1ex
-      The function \texttt{pf(q)} returns the cumulative probability of the \emph{F-distribution}, i.e. the cumulative probability that the \emph{F-statistic} $F$ is less than the quantile $q$.
-      \vskip1ex
-      This \emph{F-test} is very sensitive to the assumption of the normality of the variables.
+      The function \texttt{unlist()} collapses a list with atomic elements into a vector (which can cause type coercion).
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-sigmax <- var(rnorm(nrows))
-sigmay <- var(rnorm(nrows))
-fratio <- sigmax/sigmay
-# Cumulative probability for q = fratio
-pf(fratio, nrows-1, nrows-1)
-# p-value for fratios
-1-pf((10:20)/10, nrows-1, nrows-1)
+# Create a list with two elements
+listv <- list(c("a", "b"), 1:4)
+listv
+c(typeof(listv), mode(listv), class(listv))
+# Lists are also vectors
+c(is.vector(listv), is.list(listv))
+NROW(listv)
+# Create named list
+listv <- list(first=c("a", "b"), second=1:4)
+listv
+names(listv)
+unlist(listv)
       @
   \end{columns}
 \end{block}
@@ -941,1320 +128,34 @@ pf(fratio, nrows-1, nrows-1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{F-statistic} for Linear Regression}
-\begin{frame}[fragile,t]{\subsecname}
+\begin{frame}[fragile,t]{Subsetting \subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response}.
-      \vskip1ex
-      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_1 < p_2$.
-      \vskip1ex
-      Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}:
-      \begin{displaymath}
-        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
-    \column{0.5\textwidth}
-      If the \emph{restricted} model has only one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
-      \vskip1ex
-      Let the \emph{unrestricted} multivariate regression model be defined as:
-      \begin{displaymath}
-        y = \mathbb{X} \beta + \varepsilon
-      \end{displaymath}
-      Where $y$ is the \emph{response}, $\mathbb{X}$ is the \emph{predictor matrix} (with $k$ \emph{predictors}, including the intercept term), and $\beta$ are the $k$ \emph{regression coefficients}.
-      \vskip1ex
-      So the \emph{unrestricted} model has $k$ parameters ($p_2 = k$), and $RSS_2 = RSS$ and $ESS_2 = ESS$, and then the \emph{F}-statistic can be written as:
-      \begin{displaymath}
-        F = \frac{ESS/(k-1)}{RSS/(n-k)}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{F-test} for Linear Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
-      \vskip1ex
-      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}:
-      \begin{displaymath}
-        F = \frac{ESS/(k-1)}{RSS/(n-k)}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $(k-1)$ and $(n-k)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
-      \vskip1ex
-      The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance of $ESS$ is not significantly greater than of $RSS$).
-      \vskip1ex
-      A large value of the \emph{F-statistic} $F$ indicates that the variance of $ESS$ is significantly greater than that of $RSS$, and that the regression is statistically significant.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# F-statistic from lm()
-regsum$fstatistic
-# Degrees of freedom of residuals
-degf <- (nrows - ncols)
-# F-statistic from ESS and RSS
-fstat <- (ess/(ncols-1))/(rss/degf)
-all.equal(fstat, regsum$fstatistic[1], check.attributes=FALSE)
-# p-value of F-statistic
-1-pf(q=fstat, df1=(ncols-1), df2=(nrows-ncols))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Regression Regularized}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Regularized Inverse of Rectangular Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ is defined as the factorization:
-      \begin{displaymath}
-        \mathbb{A} = \mathbb{U} \Sigma \mathbb{V}^T
-      \end{displaymath}
-      Where $\mathbb{U}$ and $\mathbb{V}$ are the \emph{singular matrices}, and $\Sigma$ is a diagonal matrix of \emph{singular values}.
-      \vskip1ex
-      The \emph{generalized inverse} matrix $\mathbb{A}^{-1}$ satisfies the inverse equation: $\mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}$, and it can be expressed as a product of the \emph{SVD} matrices as follows:
-      \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
-      \end{displaymath}
-      If any of the \emph{singular values} are zero then the \emph{generalized inverse} does not exist.
-      \vskip1ex
-      The \emph{regularized inverse} is obtained by removing very small \emph{singular values}:
-      \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
-      \end{displaymath}
-      Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices without very small \emph{singular values}.
-      \vskip1ex
-      The regularized inverse satisfies the inverse equation only approximately (it has \emph{bias}), but it's often used in machine learning because it has lower \emph{variance} than the exact inverse.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate ETF returns
-retp <- na.omit(rutils::etfenv$returns)
-# Perform singular value decomposition
-svdec <- svd(retp)
-barplot(svdec$d, main="Singular Values of ETF Returns")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.35\paperwidth]{figure/reg_svd.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate generalized inverse from SVD
-invmat <- svdec$v %*% (t(svdec$u) / svdec$d)
-# Verify inverse property of inverse
-all.equal(zoo::coredata(retp), retp %*% invmat %*% retp)
-# Calculate regularized inverse from SVD
-dimax <- 1:3
-invreg <- svdec$v[, dimax] %*%
-  (t(svdec$u[, dimax]) / svdec$d[dimax])
-# Calculate regularized inverse using RcppArmadillo
-invcpp <- HighFreq::calc_inv(retp, dimax=3)
-all.equal(invreg, invcpp, check.attributes=FALSE)
-# Calculate regularized inverse from Moore-Penrose pseudo-inverse
-retsq <- t(retp) %*% retp
-eigend <- eigen(retsq)
-inv2 <- eigend$vectors[, dimax] %*% 
-  (t(eigend$vectors[, dimax]) / eigend$values[dimax])
-invmp <- inv2 %*% t(retp)
-all.equal(invreg, invmp, check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Linear Transformation of the Predictor Matrix}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{multivariate} linear regression model can be transformed by replacing its \emph{predictors} ${x_j}$ with their own linear combinations.
-      \vskip1ex
-      This is equivalent to multiplying the \emph{predictor matrix} $\mathbb{X}$ by a transformation matrix $\mathbb{W}$:
-      \begin{displaymath}
-        \mathbb{X}_{trans} = \mathbb{X} \, \mathbb{W}
-      \end{displaymath}
-      The transformed \emph{predictor matrix} $\mathbb{X}_{trans}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{predictor matrix} $\mathbb{X}$:
-      \begin{flalign*}
-        & \mathbb{H}_{trans} = \mathbb{X}_{trans} (\mathbb{X}^T_{trans} \mathbb{X}_{trans})^{-1} \mathbb{X}^T_{trans} = \\
-        & \mathbb{X}\mathbb{W} (\mathbb{W}^T \mathbb{X}^T \mathbb{X} \mathbb{W})^{-1} \mathbb{W}^T \mathbb{X}^T = \\
-        & \mathbb{X}\mathbb{W} \mathbb{W}^{-1} (\mathbb{X}^T \mathbb{X})^{-1} {\mathbb{W}^T}^{-1} \mathbb{W}^T \mathbb{X}^T = \\
-        & \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{H}
-      \end{flalign*}
-      Since the \emph{influence matrix} $\mathbb{H}$ is the same, the transformed regression model produces the same \emph{fitted values} and \emph{residuals} as the original regression model, so it's equivalent to it.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Define transformation matrix
-matv <- matrix(runif(ncols^2, min=(-1), max=1), ncol=ncols)
-# Calculate linear combinations of predictor columns
-predt <- predm %*% matv
-# Calculate the influence matrix of the transformed predictor
-influencet <- predt %*% MASS::ginv(predt)
-# Compare the influence matrices
-all.equal(infmat, influencet)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Principal Component Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In \emph{Principal Component Regression} (\emph{PCR}), the predictor matrix $\mathbb{X}$ is multiplied by the \emph{PCA rotation matrix} $\mathbb{W}$:
-      \begin{displaymath}
-        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
-      \end{displaymath}
-      So that the principal component vectors form the columns of the new predictor matrix.
-      \vskip1ex
-      Since the new \emph{PCR} predictors $x^{pca}_i$ are orthogonal, the regression coefficients are simply: 
-      \begin{displaymath}
-        \beta_i = \frac{x^{pca}_i \cdot y}{\sigma^2_i}
-      \end{displaymath}
-      Where $x^{pca}_i \cdot y$ are the inner products of the \emph{PCR} predictors $x^{pca}_i$ times the \emph{response vector} $y$, and $\sigma^2_i = x^{pca}_i \cdot x^{pca}_i$ are the inner products (sum of squares) of the predictors $x^{pca}_i$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Perform PCA of the predictors
-pcad <- prcomp(predm, center=FALSE, scale=FALSE)
-# Calculate the PCA predictors
-predpca <- predm %*% pcad$rotation
-# Principal components are orthogonal to each other
-round(t(predpca) %*% predpca, 2)
-# Calculate the PCA influence matrix
-infmat <- predm %*% MASS::ginv(predm)
-infpca <- predpca %*% MASS::ginv(predpca)
-all.equal(infmat, infpca)
-# Calculate the regression coefficients
-coeffv <- drop(MASS::ginv(predm) %*% respv)
-# Transform the collinear regression coefficients to the PCA
-drop(coeffv %*% pcad$rotation)
-# Calculate the PCA regression coefficients
-drop(MASS::ginv(predpca) %*% respv)
-# Calculate the PCA regression coefficients directly
-colSums(predpca*drop(respv))/colSums(predpca^2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Dimension Reduction Using Principal Component Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the predictor columns are \emph{collinear} then some of the \emph{PCR} predictor squares are zero $\sigma^2_i = 0$, and the associated regression coefficients are infinite (indeterminate) and should be discarded.
-      \vskip1ex
-      The regression can also become \emph{singular} if the number of rows of the predictor is too small, or is even less than the number of its columns.
-      \vskip1ex
-      The regression can be \emph{regularized} by removing the infinite or very large \emph{PCR} regression coefficients, and transforming the coefficients back to the original predictor coordinates.
-      \vskip1ex
-      This is called \emph{dimension reduction} - excluding the principal components with very small squares.
-      \vskip1ex
-      \emph{Dimension reduction} can also be applied to reduce model overfitting by reducing the number of effective predictors.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Create almost collinear predictors
-predcol <- predm
-predcol[, 1] <- (predcol[, 1]/1e3 + predcol[, 2])
-# Calculate the collinear regression coefficients
-coeffv <- drop(MASS::ginv(predcol) %*% respv)
-coeffv
-# Calculate the PCA predictors
-pcad <- prcomp(predcol, center=FALSE, scale=FALSE)
-predpca <- predcol %*% pcad$rotation
-round(t(predpca) %*% predpca, 6)
-# Transform the collinear regression coefficients to the PCA
-drop(coeffv %*% pcad$rotation)
-# Calculate the PCA regression coefficients
-coeffpca <- drop(MASS::ginv(predpca) %*% respv)
-# Calculate the PCA regression coefficients directly
-colSums(predpca*drop(respv))/colSums(predpca^2)
-# Transform the PCA regression coefficients to the original coordinates
-drop(coeffpca %*% MASS::ginv(pcad$rotation))
-coeffv
-# Calculate the regression coefficients after dimension reduction
-npca <- NROW(coeffpca)
-drop(coeffpca[-npca] %*% MASS::ginv(pcad$rotation)[-npca, ])
-# Compare with the collinear regression coefficients
-coeffv
-# Calculate the original regression coefficients
-drop(MASS::ginv(predm) %*% respv)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{The Hampel Filter}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading \protect\emph{TAQ} Data From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Trade and Quote (\emph{TAQ}) data stored in \texttt{.csv} files can be very large, so it's better to read it using the function \texttt{data.table::fread()} which is much faster than the function \texttt{read.csv()}.
-      \vskip1ex
-      Each \emph{trade} or \emph{quote} contributes a \emph{tick} (row) of data, and the number of ticks can be very large (hundred of thousands per day, or more).
-      \vskip1ex
-      The function \texttt{strptime()} coerces \texttt{character} strings representing the date and time into \texttt{POSIXlt} \emph{date-time} objects.
-      \vskip1ex
-      The argument \texttt{format="\%H:\%M:\%OS"} allows the parsing of fractional seconds, for example \texttt{"15:59:59.989847074"}.
-      \vskip1ex
-      The function \texttt{as.POSIXct()} coerces objects into \texttt{POSIXct} \emph{date-time} objects, with a \texttt{numeric} value representing the \emph{moment of time} in seconds.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)
-# Read TAQ trade data from csv file
-taq <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.csv")
-# Inspect the TAQ data in data.table format
-taq
-class(taq)
-colnames(taq)
-sapply(taq, class)
-symbol <- taq$SYM_ROOT[1]
-# Create date-time index
-datev <- paste(taq$DATE, taq$TIME_M)
-# Coerce date-time index to POSIXlt
-datev <- strptime(datev, "%Y%m%d %H:%M:%OS")
-class(datev)
-# Display more significant digits
-# options("digits")
-options(digits=20, digits.secs=10)
-last(datev)
-unclass(last(datev))
-as.numeric(last(datev))
-# Coerce date-time index to POSIXct
-datev <- as.POSIXct(datev)
-class(datev)
-last(datev)
-unclass(last(datev))
-as.numeric(last(datev))
-# Calculate the number of seconds
-nsecs <- as.numeric(last(datev)) - as.numeric(first(datev))
-# Calculate the number of ticks per second
-NROW(taq)/(6.5*3600)
-# Select TAQ data columns
-taq <- taq[, .(price=PRICE, volume=SIZE)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Trading Volumes in High Frequency Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The trading volumes represent the number of shares traded at a given price.  
-      \vskip1ex
-      The histogram of the trading volumes shows that the highest frequencies of trades are for \texttt{100} shares and for round lots (trades that are multiples of \texttt{100} shares.)
-      \vskip1ex
-      There are also significant frequencies for \emph{odd lots}, with small volumes of less than \texttt{100} shares.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/hf_ticks_volume_histogram.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce trade ticks to xts series
-xlk <- xts::xts(taq[, .(price, volume)], datev)
-colnames(xlk) <- c("price", "volume")
-save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# Plot histogram of the trading volumes
-hist(xlk$volume, main="Histogram of XLK Trading Volumes", 
-     breaks=1e5, xlim=c(1, 400), xlab="number of shares")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Microstructure Noise in High Frequency Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      High frequency data contains \emph{microstructure noise} in the form of \emph{price spikes} and the \emph{bid-ask bounce}.
-      \vskip1ex
-      \emph{Price spikes} are single ticks with prices far away from the average.
-      \vskip1ex
-      \emph{Price spikes} are often caused by data collection errors, but sometimes they represent actual trades with very large lot (trade) sizes.
-      \vskip1ex
-      The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
-      \vskip1ex
-      The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in reality the mid price is unchanged.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_raw.png}
-      % \vspace{-1em}
-      % \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_bounce.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph
-dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-# Plot in x11 window
-x11(width=6, height=5)
-quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Microstructure Noise And Trading Volumes in High Frequency Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The number of the \emph{price spikes} depends on the level of trading volumes, with the number decreasing with higher trading volumes.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_biglots.png}
-      % \vspace{-1em}
-      % \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_bounce.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of trade prices of at least 100 shares
-dygraphs::dygraph(xlk$price[volumv >= 100, ], 
-  main="XLK Prices for Trades of At Least 100 Shares") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Filtering Microstructure Noise From High Frequency Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Microstructure noise in high frequency data can be identified using a \emph{Hampel filter}.
-      \vskip1ex
-      The \emph{z-scores} are equal to the prices minus the median of the prices, divided by the median absolute deviation (\emph{MAD}) of prices:
-      \begin{displaymath}
-        z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
-      \end{displaymath}
-      If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate centered Hampel filter to remove bad prices
-lookb <- 71
-half_back <- lookb %/% 2
-pricev <- xlk$price
-medianv <- roll::roll_median(pricev, width=lookb)
-colnames(medianv) <- c("median")
-# Overwrite leading NA values
-medianv[1:lookb, ] <- pricev[1:lookb, ]
-# medianv <- TTR::runMedian(pricev, n=lookb)
-medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=lookb)
-madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
-# Calculate the Z-scores
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_scrubbed.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Define discrimination threshold value
-threshv <- 6*madz
-# Identify good prices with small z-scores
-isgood <- (abs(zscores) < threshv)
-# Calculate the number of bad prices
-sum(!isgood)
-# Remove bad prices and calculate time series of scrubbed prices
-priceg <- xlk$price[isgood]
-# Plot dygraph of the scrubbed prices
-dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-# Plot using chart_Series()
-x11(width=6, height=5)
-quantmod::chart_Series(x=priceg,
-  name="Clean XLK Intraday Prices for 2020-03-16")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Classifying Data Outliers Using the Hampel Filter}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Hampel filter is a \emph{classifier} which classifies the prices as either good or bad data points.
-      \vskip1ex
-      In order to measure the performance of the Hampel filter, we add price spikes to the clean prices, to see how accurately they're classified. 
-      \vskip1ex
-      Let the \emph{null hypothesis} be that the given price is a good data point.
-      \vskip1ex
-      A positive result corresponds to rejecting the \emph{null hypothesis}, while a negative result corresponds to accepting the \emph{null hypothesis}.
-      \vskip1ex
-      The classifications are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
-      \vskip1ex
-      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), when good data is classified as bad.
-      \vskip1ex
-      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), when bad data is classified as good.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add 200 random price spikes to the clean prices
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nspikes <- 200
-nrows <- NROW(priceg)
-ispike <- logical(nrows)
-ispike[sample(x=nrows, size=nspikes)] <- TRUE
-priceb <- priceg
-priceb[ispike] <- priceb[ispike]*
-  sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
-# Calculate the z-scores
-medianv <- roll::roll_median(priceb, width=lookb)
-# Plot the bad prices and their medians
-pricem <- cbind(priceb, medianv)
-colnames(pricem) <- c("prices with spikes", "median")
-dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
-  dyOptions(colors=c("red", "blue"))
-# medianv <- TTR::runMedian(priceb, n=lookb)
-madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
-# madv <- TTR::runMAD(priceb, n=lookb)
-zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
-zscores[1:lookb, ] <- 0
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
-# Identify good prices with small z-scores
-threshv <- 5*madz
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Confusion Matrix of a Binary Classification Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
-      \vskip1ex
-      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
-      \vskip1ex
-      \newcommand\MyBox[2]{
-        \fbox{\lower0.75cm
-          \vbox to 1.2cm{\vfil
-            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
-            \vfil}
-        }
-      }
-      \renewcommand\arraystretch{0.3}
-      \setlength\tabcolsep{0pt}
-      {\tiny
-      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
-      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
-      & \multicolumn{2}{c}{\bfseries Forecast} & \\
-      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
-      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
-      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
-      \end{tabular}}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate confusion matrix
-table(actual=!ispike, forecast=isgood)
-sum(!isgood)
-# FALSE positive (type I error)
-sum(!ispike & isgood)
-# FALSE negative (type II error)
-sum(ispike & isgood)
-      @
-    \column{0.5\textwidth}
-      Let the \emph{null hypothesis} be that the given price is a good data point.
-      \vskip1ex
-      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
-      \vskip1ex
-      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
-      \vskip1ex
-      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
-      \vskip1ex
-      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
-      \vskip1ex
-      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
-      \vskip1ex
-      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Receiver Operating Characteristic (ROC) Curve}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
-      \vskip1ex
-      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
-      <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of threshold
-confun <- function(actualv, zscores, threshv) {
-    confmat <- table(actualv, (abs(zscores) < threshv))
-    confmat <- confmat / rowSums(confmat)
-    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-  }  # end confun
-confun(!ispike, zscores, threshv=threshv)
-# Define vector of discrimination thresholds
-threshv <- madz*seq(from=0.1, to=7, by=0.1)^2
-# Calculate error rates
-errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-# Calculate area under ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot ROC curve for Hampel classifier
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Hampel Classifier",
-     type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Filtering Bad Data From Daily Stock Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Daily stock prices also contain bad data points consisting of mostly single, isolated spikes in prices.
-      \vskip1ex
-      The number of false positives may be too high, so the Hampel filter parameters (the look-back interval and the threshold) need adjustment.
-      \vskip1ex
-      For example, the \emph{VXX} has only one bad price (on \texttt{2010-11-08}), but the Hampel filter identifies many more than that (which are false positives).
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the centered Hampel filter for VXX
-pricev <- log(na.omit(rutils::etfenv$prices$VXX))
-medianv <- roll::roll_median(pricev, width=lookb)
-medianv[1:lookb, ] <- pricev[1:lookb, ]
-medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_falsepos.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Define discrimination threshold value
-threshv <- 10*madz
-# Calculate the bad prices
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-# Dates of the bad prices
-zoo::index(pricev[!isgood])
-# Calculate the false positives
-isfp <- !isgood
-isfp[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
-# Plot dygraph of the prices with bad prices
-dygraphs::dygraph(pricev, main="VXX Prices With False Positives") %>%
-  dyEvent(zoo::index(pricev[isfp]), label=rep("false", sum(isfp)), strokePattern="solid", color="red") %>%
-  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Scrubbing Bad Stock Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bad stock prices can be scrubbed (replaced) with the previous good price.  
-      \vskip1ex
-      But it's incorrect to replace bad prices with the average of the previous good price and the next good price, since that would cause data snooping.
-      <<echo=TRUE,eval=FALSE>>=
-# Dates of the bad prices
-dates <- zoo::index(pricev)
-dateb <- dates[!isgood]
-# Dates of the previous prices
-datep <- c(!isgood[-1], FALSE)
-dates[datep]
-# Replace bad stock prices with the previous good prices
-priceg <- pricev
-priceg[!isgood] <- pricev[datep]
-# Calculate the Z-scores
-medianv <- roll::roll_median(priceg, width=lookb)
-medianv[1:lookb, ] <- priceg[1:lookb, ]
-medianv <- rutils::lagit(medianv, lagg=(-half_back), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceg, lookb=lookb, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-half_back), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
-madz <- mad(zscores[abs(zscores) > 0])
-# Calculate the number of bad prices
-threshv <- 10*madz
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-zoo::index(priceg[!isgood])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_scrubbed.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the false positives
-isfp <- !isgood
-isfp[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
-# Plot dygraph of the prices with bad prices
-dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
-  dyEvent(zoo::index(priceg[isfp]), label=rep("false", sum(isfp)), strokePattern="solid", color="red") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Classification Using Logistic Regression}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Logistic} Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{logistic} function expresses the probability of a numerical variable ranging over the whole interval of real numbers:
-      \begin{displaymath}
-        p(x) = \frac{1}{1 + \exp(-\lambda x)}
-      \end{displaymath}
-      Where $\lambda$ is the scale (dispersion) parameter.
-      \vskip1ex
-      The \emph{logistic} function is often used as an activation function in neural networks, and logistic regression can be viewed as a perceptron (single neuron network).
-      \vskip1ex
-      The \emph{logistic} function can be inverted to obtain the \emph{Odds Ratio} (the ratio of probabilities for favorable to unfavorable outcomes):
-      \begin{displaymath}
-        \frac{p(x)}{1 - p(x)} = \exp(\lambda x)
-      \end{displaymath}
-      The function \texttt{plogis()} gives the cumulative probability of the \emph{Logistic} distribution,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/logistic_fun.png}
-        <<echo=TRUE,eval=FALSE>>=
-lambdav <- c(0.5, 1, 1.5)
-colorv <- c("red", "blue", "green")
-# Plot three curves in loop
-for (it in 1:3) {
-  curve(expr=plogis(x, scale=lambdav[it]),
-        xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
-        col=colorv[it], add=(it>1))
-}  # end for
-# Add title
-title(main="Logistic function", line=0.5)
-# Add legend
-legend("topleft", title="Scale parameters",
-       paste("lambda", lambdav, sep="="), y.intersp=0.4,
-       inset=0.05, cex=0.8, lwd=6, bty="n", lty=1, col=colorv)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing \protect\emph{Logistic} Regression Using the Function \texttt{glm()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Logistic} regression (\emph{logit}) is used when the response are discrete variables (like \texttt{factors} or \texttt{integers}), when \emph{linear} regression can't be applied.
-      \vskip1ex
-      The function \texttt{glm()} fits generalized linear models, including \emph{logistic} regressions.
-      \vskip1ex
-      The parameter \texttt{family=binomial(logit)} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
-      \vskip1ex
-      The \emph{Mann-Whitney} test \emph{null hypothesis} is that the two samples, $x_i$ and $y_i$, were obtained from probability distributions with the same median (location).
-      \vskip1ex
-      The function \texttt{wilcox.test()} with parameter \texttt{paired=FALSE} (the default) calculates the \emph{Mann-Whitney} test statistic and its \emph{p}-value.
-      <<echo=TRUE,eval=FALSE>>=
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-# Simulate overlapping scores data
-sample1 <- runif(100, max=0.6)
-sample2 <- runif(100, min=0.4)
-# Perform Mann-Whitney test for data location
-wilcox.test(sample1, sample2)
-# Combine scores and add categorical variable
-predm <- c(sample1, sample2)
-respv <- c(logical(100), !logical(100))
-# Perform logit regression
-logmod <- glm(respv ~ predm, family=binomial(logit))
-class(logmod)
-summary(logmod)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/logistic_density.png}
-      <<echo=TRUE,eval=FALSE>>=
-ordern <- order(predm)
-plot(x=predm[ordern], y=logmod$fitted.values[ordern],
-     main="Category Densities and Logistic Function",
-     type="l", lwd=4, col="orange", xlab="predictor", ylab="density")
-densv <- density(predm[respv])
-densv$y <- densv$y/max(densv$y)
-lines(densv, col="red")
-polygon(c(min(densv$x), densv$x, max(densv$x)), c(min(densv$y), densv$y, min(densv$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-densv <- density(predm[!respv])
-densv$y <- densv$y/max(densv$y)
-lines(densv, col="blue")
-polygon(c(min(densv$x), densv$x, max(densv$x)), c(min(densv$y), densv$y, min(densv$y)), col=rgb(0, 0, 1, 0.2), border=NA)
-# Add legend
-legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
-       lwd=c(6, NA, NA), pch=c(NA, 15, 15), y.intersp=0.4,
-       legend=c("logistic fit", "TRUE", "FALSE"),
-       col=c("orange", "red", "blue"),
-       text.col=c("black", "red", "blue"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Likelihood Function of the Binomial Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $b$ be a binomial random variable, which either has the value $b = 1$ with probability $p$, or $b = 0$ with probability $(1-p)$.
-      \vskip1ex
-      Then $b$ follows the binomial distribution:
-      \begin{displaymath}
-        f(b) = b \, p + (1-b) \, (1-p)
-      \end{displaymath}
-      The \emph{log-likelihood function} $\mathcal{L}(p | b)$ of the probability $p$ given the value $b$ is obtained from the logarithms of the binomial probabilities:
-      \begin{displaymath}
-        \mathcal{L}(p | b) = b \, \log(p) + (1-b) \, \log(1-p)
-      \end{displaymath}
-      The \emph{log-likelihood function} measures how \emph{likely} are the distribution parameters, given the observed values.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/logistic_likelihood.png}
-        <<echo=TRUE,eval=FALSE>>=
-# Likelihood function of binomial distribution
-likefun <- function(prob, b) {
-  b*log(prob) + (1-b)*log(1-prob)
-}  # end likefun
-likefun(prob=0.25, b=1)
-# Plot binomial likelihood function
-curve(expr=likefun(x, b=1), xlim=c(0, 1), lwd=3, 
-      xlab="prob", ylab="likelihood", col="blue",
-      main="Binomial Likelihood Function")
-curve(expr=likefun(x, b=0), lwd=3, col="red", add=TRUE)
-legend(x="top", legend=c("b = 1", "b = 0"),
-       title=NULL, inset=0.3, cex=1.0, lwd=6, y.intersp=0.4,
-       bty="n", lty=1, col=c("blue", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Likelihood Function of the Logistic Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $b_i$ be binomial random variables, with probabilities $p_i$ that depend on the numerical variables $s_i$ through the logistic function: 
-      \begin{displaymath}
-        p_i = \frac{1}{1 + \exp(- \lambda_0 - \lambda_1 s_i)}
-      \end{displaymath}
-      Let's assume that the $b_i$ and $s_i$ values are known (observed), and we want to find the parameters $\lambda_0$ and $\lambda_1$ that best fit the observations.
-      \vskip1ex
-      The \emph{log-likelihood function} $\mathcal{L}$ is equal to the sum of the individual \emph{log-likelihoods}:
-      \begin{multline*}
-        \mathcal{L}(\lambda_0, \lambda_1 | b_i) = \sum_{i=1}^n {b_i \log(p_i) + (1-b_i) \log(1-p_i)}
-      \end{multline*}
-      The \emph{log-likelihood function} measures how \emph{likely} are the distribution parameters, given the observed values.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Specify predictor matrix
-predm <- cbind(intercept=rep(1, NROW(respv)), predm)
-# Likelihood function of the logistic model
-likefun <- function(coeff, respv, predm) {
-  probs <- plogis(drop(predm %*% coeff))
-  -sum(respv*log(probs) + (1-respv)*log((1-probs)))
-}  # end likefun
-# Run likelihood function
-coeff <- c(1, 1)
-likefun(coeff, respv, predm)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multi-dimensional Optimization Using \texttt{optim()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{optim()} performs \emph{multi-dimensional} optimization.
-      \vskip1ex
-      The argument \texttt{fn} is the objective function to be minimized.
-      \vskip1ex
-      The argument of \texttt{fn} that is to be optimized, must be a vector argument.
-      \vskip1ex
-      The argument \texttt{par} is the initial vector argument value.
-      \vskip1ex
-      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
-      \vskip1ex
-      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
-      \vskip1ex
-      \texttt{method="L-BFGS-B"} specifies the quasi-Newton \emph{gradient} optimization method.
-      \vskip1ex
-      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
-      \vskip1ex
-      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum.
-    \column{0.5\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vecv, param=25) {
-  sum(vecv^2 - param*cos(vecv))
-}  # end rastrigin
-vecv <- c(pi/6, pi/6)
-rastrigin(vecv=vecv)
-# Draw 3d surface plot of Rastrigin function
-options(rgl.useNULL=TRUE); library(rgl)
-rgl::persp3d(
-  x=Vectorize(function(x, y) rastrigin(vecv=c(x, y))),
-  xlim=c(-10, 10), ylim=c(-10, 10),
-  col="green", axes=FALSE, zlab="", main="rastrigin")
-# Render the 3d surface plot of function
-rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
-# Optimize with respect to vector argument
-optiml <- optim(par=vecv, fn=rastrigin,
-                method="L-BFGS-B",
-                upper=c(4*pi, 4*pi),
-                lower=c(pi/2, pi/2),
-                param=1)
-# Optimal parameters and value
-optiml$par
-optiml$value
-rastrigin(optiml$par, param=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Maximum Likelihood Calibration of the Logistic Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The logistic model depends on the unknown parameters $\lambda_0$ and $\lambda_1$, which can be calibrated by maximizing the likelihood function.
-      \vskip1ex
-      The function \texttt{optim()} with the argument \texttt{hessian=TRUE} returns the Hessian matrix.
-      \vskip1ex
-      The Hessian is a matrix of the second-order partial derivatives of the likelihood function with respect to the optimization parameters:
-      \begin{displaymath}
-        H = \frac{\partial^2 \mathcal{L}}{\partial \lambda^2}
-      \end{displaymath}
-      The Hessian matrix measures the convexity of the likelihood surface - it's large if the likelihood surface is highly convex, and it's small if the likelihood surface is flat.
-      \vskip1ex
-      If the likelihood surface is highly convex, then the coefficients can be determined with greater precision, so their standard errors are small.  If the likelihood surface is flat, then the coefficients have large standard errors.
-      \vskip1ex
-      The inverse of the Hessian matrix provides the standard errors of the logistic parameters: $\sigma_{SE} = \sqrt{H^{-1}}$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Initial parameters
-initp <- c(1, 1)
-# Find max likelihood parameters using steepest descent optimizer
-optiml <- optim(par=initp,
-                fn=likefun, # Log-likelihood function
-                method="L-BFGS-B", # Quasi-Newton method
-                respv=respv,
-                predm=predm, 
-                upper=c(20, 20), # Upper constraint
-                lower=c(-20, -20), # Lower constraint
-                hessian=TRUE)
-# Optimal logistic parameters
-optiml$par
-unname(logmod$coefficients)
-# Standard errors of parameters
-sqrt(diag(solve(optiml$hessian)))
-regsum <- summary(logmod)
-regsum$coefficients[, 2]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{ISLR} With Datasets for Machine Learning}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{ISLR} contains datasets used in the book
-      \href{https://www.statlearning.com}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
-    \vskip1ex
-      The book introduces machine learning techniques using \texttt{R}, and it's a must for advanced finance applications.
-      % \fullcite{islbook}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(ISLR)  # Load package ISLR
-# get documentation for package tseries
-packageDescription("ISLR")  # get short description
-
-help(package="ISLR")  # Load help page
-
-library(ISLR)  # Load package ISLR
-
-data(package="ISLR")  # list all datasets in ISLR
-
-ls("package:ISLR")  # list all objects in ISLR
-
-detach("package:ISLR")  # Remove ISLR from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Default} Dataset}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The data frame \texttt{Default} in the package \emph{ISLR} contains credit default data.
-      \vskip1ex
-      The \texttt{Default} data frame contains two columns of categorical data (\texttt{factors}): \texttt{default} and \texttt{student}, and two columns of numerical data: \texttt{balance} and \texttt{income}.
-      \vskip1ex
-      The columns \texttt{default} and \texttt{student} contain factor data, and they can be converted to \texttt{Boolean} values, with \texttt{TRUE} if \texttt{default == "Yes"} and \texttt{student == "Yes"}, and \texttt{FALSE} otherwise.
-      \vskip1ex
-      This avoids implicit coercion by the function \texttt{glm()}.
-    \column{0.5\textwidth}
-      <<echo=TRUE,eval=TRUE>>=
-# Coerce the default and student columns to Boolean
-Default <- ISLR::Default
-Default$default <- (Default$default == "Yes")
-Default$student <- (Default$student == "Yes")
-colnames(Default)[1:2] <- c("default", "student")
-attach(Default)  # Attach Default to search path
-# Explore credit default data
-summary(Default)
-sapply(Default, class)
-dim(Default)
-head(Default)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Dependence of \texttt{default} on The \texttt{balance} and \texttt{income}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The columns \texttt{student}, \texttt{balance}, and \texttt{income} can be used as \emph{predictors} to predict the \texttt{default} column.
-      \vskip1ex
-      The scatterplot of \texttt{income} versus \texttt{balance} shows that the \texttt{balance} column is able to separate the data points of \texttt{default = TRUE} from \texttt{default = FALSE}.
-      \vskip1ex
-      But there is very little difference in \texttt{income} between the \texttt{default = TRUE} versus \texttt{default = FALSE} data points.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/islr_default_data.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot data points for non-defaulters
-xlim <- range(balance); ylim <- range(income)
-plot(income ~ balance,
-     main="Default Dataset from Package ISLR",
-     xlim=xlim, ylim=ylim, pch=4, col="blue",
-     data=Default[!default, ])
-# Plot data points for defaulters
-points(income ~ balance, pch=4, lwd=2, col="red",
-       data=Default[default, ])
-# Add legend
-legend(x="topright", legend=c("non-defaulters", "defaulters"),
-       y.intersp=0.4, bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Boxplots of the \texttt{Default} Dataset}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{Box Plot} (box-and-whisker plot) is a graphical display of a distribution of data:
-      \vskip1ex
-      The \emph{box} represents the upper and lower quartiles, \\
-      The vertical lines (whiskers) represent values beyond the quartiles, \\
-      Open circles represent values beyond the nominal range (outliers).
-      \vskip1ex
-      The function \texttt{boxplot()} plots a box-and-whisker plot for a distribution of data.
-      \vskip1ex
-      \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (involving categorical variables), and another for \texttt{data frames}.
-      \vskip1ex
-      The \emph{Mann-Whitney} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
-      <<echo=TRUE,eval=FALSE>>=
-# Perform Mann-Whitney test for the location of the balances
-wilcox.test(balance[default], balance[!default])
-# Perform Mann-Whitney test for the location of the incomes
-wilcox.test(income[default], income[!default])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/islr_default_boxplot.png}
-      <<echo=TRUE,eval=FALSE>>=
-x11(width=6, height=5)
-# Set 2 plot panels
-par(mfrow=c(1,2))
-# Balance boxplot
-boxplot(formula=balance ~ default,
-        col="lightgrey", main="balance", xlab="Default")
-# Income boxplot
-boxplot(formula=income ~ default,
-        col="lightgrey", main="income", xlab="Default")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modeling Credit Defaults Using \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{balance} column can be used to calculate the probability of default using \emph{logistic} regression.
-      \vskip1ex
-      The residuals are the differences between the actual response values ($0$ and $1$), and the calculated probabilities of default.
-      \vskip1ex
-      The residuals are not normally distributed, so the data is fitted using the \emph{maximum likelihood} method, instead of least squares.
-      <<echo=TRUE,eval=TRUE>>=
-# Fit logistic regression model
-logmod <- glm(default ~ balance, family=binomial(logit))
-class(logmod)
-summary(logmod)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/islr_logistic_reg.png}
-      <<echo=TRUE,eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
-plot(x=balance, y=default,
-     main="Logistic Regression of Credit Defaults", 
-     col="orange", xlab="credit balance", ylab="defaults")
-ordern <- order(balance)
-lines(x=balance[ordern], y=logmod$fitted.values[ordern], col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n", lwd=6, y.intersp=0.4,
-       legend=c("defaults", "logit fitted values"),
-       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modeling Cumulative Defaults Using \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{glm()} can model a \emph{logistic} regression using either a \texttt{Boolean} response variable, or using a response variable specified as a frequency.
-      \vskip1ex
-      In the second case, the response variable should be defined as a two-column matrix, with the cumulative frequency of success (\texttt{TRUE}) and a cumulative frequency of failure (\texttt{FALSE}).
-      \vskip1ex
-      These two different ways of specifying the \emph{logistic} regression are related, but they are not equivalent, because they have different error terms.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate cumulative defaults
-sumd <- sum(default)
-defaultv <- sapply(balance, function(balv) {
-    sum(default[balance <= balv])
-})  # end sapply
-# Perform logit regression
-logmod <- glm(cbind(defaultv, sumd-defaultv) ~ balance,
-  family=binomial(logit))
-summary(logmod)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/islr_logistic_count.png}
-      <<echo=TRUE,eval=FALSE>>=
-plot(x=balance, y=defaultv/sumd, col="orange", lwd=1,
-     main="Cumulative Defaults Versus Balance",
-     xlab="credit balance", ylab="cumulative defaults")
-ordern <- order(balance)
-lines(x=balance[ordern], y=logmod$fitted.values[ordern],
-      col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n", y.intersp=0.4,
-       legend=c("cumulative defaults", "fitted values"),
-       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multifactor \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Logistic} regression calculates the probability of categorical variables, from the \emph{Odds Ratio} of continuous \emph{predictors}:
-      \begin{displaymath}
-        p = \frac{1}{1 + \exp(- \lambda_0 - \sum_{i=1}^n \lambda_i x_i)}
-      \end{displaymath}
-      The \emph{generic} function \texttt{summary()} produces a list of regression model summary and diagnostic statistics:
+      Lists can be subset (indexed) using:
       \begin{itemize}
-        \item coefficients: matrix with estimated coefficients, their \emph{z}-values, and \emph{p}-values,
-        \item \emph{Null} deviance: measures the differences between the response values and the probabilities calculated using only the intercept,
-        \item \emph{Residual} deviance: measures the differences between the response values and the model probabilities,
+        \item the \texttt{"["} operator (returns sublist),
+        \item the \texttt{"[["} operator (returns an element),
+        \item the \texttt{"\$"} operator (for named listv only),
       \end{itemize}
-      The \texttt{balance} and \texttt{student} columns are statistically significant, but the \texttt{income} column is not.
+      \vskip1ex
+      Partial name matching allows subsetting with partial name, as long as it can be resolved.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-# Fit multifactor logistic regression model
-colnamev <- colnames(Default)
-formulav <- as.formula(paste(colnamev[1],
-  paste(colnamev[-1], collapse="+"), sep=" ~ "))
-formulav
-logmod <- glm(formulav, data=Default, family=binomial(logit))
-summary(logmod)
+listv[2]  # Extract second element as sublist
+listv[[2]]  # Extract second element
+listv[[2]][3]  # Extract third element of second element
+listv[[c(2, 3)]]  # Third element of second element
+listv$second  # Extract second element
+listv$s  # Extract second element - partial name matching
+listv$second[3]  # Third element of second element
+listv <- list()  # Empty list
+listv$a <- 1
+listv[2] <- 2
+listv
+names(listv)
       @
   \end{columns}
 \end{block}
@@ -2263,57 +164,1023 @@ summary(logmod)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Confounding Variables in Multifactor \protect\emph{Logistic} Regression}
+\begin{frame}[fragile,t]{Coercing Vectors Into \subsecname \hskip0.5em Using \texttt{as.list()}}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{as.list()} coerces vectors and other objects into lists.
+      \vskip1ex
+      \texttt{as.list()} returns a list with the same elements as the vector.
+      \vskip1ex
+      \texttt{list()} called on a vector returns a single element equal to the vector.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Convert vector elements to list elements
+as.list(1:3)
+# Convert whole vector to single list element
+list(1:3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Data Frames}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{student} column alone can be used to calculate the probability of default using single-factor \emph{logistic} regression.
+      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \emph{types}.
       \vskip1ex
-      But the coefficient from the single-factor regression is positive (indicating that students are more likely to default), while the coefficient from the multifactor regression is negative (indicating that students are less likely to default).
+      Data frames can be thought of as listv of vectors of the same length.
       \vskip1ex
-      The reason that students are more likely to default is because they have higher credit balances than non-students - which is what the single-factor regression shows.
-      \vskip1ex
-      But students are less likely to default than non-students that have the same credit balance - which is what the multifactor model shows.
-      \vskip1ex
-      The \texttt{student} column is a confounding variable since it's correlated with the \texttt{balance} column.
-      \vskip1ex
-      That's why the multifactor regression coefficient for \texttt{student} is negative, while the single factor coefficient for \texttt{student} is positive.
-      <<echo=TRUE,eval=FALSE>>=
-# Fit single-factor logistic model with student as predictor
-glm_student <- glm(default ~ student, family=binomial(logit))
-summary(glm_student)
-# Multifactor coefficient is negative
-logmod$coefficients
-# Single-factor coefficient is positive
-glm_student$coefficients
-      @
+      The function \texttt{data.frame()} creates a \emph{data frame} from vectors assigned to column names.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/islr_student_boxplot.png}
+      <<echo=TRUE,eval=TRUE>>=
+dframe <- data.frame(  # Create a data frame
+                      type=c("rose", "daisy", "tulip"),
+                      color=c("red", "white", "yellow"),
+                      price=c(1.5, 0.5, 1.0)
+                    )  # end data.frame
+dframe
+dim(dframe)  # Get dimension attribute
+colnames(dframe)  # Get the colnames attribute
+rownames(dframe)  # Get the rownames attribute
+class(dframe)  # Get object class
+typeof(dframe)  # Data frames are listv
+is.data.frame(dframe)
+
+class(dframe$type)  # Get column class
+class(dframe$price)  # Get column class
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Data frames can be subset in a similar way to listv and matrices.
+      \vskip1ex
+      Depending on how a data frame is subset, the result can be either a data frame or a vector.
+      \vskip1ex
+      Extracting a single column from a data frame produces a vector.
+      \vskip1ex
+      The data frame class attribute can be preserved by using the parameter \texttt{"drop=FALSE"}.
+      \vskip1ex
+      Extracting a single row from a data frame produces a data frame.
+      \vskip1ex
+      The function \texttt{unlist()} applied to a single row extracted from a data frame coerces it to a vector.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+dframe[, 3]  # Extract third column as vector
+dframe[[3]]  # Extract third column as vector
+dframe[3]  # Extract third column as data frame
+dframe[, 3, drop=FALSE]  # Extract third column as data frame
+dframe[[3]][2]  # Second element from third column
+dframe$price[2]  # Second element from "price" column
+is.data.frame(dframe[[3]]); is.vector(dframe[[3]])
+dframe[2, ]  # Extract second row
+dframe[2, ][3]  # Third element from second column
+dframe[2, 3]  # Third element from second column
+unlist(dframe[2, ])  # Coerce to vector
+is.data.frame(dframe[2, ]); is.vector(dframe[2, ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em and Factors}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      By default \texttt{data.frame()} does not coerce \texttt{character} vectors to \texttt{factors}, so no need for the option \texttt{stringsAsFactors=FALSE}.
+      \vskip1ex
+      The function \texttt{options()} sets global \emph{options}, that determine how \texttt{R} computes and displays its results.
+      \vskip1ex
+      If the global \texttt{option} \texttt{stringsAsFactors=FALSE} is set, then \texttt{character} vectors will not be coerced to \texttt{factors} in all subsequent \texttt{data frame} operations.
+      \vskip1ex
+      The default is \texttt{stringsAsFactors=FALSE} since \texttt{R} version \texttt{4.0}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+dframe <- data.frame(  # Create a data frame
+                      type=c("rose", "daisy", "tulip"),
+                      color=c("red", "white", "yellow"),
+                      price=c(1.5, 0.5, 1.0),
+                      row.names=c("flower1", "flower2", "flower3")
+                    )  # end data.frame
+dframe
+class(dframe$type)  # Get column class
+class(dframe$price)  # Get column class
+# Set option to not coerce character vectors to factors - that was old default
+options("stringsAsFactors")
+options(stringsAsFactors=FALSE)
+options("stringsAsFactors")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Exploring \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{str()} displays the structure of an \texttt{R} object.
+      \vskip1ex
+      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+str(dframe)  # Display the object structure
+dim(cars)  # The cars data frame has 50 rows
+head(cars, n=5)  # Get first five rows
+tail(cars, n=5)  # Get last five rows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Sorting Vectors}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{sort()} returns a vector sorted into ascending order.
+      \vskip1ex
+      A permutation is a re-ordering of the elements of a vector.
+      \vskip1ex
+      The permutation index specifies how the elements are re-ordered in a permutation.
+      \vskip1ex
+      The function \texttt{order()} calculates the permutation index to sort a given vector into ascending order.
+      \vskip1ex
+      Applying the function \texttt{order()} twice: \texttt{order(order())}, calculates the permutation index to sort the vector from ascending order into its unsorted (original) order.
+      \vskip1ex
+      So the permutation index produced by: \texttt{order(order())} is the reverse of the permutation index produced by: \texttt{order()}.
+      \vskip1ex
+      \texttt{order()} can take several vectors as input, to break any ties.
+      \vskip1ex
+      Data frames can be sorted on any column.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Create a named vector of student scores
+scorev <- sample(round(runif(5, min=1, max=10), digits=2))
+names(scorev) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
+# Sort the vector into ascending order
+sort(scorev)
+# Calculate index to sort into ascending order
+order(scorev)
+# Sort the vector into ascending order
+scorev[order(scorev)]
+# Calculate the sorted (ordered) vector
+sortv <- scorev[order(scorev)]
+# Calculate index to sort into unsorted (original) order
+order(order(scorev))
+sortv[order(order(scorev))]
+scorev
+# Examples for sort() with ties
+order(c(2, 1:4))  # There's a tie
+order(c(2, 1:4), 1:5)  # There's a tie
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Sorting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Data frames can be sorted on any one of its columns.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Create a vector of student ranks
+rankv <- c("fifth", "fourth", "third", "second", "first")
+# Reverse sort the student ranks according to students
+rankv[order(order(scorev))]
+# Create a data frame of students and their ranks
+rosterdf <- data.frame(score=scorev, 
+  rank=rankv[order(order(scorev))])
+rosterdf
+# Permutation index on price column
+order(dframe$price)
+# Sort dframe on price column
+dframe[order(dframe$price), ]
+# Sort dframe on color column
+dframe[order(dframe$color), ]
+
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing \subsecname \hskip0.5em Into Matrices Using \texttt{as.matrix()}}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{as.matrix()} coerces vectors and data frames into matrices.
+      \vskip1ex
+      Coercing a data frame into a matrix causes coercion of \texttt{numeric} values into \texttt{character}.
+      \vskip1ex
+      \texttt{as.matrix()} coerces vectors into single column matrices, as opposed to \texttt{matrix()}, which produces a matrix.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+as.matrix(dframe)
+vecv <- sample(9)
+matrix(vecv, ncol=3)
+as.matrix(vecv, ncol=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing Matrices Into \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames.
+      \vskip1ex
+      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames.
+      \vskip1ex
+      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch.
+      \vskip1ex
+      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch.
+      \vskip1ex
+      The function \texttt{data.frame()} can also be used to coerce matrices into data frames, but is much slower than even \texttt{as.data.frame()}.
+      \vskip1ex
+      \texttt{as.data.frame()} is about three times faster than \texttt{data.frame()}, because it doesn't require extra \texttt{R} code in \texttt{data.frame()} needed for handling different types of vectors, and for method dispatch.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:3))>>=
+matv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
+rownames(matv) <- c("row1", "row2")  # Rownames attribute
+colnames(matv) <- c("col1", "col2", "col3")  # Colnames attribute
+library(microbenchmark)
+# Call method instead of generic function
+as.data.frame.matrix(matv)
+# A few methods for generic function as.data.frame()
+sample(methods(as.data.frame), size=4)
+# Function method is faster than generic function
+summary(microbenchmark(
+  as_dframem=as.data.frame.matrix(matv),
+  as_dframe=as.data.frame(matv),
+  dframe=data.frame(matv),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing Matrices Into Lists}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Matrices can be coerced into lists in at least two different ways.
+      \vskip1ex
+      Matrices can be first coerced into a data frame, and then into a list using function \texttt{as.list()}.
+      \vskip1ex
+      Matrices can be directly coerced into a list using function \texttt{lapply()}.
+      \vskip1ex
+      Using \texttt{lapply()} is the faster of the two methods, because \texttt{lapply()} is a \emph{compiled} function.
+    \column{0.5\textwidth}
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(microbenchmark)
+# lapply is faster than coercion function
+summary(microbenchmark(
+  aslist=as.list(as.data.frame.matrix(matv)),
+  lapply=lapply(seq_along(matv[1, ]),
+           function(indeks) matv[, indeks]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{iris} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{iris} data frame is included in the \texttt{datasets} base package.
+      \vskip1ex
+      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris.
+      \vskip1ex
+      The function \texttt{unique()} extracts unique elements of an object.
+      \vskip1ex
+      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector.
+      \vskip1ex
+      \texttt{sapply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# ?iris  # Get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # List of unique elements of iris
+class(unique(iris$Species))
+# Find which columns of iris are numeric
+sapply(iris, is.numeric)
+# Calculate means of iris columns
+sapply(iris, mean)  # Returns NA for Species
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{mtcars} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# ?mtcars  # mtcars data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp	 Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # Extract list of car cylinders
+sapply(mtcars, mean)  # Calculate means of mtcars columns
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{Cars93} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles.
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram.
+      \vskip1ex
+      \texttt{"FD"} stands for the Freedman-Diaconis rule for calculating histogram breaks,
       <<echo=TRUE,eval=FALSE>>=
-# Calculate cumulative defaults
-cum_defaults <- sapply(balance, function(balv) {
-c(student=sum(default[student & (balance <= balv)]),
-  non_student=sum(default[!student & (balance <= balv)]))
+library(MASS)
+# ?Cars93  # Get information on Cars93
+dim(Cars93)
+head(colnames(Cars93))
+# head(Cars93, 2)
+unique(Cars93$Type)  # Extract list of car types
+# sapply(Cars93, mean)  # Calculate means of Cars93 columns
+# Plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1",
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.4\paperwidth]{figure/Cars93_hist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Data Management and Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bad Data}
+\begin{frame}[fragile,t]{Types of \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Possible sources of bad data are: imported data, class coercion, numeric overflow.
+      \vskip1ex
+      Types of bad data:
+      \begin{itemize}
+        \item \texttt{NA} (not available) is a logical constant indicating missing data,
+        \item \texttt{NaN} means Not a Number data,
+        \item \texttt{Inf} means numeric overflow - divide by zero,
+      \end{itemize}
+      \vskip1ex
+      When a function produces \texttt{NA} or \texttt{NaN} values, then it also produces a \emph{warning} condition, but not an \emph{error}.
+      \vskip1ex
+      \texttt{NA} or \texttt{NaN} values are not \emph{errors}.
+      \vskip1ex
+      The functions \texttt{is.na()} and \texttt{is.nan()} test for \texttt{NA} and \texttt{NaN} values.
+      \vskip1ex
+      Many functions have a \texttt{na.rm} parameter to remove \texttt{NAs} from input data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=TRUE>>=
+rm(list=ls())
+as.numeric(c(1:3, "a"))  # NA from coercion
+0/0  # NaN from ambiguous math
+1/0  # Inf from divide by zero
+is.na(c(NA, NaN, 0/0, 1/0))  # Test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # Test for NaN
+NA*1:4  # Create vector of Nas
+# Create vector with some NA values
+datav <- c(1, 2, NA, 4, NA, 5)
+datav
+mean(datav)  # Returns NA, when NAs are input
+mean(datav, na.rm=TRUE)  # remove NAs from input data
+datav[!is.na(datav)]  # Delete the NA values
+sum(!is.na(datav))  # Count non-NA values
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Scrubbing \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# airquality data has some NAs
+head(airquality)
+dim(airquality)
+# Number of NA elements
+sum(is.na(airquality))
+# Number of rows with NA elements
+sum(!complete.cases(airquality))
+# Display rows containing NAs
+head(airquality[!complete.cases(airquality), ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Scrubbing Data Using Carry Forward}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Rows containing bad data may be either removed or replaced with an estimated value.
+      \vskip1ex
+      The function \texttt{stats::na.omit()} removes individual \texttt{NA} values from vectors, and it also removes whole rows of data containing \texttt{NA} values from matrices and data frames.
+      \vskip1ex
+      Bad data can also be replaced with the most recent prior values (carry forward good data).
+      \vskip1ex
+      The function \texttt{zoo::na.locf()} replaces \texttt{NA} values with the most recent non-\texttt{NA} values prior to it (\emph{locf} stands for \emph{last observation carry forward}).
+      \vskip1ex
+      Copying the last non-\texttt{NA} values forward causes less data loss than removing whole rows of data.
+      \vskip1ex
+      The function \texttt{na.locf()} with argument \texttt{fromLast=TRUE} replaces \texttt{NA} values with non-\texttt{NA} values in reverse order, starting from the end.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Create vector containing NA values
+vecv <- sample(22)
+vecv[sample(NROW(vecv), 4)] <- NA
+# Replace NA values with the most recent non-NA values
+zoo::na.locf(vecv)
+# Remove rows containing NAs
+goodair <- airquality[complete.cases(airquality), ]
+dim(goodair)
+# NAs removed
+head(goodair)
+# Another way of removing NAs
+freshair <- na.omit(airquality)
+all.equal(freshair, goodair, check.attributes=FALSE)
+# Replace NAs
+goodair <- zoo::na.locf(airquality)
+dim(goodair)
+# NAs replaced
+head(goodair)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Scrubbing Time Series Data}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Missing asset prices and returns can be replaced with the most recent prior values (carry forward good data).
+      \vskip1ex
+      But missing asset returns should not be replaced with values from the future.  Instead, missing returns should be replaced with zero values.
+      \vskip1ex
+      The function \texttt{na.locf.xts()} from package \emph{xts} is faster than \texttt{zoo::na.locf()}, but it only operates on time series of class \texttt{"xts"}.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# Replace NAs in xts time series
+library(rutils)  # load package rutils
+pricev <- rutils::etfenv$prices[, 1]
+head(pricev, 3)
+sum(is.na(pricev))
+pricez <- zoo::na.locf(pricev, fromLast=TRUE)
+pricex <- xts:::na.locf.xts(pricev, fromLast=TRUE)
+all.equal(pricez, pricex, check.attributes=FALSE)
+head(pricex, 3)
+library(microbenchmark)
+summary(microbenchmark(
+  zoo=zoo::na.locf(pricev, fromLast=TRUE),
+  xts=xts:::na.locf.xts(pricev, fromLast=TRUE),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{NULL} Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{NULL} represents a null object, and is a legitimate value, not bad data.
+      \vskip1ex
+      \texttt{NULL} is often returned by functions whose value is undefined.
+      \vskip1ex
+      \texttt{NULL} can also be used to initialize vectors.
+      \vskip1ex
+      \texttt{NULL} is not the same as \texttt{NA} values or zero-length (empty) vectors.
+      \vskip1ex
+      The functions \texttt{numeric()} and \texttt{character()} return empty (zero-length) vectors of the specified \emph{type}.
+      \vskip1ex
+      The function \texttt{is.null()} tests for \texttt{NULL} values.
+      \vskip1ex
+      Very often variables are initialized to \texttt{NULL} before the start of iteration.
+      \vskip1ex
+      A more efficient way to perform iteration is by pre-allocating the vector.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# NULL values have no mode or type
+c(mode(NULL), mode(NA))
+c(typeof(NULL), typeof(NA))
+c(NROW(NULL), NROW(NA))
+# Check for NULL values
+is.null(NULL)
+# NULL values are ignored when combined into a vector
+c(1, 2, NULL, 4, 5)
+# But NA value isn't ignored
+c(1, 2, NA, 4, 5)
+# Vectors can be initialized to NULL
+vecv <- NULL
+is.null(vecv)
+# Grow the vector in a loop - very bad code!!!
+for (indeks in 1:5)
+  vecv <- c(vecv, indeks)
+# Initialize empty vector
+vecv <- numeric()
+# Grow the vector in a loop - very bad code!!!
+for (indeks in 1:5)
+  vecv <- c(vecv, indeks)
+# Allocate vector
+vecv <- numeric(5)
+# Assign to vector in a loop - good code
+for (indeks in 1:5)
+  vecv[indeks] <- runif(1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Manipulating Lists and Data Frames}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Flattening a List of Vectors to a Matrix Using \texttt{do.call()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()}.
+      \vskip1ex
+      If the list contains vectors of different lengths, then \texttt{R} applies the recycling rule.
+      \vskip1ex
+      If the list contains a \texttt{NULL} element, that element is skipped.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create list of vectors
+listv <- lapply(1:3, function(x) sample(6))
+# Bind list elements into matrix - doesn't work
+rbind(listv)
+# Bind list elements into matrix - tedious
+rbind(listv[[1]], listv[[2]], listv[[3]])
+# Bind list elements into matrix - works!
+do.call(rbind, listv)
+# Create numeric list
+listv <- list(1, 2, 3, 4)
+do.call(rbind, listv)  # Returns single column matrix
+do.call(cbind, listv)  # Returns single row matrix
+# Recycling rule applied
+do.call(cbind, list(1:2, 3:5))
+# NULL element is skipped
+do.call(cbind, list(1, NULL, 3, 4))
+# NA element isn't skipped
+do.call(cbind, list(1, NA, 3, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Binding of Lists Into Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()}.
+      \vskip1ex
+      But for large vectors this procedure can be very slow, and often causes an out of memory error.
+      \vskip1ex
+      The function \texttt{do\_call\_rbind()} efficiently combines a list of vectors into a matrix.
+      \vskip1ex
+      \texttt{do\_call\_rbind()} produces the same result as \texttt{do.call(rbind, list\_var)}, but using recursion.
+      \vskip1ex
+      \texttt{do\_call\_rbind()} calls lapply in a loop, each time binding neighboring list elements and dividing the length of the list by half.
+      \vskip1ex
+      \texttt{do\_call\_rbind()} is the same function as \texttt{do.call.rbind()} from package \emph{qmao}:\\
+\hskip1em\url{https://r-forge.r-project.org/R/?group_id=1113}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)), eval=FALSE>>=
+library(microbenchmark)
+list_vectors <- lapply(1:5, rnorm, n=10)
+matv <- do.call(rbind, list_vectors)
+dim(matv)
+do_call_rbind <- function(listv) {
+  while (NROW(listv) > 1) {
+# Index of odd list elements
+    odd_index <- seq(from=1, to=NROW(listv), by=2)
+# Bind odd and even elements, and divide listv by half
+    listv <- lapply(odd_index, function(indeks) {
+      if (indeks==NROW(listv)) return(listv[[indeks]])
+      rbind(listv[[indeks]], listv[[indeks+1]])
+    })  # end lapply
+  }  # end while
+# listv has only one element - return it
+  listv[[1]]
+}  # end do_call_rbind
+identical(matv, do_call_rbind(list_vectors))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Data Frames Using \texttt{subset()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Filtering} means extracting rows from a \emph{data frame} that satisfy a logical condition.
+      \vskip1ex
+      \emph{Data frames} can be filtered using Boolean vectors and brackets \texttt{"[]"} operators.
+      \vskip1ex
+      The function \texttt{subset()} filters \emph{data frames}, by applying logical conditions to its columns, using the column names.
+      \vskip1ex
+      \texttt{subset()} provides a succinct notation and discards \texttt{NA} values, but it's slightly slower than using \texttt{Boolean} vectors and brackets \texttt{"[]"} operators.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)), eval=FALSE>>=
+library(microbenchmark)
+airquality[(airquality$Solar.R > 320 &
+              !is.na(airquality$Solar.R)), ]
+subset(x=airquality, subset=(Solar.R > 320))
+summary(microbenchmark(
+    subset=subset(x=airquality, subset=(Solar.R > 320)),
+    brackets=airquality[(airquality$Solar.R > 320 &
+                  !is.na(airquality$Solar.R)), ],
+times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Splitting Data Frames Using \texttt{factor} Categorical Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable).
+      \vskip1ex
+      The list's \texttt{namev} attribute is equal to the \texttt{factor} levels.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+unique(iris$Species)  # Species has three distinct values
+# Split into separate data frames by hand
+setosa <- iris[iris$Species=="setosa", ]
+versi <- iris[iris$Species=="versicolor", ]
+virgin <- iris[iris$Species=="virginica", ]
+dim(setosa)
+head(setosa, 2)
+# Split iris into list based on Species
+splitiris <- split(iris, iris$Species)
+str(splitiris, max.confl=1)
+names(splitiris)
+dim(splitiris$setosa)
+head(splitiris$setosa, 2)
+all.equal(setosa, splitiris$setosa)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{split-apply-combine} procedure consists of:
+      \begin{itemize}
+        \item dividing an object into a list, according to a factor (attribute).
+        \item applying a function to each list element.
+        \item combining the results.
+      \end{itemize}
+      The \emph{split-apply-combine} procedure is also called the \emph{map-reduce} procedure, or simply \emph{data pivoting}, and it's similar to \emph{pivot tables} in \emph{Excel}.
+      \vskip1ex
+      \emph{Data pivoting} can be performed \emph{data frames}, by aggregating its columns based on categorical data stored in one of its columns.
+      \vskip1ex
+      You can read more about the \emph{split-apply-combine} procedure in Hadley Wickham's paper:\\
+      \url{http://www.jstatsoft.org/v40/i01/paper}
+      \vskip1ex
+    \column{0.5\textwidth}
+      \hskip1em\includegraphics[width=0.45\paperwidth]{figure/split_apply_combine_procedure.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Example}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Data pivoting} can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()}.
+      \vskip1ex
+      A \emph{data frame} can be \emph{pivoted} either by first splitting it into a list of \emph{data frames} and then aggregating, or by splitting just a single column and aggregating it.
+      \vskip1ex
+      The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable).
+      \vskip1ex
+      The list's \texttt{namev} attribute is equal to the \texttt{factor} levels.
+      \vskip1ex
+      The functional \texttt{aggregate()} \emph{pivots} the columns of a \emph{data frame}.
+      \vskip1ex
+      \texttt{aggregate()} can accept a \texttt{"formula"} argument with the column names, or it can accept \texttt{"x"} and \texttt{"by"} arguments with the columns.
+      \vskip1ex
+      \texttt{aggregate()} returns a \emph{data frame} containing the names of the groups (\texttt{factor} confls).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+unique(mtcars$cyl)  # cyl has three unique values
+# Split mpg column based on number of cylinders
+split(mtcars$mpg, mtcars$cyl)
+# Split mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.confl=1)
+names(split_cars)
+# Aggregate the mean mpg over split mtcars data frame
+sapply(split_cars, function(x) mean(x$mpg))
+# Or: split mpg column and aggregate the mean
+sapply(split(mtcars$mpg, mtcars$cyl), mean)
+# Same but using with()
+with(mtcars, sapply(split(mpg, cyl), mean))
+# Or: aggregate() using formula syntax
+aggregate(x=(mpg ~ cyl), data=mtcars, FUN=mean)
+# Or: aggregate() using data frame syntax
+aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
+# Or: using name for mpg
+aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
+# Aggregate() all columns
+aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
+# Aggregate multiple columns using formula syntax
+aggregate(x=(cbind(mpg, hp) ~ cyl), data=mtcars, FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{tapply()} Functional}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{tapply()} is a specialized version of the \texttt{apply()} functional, that applies a function to elements of a \emph{jagged array}.
+      \vskip1ex
+      A \emph{jagged array} is a list consisting of vectors or matrices of different lengths.
+      \vskip1ex
+      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"}.
+      \vskip1ex
+      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a \emph{jagged array}, and then applies \texttt{"FUN"} to each element of the \emph{jagged array}.
+      \vskip1ex
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs \emph{data pivoting} in a single function call.
+      \vskip1ex
+      The \texttt{by()} function is a wrapper for \texttt{tapply()}.
+      \vskip1ex
+      The \texttt{with()} function evaluates an expression in an environment constructed from the data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Mean mpg for each cylinder group
+tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
+# using with() environment
+with(mtcars, tapply(X=mpg, INDEX=cyl, FUN=mean))
+# Function sapply() instead of tapply()
+with(mtcars, sapply(sort(unique(cyl)), function(x) {
+       structure(mean(mpg[x==cyl]), names=x)
+     }))  # end with
+# Function by() instead of tapply()
+with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Returning a Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Sometimes \emph{data pivoting} returns a list of vectors.
+      \vskip1ex
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()}.
+      \vskip1ex
+     The function \texttt{do.call()} executes a function call using a function name and a list of arguments.
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
+      \texttt{do.call(fun, list)=
+      fun(list[[1]], list[[2]], \ldots)}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Get several mpg stats for each cylinder group
+cardata <- sapply(split_cars, function(x) {
+  c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+}  # end anonymous function
+)  # end sapply
+cardata  # sapply() produces a matrix
+# Now same using lapply
+cardata <- lapply(split_cars, function(x) {
+  c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+}  # end anonymous function
+)  # end sapply
+is.list(cardata)  # lapply produces a list
+# do.call flattens list into a matrix
+do.call(cbind, cardata)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} of Panel Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{data frame} \texttt{panel\_data} contains fundamental financial data for \emph{S\&P500} stocks.
+      \vskip1ex
+      The \texttt{Industry} column has \texttt{22} unique elements, while the \texttt{Sector} column has \texttt{10} unique elements.
+      \vskip1ex
+      Each \texttt{Industry} belongs to a single \texttt{Sector}, but each \texttt{Sector} may have several \texttt{Industries} that belong to it.
+      \vskip1ex
+      The functional \texttt{aggregate()} allows aggregating over the \texttt{Industry} column, by performing \emph{data pivoting}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Download CRSPpanel.txt from the NYU share drive
+# Read the file using read.table() with header and sep arguments
+paneld <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt", 
+                         header=TRUE, sep="\t")
+paneld[1:5, 1:5]
+attach(paneld)
+# Split paneld based on Industry column
+panelds <- split(paneld, paneld$Industry)
+# Number of companies in each Industry
+sapply(panelds, NROW)
+# Number of Sectors that each Industry belongs to
+sapply(panelds, function(x) {
+  NROW(unique(x$Sector))
 })  # end sapply
-total_defaults <- c(student=sum(student & default), 
-            student=sum(!student & default))
-cum_defaults <- t(cum_defaults / total_defaults)
-# Plot cumulative defaults
-par(mfrow=c(1,2))  # Set plot panels
-ordern <- order(balance)
-plot(x=balance[ordern], y=cum_defaults[ordern, 1],
-     col="red", t="l", lwd=2, xlab="credit balance", ylab="",
-     main="Cumulative defaults of\n students and non-students")
-lines(x=balance[ordern], y=cum_defaults[ordern, 2], col="blue", lwd=2)
-legend(x="topleft", bty="n", y.intersp=0.4,
-       legend=c("students", "non-students"),
-       col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
-# Balance boxplot for student factor
-boxplot(formula=balance ~ !student,
-        col="lightgrey", main="balance", xlab="Student")
+# Or
+aggregate(x=(Sector ~ Industry), 
+  data=paneld, FUN=function(x) NROW(unique(x)))
+# Industries and the Sector to which they belong
+aggregate(x=(Sector ~ Industry), data=paneld, FUN=unique)
+# Or
+aggregate(x=Sector, by=list(Industry), FUN=unique)
+# Or
+sapply(unique(Industry), function(x) {
+  Sector[match(x, Industry)]
+})  # end sapply
       @
   \end{columns}
 \end{block}
@@ -2322,196 +1189,1129 @@ boxplot(formula=balance ~ !student,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Forecasting Credit Defaults using Logistic Regression}
+\subsection{\protect\emph{Data Pivoting} Returning a \protect\emph{Jagged Array}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
+      A \emph{jagged array} is a list consisting of vectors or matrices of different lengths.
       \vskip1ex
-      The method \texttt{predict.glm()} produces forecasts for a generalized linear (\emph{glm}) model, in the form of \texttt{numeric} probabilities, not the \texttt{Boolean} response variable.
+      The functional \texttt{aggregate()} returns a \emph{data frame}, so it's output must be coerced if the \emph{data pivoting} attempts to return a \emph{jagged array}.
       \vskip1ex
-      The \texttt{Boolean} forecasts are obtained by comparing the \emph{forecast probabilities} with a \emph{discrimination threshold}.
+      The functional \texttt{tapply()} returns an array, so it's output must be coerced if the \emph{data pivoting} attempts to return a \emph{jagged array}.
       \vskip1ex
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{default = FALSE}.
+      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"}.
       \vskip1ex
-      If the \emph{forecast probability} is \emph{less} than the \emph{discrimination threshold}, then the forecast is that the subject will not default and that the \emph{null hypothesis} is \texttt{TRUE}.
+      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a \emph{jagged array}, and then applies \texttt{"FUN"} to each element of the \emph{jagged array}.
       \vskip1ex
-      The \emph{in-sample forecasts} are just the \emph{fitted values} of the \emph{glm} model.
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs \emph{data pivoting} in a single function call.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# Perform in-sample forecast from logistic regression model
-fcast <- predict(logmod, type="response")
-all.equal(logmod$fitted.values, fcast)
-# Define discrimination threshold value
-threshv <- 0.7
-# Calculate confusion matrix in-sample
-table(actual=!default, forecast=(fcast < threshv))
-# Fit logistic regression over training data
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nrows <- NROW(Default)
-samplev <- sample.int(n=nrows, size=nrows/2)
-trainset <- Default[samplev, ]
-logmod <- glm(formulav, data=trainset, family=binomial(logit))
-# Forecast over test data out-of-sample
-testset <- Default[-samplev, ]
-fcast <- predict(logmod, newdata=testset, type="response")
-# Calculate confusion matrix out-of-sample
-table(actual=!testset$default, forecast=(fcast < threshv))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Forecasting Errors}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
-      \vskip1ex
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{default = FALSE}.
-      \vskip1ex
-      A \emph{positive} result corresponds to rejecting the null hypothesis, while a \emph{negative} result corresponds to accepting the null hypothesis.
-      \vskip1ex
-      The forecasts are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
-      \vskip1ex
-      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), when there is no default but it's classified as a default.
-      \vskip1ex
-      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), when there is a default but it's classified as no default.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# Calculate confusion matrix out-of-sample
-confmat <- table(actual=!testset$default, 
-      forecast=(fcast < threshv))
-confmat
-# Calculate FALSE positive (type I error)
-sum(!testset$default & (fcast > threshv))
-# Calculate FALSE negative (type II error)
-sum(testset$default & (fcast < threshv))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Confusion Matrix of a Binary Classification Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
-      \vskip1ex
-      \newcommand\MyBox[2]{
-        \fbox{\lower0.75cm
-          \vbox to 1.2cm{\vfil
-            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
-            \vfil}
-        }
-      }
-      \renewcommand\arraystretch{0.3}
-      \setlength\tabcolsep{0pt}
-      {\tiny
-      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
-      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
-      & \multicolumn{2}{c}{\bfseries Forecast} & \\
-      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
-      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
-      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
-      \end{tabular}}
-      <<echo=TRUE,eval=TRUE>>=
-# Calculate FALSE positive and FALSE negative rates
-confmat <- confmat / rowSums(confmat)
-c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-detach(Default)
-      @
-      <<echo=FALSE,eval=FALSE,results='asis'>>=
-# Below is an unsuccessful attempt to draw confusion matrix using xtable
-confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
-dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
-                                   actual=c("FALSE", "TRUE"))
-print(xtable::xtable(confusion_matrix,
-      caption="Confusion Matrix"),
-      caption.placement="top",
-      comment=FALSE, size="scriptsize",
-      include.rownames=TRUE,
-      include.colnames=TRUE)
-# end unsuccessful attempt to draw confusion table using xtable
-      @
-    \column{0.5\textwidth}
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{default = FALSE}.
-      \vskip1ex
-      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
-      \vskip1ex
-      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
-      \vskip1ex
-      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
-      \vskip1ex
-      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
-      \vskip1ex
-      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
-      \vskip1ex
-      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Receiver Operating Characteristic (ROC) Curve}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
-      \vskip1ex
-      The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of threshold
-confun <- function(actualv, fcast, threshv) {
-    confmat <- table(actualv, (fcast < threshv))
-    confmat <- confmat / rowSums(confmat)
-    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-  }  # end confun
-confun(!testset$default, fcast, threshv=threshv)
-# Define vector of discrimination thresholds
-threshv <- seq(0.05, 0.95, by=0.05)^2
-# Calculate error rates
-errorr <- sapply(threshv, confun,
-  actualv=!testset$default, fcast=fcast)  # end sapply
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-# Calculate area under ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
+# Split paneld based on Sector column
+panelds <- split(paneld, paneld$Sector)
+# Number of companies in each Sector
+sapply(panelds, NROW)
+# Industries belonging to each Sector (jagged array)
+secind <- sapply(panelds, function(x) unique(x$Industry))
+# Or use aggregate() (returns a data frame)
+secind2 <- aggregate(x=(Industry ~ Sector), 
+  data=paneld, FUN=function(x) unique(x))
+# Or use aggregate() with "by" argument
+secind2 <- aggregate(x=Industry, by=list(Sector), 
+    FUN=function(x) as.vector(unique(x)))
+# Coerce secind2 into a jagged array
+namev <- secind2[, 1]
+secind2 <- secind2[, 2]
+names(secind2) <- namev
+all.equal(secind2, secind)
+# Or use tapply() (returns an array)
+secind2 <- tapply(X=Industry, INDEX=Sector, FUN=unique)
+# Coerce secind2 into a jagged array
+secind2 <- drop(as.matrix(secind2))
+all.equal(secind2, secind)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Over Multiple Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Data pivoting} over multiple columns can be performed by splitting the \emph{data frame} and then performing an sapply() loop using an anonymous function.
+      \vskip1ex
+      Splitting the \emph{data frame} allows aggregations over multiple columns.
+      \vskip1ex
+      An anonymous function allows applying different aggregations on the same column.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/islr_defaults_roc.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot ROC Curve for Defaults
-x11(width=5, height=5)
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Average ROE in each Industry
+sapply(split(ROE, Industry), mean)
+# Average, min, and max ROE in each Industry
+t(sapply(split(ROE, Industry), FUN=function(x) 
+  c(mean=mean(x), max=max(x), min=min(x))))
+# Split paneld based on Industry column
+panelds <- split(paneld, paneld$Industry)
+# Average ROE and EPS in each Industry
+t(sapply(panelds, FUN=function(x) 
+  c(mean_roe=mean(x$ROE), 
+    mean_eps=mean(x$EPS.EXCLUDE.EI))))
+# Or: split paneld based on Industry column
+panelds <- split(paneld[, c("ROE", "EPS.EXCLUDE.EI")], 
+  paneld$Industry)
+# Average ROE and EPS in each Industry
+t(sapply(panelds, FUN=function(x) sapply(x, mean)))
+# Average ROE and EPS using aggregate()
+aggregate(x=paneld[, c("ROE", "EPS.EXCLUDE.EI")], 
+  by=list(paneld$Industry), FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Debugging and Exception Handling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions.
+      \vskip1ex
+      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler.
+      \vskip1ex
+      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler.
+      \vskip1ex
+      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
+      \begin{itemize}
+        \item \emph{negative} then warnings are ignored,
+        \item \emph{zero} then warnings are stored and printed after the top-confl function has completed,
+        \item \emph{one} - warnings are printed as they occur,
+        \item \emph{two} or larger - warnings are turned into errors,
+      \end{itemize}
+      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# ?options  # Get info on global options
+getOption("warn")  # Global option for "warn"
+options("warn")  # Global option for "warn"
+getOption("error")  # Global option for "error"
+calc_sqrt <- function(inputv) {
+# Returns its argument
+  if (inputv < 0) {
+    warning("calc_sqrt: input is negative")
+    NULL  # Return NULL for negative argument
+  } else {
+    sqrt(inputv)
+  }  # end if
+}  # end calc_sqrt
+calc_sqrt(5)
+calc_sqrt(-1)
+options(warn=-1)
+calc_sqrt(-1)
+options(warn=0)
+calc_sqrt()
+options(warn=1)
+calc_sqrt()
+options(warn=3)
+calc_sqrt()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Function Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type}.
+      \vskip1ex
+      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call.
+      \vskip1ex
+      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise.
+      \vskip1ex
+      Missing arguments can be detected by:\\
+      - assigning a \texttt{NULL} default value to formal arguments and then calling  \texttt{is.null()} on them,\\
+      - calling the function \texttt{missing()} on the arguments.
+      \vskip1ex
+      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
+      \vskip1ex
+      The function \texttt{return()} returns its argument and terminates futher function execution.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Function valido validates its arguments
+valido <- function(inputv=NULL) {
+# Check if argument is valid and return double
+  if (is.null(inputv)) {
+    return("valido: input is missing")
+  } else if (is.numeric(inputv)) {
+    2*inputv
+  } else cat("valido: input not numeric")
+}  # end valido
+valido(3)
+valido("a")
+valido()
+# valido validates arguments using missing()
+valido <- function(inputv) {
+# Check if argument is valid and return double
+  if (missing(inputv)) {
+    return("valido: input is missing")
+  } else if (is.numeric(inputv)) {
+    2*inputv
+  } else cat("valido: input is not numeric")
+}  # end valido
+valido(3)
+valido("a")
+valido()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Assertions Inside Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution.
+      \vskip1ex
+      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code.
+      \vskip1ex
+      Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced.
+      \vskip1ex
+      The function \texttt{traceback()} prints the call stack, showing the function that produced the \emph{error} condition.
+      \vskip1ex
+      \texttt{cat()} statements inside the function body provide information about the state of its variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+            <<echo=TRUE,eval=FALSE>>=
+# valido() validates its arguments and assertions
+valido <- function(inputv) {
+# Check if argument is valid and return double
+  if (missing(inputv)) {
+    stop("valido: input is missing")
+  } else if (!is.numeric(inputv)) {
+    cat("input =", inputv, "\n")
+    stop("valido: input is not numeric")
+  } else 2*inputv
+}  # end valido
+valido(3)
+valido("a")
+valido()
+      @
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Print the call stack
+traceback()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Assertions Using \texttt{stopifnot()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()}.
+      \vskip1ex
+      If the argument to function \texttt{stopifnot()} is \texttt{FALSE}, then it produces an \emph{error} condition, and halts function execution.
+      \vskip1ex
+      \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if ()} statements.
+      \vskip1ex
+      \texttt{stopifnot()} is often used to check the validity of function arguments.
+      \vskip1ex
+      \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+valido <- function(inputv) {
+# Check argument using long form '&&' operator
+  stopifnot(!missing(inputv) && is.numeric(inputv))
+  2*inputv
+}  # end valido
+valido(3)
+valido()
+valido("a")
+valido <- function(inputv) {
+# Check argument using logical '&' operator
+  stopifnot(!missing(inputv) & is.numeric(inputv))
+  2*inputv
+}  # end valido
+valido()
+valido("a")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Function Arguments and Assertions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE}.
+      \vskip1ex
+      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions.
+      \vskip1ex
+      \texttt{cat()} statements can provide information about the state of variables inside a function.
+      \vskip1ex
+      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# sumtwo() returns the sum of its two arguments
+sumtwo <- function(input1, input2) {  # Even more robust
+# Check if at least one argument is not missing
+  stopifnot(!missing(input1) && !missing(input2))
+# Check if arguments are valid and return sum
+  if (is.numeric(input1) && is.numeric(input2)) {
+    input1 + input2  # Both valid
+  } else if (is.numeric(input1)) {
+    cat("input2 is not numeric\n")
+    input1  # input1 is valid
+  } else if (is.numeric(input2)) {
+    cat("input1 is not numeric\n")
+    input2  # input2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sumtwo
+sumtwo(1, 2)
+sumtwo(5, 'a')
+sumtwo('a', 5)
+sumtwo('a', 'b')
+sumtwo()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Debugger Facility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{debug()} flags a function for future debugging, but doesn't invoke the debugger.
+      \vskip1ex
+      After a function is flagged for debugging with the call \texttt{"debug(myfun)"}, then the function call \texttt{"myfun()"} automatically invokes the debugger (browser).
+      \vskip1ex
+      When the debugger is first invoked, it prints the function code to the console, and produces a \emph{browser} prompt: \texttt{"Browse[2]>"}.
+      \vskip1ex
+      Once inside the debugger, the user can execute the function code one command at a time by pressing the \emph{Enter} key.
+      \vskip1ex
+      The user can examine the function arguments and variables with standard \texttt{R} commands, and can also change the values of objects or create new ones.
+      \vskip1ex
+      The command \texttt{"c"} executes the remainder of the function code without pausing.
+      \vskip1ex
+      The command \texttt{"Q"} exits the debugger (browser).
+      \vskip1ex
+      The call \texttt{"undebug(myfun)"} at the \texttt{R} prompt unflags the function for debugging.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Flag "valido" for debugging
+debug(valido)
+# Calling "valido" starts debugger
+valido(3)
+# unflag "valido" for debugging
+undebug(valido)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Debugging Using \texttt{browser()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      As an alternative to flagging a function for debugging, the user can insert the function \texttt{browser()} into the function body.
+      \vskip1ex
+      \texttt{browser()} pauses the execution of a function and invokes the debugger (browser) at the point where \texttt{browser()} was called.
+      \vskip1ex
+      Once inside the debugger, the user can execute all the same browser commands as when using \texttt{debug()}.
+      \vskip1ex
+      \texttt{browser()} is usually inserted just before the command that is suspected of producing an \emph{error} condition.
+      \vskip1ex
+      Another alternative to flagging a function for debugging, or inserting \texttt{browser()} calls, is setting the \texttt{"error"} option equal to \texttt{"recover"}.
+      \vskip1ex
+      Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+valido <- function(inputv) {
+  browser()  # Pause and invoke debugger
+# Check argument using long form '&&' operator
+  stopifnot(!missing(inputv) && is.numeric(inputv))
+  2*inputv
+}  # end valido
+valido()  # Invokes debugger
+options("error")  # Show default NULL "error" option
+options(error=recover)  # Set "error" option to "recover"
+options(error=NULL)  # Set back to default "error" option
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using the Debugger in \protect\emph{RStudio}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
+      \begin{itemize}
+        \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
+        \item stepping into functions,
+        \item environment pane with environment stack, instead of calling \texttt{ls()},
+        \item traceback pane, instead of calling \texttt{traceback()},
+      \end{itemize}
+      \emph{RStudio} provides an online debugging tutorial:
+      \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{image/rstudio_debug.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Handling Exception Conditions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
+      \vskip1ex
+      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument.
+      \vskip1ex
+      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression.
+      \vskip1ex
+      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition}.
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console.
+      \vskip1ex
+      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+str(tryCatch)  # Get arguments of tryCatch()
+tryCatch(  # Without error handler
+  {  # Evaluate expressions
+    numv <- 101  # Assign
+    stop("my error")  # Produce error
+  },
+  finally=print(paste0("numv = ", numv))
+)  # end tryCatch
+
+tryCatch(  # With error handler
+  {  # Evaluate expressions
+    numv <- 101  # Assign
+    stop("my error")  # Produce error
+  },
+  # Error handler captures error condition
+  error=function(msg) {
+    print(paste0("Error handler: ", msg))
+  },  # end error handler
+  # Warning handler captures warning condition
+  warning=function(msg) {
+    print(paste0("Warning handler: ", msg))
+  },  # end warning handler
+  finally=print(paste0("numv = ", numv))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Error Conditions in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If an \emph{error} occurs in an \texttt{apply()} loop, then the loop exits without returning any result.
+      \vskip1ex
+      \texttt{apply()} collects the values returned by the function supplied to its \texttt{FUN} argument, and returns them only after the loop is finished.
+      \vskip1ex
+      If one of the function calls produces an error, then the loop is interrupted and \texttt{apply()} exits without returning any result.
+      \vskip1ex
+      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Apply loop without tryCatch
+apply(matrix(1:5), 1, function(numv) {  # Anonymous function
+    stopifnot(!(numv = 3))  # Check for error
+    # Broadcast message to console
+    cat("(cat) numv = ", numv, "\n")
+    # Return a value
+    paste0("(return) numv = ", numv)
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Handling in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results.
+      \vskip1ex
+      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()}.
+      \vskip1ex
+      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()}.
+      \vskip1ex
+      \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# Apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(numv) {  # Anonymous function
+    tryCatch(  # With error handler
+      {  # Body
+        stopifnot(numv != 3)  # Check for error
+        # Broadcast message to console
+        cat("(cat) numv = ", numv, "\t")
+        # Return a value
+        paste0("(return) numv = ", numv)
+      },
+      # Error handler captures error condition
+      error=function(msg)
+        paste0("handler: ", msg),
+      finally=print(paste0("(finally) numv = ", numv))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Date and Time Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Date Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} has a \texttt{Date} class for date objects (but without time).
+      \vskip1ex
+      The function \texttt{as.Date()} parses \texttt{character} strings and coerces \texttt{numeric} objects into \texttt{Date} objects.
+      \vskip1ex
+      \texttt{R} stores \texttt{Date} objects as the number of days since the \emph{epoch} (January 1, 1970).
+      \vskip1ex
+      The function \texttt{difftime()} calculates the difference between \texttt{Date} objects, and returns a time interval object of class \texttt{difftime}.
+      \vskip1ex
+      The \texttt{"+"} and \texttt{"-"} arithmetic operators and the \texttt{"<"} and \texttt{">"} logical comparison operators are overloaded to allow these operations directly on \texttt{Date} objects.
+      \vskip1ex
+      \texttt{numeric} \emph{year-fraction} dates can be coerced to \texttt{Date} objects using the functions \texttt{attributes()} and \texttt{structure()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+Sys.Date()  # Get today's date
+as.Date(1e3)  # Coerce numeric into date object
+datetime <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
+datetime
+class(datetime)  # Date object
+as.Date("07-14-2014", "%m-%d-%Y")  # Specify format
+datetime + 20  # Add 20 days
+# Extract internal representation to integer
+as.numeric(datetime)
+datep <- as.Date("07/14/2013", "%m/%d/%Y")
+datep
+# Difference between dates
+difftime(datetime, datep, units="weeks")
+weekdays(datetime)  # Get day of the week
+# Coerce numeric into date-times
+datetime <- 0
+attributes(datetime) <- list(class="Date")
+datetime  # "Date" object
+structure(0, class="Date")  # "Date" object
+structure(10000.25, class="Date")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXct} Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{POSIXct} class in \texttt{R} represents \emph{date-time} objects, that can store both the date and time.
+      \vskip1ex
+      The \emph{clock time} is the time (number of hours, minutes and seconds) in the local \emph{time zone}.
+      \vskip1ex
+      The \emph{moment of time} is the \emph{clock time} in the \texttt{UTC} \emph{time zone}.
+      \vskip1ex
+      \texttt{POSIXct} objects are stored as the number of seconds that have elapsed since the \emph{epoch} (January 1, 1970) in the \texttt{UTC} \emph{time zone}.
+      \vskip1ex
+      \texttt{POSIXct} objects are stored as the \emph{moment of time}, but are printed out as the \emph{clock time} in the local \emph{time zone}.
+      \vskip1ex
+      A \emph{clock time} together with a \emph{time zone} uniquely specifies a \emph{moment of time}.
+      \vskip1ex
+      The function \texttt{as.POSIXct()} can parse a \texttt{character} string (representing the \emph{clock time}) and a \emph{time zone} into a \texttt{POSIXct} object.
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface".
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+datetime <- Sys.time()  # Get today's date and time
+datetime
+class(datetime)  # POSIXct object
+# POSIXct stored as integer moment of time
+as.numeric(datetime)
+# Parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+datetime <- as.POSIXct("2014-07-14 13:30:10")
+# Different time zones can have same clock time
+as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
+as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# Format argument allows parsing different date-time string formats
+as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
+           tz="America/New_York")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Operations on \texttt{POSIXct} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{"+"} and \texttt{"-"} arithmetic operators are overloaded to allow addition and subtraction operations on \texttt{POSIXct} objects.
+      \vskip1ex
+      The \texttt{"<"} and \texttt{">"} logical comparison operators are also overloaded to allow direct comparisons between \texttt{POSIXct} objects.
+      \vskip1ex
+      Operations on \texttt{POSIXct} objects are equivalent to the same operations on the internal integer representation of \texttt{POSIXct} (number of seconds since the \emph{epoch}).
+      \vskip1ex
+      Subtracting \texttt{POSIXct} objects creates a time interval object of class \texttt{difftime}.
+      \vskip1ex
+      The method \texttt{seq.POSIXt} creates a vector of \texttt{POSIXct} \emph{date-times}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Same moment of time corresponds to different clock times
+timeny <- as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
+timeldn <- as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# Add five hours to POSIXct
+timeny + 5*60*60
+# Subtract POSIXct
+timeny - timeldn
+class(timeny - timeldn)
+# Compare POSIXct
+timeny > timeldn
+# Create vector of POSIXct times during trading hours
+timev <- seq(
+  from=as.POSIXct("2014-07-14 09:30:00", tz="America/New_York"),
+  to=as.POSIXct("2014-07-14 16:00:00", tz="America/New_York"),
+  by="10 min")
+head(timev, 3)
+tail(timev, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Moment of Time and Clock Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{as.POSIXct()} can also coerce \texttt{integer} objects into \texttt{POSIXct}, given an \texttt{origin} in time.
+      \vskip1ex
+      The same \emph{moment of time} corresponds to different \emph{clock times} in different \emph{time zones}.
+      \vskip1ex
+      The same \emph{clock times} in different \emph{time zones} correspond to different \emph{moments of time}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# POSIXct is stored as integer moment of time
+datetimen <- as.numeric(datetime)
+# Same moment of time corresponds to different clock times
+as.POSIXct(datetimen, origin="1970-01-01", tz="America/New_York")
+as.POSIXct(datetimen, origin="1970-01-01", tz="UTC")
+# Same clock time corresponds to different moments of time
+as.POSIXct("2014-07-14 13:30:10", tz="America/New_York") -
+  as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# Add 20 seconds to POSIXct
+datetime + 20
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Methods for Manipulating \texttt{POSIXct} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{format()} formats \texttt{R} objects for printing and display.
+      \vskip1ex
+      The method \texttt{format.POSIXct()} parses \texttt{POSIXct} objects into a \texttt{character} string representing the \emph{clock time} in a given \emph{time zone}.
+      \vskip1ex
+      The method \texttt{as.POSIXct.Date()} parses \texttt{Date} objects into \texttt{POSIXct}, and assigns to them the \emph{moment of time} corresponding to midnight \texttt{UTC}.
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface".
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+datetime  # POSIXct date and time
+# Parse POSIXct to string representing the clock time
+format(datetime)
+class(format(datetime))  # Character string
+# Get clock times in different time zones
+format(datetime, tz="America/New_York")
+format(datetime, tz="UTC")
+# Format with custom format strings
+format(datetime, "%m/%Y")
+format(datetime, "%m-%d-%Y %H hours")
+# Trunc to hour
+format(datetime, "%m-%d-%Y %H:00:00")
+# Date converted to midnight UTC moment of time
+as.POSIXct(Sys.Date())
+as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
+           origin="1970-01-01",
+           tz="UTC")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXlt} Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{POSIXlt} class in \texttt{R} represents \emph{date-time} objects, that are stored internally as a list.
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} can parse a \texttt{character} string (representing the \emph{clock time}) and a \emph{time zone} into a \texttt{POSIXlt} object.
+      \vskip1ex
+      The method \texttt{format.POSIXlt()} parses \texttt{POSIXlt} objects into a \texttt{character} string representing the \emph{clock time} in a given \emph{time zone}.
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} can also parse a \texttt{POSIXct} object into a \texttt{POSIXlt} object, and \texttt{as.POSIXct()} can perform the reverse.
+      \vskip1ex
+      Adding a number to \texttt{POSIXlt} causes implicit coercion to \texttt{POSIXct}.
+      \vskip1ex
+      \texttt{POSIXct} and \texttt{POSIXlt} are two derived classes from the \texttt{POSIXt} class.
+      \vskip1ex
+      The methods \texttt{round.POSIXt()} and \texttt{trunc.POSIXt()} round and truncate \texttt{POSIXt} objects, and return \texttt{POSIXlt} objects.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+datetime <- as.POSIXlt("2014-07-14 18:30:10")
+datetime
+class(datetime)  # POSIXlt object
+as.POSIXct(datetime)  # Coerce to POSIXct object
+# Extract internal list representation to vector
+unlist(datetime)
+datetime + 20  # Add 20 seconds
+class(datetime + 20)  # Implicit coercion to POSIXct
+trunc(datetime, units="hours")  # Truncate to closest hour
+trunc(datetime, units="days")  # Truncate to closest day
+methods(trunc)  # Trunc methods
+trunc.POSIXt
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones and Date-time Conversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{date-time} objects require a \emph{time zone} to be uniquely specified.
+      \vskip1ex
+      \texttt{UTC} stands for "Universal Time Coordinated", and is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time.
+      \vskip1ex
+      \texttt{EST} stands for "Eastern Standard Time", and is \texttt{UTC} - 5 hours.
+      \vskip1ex
+      \texttt{EDT} stands for "Eastern Daylight Time", and is \texttt{UTC} - 4 hours.
+      \vskip1ex
+      The function \texttt{Sys.setenv()} can be used to set the default \emph{time zone}, but the environment variable \texttt{"TZ"} must be capitalized.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Set time-zone to UTC
+Sys.setenv(TZ="UTC")
+Sys.timezone()  # Get time-zone
+Sys.time()  # Today's date and time
+# Set time-zone back to New York
+Sys.setenv(TZ="America/New_York")
+Sys.time()  # Today's date and time
+# Standard Time in effect
+as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
+# Daylight Savings Time in effect
+as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
+datetime <- Sys.time()  # Today's date and time
+# Convert to character in different TZ
+format(datetime, tz="America/New_York")
+format(datetime, tz="UTC")
+# Parse back to POSIXct
+as.POSIXct(format(datetime, tz="America/New_York"))
+# Difference between New_York time and UTC
+as.POSIXct(format(Sys.time(), tz="UTC")) -
+  as.POSIXct(format(Sys.time(), tz="America/New_York"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Manipulating Date-time Objects Using \protect\emph{lubridate}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{lubridate} contains functions for manipulating \texttt{POSIXct} date-time objects.
+      \vskip1ex
+      The \texttt{ymd(), dmy()}, etc. functions parse \texttt{character} and \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects.
+      \vskip1ex
+      The \texttt{mday(), month(), year()}, etc. accessor functions extract date-time components.
+      \vskip1ex
+      The function \texttt{decimal\_date()} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates.
+      \vskip1ex
+      The function \texttt{date\_decimal()} converts \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(lubridate)  # Load lubridate
+# Parse strings into date-times
+as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
+datetime <- lubridate::mdy("07-14-2014", tz="America/New_York")
+datetime
+class(datetime)  # POSIXct object
+lubridate::dmy("14.07.2014", tz="America/New_York")
+
+# Parse numeric into date-times
+as.POSIXct(as.character(14072014), format="%d%m%Y",
+                        tz="America/New_York")
+lubridate::dmy(14072014, tz="America/New_York")
+
+# Parse decimal to date-times
+lubridate::decimal_date(datetime)
+lubridate::date_decimal(2014.25, tz="America/New_York")
+date_decimal(decimal_date(datetime), tz="America/New_York")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones Using \protect\emph{lubridate}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{lubridate} simplifies \emph{time zone} calculations.
+      \vskip1ex
+      The package \emph{lubridate} uses the \emph{UTC} \emph{time zone} as default.
+      \vskip1ex
+      The function \texttt{with\_tz()} creates a date-time object with the same moment of time in a different \emph{time zone}.
+      \vskip1ex
+      The function \texttt{force\_tz()} creates a date-time object with the same clock time in a different \emph{time zone}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+datetime <- lubridate::ymd_hms(20140714142010,
+                     tz="America/New_York")
+datetime
+# Get same moment of time in "UTC" time zone
+lubridate::with_tz(datetime, "UTC")
+as.POSIXct(format(datetime, tz="UTC"), tz="UTC")
+# Get same clock time in "UTC" time zone
+lubridate::force_tz(datetime, "UTC")
+as.POSIXct(format(datetime, tz="America/New_York"),
+           tz="UTC")
+# Same moment of time
+datetime - with_tz(datetime, "UTC")
+# Different moments of time
+datetime - force_tz(datetime, "UTC")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{lubridate} Time Span Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{lubridate} has two time span classes: \texttt{durations} and \texttt{periods}.
+      \vskip1ex
+      \texttt{durations} specify exact time spans, such as numbers of seconds, hours, days, etc.
+      \vskip1ex
+      The functions \texttt{ddays(), dyears()}, etc. return \texttt{duration} objects.
+      \vskip1ex
+      \texttt{periods} specify relative time spans that don't have a fixed length, such as months, years, etc.
+      \vskip1ex
+      \texttt{periods} account for variable days in the months, for Daylight Savings Time, and for leap years.
+      \vskip1ex
+      The functions \texttt{days(), months(), years()}, etc. return \texttt{period} objects.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+# Daylight Savings Time handling periods vs durations
+datetime <- as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
+datetime
+datetime + lubridate::ddays(1)  # Add duration
+datetime + lubridate::days(1)  # Add period
+
+leap_year(2012)  # Leap year
+datetime <- lubridate::dmy(01012012, tz="America/New_York")
+datetime
+datetime + lubridate::dyears(1)  # Add duration
+datetime + lubridate::years(1)  # Add period
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adding Time Spans to Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{periods} allow calculating future dates with the same day of the month, or month of the year.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+datetime <- lubridate::ymd_hms(20140714142010, tz="America/New_York")
+datetime
+# Add periods to a date-time
+c(datetime + lubridate::seconds(1), datetime + lubridate::minutes(1),
+  datetime + lubridate::days(1), datetime + period(months=1))
+
+# Create vectors of dates
+datetime <- lubridate::ymd(20140714, tz="America/New_York")
+datetime + 0:2 * period(months=1)  # Monthly dates
+datetime + period(months=0:2)
+datetime + 0:2 * period(months=2)  # bi-monthly dates
+datetime + seq(0, 5, by=2) * period(months=1)
+seq(datetime, length=3, by="2 months")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{End-of-month Dates}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Adding monthly \texttt{periods} can create invalid dates.
+      \vskip1ex
+      The operators \texttt{\%m+\%} and \texttt{\%m-\%} add or subtract monthly \texttt{periods} to account for the varible number of days per month.
+      \vskip1ex
+      This allows creating vectors of end-of-month dates.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+# Adding monthly periods can create invalid dates
+datetime <- lubridate::ymd(20120131, tz="America/New_York")
+datetime + 0:2 * period(months=1)
+datetime + period(months=1)
+datetime + period(months=2)
+
+# Create vector of end-of-month dates
+datetime %m-% lubridate::months(13:1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{RQuantLib} Calendar Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package
+      \href{https://cran.r-project.org/web/packages/RQuantLib/index.html}{\emph{RQuantLib}}
+      is an interface to the
+      \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
+      open source \texttt{C/C++} library for quantitative finance, mostly designed for pricing fixed-income instruments and options.
+      \vskip1ex
+      The
+      \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
+      library also contains calendar functions for determining holidays and business days in many different jurisdictions.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # Load zoo
+library(RQuantLib)  # Load RQuantLib
+
+# Create daily date series of class "Date"
+datev <- Sys.Date() + -5:2
+dates
+
+# Create Boolean vector of business days
+# Use RQuantLib calendar
+is_busday <- RQuantLib::isBusinessDay(
+  calendar="UnitedStates/GovernmentBond", datev)
+
+# Create daily series of business days
+bus_index <- datev[is_busday]
+bus_index
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Review of Date-time Classes in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{Date} class from the \texttt{base} package is suitable for \emph{daily} time series.
+      \vskip1ex
+      The \texttt{POSIXct} class from the \texttt{base} package is suitable for \emph{intra-day} time series.
+      \vskip1ex
+      The \texttt{yearmon} and  \texttt{yearqtr} classes from the \emph{zoo} package are suitable for \emph{quarterly} and \emph{monthly} time series.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # Load package zoo
+datetime <- Sys.Date()  # Create date series of class "Date"
+datev <- datetime + 0:365  # Daily series over one year
+head(datev, 4)  # Print first few dates
+format(head(datev, 4), "%m/%d/%Y")  # Print first few dates
+# Create daily date-time series of class "POSIXct"
+datev <- seq(Sys.time(), by="days", length.out=365)
+head(datev, 4)  # Print first few dates
+format(head(datev, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
+# Create series of monthly dates of class "zoo"
+monthly_index <- yearmon(2010+0:36/12)
+head(monthly_index, 4)  # Print first few dates
+# Create series of quarterly dates of class "zoo"
+qrtly_index <- yearqtr(2010+0:16/4)
+head(qrtly_index, 4)  # Print first few dates
+# Parse quarterly "zoo" dates to POSIXct
+Sys.setenv(TZ="UTC")
+as.POSIXct(head(qrtly_index, 4))
       @
   \end{columns}
 \end{block}

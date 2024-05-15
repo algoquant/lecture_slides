@@ -59,3 +59,20 @@ double inv_mat(arma::mat& matrixv) {
 }  // end inv_mat
 
 
+// The function demeanr() calculates a matrix with de-meaned columns.
+// It accepts a pointer to a matrix and operates on the matrix in place.
+// It returns the number of columns of the input matrix.
+// It uses RcppArmadillo.
+//' @export
+ // [[Rcpp::export]]
+ int demeanr(arma::mat& matrixv) {
+   // de-mean response and explanatory variables
+   // arma::mat matrixd(matrixv.n_cols);
+   for (uword i = 0; i < matrixv.n_cols; i++) {
+     matrixv.col(i) -= arma::mean(matrixv.col(i));
+     // matrixd(i) = arma::mean(matrixv.col(i));
+   }  // end for
+   return matrixv.n_cols;
+ }  // end demeanr
+
+

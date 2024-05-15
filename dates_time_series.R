@@ -154,81 +154,81 @@ datetime <- lubridate::ymd_hms(20140714142010, tz="America/New_York")
 datetime
 # Add periods to a date-time
 c(datetime + lubridate::seconds(1), datetime + lubridate::minutes(1),
-  datetime + lubridate::days(1), datetime + lubridate::months(1))
+  datetime + lubridate::days(1), datetime + period(months=1))
 # Create vectors of dates
 datetime <- lubridate::ymd(20140714, tz="America/New_York")
-datetime + 0:2 * lubridate::months(1)  # Monthly dates
-datetime + lubridate::months(0:2)
-datetime + 0:2 * lubridate::months(2)  # bi-monthly dates
-datetime + seq(0, 5, by=2) * lubridate::months(1)
+datetime + 0:2 * period(months=1)  # Monthly dates
+datetime + period(months=0:2)
+datetime + 0:2 * period(months=2)  # bi-monthly dates
+datetime + seq(0, 5, by=2) * period(months=1)
 seq(datetime, length=3, by="2 months")
 library(lubridate)  # Load lubridate
 # Adding monthly periods can create invalid dates
 datetime <- lubridate::ymd(20120131, tz="America/New_York")
-datetime + 0:2 * lubridate::months(1)
-datetime + lubridate::months(1)
-datetime + lubridate::months(2)
+datetime + 0:2 * period(months=1)
+datetime + period(months=1)
+datetime + period(months=2)
 # Create vector of end-of-month dates
-datetime %m-% lubridate::months(13:1)
+datetime %m-% months(13:1)
 library(zoo)  # Load zoo
 library(RQuantLib)  # Load RQuantLib
 # Create daily date series of class "Date"
-dates <- Sys.Date() + -5:2
-dates
+datev <- Sys.Date() + -5:2
+datev
 # Create Boolean vector of business days
 # Use RQuantLib calendar
-is_busday <- RQuantLib::isBusinessDay(
-  calendar="UnitedStates/GovernmentBond", dates)
+isbusday <- RQuantLib::isBusinessDay(
+  calendar="UnitedStates/GovernmentBond", datev)
 # Create daily series of business days
-bus_index <- dates[is_busday]
-bus_index
+datev[isbusday]
 library(zoo)  # Load package zoo
 datetime <- Sys.Date()  # Create date series of class "Date"
-dates <- datetime + 0:365  # Daily series over one year
-head(dates, 4)  # Print first few dates
-format(head(dates, 4), "%m/%d/%Y")  # Print first few dates
+datev <- datetime + 0:365  # Daily series over one year
+head(datev, 4)  # Print first few dates
+format(head(datev, 4), "%m/%d/%Y")  # Print first few dates
 # Create daily date-time series of class "POSIXct"
-dates <- seq(Sys.time(), by="days", length.out=365)
-head(dates, 4)  # Print first few dates
-format(head(dates, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
+datev <- seq(Sys.time(), by="days", length.out=365)
+head(datev, 4)  # Print first few dates
+format(head(datev, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
 # Create series of monthly dates of class "zoo"
-monthly_index <- yearmon(2010+0:36/12)
-head(monthly_index, 4)  # Print first few dates
+monthv <- yearmon(2010+0:36/12)
+head(monthv, 4)  # Print first few dates
 # Create series of quarterly dates of class "zoo"
-qrtly_index <- yearqtr(2010+0:16/4)
-head(qrtly_index, 4)  # Print first few dates
+qrtv <- yearqtr(2010+0:16/4)
+head(qrtv, 4)  # Print first few dates
 # Parse quarterly "zoo" dates to POSIXct
 Sys.setenv(TZ="UTC")
-as.POSIXct(head(qrtly_index, 4))
+as.POSIXct(head(qrtv, 4))
 library(lubridate)  # Load lubridate
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Create daily time series ending today
 startd <- decimal_date(Sys.Date()-6)
 endd <- decimal_date(Sys.Date())
 # Create vector of geometric Brownian motion
 datav <- exp(cumsum(rnorm(6)/100))
 tstep <- NROW(datav)/(endd-startd)
-tseries <- ts(data=datav, start=startd, frequency=tstep)
-tseries  # Display time series
+timeser <- ts(data=datav, start=startd, frequency=tstep)
+timeser  # Display time series
 # Display index dates
-as.Date(date_decimal(zoo::coredata(time(tseries))))
+as.Date(date_decimal(zoo::coredata(time(timeser))))
 # bi-monthly geometric Brownian motion starting mid-1990
-tseries <- ts(data=exp(cumsum(rnorm(96)/100)),
+timeser <- ts(data=exp(cumsum(rnorm(96)/100)),
        frequency=6, start=1990.5)
 # Show some methods for class "ts"
 matrix(methods(class="ts")[3:8], ncol=2)
 # "tsp" attribute specifies the date-time index
-attributes(tseries)
+attributes(timeser)
 # Extract the index
-tail(time(tseries), 11)
+tail(time(timeser), 11)
 # The index is equally spaced
-diff(tail(time(tseries), 11))
+diff(tail(time(timeser), 11))
 # Subset the time series
-window(tseries, start=1992, end=1992.25)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-plot(tseries, type="l",  # Create plot
-     col="red", lty="solid", xlab="", ylab="")
-title(main="Random Prices", line=-1)  # Add title
+window(timeser, start=1992, end=1992.25)
+# Create plot
+plot(timeser, type="l", col="red", lty="solid",
+     xlab="", ylab="")
+title(main="Brownian Motion", line=1)  # Add title
 class(EuStockMarkets)  # Multiple ts object
 dim(EuStockMarkets)
 head(EuStockMarkets, 3)  # Get first three rows
@@ -247,11 +247,12 @@ legend(x=1992, y=8000,
  legend=colnames(EuStockMarkets),
  col=c("black", "red", "blue", "green"),
  lwd=6, lty=1)
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
 # Create zoo time series of random returns
-dates <- Sys.Date() + 0:3
-zoots <- zoo(rnorm(NROW(dates)), order.by=dates)
+datev <- Sys.Date() + 0:11
+zoots <- zoo(rnorm(NROW(datev)), order.by=datev)
 zoots
 attributes(zoots)
 class(zoots)  # Class "zoo"
@@ -263,19 +264,19 @@ start(zoots)  # First date
 end(zoots)  # Last date
 zoots[start(zoots)]  # First element
 zoots[end(zoots)]  # Last element
-zoo::coredata(zoots) <- rep(1, 4)  # Replace coredata
+zoo::coredata(zoots) <- rep(1, NROW(zoots))  # Replace coredata
 cumsum(zoots)  # Cumulative sum
 cummax(cumsum(zoots))
 cummin(cumsum(zoots))
 library(zoo)  # Load package zoo
-zoots <- zoo(matrix(cumsum(rnorm(100)), nc=1),
-  order.by=seq(from=as.Date("2013-06-15"), by="day", len=100))
+zoots <- zoo(matrix(cumsum(rnorm(10)), nc=1),
+  order.by=seq(from=as.Date("2013-06-15"), by="day", len=10))
 colnames(zoots) <- "zoots"
 tail(zoots)
 dim(zoots)
 attributes(zoots)
 library(zoo)  # Load package zoo
-zoo::coredata(zoots) <- (1:4)^2  # Replace coredata
+zoo::coredata(zoots) <- (1:10)^2  # Replace coredata
 zoots
 lag(zoots)  # One day lag
 lag(zoots, 2)  # Two day lag
@@ -283,18 +284,18 @@ lag(zoots, k=-1)  # Proper one day lag
 diff(zoots)  # Diff with one day lag
 # Proper lag and original length
 lag(zoots, -2, na.pad=TRUE)
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
 # Create index of daily dates
-dates <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
+datev <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 # Create vector of geometric Brownian motion
-datav <- exp(cumsum(rnorm(NROW(dates))/100))
+datav <- exp(cumsum(rnorm(NROW(datev))/100))
 # Create zoo series of geometric Brownian motion
-zoots <- zoo(x=datav, order.by=dates)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Plot using plot.zoo method
-plot(zoots, xlab="", ylab="")
-title(main="Random Prices", line=-1)  # Add title
+zoots <- zoo(x=datav, order.by=datev)
+# Plot using method plot.zoo()
+plot.zoo(zoots, xlab="", ylab="")
+title(main="Brownian Motion", line=1)  # Add title
 library(zoo)  # Load package zoo
 # Subset zoo as matrix
 zoots[459:463, 1]
@@ -304,42 +305,42 @@ window(zoots,
  end=as.Date("2014-10-19"))
 # Subset zoo using Date object
 zoots[as.Date("2014-10-15")]
-set.seed(1121)  # Reset random number generator
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
 # Create daily date series of class "Date"
-index1 <- seq(Sys.Date(), by="days", length.out=365)
+tday <- Sys.Date()
+index1 <- seq(tday-2*365, by="days", length.out=365)
 # Create zoo time series of random returns
-zoots1 <- zoo(rnorm(NROW(index1)), order.by=index1)
+zoo1 <- zoo(rnorm(NROW(index1)), order.by=index1)
 # Create another zoo time series of random returns
-index2 <- seq(Sys.Date()+350, by="days", length.out=365)
-zoots2 <- zoo(rnorm(NROW(index2)), order.by=index2)
+index2 <- seq(tday-360, by="days", length.out=365)
+zoo2 <- zoo(rnorm(NROW(index2)), order.by=index2)
 # rbind the two time series - ts1 supersedes ts2
-zoots3 <- rbind(zoots1,
-  zoots2[zoo::index(zoots2) > end(zoots1)])
+zooub2 <- zoo2[zoo::index(zoo2) > end(zoo1)]
+zoo3 <- rbind(zoo1, zooub2)
 # Plot zoo time series of geometric Brownian motion
-plot(exp(cumsum(zoots3)/100), xlab="", ylab="")
+plot(exp(cumsum(zoo3)/100), xlab="", ylab="")
 # Add vertical lines at stitch point
-abline(v=end(zoots1), col="blue", lty="dashed")
-abline(v=start(zoots2), col="red", lty="dashed")
-title(main="Random Prices", line=-1)  # Add title
+abline(v=end(zoo1), col="blue", lty="dashed")
+abline(v=start(zoo2), col="red", lty="dashed")
+title(main="Brownian Motions Stitched Together", line=1)  # Add title
 # Create daily date series of class "Date"
 index1 <- Sys.Date() + -3:1
 # Create zoo time series of random returns
-zoots1 <- zoo(rnorm(NROW(index1)), order.by=index1)
+zoo1 <- zoo(rnorm(NROW(index1)), order.by=index1)
 # Create another zoo time series of random returns
 index2 <- Sys.Date() + -1:3
-zoots2 <- zoo(rnorm(NROW(index2)), order.by=index2)
-merge(zoots1, zoots2)  # union of dates
+zoo2 <- zoo(rnorm(NROW(index2)), order.by=index2)
+merge(zoo1, zoo2)  # union of dates
 # Intersection of dates
-merge(zoots1, zoots2, all=FALSE)
+merge(zoo1, zoo2, all=FALSE)
 # Create matrix containing NA values
-matrixv <- sample(18)
-matrixv[sample(NROW(matrixv), 4)] <- NA
-matrixv <- matrix(matrixv, nc=3)
+matv <- sample(18)
+matv[sample(NROW(matv), 4)] <- NA
+matv <- matrix(matv, nc=3)
 # Replace NA values with most recent non-NA values
-zoo::na.locf(matrixv)
-rutils::na_locf(matrixv)
+zoo::na.locf(matv)
 # Get time series of prices
 pricev <- mget(c("VTI", "VXX"), envir=rutils::etfenv)
 pricev <- lapply(pricev, quantmod::Cl)
@@ -389,17 +390,18 @@ zoo::index(zoots) <- date_decimal(zoo::index(zoots))
 head(zoots, 3)
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Create index of daily dates
-dates <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
+datev <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 # Create vector of geometric Brownian motion
-datav <- exp(cumsum(rnorm(NROW(dates))/100))
+datav <- exp(cumsum(rnorm(NROW(datev))/100))
 # Create zoo time series of geometric Brownian motion
-zoots <- zoo(x=datav, order.by=dates)
+zoots <- zoo(x=datav, order.by=datev)
 head(zoots, 3)  # zoo object
 # as.ts() creates ts object with frequency=1
-tseries <- as.ts(zoots)
-tsp(tseries)  # Frequency=1
+timeser <- as.ts(zoots)
+tsp(timeser)  # Frequency=1
 # Get start and end dates of zoots
 startd <- decimal_date(start(zoots))
 endd <- decimal_date(end(zoots))
@@ -407,36 +409,33 @@ endd <- decimal_date(end(zoots))
 tstep <- NROW(zoots)/(endd-startd)
 datav <- zoo::coredata(zoots)  # Extract data from zoots
 # Create ts object using ts()
-tseries <- ts(data=datav, start=startd, frequency=tstep)
+timeser <- ts(data=datav, start=startd, frequency=tstep)
 # Display start of time series
-window(tseries, start=start(tseries),
- end=start(tseries)+4/365)
-head(time(tseries))  # Display index dates
-head(as.Date(date_decimal(zoo::coredata(time(tseries)))))
+window(timeser, start=start(timeser), end=start(timeser)+4/365)
+head(time(timeser))  # Display index dates
+head(as.Date(date_decimal(zoo::coredata(time(timeser)))))
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 # Create weekday Boolean vector
-weekdayv <- weekdays(zoo::index(zoots))
-is_weekday <- !((weekdayv == "Saturday") |
-  (weekdayv == "Sunday"))
+wkdays <- weekdays(zoo::index(zoots))
+wkdayl <- !((wkdays == "Saturday") | (wkdays == "Sunday"))
 # Remove weekends from zoo time series
-zoots <- zoots[is_weekday, ]
+zoots <- zoots[wkdayl, ]
 head(zoots, 7)  # zoo object
 # as.ts() creates NA values
-tseries <- as.ts(zoots)
-head(tseries, 7)
+timeser <- as.ts(zoots)
+head(timeser, 7)
 # Create vector of regular dates, including weekends
-dates <- seq(from=start(zoots),
-            by="day",
-            length.out=NROW(zoots))
-zoo::index(zoots) <- dates
-tseries <- as.ts(zoots)
-head(tseries, 7)
-set.seed(1121)  # Reset random number generator
+datev <- seq(from=start(zoots), by="day", length.out=NROW(zoots))
+zoo::index(zoots) <- datev
+timeser <- as.ts(zoots)
+head(timeser, 7)
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(xts)  # Load package xts
 # Create xts time series of random returns
-dates <- Sys.Date() + 0:3
-xtsv <- xts(rnorm(NROW(dates)), order.by=dates)
+datev <- Sys.Date() + 0:3
+xtsv <- xts(rnorm(NROW(datev)), order.by=datev)
 names(xtsv) <- "random"
 xtsv
 tail(xtsv, 3)  # Get last few elements
@@ -445,16 +444,17 @@ last(xtsv)  # Get last element
 class(xtsv)  # Class "xts"
 attributes(xtsv)
 # Get the time zone of an xts object
-indexTZ(xtsv)
-load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
-library(xts)  # Load package xts
+tzone(xtsv)
+load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
+class(zoo_stx)
 # as.xts() coerces zoo series into xts series
-pricexts <- as.xts(pricezoo)
+library(xts)  # Load package xts
+pricexts <- as.xts(zoo_stx)
 dim(pricexts)
 head(pricexts[, 1:4], 4)
 # Plot using plot.xts method
 xts::plot.xts(pricexts[, "Close"], xlab="", ylab="", main="")
-title(main="MSFT Prices")  # Add title
+title(main="Stock Prices")  # Add title
 library(xts)  # Load xts
 library(lubridate)  # Load lubridate
 # Coerce EuStockMarkets into class xts
@@ -477,9 +477,9 @@ for (colnum in 2:NCOL(xtsv))
   lines(xtsv[, colnum], col=colorv[colnum])
 # Plot using quantmod
 library(quantmod)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- colors
-chart_Series(x=xtsv, theme=plot_theme,
+plotheme <- chart_theme()
+plotheme$col$line.col <- colors
+chart_Series(x=xtsv, theme=plotheme,
        name="EuStockMarkets using quantmod")
 legend("topleft", legend=colnames(EuStockMarkets),
  inset=0.2, cex=0.7, , lty=rep(1, NCOL(xtsv)),
@@ -507,15 +507,13 @@ library(ggplot2)
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
 # Create data frame of time series
-dframe <- data.frame(dates=zoo::index(pricev),
-    zoo::coredata(pricev))
+dframe <- data.frame(datev=zoo::index(pricev), zoo::coredata(pricev))
 # reshape data into a single column
-dframe <-
-  reshape2::melt(dframe, id="dates")
+dframe <- reshape2::melt(dframe, id="dates")
 x11(width=6, height=5)  # Open plot window
 # ggplot the melted dframe
 ggplot(data=dframe,
- mapping=aes(x=dates, y=value, colour=variable)) +
+ mapping=aes(x=datev, y=value, colour=variable)) +
  geom_line() +
   xlab("") + ylab("") +
   ggtitle("VTI and IEF") +
@@ -538,19 +536,19 @@ library(plotly)
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
 # Create data frame of time series
-dframe <- data.frame(dates=zoo::index(pricev),
+dframe <- data.frame(datev=zoo::index(pricev),
     zoo::coredata(pricev))
 # Plotly syntax using pipes
 dframe %>%
-  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
-  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF") %>%
+  plot_ly(x=~datev, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
+  add_trace(x=~datev, y=~IEF, type="scatter", mode="lines", name="IEF") %>%
   layout(title="VTI and IEF prices",
    xaxis=list(title="Time"),
    yaxis=list(title="Stock Prices"),
    legend=list(x=0.1, y=0.9))
 # Or use standard plotly syntax
-plotobj <- plot_ly(data=dframe, x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI")
-plotobj <- add_trace(p=plotobj, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
+plotobj <- plot_ly(data=dframe, x=~datev, y=~VTI, type="scatter", mode="lines", name="VTI")
+plotobj <- add_trace(p=plotobj, x=~datev, y=~IEF, type="scatter", mode="lines", name="IEF")
 plotobj <- layout(p=plotobj, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 plotobj
 # Subset xts using a date range string
@@ -607,17 +605,17 @@ dates1 <- zoo::index(vti1)
 dates2 <- zoo::index(vti2)
 # Join by rows
 vti <- rbind(vti1, vti2)
-dates <- zoo::index(vti)
-sum(duplicated(dates))
-vti <- vti[!duplicated(dates), ]
+datev <- zoo::index(vti)
+sum(duplicated(datev))
+vti <- vti[!duplicated(datev), ]
 all.equal(vti, rutils::etfenv$VTI)
 # Alternative method - slightly slower
 vti <- rbind(vti1, vti2[!(zoo::index(vti2) %in% zoo::index(vti1))])
 all.equal(vti, rutils::etfenv$VTI)
 # Remove duplicates starting from the end
 vti <- rbind(vti1, vti2)
-vti <- vti[!duplicated(dates), ]
-vtifl <- vti[!duplicated(dates, fromLast=TRUE), ]
+vti <- vti[!duplicated(datev), ]
+vtifl <- vti[!duplicated(datev, fromLast=TRUE), ]
 all.equal(vti, vtifl)
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
@@ -650,31 +648,51 @@ pricem <- to.period(x=pricev, period="months", name="MSFT")
 colnames(pricem)
 colnames(pricem) <- sapply(
   strsplit(colnames(pricem), split=".", fixed=TRUE),
-  function(na_me) na_me[-1]
+  function(namev) namev[-1]
   )  # end sapply
 head(pricem, 3)
 # Lower the periodicity to years
-pricesy <- to.period(x=pricem, period="years", name="MSFT")
-colnames(pricevy) <- sapply(
-  strsplit(colnames(pricevy), split=".", fixed=TRUE),
-  function(na_me) na_me[-1]
+pricey <- to.period(x=pricem, period="years", name="MSFT")
+colnames(pricey) <- sapply(
+  strsplit(colnames(pricey), split=".", fixed=TRUE),
+  function(namev) namev[-1]
   )  # end sapply
-head(pricevy)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
-library(xts)  # Load package xts
+head(pricey)
+load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
+library(quantmod)  # Load package quantmod
 # as.xts() coerces zoo series into xts series
-pricexts <- as.xts(pricezoo)
-# Subset xts using a date
-pricexts <- pricexts["2014-11", 1:4]
-# Plot OHLC using plot.xts method
-xts::plot.xts(pricexts, type="candles", main="")
-title(main="MSFT Prices")  # Add title
-load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
-pricev <- as.ts(pricezoo)
-class(pricev)
-tail(pricev[, 1:4])
+class(zoo_stx)
+pricexts <- as.xts(zoo_stx)
+dim(pricexts)
+head(pricexts[, 1:4], 4)
+# OHLC candlechart
+plotheme <- chart_theme()
+plotheme$col$up.col <- c("green")
+plotheme$col$dn.col <- c("red")
+chart_Series(x=pricexts["2016-05/2016-06", 1:4], theme=plotheme,
+  name="Candlestick Plot of OHLC Stock Prices")
+library(dygraphs)
+# Create dygraphs object
+dyplot <- dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4])
+# Convert dygraphs object to candlestick plot
+dyplot <- dygraphs::dyCandlestick(dyplot)
+# Render candlestick plot
+dyplot
+# Candlestick plot using pipes syntax
+dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4]) %>%
+  dyCandlestick() %>%
+  dyOptions(colors="red", strokeWidth=3)
+# Candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dyOptions(
+  dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4]),
+  colors="red", strokeWidth=3))
+# Create zoo time series
+datev <- seq(from=as.Date("2014-07-14"), by="day", length.out=10)
+timeser <- zoo(x=sample(10), order.by=datev)
+class(timeser)
+timeser
 library(xts)
-pricexts <- as.xts(pricezoo)
-class(pricexts)
-tail(pricexts[, 1:4])
+# Coerce zoo time series to class xts
+pricexts <- as.xts(timeser)
+class(xtseries)
+xtseries

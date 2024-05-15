@@ -68,7 +68,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Markets and Trading]{Markets and Trading}
-\subtitle{FRE6871 \& FRE7241, Fall 2023}
+\subtitle{FRE6871 \& FRE7241, Spring 2024}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -110,12 +110,17 @@ symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
 ratesenv <- new.env()
 # Download time series for symbolv into ratesenv
 quantmod::getSymbols(symbolv, env=ratesenv, src="FRED")
-# List files in ratesenv
-ls(ratesenv)
+# Remove NA values in ratesenv
+sapply(ratesenv, function(x) sum(is.na(x)))
+sapply(ls(ratesenv), function(namev) {
+  assign(x=namev, value=na.omit(get(namev, ratesenv)), 
+         envir=ratesenv)
+}) # end sapply
+sapply(ratesenv, function(x) sum(is.na(x)))
 # Get class of all objects in ratesenv
 sapply(ratesenv, class)
 # Get class of all objects in R workspace
-sapply(ls(), function(name) class(get(name)))
+sapply(ls(), function(namev) class(get(namev)))
 # Save the time series environment into a binary .RData file
 save(ratesenv, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
       @
@@ -861,10 +866,10 @@ print(xtable::xtable(futures), comment=FALSE, size="scriptsize", include.rowname
       The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
       <<echo=TRUE,eval=FALSE>>=
 # Load data for S&P Emini futures June 2019 contract
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-file_name <- file.path(dir_name, "ESohlc.csv")
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+filen <- file.path(dirn, "ESohlc.csv")
 # Read a data table from CSV file
-pricev <- data.table::fread(file_name)
+pricev <- data.table::fread(filen)
 class(pricev)
 # Coerce first column from string to date-time
 unlist(sapply(pricev, class))
@@ -909,17 +914,17 @@ dygraphs::dygraph(pricev[, 1:4], main="OHLC prices") %>%
       The contract with the highest trading volume is usually considered the most liquid contract.
       <<echo=TRUE,eval=FALSE>>=
 # Load ESU8 data
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-file_name <- file.path(dir_name, "ESU8.csv")
-ESU8 <- data.table::fread(file_name)
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+filen <- file.path(dirn, "ESU8.csv")
+ESU8 <- data.table::fread(filen)
 # Coerce ESU8 into xts series
 ESU8$V1 <- as.Date(as.POSIXct.numeric(ESU8$V1,
     tz="America/New_York", origin="1970-01-01"))
 ESU8 <- data.table::as.xts.data.table(ESU8)
 colnames(ESU8)[1:5] <- c("Open", "High", "Low", "Close", "Volume")
 # Load ESM8 data
-file_name <- file.path(dir_name, "ESM8.csv")
-ESM8 <- data.table::fread(file_name)
+filen <- file.path(dirn, "ESM8.csv")
+ESM8 <- data.table::fread(filen)
 # Coerce ESM8 into xts series
 ESM8$V1 <- as.Date(as.POSIXct.numeric(ESM8$V1,
     tz="America/New_York", origin="1970-01-01"))
@@ -964,7 +969,7 @@ legend("topleft", legend=colnames(volumm), col=colorv, y.intersp=0.1,
       \vskip1ex
       When the next contract becomes more liquid, then the continuous contract price is rolled over to that contract.
       \vskip1ex
-      Futures contracts with different maturities (expiration dates) trade at different prices because of the futures curve, which causes price jumps between consecutive futures contracts.
+      Futures contracts with different maturities (expiration datev) trade at different prices because of the futures curve, which causes price jumps between consecutive futures contracts.
       \vskip1ex
       The old contract price is multiplied by a scaling factor after that contract is rolled, to remove price jumps.
       \vskip1ex
@@ -1688,25 +1693,25 @@ class(sp500table)
 dim(sp500table)
 head(sp500table)
 # Select unique sp500 tickers and save them into text file
-sp500_tickers <- unique(sp500table$co_tic)
-cat(sp500_tickers, file="/Users/jerzy/Develop/lecture_slides/data/sp500_tickers.txt", sep="\n")
+ticksp500 <- unique(sp500table$co_tic)
+cat(ticksp500, file="/Users/jerzy/Develop/lecture_slides/data/ticksp500.txt", sep="\n")
 # Some gvkeys are duplicates
 duplicatv <- table(sp500table$gvkey)
 duplicatv <- duplicatv[duplicatv > 1]
 duplicatv <- sp500table[match(as.numeric(names(duplicatv)), sp500table$gvkey), ]
 # Select unique gvkeys
-sp500_gvkeys <- unique(sp500table$gvkey)
-# foo <- sp500table[match(sp500_gvkeys, sp500table$gvkey), ]
+keysp500 <- unique(sp500table$gvkey)
+# foo <- sp500table[match(keysp500, sp500table$gvkey), ]
 # Save gvkeys into text file
-cat(sp500_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/sp500_gvkeys.txt", sep="\n")
+cat(keysp500, file="/Users/jerzy/Develop/lecture_slides/data/keysp500.txt", sep="\n")
 # Select unique cusips and save into text file
-sp500_cusips <- unique(sp500table$co_cusip)
+cusipsp500 <- unique(sp500table$co_cusip)
 # Remove empty cusips
-which(sp500_cusips == "")
-sp500_cusips <- sp500_cusips[-which(sp500_cusips == "")]
-cat(sp500_cusips, file="/Users/jerzy/Develop/lecture_slides/data/sp500_cusips.txt", sep="\n")
-# Find the rows corresponding to the sp500_cusips
-rows_cusips <- sp500table[match(sp500_cusips, sp500table$co_cusip), ]
+which(cusipsp500 == "")
+cusipsp500 <- cusipsp500[-which(cusipsp500 == "")]
+cat(cusipsp500, file="/Users/jerzy/Develop/lecture_slides/data/cusipsp500.txt", sep="\n")
+# Find the rows corresponding to the cusipsp500
+rows_cusips <- sp500table[match(cusipsp500, sp500table$co_cusip), ]
 # Find the rows corresponding to duplicate gvkeys
 duplicatv <- table(rows_cusips$gvkey)
 duplicatv <- duplicatv[duplicatv > 1]
@@ -1818,16 +1823,16 @@ head(sp500table)
 library(rutils)  # Load package rutils
 # Read .csv file with TAP OHLC prices
 ohlc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/TAP.csv")
-# ohlc contains cusips not in sp500_cusips
+# ohlc contains cusips not in cusipsp500
 cusips <- unique(ohlc$cusip)
-cusips %in% sp500_cusips
-# Select data only for sp500_cusips
-ohlc <- ohlc[ohlc$cusip %in% sp500_cusips, ]
-# ohlc contains tickers not in sp500_tickers
+cusips %in% cusipsp500
+# Select data only for cusipsp500
+ohlc <- ohlc[ohlc$cusip %in% cusipsp500, ]
+# ohlc contains tickers not in ticksp500
 tickers <- unique(ohlc$tic)
-tickers %in% sp500_tickers
-# Select data only for sp500_tickers
-ohlc <- ohlc[ohlc$tic %in% sp500_tickers, ]
+tickers %in% ticksp500
+# Select data only for ticksp500
+ohlc <- ohlc[ohlc$tic %in% ticksp500, ]
 # Select ticker from sp500table
 symboln <- sp500table$co_tic[match(ohlc$gvkey[1], sp500table$gvkey)]
 # Adjustment factor and total return factor
@@ -1868,7 +1873,7 @@ plot(quantmod::Cl(ohlc), main="TAP Stock")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define formatting function for OHLC prices
-format_ohlc <- function(ohlc, environ_ment) {
+format_ohlc <- function(ohlc, pricenv) {
   # Select ticker from sp500table
   symboln <- sp500table$co_tic[match(ohlc$gvkey[1], sp500table$gvkey)]
   # Split adjustment and total return factors
@@ -1888,9 +1893,9 @@ format_ohlc <- function(ohlc, environ_ment) {
   ohlc[isna, 1] <- (ohlc[isna, 2] + ohlc[isna, 3])/2
   # Adjust the prices
   ohlc[, 1:4] <- factr*ohlc[, 1:4]/factadj/factr[NROW(factr)]
-  # Copy the OHLCV data to environ_ment
+  # Copy the OHLCV data to pricenv
   ohlc <- na.omit(ohlc)
-  assign(x=symboln, value=ohlc, envir=environ_ment)
+  assign(x=symboln, value=ohlc, envir=pricenv)
   symbol
 }  # end format_ohlc
       @
@@ -1916,23 +1921,22 @@ format_ohlc <- function(ohlc, environ_ment) {
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load OHLC prices from .csv file downloaded from WRDS by cusip
-sp500_pricev <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices_bycusip.csv")
-# sp500_prices contains cusips not in sp500_cusips
+pricesp500 <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices_bycusip.csv")
+# sp500_prices contains cusips not in cusipsp500
 cusips <- unique(sp500_prices$cusip)
-NROW(sp500_cusips); NROW(cusips)
-# Select data only for sp500_cusips
-sp500_pricev <- sp500_pricev[sp500_prices$cusip %in% sp500_cusips, ]
-# sp500_prices contains tickers not in sp500_tickers
+NROW(cusipsp500); NROW(cusips)
+# Select data only for cusipsp500
+pricesp500 <- pricesp500[sp500_prices$cusip %in% cusipsp500, ]
+# sp500_prices contains tickers not in ticksp500
 tickers <- unique(sp500_prices$tic)
-NROW(sp500_tickers); NROW(tickers)
-# Select data only for sp500_tickers
-sp500_pricev <- sp500_pricev[sp500_prices$tic %in% sp500_tickers, ]
+NROW(ticksp500); NROW(tickers)
+# Select data only for ticksp500
+pricesp500 <- pricesp500[sp500_prices$tic %in% ticksp500, ]
 # Create new data environment
 sp500env <- new.env()
 # Perform OHLC aggregations by cusip column
-sp500_pricev <- split(sp500_pricev, sp500_prices$cusip)
-process_ed <- lapply(sp500_pricev, format_ohlc,
-                     environ_ment=sp500env)
+pricesp500 <- split(pricesp500, sp500_prices$cusip)
+process_ed <- lapply(pricesp500, format_ohlc, pricenv=sp500env)
       @
   \end{columns}
 \end{block}
@@ -2328,8 +2332,7 @@ chart_Series(cumsum(factors["2001/", 1]/100),
       \emph{TAQ} data is often split into \emph{trade} data and \emph{quote} data.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),size="tiny",tidy=FALSE,eval=TRUE>>=
-options(width=200)
+      <<echo=TRUE,eval=FALSE>>=
 # Load package HighFreq
 library(HighFreq)
 # Or load the high frequency data file directly:
@@ -2414,7 +2417,7 @@ last(datev)
 unclass(last(datev))
 as.numeric(last(datev))
 # Calculate the number of seconds
-nsecs <- as.numeric(last(datev)) - as.numeric(first(datev))
+as.numeric(last(datev)) - as.numeric(first(datev))
 # Calculate the number of ticks per second
 NROW(taq)/(6.5*3600)
 # Select TAQ data columns
@@ -2445,8 +2448,7 @@ taq <- taq[, .(price=PRICE, volume=SIZE)]
 # Coerce trade ticks to xts series
 xlk <- xts::xts(taq[, .(price, volume)], datev)
 colnames(xlk) <- c("price", "volume")
-save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
-# save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316.RData")
+save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades_20200316.RData")
 # Plot histogram of the trading volumes
 hist(xlk$volume, main="Histogram of XLK Trading Volumes", 
      breaks=1e5, xlim=c(1, 400), xlab="number of shares")
@@ -2577,7 +2579,7 @@ NROW(tickb)/(6.5*3600)
 hist(tickb$volume, main="Histogram of XLK Trading Volumes", 
      breaks=100000, xlim=c(1, 400), xlab="number of shares")
 # Save trade ticks with large lots
-data.table::fwrite(tickb, file="/Users/jerzy/Develop/data/xlk_tick_trades2020_0316_biglots.csv")
+data.table::fwrite(tickb, file="/Users/jerzy/Develop/data/xlk_tick_trades_20200316_biglots.csv")
 # Coerce trade prices to xts
 xlkb <- xts::xts(tickb[, .(price, volume)], tickb$index)
 colnames(xlkb) <- c("price", "volume")
@@ -2598,6 +2600,11 @@ quantmod::chart_Series(x=xlk$price,
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Scrubbing Bad Market Data}
 
 
 %%%%%%%%%%%%%%%
@@ -2624,8 +2631,8 @@ Identify bad prices in-sample using
       If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the centered Hampel filter to remove bad prices
-lookb <- 71
-halfb <- lookb %/% 2
+lookb <- 71 # Look-back interval
+halfb <- lookb %/% 2 # Half-back interval
 pricev <- xlk$price
 # Calculate the trailing median and MAD
 medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
@@ -2652,10 +2659,10 @@ threshv <- 6*madz
 isgood <- (abs(zscores) < threshv)
 # Calculate the number of bad prices
 sum(!isgood)
-# Overwrite bad prices and calculate time series of scrubbed prices
+# Scrub bad prices by replacing them with previous good prices
 priceg <- pricev
 priceg[!isgood] <- NA
-priceg <- na.locf(priceg)
+priceg <- zoo::na.locf(priceg)
 # Plot dygraph of the scrubbed prices
 dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
   dyOptions(colors="blue", strokeWidth=1)
@@ -2686,8 +2693,8 @@ quantmod::chart_Series(x=priceg,
       If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the centered Hampel filter to remove bad prices
-lookb <- 71
-halfb <- lookb %/% 2
+lookb <- 71 # Look-back interval
+halfb <- lookb %/% 2 # Half-back interval
 pricev <- xlk$price
 # Calculate the trailing median and MAD
 medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
@@ -2717,7 +2724,7 @@ sum(!isgood)
 # Overwrite bad prices and calculate time series of scrubbed prices
 priceg <- pricev
 priceg[!isgood] <- NA
-priceg <- na.locf(priceg)
+priceg <- zoo::na.locf(priceg)
 # Plot dygraph of the scrubbed prices
 dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
   dyOptions(colors="blue", strokeWidth=1)
@@ -2764,16 +2771,14 @@ ispike[sample(x=nrows, size=nspikes)] <- TRUE
 priceb <- priceg
 priceb[ispike] <- priceb[ispike]*
   sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
-# Calculate the z-scores
-medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
 # Plot the bad prices and their medians
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
 pricem <- cbind(priceb, medianv)
 colnames(pricem) <- c("prices with spikes", "median")
 dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
   dyOptions(colors=c("red", "blue"))
-# medianv <- TTR::runMedian(priceb, n=lookb)
+# Calculate the z-scores
 madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
-# madv <- TTR::runMAD(priceb, n=lookb)
 zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
 # Z-scores have very fat tails
 range(zscores); mad(zscores)
@@ -2782,6 +2787,7 @@ hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
 # Identify good prices with small z-scores
 threshv <- 3*madz
 isgood <- (abs(zscores) < threshv)
+# Calculate the number of bad prices
 sum(!isgood)
       @
   \end{columns}
@@ -2866,7 +2872,7 @@ confun <- function(actualv, zscores, threshv) {
 }  # end confun
 confun(!ispike, zscores, threshv=threshv)
 # Define vector of discrimination thresholds
-threshv <- madz*seq(from=0.1, to=5.0, by=0.1)/2
+threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
 # Calculate the error rates
 errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
 errorr <- t(errorr)
@@ -2904,18 +2910,19 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Daily stock prices also contain bad data points consisting of mostly single, isolated spikes in prices.
+      Daily stock prices can also contain bad data points consisting of mostly single, isolated spikes in prices.
       \vskip1ex
       The number of false positives may be too high, so the Hampel filter parameters (the look-back interval and the threshold) need adjustment.
       \vskip1ex
       For example, the \emph{VXX} has only one bad price (on \texttt{2010-11-08}), but the Hampel filter identifies many more than that (which are false positives).
       <<echo=TRUE,eval=FALSE>>=
+# Load log VXX prices
+load("/Users/jerzy/Develop/lecture_slides/data/pricevxx.RData")
+nrows <- NROW(pricev)
 # Calculate the centered Hampel filter for VXX
-lookb <- 71
-halfb <- lookb %/% 2
-pricev <- log(na.omit(rutils::etfenv$prices$VXX))
-medianv <- roll::roll_median(pricev, width=lookb)
-medianv[1:lookb, ] <- pricev[1:lookb, ]
+lookb <- 7 # Look-back interval
+halfb <- lookb %/% 2 # Half-back interval
+medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
 medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
 madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
@@ -2923,26 +2930,32 @@ zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
 range(zscores); mad(zscores)
 madz <- mad(zscores[abs(zscores) > 0])
 hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
+# Define discrimination threshold value
+threshv <- 9*madz
+# Calculate the good prices
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+# Dates of the bad prices
+zoo::index(pricev[!isgood])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_falsepos.png}
       <<echo=TRUE,eval=FALSE>>=
-# Define discrimination threshold value
-threshv <- 10*madz
-# Calculate the bad prices
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-# Dates of the bad prices
-zoo::index(pricev[!isgood])
 # Calculate the false positives
 falsep <- !isgood
 falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
 # Plot dygraph of the prices with bad prices
-dygraphs::dygraph(pricev, main="VXX Prices With False Positives") %>%
+datam <- cbind(pricev, zscores)
+colnames(datam)[2] <- "ZScores"
+colnamev <- colnames(datam)
+dygraphs::dygraph(datam, main="VXX Prices With Z-Scores and False Positives") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=1, col="red") %>%
   dyEvent(zoo::index(pricev[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
-  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green") %>%
-  dyOptions(colors="blue", strokeWidth=1)
+  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green")
       @
   \end{columns}
 \end{block}
@@ -2971,15 +2984,14 @@ dygraphs::dygraph(pricev, main="VXX Prices With False Positives") %>%
 priceb <- pricev
 priceb["2017-11-20"] <- 1.2*priceb["2017-11-20"]
 # Calculate the Z-scores
-medianv <- roll::roll_median(priceb, width=lookb)
-medianv[1:lookb, ] <- priceb[1:lookb, ]
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
 medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
 madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
 zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
 madz <- mad(zscores[abs(zscores) > 0])
 # Calculate the number of bad prices
-threshv <- 10*madz
+threshv <- 9*madz
 isgood <- (abs(zscores) < threshv)
 sum(!isgood)
 zoo::index(priceb[!isgood])
@@ -2988,8 +3000,7 @@ priceb <- pricev
 priceb["2017-11-20"] <- 1.2*priceb["2017-11-21"]
 priceb["2017-11-21"] <- 1.2*priceb["2017-11-21"]
 # Calculate the Z-scores
-medianv <- roll::roll_median(priceb, width=lookb)
-medianv[1:lookb, ] <- priceb[1:lookb, ]
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
 medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
 madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
@@ -3017,25 +3028,19 @@ zoo::index(priceb[!isgood])
       \vskip1ex
       But it's incorrect to replace bad prices with the average of the previous good price and the next good price, since that would cause data snooping.
       <<echo=TRUE,eval=FALSE>>=
-# Dates of the bad prices
-datev <- zoo::index(pricev)
-dateb <- datev[!isgood]
-# Dates of the previous prices
-datep <- c(!isgood[-1], FALSE)
-datev[datep]
 # Replace bad stock prices with the previous good prices
 priceg <- pricev
-priceg[!isgood] <- pricev[datep]
+priceg[!isgood] <- NA
+priceg <- zoo::na.locf(priceg)
 # Calculate the Z-scores
-medianv <- roll::roll_median(priceg, width=lookb)
-medianv[1:lookb, ] <- priceg[1:lookb, ]
+medianv <- HighFreq::roll_mean(priceg, lookb=lookb, method="nonparametric")
 medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
 madv <- HighFreq::roll_var(priceg, lookb=lookb, method="nonparametric")
 madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
 zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
 madz <- mad(zscores[abs(zscores) > 0])
 # Calculate the number of bad prices
-threshv <- 10*madz
+threshv <- 9*madz
 isgood <- (abs(zscores) < threshv)
 sum(!isgood)
 zoo::index(priceg[!isgood])
@@ -3059,54 +3064,56 @@ dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Receiver Operating Characteristic (ROC) Curve}
+\subsection{ROC Curve for Daily Hampel Classifier}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      In order to measure the performance of the Hampel filter, we add price spikes to the clean prices, to see how accurately they're classified. 
+      \vskip1ex
       The performance of the Hampel noise classification model depends on the length of the look-back time interval.
-      a binary.
-      \emph{area under the ROC curve} (AUC) is a measure of 
-      a binary.
-      The optimal \emph{threshold value} can be determined using \emph{cross-validation}. 
       \vskip1ex
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
-      \vskip1ex
-      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
+      The optimal \emph{look-back interval} and \emph{threshold value} can be determined using \emph{cross-validation}. 
       <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of threshold
-confun <- function(actualv, zscores, threshv) {
-    confmat <- table(!actualv, !(abs(zscores) > threshv))
-    confmat <- confmat / rowSums(confmat)
-    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-  }  # end confun
-confun(ispike, zscores, threshv=threshv)
+# Add 200 random price spikes to the clean prices
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nspikes <- 200
+ispike <- logical(nrows)
+ispike[sample(x=nrows, size=nspikes)] <- TRUE
+priceb <- priceg
+priceb[ispike] <- priceb[ispike]*
+  sample(c(0.99, 1.01), size=nspikes, replace=TRUE)
+# Calculate the Z-scores
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
 # Define vector of discrimination thresholds
-threshv <- seq(from=0.2, to=5.0, by=0.2)
+threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
 # Calculate the error rates
-errorr <- sapply(threshv, confun,
-  actualv=ispike, zscores=zscores)  # end sapply
+errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
 errorr <- t(errorr)
 rownames(errorr) <- threshv
 errorr <- rbind(c(1, 0), errorr)
 errorr <- rbind(errorr, c(0, 1))
-# Calculate the area under ROC curve (AUC)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc_daily.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the area under the ROC curve (AUC)
 truepos <- (1 - errorr[, "typeII"])
 truepos <- (truepos + rutils::lagit(truepos))/2
 falsepos <- rutils::diffit(errorr[, "typeI"])
 abs(sum(truepos*falsepos))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc.png}
-      <<echo=TRUE,eval=FALSE>>=
 # Plot ROC curve for Hampel classifier
-x11(width=6, height=5)
 plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Hampel Classifier",
+     main="ROC Curve for Daily Hampel Classifier",
      type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
       @
@@ -3530,7 +3537,7 @@ legend("topright", inset=0.05, bty="n",
 # Calculate rolling volatility of SPY returns
 ret2013 <- retp["2013-11-11/2013-11-15"]
 # Calculate rolling volatility
-lookb <- 11
+lookb <- 11 # Look-back interval
 endd <- seq_along(ret2013)
 startp <- c(rep_len(1, lookb),
   endd[1:(NROW(endd)-lookb)])
@@ -3661,7 +3668,7 @@ mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2,
       Hourly aggregations of high frequency data also support the rule that the \emph{trading volume} is roughly proportional to the \emph{volatility} of the returns: $\upsilon \propto \sigma$.
       <<echo=TRUE,eval=FALSE>>=
 # 60 minutes of data in lookb interval
-lookb <- 60
+lookb <- 60 # Look-back interval
 vol2013 <- volumv["2013"]
 ret2013 <- retp["2013"]
 # Define end points with beginning stub
@@ -3872,7 +3879,7 @@ chart_Series(volatd["2010"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Daily Seasonality of Volume and Volatility}
+\subsection{Intraday Seasonality of Volume and Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3897,10 +3904,10 @@ x11(width=6, height=7) ; par(mfrow=c(2, 1))
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue")
 chart_Series(volumagg[c(-1, -NROW(volumagg))], theme=plot_theme,
-  name="Daily Seasonality of SPY Volume", plot=FALSE)
+  name="Intraday Seasonality of SPY Volume", plot=FALSE)
 plot_theme$col$line.col <- c("red")
 chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
-  name="Daily Seasonality of SPY Volatility")
+  name="Intraday Seasonality of SPY Volatility")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3912,7 +3919,7 @@ chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Daily Seasonality of Liquidity and Volatility}
+\subsection{Intraday Seasonality of Liquidity and Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3924,15 +3931,15 @@ chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate market liquidity
 liquidv <- sqrt(volumagg)/volagg
-# Plot daily seasonality of market liquidity
+# Plot intraday seasonality of market liquidity
 x11(width=6, height=7) ; par(mfrow=c(2, 1))
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue")
 chart_Series(liquidv[c(-1, -NROW(liquidv))], theme=plot_theme,
-  name="Daily Seasonality of SPY Liquidity", plot=FALSE)
+  name="Intraday Seasonality of SPY Liquidity", plot=FALSE)
 plot_theme$col$line.col <- c("red")
 chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
-  name="Daily Seasonality of SPY Volatility")
+  name="Intraday Seasonality of SPY Volatility")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3968,7 +3975,7 @@ abline(h=0.5, col="blue", lwd=2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Daily Seasonality of Hurst Exponent and Volatility}
+\subsection{draft: Intraday Seasonality of Hurst Exponent and Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3978,7 +3985,7 @@ abline(h=0.5, col="blue", lwd=2)
       <<daily_season_hurst_volat,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 par(mfrow=c(2,1))  # set plot panels
 library(rutils)  # Load package rutils
-# Daily seasonality of Hurst exponent
+# Intraday seasonality of Hurst exponent
 interval <- "2013"
 season_hurst <- season_ality(hurst_ohlc(ohlc=SPY[interval, 1:4]))
 season_hurst <- season_hurst[-(nrow(season_hurst))]
@@ -3987,7 +3994,7 @@ plot_theme <- chart_theme()
 plot_theme$format.labels <- "%H:%M"
 chobj <- chart_Series(x=season_hurst,
   name=paste(colnames(season_hurst),
-  "daily seasonality"), theme=plot_theme,
+  "intraday seasonality"), theme=plot_theme,
   plot=FALSE)
 ylim <- chobj$get_ylim()
 ylim[[2]] <- structure(c(ylim[[2]][1],
@@ -3995,7 +4002,7 @@ ylim[[2]] <- structure(c(ylim[[2]][1],
 chobj$set_ylim(ylim)
 plot(chobj)
 abline(h=0.5, col="blue", lwd=2)
-# Daily seasonality of volatility
+# Intraday seasonality of volatility
 season_var <- season_ality(vol_ohlc(ohlc=SPY))
       @
     \column{0.5\textwidth}
@@ -4029,7 +4036,7 @@ varv <- roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
 skewn <- roll_agg_ohlc(ohlc=SPY, agg_fun="skew_ohlc")
 skewn <- skewn/(varv)^(1.5)
 skewn[1, ] <- 0
-skewn <- na.locf(skewn)
+skewn <- zoo::na.locf(skewn)
 interval <- "2013-11-11/2013-11-15"
 chart_Series(varv[interval],
             name=paste(symboln, "variance"))
@@ -4628,10 +4635,10 @@ symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file for data download
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-dir.create(dir_name)
-file_name <- file.path(dir_name, paste0(symboln, "201906.csv"))
-file_connect <- file(file_name, open="w")
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+dir.create(dirn)
+filen <- file.path(dirn, paste0(symboln, "201906.csv"))
+file_connect <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Write header to file
@@ -4670,9 +4677,9 @@ symbolv <- c("AAPL", "F", "MSFT")
 contractv <- lapply(symbolv, IBrokers::twsEquity, primary="SMART")
 names(contractv) <- symbolv
 # Open file connections for data download
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-file_names <- file.path(dir_name, paste0(symbolv, format(Sys.time(), format="_%m_%d_%Y_%H_%M"), ".csv"))
-file_connects <- lapply(file_names, function(file_name) file(file_name, open="w"))
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+filens <- file.path(dirn, paste0(symbolv, format(Sys.time(), format="_%m_%d_%Y_%H_%M"), ".csv"))
+file_connects <- lapply(filens, function(filen) file(filen, open="w"))
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Download historical 1-minute bar data to files
@@ -4717,8 +4724,8 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
   include_expired="1",
   exch="GLOBEX", expiry="201806")
 # Open file connection for ESM8 data download
-file_name <- file.path(dir_name, paste0(symboln, "M8.csv"))
-file_connect <- file(file_name, open="w")
+filen <- file.path(dirn, paste0(symboln, "M8.csv"))
+file_connect <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Download historical data to file
@@ -4736,7 +4743,7 @@ IBrokers::twsDisconnect(ib_connect)
       \includegraphics[width=0.45\paperwidth]{figure/sp500_ESM8_futures.png}
       <<echo=TRUE,eval=FALSE>>=
 # Load OHLC data and coerce it into xts series
-pricev <- data.table::fread(file_name)
+pricev <- data.table::fread(filen)
 data.table::setDF(pricev)
 pricev <- xts::xts(pricev[, 2:6],
   order.by=as.Date(as.POSIXct.numeric(pricev[, 1],
@@ -4796,10 +4803,10 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
   include_expired="1",
   exch="GLOBEX", expiry="201806")
 # Open file connection for data download
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-dir.create(dir_name)
-file_name <- file.path(dir_name, paste0(symboln, ".csv"))
-file_connect <- file(file_name, open="w")
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+dir.create(dirn)
+filen <- file.path(dirn, paste0(symboln, ".csv"))
+file_connect <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Download historical data to file
@@ -4844,10 +4851,10 @@ symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file connection for data download
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-# Dir.create(dir_name)
-file_name <- file.path(dir_name, paste0(symboln, "_taq_live.csv"))
-file_connect <- file(file_name, open="w")
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+# Dir.create(dirn)
+filen <- file.path(dirn, paste0(symboln, "_taq_live.csv"))
+file_connect <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Download live data to file
@@ -4886,10 +4893,10 @@ symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file connection for data download
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-# Dir.create(dir_name)
-file_name <- file.path(dir_name, paste0(symboln, "_ohlc_live.csv"))
-file_connect <- file(file_name, open="w")
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+# Dir.create(dirn)
+filen <- file.path(dirn, paste0(symboln, "_ohlc_live.csv"))
+file_connect <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Download live data to file
@@ -4903,7 +4910,7 @@ IBrokers::twsDisconnect(ib_connect)
 close(file_connect)
 # Load OHLC data and coerce it into xts series
 library(data.table)
-pricev <- data.table::fread(file_name)
+pricev <- data.table::fread(filen)
 pricev <- xts::xts(pricev[, paste0("V", 2:6)],
   as.POSIXct.numeric(as.numeric(pricev[, V1]), tz="America/New_York", origin="1970-01-01"))
 colnames(pricev) <- c("Open", "High", "Low", "Close", "Volume")
@@ -4942,9 +4949,9 @@ library(IBrokers)
 contractv <- list(ES=IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201906"),
                    ZN=IBrokers::twsFuture(symbol="ZN", exch="ECBOT", expiry="201906"))
 # Open the file connection for storing the bar data
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-file_names <- file.path(dir_name, paste0(c("ES", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
-file_connects <- lapply(file_names, function(file_name) file(file_name, open="w"))
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+filens <- file.path(dirn, paste0(c("ES", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
+file_connects <- lapply(filens, function(filen) file(filen, open="w"))
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Download live data to file
@@ -4960,7 +4967,7 @@ for (file_connect in file_connects)
   close(file_connect)
 library(data.table)
 # Load ES futures June 2019 contract and coerce it into xts series
-pricev <- data.table::fread(file_names[1])
+pricev <- data.table::fread(filens[1])
 pricev <- xts::xts(pricev[, paste0("V", 2:6)],
   as.POSIXct.numeric(as.numeric(pricev[, V1]), tz="America/New_York", origin="1970-01-01"))
 colnames(pricev) <- c("Open", "High", "Low", "Close", "Volume")
@@ -4969,7 +4976,7 @@ library(dygraphs)
 dygraphs::dygraph(pricev[, 1:4], main="S&P500 ESM9 futures") %>%
   dyCandlestick()
 # Load ZN 10yr Treasury futures June 2019 contract
-pricev <- data.table::fread(file_names[2])
+pricev <- data.table::fread(filens[2])
 pricev <- xts::xts(pricev[, paste0("V", 2:6)],
   as.POSIXct.numeric(as.numeric(pricev[, V1]), tz="America/New_York", origin="1970-01-01"))
 colnames(pricev) <- c("Open", "High", "Low", "Close", "Volume")
@@ -5296,17 +5303,17 @@ euro_contract <- IBrokers::twsFuture(symbol="EUR",
 IBrokers::reqContractDetails(conn=ib_connect, Contract=euro_contract)
 
 # Define data directory
-dir_name <- "/Users/jerzy/Develop/data/ib_data"
-# Dir.create(dir_name)
+dirn <- "/Users/jerzy/Develop/data/ib_data"
+# Dir.create(dirn)
 
 # Open file for error messages
 file_root <- "replay"
-file_name <- file.path(dir_name, paste0(file_root, "_error.csv"))
-error_connect <- file(file_name, open="w")
+filen <- file.path(dirn, paste0(file_root, "_error.csv"))
+error_connect <- file(filen, open="w")
 
 # Open file for raw data
-file_name <- file.path(dir_name, paste0(file_root, "_raw.csv"))
-raw_connect <- file(file_name, open="w")
+filen <- file.path(dirn, paste0(file_root, "_raw.csv"))
+raw_connect <- file(filen, open="w")
 
 # Create empty eWrapper to redirect error messages to error file
 error_ewrapper <- eWrapper(debug=NULL, errfile=error_connect)
@@ -5336,14 +5343,14 @@ close(error_connect)
 ## Replay the raw data
 
 # Open file with raw data
-file_name <- file.path(dir_name, paste0(file_root, "_raw.csv"))
-raw_connect <- IBrokers::twsConnect(file_name)
+filen <- file.path(dirn, paste0(file_root, "_raw.csv"))
+raw_connect <- IBrokers::twsConnect(filen)
 class(raw_connect) <- c("twsPlayback", class(raw_connect))
 # Replay the raw data
 IBrokers::reqMktData(raw_connect, list(snp_contract, vix_contract))
 
 # Open file for data
-file_connect <- file(file.path(dir_name, "temp.csv"), open="w")
+file_connect <- file(file.path(dirn, "temp.csv"), open="w")
 # Download TAQ data to file
 IBrokers::reqMktData(conn=raw_connect,
            Contract=snp_contract,

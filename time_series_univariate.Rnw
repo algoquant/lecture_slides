@@ -57,7 +57,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Univariate]{Time Series Univariate}
-\subtitle{FRE6871 \& FRE7241, Fall 2023}
+\subtitle{FRE6871 \& FRE7241, Spring 2024}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -667,9 +667,9 @@ class(chobj$get_ylim)
 class(chobj$set_ylim)
 # ls(chobj$Env)
 class(chobj$Env$actions)
-plot_theme <- chart_theme()
-class(plot_theme)
-ls(plot_theme)
+plotheme <- chart_theme()
+class(plotheme)
+ls(plotheme)
       @
   \end{columns}
 \end{block}
@@ -695,10 +695,10 @@ ls(plot_theme)
 library(quantmod)
 ohlc <- rutils::etfenv$VTI["2010-04/2010-05"]
 # Extract, modify theme, format tick marks "%b %d"
-plot_theme <- chart_theme()
-plot_theme$format.labels <- "%b %d"
+plotheme <- chart_theme()
+plotheme$format.labels <- "%b %d"
 # Create plot object
-chobj <- chart_Series(x=ohlc, theme=plot_theme, plot=FALSE)
+chobj <- chart_Series(x=ohlc, theme=plotheme, plot=FALSE)
 # Extract ylim using accessor function
 ylim <- chobj$get_ylim()
 ylim[[2]] <- structure(range(quantmod::Cl(ohlc)) + c(-1, 1),
@@ -2195,14 +2195,14 @@ retd[1] <- 0
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volatilities for vector of aggregation intervals
 aggv <- seq.int(from=3, to=35, length.out=9)^2
-volat <- sapply(aggv, function(aggint) {
-  naggs <- nrows %/% aggint
-  endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
-  # endd <- rutils::calc_endpoints(closep, interval=aggint)
+volv <- sapply(aggv, function(agg) {
+  naggs <- nrows %/% agg
+  endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
+  # endd <- rutils::calc_endpoints(closep, interval=agg)
   sd(rutils::diffit(closep[endd]))
 })  # end sapply
 # Calculate the Hurst from single data point
-volog <- log(volat)
+volog <- log(volv)
 agglog <- log(aggv)
 (last(volog) - first(volog))/(last(agglog) - first(agglog))
 # Calculate the Hurst from regression slope using formula
@@ -2258,18 +2258,18 @@ text(agglog[2], volog[NROW(volog)-1],
 closep <- cumsum(retp)
 nrows <- NROW(closep)
 # Calculate the rescaled range
-aggint <- 500
-naggs <- nrows %/% aggint
-endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
+agg <- 500
+naggs <- nrows %/% agg
+endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
 # Or
-# endd <- rutils::calc_endpoints(closep, interval=aggint)
+# endd <- rutils::calc_endpoints(closep, interval=agg)
 rrange <- sapply(2:NROW(endd), function(np) {
   indeks <- (endd[np-1]+1):endd[np]
   diff(range(closep[indeks]))/sd(retp[indeks])
 })  # end sapply
 mean(rrange)
 # Calculate the Hurst from single data point
-log(mean(rrange))/log(aggint)
+log(mean(rrange))/log(agg)
       @
   \end{columns}
 \end{block}
@@ -2295,10 +2295,10 @@ log(mean(rrange))/log(aggint)
       The Hurst exponents calculated from the \emph{rescaled range} and the \emph{volatility} are similar but not exactly equal because they use different methods to estimate price dispersion.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the rescaled range for vector of aggregation intervals
-rrange <- sapply(aggv, function(aggint) {
+rrange <- sapply(aggv, function(agg) {
 # Calculate the end points
-  naggs <- nrows %/% aggint
-  endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
+  naggs <- nrows %/% agg
+  endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
 # Calculate the rescaled ranges
   rrange <- sapply(2:NROW(endd), function(np) {
     indeks <- (endd[np-1]+1):endd[np]
@@ -2459,17 +2459,17 @@ text(x=0.5, y=50, lab="H = 0.5", pos=4)
       Highly volatile stocks tend to have large Hurst exponents. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the volatility of stocks
-volat <- sapply(pricev, function(closep) {
+volv <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep)))
 })  # end sapply
 # Dygraph of stock with highest volatility
-namev <- names(which.max(volat))
+namev <- names(which.max(volv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
 # Dygraph of stock with lowest volatility
-namev <- names(which.min(volat))
+namev <- names(which.min(volv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
 # Calculate the regression of the Hurst exponents versus volatilities
-model <- lm(hurstv ~ volat)
+model <- lm(hurstv ~ volv)
 summary(model)
       @
     \column{0.5\textwidth}
@@ -2477,13 +2477,13 @@ summary(model)
       \includegraphics[width=0.45\paperwidth]{figure/hurst_stocks_volatility.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot scatterplot of the Hurst exponents versus volatilities
-plot(hurstv ~ volat, xlab="Volatility", ylab="Hurst", 
+plot(hurstv ~ volv, xlab="Volatility", ylab="Hurst", 
      main="Hurst Exponents Versus Volatilities of Stocks")
 # Add regression line
 abline(model, col='red', lwd=3)
 tvalue <- summary(model)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
-text(x=mean(volat), y=max(hurstv), 
+text(x=mean(volv), y=max(hurstv), 
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
       @
   \end{columns}
@@ -3717,29 +3717,29 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection"); innov <- matrix(rnorm(1e4, sd=0.01))
 # Simulate AR(1) process with coefficient=1, with unit root
+innov <- matrix(rnorm(1e4, sd=0.01))
 arimav <- HighFreq::sim_ar(coeff=matrix(1), innov=innov)
-x11(); plot(arimav, t="l", main="AR(1) coefficient = 1.0")
+plot(arimav, t="l", main="Brownian Motion")
 # Perform ADF test with lag = 1
 tseries::adf.test(arimav, k=1)
 # Perform standard Dickey-Fuller test
 tseries::adf.test(arimav, k=0)
 # Simulate AR(1) with coefficient close to 1, without unit root
 arimav <- HighFreq::sim_ar(coeff=matrix(0.99), innov=innov)
-x11(); plot(arimav, t="l", main="AR(1) coefficient = 0.99")
+plot(arimav, t="l", main="AR(1) coefficient = 0.99")
 tseries::adf.test(arimav, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with mean reversion
 prici <- 0.0; priceq <- 0.0; thetav <- 0.1
 pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
   theta=thetav, innov=innov)
-x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
+plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with zero reversion
 thetav <- 0.0
 pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
   theta=thetav, innov=innov)
-x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
+plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
       @
       The common practice is to use a small number of lags in the \emph{ADF} test, and if the residuals are autocorrelated, then to increase them until the correlations are no longer significant.
@@ -4721,13 +4721,13 @@ c(mse=mean((retp - fcast)^2), cor=cor(retp, fcast))
       \vskip1ex
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       <<echo=TRUE,eval=FALSE>>=
-lookbs <- seq(20, 200, 20)
-fcast <- sapply(lookbs, sim_fcasts, respv=retp, 
+lookbv <- seq(20, 200, 20)
+fcast <- sapply(lookbv, sim_fcasts, respv=retp, 
                      nagg=5, ordern=5)
-colnames(fcast) <- lookbs
+colnames(fcast) <- lookbv
 msev <- apply(fcast, 2, function(x) mean((retp - x)^2))
 # Plot forecasting series with legend
-plot(x=lookbs, y=msev,
+plot(x=lookbv, y=msev,
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")
       @

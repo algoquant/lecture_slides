@@ -1,7 +1,9 @@
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 runif(3)  # three numbers from uniform distribution
 runif(3)  # Simulate another three numbers
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 runif(3)  # Simulate another three numbers
 # Simulate random number from standard normal distribution
 rnorm(1)
@@ -25,21 +27,22 @@ lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="orange")
 # using logistic map function.
 unifun <- function(seedv, n=10) {
   # Pre-allocate vector instead of "growing" it
-  output <- numeric(n)
+  datav <- numeric(n)
   # initialize
-  output[1] <- seedv
+  datav[1] <- seedv
   # Perform loop
   for (i in 2:n) {
-    output[i] <- 4*output[i-1]*(1-output[i-1])
+    datav[i] <- 4*datav[i-1]*(1-datav[i-1])
   }  # end for
-  acos(1-2*output)/pi
+  acos(1-2*datav)/pi
 }  # end unifun
 unifun(seedv=0.1, n=15)
 plot(
   density(unifun(seedv=runif(1), n=1e5)),
   xlab="", ylab="", lwd=2, col="blue",
   main="uniform pseudo-random number density")
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Flip unbiased coin once, 20 times
 rbinom(n=20, size=1, 0.5)
 # Number of heads after flipping twice, 20 times
@@ -69,7 +72,8 @@ sample(  # Sample of strings
 sample(x=0:1, size=20, replace=TRUE)
 # Flip unbiased coin once, 20 times
 as.numeric(runif(20) > 0.5)  # Slower
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
 datav <- rnorm(1000)
 mean(datav)  # Sample mean
@@ -99,7 +103,8 @@ nrows/(nrows-1)^2*sum(retp^4)
 c(pnorm(-2), pnorm(2))
 # Calculate inverse cumulative standard normal distribution
 c(qnorm(0.75), qnorm(0.25))
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
 nrows <- 1000
 datav <- rnorm(nrows)
@@ -123,7 +128,8 @@ summary(microbenchmark(
   monte_carlo=datav[cutoff],
   quantv=quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
 nrows <- 1000
 datav <- rnorm(nrows)
@@ -193,7 +199,8 @@ labelv <- paste("Order", 1:3, sep=" = ")
 legend("topright", inset=0.05, bty="n",
  title=NULL, labelv, cex=0.8, lwd=6, lty=1,
  col=colorv)
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
 nrows <- 1000
 datav <- rnorm(nrows)
@@ -384,8 +391,8 @@ countst <- rutils::diffit(pnorm(histp$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
 # Return p-value
-chisq_test <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-chisq_test$p.value
+chisqtest <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+chisqtest$p.value
 # Observed frequencies from shifted normal data
 histp <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
 countsn <- histp$counts/sum(histp$counts)
@@ -443,8 +450,8 @@ apply(bootd, MARGIN=2, function(x)
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # initialize compute cluster
-bootd <- parLapply(cluster, 1:1e4,
+compclust <- makeCluster(ncores)  # initialize compute cluster
+bootd <- parLapply(compclust, 1:1e4,
   function(x, nrows, retp) {
     # Simulate data
     ndata <- rnorm(nrows, sd=100)
@@ -454,7 +461,7 @@ n_median=median(ndata),
 vti_mean=mean(retp),
 vti_median=median(retp))
   }, nrows, retp)  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:1e4, function(x) {
   # Simulate data
@@ -520,13 +527,13 @@ apply(bootd, MARGIN=2, function(x)
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # initialize compute cluster
-bootd <- parLapply(cluster, 1:1e4,
+compclust <- makeCluster(ncores)  # initialize compute cluster
+bootd <- parLapply(compclust, 1:1e4,
   function(x, datav) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, datav=datav)  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:1e4, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
@@ -536,7 +543,8 @@ bootd <- mclapply(1:1e4, function(x) {
 bootd <- rutils::do_call(rbind, bootd)
 apply(bootd, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
 nrows <- 1e3
 datav <- rnorm(nrows)
@@ -857,13 +865,13 @@ function(x) c(mean=mean(x), stderror=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # initialize compute cluster
-bootd <- parLapply(cluster, 1:1e4,
+compclust <- makeCluster(ncores)  # initialize compute cluster
+bootd <- parLapply(compclust, 1:1e4,
   function(x, datav) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, datav=datav)  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:1e4,
   function(x) {
@@ -895,13 +903,13 @@ apply(bootd, MARGIN=2, function(x)
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # initialize compute cluster
-bootd <- parLapply(cluster, 1:1e4,
+compclust <- makeCluster(ncores)  # initialize compute cluster
+bootd <- parLapply(compclust, 1:1e4,
   function(x, datav) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, datav=datav)  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:1e4, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
@@ -911,7 +919,8 @@ bootd <- mclapply(1:1e4, function(x) {
 bootd <- rutils::do_call(rbind, bootd)
 apply(bootd, MARGIN=2, function(x)
   c(mean=mean(x), stderror=sd(x)))
-set.seed(1121)  # initialize random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Define variables and calculate correlation
 nrows <- 100
 xvar <- runif(nrows); yxvar <- runif(nrows)
@@ -955,7 +964,7 @@ corv*c(1-qnorm(0.975)*stderror, 1+qnorm(0.975)*stderror)
 cor.test(xvar, yxvar)
 rho <- 0.9
 rho2 <- sqrt(1-rho^2)
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Bootstrap of sample mean and median
 bootd <- sapply(1:1000, function(x) {
   xvar <- rnorm(nrows)
@@ -1124,7 +1133,8 @@ calc_mom <- function(retp, moment=3) {
 # Calculate skew and kurtosis of VTI returns
 calc_mom(retp, moment=3)
 calc_mom(retp, moment=4)
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
 nrows <- 1000
 datav <- rnorm(nrows)
@@ -1285,8 +1295,8 @@ countst <- rutils::diffit(pnorm(histp$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
 # Return p-value
-chisq_test <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-chisq_test$p.value
+chisqtest <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+chisqtest$p.value
 # Observed frequencies from shifted normal data
 histp <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
 countsn <- histp$counts/sum(histp$counts)
@@ -1303,16 +1313,16 @@ countst <- rutils::diffit(countst)
 # Perform Chi-squared test for VTI returns
 chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
 # Objective function from function dt()
-likefun <- function(par, dfree, data) {
-  -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
+likefun <- function(par, dfree, datav) {
+  -sum(log(dt(x=(datav-par[1])/par[2], df=dfree)/par[2]))
 }  # end likefun
 # Demonstrate equivalence with log(dt())
 likefun(c(1, 0.5), 2, 2:5)
 -sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
 # Objective function is negative log-likelihood
-likefun <- function(par, dfree, data) {
+likefun <- function(par, dfree, datav) {
   sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
-    log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
+    log(par[2]) + (dfree+1)/2*log(1+((datav-par[1])/par[2])^2/dfree))
 }  # end likefun
 # Calculate VTI percentage returns
 retp <- as.numeric(na.omit(rutils::etfenv$returns$VTI))
@@ -1332,7 +1342,7 @@ fitobj$value
 initp <- c(mean=0, scale=0.01)  # Initial parameters
 fitobj <- optim(par=initp,
   fn=likefun, # Log-likelihood function
-  data=retp,
+  datav=retp,
   dfree=3, # Degrees of freedom
   method="L-BFGS-B", # Quasi-Newton method
   upper=c(1, 0.1), # Upper constraint
@@ -1363,20 +1373,20 @@ legend("topright", inset=0.05, bty="n", y.intersp=0.4,
   leg=c("density", "t-distr", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
 # Calculate sample from non-standard t-distribution with df=3
-tdata <- scalev*rt(NROW(retp), df=3) + locv
+datat <- locv + scalev*rt(NROW(retp), df=3)
 # Q-Q plot of VTI Returns vs non-standard t-distribution
-qqplot(tdata, retp, xlab="t-Dist Quantiles", ylab="VTI Quantiles",
+qqplot(datat, retp, xlab="t-Dist Quantiles", ylab="VTI Quantiles",
        main="Q-Q plot of VTI Returns vs Student's t-distribution")
 # Calculate quartiles of the distributions
 probs <- c(0.25, 0.75)
 qrets <- quantile(retp, probs)
-qtdata <- quantile(tdata, probs)
+qtdata <- quantile(datat, probs)
 # Calculate slope and plot line connecting quartiles
 slope <- diff(qrets)/diff(qtdata)
 intercept <- qrets[1]-slope*qtdata[1]
 abline(intercept, slope, lwd=2, col="red")
 # KS test for VTI returns vs t-distribution data
-ks.test(retp, tdata)
+ks.test(retp, datat)
 # Define cumulative distribution of non-standard t-distribution
 ptdistr <- function(x, dfree, locv=0, scalev=1) {
   pt((x-locv)/scalev, df=dfree)
@@ -1401,11 +1411,11 @@ closep <- drop(coredata(quantmod::Cl(ohlc)))
 retp <- rutils::diffit(log(closep))
 volumv <- coredata(quantmod::Vo(ohlc))
 # Calculate trailing variance
-look_back <- 121
-varv <- HighFreq::roll_var_ohlc(log(ohlc), method="close", look_back=look_back, scale=FALSE)
-varv[1:look_back, ] <- varv[look_back+1, ]
+lookb <- 121
+varv <- HighFreq::roll_var_ohlc(log(ohlc), method="close", lookb=lookb, scale=FALSE)
+varv[1:lookb, ] <- varv[lookb+1, ]
 # Calculate trailing average volume
-volumr <- HighFreq::roll_var(volumv, look_back=look_back)/look_back
+volumr <- HighFreq::roll_sum(volumv, lookb=lookb)/lookb
 # dygraph plot of VTI variance and trading volumes
 datav <- xts::xts(cbind(varv, volumr), zoo::index(ohlc))
 colnamev <- c("variance", "volume")

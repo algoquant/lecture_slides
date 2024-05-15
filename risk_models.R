@@ -1,15 +1,15 @@
-# Test if IEF can time VTI
-retp <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
-retvti <- retp$VTI
-desv <- cbind(retp, 0.5*(retvti+abs(retvti)), retvti^2)
-colnames(desv)[3:4] <- c("merton", "treynor")
-# Merton-Henriksson test
-regmod <- lm(IEF ~ VTI + merton, data=desv); summary(regmod)
-# Treynor-Mazuy test
-regmod <- lm(IEF ~ VTI + treynor, data=desv); summary(regmod)
+# Create a design matrix of IEF and VTI returns
+desm <- na.omit(rutils::etfenv$returns[, c("IEF", "VTI")])
+retvti <- desm$VTI
+# Add returns with perfect timing skill
+desm <- cbind(desm, 0.5*(retvti+abs(retvti)), retvti^2)
+colnames(desm)[3:4] <- c("merton", "treynor")
+# Perform Merton-Henriksson test regression
+regmod <- lm(IEF ~ VTI + merton, data=desm); summary(regmod)
+# Perform Treynor-Mazuy test regression
+regmod <- lm(IEF ~ VTI + treynor, data=desm); summary(regmod)
 # Plot residual scatterplot
-x11(width=6, height=5)
-resids <- (desv$IEF - regmod$coeff["VTI"]*retvti)
+resids <- (desm$IEF - regmod$coeff["VTI"]*retvti)
 plot.default(x=retvti, y=resids, xlab="VTI", ylab="IEF")
 title(main="Treynor-Mazuy Market Timing Test\n for IEF vs VTI", line=0.5)
 # Plot fitted (predicted) response values
@@ -85,7 +85,8 @@ title(main="Wealth of Multiperiod Betting", line=0.1)
 x11(width=5, height=4)
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Simulate asset prices
 calc_pricev <- function(x) cumprod(1 + rnorm(1e3, sd=0.01))
 price_paths <- sapply(1:3, calc_pricev)
@@ -140,16 +141,16 @@ quantmod::chart_Series(kelly_paths, theme=plot_theme, name="Wealth Paths")
 legend("topleft", legend=colnames(kelly_paths),
  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
  col=plot_theme$col$line.col, bty="n")
-# bid_offer equal to 10 bps for liquid ETFs
-bid_offer <- 0.001
+# bidask equal to 1 bp for liquid ETFs
+bidask <- 0.001
 # Calculate the wealth paths
 kelly_ratio <- drop(mean(retp)/var(retp))
 wealthv <- cumprod(1 + kelly_ratio*retp)
 wealth_trans <- cumprod(1 + kelly_ratio*retp -
-  0.5*bid_offer*kelly_ratio*(kelly_ratio-1)*abs(retp))
+  0.5*bidask*kelly_ratio*(kelly_ratio-1)*abs(retp))
 # Calculate the compounded wealth from returns
 wealthv <- cbind(wealthv, wealth_trans)
-colnames(wealthv) <- c("Kelly", "Including bid-offer")
+colnames(wealthv) <- c("Kelly", "Including bid-ask")
 # Plot compounded wealth
 dygraphs::dygraph(wealthv, main="Kelly Strategy With Transaction Costs") %>%
   dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
@@ -273,7 +274,7 @@ unlist(optimize(f=function(x) utilfun(x, bondu=0), interval=c(1, 4)))
 # Kelly weight for bonds
 unlist(optimize(f=function(x) utilfun(x, stocku=0), interval=c(1, 14)))
 # Vectorized utility of stock and bond portfolio
-utility_vec <- function(weights) {
+utility_vec <- function(weightv) {
   utilfun(weightv[1], weightv[2])
 }  # end utility_vec
 # Optimize with respect to vector argument
@@ -301,14 +302,14 @@ dygraphs::dygraph(wealthv, main="Stock and Bond Portfolio") %>%
   dyLegend(show="always", width=300)
 retp <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 # Calculate the rolling returns and variance
-look_back <- 200
-var_rolling <- HighFreq::roll_var(retp, look_back)
-weightv <- HighFreq::roll_sum(retp, look_back)/look_back
+lookb <- 200
+var_rolling <- HighFreq::roll_var(retp, lookb)
+weightv <- HighFreq::roll_sum(retp, lookb)/lookb
 weightv <- weightv/var_rolling
-weightv[1, ] <- 1/NCOL(weights)
-weightv <- zoo::na.locf(weights)
-sum(is.na(weights))
-range(weights)
+weightv[1, ] <- 1/NCOL(weightv)
+weightv <- zoo::na.locf(weightv)
+sum(is.na(weightv))
+range(weightv)
 # Plot the weights
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
@@ -323,22 +324,22 @@ legend("topright", legend=c("VTI", "IEF"),
 # Scale and lag the Kelly weights
 weightv <- lapply(weightv, function(x) 10*x/sum(abs(range(x))))
 weightv <- do.call(cbind, weightv)
-weightv <- rutils::lagit(weights)
+weightv <- rutils::lagit(weightv)
 # Calculate the compounded Kelly wealth and VTI
 wealthv <- cbind(cumprod(1 + weightv$VTI*retp$VTI), cumprod(1 + retp$VTI))
 colnames(wealthv) <- c("Kelly Strategy", "VTI")
 dygraphs::dygraph(wealthv, main="VTI Strategy Using Rolling Kelly Weight") %>%
   dyAxis("y", label="Kelly Strategy", independentTicks=TRUE) %>%
   dyAxis("y2", label="VTI", independentTicks=TRUE) %>%
-  dySeries(name="Kelly Strategy", axis="y", label="Kelly Strategy", strokeWidth=1, col="red") %>%
-  dySeries(name="VTI", axis="y2", label="VTI", strokeWidth=1, col="blue")
-# bid_offer equal to 10 bps for liquid ETFs
-bid_offer <- 0.001
+  dySeries(name="Kelly Strategy", axis="y", strokeWidth=1, col="red") %>%
+  dySeries(name="VTI", axis="y2", strokeWidth=1, col="blue")
+# bidask equal to 1 bp for liquid ETFs
+bidask <- 0.001
 # Calculate the compounded Kelly wealth and margin
 wealthv <- cumprod(1 + weightv$VTI*retp$VTI)
 marginv <- (retp$VTI - 1)*wealthv + 1
 # Calculate the transaction costs
-costs <- bid_offer*drop(rutils::diffit(marginv))/2
+costs <- bidask*drop(rutils::diffit(marginv))/2
 wealth_diff <- drop(rutils::diffit(wealthv))
 costs_rel <- ifelse(wealth_diff>0, costs/wealth_diff, 0)
 range(costs_rel)
@@ -349,7 +350,7 @@ costs <- rutils::lagit(abs(costs)/wealthv)
 wealth_trans <- cumprod(1 + retp$VTI*retp$VTI - costs)
 # Plot compounded wealth
 wealthv <- cbind(wealthv, wealth_trans)
-colnames(wealthv) <- c("Kelly", "Including bid-offer")
+colnames(wealthv) <- c("Kelly", "Including bid-ask")
 dygraphs::dygraph(wealthv, main="Kelly Strategy With Transaction Costs") %>%
   dyOptions(colors=c("green", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -363,8 +364,8 @@ colnames(wealthv) <- c("Kelly Strategy", "VTI plus IEF")
 dygraphs::dygraph(wealthv, main="Rolling Kelly Strategy For VTI and IEF") %>%
   dyAxis("y", label="Kelly Strategy", independentTicks=TRUE) %>%
   dyAxis("y2", label="VTI plus IEF", independentTicks=TRUE) %>%
-  dySeries(name="Kelly Strategy", axis="y", label="Kelly Strategy", strokeWidth=1, col="red") %>%
-  dySeries(name="VTI plus IEF", axis="y2", label="VTI plus IEF", strokeWidth=1, col="blue")
+  dySeries(name="Kelly Strategy", axis="y", strokeWidth=1, col="red") %>%
+  dySeries(name="VTI plus IEF", axis="y2", strokeWidth=1, col="blue")
 # Load package PerformanceAnalytics
 library(PerformanceAnalytics)
 # Get documentation for package PerformanceAnalytics
@@ -378,9 +379,9 @@ ls("package:PerformanceAnalytics")
 data(package="PerformanceAnalytics")
 # Remove PerformanceAnalytics from search path
 detach("package:PerformanceAnalytics")
-perf_data <- unclass(data(
+perfstats <- unclass(data(
     package="PerformanceAnalytics"))$results[, -(1:2)]
-apply(perf_data, 1, paste, collapse=" - ")
+apply(perfstats, 1, paste, collapse=" - ")
 # Load "managers" data set
 data(managers)
 class(managers)
@@ -431,8 +432,8 @@ apply(bootd, MARGIN=2, function(x)
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # Initialize compute cluster
-bootd <- parLapply(cluster, 1:10000,
+compclust <- makeCluster(ncores)  # Initialize compute cluster
+bootd <- parLapply(compclust, 1:10000,
   function(x, datav) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
@@ -442,7 +443,7 @@ bootd <- mclapply(1:10000, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, mc.cores=ncores)  # end mclapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
 apply(bootd, MARGIN=2, function(x)
@@ -464,9 +465,9 @@ bootd <- t(bootd)
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # Initialize compute cluster
-clusterExport(cluster, c("nrows", "returns"))
-bootd <- parLapply(cluster, 1:10000,
+compclust <- makeCluster(ncores)  # Initialize compute cluster
+clusterExport(compclust, c("nrows", "returns"))
+bootd <- parLapply(compclust, 1:10000,
   function(x) {
     samplev <- retp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
@@ -476,7 +477,7 @@ bootd <- mclapply(1:10000, function(x) {
     samplev <- retp[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, mc.cores=ncores)  # end mclapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
 apply(bootd, MARGIN=2, function(x)
@@ -485,18 +486,18 @@ library(PerformanceAnalytics)
 # Define target rate of return of 50 bps
 targetr <- 0.005
 # Calculate the full downside returns
-returns_sub <- (retp - targetr)
-returns_sub <- ifelse(returns_sub < 0, returns_sub, 0)
-nrows <- NROW(returns_sub)
+retsub <- (retp - targetr)
+retsub <- ifelse(retsub < 0, retsub, 0)
+nrows <- NROW(retsub)
 # Calculate the downside deviation
-all.equal(sqrt(sum(returns_sub^2)/nrows),
+all.equal(sqrt(sum(retsub^2)/nrows),
   drop(DownsideDeviation(retp, MAR=targetr, method="full")))
 # Calculate the subset downside returns
-returns_sub <- (retp - targetr)
-returns_sub <- returns_sub[returns_sub < 0]
-nrows <- NROW(returns_sub)
+retsub <- (retp - targetr)
+retsub <- retsub[retsub < 0]
+nrows <- NROW(retsub)
 # Calculate the downside deviation
-all.equal(sqrt(sum(returns_sub^2)/nrows),
+all.equal(sqrt(sum(retsub^2)/nrows),
   drop(DownsideDeviation(retp, MAR=targetr, method="subset")))
 # Calculate time series of VTI drawdowns
 closep <- log(quantmod::Cl(rutils::etfenv$VTI))
@@ -645,8 +646,8 @@ dygraphs::dygraph(pricev, main="Prices of VXX and SVXY") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="green") %>%
-  dyLegend(show="always", width=500) %>% dyLegend(show="always", width=500) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300) %>% dyLegend(show="always", width=300) %>%
+  dyLegend(show="always", width=300)
 # Remove VIX volatility ETF data
 riskstats <- riskstats[-match(c("VXX", "SVXY"), riskstats$Name), ]
 # Plot scatterplot of Sharpe vs Skewness
@@ -664,7 +665,7 @@ plot(Kurtosis ~ Skewness, data=riskstats,
      main="Kurtosis vs Skewness")
 # Add labels
 text(x=riskstats$Skewness, y=riskstats$Kurtosis,
-    labels=riskstats$Name, pos=1, cex=0.8)
+    labels=riskstats$Name, pos=1, cex=0.5)
 #Below is for ETFs
 # Sort on Sharpe ratio
 riskstats <- riskstats[order(riskstats$Skewness, decreasing=TRUE), ]
@@ -684,12 +685,12 @@ wealthv <- xts::xts(wealthv, zoo::index(retp))
 wealthv <- cumsum(wealthv)
 # dygraph plot of high skew and low skew ETFs
 colnamev <- colnames(wealthv)
-dygraphs::dygraph(wealthv, main="Log Wealth of High and Low Skew ETFs") %>%
+dygraphs::dygraph(wealthv, main="Log Wealth of Low and High Skew ETFs") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="green") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 #Below is for S&P500 constituent stocks
 # calc_mom() calculates the moments of returns
 calc_mom <- function(retp, moment=3) {
@@ -708,13 +709,13 @@ skews <- sapply(retp, calc_mom, moment=3)
 # skews <- sapply(retp, calc_mom, moment=4)
 # skews <- sapply(retp, sd, na.rm=TRUE)
 skews <- sort(skews)
-namesv <- names(skews)
-nrows <- NROW(namesv)
+namev <- names(skews)
+nrows <- NROW(namev)
 # Select high skew and low skew ETFs
 cutoff <- NROW(riskstats %/% 2)
-low_skew <- namesv[1:cutoff]
-high_skew <- namesv[(cutoff+1):nrows]
-# low_skew <- namesv[1:50]
+low_skew <- namev[1:cutoff]
+high_skew <- namev[(cutoff+1):nrows]
+# low_skew <- namev[1:50]
 # Calculate returns and log prices
 low_skew <- rowMeans(retp[, low_skew], na.rm=TRUE)
 low_skew[1] <- 0
@@ -725,12 +726,12 @@ wealthv <- xts::xts(wealthv, zoo::index(retp))
 wealthv <- cumsum(wealthv)
 # dygraph plot of high skew and low skew ETFs
 colnamev <- colnames(wealthv)
-dygraphs::dygraph(wealthv, main="Log Wealth of High and Low Skew Stocks") %>%
+dygraphs::dygraph(wealthv, main="Log Wealth of Low and High Skew Stocks") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="green") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 library(PerformanceAnalytics)
 retp <- rutils::etfenv$returns[, c("VTI", "IEF")]
 retp <- na.omit(retp)
@@ -759,8 +760,8 @@ cvar <- sapply(retp, function(x) {
 # Calculate VTI daily percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(retp)
-# Bootstrap aggregated annual VTI returns
-holdp <- 252
+# Bootstrap aggregated monthly VTI returns
+holdp <- 22
 reta <- sqrt(holdp)*sapply(1:nrows, function(x) {
     mean(retp[sample.int(nrows, size=holdp, replace=TRUE)])
 })  # end sapply
@@ -781,7 +782,7 @@ ratiom <- sapply(datav, function(x) {
   mean(x)/c(Sharpe=stdev, Dowd=-varisk, DowdC=-cvar)
 })  # end sapply
 # Annualize the daily risk
-ratiom[, 1] <- sqrt(252)*ratiom[, 1]
+ratiom[, 1] <- sqrt(22)*ratiom[, 1]
 ratiom
 # Plot the densities of returns
 plot(density(retp), t="l", lwd=3, col="blue",
@@ -821,10 +822,10 @@ colnames(closep) <- "VTI"
 nrows <- NROW(closep)
 # Inspect the R code of the function filter()
 filter
-# Calculate EWMA weights
-look_back <- 21
-weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+# Calculate EMA weights
+lookb <- 21
+weightv <- exp(-0.1*1:lookb)
+weightv <- weightv/sum(weightv)
 # Calculate convolution using filter()
 pricef <- filter(closep, filter=weightv, method="convolution", sides=1)
 # filter() returns time series of class "ts"
@@ -835,9 +836,9 @@ getAnywhere(C_cfilter)
 priceff <- .Call(stats:::C_cfilter, closep, filter=weightv,
                sides=1, circular=FALSE)
 all.equal(as.numeric(pricef), priceff, check.attributes=FALSE)
-# Calculate EWMA prices using HighFreq::roll_conv()
+# Calculate EMA prices using HighFreq::roll_conv()
 pricecpp <- HighFreq::roll_conv(closep, weightv=weightv)
-all.equal(priceff[-(1:look_back)], as.numeric(pricecpp)[-(1:look_back)])
+all.equal(priceff[-(1:lookb)], as.numeric(pricecpp)[-(1:lookb)])
 # Benchmark speed of trailing calculations
 library(microbenchmark)
 summary(microbenchmark(
@@ -847,8 +848,8 @@ summary(microbenchmark(
   ), times=10)[, c(1, 4, 5)]
 # Simulate AR process using filter()
 nrows <- NROW(closep)
-# Calculate ARIMA coefficients and innovations
-coeff <- matrix(weights)/4
+# Calculate AR coefficients and innovations
+coeff <- matrix(weightv)/4
 ncoeff <- NROW(coeff)
 innov <- matrix(rnorm(nrows))
 arimav <- filter(x=innov, filter=coeff, method="recursive")
@@ -868,10 +869,10 @@ summary(microbenchmark(
   priceff=.Call(stats:::C_rfilter, innov, coeff, double(ncoeff + nrows)),
   Rcpp=HighFreq::sim_ar(coeff, innov)
   ), times=10)[, c(1, 4, 5)]
-# Calculate trailing EWMA prices using HighFreq::roll_conv()
-look_back <- 21
-weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+# Calculate trailing EMA prices using HighFreq::roll_conv()
+lookb <- 21
+weightv <- exp(-0.1*1:lookb)
+weightv <- weightv/sum(weightv)
 pricef <- HighFreq::roll_conv(closep, weightv=weightv)
 # Combine prices with smoothed prices
 pricev <- cbind(closep, pricef)
@@ -881,16 +882,16 @@ sapply(rutils::diffit(pricev), sd)
 # Plot dygraph
 dygraphs::dygraph(pricev["2009"], main="VTI Prices and Trailing Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Center the smoothed prices
-pricef <- rutils::lagit(pricef, -(look_back %/% 2), pad_zeros=FALSE)
+pricef <- rutils::lagit(pricef, -(lookb %/% 2), pad_zeros=FALSE)
 # Combine prices with smoothed prices
 pricev <- cbind(closep, pricef)
 colnames(pricev)[2] <- "VTI Smooth"
 # Plot dygraph
 dygraphs::dygraph(pricev["2009"], main="VTI Prices and Centered Smoothed Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 library(rutils)  # Load package rutils
 library(ggplot2)  # Load ggplot2
 library(gridExtra)  # Load gridExtra
@@ -960,60 +961,60 @@ datev <- zoo::index(ohlc)
 closep <- log(quantmod::Cl(ohlc))
 colnames(closep) <- "VTI"
 nrows <- NROW(closep)
-# Calculate EWMA weights
-look_back <- 111
-lambda <- 0.9
-weightv <- lambda^(1:look_back)
-weightv <- weightv/sum(weights)
-# Calculate EWMA prices as the convolution
-ewmacpp <- HighFreq::roll_sumw(closep, weightv=weightv)
-pricev <- cbind(closep, ewmacpp)
-colnames(pricev) <- c("VTI", "VTI EWMA")
+# Calculate EMA weights
+lookb <- 111
+lambdaf <- 0.9
+weightv <- lambdaf^(1:lookb)
+weightv <- weightv/sum(weightv)
+# Calculate EMA prices as the convolution
+pricema <- HighFreq::roll_sumw(closep, weightv=weightv)
+pricev <- cbind(closep, pricema)
+colnames(pricev) <- c("VTI", "VTI EMA")
 # Dygraphs plot with custom line colors
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main="VTI EWMA Prices") %>%
+dygraphs::dygraph(pricev["2008/2009"], main="VTI EMA Prices") %>%
   dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
-# Standard plot of  EWMA prices with custom line colors
+  dyLegend(show="always", width=300)
+# Standard plot of  EMA prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
 plot_theme$col$line.col <- colors
 quantmod::chart_Series(pricev["2008/2009"], theme=plot_theme,
-       lwd=2, name="VTI EWMA Prices")
+       lwd=2, name="VTI EMA Prices")
 legend("topleft", legend=colnames(pricev), y.intersp=0.4,
  inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
  col=plot_theme$col$line.col, bty="n")
-# Calculate EWMA prices recursively using C++ code
-ewmar <- .Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep))))[-1]
+# Calculate EMA prices recursively using C++ code
+emar <- .Call(stats:::C_rfilter, closep, lambdaf, c(as.numeric(closep[1])/(1-lambdaf), double(NROW(closep))))[-1]
 # Or R code
-# ewmar <- filter(closep, filter=lambda, init=as.numeric(closep[1, 1])/(1-lambda), method="recursive")
-ewmar <- (1-lambda)*ewmar
-# Calculate EWMA prices recursively using RcppArmadillo C++
-ewmacpp <- HighFreq::run_mean(closep, lambda=lambda)
-all.equal(drop(ewmacpp), ewmar)
+# emar <- filter(closep, filter=lambdaf, init=as.numeric(closep[1, 1])/(1-lambdaf), method="recursive")
+emar <- (1-lambdaf)*emar
+# Calculate EMA prices recursively using RcppArmadillo C++
+pricema <- HighFreq::run_mean(closep, lambda=lambdaf)
+all.equal(drop(pricema), emar)
 # Compare the speed of C++ code with RcppArmadillo C++
 library(microbenchmark)
 summary(microbenchmark(
-  filtercpp=HighFreq::run_mean(closep, lambda=lambda),
-  rfilter=.Call(stats:::C_rfilter, closep, lambda, c(as.numeric(closep[1])/(1-lambda), double(NROW(closep)))),
+  filtercpp=HighFreq::run_mean(closep, lambda=lambdaf),
+  rfilter=.Call(stats:::C_rfilter, closep, lambdaf, c(as.numeric(closep[1])/(1-lambdaf), double(NROW(closep)))),
   times=10))[, c(1, 4, 5)]
 # Dygraphs plot with custom line colors
-pricev <- cbind(closep, ewmacpp)
-colnames(pricev) <- c("VTI", "VTI EWMA")
+pricev <- cbind(closep, pricema)
+colnames(pricev) <- c("VTI", "VTI EMA")
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EWMA Prices") %>%
+dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EMA Prices") %>%
   dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
-# Standard plot of  EWMA prices with custom line colors
+  dyLegend(show="always", width=300)
+# Standard plot of  EMA prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
 plot_theme$col$line.col <- colors
 quantmod::chart_Series(pricev["2008/2009"], theme=plot_theme,
-       lwd=2, name="VTI EWMA Prices")
+       lwd=2, name="VTI EMA Prices")
 legend("topleft", legend=colnames(pricev),
  inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
  col=plot_theme$col$line.col, bty="n")
@@ -1022,15 +1023,15 @@ volumv <- quantmod::Vo(ohlc)
 colnames(volumv) <- "Volume"
 nrows <- NROW(closep)
 # Calculate the VWAP prices
-look_back <- 21
-vwap <- HighFreq::roll_sum(closep, look_back=look_back, weightv=volumv)
+lookb <- 21
+vwap <- HighFreq::roll_sum(closep, lookb=lookb, weightv=volumv)
 colnames(vwap) <- "VWAP"
 pricev <- cbind(closep, vwap)
 # Dygraphs plot with custom line colors
 colorv <- c("blue", "red")
 dygraphs::dygraph(pricev["2008/2009"], main="VTI VWAP Prices") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot VWAP prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
@@ -1041,61 +1042,61 @@ legend("bottomright", legend=colnames(pricev),
  inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
  col=plot_theme$col$line.col, bty="n")
 # Calculate VWAP prices recursively using C++ code
-lambda <- 0.9
-volumer <- .Call(stats:::C_rfilter, volumv, lambda, c(as.numeric(volumv[1])/(1-lambda), double(NROW(volumv))))[-1]
-pricer <- .Call(stats:::C_rfilter, volumv*closep, lambda, c(as.numeric(volumv[1]*closep[1])/(1-lambda), double(NROW(closep))))[-1]
+lambdaf <- 0.9
+volumer <- .Call(stats:::C_rfilter, volumv, lambdaf, c(as.numeric(volumv[1])/(1-lambdaf), double(NROW(volumv))))[-1]
+pricer <- .Call(stats:::C_rfilter, volumv*closep, lambdaf, c(as.numeric(volumv[1]*closep[1])/(1-lambdaf), double(NROW(closep))))[-1]
 vwapr <- pricer/volumer
 # Calculate VWAP prices recursively using RcppArmadillo C++
-vwapcpp <- HighFreq::run_mean(closep, lambda=lambda, weightv=volumv)
-all.equal(vwapr, drop(vwapcpp))
+vwapc <- HighFreq::run_mean(closep, lambda=lambdaf, weightv=volumv)
+all.equal(vwapr, drop(vwapc))
 # Dygraphs plot the VWAP prices
 pricev <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
 colnames(pricev) <- c("VWAP trailing", "VWAP recursive")
 dygraphs::dygraph(pricev["2008/2009"], main="VWAP Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
-# Calculate two EWMA prices
-look_back <- 21
-lambda <- 0.1
-weightv <- exp(-lambda*1:look_back)
-weightv <- weightv/sum(weights)
-ewmaf <- HighFreq::roll_conv(closep, weightv=weightv)
-lambda <- 0.05
-weightv <- exp(-lambda*1:look_back)
-weightv <- weightv/sum(weights)
-ewmas <- HighFreq::roll_conv(closep, weightv=weightv)
+  dyLegend(show="always", width=300)
+# Calculate two EMA prices
+lookb <- 21
+lambdafa <- 0.1 # Fast EMA
+weightv <- exp(-lambdafa*1:lookb)
+weightv <- weightv/sum(weightv)
+emaf <- HighFreq::roll_conv(closep, weightv=weightv)
+lambdasl <- 0.05 # Slow EMAs
+weightv <- exp(-lambdasl*1:lookb)
+weightv <- weightv/sum(weightv)
+emas <- HighFreq::roll_conv(closep, weightv=weightv)
 # Calculate VTI prices
-ewmadiff <- (ewmaf - ewmas)
-pricev <- cbind(closep, ewmadiff)
-symbol <- "VTI"
-colnames(pricev) <- c(symbol, paste(symbol, "Returns"))
+emad <- (emaf - emas)
+pricev <- cbind(closep, emad)
+symboln <- "VTI"
+colnames(pricev) <- c(symboln, paste(symboln, "Returns"))
 # Plot dygraph of VTI Returns
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008/2009"], main=paste(symbol, "EWMA Returns")) %>%
+dygraphs::dygraph(pricev["2008/2009"], main=paste(symboln, "EMA Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Calculate the fractional weights
 deltav <- 0.1
-weightv <- (deltav - 0:(look_back-2)) / 1:(look_back-1)
-weightv <- (-1)^(1:(look_back-1))*cumprod(weights)
+weightv <- (deltav - 0:(lookb-2)) / 1:(lookb-1)
+weightv <- (-1)^(1:(lookb-1))*cumprod(weightv)
 weightv <- c(1, weightv)
-weightv <- (weightv - mean(weights))
+weightv <- (weightv - mean(weightv))
 # Calculate the fractional VTI returns
 retf <- HighFreq::roll_conv(closep, weightv=weightv)
 pricev <- cbind(closep, retf)
-symbol <- "VTI"
-colnames(pricev) <- c(symbol, paste(symbol, "Returns"))
+symboln <- "VTI"
+colnames(pricev) <- c(symboln, paste(symboln, "Returns"))
 # Plot dygraph of VTI Returns
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2008-08/2009-08"], main=paste(symbol, "Fractional Returns")) %>%
+dygraphs::dygraph(pricev["2008-08/2009-08"], main=paste(symboln, "Fractional Returns")) %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Perform ADF test for prices
 tseries::adf.test(closep)
 # Perform ADF test for returns
@@ -1103,9 +1104,9 @@ tseries::adf.test(retp)
 # Calculate fractional VTI returns
 deltav <- 0.1*c(1, 3, 5, 7, 9)
 retfrac <- lapply(deltav, function(deltav) {
-  weightv <- (deltav - 0:(look_back-2)) / 1:(look_back-1)
-  weightv <- c(1, (-1)^(1:(look_back-1))*cumprod(weights))
-  weightv <- (weightv - mean(weights))
+  weightv <- (deltav - 0:(lookb-2)) / 1:(lookb-1)
+  weightv <- c(1, (-1)^(1:(lookb-1))*cumprod(weightv))
+  weightv <- (weightv - mean(weightv))
   HighFreq::roll_conv(closep, weightv=weightv)
 })  # end lapply
 retfrac <- do.call(cbind, retfrac)
@@ -1125,14 +1126,14 @@ dyplot <- dygraphs::dygraph(retfrac["2008-08/2009-08"], main="Fractional Returns
 for (i in 2:NROW(colnamev))
   dyplot <- dyplot %>%
   dyAxis("y2", label=colnamev[i], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[i], axis="y2", label=colnamev[i], strokeWidth=2, col=colorv[i])
-dyplot <- dyplot %>% dyLegend(width=500)
+  dySeries(name=colnamev[i], axis="y2", strokeWidth=2, col=colorv[i])
+dyplot <- dyplot %>% dyLegend(width=300)
 dyplot
 # Calculate volume z-scores
 volumv <- quantmod::Vo(ohlc)
-look_back <- 21
-volumean <- HighFreq::roll_mean(volumv, look_back=look_back)
-volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volumv), look_back=look_back))
+lookb <- 21
+volumean <- HighFreq::roll_mean(volumv, lookb=lookb)
+volumsd <- sqrt(HighFreq::roll_var(rutils::diffit(volumv), lookb=lookb))
 volumsd[1] <- 0
 volumz <- ifelse(volumsd > 0, (volumv - volumean)/volumsd, 0)
 # Plot histogram of volume z-scores
@@ -1146,15 +1147,15 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI Volume Z-Scores") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Calculate volatility (true range) z-scores
-volat <- log(quantmod::Hi(ohlc) - quantmod::Lo(ohlc))
-look_back <- 21
-volatm <- HighFreq::roll_mean(volat, look_back=look_back)
-volat <- (volat - volatm)
-volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volat), look_back=look_back))
+volv <- log(quantmod::Hi(ohlc) - quantmod::Lo(ohlc))
+lookb <- 21
+volatm <- HighFreq::roll_mean(volv, lookb=lookb)
+volv <- (volv - volatm)
+volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volv), lookb=lookb))
 volatsd[1] <- 0
-volatz <- ifelse(volatsd > 0, volat/volatsd, 0)
+volatz <- ifelse(volatsd > 0, volv/volatsd, 0)
 # Plot histogram of the volatility z-scores
 hist(volatz, breaks=1e2)
 # Plot scatterplot of volume and volatility z-scores
@@ -1171,15 +1172,15 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI Volatility Z-Scores") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Calculate the recursive trailing VTI volatility
-lambdaf <- 0.8
-lambdas <- 0.81
-volatf <- sqrt(HighFreq::run_var(retp, lambda=lambdaf))
-volats <- sqrt(HighFreq::run_var(retp, lambda=lambdas))
+lambdafa <- 0.8 # Fast lambda
+lambdasl <- 0.81 # Slow lambda
+volatf <- sqrt(HighFreq::run_var(retp, lambda=lambdafa))
+volats <- sqrt(HighFreq::run_var(retp, lambda=lambdasl))
 # Calculate the recursive trailing z-scores of VTI volatility
 volatd <- volatf - volats
-volatsd <- sqrt(HighFreq::run_var(rutils::diffit(volatd), lambda=lambdaf))
+volatsd <- sqrt(HighFreq::run_var(rutils::diffit(volatd), lambda=lambdafa))
 volatsd[1] <- 0
 volatz <- ifelse(volatsd > 0, volatd/volatsd, 0)
 # Plot histogram of the volatility z-scores
@@ -1198,18 +1199,18 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI Online Volatility Z-Scores") %>
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Calculate the centered volatility
-look_back <- 21
-half_back <- look_back %/% 2
-volat <- HighFreq::roll_var(closep, look_back=look_back)
-volat <- sqrt(volat)
-volat <- rutils::lagit(volat, lagg=(-half_back))
+lookb <- 21
+halfb <- lookb %/% 2
+volv <- HighFreq::roll_var(closep, lookb=lookb)
+volv <- sqrt(volv)
+volv <- rutils::lagit(volv, lagg=(-halfb))
 # Calculate the z-scores of prices
 pricez <- (closep -
-  0.5*(rutils::lagit(closep, half_back, pad_zeros=FALSE) +
-  rutils::lagit(closep, -half_back, pad_zeros=FALSE)))
-pricez <- ifelse(volat > 0, pricez/volat, 0)
+  0.5*(rutils::lagit(closep, halfb, pad_zeros=FALSE) +
+  rutils::lagit(closep, -halfb, pad_zeros=FALSE)))
+pricez <- ifelse(volv > 0, pricez/volv, 0)
 # Plot dygraph of z-scores of VTI prices
 pricev <- cbind(closep, pricez)
 colnames(pricev) <- c("VTI", "Z-Scores")
@@ -1219,18 +1220,18 @@ dygraphs::dygraph(pricev["2009"], main="VTI Centered Price Z-Scores") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Calculate the thresholds for labeling tops and bottoms
 confl <- c(0.2, 0.8)
 threshv <- quantile(pricez, confl)
 # Calculate the vectors of tops and bottoms
-tops <- zoo::coredata(pricez > threshv[2])
-bottoms <- zoo::coredata(pricez < threshv[1])
+topl <- zoo::coredata(pricez > threshv[2])
+bottoml <- zoo::coredata(pricez < threshv[1])
 # Simulate in-sample VTI strategy
 posv <- rep(NA_integer_, nrows)
 posv[1] <- 0
-posv[tops] <- (-1)
-posv[bottoms] <- 1
+posv[topl] <- (-1)
+posv[bottoml] <- 1
 posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv)
 pnls <- retp*posv
@@ -1242,48 +1243,49 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Price Tops and Bottoms Strategy In-sample") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
   dyAxis("y2", label="Strategy", independentTicks=TRUE) %>%
-  dySeries(name="VTI", axis="y", label="VTI", strokeWidth=2, col="blue") %>%
-  dySeries(name="Strategy", axis="y2", label="Strategy", strokeWidth=2, col="red")
+  dySeries(name="VTI", axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name="Strategy", axis="y2", strokeWidth=2, col="red")
 # Calculate the trailing VTI volatility
-volat <- HighFreq::roll_var(closep, look_back=look_back)
-volat <- sqrt(volat)
+volv <- HighFreq::roll_var(closep, lookb=lookb)
+volv <- sqrt(volv)
 # Calculate the trailing z-scores of VTI prices
-pricez <- (closep - rutils::lagit(closep, look_back, pad_zeros=FALSE))
-pricez <- ifelse(volat > 0, pricez/volat, 0)
+pricez <- (closep - rutils::lagit(closep, lookb, pad_zeros=FALSE))
+pricez <- ifelse(volv > 0, pricez/volv, 0)
 # Plot dygraph of the trailing z-scores of VTI prices
 pricev <- cbind(closep, pricez)
 colnames(pricev) <- c("VTI", "Z-Scores")
 colnamev <- colnames(pricev)
-dygraphs::dygraph(pricev["2009"], main="VTI Trailing Price Z-Scores") %>%
+dygraphs::dygraph(pricev["2009"],
+  main="VTI Trailing Price Z-Scores") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dySeries(axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
+  dySeries(axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=300)
 # Calculate the recursive trailing VTI volatility
-lambda <- 0.9
-volat <- HighFreq::run_var(closep, lambda=lambda)
-volat <- sqrt(volat)
+lambdaf <- 0.9
+volv <- HighFreq::run_var(closep, lambda=lambdaf)
+volv <- sqrt(volv)
 # Calculate the recursive trailing z-scores of VTI prices
-pricer <- (closep - HighFreq::run_mean(closep, lambda=lambda))
-pricer <- ifelse(volat > 0, pricer/volat, 0)
+pricer <- (closep - HighFreq::run_mean(closep, lambda=lambdaf))
+pricer <- ifelse(volv > 0, pricer/volv, 0)
 # Plot dygraph of the trailing z-scores of VTI prices
 pricev <- xts::xts(cbind(pricez, pricer), datev)
 colnames(pricev) <- c("Z-Scores", "Recursive")
 colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2009"], main="VTI Online Trailing Price Z-Scores") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Calculate trailing price regression z-scores
 datev <- matrix(zoo::index(closep))
-look_back <- 21
+lookb <- 21
 # Create a default list of regression parameters
 controlv <- HighFreq::param_reg()
-regz <- HighFreq::roll_reg(respv=closep, predm=datev,
-   look_back=look_back, controlv=controlv)
-regz[1:look_back, ] <- 0
+regs <- HighFreq::roll_reg(respv=closep, predm=datev,
+   lookb=lookb, controlv=controlv)
+regs[1:lookb, ] <- 0
 # Plot dygraph of z-scores of VTI prices
-datav <- cbind(closep, regz[, NCOL(regz)])
+datav <- cbind(closep, regs[, NCOL(regs)])
 colnames(datav) <- c("VTI", "Z-Scores")
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav["2009"], main="VTI Regression Z-Scores") %>%
@@ -1291,25 +1293,26 @@ dygraphs::dygraph(datav["2009"], main="VTI Regression Z-Scores") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Calculate recursive trailing price regression versus time
-lambda <- 0.9
-regz <- HighFreq::run_reg(closep, datev, lambda=lambda,
-  method="scale")
-colnames(regz) <- c("betas", "alphas", "zscores")
-tail(regz)
+lambdaf <- 0.9
+# Create a list of regression parameters
+controlv <- HighFreq::param_reg(residscale="standardize")
+regs <- HighFreq::run_reg(closep, matrix(datev), lambda=lambdaf, controlv=controlv)
+colnames(regs) <- c("alpha", "beta", "zscores")
+tail(regs)
 # Plot dygraph of regression betas
-datav <- cbind(closep, regz[, "betas"])
+datav <- cbind(closep, 252*regs[, "beta"])
 colnames(datav) <- c("VTI", "Slope")
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav["2009"], main="VTI Online Regression Slope") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dySeries(axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
+  dySeries(axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=300)
 # Plot dygraph of z-scores of VTI prices
-datav <- cbind(closep, regz[, "zscores"])
+datav <- cbind(closep, regs[, "zscores"])
 colnames(datav) <- c("VTI", "Z-Scores")
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav["2009"], main="VTI Online Regression Z-Scores") %>%
@@ -1317,48 +1320,45 @@ dygraphs::dygraph(datav["2009"], main="VTI Online Regression Z-Scores") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Extract time series of VTI log prices
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Define look-back window
-look_back <- 11
+lookb <- 11
 # Calculate time series of trailing medians
-medianv <- roll::roll_median(closep, width=look_back)
-# medianv <- TTR::runMedian(closep, n=look_back)
+medianv <- HighFreq::roll_mean(closep, lookb=lookb, method="nonparametric")
 # Calculate time series of MAD
-madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(closep, n=look_back)
+madv <- HighFreq::roll_var(closep, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(closep, n=lookb)
 # Calculate time series of z-scores
 zscores <- (closep - medianv)/madv
-zscores[1:look_back, ] <- 0
-tail(zscores, look_back)
+zscores[1:lookb, ] <- 0
+tail(zscores, lookb)
 range(zscores)
 x11(width=6, height=5)
 # Plot the prices and medians
 dygraphs::dygraph(cbind(closep, medianv), main="VTI median") %>%
   dyOptions(colors=c("black", "red")) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Plot histogram of z-scores
 histp <- hist(zscores, col="lightgrey",
   xlab="z-scores", breaks=50, xlim=c(-4, 4),
   ylab="frequency", freq=FALSE, main="Hampel Z-Scores histogram")
 lines(density(zscores, adjust=1.5), lwd=3, col="blue")
 # Calculate one-sided Hampel z-scores
-medianv <- roll::roll_median(closep, width=look_back)
-# medianv <- TTR::runMedian(closep, n=look_back)
-madv <- HighFreq::roll_var(closep, look_back=look_back, method="nonparametric")
-# madv <- TTR::runMAD(closep, n=look_back)
+medianv <- HighFreq::roll_mean(closep, lookb=lookb, method="nonparametric")
+madv <- HighFreq::roll_var(closep, lookb=lookb, method="nonparametric")
 zscores <- (closep - medianv)/madv
-zscores[1:look_back, ] <- 0
-tail(zscores, look_back)
+zscores[1:lookb, ] <- 0
+tail(zscores, lookb)
 range(zscores)
 # Calculate two-sided Hampel z-scores
-half_back <- look_back %/% 2
-medianv <- rutils::lagit(medianv, lagg=(-half_back))
-madv <- rutils::lagit(madv, lagg=(-half_back))
+halfb <- lookb %/% 2
+medianv <- rutils::lagit(medianv, lagg=(-halfb))
+madv <- rutils::lagit(madv, lagg=(-halfb))
 zscores <- (closep - medianv)/madv
-zscores[1:look_back, ] <- 0
-tail(zscores, look_back)
+zscores[1:lookb, ] <- 0
+tail(zscores, lookb)
 range(zscores)
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
@@ -1366,24 +1366,24 @@ nrows <- NROW(retp)
 # Define end points
 endd <- 1:NROW(retp)
 # Start points are multi-period lag of endd
-look_back <- 11
-startp <- c(rep_len(0, look_back-1), endd[1:(nrows-look_back+1)])
+lookb <- 11
+startp <- c(rep_len(0, lookb-1), endd[1:(nrows-lookb+1)])
 # Calculate trailing variance in sapply() loop - takes long
 varv <- sapply(1:nrows, function(it) {
   retp <- retp[startp[it]:endd[it]]
-  sum((retp - mean(retp))^2)/look_back
+  sum((retp - mean(retp))^2)/lookb
 })  # end sapply
 # Use only vectorized functions
 retc <- cumsum(retp)
-retc <- (retc - c(rep_len(0, look_back), retc[1:(nrows-look_back)]))
+retc <- (retc - c(rep_len(0, lookb), retc[1:(nrows-lookb)]))
 retc2 <- cumsum(retp^2)
-retc2 <- (retc2 - c(rep_len(0, look_back), retc2[1:(nrows-look_back)]))
-var2 <- (retc2 - retc^2/look_back)/look_back
-all.equal(varv[-(1:look_back)], as.numeric(var2)[-(1:look_back)])
+retc2 <- (retc2 - c(rep_len(0, lookb), retc2[1:(nrows-lookb)]))
+var2 <- (retc2 - retc^2/lookb)/lookb
+all.equal(varv[-(1:lookb)], as.numeric(var2)[-(1:lookb)])
 # Or using package rutils
-retc <- rutils::roll_sum(retp, look_back=look_back)
-retc2 <- rutils::roll_sum(retp^2, look_back=look_back)
-var2 <- (retc2 - retc^2/look_back)/look_back
+retc <- rutils::roll_sum(retp, lookb=lookb)
+retc2 <- rutils::roll_sum(retp^2, lookb=lookb)
+var2 <- (retc2 - retc^2/lookb)/lookb
 # Coerce variance into xts
 tail(varv)
 class(varv)
@@ -1391,46 +1391,46 @@ varv <- xts(varv, order.by=zoo::index(retp))
 colnames(varv) <- "VTI.variance"
 head(varv)
 # Calculate trailing VTI variance using package HighFreq
-varv <- roll::roll_var(retp, width=look_back)
+varv <- roll::roll_var(retp, width=lookb)
 colnames(varv) <- "Variance"
 head(varv)
 sum(is.na(varv))
-varv[1:(look_back-1)] <- 0
+varv[1:(lookb-1)] <- 0
 # Benchmark calculation of trailing variance
 library(microbenchmark)
 summary(microbenchmark(
   sapply=sapply(1:nrows, function(it) {
     var(retp[startp[it]:endd[it]])
   }),
-  roll=roll::roll_var(retp, width=look_back),
+  roll=roll::roll_var(retp, width=lookb),
   times=10))[, c(1, 4, 5)]
-# Calculate EWMA VTI variance using compiled C++ function
-look_back <- 51
-weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+# Calculate EMA VTI variance using compiled C++ function
+lookb <- 51
+weightv <- exp(-0.1*1:lookb)
+weightv <- weightv/sum(weightv)
 varv <- .Call(stats:::C_cfilter, retp^2, filter=weightv, sides=1, circular=FALSE)
-varv[1:(look_back-1)] <- varv[look_back]
-# Plot EWMA volatility
+varv[1:(lookb-1)] <- varv[lookb]
+# Plot EMA volatility
 varv <- xts:::xts(sqrt(varv), order.by=zoo::index(retp))
-dygraphs::dygraph(varv, main="VTI EWMA Volatility") %>%
-  dyOptions(colors="blue") %>% dyLegend(show="always", width=500)
-quantmod::chart_Series(xtsv, name="VTI EWMA Volatility")
+dygraphs::dygraph(varv, main="VTI EMA Volatility") %>%
+  dyOptions(colors="blue") %>% dyLegend(show="always", width=300)
+quantmod::chart_Series(xtsv, name="VTI EMA Volatility")
 # Calculate trailing VTI variance using package roll
 library(roll)  # Load roll
-varv <- roll::roll_var(retp, weights=rev(weights), width=look_back)
+varv <- roll::roll_var(retp, weights=rev(weightv), width=lookb)
 colnames(varv) <- "VTI.variance"
 class(varv)
 head(varv)
 sum(is.na(varv))
-varv[1:(look_back-1)] <- 0
+varv[1:(lookb-1)] <- 0
 # Calculate realized variance recursively
-lambda <- 0.9
-volat <- HighFreq::run_var(retp, lambda=lambda)
-volat <- sqrt(volat)
-# Plot EWMA volatility
-volat <- xts:::xts(volat, order.by=datev)
-dygraphs::dygraph(volat, main="VTI Realized Volatility") %>%
-  dyOptions(colors="blue") %>% dyLegend(show="always", width=500)
+lambdaf <- 0.9
+volv <- HighFreq::run_var(retp, lambda=lambdaf)
+volv <- sqrt(volv)
+# Plot EMA volatility
+volv <- xts:::xts(volv, order.by=datev)
+dygraphs::dygraph(volv, main="VTI Realized Volatility") %>%
+  dyOptions(colors="blue") %>% dyLegend(show="always", width=300)
 library(HighFreq)  # Load HighFreq
 # Minutely SPY returns (unit per minute) single day
 # Minutely SPY volatility (unit per minute)
@@ -1457,11 +1457,11 @@ sqrt((6.5*60)*mean(na.omit(
   TTR::volatility(spy, N=1, calc="yang.zhang"))^2))
 # Calculate trailing SPY variance using package HighFreq
 varv <- HighFreq::roll_var_ohlc(log(spy), method="yang_zhang",
-  look_back=look_back)
+  lookb=lookb)
 # Plot range volatility
 varv <- xts:::xts(sqrt(varv), order.by=zoo::index(spy))
 dygraphs::dygraph(varv["2009-02"], main="SPY Trailing Range Volatility") %>%
-  dyOptions(colors="blue") %>% dyLegend(show="always", width=500)
+  dyOptions(colors="blue") %>% dyLegend(show="always", width=300)
 # Benchmark the speed of HighFreq vs TTR
 library(microbenchmark)
 summary(microbenchmark(
@@ -1471,15 +1471,15 @@ summary(microbenchmark(
 # Calculate VXX log prices
 vxx <- na.omit(rutils::etfenv$prices$VXX)
 datev <- zoo::index(vxx)
-look_back <- 41
+lookb <- 41
 vxx <- log(vxx)
 # Calculate trailing VTI volatility
 closep <- get("VTI", rutils::etfenv)[datev]
 closep <- log(closep)
-volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalev=FALSE))
-volat[1:look_back] <- volat[look_back+1]
+volv <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, lookb=lookb, scalev=FALSE))
+volv[1:lookb] <- volv[lookb+1]
 # Plot dygraph of VXX and VTI volatility
-datav <- cbind(vxx, volat)
+datav <- cbind(vxx, volv)
 colnames(datav)[2] <- "VTI Volatility"
 colnamev <- colnames(datav)
 captiont <- "VXX and VTI Volatility"
@@ -1488,29 +1488,29 @@ dygraphs::dygraph(datav[, 1:2], main=captiont) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=1, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 # Calculate VXX log prices
 vxx <- na.omit(rutils::etfenv$prices$VXX)
 datev <- zoo::index(vxx)
-look_back <- 41
+lookb <- 41
 vxx <- log(vxx)
-vxx <- (vxx - HighFreq::roll_mean(vxx, look_back=look_back))
-vxx[1:look_back] <- vxx[look_back+1]
+vxx <- (vxx - HighFreq::roll_mean(vxx, lookb=lookb))
+vxx[1:lookb] <- vxx[lookb+1]
 # Calculate trailing VTI volatility
 closep <- get("VTI", rutils::etfenv)[datev]
 closep <- log(closep)
-volat <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, look_back=look_back, scalev=FALSE))
-volat[1:look_back] <- volat[look_back+1]
+volv <- sqrt(HighFreq::roll_var_ohlc(ohlc=closep, lookb=lookb, scalev=FALSE))
+volv[1:lookb] <- volv[lookb+1]
 # Calculate regression coefficients of XLB ~ XLE
-betav <- drop(cov(vxx, volat)/var(volat))
-alpha <- drop(mean(vxx) - betav*mean(volat))
+betac <- drop(cov(vxx, volv)/var(volv))
+alphac <- drop(mean(vxx) - betac*mean(volv))
 # Calculate regression residuals
-fitv <- (alpha + betav*volat)
+fitv <- (alphac + betac*volv)
 residuals <- (vxx - fitv)
 # Perform ADF test on residuals
 tseries::adf.test(residuals, k=1)
 # Plot dygraph of VXX and VTI volatility
-datav <- cbind(vxx, volat)
+datav <- cbind(vxx, volv)
 colnamev <- colnames(datav)
 captiont <- "VXX and VTI Volatility"
 dygraphs::dygraph(datav[, 1:2], main=captiont) %>%
@@ -1518,20 +1518,20 @@ dygraphs::dygraph(datav[, 1:2], main=captiont) %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=1, col="red") %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
 x11(width=6, height=5)
 par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 # Calculate trailing VTI variance using package roll
-look_back <- 21
-varv <- HighFreq::roll_var(retp, look_back=look_back)
+lookb <- 21
+varv <- HighFreq::roll_var(retp, lookb=lookb)
 colnames(varv) <- "Variance"
-# Number of look_backs that fit over returns
+# Number of lookbv that fit over returns
 nrows <- NROW(retp)
-nagg <- nrows %/% look_back
+nagg <- nrows %/% lookb
 # Define end points with beginning stub
-endd <- c(0, nrows-look_back*nagg + (0:nagg)*look_back)
+endd <- c(0, nrows-lookb*nagg + (0:nagg)*lookb)
 nrows <- NROW(endd)
 # Subset variance to end points
 varv <- varv[endd]
@@ -1540,44 +1540,44 @@ rutils::plot_acf(varv, lag=10, main="ACF of Variance")
 # Plot partial autocorrelation
 pacf(varv, lag=10, main="PACF of Variance", ylab=NA)
 # Define GARCH parameters
-alpha <- 0.3; betav <- 0.5;
-omega <- 1e-4*(1-alpha-betav)
+alphac <- 0.3; betac <- 0.5;
+omega <- 1e-4*(1 - alphac - betac)
 nrows <- 1000
 # Calculate matrix of standard normal innovations
-set.seed(1121)  # Reset random numbers
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 innov <- rnorm(nrows)
 retp <- numeric(nrows)
 varv <- numeric(nrows)
-varv[1] <- omega/(1-alpha-betav)
+varv[1] <- omega/(1 - alphac - betac)
 retp[1] <- sqrt(varv[1])*innov[1]
 # Simulate GARCH model
 for (i in 2:nrows) {
   retp[i] <- sqrt(varv[i-1])*innov[i]
-  varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
+  varv[i] <- omega + alphac*retp[i]^2 + betac*varv[i-1]
 }  # end for
 # Simulate the GARCH process using Rcpp
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,
-  beta=betav, innov=matrix(innov))
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,
+  beta=betac, innov=matrix(innov))
 all.equal(garch_data, cbind(retp, varv), check.attributes=FALSE)
 # Define GARCH parameters
-alpha <- 0.3; betav <- 0.5;
-omega <- 1e-4*(1-alpha-betav)
+alphac <- 0.3; betac <- 0.5;
+omega <- 1e-4*(1 - alphac - betac)
 nrows <- 1000
 # Calculate matrix of standard normal innovations
-set.seed(1121)  # Reset random numbers
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 innov <- rnorm(nrows)
 retp <- numeric(nrows)
 varv <- numeric(nrows)
-varv[1] <- omega/(1-alpha-betav)
+varv[1] <- omega/(1 - alphac - betac)
 retp[1] <- sqrt(varv[1])*innov[1]
 # Simulate GARCH model
 for (i in 2:nrows) {
   retp[i] <- sqrt(varv[i-1])*innov[i]
-  varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
+  varv[i] <- omega + alphac*retp[i]^2 + betac*varv[i-1]
 }  # end for
 # Simulate the GARCH process using Rcpp
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,
-  beta=betav, innov=matrix(innov))
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,
+  beta=betac, innov=matrix(innov))
 all.equal(garch_data, cbind(retp, varv), check.attributes=FALSE)
 # Open plot window on Mac
 dev.new(width=6, height=5, noRStudioGD=TRUE)
@@ -1615,7 +1615,7 @@ legend("topright", inset=-0, bty="n", y.intersp=0.4,
 quartz.save("figure/garch_hist.png", type="png", width=6, height=5)
 # Specify GARCH model
 garch_spec <- fGarch::garchSpec(model=list(ar=c(0, 0), omega=omega,
-  alpha=alpha, beta=betav))
+  alpha=alphac, beta=betac))
 # Simulate GARCH model
 garch_sim <- fGarch::garchSim(spec=garch_spec, n=nrows)
 retp <- as.numeric(garch_sim)
@@ -1643,15 +1643,15 @@ legend("topright", inset=0.05, bty="n", y.intersp=0.4,
 # Calculate variance of GARCH returns
 var(retp)
 # Calculate expected value of variance
-omega/(1-alpha-betav)
+omega/(1 - alphac - betac)
 # Calculate kurtosis of GARCH returns
 mean(((retp-mean(retp))/sd(retp))^4)
 # Calculate expected value of kurtosis
-3 + 6*alpha^2/(1-2*alpha^2-(alpha+betav)^2)
+3 + 6*alpha^2/(1-2*alpha^2-(alphac+betac)^2)
 # Calculate the distribution of GARCH kurtosis
 kurt <- sapply(1:1e4, function(x) {
-  garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,
-    beta=betav, innov=matrix(rnorm(nrows)))
+  garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,
+    beta=betac, innov=matrix(rnorm(nrows)))
   retp <- garch_data[, 1]
   c(var(retp), mean(((retp-mean(retp))/sd(retp))^4))
 })  # end sapply
@@ -1664,20 +1664,20 @@ histp <- hist(kurt[, 2], breaks=500, col="lightgrey",
   xlim=c(2, 8), xlab="returns", ylab="frequency", freq=FALSE,
   main="Distribution of GARCH Kurtosis")
 lines(density(kurt[, 2], adjust=1.5), lwd=3, col="blue")
-abline(v=(3 + 6*alpha^2/(1-2*alpha^2-(alpha+betav)^2)), lwd=3, col="red")
+abline(v=(3 + 6*alpha^2/(1-2*alpha^2-(alphac+betac)^2)), lwd=3, col="red")
 text(x=7.0, y=0.4, "Expected Kurtosis")
 quartz.save("figure/garch_kurtosis.png", type="png", width=6, height=5)
 # Simulate the GARCH process using Rcpp
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,
-  beta=betav, innov=matrix(innov))
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,
+  beta=betac, innov=matrix(innov))
 # Extract the returns
 retp <- garch_data[, 1]
 # Estimate the trailing variance from the returns
 varv <- numeric(nrows)
-varv[1] <- omega/(1-alpha-betav)
+varv[1] <- omega/(1 - alphac - betac)
 for (i in 2:nrows) {
-  varv[i] <- omega + alpha*retp[i]^2 +
-    betav*varv[i-1]
+  varv[i] <- omega + alphac*retp[i]^2 +
+    betac*varv[i-1]
 }  # end for
 all.equal(garch_data[, 2], varv, check.attributes=FALSE)
 library(fGarch)
@@ -1686,7 +1686,7 @@ garch_fit <- fGarch::garchFit(data=retp)
 # Fitted GARCH parameters
 garch_fit@fit$coef
 # Actual GARCH parameters
-c(mu=mean(retp), omega=omega,alpha=alpha, beta=betav)
+c(mu=mean(retp), omega=omega,alpha=alphac, beta=betac)
 # Plot GARCH fitted volatility
 plot(sqrt(garch_fit@fit$series$h), t="l",
   col="blue", xlab="", ylab="",
@@ -1694,12 +1694,12 @@ plot(sqrt(garch_fit@fit$series$h), t="l",
 quartz.save("figure/garch_fGarch_fitted.png",
   type="png", width=6, height=5)
 # Define likelihood function
-likefun <- function(omega, alpha, betav) {
+likefun <- function(omega, alphac, betac) {
   # Estimate the trailing variance from the returns
   varv <- numeric(nrows)
-  varv[1] <- omega/(1-alpha-betav)
+  varv[1] <- omega/(1 - alphac - betac)
   for (i in 2:nrows) {
-    varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
+    varv[i] <- omega + alphac*retp[i]^2 + betac*varv[i-1]
   }  # end for
   varv <- ifelse(varv > 0, varv, 0.000001)
   # Lag the variance
@@ -1708,55 +1708,55 @@ likefun <- function(omega, alpha, betav) {
   -sum(retp^2/varv + log(varv))
 }  # end likefun
 # Calculate the likelihood in R
-likefun(omega, alpha, betav)
+likefun(omega, alphac, betac)
 # Calculate the likelihood in Rcpp
-HighFreq::lik_garch(omega=omega, alpha=alpha,
-  beta=betav, returns=matrix(retp))
+HighFreq::lik_garch(omega=omega, alpha=alphac,
+  beta=betac, returns=matrix(retp))
 # Benchmark speed of likelihood calculations
 library(microbenchmark)
 summary(microbenchmark(
-  Rcode=likefun(omega, alpha, betav),
-  Rcpp=HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=matrix(retp))
+  Rcode=likefun(omega, alphac, betac),
+  Rcpp=HighFreq::lik_garch(omega=omega, alpha=alphac, beta=betac, returns=matrix(retp))
   ), times=10)[, c(1, 4, 5)]
 # Calculate the variance of returns
 retp <- garch_data[, 1, drop=FALSE]
 varv <- var(retp)
 retp <- (retp - mean(retp))
-# Calculate likelihood as function of alpha and betav parameters
-likefun <- function(alpha, betav) {
-  omega <- variance*(1 - alpha - betav)
-  -HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=retp)
+# Calculate likelihood as function of alpha and betac parameters
+likefun <- function(alphac, betac) {
+  omega <- variance*(1 - alpha - betac)
+  -HighFreq::lik_garch(omega=omega, alpha=alphac, beta=betac, returns=retp)
 }  # end likefun
 # Calculate matrix of likelihood values
 alphas <- seq(from=0.15, to=0.35, len=50)
-betav <- seq(from=0.35, to=0.5, len=50)
-likmat <- sapply(alphas, function(alpha) sapply(betav,
-  function(betav) likefun(alpha, betav)))
+betac <- seq(from=0.35, to=0.5, len=50)
+likmat <- sapply(alphacs, function(alphac) sapply(betac,
+  function(betac) likefun(alphac, betac)))
 # Set rgl options and load package rgl
 options(rgl.useNULL=TRUE); library(rgl)
 # Draw and render 3d surface plot of likelihood function
 ncols <- 100
 color <- rainbow(ncols, start=2/6, end=4/6)
 zcols <- cut(likmat, ncols)
-rgl::persp3d(alphas, betav, likmat, col=color[zcols],
+rgl::persp3d(alphacs, betac, likmat, col=color[zcols],
   xlab="alpha", ylab="beta", zlab="likelihood")
 rgl::rglwidget(elementId="plot3drgl", width=700, height=700)
 # Perform grid search
 coord <- which(likmat == min(likmat), arr.ind=TRUE)
-c(alphas[coord[2]], betav[coord[1]])
+c(alphacs[coord[2]], betac[coord[1]])
 likmat[coord]
-likefun(alphas[coord[2]], betav[coord[1]])
+likefun(alphacs[coord[2]], betac[coord[1]])
 # Optimal and actual parameters
 options(scipen=2)  # Use fixed not scientific notation
-cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
-  optimal=c(alphas[coord[2]], betav[coord[1]], variance*(1 - sum(alphas[coord[2]], betav[coord[1]]))))
+cbind(actual=c(alphac=alphac, beta=betac, omega=omega),
+  optimal=c(alphacs[coord[2]], betac[coord[1]], variance*(1 - sum(alphacs[coord[2]], betac[coord[1]]))))
 # Define vectorized likelihood function
 likefun <- function(x, retp) {
-  alpha <- x[1]; betav <- x[2]; omega <- x[3]
-  -HighFreq::lik_garch(omega=omega, alpha=alpha, beta=betav, returns=retp)
+  alphac <- x[1]; betac <- x[2]; omega <- x[3]
+  -HighFreq::lik_garch(omega=omega, alpha=alphac, beta=betac, returns=retp)
 }  # end likefun
 # Initial parameters
-initp <- c(alpha=0.2, beta=0.4, omega=varv/0.2)
+initp <- c(alphac=0.2, beta=0.4, omega=varv/0.2)
 # Find max likelihood parameters using steepest descent optimizer
 fitobj <- optim(par=initp,
   fn=likefun, # Log-likelihood function
@@ -1765,7 +1765,7 @@ fitobj <- optim(par=initp,
   upper=c(0.35, 0.55, varv), # Upper constraint
   lower=c(0.15, 0.35, varv/100)) # Lower constraint
 # Optimal and actual parameters
-cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
+cbind(actual=c(alphac=alphac, beta=betac, omega=omega),
 optimal=c(fitobj$par["alpha"], fitobj$par["beta"], fitobj$par["omega"]))
 # Find max likelihood parameters using DEoptim
 optiml <- DEoptim::DEoptim(fn=likefun,
@@ -1774,7 +1774,7 @@ optiml <- DEoptim::DEoptim(fn=likefun,
   returns=retp,
   control=list(trace=FALSE, itermax=1000, parallelType=1))
 # Optimal and actual parameters
-cbind(actual=c(alpha=alpha, beta=betav, omega=omega),
+cbind(actual=c(alphac=alphac, beta=betac, omega=omega),
 optimal=c(optiml$optim$bestmem[1], optiml$optim$bestmem[2], optiml$optim$bestmem[3]))
 # Calculate VTI returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
@@ -1786,37 +1786,37 @@ optiml <- DEoptim::DEoptim(fn=likefun,
   control=list(trace=FALSE, itermax=1000, parallelType=1))
 # Optimal parameters
 par_am <- unname(optiml$optim$bestmem)
-alpha <- par_am[1]; betav <- par_am[2]; omega <- par_am[3]
-c(alpha, betav, omega)
+alphac <- par_am[1]; betac <- par_am[2]; omega <- par_am[3]
+c(alphac, betac, omega)
 # Equilibrium GARCH variance
-omega/(1-alpha-betav)
+omega/(1 - alphac - betac)
 drop(var(retp))
 # Estimate the GARCH volatility of VTI returns
 nrows <- NROW(retp)
 varv <- numeric(nrows)
-varv[1] <- omega/(1-alpha-betav)
+varv[1] <- omega/(1 - alphac - betac)
 for (i in 2:nrows) {
-  varv[i] <- omega + alpha*retp[i]^2 + betav*varv[i-1]
+  varv[i] <- omega + alphac*retp[i]^2 + betac*varv[i-1]
 }  # end for
 # Estimate the GARCH volatility using Rcpp
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,
-  beta=betav, innov=retp, is_random=FALSE)
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,
+  beta=betac, innov=retp, is_random=FALSE)
 all.equal(garch_data[, 2], varv, check.attributes=FALSE)
 # Plot dygraph of the estimated GARCH volatility
 dygraphs::dygraph(xts::xts(sqrt(varv), zoo::index(retp)),
   main="Estimated GARCH Volatility of VTI") %>%
-  dyOptions(colors="blue") %>% dyLegend(show="always", width=500)
+  dyOptions(colors="blue") %>% dyLegend(show="always", width=300)
 # Simulate GARCH model
-garch_data <- HighFreq::sim_garch(omega=omega, alpha=alpha,
-  beta=betav, innov=matrix(innov))
+garch_data <- HighFreq::sim_garch(omega=omega, alpha=alphac,
+  beta=betac, innov=matrix(innov))
 varv <- garch_data[, 2]
 # Calculate the equilibrium variance
-vareq <- omega/(1-alpha-betav)
+vareq <- omega/(1 - alphac - betac)
 # Calculate the variance forecasts
 varf <- numeric(10)
-varf[1] <- vareq + (alpha + betav)*(xts::last(varv) - vareq)
+varf[1] <- vareq + (alphac + betac)*(xts::last(varv) - vareq)
 for (i in 2:10) {
-  varf[i] <- vareq + (alpha + betav)*(varf[i-1] - vareq)
+  varf[i] <- vareq + (alphac + betac)*(varf[i-1] - vareq)
 }  # end for
 # Open plot window on Mac
 dev.new(width=6, height=5, noRStudioGD=TRUE)
@@ -1959,10 +1959,10 @@ ohlc <- rutils::etfenv$VTI
 nrows <- NROW(ohlc["2018-06/"])
 # Define endd at each point in time
 endd <- 0:nrows
-# Number of data points in look_back interval
-look_back <- 22
-# startp are endd lagged by look_back
-startp <- c(rep_len(0, look_back), endd[1:(NROW(endd)-look_back)])
+# Number of data points in lookb interval
+lookb <- 22
+# startp are endd lagged by lookb
+startp <- c(rep_len(0, lookb), endd[1:(NROW(endd)-lookb)])
 head(startp, 33)
 # Number of data points
 closep <- quantmod::Cl(ohlc["2018/"])
@@ -1997,14 +1997,14 @@ npoints <- 21
 nagg <- nrows %/% npoints
 # Stub interval at beginning
 endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
-# look_back defined as number of data points
-look_back <- 252
-# startp are endd lagged by look_back
-startp <- (endd - look_back + 1)
+# lookb defined as number of data points
+lookb <- 252
+# startp are endd lagged by lookb
+startp <- (endd - lookb + 1)
 startp <- ifelse(startp < 0, 0, startp)
-# look_back defined as number of endd
-look_back <- 12
-startp <- c(rep_len(0, look_back), endd[1:(NROW(endd)- look_back)])
+# lookb defined as number of endd
+lookb <- 12
+startp <- c(rep_len(0, lookb), endd[1:(NROW(endd)- lookb)])
 # Bind startp with endd
 cbind(startp, endd)
 # Number of data points
@@ -2023,18 +2023,18 @@ startp <- c(0, endd[1:(NROW(endd)-1)]+1)
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
 endd <- 0:NROW(closep)  # End points at each point
 npts <- NROW(endd)
-look_back <- 22  # Number of data points per look-back interval
+lookb <- 22  # Number of data points per look-back interval
 # startp are multi-period lag of endd
-startp <- c(rep_len(0, look_back), endd[1:(npts - look_back)])
+startp <- c(rep_len(0, lookb), endd[1:(npts - lookb)])
 # Define list of look-back intervals for aggregations over past
-look_backs <- lapply(2:npts, function(it) {
+lookbv <- lapply(2:npts, function(it) {
     startp[it]:endd[it]
 })  # end lapply
 # Define aggregation function
 aggfun <- function(xtsv) c(max=max(xtsv), min=min(xtsv))
-# Perform aggregations over look_backs list
-aggs <- sapply(look_backs,
-    function(look_back) aggfun(closep[look_back])
+# Perform aggregations over lookbv list
+aggs <- sapply(lookbv,
+    function(lookb) aggfun(closep[lookb])
 )  # end sapply
 # Coerce aggs into matrix and transpose it
 if (is.vector(aggs))
@@ -2043,9 +2043,9 @@ aggs <- t(aggs)
 # Coerce aggs into xts series
 aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
 library(rutils)  # Load package rutils
-# Perform aggregations over look_backs list
-aggs <- lapply(look_backs,
-    function(look_back) aggfun(closep[look_back])
+# Perform aggregations over lookbv list
+aggs <- lapply(lookbv,
+    function(lookb) aggfun(closep[lookb])
 )  # end lapply
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
@@ -2063,13 +2063,13 @@ legend("top", legend=colnames(aggs),
   col=plot_theme$col$line.col, bty="n")
 # library(rutils)  # Load package rutils
 # Define functional for trailing aggregations
-roll_agg <- function(xtsv, look_back, FUN, ...) {
+roll_agg <- function(xtsv, lookb, FUN, ...) {
 # Define end points at every period
   endd <- 0:NROW(xtsv)
   npts <- NROW(endd)
 # Define starting points as lag of endd
-  startp <- c(rep_len(0, look_back), endd[1:(npts- look_back)])
-# Perform aggregations over look_backs list
+  startp <- c(rep_len(0, lookb), endd[1:(npts- lookb)])
+# Perform aggregations over lookbv list
   aggs <- lapply(2:npts, function(it)
     FUN(xtsv[startp[it]:endd[it]], ...)
   )  # end lapply
@@ -2084,7 +2084,7 @@ roll_agg <- function(xtsv, look_back, FUN, ...) {
 aggfun <- function(xtsv)
   c(max=max(xtsv), min=min(xtsv))
 # Perform aggregations over trailing interval
-aggs <- roll_agg(closep, look_back=look_back, FUN=aggfun)
+aggs <- roll_agg(closep, lookb=lookb, FUN=aggfun)
 class(aggs)
 dim(aggs)
 # library(rutils)  # Load package rutils
@@ -2097,35 +2097,35 @@ agg_xts <- function(xtsv)
 # Benchmark the speed of aggregation functions
 library(microbenchmark)
 summary(microbenchmark(
-  agg_vector=roll_agg(closep, look_back=look_back, FUN=agg_vector),
-  agg_xts=roll_agg(closep, look_back=look_back, FUN=agg_xts),
+  agg_vector=roll_agg(closep, lookb=lookb, FUN=agg_vector),
+  agg_xts=roll_agg(closep, lookb=lookb, FUN=agg_xts),
   times=10))[, c(1, 4, 5)]
 # library(rutils)  # Load package rutils
 # Define aggregation function that returns a single value
 aggfun <- function(xtsv)  max(xtsv)
 # Perform aggregations over a trailing interval
-aggs <- xts:::rollapply.xts(closep, width=look_back,
+aggs <- xts:::rollapply.xts(closep, width=lookb,
               FUN=aggfun, align="right")
 # Perform aggregations over a trailing interval
 library(PerformanceAnalytics)  # Load package PerformanceAnalytics
-aggs <- apply.rolling(closep, width=look_back, FUN=aggfun)
+aggs <- apply.rolling(closep, width=lookb, FUN=aggfun)
 # Benchmark the speed of the functionals
 library(microbenchmark)
 summary(microbenchmark(
-  roll_agg=roll_agg(closep, look_back=look_back, FUN=max),
-  roll_xts=xts:::rollapply.xts(closep, width=look_back, FUN=max, align="right"),
-  apply_rolling=apply.rolling(closep, width=look_back, FUN=max),
+  roll_agg=roll_agg(closep, lookb=lookb, FUN=max),
+  roll_xts=xts:::rollapply.xts(closep, width=lookb, FUN=max, align="right"),
+  apply_rolling=apply.rolling(closep, width=lookb, FUN=max),
   times=10))[, c(1, 4, 5)]
 # library(rutils)  # Load package rutils
 # Trailing sum using cumsum()
-roll_sum <- function(xtsv, look_back) {
+roll_sum <- function(xtsv, lookb) {
   cumsumv <- cumsum(na.omit(xtsv))
-  output <- cumsumv - rutils::lagit(x=cumsumv, lagg=look_back)
-  output[1:look_back, ] <- cumsumv[1:look_back, ]
-  colnames(output) <- paste0(colnames(xtsv), "_stdev")
-  output
+  datav <- (cumsumv - rutils::lagit(x=cumsumv, lagg=lookb))
+  datav[1:lookb, ] <- cumsumv[1:lookb, ]
+  colnames(datav) <- paste0(colnames(xtsv), "_stdev")
+  datav
 }  # end roll_sum
-aggs <- roll_sum(closep, look_back=look_back)
+aggs <- roll_sum(closep, lookb=lookb)
 # Perform trailing aggregations using lapply loop
 aggs <- lapply(2:npts, function(it)
     sum(closep[startp[it]:endd[it]])
@@ -2137,16 +2137,16 @@ tail(aggs)
 # Benchmark the speed of both methods
 library(microbenchmark)
 summary(microbenchmark(
-  roll_sum=roll_sum(closep, look_back=look_back),
-  s_apply=sapply(look_backs,
-    function(look_back) sum(closep[look_back])),
+  roll_sum=roll_sum(closep, lookb=lookb),
+  s_apply=sapply(lookbv,
+    function(lookb) sum(closep[lookb])),
   times=10))[, c(1, 4, 5)]
 # Extract time series of VTI log prices
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
-# Calculate EWMA prices using filter()
-look_back <- 21
-weightv <- exp(-0.1*1:look_back)
-weightv <- weightv/sum(weights)
+# Calculate EMA prices using filter()
+lookb <- 21
+weightv <- exp(-0.1*1:lookb)
+weightv <- weightv/sum(weightv)
 pricef <- stats::filter(closep, filter=weightv,
                    method="convolution", sides=1)
 pricef <- as.numeric(pricef)
@@ -2158,10 +2158,10 @@ str(stats:::C_cfilter)
 priceff <- .Call(stats:::C_cfilter, closep,
                filter=weightv, sides=1, circular=FALSE)
 all.equal(as.numeric(pricef), priceff, check.attributes=FALSE)
-# Calculate EWMA prices using HighFreq::roll_conv()
+# Calculate EMA prices using HighFreq::roll_conv()
 pricecpp <- HighFreq::roll_conv(closep, weightv=weightv)
-all.equal(pricef[-(1:look_back)],
-    as.numeric(pricecpp)[-(1:look_back)],
+all.equal(pricef[-(1:lookb)],
+    as.numeric(pricecpp)[-(1:lookb)],
     check.attributes=FALSE)
 # Benchmark speed of trailing calculations
 library(microbenchmark)
@@ -2172,84 +2172,84 @@ summary(microbenchmark(
   rcpp=HighFreq::roll_conv(closep, weightv=weightv)
   ), times=10)[, c(1, 4, 5)]
 # Calculate the trailing maximum and minimum over a vector of data
-roll_maxminr <- function(vectorv, look_back) {
-  nrows <- NROW(vectorv)
+roll_maxminr <- function(vecv, lookb) {
+  nrows <- NROW(vecv)
   max_min <- matrix(numeric(2:nrows), nc=2)
   # Loop over periods
   for (it in 1:nrows) {
-    sub_vec <- vectorv[max(1, it-look_back+1):it]
+    sub_vec <- vecv[max(1, it-lookb+1):it]
     max_min[it, 1] <- max(sub_vec)
     max_min[it, 2] <- min(sub_vec)
   }  # end for
   return(max_min)
 }  # end roll_maxminr
-max_minr <- roll_maxminr(closep, look_back)
+max_minr <- roll_maxminr(closep, lookb)
 max_minr <- xts::xts(max_minr, zoo::index(closep))
 library(TTR)  # Load package TTR
-max_min <- cbind(TTR::runMax(x=closep, n=look_back),
-           TTR::runMin(x=closep, n=look_back))
-all.equal(max_min[-(1:look_back), ], max_minr[-(1:look_back), ], check.attributes=FALSE)
+max_min <- cbind(TTR::runMax(x=closep, n=lookb),
+           TTR::runMin(x=closep, n=lookb))
+all.equal(max_min[-(1:lookb), ], max_minr[-(1:lookb), ], check.attributes=FALSE)
 # Benchmark the speed of TTR::runMax
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=roll_maxminr(closep, look_back),
-  ttr=TTR::runMax(closep, n=look_back),
+  rcode=roll_maxminr(closep, lookb),
+  ttr=TTR::runMax(closep, n=lookb),
   times=10))[, c(1, 4, 5)]
 # Benchmark the speed of TTR::runSum
 summary(microbenchmark(
   vector_r=cumsum(coredata(closep)),
-  rutils=rutils::roll_sum(closep, look_back=look_back),
-  ttr=TTR::runSum(closep, n=look_back),
+  rutils=rutils::roll_sum(closep, lookb=lookb),
+  ttr=TTR::runSum(closep, n=lookb),
   times=10))[, c(1, 4, 5)]
 library(rutils)
 # Calculate trailing VTI variance using package roll
 library(roll)  # Load roll
 retp <- na.omit(rutils::etfenv$returns$VTI)
-look_back <- 22
+lookb <- 22
 # Calculate trailing sum using roll::roll_sum
-sum_roll <- roll::roll_sum(retp, width=look_back, min_obs=1)
+sumroll <- roll::roll_sum(retp, width=lookb, min_obs=1)
 # Calculate trailing sum using rutils
-sum_rutils <- rutils::roll_sum(retp, look_back=look_back)
-all.equal(sum_roll[-(1:look_back), ],
-    sum_rutils[-(1:look_back), ], check.attributes=FALSE)
+sumrutils <- rutils::roll_sum(retp, lookb=lookb)
+all.equal(sumroll[-(1:lookb), ],
+    sumrutils[-(1:lookb), ], check.attributes=FALSE)
 # Benchmark speed of trailing calculations
 library(microbenchmark)
 summary(microbenchmark(
   cumsumv=cumsum(retp),
-  roll=roll::roll_sum(retp, width=look_back),
-  RcppRoll=RcppRoll::roll_sum(retp, n=look_back),
-  rutils=rutils::roll_sum(retp, look_back=look_back),
+  roll=roll::roll_sum(retp, width=lookb),
+  RcppRoll=RcppRoll::roll_sum(retp, n=lookb),
+  rutils=rutils::roll_sum(retp, lookb=lookb),
   times=10))[, c(1, 4, 5)]
 library(RcppRoll)  # Load package RcppRoll
 # Calculate trailing sum using RcppRoll
-sum_roll <- RcppRoll::roll_sum(retp, align="right", n=look_back)
+sumroll <- RcppRoll::roll_sum(retp, align="right", n=lookb)
 # Calculate trailing sum using rutils
-sum_rutils <- rutils::roll_sum(retp, look_back=look_back)
-all.equal(sum_roll, coredata(sum_rutils[-(1:(look_back-1))]),
+sumrutils <- rutils::roll_sum(retp, lookb=lookb)
+all.equal(sumroll, coredata(sumrutils[-(1:(lookb-1))]),
     check.attributes=FALSE)
 # Benchmark speed of trailing calculations
 library(microbenchmark)
 summary(microbenchmark(
   cumsumv=cumsum(retp),
-  RcppRoll=RcppRoll::roll_sum(retp, n=look_back),
-  rutils=rutils::roll_sum(retp, look_back=look_back),
+  RcppRoll=RcppRoll::roll_sum(retp, n=lookb),
+  rutils=rutils::roll_sum(retp, lookb=lookb),
   times=10))[, c(1, 4, 5)]
-# Calculate EWMA prices using RcppRoll
+# Calculate EMA prices using RcppRoll
 closep <- quantmod::Cl(rutils::etfenv$VTI)
-weightv <- exp(0.1*1:look_back)
-pricewma <- RcppRoll::roll_mean(closep,
-align="right", n=look_back, weights=weightv)
-pricewma <- cbind(closep,
-  rbind(coredata(closep[1:(look_back-1), ]), pricewma))
-colnames(pricewma) <- c("VTI", "VTI EWMA")
+weightv <- exp(0.1*1:lookb)
+pricema <- RcppRoll::roll_mean(closep,
+align="right", n=lookb, weights=weightv)
+pricema <- cbind(closep,
+  rbind(coredata(closep[1:(lookb-1), ]), pricema))
+colnames(pricema) <- c("VTI", "VTI EMA")
 # Plot an interactive dygraph plot
-dygraphs::dygraph(pricewma)
-# Or static plot of EWMA prices with custom line colors
+dygraphs::dygraph(pricema)
+# Or static plot of EMA prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red")
-quantmod::chart_Series(pricewma, theme=plot_theme, name="EWMA prices")
-legend("top", legend=colnames(pricewma),
+quantmod::chart_Series(pricema, theme=plot_theme, name="EMA prices")
+legend("top", legend=colnames(pricema),
  bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
 # library(rutils)  # Load package rutils
@@ -2261,34 +2261,34 @@ data(package="caTools")  # List all datasets in "caTools"
 ls("package:caTools")  # List all objects in "caTools"
 detach("package:caTools")  # Remove caTools from search path
 # Median filter
-look_back <- 2
+lookb <- 2
 closep <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
-med_ian <- runmed(x=closep, k=look_back)
+med_ian <- runmed(x=closep, k=lookb)
 # Vector of trailing volatilities
-sigmav <- runsd(x=closep, k=look_back,
+sigmav <- runsd(x=closep, k=lookb,
           endrule="constant", align="center")
 # Vector of trailing quantiles
-quantvs <- runquantile(x=closep, k=look_back,
+quantvs <- runquantile(x=closep, k=lookb,
   probs=0.9, endrule="constant", align="center")
 # Compile Rcpp functions
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/roll_maxmin.cpp")
-max_minarma <- roll_maxmin(closep, look_back)
+max_minarma <- roll_maxmin(closep, lookb)
 max_minarma <- xts::xts(max_minr, zoo::index(closep))
-max_min <- cbind(TTR::runMax(x=closep, n=look_back),
-           TTR::runMin(x=closep, n=look_back))
-all.equal(max_min[-(1:look_back), ], max_minarma[-(1:look_back), ], check.attributes=FALSE)
+max_min <- cbind(TTR::runMax(x=closep, n=lookb),
+           TTR::runMin(x=closep, n=lookb))
+all.equal(max_min[-(1:lookb), ], max_minarma[-(1:lookb), ], check.attributes=FALSE)
 # Benchmark the speed of TTR::runMax
 library(microbenchmark)
 summary(microbenchmark(
-  arma=roll_maxmin(closep, look_back),
-  ttr=TTR::runMax(closep, n=look_back),
+  arma=roll_maxmin(closep, lookb),
+  ttr=TTR::runMax(closep, n=lookb),
   times=10))[, c(1, 4, 5)]
 # Dygraphs plot with max_min lines
 datav <- cbind(closep, max_minarma)
 colnames(datav)[2:3] <- c("max", "min")
 colorv <- c("blue", "red", "green")
 dygraphs::dygraph(datav, main=paste(colnames(closep), "max and min lines")) %>%
-  dyOptions(colors=colorv) %>% dyLegend(show="always", width=500)
+  dyOptions(colors=colorv) %>% dyLegend(show="always", width=300)
 # Standard plot with max_min lines
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colors
@@ -2308,22 +2308,22 @@ closep <- log(na.omit(rutils::etfenv$prices$VTI))
 # Number of data points
 nrows <- NROW(closep)
 # Number of data points per interval
-look_back <- 22
-# Number of look_backs that fit over nrows
-nagg <- nrows %/% look_back
+lookb <- 22
+# Number of lookbv that fit over nrows
+nagg <- nrows %/% lookb
 # Define endd with beginning stub
-endd <- c(0, nrows-look_back*nagg + (0:nagg)*look_back)
+endd <- c(0, nrows-lookb*nagg + (0:nagg)*lookb)
 # Define contiguous startp
 startp <- c(0, endd[1:(NROW(endd)-1)])
 # Define list of look-back intervals for aggregations over past
-look_backs <- lapply(2:NROW(endd), function(it) {
+lookbv <- lapply(2:NROW(endd), function(it) {
     startp[it]:endd[it]
 })  # end lapply
-look_backs[[1]]
-look_backs[[2]]
-# Perform sapply() loop over look_backs list
-aggs <- sapply(look_backs, function(look_back) {
-  xtsv <- closep[look_back]
+lookbv[[1]]
+lookbv[[2]]
+# Perform sapply() loop over lookbv list
+aggs <- sapply(lookbv, function(lookb) {
+  xtsv <- closep[lookb]
   c(max=max(xtsv), min=min(xtsv))
 })  # end sapply
 # Coerce aggs into matrix and transpose it
@@ -2342,9 +2342,9 @@ legend("top", legend=colnames(aggs),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 # library(rutils)  # Load package rutils
-# Perform lapply() loop over look_backs list
-aggs <- lapply(look_backs, function(look_back) {
-  xtsv <- closep[look_back]
+# Perform lapply() loop over lookbv list
+aggs <- lapply(lookbv, function(lookb) {
+  xtsv <- closep[lookb]
   c(max=max(xtsv), min=min(xtsv))
 })  # end lapply
 # rbind list into single xts or matrix
@@ -2365,9 +2365,9 @@ roll_agg <- function(xtsv, endd, FUN, ...) {
   nrows <- NROW(endd)
 # startp are single-period lag of endd
   startp <- c(1, endd[1:(nrows-1)])
-# Perform aggregations over look_backs list
-  aggs <- lapply(look_backs,
-    function(look_back) FUN(xtsv[look_back], ...))  # end lapply
+# Perform aggregations over lookbv list
+  aggs <- lapply(lookbv,
+    function(lookb) FUN(xtsv[lookb], ...))  # end lapply
 # rbind list into single xts or matrix
   aggs <- rutils::do_call(rbind, aggs)
   if (!is.xts(aggs))
@@ -2398,12 +2398,12 @@ npoints <- 5
 nrows <- NROW(closep)
 nagg <- nrows %/% npoints
 endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
-# Number of data points in look_back interval
-look_back <- 22
-# startp are endd lagged by look_back
-startp <- (endd - look_back + 1)
+# Number of data points in lookb interval
+lookb <- 22
+# startp are endd lagged by lookb
+startp <- (endd - lookb + 1)
 startp <- ifelse(startp < 0, 0, startp)
-# Perform lapply() loop over look_backs list
+# Perform lapply() loop over lookbv list
 aggs <- lapply(2:NROW(endd), function(it) {
 xtsv <- closep[startp[it]:endd[it]]
 c(max=max(xtsv), min=min(xtsv))
@@ -2430,7 +2430,8 @@ quantmod::chart_Series(aggs, theme=plot_theme, name="price aggregations")
 legend("top", legend=colnames(aggs),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # Load package zoo
 # Create zoo time series of random returns

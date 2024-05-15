@@ -2,23 +2,23 @@ library(rgl)
 knit_hooks$set(rgl=hook_rgl)
 knit_hooks$set(webgl=hook_webgl)
 library(quantmod)
-car_s <- mtcars[sample(NROW(mtcars), 10), ]
+cardf <- mtcars[sample(NROW(mtcars), 10), ]
 # Plot scatter plot horsepower vs miles per gallon
-plot(car_s[, "hp"], car_s[, "mpg"],
+plot(cardf[, "hp"], cardf[, "mpg"],
      xlab="horsepower", ylab="miles per gallon",
      main="miles per gallon vs horsepower")
 # Add a solid red point (pch=16) for the last car
-points(x=car_s[NROW(car_s), "hp"],
- y=car_s[NROW(car_s), "mpg"],
+points(x=cardf[NROW(cardf), "hp"],
+ y=cardf[NROW(cardf), "mpg"],
  col="red", pch=16)
 # Add labels with the car names
-text(x=car_s[, "hp"], y=car_s[, "mpg"],
-     labels=rownames(car_s[, ]),
+text(x=cardf[, "hp"], y=cardf[, "mpg"],
+     labels=rownames(cardf[, ]),
      pos=1, cex=0.8)
 # Labels using wordcloud, to prevent overlaps
 library(wordcloud)
-textplot(x=car_s[, "hp"], y=car_s[, "mpg"],
-   words=rownames(car_s))
+textplot(x=cardf[, "hp"], y=cardf[, "mpg"],
+   words=rownames(cardf))
 # Plot the tree Height
 plot(trees[, "Height"],
      type="l",
@@ -65,42 +65,42 @@ legend(x="topright", legend=c("Normal", "shifted"),
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 library(zoo)  # Load zoo
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-zoo_series <- window(zoo_stx[, "AdjClose"],
+zoots <- window(zoo_stx[, "AdjClose"],
    start=as.Date("2013-01-01"),
    end=as.Date("2013-12-31"))
-# extract time index and monthly dates
-dates <- zoo::index(zoo_series)
+# Extract time index and monthly dates
+datev <- zoo::index(zoots)
 # Coerce index to monthly dates
-month_ly <- as.yearmon(dates)
+monthv <- as.yearmon(datev)
 # tick locations at beginning of month
-tick_s <- dates[match(unique(month_ly), month_ly)]
-# tick_s <- as.Date(tapply(X=dates, INDEX=month_ly, FUN=min))
+tickv <- datev[match(unique(monthv), monthv)]
+# tickv <- as.Date(tapply(X=datev, INDEX=monthv, FUN=min))
 # first plot zoo without "x" axis
-plot(zoo_series, xaxt="n", xlab=NA, ylab=NA, main="MSFT stock prices")
+plot(zoots, xaxt="n", xlab=NA, ylab=NA, main="MSFT stock prices")
 # Add "x" axis with monthly ticks
-axis(side=1, at=tick_s, labels=format(tick_s, "%b-%y"), tcl=-0.7)
+axis(side=1, at=tickv, labels=format(tickv, "%b-%y"), tcl=-0.7)
 # Add vertical lines
-abline(v=tick_s, col="grey", lwd=0.5)
+abline(v=tickv, col="grey", lwd=0.5)
 # Plot zoo using base plotting functions
-plot(as.vector(zoo_series), xaxt="n",
+plot(as.vector(zoots), xaxt="n",
  xlab=NA, ylab=NA, t="l", main="MSFT stock prices")
-a_t <- match(tick_s, dates)
-# a_t <- seq_along(dates)[dates %in% tick_s]
+tickd <- match(tickv, datev)
+# tickd <- seq_along(datev)[datev %in% tickv]
 # Add "x" axis with monthly ticks
-axis(side=1, at=a_t, labels=format(tick_s, "%b-%y"), tcl=-0.7)
-abline(v=a_t, col="grey", lwd=0.5)
+axis(side=1, at=tickd, labels=format(tickv, "%b-%y"), tcl=-0.7)
+abline(v=tickd, col="grey", lwd=0.5)
 library(zoo)  # Load zoo
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 # extract time index and monthly dates
-dates <- zoo::index(zoo_stx)
+datev <- zoo::index(zoo_stx)
 # Coerce index to monthly dates
-month_ly <- as.yearmon(dates)
+monthv <- as.yearmon(datev)
 # benchmark two methods of calculating tick locations
 library(microbenchmark)
 summary(microbenchmark(
-m_atch=dates[match(unique(month_ly), month_ly)],
-t_apply=as.Date(tapply(X=dates,
-    INDEX=month_ly, FUN=min)),
+match=datev[match(unique(monthv), monthv)],
+tapply=as.Date(tapply(X=datev,
+    INDEX=monthv, FUN=min)),
 times=10)
   )[, c(1, 4, 5)]
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
@@ -366,7 +366,7 @@ eventv <- 0:11  # Poisson events
 poissonf <- dpois(eventv, lambda=4)
 names(poissonf) <- as.character(eventv)
 # Poisson function
-poissonfun <- function(x, lambda) {exp(-lambda)*lambda^x/factorial(x)}
+poissonfun <- function(x, lambdaf) {exp(-lambdaf)*lambdaf^x/factorial(x)}
 curve(expr=poissonfun(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
 xlab="No. of events", ylab="Frequency of events", lwd=2, col="blue")
 legend(x="topright", legend="Poisson density", title="", bty="n",
@@ -386,8 +386,8 @@ histp <- hist(poissonv, col="lightgrey", xlab="count",
      ylab="frequency", freq=FALSE, main="Poisson histogram")
 lines(density(poissonv, adjust=1.5), lwd=2, col="blue")
 # Poisson probability distribution function
-poissonfun <- function(x, lambda)
-  {exp(-lambda)*lambda^x/factorial(x)}
+poissonfun <- function(x, lambdaf)
+  {exp(-lambdaf)*lambdaf^x/factorial(x)}
 curve(expr=poissonfun(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
 # Add legend
 legend("topright", inset=0.01, title="Poisson histogram",
@@ -500,7 +500,7 @@ uiface <- shiny::fluidPage(
     column(width=3, selectInput("symbol", label="Symbol",
                           choices=symbolv, selected=symbol)),
     # Input look-back interval
-    column(width=3, sliderInput("look_back", label="Lookback interval",
+    column(width=3, sliderInput("lookb", label="Lookback interval",
                           min=1, max=150, value=11, step=1))
   ),  # end fluidRow
   # Create output plot panel
@@ -520,12 +520,12 @@ servfun <- shiny::shinyServer(function(input, output) {
   # Calculate the VWAP indicator in a reactive environment
   vwapv <- shiny::reactive({
     # Get model parameters from input argument
-    look_back <- input$look_back
+    lookb <- input$lookb
     # Calculate the VWAP indicator
     closep <- closep()[, 1]
     volum <- closep()[, 2]
-    vwapv <- HighFreq::roll_sum(tseries=closep*volum, look_back=look_back)
-    volumroll <- HighFreq::roll_sum(tseries=volum, look_back=look_back)
+    vwapv <- HighFreq::roll_sum(tseries=closep*volum, lookb=lookb)
+    volumroll <- HighFreq::roll_sum(tseries=volum, lookb=lookb)
     vwapv <- vwapv/volumroll
     vwapv[is.na(vwapv)] <- 0
     # Return the plot data
@@ -539,8 +539,8 @@ servfun <- shiny::shinyServer(function(input, output) {
     dygraphs::dygraph(vwapv(), main=paste(colnamev[1], "VWAP")) %>%
 dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
 dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
-dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red")
+dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
+dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red")
   })  # end output plot
 })  # end server code
 Return a Shiny app object
@@ -590,22 +590,22 @@ plot_theme$col$line.col <- c("orange", "blue")
 # ```
 #end R startup chunk
 inputPanel(
-  sliderInput("lambda", label="lambda:",
+  sliderInput("lambdaf", label="lambdaf:",
     min=0.01, max=0.2, value=0.1, step=0.01)
 )  # end inputPanel
 renderPlot({
-  # Calculate EWMA prices
-  lambda <- input$lambda
-  weightv <- exp(-lambda*1:interval)
-  weightv <- weights/sum(weights)
-  ewmacpp <- .Call(stats:::C_cfilter, closep, filter=weightv, sides=1, circular=FALSE)
-  ewmacpp[1:(interval-1)] <- ewmacpp[interval]
-  ewmacpp <- xts(cbind(closep , ewmacpp), order.by=zoo::index(closep ))
-  colnames(ewmacpp) <- c("VTI", "VTI EWMA")
-  # Plot EWMA prices
-  chobj <- chart_Series(ewmacpp, theme=plot_theme, name="EWMA prices")
+  # Calculate EMA prices
+  lambdaf <- input$lambdaf
+  weightv <- exp(-lambdaf*1:interval)
+  weightv <- weightv/sum(weightv)
+  emacpp <- .Call(stats:::C_cfilter, closep, filter=weightv, sides=1, circular=FALSE)
+  emacpp[1:(interval-1)] <- emacpp[interval]
+  emacpp <- xts(cbind(closep , emacpp), order.by=zoo::index(closep ))
+  colnames(emacpp) <- c("VTI", "VTI EMA")
+  # Plot EMA prices
+  chobj <- chart_Series(emacpp, theme=plot_theme, name="EMA prices")
   plot(chobj)
-  legend("top", legend=colnames(ewmacpp),
+  legend("top", legend=colnames(emacpp),
    y.intersp=0.4, inset=0.1, bg="white", lty=1, lwd=2,
    col=plot_theme$col$line.col, bty="n")
 })  # end renderPlot
@@ -661,7 +661,7 @@ library(ggplot2)  # Load ggplot2
 library(scales)  # Load scales
 library(gridExtra)  # Load gridExtra
 # Coerce mts object into zoo
-zoo_series <- as.zoo(EuStockMarkets)
+zoots <- as.zoo(EuStockMarkets)
 # Create ggplot2 theme object
 auto_theme <- theme(
   legend.position="none",
@@ -671,12 +671,12 @@ auto_theme <- theme(
   plot.background=element_blank()
   )  # end theme
 # ggplot2 object for plotting in single panel
-ggp_zoo_single <- autoplot(zoo_series,
+ggp_zoo_single <- autoplot(zoots,
             main="Eu Stox single panel",
             facets=NULL) + xlab("") +
             auto_theme
 # ggplot2 object for plotting in multiple panels
-ggp_zoo_multiple <- autoplot(zoo_series,
+ggp_zoo_multiple <- autoplot(zoots,
             main="Eu Stox multiple panels",
             facets="Series ~ .") + xlab("") +
             facet_grid("Series ~ .",
@@ -696,7 +696,7 @@ auto_theme <- theme(legend.position=c(0.1, 0.5),
   axis.text.y=element_blank()
   )
 # Plot ggplot2 in single pane
-ggp.zoo1 <- autoplot(zoo_series, main="Eu Stox",
+ggp.zoo1 <- autoplot(zoots, main="Eu Stox",
    facets=NULL) + xlab("") +
   theme(legend.position=c(0.1, 0.5),
   plot.title=element_text(vjust=-2.0),
@@ -705,7 +705,7 @@ ggp.zoo1 <- autoplot(zoo_series, main="Eu Stox",
   axis.text.y=element_blank()
   )
 # Plot ggplot2 in multiple panes
-ggp.zoo2 <- autoplot(zoo_series, main="Eu Stox",
+ggp.zoo2 <- autoplot(zoots, main="Eu Stox",
    facets=Series ~ .) + xlab("") +
   theme(legend.position=c(0.1, 0.5),
   plot.title=element_text(vjust=-2.0),
@@ -747,11 +747,15 @@ xlim <- seq(from=-5, to=5, by=0.1)
 ylim <- seq(from=-5, to=5, by=0.1)
 rgl::persp3d(z=outer(xlim, ylim, FUN=fun2d),
   xlab="x", ylab="y", zlab="fun2d", col="green")
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)
 # Save current view to png file
 rgl::rgl.snapshot("surface_plot.png")
 # Define function of two variables and two parameters
-fun2d <- function(x, y, lambda1=1, lambda2=1)
-  sin(lambda1*x)*sin(lambda2*y)
+fun2d <- function(x, y, lambdaf1=1, lambdaf2=1)
+  sin(lambdaf1*x)*sin(lambdaf2*y)
 # Draw 3d surface plot of function
 rgl::persp3d(x=fun2d, xlim=c(-5, 5), ylim=c(-5, 5),
-  col="green", axes=FALSE, lambda1=1, lambda2=2)
+  col="green", axes=FALSE, lambdaf1=1, lambdaf2=2)
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)

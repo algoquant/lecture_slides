@@ -10,8 +10,8 @@ install.packages(
 install.packages("devtools")
 # load devtools
 library(devtools)
-# install package "babynamesv" from GitHub
-install_github(repo="hadley/babynamesv")
+# install package "babynamev" from GitHub
+install_github(repo="hadley/babynamev")
 # install package "PortfolioAnalytics" from source
 install.packages("PortfolioAnalytics",
   type="source",
@@ -27,14 +27,14 @@ install.packages(
   repos=NULL, type="source")
 getOption("defaultPackages")
 # matrix of installed package information
-pack_info <- installed.packages()
-dim(pack_info)
+packinfo <- installed.packages()
+dim(packinfo)
 # get all installed package names
-sort(unname(pack_info[, "Package"]))
+sort(unname(packinfo[, "Package"]))
 # get a few package names and their versions
-pack_info[sample(x=1:100, 5), c("Package", "Version")]
+packinfo[sample(x=1:100, 5), c("Package", "Version")]
 # get info for package "xts"
-t(pack_info["xts", ])
+t(packinfo["xts", ])
 # list directories in "PortfolioAnalytics" sub-directory
 gsub(
   "C:/Users/Jerzy/Documents/R/win-library/3.1",

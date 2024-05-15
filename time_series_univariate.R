@@ -202,16 +202,16 @@ class(chobj$get_ylim)
 class(chobj$set_ylim)
 # ls(chobj$Env)
 class(chobj$Env$actions)
-plot_theme <- chart_theme()
-class(plot_theme)
-ls(plot_theme)
+plotheme <- chart_theme()
+class(plotheme)
+ls(plotheme)
 library(quantmod)
 ohlc <- rutils::etfenv$VTI["2010-04/2010-05"]
 # Extract, modify theme, format tick marks "%b %d"
-plot_theme <- chart_theme()
-plot_theme$format.labels <- "%b %d"
+plotheme <- chart_theme()
+plotheme$format.labels <- "%b %d"
 # Create plot object
-chobj <- chart_Series(x=ohlc, theme=plot_theme, plot=FALSE)
+chobj <- chart_Series(x=ohlc, theme=plotheme, plot=FALSE)
 # Extract ylim using accessor function
 ylim <- chobj$get_ylim()
 ylim[[2]] <- structure(range(quantmod::Cl(ohlc)) + c(-1, 1),
@@ -282,7 +282,7 @@ dygraphs::dygraph(datav) %>% dyCandlestick() %>%
 dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(datav),
   colors="red", strokeWidth=3))
 # Create candlestick plot with background shading
-indic <- (Cl(datav) > datav[, "VWAP"])
+indic <- (quantmod::Cl(datav) > datav[, "VWAP"])
 whichv <- which(rutils::diffit(indic) != 0)
 indic <- rbind(first(indic), indic[whichv, ], last(indic))
 datev <- zoo::index(indic)
@@ -299,15 +299,15 @@ dyShading(from=datev[i], to=datev[i+1], color=indic[i])
 dyplot
 library(dygraphs)
 # Prepare VTI and IEF prices
-pricev <- cbind(Cl(rutils::etfenv$VTI), Cl(rutils::etfenv$IEF))
+pricev <- cbind(quantmod::Cl(rutils::etfenv$VTI), quantmod::Cl(rutils::etfenv$IEF))
 pricev <- na.omit(pricev)
 colnamev <- rutils::get_name(colnames(pricev))
 colnames(pricev) <- colnamev
 # dygraphs plot with two y-axes
 library(dygraphs)
 dygraphs::dygraph(pricev, main=paste(colnamev, collapse=" and ")) %>%
-  dyAxis(name="y", independentTicks=TRUE) %>%
-  dyAxis(name="y2", independentTicks=TRUE) %>%
+  dyAxis(name="y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis(name="y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="red") %>%
   dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="blue")
 # Load package qmao
@@ -323,7 +323,8 @@ data(package="qmao")
 ls("package:qmao")
 # Remove qmao from search path
 detach("package:qmao")
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
 nrows <- 1000
 datav <- rnorm(nrows)
@@ -349,7 +350,8 @@ summary(microbenchmark(
   monte_carlo = datav[cutoff],
   quantv = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
 pathv <- numeric(nrows)  # Allocate path vector
@@ -370,7 +372,8 @@ plot(pathv, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barl, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-set.seed(1121)  # Reset random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 barl <- 20  # Barrier level
 nrows <- 1000  # Number of simulation steps
 # Simulate path of Brownian motion
@@ -579,39 +582,66 @@ title(main="ACF of VTI Returns", line=-1)
 # Calculate two-tailed 95% confidence interval
 qnorm(0.975)/sqrt(NROW(retp))
 # Get the ACF data returned invisibly
-acfv <- acf(retp, plot=FALSE)
-summary(acfv)
+acfl <- acf(retp, plot=FALSE)
+summary(acfl)
 # Print the ACF data
-print(acfv)
-dim(acfv$acf)
-dim(acfv$lag)
-head(acfv$acf)
+print(acfl)
+dim(acfl$acf)
+dim(acfl$lag)
+head(acfl$acf)
 plot_acf <- function(xtsv, lagg=10, plotobj=TRUE,
                xlab="Lag", ylab="", main="", ...) {
   # Calculate the ACF without a plot
-  acfv <- acf(x=xtsv, lag.max=lagg, plot=FALSE, ...)
+  acfl <- acf(x=xtsv, lag.max=lagg, plot=FALSE, ...)
   # Remove first element of ACF data
-  acfv$acf <- array(data=acfv$acf[-1],
-    dim=c((dim(acfv$acf)[1]-1), 1, 1))
-  acfv$lag <- array(data=acfv$lag[-1],
-    dim=c((dim(acfv$lag)[1]-1), 1, 1))
+  acfl$acf <- array(data=acfl$acf[-1],
+    dim=c((dim(acfl$acf)[1]-1), 1, 1))
+  acfl$lag <- array(data=acfl$lag[-1],
+    dim=c((dim(acfl$lag)[1]-1), 1, 1))
   # Plot ACF
   if (plotobj) {
     ci <- qnorm((1+0.95)/2)/sqrt(NROW(xtsv))
-    ylim <- c(min(-ci, range(acfv$acf[-1])),
-        max(ci, range(acfv$acf[-1])))
-    plot(acfv, xlab=xlab, ylab=ylab,
+    ylim <- c(min(-ci, range(acfl$acf[-1])),
+        max(ci, range(acfl$acf[-1])))
+    plot(acfl, xlab=xlab, ylab=ylab,
    ylim=ylim, main="", ci=0)
     title(main=main, line=0.5)
     abline(h=c(-ci, ci), col="blue", lty=2)
   }  # end if
   # Return the ACF data invisibly
-  invisible(acfv)
+  invisible(acfl)
 }  # end plot_acf
-# Improved autocorrelation function
-x11(width=6, height=4)
-rutils::plot_acf(retp, lag=10, main="")
-title(main="ACF of VTI returns", line=-1)
+library(rutils)  # Load package rutils
+library(Ecdat)  # Load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+# Coerce to "zoo"
+macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macrodata) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # Generic ggplot2 for "zoo"
+  object=macrodata, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # Modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+# Open plot window under MS Windows
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1),
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Set two vertical plot panels
+par(mfrow=c(2,1))
+macrodiff <- na.omit(diff(macrodata))
+# Plot the autocorrelations
+rutils::plot_acf(coredata(macrodiff[, "unemprate"]),
+  lag=10, main="quarterly unemployment rate")
+rutils::plot_acf(coredata(macrodiff[, "3mTbill"]),
+  lag=10, main="3 month T-bill EOQ")
+# Autocorrelations of VTI returns
+rutils::plot_acf(retp, lag=10, main="ACF of VTI returns")
 # Ljung-Box test for VTI returns
 # 'lag' is the number of autocorrelation coefficients
 Box.test(retp, lag=10, type="Ljung")
@@ -629,7 +659,7 @@ Box.test(macrodiff[, "unemprate"], lag=10, type="Ljung")
 retp <- rutils::etfenv$returns[, c("VTI", "XLF")]
 retp <- na.omit(retp)
 nrows <- NROW(retp)
-# De-mean (center) and scale the returns
+# Center (de-mean) and scale the returns
 retp <- apply(retp, MARGIN=2, function(x) (x-mean(x))/sd(x))
 apply(retp, MARGIN=2, sd)
 # Calculate the correlation
@@ -694,35 +724,38 @@ rutils::plot_acf(rethigh, lag=10,
  main="ACF of High Volatility Returns")
 Box.test(rethigh, lag=10, type="Ljung")
 NA
-library(rutils)  # Load package rutils
-library(Ecdat)  # Load Ecdat
-colnames(Macrodat)  # United States Macroeconomic Time Series
-# Coerce to "zoo"
-macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macrodata) <- c("unemprate", "3mTbill")
-# ggplot2 in multiple panes
-autoplot(  # Generic ggplot2 for "zoo"
-  object=macrodata, main="US Macro",
-  facets=Series ~ .) + # end autoplot
-  xlab("") +
-theme(  # Modify plot theme
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank()
-)  # end theme
-# Open plot window under MS Windows
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1),
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Set two vertical plot panels
-par(mfrow=c(2,1))
-macrodiff <- na.omit(diff(macrodata))
-# Plot the autocorrelations
-rutils::plot_acf(coredata(macrodiff[, "unemprate"]),
-  lag=10, main="quarterly unemployment rate")
-rutils::plot_acf(coredata(macrodiff[, "3mTbill"]),
-  lag=10, main="3 month T-bill EOQ")
+# Load daily S&P500 stock returns
+load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+# Calculate the stock volatilities and Ljung-Box test statistics
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1
+statm <- mclapply(returns, function(retp) {
+  retp <- na.omit(retp)
+  c(stdev=sd(retp), lbstat=Box.test(retp, lag=10, type="Ljung")$statistic)
+}, mc.cores=ncores)  # end mclapply
+statm <- do.call(rbind, statm)
+colnames(statm)[2] <- "lbstat"
+# Calculate the median volatility
+stdev <- statm[, "stdev"]
+lbstat <- statm[, "lbstat"]
+stdevm <- median(stdev)
+# Calculate the Ljung-Box statistics for stock volatility quantiles
+quants <- quantile(stdev, c(0.001, seq(0.1, 0.9, 0.1), 0.999))
+lbstatq <- sapply(2:NROW(quants), function(it) {
+  mean(lbstat[(stdev > quants[it-1]) & (stdev < quants[it])])
+}) # end sapply
+# Calculate the Ljung-Box statistics for low and high volatility stocks
+lowvol <- (stdev < stdevm)
+mean(statm[lowvol, "lbstat"])
+mean(statm[!lowvol, "lbstat"])
+# Compare the Ljung-Box statistics for lowest volatility stocks with VTI
+lbstatq[1]
+Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
+# Plot Ljung-Box test statistic for volatility quantiles
+plot(x=quants[-NROW(quants)], y=lbstatq, lwd=1, col="blue",
+     # xlim=c(0.01, 0.05), ylim=c(0, 100),
+     xlab="volatility", ylab="Ljung-Box Stat",
+     main="Ljung-Box Statistic For Stock Volatility Quantiles")
 # Calculate SPY log prices and percentage returns
 ohlc <- HighFreq::SPY
 ohlc[, 1:4] <- log(ohlc[, 1:4])
@@ -735,28 +768,34 @@ x11(width=6, height=4)
 # Open plot window on Mac
 dev.new(width=6, height=4, noRStudioGD=TRUE)
 # Plot the autocorrelations of minutely SPY returns
-acfv <- rutils::plot_acf(as.numeric(retp), lag=10,
+acfl <- rutils::plot_acf(as.numeric(retp), lag=10,
      xlab="lag", ylab="Autocorrelation", main="")
 title("Autocorrelations of Minutely SPY Returns", line=1)
 # Calculate the sum of autocorrelations
-sum(acfv$acf)
+sum(acfl$acf)
 # Ljung-Box test for minutely SPY returns
 Box.test(retp, lag=10, type="Ljung")
 # Calculate hourly SPY percentage returns
-closeh <- Cl(xts::to.period(x=ohlc, period="hours"))
+closeh <- quantmod::Cl(xts::to.period(x=ohlc, period="hours"))
 retsh <- rutils::diffit(closeh)
 # Ljung-Box test for hourly SPY returns
 Box.test(retsh, lag=10, type="Ljung")
 # Calculate daily SPY percentage returns
-closed <- Cl(xts::to.period(x=ohlc, period="days"))
+closed <- quantmod::Cl(xts::to.period(x=ohlc, period="days"))
 retd <- rutils::diffit(closed)
 # Ljung-Box test for daily SPY returns
 Box.test(retd, lag=10, type="Ljung")
 # Ljung-Box test statistics for aggregated SPY returns
-sapply(list(minutely=retp, hourly=retsh, daily=retd),
+lbstat <- sapply(list(daily=retd, hourly=retsh, minutely=retp),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
+# Plot Ljung-Box test statistic for different aggregation intervals
+plot(lbstat, lwd=6, col="blue", xaxt="n",
+     xlab="Aggregation interval", ylab="Ljung-Box Stat",
+     main="Ljung-Box Statistic For Different Aggregations")
+# Add X-axis with labels
+axis(side=1, at=(1:3), labels=c("daily", "hourly", "minutely"))
 # Daily SPY volatility from daily returns
 sd(retd)
 # Minutely SPY volatility scaled to daily interval
@@ -773,14 +812,14 @@ retd[1] <- 0
 24*60*60*sd(retd)
 # Calculate volatilities for vector of aggregation intervals
 aggv <- seq.int(from=3, to=35, length.out=9)^2
-volat <- sapply(aggv, function(aggint) {
-  naggs <- nrows %/% aggint
-  endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
-  # endd <- rutils::calc_endpoints(closep, interval=aggint)
+volv <- sapply(aggv, function(agg) {
+  naggs <- nrows %/% agg
+  endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
+  # endd <- rutils::calc_endpoints(closep, interval=agg)
   sd(rutils::diffit(closep[endd]))
 })  # end sapply
 # Calculate the Hurst from single data point
-volog <- log(volat)
+volog <- log(volv)
 agglog <- log(aggv)
 (last(volog) - first(volog))/(last(agglog) - first(agglog))
 # Calculate the Hurst from regression slope using formula
@@ -801,23 +840,23 @@ text(agglog[2], volog[NROW(volog)-1],
 closep <- cumsum(retp)
 nrows <- NROW(closep)
 # Calculate the rescaled range
-aggint <- 500
-naggs <- nrows %/% aggint
-endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
+agg <- 500
+naggs <- nrows %/% agg
+endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
 # Or
-# endd <- rutils::calc_endpoints(closep, interval=aggint)
+# endd <- rutils::calc_endpoints(closep, interval=agg)
 rrange <- sapply(2:NROW(endd), function(np) {
   indeks <- (endd[np-1]+1):endd[np]
   diff(range(closep[indeks]))/sd(retp[indeks])
 })  # end sapply
 mean(rrange)
 # Calculate the Hurst from single data point
-log(mean(rrange))/log(aggint)
+log(mean(rrange))/log(agg)
 # Calculate the rescaled range for vector of aggregation intervals
-rrange <- sapply(aggv, function(aggint) {
+rrange <- sapply(aggv, function(agg) {
 # Calculate the end points
-  naggs <- nrows %/% aggint
-  endd <- c(0, nrows - naggs*aggint + (0:naggs)*aggint)
+  naggs <- nrows %/% agg
+  endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
 # Calculate the rescaled ranges
   rrange <- sapply(2:NROW(endd), function(np) {
     indeks <- (endd[np-1]+1):endd[np]
@@ -908,26 +947,26 @@ hist(hurstv, breaks=20, xlab="Hurst", ylab="Count",
 abline(v=0.5, lwd=3, col='red')
 text(x=0.5, y=50, lab="H = 0.5", pos=4)
 # Calculate the volatility of stocks
-volat <- sapply(pricev, function(closep) {
+volv <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep)))
 })  # end sapply
 # Dygraph of stock with highest volatility
-namev <- names(which.max(volat))
+namev <- names(which.max(volv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
 # Dygraph of stock with lowest volatility
-namev <- names(which.min(volat))
+namev <- names(which.min(volv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
 # Calculate the regression of the Hurst exponents versus volatilities
-model <- lm(hurstv ~ volat)
+model <- lm(hurstv ~ volv)
 summary(model)
 # Plot scatterplot of the Hurst exponents versus volatilities
-plot(hurstv ~ volat, xlab="Volatility", ylab="Hurst",
+plot(hurstv ~ volv, xlab="Volatility", ylab="Hurst",
      main="Hurst Exponents Versus Volatilities of Stocks")
 # Add regression line
 abline(model, col='red', lwd=3)
 tvalue <- summary(model)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
-text(x=mean(volat), y=max(hurstv),
+text(x=mean(volv), y=max(hurstv),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
 # Calculate the in-sample volatility of stocks
 volatis <- sapply(pricev, function(closep) {
@@ -1119,7 +1158,7 @@ names(weightv) <- colnames(retp)
 # Calculate the out-of-sample Hurst exponent
 -calc_phurst(weightv, retp=retp["2010/"])
 # Simulate AR processes
-set.seed(1121)  # Reset random numbers
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 datev <- Sys.Date() + 0:728  # Two year daily series
 # AR time series of returns
 arimav <- xts(x=arima.sim(n=NROW(datev), model=list(ar=0.2)),
@@ -1139,7 +1178,7 @@ theme(legend.position=c(0.1, 0.5),
 coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
 # Create three AR time series
 arimav <- sapply(coeff, function(phi) {
-  set.seed(1121)  # Reset random numbers
+  set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
   arima.sim(n=NROW(datev), model=list(ar=phi))
 })  # end sapply
 colnames(arimav) <- paste("autocorr", coeff)
@@ -1160,7 +1199,7 @@ theme(
 # Define AR(3) coefficients and innovations
 coeff <- c(0.1, 0.39, 0.5)
 nrows <- 1e2
-set.seed(1121); innov <- rnorm(nrows)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection"); innov <- rnorm(nrows)
 # Simulate AR process using recursive loop in R
 arimav <- numeric(nrows)
 arimav[1] <- innov[1]
@@ -1194,7 +1233,7 @@ summary(microbenchmark(
 rootv <- Mod(polyroot(c(1, -coeff)))
 # Calculate warmup period
 warmup <- NROW(coeff) + ceiling(6/log(min(rootv)))
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nrows <- 1e4
 innov <- rnorm(nrows + warmup)
 # Simulate AR process using arima.sim()
@@ -1221,14 +1260,14 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 # Simulate AR(1) process
 arimav <- arima.sim(n=1e3, model=list(ar=0.8))
 # ACF of AR(1) process
-acfv <- rutils::plot_acf(arimav, lag=10, xlab="", ylab="",
+acfl <- rutils::plot_acf(arimav, lag=10, xlab="", ylab="",
   main="Autocorrelations of AR(1) process")
-acfv$acf[1:5]
+acfl$acf[1:5]
 # PACF of AR(1) process
-pacfv <- pacf(arimav, lag=10, xlab="", ylab="", main="")
+pacfl <- pacf(arimav, lag=10, xlab="", ylab="", main="")
 title("Partial autocorrelations of AR(1) process", line=1)
-pacfv <- as.numeric(pacfv$acf)
-pacfv[1:5]
+pacfl <- as.numeric(pacfl$acf)
+pacfl[1:5]
 # Set two vertical plot panels
 par(mfrow=c(2,1))
 # Simulate AR process of returns
@@ -1240,7 +1279,8 @@ rutils::plot_acf(arimav, lag=10, xlab="", ylab="",
 pacf(arimav, lag=10, xlab="", ylab="", main="PACF of AR(3) process")
 library(rutils)  # Load rutils
 library(ggplot2)  # Load ggplot2
-set.seed(1121)  # Initialize random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 randw <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
 order.by=(Sys.Date()+0:99)))
 colnames(randw) <- paste("randw", 1:3, sep="_")
@@ -1251,25 +1291,27 @@ plot.zoo(randw, main="Random walks",
 legend(x="topleft", legend=colnames(randw),
  col=c("black", "red", "blue"), lty=1)
 # Simulate arima with large AR coefficient
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nrows <- 1e4
 arimav <- arima.sim(n=nrows, model=list(ar=0.99))
 tseries::adf.test(arimav)
 # Integrated series has unit root
 tseries::adf.test(cumsum(arimav))
 # Simulate arima with negative AR coefficient
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 arimav <- arima.sim(n=nrows, model=list(ar=-0.99))
 tseries::adf.test(arimav)
 # Integrated series has unit root
 tseries::adf.test(cumsum(arimav))
 # Simulate random walks using apply() loops
-set.seed(1121)  # Initialize random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 randws <- matrix(rnorm(1000*100), ncol=1000)
 randws <- apply(randws, 2, cumsum)
 varv <- apply(randws, 1, var)
 # Simulate random walks using vectorized functions
-set.seed(1121)  # Initialize random number generator
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 randws <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
 varv <- matrixStats::rowVars(randws)
 par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
@@ -1338,14 +1380,14 @@ c(volatility=sigmav, estimate=sd(retp))
 # Extract OU parameters from regression
 coeff <- summary(regmod)$coefficients
 # Calculate regression alpha and beta directly
-betav <- cov(retp, pricelag)/var(pricelag)
-alpha <- (mean(retp) - betav*mean(pricelag))
-cbind(direct=c(alpha=alpha, beta=betav), lm=coeff[, 1])
-all.equal(c(alpha=alpha, beta=betav), coeff[, 1],
+betac <- cov(retp, pricelag)/var(pricelag)
+alphac <- (mean(retp) - betac*mean(pricelag))
+cbind(direct=c(alpha=alphac, beta=betac), lm=coeff[, 1])
+all.equal(c(alpha=alphac, beta=betac), coeff[, 1],
     check.attributes=FALSE)
 # Calculate regression standard errors directly
-betav <- c(alpha=alpha, beta=betav)
-fitv <- (alpha + betav*pricelag)
+betac <- c(alpha=alphac, beta=betac)
+fitv <- (alphac + betac*pricelag)
 resids <- (retp - fitv)
 prices2 <- sum((pricelag - mean(pricelag))^2)
 betasd <- sqrt(sum(resids^2)/prices2/(nrows-2))
@@ -1366,7 +1408,7 @@ round(coeff, 4)
 retp <- numeric(nrows)
 pricev <- numeric(nrows)
 pricev[1] <- exp(sigmav*innov[1])
-set.seed(1121)  # Reset random numbers
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 for (i in 2:nrows) {
   retp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
   pricev[i] <- pricev[i-1]*exp(retp[i])
@@ -1416,37 +1458,37 @@ summary(microbenchmark(
   }},
   Rcpp=HighFreq::sim_df(init_price=prici, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-set.seed(1121); innov <- matrix(rnorm(1e4, sd=0.01))
 # Simulate AR(1) process with coefficient=1, with unit root
+innov <- matrix(rnorm(1e4, sd=0.01))
 arimav <- HighFreq::sim_ar(coeff=matrix(1), innov=innov)
-x11(); plot(arimav, t="l", main="AR(1) coefficient = 1.0")
+plot(arimav, t="l", main="Brownian Motion")
 # Perform ADF test with lag = 1
 tseries::adf.test(arimav, k=1)
 # Perform standard Dickey-Fuller test
 tseries::adf.test(arimav, k=0)
 # Simulate AR(1) with coefficient close to 1, without unit root
 arimav <- HighFreq::sim_ar(coeff=matrix(0.99), innov=innov)
-x11(); plot(arimav, t="l", main="AR(1) coefficient = 0.99")
+plot(arimav, t="l", main="AR(1) coefficient = 0.99")
 tseries::adf.test(arimav, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with mean reversion
 prici <- 0.0; priceq <- 0.0; thetav <- 0.1
 pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq,
   theta=thetav, innov=innov)
-x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
+plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with zero reversion
 thetav <- 0.0
 pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq,
   theta=thetav, innov=innov)
-x11(); plot(pricev, t="l", main=paste("OU coefficient =", thetav))
+plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
 nrows <- 1e3
 # Perform ADF test for AR(1) with small coefficient
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 arimav <- arima.sim(n=nrows, model=list(ar=0.01))
 tseries::adf.test(arimav)
 # Perform ADF test for AR(1) with large coefficient
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 arimav <- arima.sim(n=nrows, model=list(ar=0.99))
 tseries::adf.test(arimav)
 # Perform ADF test with lag = 1
@@ -1470,7 +1512,7 @@ plot(x=coeffv, y=adft["adfstat", ], main="ADF Stat Versus AR Coefficient",
 # Specify AR process parameters
 nrows <- 1e3
 coeff <- matrix(c(0.1, 0.39, 0.5)); ncoeff <- NROW(coeff)
-set.seed(1121); innov <- matrix(rnorm(nrows))
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection"); innov <- matrix(rnorm(nrows))
 # Simulate AR process using HighFreq::sim_ar()
 arimav <- HighFreq::sim_ar(coeff=coeff, innov=innov)
 # Fit AR model using ar.ols()
@@ -1488,7 +1530,7 @@ all.equal(drop(arfit$ar), coeff, check.attributes=FALSE)
 nrows <- 1e3
 coeff <- c(0.1, 0.39, 0.5); ncoeff <- NROW(coeff)
 # Simulate AR process using C_rfilter()
-set.seed(1121); innov <- rnorm(nrows, sd=0.01)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection"); innov <- rnorm(nrows, sd=0.01)
 arimav <- .Call(stats:::C_rfilter, innov, coeff,
   double(nrows + ncoeff))[-(1:ncoeff)]
 # wippp
@@ -1496,7 +1538,7 @@ arimav <- .Call(stats:::C_rfilter, innov, coeff,
 # Define predictor matrix
 arimav <- (arimav - mean(arimav))
 predm <- sapply(1:3, rutils::lagit, input=arimav)
-# Calculate de-meaned returns matrix
+# Calculate centered returns matrix
 predm <- t(t(predm) - colMeans(predm))
 predinv <- MASS::ginv(predm)
 # Regression coefficients with response equal to arimav
@@ -1508,10 +1550,10 @@ resids <- drop(arimav - fitv)
 # Variance of residuals
 residsd <- sum(resids^2)/(nrows-NROW(coeff))
 # Inverse of predictor matrix squared
-predm2 <- MASS::ginv(crossprod(predm))
+pred2 <- MASS::ginv(crossprod(predm))
 # Calculate covariance matrix of AR coefficients
-covar <- residsd*predm2
-coeffsd <- sqrt(diag(covar))
+covmat <- residsd*pred2
+coeffsd <- sqrt(diag(covmat))
 # Calculate t-values of AR coefficients
 coefft <- drop(coeff)/coeffsd
 # Plot the t-values of the AR coefficients
@@ -1524,8 +1566,8 @@ coeff <- drop(predinv %*% arimav)
 # Calculate t-values of AR(5) coefficients
 resids <- drop(arimav - drop(predm %*% coeff))
 residsd <- sum(resids^2)/(nrows-NROW(coeff))
-covar <- residsd*MASS::ginv(crossprod(predm))
-coeffsd <- sqrt(diag(covar))
+covmat <- residsd*MASS::ginv(crossprod(predm))
+coeffsd <- sqrt(diag(covmat))
 coefft <- drop(coeff)/coeffsd
 # Fit AR(5) model using arima()
 arfit <- arima(arimav, order=c(5, 0, 0), include.mean=FALSE)
@@ -1541,8 +1583,8 @@ coeff <- drop(predinv %*% retp)
 # Calculate t-values of AR(5) coefficients
 resids <- drop(retp - drop(predm %*% coeff))
 residsd <- sum(resids^2)/(nrows-NROW(coeff))
-covar <- residsd*MASS::ginv(crossprod(predm))
-coeffsd <- sqrt(diag(covar))
+covmat <- residsd*MASS::ginv(crossprod(predm))
+coeffsd <- sqrt(diag(covmat))
 coefft <- drop(coeff)/coeffsd
 # Calibrate ARIMA model using auto.arima()
 # library(forecast)  # Load forecast
@@ -1563,10 +1605,10 @@ predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% arimav)
 all.equal(arfit$coef, coeff, check.attributes=FALSE)
 # Compute autocorrelation coefficients
-acfv <- rutils::plot_acf(arimav, lag=10, plot=FALSE)
-acfv <- drop(acfv$acf)
-nrows <- NROW(acfv)
-acf1 <- c(1, acfv[-nrows])
+acfl <- rutils::plot_acf(arimav, lag=10, plot=FALSE)
+acfl <- drop(acfl$acf)
+nrows <- NROW(acfl)
+acf1 <- c(1, acfl[-nrows])
 # Define Yule-Walker matrix
 ywmat <- sapply(1:nrows, function(lagg) {
   if (lagg < nrows)
@@ -1577,36 +1619,36 @@ ywmat <- sapply(1:nrows, function(lagg) {
 # Generalized inverse of Yule-Walker matrix
 ywmatinv <- MASS::ginv(ywmat)
 # Solve Yule-Walker equations
-ywcoeff <- drop(ywmatinv %*% acfv)
+ywcoeff <- drop(ywmatinv %*% acfl)
 round(ywcoeff, 5)
 coeff
 # Calculate PACF from acf using Durbin-Levinson algorithm
-acfv <- rutils::plot_acf(arimav, lag=10, plotobj=FALSE)
-acfv <- drop(acfv$acf)
-nrows <- NROW(acfv)
-pacfv <- numeric(2)
-pacfv[1] <- acfv[1]
-pacfv[2] <- (acfv[2] - acfv[1]^2)/(1 - acfv[1]^2)
+acfl <- rutils::plot_acf(arimav, lag=10, plotobj=FALSE)
+acfl <- drop(acfl$acf)
+nrows <- NROW(acfl)
+pacfl <- numeric(2)
+pacfl[1] <- acfl[1]
+pacfl[2] <- (acfl[2] - acfl[1]^2)/(1 - acfl[1]^2)
 # Calculate PACF recursively in a loop using Durbin-Levinson algorithm
-pacfvl <- matrix(numeric(nrows*nrows), nc=nrows)
-pacfvl[1, 1] <- acfv[1]
+pacfll <- matrix(numeric(nrows*nrows), nc=nrows)
+pacfll[1, 1] <- acfl[1]
 for (it in 2:nrows) {
-  pacfvl[it, it] <- (acfv[it] - pacfvl[it-1, 1:(it-1)] %*% acfv[(it-1):1])/(1 - pacfvl[it-1, 1:(it-1)] %*% acfv[1:(it-1)])
+  pacfll[it, it] <- (acfl[it] - pacfll[it-1, 1:(it-1)] %*% acfl[(it-1):1])/(1 - pacfll[it-1, 1:(it-1)] %*% acfl[1:(it-1)])
   for (it2 in 1:(it-1)) {
-    pacfvl[it, it2] <- pacfvl[it-1, it2] - pacfvl[it, it] %*% pacfvl[it-1, it-it2]
+    pacfll[it, it2] <- pacfll[it-1, it2] - pacfll[it, it] %*% pacfll[it-1, it-it2]
   }  # end for
 }  # end for
-pacfvl <- diag(pacfvl)
+pacfll <- diag(pacfll)
 # Compare with the PACF without loop
-all.equal(pacfv, pacfvl[1:2])
+all.equal(pacfl, pacfll[1:2])
 # Calculate PACF using pacf()
-pacfv <- pacf(arimav, lag=10, plot=FALSE)
-pacfv <- drop(pacfv$acf)
-all.equal(pacfv, pacfvl)
+pacfl <- pacf(arimav, lag=10, plot=FALSE)
+pacfl <- drop(pacfl$acf)
+all.equal(pacfl, pacfll)
 # Simulate AR process using HighFreq::sim_ar()
 nrows <- 1e2
 coeff <- matrix(c(0.1, 0.39, 0.5)); ncoeff <- NROW(coeff)
-set.seed(1121); innov <- matrix(rnorm(nrows))
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection"); innov <- matrix(rnorm(nrows))
 arimav <- HighFreq::sim_ar(coeff=coeff, innov=innov)
 # Forecast AR process using loop in R
 fcast <- numeric(nrows+1)
@@ -1677,7 +1719,7 @@ plot(resids, t="l", lwd=3, xlab="", ylab="",
 # Simulate AR process using filter()
 nrows <- 1e2
 coeff <- c(0.1, 0.39, 0.5); ncoeff <- NROW(coeff)
-set.seed(1121)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 arimav <- filter(x=rnorm(nrows), filter=coeff, method="recursive")
 arimav <- as.numeric(arimav)
 # Forecast AR(3) process
@@ -1745,7 +1787,7 @@ legend(x="topright", legend=c("series", "forecasts"),
 # Define AR process parameters
 nrows <- 1e3
 coeff <- matrix(c(0.5, 0.0, 0.0)); ncoeff <- NROW(coeff)
-set.seed(1121); innov <- matrix(rnorm(nrows, sd=0.01))
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection"); innov <- matrix(rnorm(nrows, sd=0.01))
 # Simulate AR process using HighFreq::sim_ar()
 arimav <- HighFreq::sim_ar(coeff=coeff, innov=innov)
 # Define order of the AR(n) forecasting model
@@ -1754,9 +1796,9 @@ ordern <- 5
 predm <- sapply(1:ordern, rutils::lagit, input=arimav)
 colnames(predm) <- paste0("pred", 1:NCOL(predm))
 # Specify length of look-back interval
-look_back <- 100
+lookb <- 100
 # Invert the predictor matrix
-rangev <- (nrows-look_back):(nrows-1)
+rangev <- (nrows-lookb):(nrows-1)
 predinv <- MASS::ginv(predm[rangev, ])
 # Calculate fitted coefficients
 coeff <- drop(predinv %*% arimav[rangev])
@@ -1776,10 +1818,10 @@ maxorder <- 5
 predm <- sapply(1:maxorder, rutils::lagit, input=retp)
 predm <- cbind(rep(1, nrows), predm)
 # Perform rolling forecasting
-look_back <- 100
-fcast <- sapply((look_back+1):nrows, function(endd) {
+lookb <- 100
+fcast <- sapply((lookb+1):nrows, function(endd) {
   # Define rolling look-back range
-  startp <- max(1, endd-look_back)
+  startp <- max(1, endd-lookb)
   # Or expanding look-back range
   # startp <- 1
   rangev <- startp:(endd-1)
@@ -1791,7 +1833,7 @@ fcast <- sapply((look_back+1):nrows, function(endd) {
   drop(predm[endd, ] %*% coeff)
 })  # end sapply
 # Add warmup period
-fcast <- c(rep(0, look_back), fcast)
+fcast <- c(rep(0, lookb), fcast)
 # Calculate the correlation between forecasts and returns
 cor(fcasts, retp)
 # Calculate the forecasting errors
@@ -1807,18 +1849,18 @@ dygraphs::dygraph(datav,
   dyLegend(show="always", width=300)
 # Define backtesting function
 sim_fcasts <- function(respv, nagg=5, ordern=5,
-                 look_back=100, rollp=TRUE) {
+                 lookb=100, rollp=TRUE) {
   nrows <- NROW(respv)
   # Define predictor as a rolling sum
-  predm <- rutils::roll_sum(respv, look_back=nagg)
+  predm <- rutils::roll_sum(respv, lookb=nagg)
   # Define predictor matrix for forecasting
   predm <- sapply(1+nagg*(0:ordern), rutils::lagit, input=predm)
   predm <- cbind(rep(1, nrows), predm)
   # Perform rolling forecasting
-  fcast <- sapply((look_back+1):nrows, function(endd) {
+  fcast <- sapply((lookb+1):nrows, function(endd) {
     # Define rolling look-back range
     if (rollp)
-startp <- max(1, endd-look_back)
+startp <- max(1, endd-lookb)
     else
     # Or expanding look-back range
 startp <- 1
@@ -1831,19 +1873,19 @@ startp <- 1
     drop(predm[endd, ] %*% coeff)
   })  # end sapply
   # Add warmup period
-  fcast <- c(rep(0, look_back), fcast)
+  fcast <- c(rep(0, lookb), fcast)
   # Aggregate the forecasts
-  rutils::roll_sum(fcast, look_back=nagg)
+  rutils::roll_sum(fcast, lookb=nagg)
 }  # end sim_fcasts
 # Simulate the rolling autoregressive forecasts
-fcast <- sim_fcasts(respv=retp, ordern=5, look_back=100)
+fcast <- sim_fcasts(respv=retp, ordern=5, lookb=100)
 c(mse=mean((retp - fcast)^2), cor=cor(retp, fcast))
-look_backs <- seq(20, 200, 20)
-fcast <- sapply(look_backs, sim_fcasts, respv=retp,
+lookbv <- seq(20, 200, 20)
+fcast <- sapply(lookbv, sim_fcasts, respv=retp,
                nagg=5, ordern=5)
-colnames(fcast) <- look_backs
+colnames(fcast) <- lookbv
 msev <- apply(fcast, 2, function(x) mean((retp - x)^2))
 # Plot forecasting series with legend
-plot(x=look_backs, y=msev,
+plot(x=lookbv, y=msev,
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")

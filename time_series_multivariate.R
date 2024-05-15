@@ -17,11 +17,11 @@ abline(a=0, b=-1/coef(regmodsum)[2, 1], lwd=2, col="blue")
 # Get regression coefficients
 coef(regmodsum)
 # Calculate regression coefficients from scratch
-betav <- drop(cov(retp$XLP, retp$VTI)/var(retp$VTI))
-alpha <- drop(mean(retp$XLP) - betav*mean(retp$VTI))
-c(alpha, betav)
+betac <- drop(cov(retp$XLP, retp$VTI)/var(retp$VTI))
+alphac <- drop(mean(retp$XLP) - betac*mean(retp$VTI))
+c(alphac, betac)
 # Calculate the residuals
-residuals <- (retp$XLP - (alpha + betav*retp$VTI))
+residuals <- (retp$XLP - (alphac + betac*retp$VTI))
 # Calculate the standard deviation of residuals
 nrows <- NROW(residuals)
 residsd <- sqrt(sum(residuals^2)/(nrows - 2))
@@ -60,24 +60,24 @@ library(PerformanceAnalytics)
 PerformanceAnalytics::CAPM.beta(Ra=retp$XLP, Rb=retp$VTI)
 # Or
 retxlp <- na.omit(retp[, c("XLP", "VTI")])
-betav <- drop(cov(retxlp$XLP, retxlp$VTI)/var(retxlp$VTI))
-betav
+betac <- drop(cov(retxlp$XLP, retxlp$VTI)/var(retxlp$VTI))
+betac
 # Calculate XLP alpha
 PerformanceAnalytics::CAPM.alpha(Ra=retp$XLP, Rb=retp$VTI)
 # Or
-mean(retp$XLP - betav*retp$VTI)
+mean(retp$XLP - betac*retp$VTI)
 # Calculate XLP bull beta
 PerformanceAnalytics::CAPM.beta.bull(Ra=retp$XLP, Rb=retp$VTI)
 # Calculate XLP bear beta
 PerformanceAnalytics::CAPM.beta.bear(Ra=retp$XLP, Rb=retp$VTI)
 symbolv <- rownames(betam)
-betav <- betam[-match(c("VXX", "SVXY", "MTUM", "USMV", "QUAL"), symbolv), 1]
-betav <- c(1, betav)
-names(betav)[1] <- "VTI"
-retsann <- sapply(retp[, names(betav)], PerformanceAnalytics::Return.annualized)
+betac <- betam[-match(c("VXX", "SVXY", "MTUM", "USMV", "QUAL"), symbolv), 1]
+betac <- c(1, betac)
+names(betac)[1] <- "VTI"
+retsann <- sapply(retp[, names(betac)], PerformanceAnalytics::Return.annualized)
 # Plot scatterplot of returns vs betas
 minrets <- min(retsann)
-plot(retsann ~ betav, xlab="betas", ylab="returns",
+plot(retsann ~ betac, xlab="betas", ylab="returns",
      ylim=c(minrets, -minrets), main="Security Market Line for ETFs")
 retvti <- retsann["VTI"]
 points(x=1, y=retvti, col="red", lwd=3, pch=21)
@@ -85,16 +85,16 @@ points(x=1, y=retvti, col="red", lwd=3, pch=21)
 riskfree <- 0.01
 abline(a=riskfree, b=(retvti-riskfree), col="green", lwd=2)
 # Add labels
-text(x=betav, y=retsann, labels=names(betav), pos=2, cex=0.8)
+text(x=betac, y=retsann, labels=names(betac), pos=2, cex=0.8)
 # Find optimal risk-free rate by minimizing residuals
 rss <- function(riskfree) {
-  sum((retsann - riskfree - betav*(retvti-riskfree))^2)
+  sum((retsann - riskfree - betac*(retvti-riskfree))^2)
 }  # end rss
 optimrss <- optimize(rss, c(-1, 1))
 riskfree <- optimrss$minimum
 # Or simply
-retsadj <- (retsann - retvti*betav)
-betadj <- (1-betav)
+retsadj <- (retsann - retvti*betac)
+betadj <- (1-betac)
 riskfree <- sum(retsadj*betadj)/sum(betadj^2)
 abline(a=riskfree, b=(retvti-riskfree), col="blue", lwd=2)
 legend(x="topleft", bty="n", title="Security Market Line",
@@ -103,14 +103,14 @@ legend(x="topleft", bty="n", title="Security Market Line",
 # Load S&P500 constituent stock returns
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retvti <- na.omit(rutils::etfenv$returns$VTI)
-retp <- returns[index(retvti), ]
+retp <- retstock[index(retvti), ]
 nrows <- NROW(retp)
 # Calculate stock betas
-betav <- sapply(retp, function(x) {
+betac <- sapply(retp, function(x) {
   retp <- na.omit(cbind(x, retvti))
   drop(cov(retp[, 1], retp[, 2])/var(retp[, 2]))
 })  # end sapply
-mean(betav)
+mean(betac)
 # Calculate annual stock returns
 retsann <- retp
 retsann[1, ] <- 0
@@ -118,19 +118,19 @@ retsann <- zoo::na.locf(retsann, na.rm=FALSE)
 retsann <- 252*sapply(retsann, sum)/nrows
 # Remove stocks with zero returns
 sum(retsann == 0)
-betav <- betav[retsann > 0]
+betac <- betac[retsann > 0]
 retsann <- retsann[retsann > 0]
 retvti <- 252*mean(retvti)
 # Plot scatterplot of returns vs betas
-plot(retsann ~ betav, xlab="betas", ylab="returns",
+plot(retsann ~ betac, xlab="betas", ylab="returns",
      main="Security Market Line for Stocks")
 points(x=1, y=retvti, col="red", lwd=3, pch=21)
 # Plot Security Market Line
 riskfree <- 0.01
 abline(a=riskfree, b=(retvti-riskfree), col="green", lwd=2)
 # Find optimal risk-free rate by minimizing residuals
-retsadj <- (retsann - retvti*betav)
-betadj <- (1-betav)
+retsadj <- (retsann - retvti*betac)
+betadj <- (1-betac)
 riskfree <- sum(retsadj*betadj)/sum(betadj^2)
 abline(a=riskfree, b=(retvti-riskfree), col="blue", lwd=2)
 legend(x="topleft", bty="n", title="Security Market Line",
@@ -165,9 +165,9 @@ retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
 endd <- xts::endpoints(retp, on="months")[-1]
 # Calculate start points from look-back interval
-look_back <- 12  # Look back 12 months
-startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
-head(cbind(endd, startp), look_back+2)
+lookb <- 12  # Look back 12 months
+startp <- c(rep(1, lookb), endd[1:(NROW(endd)-lookb)])
+head(cbind(endd, startp), lookb+2)
 # Calculate trailing beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
 betar <- sapply(1:NROW(endd), FUN=function(tday) {
@@ -179,8 +179,8 @@ betar <- sapply(1:NROW(endd), FUN=function(tday) {
 controlv <- HighFreq::param_reg()
 reg_stats <- HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI,
   startp=(startp-1), endp=(endd-1), controlv=controlv)
-betav <- reg_stats[, 2]
-all.equal(betav, betar)
+betac <- reg_stats[, 2]
+all.equal(betac, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
@@ -193,7 +193,7 @@ summary(microbenchmark(
 # dygraph plot of trailing XLP beta and VTI prices
 datev <- zoo::index(retp[endd, ])
 pricev <- rutils::etfenv$prices$VTI[datev]
-datav <- cbind(pricev, betav)
+datav <- cbind(pricev, betac)
 colnames(datav)[2] <- "beta"
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
@@ -207,9 +207,9 @@ retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 # Calculate monthly end points
 endd <- rutils::calc_endpoints(retp, interval="months")[-1]
 # Calculate start points from look-back interval
-look_back <- 12  # Look back 12 months
-startp <- c(rep(1, look_back), endd[1:(NROW(endd)-look_back)])
-head(cbind(endd, startp), look_back+2)
+lookb <- 12  # Look back 12 months
+startp <- c(rep(1, lookb), endd[1:(NROW(endd)-lookb)])
+head(cbind(endd, startp), lookb+2)
 # Calculate trailing beta regressions every month in R
 formulav <- XLP ~ VTI  # Specify regression formula
 betar <- sapply(1:NROW(endd), FUN=function(tday) {
@@ -221,8 +221,8 @@ betar <- sapply(1:NROW(endd), FUN=function(tday) {
 controlv <- HighFreq::param_reg()
 reg_stats <- HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI,
   startp=(startp-1), endp=(endd-1), controlv=controlv)
-betav <- reg_stats[, 2]
-all.equal(betav, betar)
+betac <- reg_stats[, 2]
+all.equal(betac, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
@@ -235,7 +235,7 @@ summary(microbenchmark(
 # dygraph plot of trailing XLP beta and VTI prices
 datev <- zoo::index(retp[endd, ])
 pricev <- log(rutils::etfenv$prices$VTI[datev])
-datav <- cbind(pricev, betav)
+datav <- cbind(pricev, betac)
 colnames(datav)[2] <- "beta"
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
@@ -245,11 +245,11 @@ dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Calculate the trailing betas
-lambda <- 0.99
-covarv <- HighFreq::run_covar(retp, lambda)
-betav <- covarv[, 1]/covarv[, 3]
+lambdaf <- 0.99
+covarv <- HighFreq::run_covar(retp, lambdaf)
+betac <- covarv[, 1]/covarv[, 3]
 # dygraph plot of trailing XLP beta and VTI prices
-datav <- cbind(pricev, betav[endd])[-(1:11)] # Remove warmup period
+datav <- cbind(pricev, betac[endd])[-(1:11)] # Remove warmup period
 colnames(datav)[2] <- "beta"
 colnamev <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
@@ -264,7 +264,7 @@ load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 pricets <- zoo::na.locf(pricets, na.rm=FALSE)
 pricets <- zoo::na.locf(pricets, fromLast=TRUE)
 retp <- rutils::diffit(log(pricev))
-# Standardize (de-mean and scale) the returns
+# Standardize (center and scale) the returns
 retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
 retp <- rutils::do_call(cbind, retp)
 # Perform principal component analysis PCA
@@ -293,21 +293,21 @@ for (ordern in 2:ncomps) {
 # Calculate principal component time series
 retpca <- xts(retp %*% pcad$rotation[, 1:ncomps], order.by=datev)
 round(cov(retpca), 3)
-pcacum <- cumsum(retpca)
+retpcac <- cumsum(retpca)
 # Plot principal component time series in multiple panels
 par(mfrow=c(ncomps/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-rangev <- range(pcacum)
+rangev <- range(retpcac)
 for (ordern in 1:ncomps) {
-  plot.zoo(pcacum[, ordern], ylim=rangev, xlab="", ylab="")
+  plot.zoo(retpcac[, ordern], ylim=rangev, xlab="", ylab="")
   title(paste0("PC", ordern), line=-2.0)
 }  # end for
 par(mfrow=c(ncomps/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 # Invert principal component time series
-invmat <- solve(pcad$rotation)
-all.equal(invmat, t(pcad$rotation))
-solved <- retpca %*% invmat[1:ncomps, ]
+pcinv <- solve(pcad$rotation)
+all.equal(pcinv, t(pcad$rotation))
+solved <- retpca %*% pcinv[1:ncomps, ]
 solved <- xts::xts(solved, datev)
 solved <- cumsum(solved)
 retc <- cumsum(retp)
@@ -337,9 +337,9 @@ for (symbol in symbolv) {
 }  # end for
 # Perform ADF unit root test on principal component time series
 retpca <- xts(retp %*% pcad$rotation, order.by=datev)
-pcacum <- cumsum(retpca)
-adf_pvalues <- sapply(1:NCOL(pcacum), function(ordern)
-  tseries::adf.test(pcacum[, ordern])$p.value)
+retpcac <- cumsum(retpca)
+adf_pvalues <- sapply(1:NCOL(retpcac), function(ordern)
+  tseries::adf.test(retpcac[, ordern])$p.value)
 # AdF unit root test on stationary time series
 tseries::adf.test(rnorm(1e5))
 library(quantmod)
@@ -367,8 +367,8 @@ corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
 # Convert correlation matrix into distance object
 distancev <- as.dist(1-cormat)
 # Perform hierarchical clustering analysis
-cluster <- hclust(distancev)
-plot(cluster, ann=FALSE, xlab="", ylab="")
+compclust <- hclust(distancev)
+plot(compclust, ann=FALSE, xlab="", ylab="")
 title("Dendrogram representing hierarchical clustering
 \nwith dissimilarity = 1-correlation", line=-0.5)
 library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"

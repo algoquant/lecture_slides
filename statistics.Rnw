@@ -62,7 +62,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Probability and Statistics]{Probability and Statistics}
-\subtitle{FRE6871 \& FRE7241, Fall 2023}
+\subtitle{FRE6871 \& FRE7241, Spring 2024}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
@@ -188,14 +188,14 @@ lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="orange")
 # using logistic map function.
 unifun <- function(seedv, n=10) {
   # Pre-allocate vector instead of "growing" it
-  output <- numeric(n)
+  datav <- numeric(n)
   # initialize
-  output[1] <- seedv
+  datav[1] <- seedv
   # Perform loop
   for (i in 2:n) {
-    output[i] <- 4*output[i-1]*(1-output[i-1])
+    datav[i] <- 4*datav[i-1]*(1-datav[i-1])
   }  # end for
-  acos(1-2*output)/pi
+  acos(1-2*datav)/pi
 }  # end unifun
       @
     \column{0.5\textwidth}
@@ -1345,9 +1345,11 @@ jarque.bera.test(runif(nrows))
       \end{displaymath}
       The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
       \vskip1ex
-      The second argument to \texttt{ks.test()} can be either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
+      The second argument to \texttt{ks.test()} can be either a \texttt{numeric} vector of cumulative frequencies, or a name of a cumulative distribution function.
       \vskip1ex
       The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution.
+      \vskip1ex
+      The \emph{K-S} test is more sensitive to the tails of the distribution because it depends on the maximum difference between the two empirical cumulative frequencies.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1453,8 +1455,8 @@ countst <- rutils::diffit(pnorm(histp$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
 # Return p-value
-chisq_test <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-chisq_test$p.value
+chisqtest <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+chisqtest$p.value
 # Observed frequencies from shifted normal data
 histp <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
 countsn <- histp$counts/sum(histp$counts)
@@ -1577,8 +1579,8 @@ apply(bootd, MARGIN=2, function(x)
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # initialize compute cluster
-bootd <- parLapply(cluster, 1:1e4,
+compclust <- makeCluster(ncores)  # initialize compute cluster
+bootd <- parLapply(compclust, 1:1e4,
   function(x, nrows, retp) {
     # Simulate data
     ndata <- rnorm(nrows, sd=100)
@@ -1588,7 +1590,7 @@ bootd <- parLapply(cluster, 1:1e4,
       vti_mean=mean(retp), 
       vti_median=median(retp))
   }, nrows, retp)  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:1e4, function(x) {
   # Simulate data
@@ -1776,13 +1778,13 @@ apply(bootd, MARGIN=2, function(x)
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # initialize compute cluster
-bootd <- parLapply(cluster, 1:1e4,
+compclust <- makeCluster(ncores)  # initialize compute cluster
+bootd <- parLapply(compclust, 1:1e4,
   function(x, datav) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, datav=datav)  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:1e4, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
@@ -2572,13 +2574,13 @@ apply(bootd, MARGIN=2,
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # initialize compute cluster
-bootd <- parLapply(cluster, 1:1e4,
+compclust <- makeCluster(ncores)  # initialize compute cluster
+bootd <- parLapply(compclust, 1:1e4,
   function(x, datav) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, datav=datav)  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:1e4,
   function(x) {
@@ -2644,13 +2646,13 @@ apply(bootd, MARGIN=2, function(x)
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
-cluster <- makeCluster(ncores)  # initialize compute cluster
-bootd <- parLapply(cluster, 1:1e4, 
+compclust <- makeCluster(ncores)  # initialize compute cluster
+bootd <- parLapply(compclust, 1:1e4, 
   function(x, datav) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
     c(sd=sd(samplev), mad=mad(samplev))
   }, datav=datav)  # end parLapply
-stopCluster(cluster)  # Stop R processes over cluster
+stopCluster(compclust)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
 bootd <- mclapply(1:1e4, function(x) {
     samplev <- datav[sample.int(nrows, replace=TRUE)]
@@ -3714,8 +3716,8 @@ countst <- rutils::diffit(pnorm(histp$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
 # Return p-value
-chisq_test <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
-chisq_test$p.value
+chisqtest <- chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
+chisqtest$p.value
 # Observed frequencies from shifted normal data
 histp <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
 countsn <- histp$counts/sum(histp$counts)
@@ -3764,16 +3766,16 @@ chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Objective function from function dt()
-likefun <- function(par, dfree, data) {
-  -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
+likefun <- function(par, dfree, datav) {
+  -sum(log(dt(x=(datav-par[1])/par[2], df=dfree)/par[2]))
 }  # end likefun
 # Demonstrate equivalence with log(dt())
 likefun(c(1, 0.5), 2, 2:5)
 -sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
 # Objective function is negative log-likelihood
-likefun <- function(par, dfree, data) {
+likefun <- function(par, dfree, datav) {
   sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
-    log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
+    log(par[2]) + (dfree+1)/2*log(1+((datav-par[1])/par[2])^2/dfree))
 }  # end likefun
       @
       The \emph{likelihood} function measures how \emph{likely} are the parameters, given the observed values $\bar{x}$.
@@ -3820,7 +3822,7 @@ fitobj$value
 initp <- c(mean=0, scale=0.01)  # Initial parameters
 fitobj <- optim(par=initp,
   fn=likefun, # Log-likelihood function
-  data=retp,
+  datav=retp,
   dfree=3, # Degrees of freedom
   method="L-BFGS-B", # Quasi-Newton method
   upper=c(1, 0.1), # Upper constraint
@@ -3901,14 +3903,14 @@ legend("topright", inset=0.05, bty="n", y.intersp=0.4,
       The \emph{Kolmogorov-Smirnov} test rejects the \emph{null hypothesis} that stock returns follow closely the non-standard \emph{t-distribution} with \texttt{3} degrees of freedom.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate sample from non-standard t-distribution with df=3
-tdata <- scalev*rt(NROW(retp), df=3) + locv
+datat <- locv + scalev*rt(NROW(retp), df=3)
 # Q-Q plot of VTI Returns vs non-standard t-distribution
-qqplot(tdata, retp, xlab="t-Dist Quantiles", ylab="VTI Quantiles", 
+qqplot(datat, retp, xlab="t-Dist Quantiles", ylab="VTI Quantiles", 
        main="Q-Q plot of VTI Returns vs Student's t-distribution")
 # Calculate quartiles of the distributions
 probs <- c(0.25, 0.75)
 qrets <- quantile(retp, probs)
-qtdata <- quantile(tdata, probs)
+qtdata <- quantile(datat, probs)
 # Calculate slope and plot line connecting quartiles
 slope <- diff(qrets)/diff(qtdata)
 intercept <- qrets[1]-slope*qtdata[1]
@@ -3918,7 +3920,7 @@ abline(intercept, slope, lwd=2, col="red")
       \includegraphics[width=0.45\paperwidth]{figure/t_dist_qq.png}
         <<echo=TRUE,eval=FALSE>>=
 # KS test for VTI returns vs t-distribution data
-ks.test(retp, tdata)
+ks.test(retp, datat)
 # Define cumulative distribution of non-standard t-distribution
 ptdistr <- function(x, dfree, locv=0, scalev=1) {
   pt((x-locv)/scalev, df=dfree)

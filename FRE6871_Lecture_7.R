@@ -1,1099 +1,276 @@
-Sys.Date()  # Get today's date
-as.Date(1e3)  # Coerce numeric into date object
-datetime <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
-datetime
-class(datetime)  # Date object
-as.Date("07-14-2014", "%m-%d-%Y")  # Specify format
-datetime + 20  # Add 20 days
-# Extract internal representation to integer
-as.numeric(datetime)
-datep <- as.Date("07/14/2013", "%m/%d/%Y")
-datep
-# Difference between dates
-difftime(datetime, datep, units="weeks")
-weekdays(datetime)  # Get day of the week
-# Coerce numeric into date-times
-datetime <- 0
-attributes(datetime) <- list(class="Date")
-datetime  # "Date" object
-structure(0, class="Date")  # "Date" object
-structure(10000.25, class="Date")
-
-datetime <- Sys.time()  # Get today's date and time
-datetime
-class(datetime)  # POSIXct object
-# POSIXct stored as integer moment of time
-as.numeric(datetime)
-# Parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
-datetime <- as.POSIXct("2014-07-14 13:30:10")
-# Different time zones can have same clock time
-as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
-as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# Format argument allows parsing different date-time string formats
-as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
-     tz="America/New_York")
-
-# Same moment of time corresponds to different clock times
-timeny <- as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
-timeldn <- as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# Add five hours to POSIXct
-timeny + 5*60*60
-# Subtract POSIXct
-timeny - timeldn
-class(timeny - timeldn)
-# Compare POSIXct
-timeny > timeldn
-# Create vector of POSIXct times during trading hours
-timev <- seq(
-  from=as.POSIXct("2014-07-14 09:30:00", tz="America/New_York"),
-  to=as.POSIXct("2014-07-14 16:00:00", tz="America/New_York"),
-  by="10 min")
-head(timev, 3)
-tail(timev, 3)
-
-# POSIXct is stored as integer moment of time
-datetimen <- as.numeric(datetime)
-# Same moment of time corresponds to different clock times
-as.POSIXct(datetimen, origin="1970-01-01", tz="America/New_York")
-as.POSIXct(datetimen, origin="1970-01-01", tz="UTC")
-# Same clock time corresponds to different moments of time
-as.POSIXct("2014-07-14 13:30:10", tz="America/New_York") -
-  as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# Add 20 seconds to POSIXct
-datetime + 20
-
-datetime  # POSIXct date and time
-# Parse POSIXct to string representing the clock time
-format(datetime)
-class(format(datetime))  # Character string
-# Get clock times in different time zones
-format(datetime, tz="America/New_York")
-format(datetime, tz="UTC")
-# Format with custom format strings
-format(datetime, "%m/%Y")
-format(datetime, "%m-%d-%Y %H hours")
-# Trunc to hour
-format(datetime, "%m-%d-%Y %H:00:00")
-# Date converted to midnight UTC moment of time
-as.POSIXct(Sys.Date())
-as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
-     origin="1970-01-01",
-     tz="UTC")
-
-# Parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-datetime <- as.POSIXlt("2014-07-14 18:30:10")
-datetime
-class(datetime)  # POSIXlt object
-as.POSIXct(datetime)  # Coerce to POSIXct object
-# Extract internal list representation to vector
-unlist(datetime)
-datetime + 20  # Add 20 seconds
-class(datetime + 20)  # Implicit coercion to POSIXct
-trunc(datetime, units="hours")  # Truncate to closest hour
-trunc(datetime, units="days")  # Truncate to closest day
-methods(trunc)  # Trunc methods
-trunc.POSIXt
-
-# Set time-zone to UTC
-Sys.setenv(TZ="UTC")
-Sys.timezone()  # Get time-zone
-Sys.time()  # Today's date and time
-# Set time-zone back to New York
-Sys.setenv(TZ="America/New_York")
-Sys.time()  # Today's date and time
-# Standard Time in effect
-as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
-# Daylight Savings Time in effect
-as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
-datetime <- Sys.time()  # Today's date and time
-# Convert to character in different TZ
-format(datetime, tz="America/New_York")
-format(datetime, tz="UTC")
-# Parse back to POSIXct
-as.POSIXct(format(datetime, tz="America/New_York"))
-# Difference between New_York time and UTC
-as.POSIXct(format(Sys.time(), tz="UTC")) -
-  as.POSIXct(format(Sys.time(), tz="America/New_York"))
-
-library(lubridate)  # Load lubridate
-# Parse strings into date-times
-as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
-datetime <- lubridate::mdy("07-14-2014", tz="America/New_York")
-datetime
-class(datetime)  # POSIXct object
-lubridate::dmy("14.07.2014", tz="America/New_York")
-
-# Parse numeric into date-times
-as.POSIXct(as.character(14072014), format="%d%m%Y",
-                  tz="America/New_York")
-lubridate::dmy(14072014, tz="America/New_York")
-
-# Parse decimal to date-times
-lubridate::decimal_date(datetime)
-lubridate::date_decimal(2014.25, tz="America/New_York")
-date_decimal(decimal_date(datetime), tz="America/New_York")
-
-library(lubridate)  # Load lubridate
-datetime <- lubridate::ymd_hms(20140714142010,
-               tz="America/New_York")
-datetime
-# Get same moment of time in "UTC" time zone
-lubridate::with_tz(datetime, "UTC")
-as.POSIXct(format(datetime, tz="UTC"), tz="UTC")
-# Get same clock time in "UTC" time zone
-lubridate::force_tz(datetime, "UTC")
-as.POSIXct(format(datetime, tz="America/New_York"),
-     tz="UTC")
-# Same moment of time
-datetime - with_tz(datetime, "UTC")
-# Different moments of time
-datetime - force_tz(datetime, "UTC")
-
-library(lubridate)  # Load lubridate
-# Daylight Savings Time handling periods vs durations
-datetime <- as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
-datetime
-datetime + lubridate::ddays(1)  # Add duration
-datetime + lubridate::days(1)  # Add period
-
-leap_year(2012)  # Leap year
-datetime <- lubridate::dmy(01012012, tz="America/New_York")
-datetime
-datetime + lubridate::dyears(1)  # Add duration
-datetime + lubridate::years(1)  # Add period
-
-library(lubridate)  # Load lubridate
-datetime <- lubridate::ymd_hms(20140714142010, tz="America/New_York")
-datetime
-# Add periods to a date-time
-c(datetime + lubridate::seconds(1), datetime + lubridate::minutes(1),
-  datetime + lubridate::days(1), datetime + lubridate::months(1))
-
-# Create vectors of dates
-datetime <- lubridate::ymd(20140714, tz="America/New_York")
-datetime + 0:2 * lubridate::months(1)  # Monthly dates
-datetime + lubridate::months(0:2)
-datetime + 0:2 * lubridate::months(2)  # bi-monthly dates
-datetime + seq(0, 5, by=2) * lubridate::months(1)
-seq(datetime, length=3, by="2 months")
-
-library(lubridate)  # Load lubridate
-# Adding monthly periods can create invalid dates
-datetime <- lubridate::ymd(20120131, tz="America/New_York")
-datetime + 0:2 * lubridate::months(1)
-datetime + lubridate::months(1)
-datetime + lubridate::months(2)
-
-# Create vector of end-of-month dates
-datetime %m-% lubridate::months(13:1)
-
-library(zoo)  # Load zoo
-library(RQuantLib)  # Load RQuantLib
-
-# Create daily date series of class "Date"
-dates <- Sys.Date() + -5:2
-dates
-
-# Create Boolean vector of business days
-# Use RQuantLib calendar
-is_busday <- RQuantLib::isBusinessDay(
-  calendar="UnitedStates/GovernmentBond", dates)
-
-# Create daily series of business days
-bus_index <- dates[is_busday]
-bus_index
-
-library(zoo)  # Load package zoo
-datetime <- Sys.Date()  # Create date series of class "Date"
-dates <- datetime + 0:365  # Daily series over one year
-head(dates, 4)  # Print first few dates
-format(head(dates, 4), "%m/%d/%Y")  # Print first few dates
-# Create daily date-time series of class "POSIXct"
-dates <- seq(Sys.time(), by="days", length.out=365)
-head(dates, 4)  # Print first few dates
-format(head(dates, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
-# Create series of monthly dates of class "zoo"
-monthly_index <- yearmon(2010+0:36/12)
-head(monthly_index, 4)  # Print first few dates
-# Create series of quarterly dates of class "zoo"
-qrtly_index <- yearqtr(2010+0:16/4)
-head(qrtly_index, 4)  # Print first few dates
-# Parse quarterly "zoo" dates to POSIXct
-Sys.setenv(TZ="UTC")
-as.POSIXct(head(qrtly_index, 4))
-
-library(lubridate)  # Load lubridate
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-# Create daily time series ending today
-startd <- decimal_date(Sys.Date()-6)
-endd <- decimal_date(Sys.Date())
-# Create vector of geometric Brownian motion
-datav <- exp(cumsum(rnorm(6)/100))
-tstep <- NROW(datav)/(endd-startd)
-tseries <- ts(data=datav, start=startd, frequency=tstep)
-tseries  # Display time series
-# Display index dates
-as.Date(date_decimal(zoo::coredata(time(tseries))))
-# bi-monthly geometric Brownian motion starting mid-1990
-tseries <- ts(data=exp(cumsum(rnorm(96)/100)),
-       frequency=6, start=1990.5)
-
-# Show some methods for class "ts"
-matrix(methods(class="ts")[3:8], ncol=2)
-# "tsp" attribute specifies the date-time index
-attributes(tseries)
-# Extract the index
-tail(time(tseries), 11)
-# The index is equally spaced
-diff(tail(time(tseries), 11))
-# Subset the time series
-window(tseries, start=1992, end=1992.25)
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-plot(tseries, type="l",  # Create plot
-     col="red", lty="solid", xlab="", ylab="")
-title(main="Random Prices", line=-1)  # Add title
-
-class(EuStockMarkets)  # Multiple ts object
-dim(EuStockMarkets)
-head(EuStockMarkets, 3)  # Get first three rows
-# EuStockMarkets index is equally spaced
-diff(tail(time(EuStockMarkets), 11))
-
-par(mar=c(1, 2, 1, 1), oma=c(0, 0, 0, 0))
-# Plot all the columns in separate panels
-plot(EuStockMarkets, main="EuStockMarkets", xlab="")
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Plot in single panel
-plot(EuStockMarkets, main="EuStockMarkets",
-     xlab="", ylab="", plot.type="single",
-     col=c("black", "red", "blue", "green"))
-# Add legend
-legend(x=1992, y=8000,
- legend=colnames(EuStockMarkets),
- col=c("black", "red", "blue", "green"),
- lwd=6, lty=1)
-
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-library(zoo)  # Load package zoo
-# Create zoo time series of random returns
-dates <- Sys.Date() + 0:3
-zoots <- zoo(rnorm(NROW(dates)), order.by=dates)
-zoots
-attributes(zoots)
-class(zoots)  # Class "zoo"
-tail(zoots, 3)  # Get last few elements
-
-library(zoo)  # Load package zoo
-zoo::coredata(zoots)  # Extract coredata
-zoo::index(zoots)  # Extract time index
-start(zoots)  # First date
-end(zoots)  # Last date
-zoots[start(zoots)]  # First element
-zoots[end(zoots)]  # Last element
-zoo::coredata(zoots) <- rep(1, 4)  # Replace coredata
-cumsum(zoots)  # Cumulative sum
-cummax(cumsum(zoots))
-cummin(cumsum(zoots))
-
-library(zoo)  # Load package zoo
-zoots <- zoo(matrix(cumsum(rnorm(100)), nc=1),
-  order.by=seq(from=as.Date("2013-06-15"), by="day", len=100))
-colnames(zoots) <- "zoots"
-tail(zoots)
-dim(zoots)
-attributes(zoots)
-
-library(zoo)  # Load package zoo
-zoo::coredata(zoots) <- (1:4)^2  # Replace coredata
-zoots
-lag(zoots)  # One day lag
-lag(zoots, 2)  # Two day lag
-lag(zoots, k=-1)  # Proper one day lag
-diff(zoots)  # Diff with one day lag
-# Proper lag and original length
-lag(zoots, -2, na.pad=TRUE)
-
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-library(zoo)  # Load package zoo
-# Create index of daily dates
-dates <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
-# Create vector of geometric Brownian motion
-datav <- exp(cumsum(rnorm(NROW(dates))/100))
-# Create zoo series of geometric Brownian motion
-zoots <- zoo(x=datav, order.by=dates)
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Plot using plot.zoo method
-plot(zoots, xlab="", ylab="")
-title(main="Random Prices", line=-1)  # Add title
-
-library(zoo)  # Load package zoo
-# Subset zoo as matrix
-zoots[459:463, 1]
-# Subset zoo using window()
-window(zoots,
- start=as.Date("2014-10-15"),
- end=as.Date("2014-10-19"))
-# Subset zoo using Date object
-zoots[as.Date("2014-10-15")]
-
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(zoo)  # Load package zoo
-# Create daily date series of class "Date"
-index1 <- seq(Sys.Date(), by="days", length.out=365)
-# Create zoo time series of random returns
-zoots1 <- zoo(rnorm(NROW(index1)), order.by=index1)
-# Create another zoo time series of random returns
-index2 <- seq(Sys.Date()+350, by="days", length.out=365)
-zoots2 <- zoo(rnorm(NROW(index2)), order.by=index2)
-# rbind the two time series - ts1 supersedes ts2
-zoots3 <- rbind(zoots1,
-  zoots2[zoo::index(zoots2) > end(zoots1)])
-# Plot zoo time series of geometric Brownian motion
-plot(exp(cumsum(zoots3)/100), xlab="", ylab="")
-# Add vertical lines at stitch point
-abline(v=end(zoots1), col="blue", lty="dashed")
-abline(v=start(zoots2), col="red", lty="dashed")
-title(main="Random Prices", line=-1)  # Add title
-
-# Create daily date series of class "Date"
-index1 <- Sys.Date() + -3:1
-# Create zoo time series of random returns
-zoots1 <- zoo(rnorm(NROW(index1)), order.by=index1)
-# Create another zoo time series of random returns
-index2 <- Sys.Date() + -1:3
-zoots2 <- zoo(rnorm(NROW(index2)), order.by=index2)
-merge(zoots1, zoots2)  # union of dates
-# Intersection of dates
-merge(zoots1, zoots2, all=FALSE)
-
-# Create matrix containing NA values
-matv <- sample(18)
-matv[sample(NROW(matv), 4)] <- NA
-matv <- matrix(matv, nc=3)
-# Replace NA values with most recent non-NA values
-zoo::na.locf(matv)
-rutils::na_locf(matv)
-# Get time series of prices
-pricev <- mget(c("VTI", "VXX"), envir=rutils::etfenv)
-pricev <- lapply(pricev, quantmod::Cl)
-pricev <- rutils::do_call(cbind, pricev)
-sum(is.na(pricev))
-# Carry forward and backward non-NA prices
-pricev <- zoo::na.locf(pricev, na.rm=FALSE)
-pricev <- zoo::na.locf(pricev, na.rm=FALSE, fromLast=TRUE)
-sum(is.na(pricev))
-# Remove whole rows containing NA returns
-retp <- rutils::etfenv$returns
-sum(is.na(retp))
-retp <- na.omit(retp)
-# Or carry forward non-NA returns (preferred)
-retp <- rutils::etfenv$returns
-retp[1, is.na(retp[1, ])] <- 0
-retp <- zoo::na.locf(retp, na.rm=FALSE)
-sum(is.na(retp))
-
-# Replace NAs in xts time series
-pricev <- rutils::etfenv$prices[, 1]
-head(pricev)
-sum(is.na(pricev))
-library(quantmod)
-pricezoo <- zoo::na.locf(pricev, na.rm=FALSE, fromLast=TRUE)
-pricexts <- xts:::na.locf.xts(pricev, fromLast=TRUE)
-all.equal(pricezoo, pricexts, check.attributes=FALSE)
-library(microbenchmark)
-summary(microbenchmark(
-  zoo=zoo::na.locf(pricev, fromLast=TRUE),
-  xts=xts:::na.locf.xts(pricev, fromLast=TRUE),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-library(lubridate)  # Load lubridate
-library(zoo)  # Load package zoo
-# methods(as.zoo)  # Many methods of coercing into zoo
-class(EuStockMarkets)  # Multiple ts object
-# Coerce mts object into zoo
-zoots <- as.zoo(EuStockMarkets)
-class(zoo::index(zoots))  # Index is numeric
-head(zoots, 3)
-# Approximately convert index into class "Date"
-zoo::index(zoots) <-
-  as.Date(365*(zoo::index(zoots)-1970))
-head(zoots, 3)
-# Convert index into class "POSIXct"
-zoots <- as.zoo(EuStockMarkets)
-zoo::index(zoots) <- date_decimal(zoo::index(zoots))
-head(zoots, 3)
-
-library(lubridate)  # Load lubridate
-library(zoo)  # Load package zoo
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-# Create index of daily dates
-dates <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
-# Create vector of geometric Brownian motion
-datav <- exp(cumsum(rnorm(NROW(dates))/100))
-# Create zoo time series of geometric Brownian motion
-zoots <- zoo(x=datav, order.by=dates)
-head(zoots, 3)  # zoo object
-# as.ts() creates ts object with frequency=1
-tseries <- as.ts(zoots)
-tsp(tseries)  # Frequency=1
-# Get start and end dates of zoots
-startd <- decimal_date(start(zoots))
-endd <- decimal_date(end(zoots))
-# Calculate frequency of zoots
-tstep <- NROW(zoots)/(endd-startd)
-datav <- zoo::coredata(zoots)  # Extract data from zoots
-# Create ts object using ts()
-tseries <- ts(data=datav, start=startd, frequency=tstep)
-# Display start of time series
-window(tseries, start=start(tseries),
- end=start(tseries)+4/365)
-head(time(tseries))  # Display index dates
-head(as.Date(date_decimal(zoo::coredata(time(tseries)))))
-
-library(lubridate)  # Load lubridate
-library(zoo)  # Load package zoo
-# Create weekday Boolean vector
-weekdayv <- weekdays(zoo::index(zoots))
-is_weekday <- !((weekdayv == "Saturday") |
-  (weekdayv == "Sunday"))
-# Remove weekends from zoo time series
-zoots <- zoots[is_weekday, ]
-head(zoots, 7)  # zoo object
-# as.ts() creates NA values
-tseries <- as.ts(zoots)
-head(tseries, 7)
-# Create vector of regular dates, including weekends
-dates <- seq(from=start(zoots),
-            by="day",
-            length.out=NROW(zoots))
-zoo::index(zoots) <- dates
-tseries <- as.ts(zoots)
-head(tseries, 7)
-
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-library(xts)  # Load package xts
-# Create xts time series of random returns
-dates <- Sys.Date() + 0:3
-xtsv <- xts(rnorm(NROW(dates)), order.by=dates)
-names(xtsv) <- "random"
-xtsv
-tail(xtsv, 3)  # Get last few elements
-first(xtsv)  # Get first element
-last(xtsv)  # Get last element
-class(xtsv)  # Class "xts"
-attributes(xtsv)
-# Get the time zone of an xts object
-indexTZ(xtsv)
-
-load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
-library(xts)  # Load package xts
-# as.xts() coerces zoo series into xts series
-pricexts <- as.xts(pricezoo)
-dim(pricexts)
-head(pricexts[, 1:4], 4)
-# Plot using plot.xts method
-xts::plot.xts(pricexts[, "Close"], xlab="", ylab="", main="")
-title(main="MSFT Prices")  # Add title
-
-library(xts)  # Load xts
-library(lubridate)  # Load lubridate
-# Coerce EuStockMarkets into class xts
-xtsv <- xts(zoo::coredata(EuStockMarkets),
-      order.by=date_decimal(zoo::index(EuStockMarkets)))
-# Plot all columns in single panel: xts v.0.9-8
-colorv <- rainbow(NCOL(xtsv))
-plot(xtsv, main="EuStockMarkets using xts",
-     col=colorv, major.ticks="years",
-     minor.ticks=FALSE)
-legend("topleft", legend=colnames(EuStockMarkets),
- inset=0.2, cex=0.7, , lty=rep(1, NCOL(xtsv)),
- lwd=3, col=colorv, bg="white")
-# Plot only first column: xts v.0.9-7
-plot(xtsv[, 1], main="EuStockMarkets using xts",
-     col=colorv[1], major.ticks="years",
-     minor.ticks=FALSE)
-# Plot remaining columns
-for (colnum in 2:NCOL(xtsv))
-  lines(xtsv[, colnum], col=colorv[colnum])
-# Plot using quantmod
-library(quantmod)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- colors
-chart_Series(x=xtsv, theme=plot_theme,
-       name="EuStockMarkets using quantmod")
-legend("topleft", legend=colnames(EuStockMarkets),
- inset=0.2, cex=0.7, , lty=rep(1, NCOL(xtsv)),
- lwd=3, col=colorv, bg="white")
-
-library(rutils)
-library(ggplot2)
-pricev <- rutils::etfenv$prices[, 1]
-pricev <- na.omit(pricev)
-# Create ggplot object
-plotobj <- qplot(x=zoo::index(pricev),
-          y=as.numeric(pricev),
-          geom="line",
-          main=names(pricev)) +
-  xlab("") + ylab("") +
-  theme(  # Add legend and title
-    legend.position=c(0.1, 0.5),
-    plot.title=element_text(vjust=-2.0),
-    plot.background=element_blank()
-  )  # end theme
-# Render ggplot object
-plotobj
-
-library(rutils)  # Load xts time series data
-library(reshape2)
-library(ggplot2)
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
-pricev <- na.omit(pricev)
-# Create data frame of time series
-dframe <- data.frame(dates=zoo::index(pricev),
-    zoo::coredata(pricev))
-# reshape data into a single column
-dframe <-
-  reshape2::melt(dframe, id="dates")
-x11(width=6, height=5)  # Open plot window
-# ggplot the melted dframe
-ggplot(data=dframe,
- mapping=aes(x=dates, y=value, colour=variable)) +
- geom_line() +
-  xlab("") + ylab("") +
-  ggtitle("VTI and IEF") +
-  theme(  # Add legend and title
-    legend.position=c(0.2, 0.8),
-    plot.title=element_text(vjust=-2.0)
-  )  # end theme
-
-# Load rutils which contains etfenv dataset
-library(rutils)
-library(dygraphs)
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
-pricev <- na.omit(pricev)
-# Plot dygraph with date range selector
-dygraph(pricev, main="VTI and IEF prices") %>%
-  dyOptions(colors=c("blue","green")) %>%
-  dyRangeSelector()
-
-# Load rutils which contains etfenv dataset
-library(rutils)
-library(plotly)
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
-pricev <- na.omit(pricev)
-# Create data frame of time series
-dframe <- data.frame(dates=zoo::index(pricev),
-    zoo::coredata(pricev))
-# Plotly syntax using pipes
-dframe %>%
-  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
-  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF") %>%
-  layout(title="VTI and IEF prices",
-   xaxis=list(title="Time"),
-   yaxis=list(title="Stock Prices"),
-   legend=list(x=0.1, y=0.9))
-# Or use standard plotly syntax
-plotobj <- plot_ly(data=dframe, x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI")
-plotobj <- add_trace(p=plotobj, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
-plotobj <- layout(p=plotobj, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
-plotobj
-
-# Subset xts using a date range string
-pricev <- rutils::etfenv$prices
-pricesub <- pricev["2014-10-15/2015-01-10", 1:4]
-first(pricesub)
-last(pricesub)
-# Subset Nov 2014 using a date string
-pricesub <- pricev["2014-11", 1:4]
-first(pricesub)
-last(pricesub)
-# Subset all data after Nov 2014
-pricesub <- pricev["2014-11/", 1:4]
-first(pricesub)
-last(pricesub)
-# Comma after date range not necessary
-all.equal(pricev["2014-11", ], pricev["2014-11"])
-# .subset_xts() is faster than the bracket []
-library(microbenchmark)
-summary(microbenchmark(
-  bracket=pricev[10:20, ],
-  subset=xts::.subset_xts(pricev, 10:20),
-  times=10))[, c(1, 4, 5)]
-
-# Specify string representing a date
-datev <- "2014-10-15"
-# Subset prices in two different ways
-pricev <- rutils::etfenv$prices
-all.equal(pricev[zoo::index(pricev) >= datev],
-    pricev[paste0(datev, "/")])
-# Boolean subsetting is slower because coercing string into date
-library(microbenchmark)
-summary(microbenchmark(
-  boolean=(pricev[zoo::index(pricev) >= datev]),
-  date=(pricev[paste0(datev, "/")]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Coerce string into a date
-datev <- as.Date("2014-10-15")
-# Boolean subsetting is faster than using date string
-summary(microbenchmark(
-  boolean=(pricev[zoo::index(pricev) >= datev]),
-  date=(pricev[paste0(datev, "/")]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-pricev <- HighFreq::SPY["2012-04"]
-# Subset recurring time interval using "T notation",
-pricev <- pricev["T10:30:00/T15:00:00"]
-first(pricev["2012-04-16"])  # First element of day
-last(pricev["2012-04-16"])  # Last element of day
-# Suppress timezone warning messages
-options(xts_check_tz=FALSE)
-
-# Create time series with overlapping time indices
-vti1 <- rutils::etfenv$VTI["/2015"]
-vti2 <- rutils::etfenv$VTI["2014/"]
-dates1 <- zoo::index(vti1)
-dates2 <- zoo::index(vti2)
-# Join by rows
-vti <- rbind(vti1, vti2)
-dates <- zoo::index(vti)
-sum(duplicated(dates))
-vti <- vti[!duplicated(dates), ]
-all.equal(vti, rutils::etfenv$VTI)
-# Alternative method - slightly slower
-vti <- rbind(vti1, vti2[!(zoo::index(vti2) %in% zoo::index(vti1))])
-all.equal(vti, rutils::etfenv$VTI)
-# Remove duplicates starting from the end
-vti <- rbind(vti1, vti2)
-vti <- vti[!duplicated(dates), ]
-vtifl <- vti[!duplicated(dates, fromLast=TRUE), ]
-all.equal(vti, vtifl)
-
-pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
-pricev <- na.omit(pricev)
-str(pricev)  # Display structure of xts
-# Subsetting zoo to single column drops dim attribute
-pricezoo <- as.zoo(pricev)
-dim(pricezoo)
-dim(pricezoo[, 1])
-# zoo with single column are vectors not matrices
-c(is.matrix(pricezoo), is.matrix(pricezoo[, 1]))
-# xts always have a dim attribute
-rbind(base=dim(pricev), subs=dim(pricev[, 1]))
-c(is.matrix(pricev), is.matrix(pricev[, 1]))
-
-# Lag of zoo shortens it by one row
-rbind(base=dim(pricezoo), lag=dim(lag(pricezoo)))
-# Lag of xts doesn't shorten it
-rbind(base=dim(pricev), lag=dim(lag(pricev)))
-# Lag of zoo is in opposite direction from xts
-head(lag(pricezoo, -1), 4)
-head(lag(pricev), 4)
-
-# library(rutils)  # Load package rutils
-# Indices of last observations in each hour
-endd <- xts::endpoints(pricev, on="hours")
-head(endd)
-# Extract the last observations in each hour
-head(pricev[endd, ])
-
-# Lower the periodicity to months
-pricem <- to.period(x=pricev, period="months", name="MSFT")
-# Convert colnames to standard OHLC format
-colnames(pricem)
-colnames(pricem) <- sapply(
-  strsplit(colnames(pricem), split=".", fixed=TRUE),
-  function(na_me) na_me[-1]
-  )  # end sapply
-head(pricem, 3)
-# Lower the periodicity to years
-pricesy <- to.period(x=pricem, period="years", name="MSFT")
-colnames(pricevy) <- sapply(
-  strsplit(colnames(pricevy), split=".", fixed=TRUE),
-  function(na_me) na_me[-1]
-  )  # end sapply
-head(pricevy)
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
-library(xts)  # Load package xts
-# as.xts() coerces zoo series into xts series
-pricexts <- as.xts(pricezoo)
-# Subset xts using a date
-pricexts <- pricexts["2014-11", 1:4]
-
-# Plot OHLC using plot.xts method
-xts::plot.xts(pricexts, type="candles", main="")
-title(main="MSFT Prices")  # Add title
-
-load(file="/Users/jerzy/Develop/lecture_slides/data/datav.RData")
-pricev <- as.ts(pricezoo)
-class(pricev)
-tail(pricev[, 1:4])
-library(xts)
-pricexts <- as.xts(pricezoo)
-class(pricexts)
-tail(pricexts[, 1:4])
-
-cat("Enter\ttab")  # Cat() parses backslash escape sequences
-print("Enter\ttab")
-
-textv <- print("hello")
-textv  # Print() returns its argument
-
-# Create string
-textv <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
-cat(textv, file="mytext.txt")  # Write to text file
-
-cat("Title: My Text",  # Write several lines to text file
-    "Some numbers: 1,2,3,...",
-    "Rprofile files contain code executed at R startup,",
-    file="mytext.txt", sep="\n")
-
-save(textv, file="mytext.RData")  # Write to binary file
-
-print(pi)
-print(pi, digits=10)
-getOption("digits")
-foo <- 12
-bar <- "weeks"
-sprintf("There are %i %s in the year", foo, bar)
-
-# Read text from file
-scan(file="mytext.txt", what=character(), sep="\n")
-
-# Read lines from file
-readLines(con="mytext.txt")
-
-# Read text from console
-input <- readline("Enter a number: ")
-class(input)
-# Coerce to numeric
-input <- as.numeric(input)
-
-# Read text from file and display in editor:
-# file.show("mytext.txt")
-# file.show("mytext.txt", pager="")
-
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-dframe <- data.frame(type=c("rose", "daisy", "tulip"),
-  color=c("red", "white", "yellow"),
-  price=c(1.5, 0.5, 1.0),
-  row.names=c("flower1", "flower2", "flower3"))  # end data.frame
-matv <- matrix(sample(1:12), ncol=3,
-  dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(matv) <- paste("row", 1:NROW(matv), sep="")
-# Write data frame to text file, and then read it back
-write.table(dframe, file="florist.txt")
-readf <- read.table(file="florist.txt")
-readf  # A data frame
-all.equal(readf, dframe)
-
-# Write matrix to text file, and then read it back
-write.table(matv, file="matrix.txt")
-readmat <- read.table(file="matrix.txt")
-readmat  # write.table() coerced matrix to data frame
-class(readmat)
-all.equal(readmat, matv)
-# Coerce from data frame back to matrix
-readmat <- as.matrix(readmat)
-class(readmat)
-all.equal(readmat, matv)
-
-# Create a data frame
-dframe <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-
-# Launch spreadsheet-style data editor
-dframe <- edit(dframe)
-
-# Copy the data frame to clipboard
-write.table(x=dframe, file="clipboard", sep="\t")
-
-# Wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write_clip <- function(data, row.names=FALSE, col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t",
-      row.names=row.names, col.names=col.names, ...)
-}  # end write_clip
-
-write_clip(data=dframe)
-
-# Wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t", header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  # end read_clip
-
-dframe <- read.table("clipboard", header=TRUE)
-dframe <- read_clip()
-
-# Write data frame to CSV file, and then read it back
-write.csv(dframe, file="florist.csv")
-readf <- read.csv(file="florist.csv")
-readf  # the row names are read in as extra column
-# Restore row names
-rownames(readf) <- readf[, 1]
-readf <- readf[, -1]  # Remove extra column
-readf
-all.equal(readf, dframe)
-# Read data frame, with row names from first column
-readf <- read.csv(file="florist.csv", row.names=1)
-readf
-all.equal(readf, dframe)
-
-# Write data frame to CSV file, without row names
-write.csv(dframe, row.names=FALSE, file="florist.csv")
-readf <- read.csv(file="florist.csv")
-readf  # A data frame without row names
-all.equal(readf, dframe)
-
-# Open a read connection to a file
-con_read = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
-# Read the first 10 rows
-data10 <- read.csv(con_read, nrows=10)
-# Read another 10 rows
-data20 <- read.csv(con_read, nrows=10, header=FALSE)
-colnames(data20) <- colnames(data10)
-# Close the connection to the file
-close(con_read)
-# Open a read connection to a file
-con_read = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
-# Read the first 1000 rows
-data10 <- read.csv(con_read, nrows=1e3)
-colnamev <- colnames(data10)
-# Write to a file
-countv <- 1
-write.csv(data10, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
-# Read remaining rows in a loop 10 rows at a time
-# Can produce error without getting to end of file
-while (isOpen(con_read)) {
-  datav <- read.csv(con_read, nrows=1e3)
-  colnames(datav) <- colnamev
-  write.csv(datav, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
-  countv <- countv + 1
-}  # end while
-
-# Write matrix to csv file, and then read it back
-write.csv(matv, file="matrix.csv")
-readmat <- read.csv(file="matrix.csv", row.names=1)
-readmat  # Read.csv() reads matrix as data frame
-class(readmat)
-readmat <- as.matrix(readmat)  # Coerce to matrix
-all.equal(readmat, matv)
-write.csv(matv, row.names=FALSE,
-    file="matrix_ex_rows.csv")
-readmat <- read.csv(file="matrix_ex_rows.csv")
-readmat <- as.matrix(readmat)
-readmat  # A matrix without row names
-all.equal(readmat, matv)
-
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-library(MASS)  # Load package "MASS"
-# Write to CSV file by row - it's very SLOW!!!
-MASS::write.matrix(matv, file="matrix.csv", sep=",")
-# Read using scan() and skip first line with colnames
-readmat <- scan(file="matrix.csv", sep=",", skip=1,
-  what=numeric())
-# Read colnames
-colnamev <- readLines(con="matrix.csv", n=1)
-colnamev  # this is a string!
-# Convert to char vector
-colnamev <- strsplit(colnamev, split=",")[[1]]
-readmat  # readmat is a vector, not matrix!
-# Coerce by row to matrix
-readmat <- matrix(readmat, ncol=NROW(colnamev), byrow=TRUE)
-# Restore colnames
-colnames(readmat) <- colnamev
-readmat
-# Scan() is a little faster than read.csv()
-library(microbenchmark)
-summary(microbenchmark(
-  read_csv=read.csv("matrix.csv"),
-  scan=scan(file="matrix.csv", sep=",",
-    skip=1, what=numeric()),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-# Read data from a csv file, including row names
-matv <- read.csv(file="matrix_bad.csv", row.names=1)
-matv
-class(matv)
-# Columns with bad data are character or factor
-sapply(matv, class)
-# Coerce character column to numeric
-matv$col2 <- as.numeric(matv$col2)
-# Or
-# Copy row names
-rownames <- row.names(matv)
-# sapply loop over columns and coerce to numeric
-matv <- sapply(matv, as.numeric)
-# Restore row names
-row.names(matv) <- rownames
-# Replace NAs with zero
-matv[is.na(matv)] <- 0
-# matrix without NAs
-matv
-
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-rm(list=ls())
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-library(zoo)  # Load package zoo
-# Create zoo with Date index
-dates <- seq(from=as.Date("2013-06-15"), by="day",
-        length.out=100)
-pricev <- zoo(rnorm(NROW(dates)), order.by=dates)
-head(pricev, 3)
-# Write zoo series to text file, and then read it back
-write.zoo(pricev, file="pricev.txt")
-pricezoo <- read.zoo("pricev.txt")  # Read it back
-all.equal(pricezoo, pricev)
-# Perform the same using write.table() and read.table()
-# First coerce pricev into data frame
-dframe <- as.data.frame(pricev)
-dframe <- cbind(dates, dframe)
-# Write pricev to text file using write.table
-write.table(dframe, file="pricev.txt",
-      row.names=FALSE, col.names=FALSE)
-# Read data frame from file
-pricezoo <- read.table(file="pricev.txt")
-sapply(pricezoo, class)  # A data frame
-# Coerce data frame into pricev
-pricezoo <- zoo::zoo(
-  drop(as.matrix(pricezoo[, -1])),
-  order.by=as.Date(pricezoo[, 1]))
-all.equal(pricezoo, pricev)
-
-library(zoo)  # Load package zoo
-# Write zoo series to CSV file, and then read it back
-write.zoo(pricev, file="pricev.csv", sep=",", col.names=TRUE)
-pricezoo <- read.zoo(file="pricev.csv",
-  header=TRUE, sep=",", drop=FALSE)
-all.equal(pricev, drop(pricezoo))
-
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-# Create zoo with POSIXct date-time index
-dates <- seq(from=as.POSIXct("2013-06-15"),
-        by="hour", length.out=100)
-pricev <- zoo(rnorm(NROW(dates)), order.by=dates)
-head(pricev, 3)
-# Write zoo series to CSV file, and then read it back
-write.zoo(pricev, file="pricev.csv", sep=",", col.names=TRUE)
-# Read from CSV file using read.csv.zoo()
-pricezoo <- read.csv.zoo(file="pricev.csv")
-all.equal(pricev, pricezoo)
-# Coerce to xts series
-xtsv <- xts::as.xts(pricezoo)
-class(xtsv); head(xtsv, 3)
-# Coerce zoo series into data frame with custom date format
-dframe <- as.data.frame(pricev)
-dframe <- cbind(format(dates, "%m-%d-%Y %H:%M:%S"), dframe)
-head(dframe, 3)
-# Write zoo series to csv file using write.table
-write.table(dframe, file="pricev.csv",
-      sep=",", row.names=FALSE, col.names=FALSE)
-# Read from CSV file using read.csv.zoo()
-pricezoo <- read.zoo(file="pricev.csv",
-  header=FALSE, sep=",", FUN=as.POSIXct,
-  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-# Or using read.csv.zoo()
-pricezoo <- read.csv.zoo(file="pricev.csv", header=FALSE,
-  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-head(pricezoo, 3)
-all.equal(pricev, pricezoo)
-
-# Read time series from CSV file, with numeric date-time
-datazoo <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/es_ohlc.csv",
+# Load package HighFreq
+library(HighFreq)
+# Or load the high frequency data file directly:
+# symbolv <- load("/Users/jerzy/Develop/R/HighFreq/data/hf_data.RData")
+head(HighFreq::SPY_TAQ)
+head(HighFreq::SPY)
+tail(HighFreq::SPY)
+library(HighFreq)
+# Read TAQ trade data from csv file
+taq <- data.table::fread(file="/Users/jerzy/Develop/lecture_slides/data/xlk_tick_trades_20200316.csv")
+# Inspect the TAQ data in data.table format
+taq
+class(taq)
+colnames(taq)
+sapply(taq, class)
+symboln <- taq$SYM_ROOT[1]
+# Create date-time index
+datev <- paste(taq$DATE, taq$TIME_M)
+# Coerce date-time index to POSIXlt
+datev <- strptime(datev, "%Y%m%d %H:%M:%OS")
+class(datev)
+# Display more significant digits
+# options("digits")
+options(digits=20, digits.secs=10)
+last(datev)
+unclass(last(datev))
+as.numeric(last(datev))
+# Coerce date-time index to POSIXct
+datev <- as.POSIXct(datev)
+class(datev)
+last(datev)
+unclass(last(datev))
+as.numeric(last(datev))
+# Calculate the number of seconds
+as.numeric(last(datev)) - as.numeric(first(datev))
+# Calculate the number of ticks per second
+NROW(taq)/(6.5*3600)
+# Select TAQ data columns
+taq <- taq[, .(price=PRICE, volume=SIZE)]
+# Coerce trade ticks to xts series
+xlk <- xts::xts(taq[, .(price, volume)], datev)
+colnames(xlk) <- c("price", "volume")
+save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades_20200316.RData")
+# Plot histogram of the trading volumes
+hist(xlk$volume, main="Histogram of XLK Trading Volumes",
+     breaks=1e5, xlim=c(1, 400), xlab="number of shares")
+# Plot dygraph
+dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot in x11 window
+x11(width=6, height=5)
+quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
+pricev <- read.zoo(file="/Users/jerzy/Develop/lecture_slides/data/bid_ask_bounce.csv",
   header=TRUE, sep=",")
-# A data frame
-class(datazoo)
-sapply(datazoo, class)
-# Coerce data frame into xts series
-datazoo <- xts::xts(as.matrix(datazoo[, -1]),
-  order.by=as.POSIXct.numeric(datazoo[, 1], tz="America/New_York",
-                        origin="1970-01-01"))
-# An xts series
-class(datazoo)
-head(datazoo, 3)
-
-rm(list=ls())  # Remove all objects
-var1 <- 1; var2 <- 2
-ls()  # List all objects
-ls()[1]  # List first object
-args(save)  # List arguments of save function
-# Save "var1" to a binary file using string argument
-save("var1", file="my_data.RData")
-# Save "var1" to a binary file using object name
-save(var1, file="my_data.RData")
-# Save multiple objects
-save(var1, var2, file="my_data.RData")
-# Save first object in list by passing to "..." argument
-# ls()[1] is not evaluated
-save(ls()[1], file="my_data.RData")
-# Save first object in list by passing to "list" argument
-save(list=ls()[1], file="my_data.RData")
-# Save whole list by passing it to the "list" argument
-save(list=ls(), file="my_data.RData")
-
-rm(list=ls())  # Remove all objects
-# Load objects from file
-loadobj <- load(file="my_data.RData")
-loadobj  # vector of loaded objects
-ls()  # List objects
-# Assign new values to objects in  global environment
-sapply(loadobj, function(symbol) {
-  assign(symbol, runif(1), envir=globalenv())
-})  # end sapply
-ls()  # List objects
-# Assign new values to objects using for loop
-for (symbol in loadobj) {
-  assign(symbol, runif(1))
-}  # end for
-ls()  # List objects
-# Save vector of objects
-save(list=loadobj, file="my_data.RData")
-# Remove only loaded objects
-rm(list=loadobj)
-# Remove the object "loadobj"
-rm(loadobj)
-
-sink("sinkdata.txt")# Redirect text output to file
-
-cat("Redirect text output from R\n")
-print(runif(10))
-cat("\nEnd data\nbye\n")
-
-sink()  # turn redirect off
-
-pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
-
-cat("Redirect data from R into pdf file\n")
-myvar <- seq(-2*pi, 2*pi, len=100)
-plot(x=myvar, y=sin(myvar), main="Sine wave",
-   xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn pdf output off
-
-png("r_plot.png")  # Redirect graphics output to png file
-
-cat("Redirect graphics from R into png file\n")
-plot(x=myvar, y=sin(myvar), main="Sine wave",
- xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn png output off
-
+pricev <- as.xts(pricev)
+dygraphs::dygraph(pricev$Close,
+  main="S&P500 Futures Prices Bid-Ask Bounce") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+# Plot dygraph of trade prices of at least 100 shares
+dygraphs::dygraph(xlk$price[xlk$volume >= 100, ],
+  main="XLK Prices for Trades of At Least 100 Shares") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Select the large trade lots of at least 100 shares
+dim(taq)
+tickb <- taq[taq$volume >= 100]
+dim(tickb)
+# Number of large lot ticks per second
+NROW(tickb)/(6.5*3600)
+# Plot histogram of the trading volumes
+hist(tickb$volume, main="Histogram of XLK Trading Volumes",
+     breaks=100000, xlim=c(1, 400), xlab="number of shares")
+# Save trade ticks with large lots
+data.table::fwrite(tickb, file="/Users/jerzy/Develop/data/xlk_tick_trades_20200316_biglots.csv")
+# Coerce trade prices to xts
+xlkb <- xts::xts(tickb[, .(price, volume)], tickb$index)
+colnames(xlkb) <- c("price", "volume")
+# Plot dygraph of the large lots
+dygraphs::dygraph(xlkb$price,
+  main="XLK Prices for Trades of At Least 100 Shares") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot the large lots
+x11(width=6, height=5)
+quantmod::chart_Series(x=xlk$price,
+  name="XLK Trade Ticks for 2020-03-16 (large lots only)")
+# Calculate the centered Hampel filter to remove bad prices
+lookb <- 71 # Look-back interval
+halfb <- lookb %/% 2 # Half-back interval
+pricev <- xlk$price
+# Calculate the trailing median and MAD
+medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
+colnames(medianv) <- c("median")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=lookb)
+# Center the median and the MAD
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+# Calculate the Z-scores
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
+# Define discrimination threshold value
+threshv <- 6*madz
+# Identify good prices with small z-scores
+isgood <- (abs(zscores) < threshv)
+# Calculate the number of bad prices
+sum(!isgood)
+# Scrub bad prices by replacing them with previous good prices
+priceg <- pricev
+priceg[!isgood] <- NA
+priceg <- zoo::na.locf(priceg)
+# Plot dygraph of the scrubbed prices
+dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot using chart_Series()
+x11(width=6, height=5)
+quantmod::chart_Series(x=priceg,
+  name="Clean XLK Intraday Prices for 2020-03-16")
+# Add 200 random price spikes to the clean prices
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nspikes <- 200
+nrows <- NROW(priceg)
+ispike <- logical(nrows)
+ispike[sample(x=nrows, size=nspikes)] <- TRUE
+priceb <- priceg
+priceb[ispike] <- priceb[ispike]*
+  sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
+# Plot the bad prices and their medians
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
+pricem <- cbind(priceb, medianv)
+colnames(pricem) <- c("prices with spikes", "median")
+dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
+  dyOptions(colors=c("red", "blue"))
+# Calculate the z-scores
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
+# Identify good prices with small z-scores
+threshv <- 3*madz
+isgood <- (abs(zscores) < threshv)
+# Calculate the number of bad prices
+sum(!isgood)
+# Calculate the confusion matrix
+table(actual=!ispike, forecast=isgood)
+sum(!isgood)
+# FALSE positive (type I error)
+sum(!ispike & !isgood)
+# FALSE negative (type II error)
+sum(ispike & isgood)
+# Confusion matrix as function of threshold
+confun <- function(actualv, zscores, threshv) {
+    confmat <- table(actualv, (abs(zscores) < threshv))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+}  # end confun
+confun(!ispike, zscores, threshv=threshv)
+# Define vector of discrimination thresholds
+threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
+# Calculate the error rates
+errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+# Calculate the area under the ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+# Plot ROC curve for Hampel classifier
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Load log VXX prices
+load("/Users/jerzy/Develop/lecture_slides/data/pricevxx.RData")
+nrows <- NROW(pricev)
+# Calculate the centered Hampel filter for VXX
+lookb <- 7 # Look-back interval
+halfb <- lookb %/% 2 # Half-back interval
+medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
+# Define discrimination threshold value
+threshv <- 9*madz
+# Calculate the good prices
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+# Dates of the bad prices
+zoo::index(pricev[!isgood])
+# Calculate the false positives
+falsep <- !isgood
+falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
+# Plot dygraph of the prices with bad prices
+datam <- cbind(pricev, zscores)
+colnames(datam)[2] <- "ZScores"
+colnamev <- colnames(datam)
+dygraphs::dygraph(datam, main="VXX Prices With Z-Scores and False Positives") %>%
+  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=1, col="blue") %>%
+  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=1, col="red") %>%
+  dyEvent(zoo::index(pricev[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green")
+# Replace bad stock prices with the previous good prices
+priceg <- pricev
+priceg[!isgood] <- NA
+priceg <- zoo::na.locf(priceg)
+# Calculate the Z-scores
+medianv <- HighFreq::roll_mean(priceg, lookb=lookb, method="nonparametric")
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceg, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
+# Calculate the number of bad prices
+threshv <- 9*madz
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+zoo::index(priceg[!isgood])
+# Calculate the false positives
+falsep <- !isgood
+falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
+# Plot dygraph of the prices with bad prices
+dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
+  dyEvent(zoo::index(priceg[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Add 200 random price spikes to the clean prices
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nspikes <- 200
+ispike <- logical(nrows)
+ispike[sample(x=nrows, size=nspikes)] <- TRUE
+priceb <- priceg
+priceb[ispike] <- priceb[ispike]*
+  sample(c(0.99, 1.01), size=nspikes, replace=TRUE)
+# Calculate the Z-scores
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
+# Define vector of discrimination thresholds
+threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
+# Calculate the error rates
+errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+# Calculate the area under the ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+# Plot ROC curve for Hampel classifier
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Daily Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
 # Install package data.table
 install.packages("data.table")
 # Load package data.table
@@ -1109,7 +286,6 @@ data(package="data.table")
 ls("package:data.table")
 # Remove data.table from search path
 detach("package:data.table")
-
 # Create a data table
 library(data.table)
 dtable <- data.table::data.table(
@@ -1136,21 +312,20 @@ summary(microbenchmark(
   dt=dtable[, .N],
   rcode=NROW(dtable),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Read a data table from CSV file
-dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-dtable <- data.table::fread(file_name)
+dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
+filen <- file.path(dirn, "weather_delays14.csv")
+dtable <- data.table::fread(filen)
 class(dtable); dim(dtable)
 dtable
 # fread() reads the same data as read.csv()
-all.equal(read.csv(file_name),
-    setDF(data.table::fread(file_name)))
+all.equal(read.csv(filen),
+    setDF(data.table::fread(filen)))
 # fread() is much faster than read.csv()
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=read.csv(file_name),
-  fread=setDF(data.table::fread(file_name)),
+  rcode=read.csv(filen),
+  fread=setDF(data.table::fread(filen)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Write data table to file in different ways
 data.table::fwrite(dtable, file="dtable.csv")
@@ -1162,15 +337,14 @@ summary(microbenchmark(
   write_csv=write.csv(dtable, file="dtable2.csv"),
   cat=cat(unlist(dtable), file="dtable3.csv"),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Select first five rows of dtable
 dtable[1:5]
 # Select rows with JFK flights
-jfk_flights <- dtable[origin=="JFK"]
+jfkf <- dtable[origin=="JFK"]
 # Select rows JFK flights in June
-jfk_flights <- dtable[origin=="JFK" & month==6]
+jfkf <- dtable[origin=="JFK" & month==6]
 # Select rows without JFK flights
-jfk_flights <- dtable[!(origin=="JFK")]
+jfkf <- dtable[!(origin=="JFK")]
 # Select flights with carrier_delay
 dtable[carrier_delay > 0]
 # Select column of dtable and return a vector
@@ -1189,7 +363,6 @@ dtable[, .(orig=origin, mon=month)]
 # Select all columns except origin
 head(dtable[, !"origin"])
 head(dtable[, -"origin"])
-
 # Select flights with positive carrier_delay
 dtable[carrier_delay > 0]
 # Number of flights with carrier_delay
@@ -1214,7 +387,6 @@ dtable[origin=="JFK", NROW(aircraft_delay)]
 dtable[origin=="JFK", .N]
 # In R
 sum(dtable[, origin]=="JFK")
-
 # Number of flights from each airport
 dtable[, .N, by=origin]
 # Same, but add names to output
@@ -1235,7 +407,6 @@ dtable[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
 # Average and max delays from each airport and month
 dtable[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
      keyby=.(airport=origin, month=month)]
-
 # Sort ascending by origin, then descending by dest
 dtables <- dtable[order(origin, -dest)]
 dtables
@@ -1255,7 +426,6 @@ dtables[, .(mean_delay=mean(aircraft_delay)),
 # Chained brackets to sort output by month
 dtables[, .(mean_delay=mean(aircraft_delay)),
   by=.(month=month)][order(month)]
-
 # Select weather_delay and aircraft_delay in two different ways
 dtable[1:7, .SD,
      .SDcols=c("weather_delay", "aircraft_delay")]
@@ -1282,7 +452,6 @@ dtable[, lapply(.SD, mean),
 dtable[, .(weather_delay=mean(weather_delay),
          aircraft_delay=mean(aircraft_delay)),
      by=.(origin)]
-
 # Add tot_delay column
 dtable[, tot_delay := (carrier_delay + aircraft_delay)]
 head(dtable, 4)
@@ -1309,7 +478,6 @@ summary(microbenchmark(
   dt=dtable[, tot_delay := (carrier_delay + aircraft_delay)],
   rcode=(dtable[, "tot_delay"] <- dtable[, "carrier_delay"] + dtable[, "aircraft_delay"]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Add a key based on the "origin" column
 setkey(dtable, origin)
 haskey(dtable)
@@ -1333,7 +501,6 @@ summary(microbenchmark(
   with_key=dtable[.("JFK", "MIA")],
   standard_r=dtable[origin == "JFK" & dest == "MIA"],
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Create data frame and coerce it to data table
 dtable <- data.frame(col1=sample(7), col2=sample(7), col3=sample(7))
 class(dtable); dtable
@@ -1349,7 +516,6 @@ summary(microbenchmark(
   asdataframe=data.table:::as.data.frame.data.table(dtable),
   setDF=data.table::setDF(dtable),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Coerce xts to a data frame
 pricev <- rutils::etfenv$VTI
 class(pricev); head(pricev)
@@ -1367,7 +533,6 @@ class(dtable); head(dtable)
 # Dates are not coerced to strings
 sapply(dtable, class)
 all.equal(pricev, dtable, check.attributes=FALSE)
-
 # Install package fst
 install.packages("fst")
 # Load package fst
@@ -1383,10 +548,9 @@ data(package="fst")
 ls("package:fst")
 # Remove fst from search path
 detach("package:fst")
-
 # Read a data frame from CSV file
-dir_name <- "/Users/jerzy/Develop/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
+dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
+filen <- file.path(dirn, "weather_delays14.csv")
 data.table::setDF(dframe)
 class(dframe); dim(dframe)
 # Write data frame to .fst file in different ways
@@ -1400,14 +564,13 @@ summary(microbenchmark(
   cat=cat(unlist(dframe), file="dframe3.csv"),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # fst::read_fst() reads the same data as read.csv()
-all.equal(read.csv(file_name),
+all.equal(read.csv(filen),
     fst::read_fst("dframe.fst"))
 # fst::read_fst() is 10 times faster than read.csv()
 summary(microbenchmark(
   fst=fst::read_fst("dframe.fst"),
-  read_csv=read.csv(file_name),
+  read_csv=read.csv(filen),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Coerce TAQ xts to a data frame
 library(HighFreq)
 taq <- HighFreq::SPY_TAQ
@@ -1432,113 +595,11 @@ dim(taq); dim(refst)
 fst:::print.fst_table(refst)
 # Subset reference to .fst just like a data table
 refst[1e4:(1e4+5), ]
-
-load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-library(tseries)  # Load package tseries
-# Download MSFT data in ts format
-pricemsft <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    retclass="ts",
-    quote=c("Open","High","Low","Close",
-      "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-# Calculate price adjustment vector
-ratio <- as.numeric(pricemsft[, "AdjClose"]/pricemsft[, "Close"])
-# Adjust OHLC prices
-pricemsftadj <- pricemsft
-pricemsftadj[, c("Open","High","Low","Close")] <-
-  ratio*pricemsft[, c("Open","High","Low","Close")]
-# Inspect the data
-tsp(pricemsftadj)  # frequency=1
-head(time(pricemsftadj))
-head(pricemsftadj)
-tail(pricemsftadj)
-
-library(tseries)  # Load package tseries
-# Download MSFT data
-pricezoo <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    quote=c("Open","High","Low","Close",
-      "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-
-load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-class(pricezoo)
-dim(pricezoo)
-head(pricezoo, 4)
-
-library(tseries)  # Load package tseries
-load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-# Calculate price adjustment vector
-ratio <- as.numeric(pricezoo[, "AdjClose"]/pricezoo[, "Close"])
-head(ratio, 5)
-tail(ratio, 5)
-# Adjust OHLC prices
-pricedj <- pricezoo
-pricedj[, c("Open","High","Low","Close")] <-
-  ratio*pricezoo[, c("Open","High","Low","Close")]
-head(pricedj)
-tail(pricedj)
-
-library(tseries)  # Load package tseries
-# Download EUR/USD data
-priceur <- suppressWarnings(
-  get.hist.quote(
-    instrument="EUR/USD",
-    provider="oanda",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    origin="1970-01-01")
-)  # end suppressWarnings
-# Bind and scrub data
-pricecombo <- cbind(priceur, pricezoo[, "AdjClose"])
-colnames(pricecombo) <- c("EURUSD", "MSFT")
-pricecombo <- pricecombo[complete.cases(pricecombo),]
-save(pricezoo, pricedj,
-     pricemsft, pricemsftadj,
-     priceur, pricecombo,
-     file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-
-load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-# Inspect the data
-class(priceur)
-head(priceur, 4)
-
-library(tseries)  # Load package tseries
-# Download price and volume data for symbolv into list of zoo objects
-pricev <- suppressWarnings(
-  lapply(symbolv, # Loop for loading data
-   get.hist.quote,
-   quote=c("AdjClose", "Volume"),
-   start=Sys.Date()-3650,
-   end=Sys.Date(),
-   origin="1970-01-01")  # end lapply
-)  # end suppressWarnings
-# Flatten list of zoo objects into a single zoo object
-pricev <- rutils::do_call(cbind, pricev)
-# Or
-# pricev <- do.call(cbind, pricev)
-# Assign names in format "symbol.Close", "symbol.Volume"
-names(pricev) <- as.numeric(sapply(symbolv,
-    paste, c("Close", "Volume"), sep="."))
-# Save pricev to a comma-separated CSV file
-write.zoo(pricev, file="pricev.csv", sep=",")
-# Save pricev to a binary .RData file
-save(pricev, file="pricev.RData")
-
 # Install and load package readxl
 install.packages("readxl")
 library(readxl)
-dir_name <- "/Users/jerzy/Develop/lecture_slides/data"
-filev <- file.path(dir_name, "multi_tabs.xlsx")
+dirn <- "/Users/jerzy/Develop/lecture_slides/data"
+filev <- file.path(dirn, "multi_tabs.xlsx")
 # Read a time series from first sheet of xlsx file
 tibblev <- readxl::read_xlsx(filev)
 class(tibblev)
@@ -1562,7 +623,6 @@ class(xtsv); dim(xtsv)
 sum(is.na(xtsv))
 xtsv <- zoo::na.locf(xtsv, na.rm=FALSE)
 xtsv <- zoo::na.locf(xtsv, fromLast=TRUE)
-
 # Read names of all the sheets in an Excel spreadsheet
 namev <- readxl::excel_sheets(filev)
 # Read all the sheets from an Excel spreadsheet
@@ -1591,7 +651,6 @@ sapply(sheets, class)
 sapply(sheets, function(xtsv) sum(is.na(xtsv)))
 sheets <- lapply(sheets, zoo::na.locf, na.rm=FALSE)
 sheets <- lapply(sheets, zoo::na.locf, fromLast=TRUE)
-
 #Perform calculations in R,
 #And export to CSV files
 setwd("/Users/jerzy/Develop/lecture_slides/data")
@@ -1602,7 +661,6 @@ readf <- readf[readf[, "type"]=="daisy", ]
 all.equal(readf, dframe)
 # Write data frame to CSV file, with row names
 write.csv(readf, file="daisies.csv")
-
 #Perform calculations in R,
 #And export to CSV files
 setwd("/Users/jerzy/Develop/lecture_slides/data")
@@ -1613,7 +671,6 @@ readf <- readf[readf[, "type"]=="daisy", ]
 all.equal(readf, dframe)
 # Write data frame to CSV file, with row names
 write.csv(readf, file="daisies.csv")
-
 # Install latest version of googlesheets
 devtools::install_github("jennybc/googlesheets")
 # Load package googlesheets
@@ -1624,27 +681,26 @@ gs_auth(new_user=TRUE)
 # List the files in Google Sheets
 googlesheets::gs_ls()
 # Register a sheet
-google_sheet <- gs_title("my_data")
+googsheet <- gs_title("my_data")
 # view sheet summary
-google_sheet
+googsheet
 # List tab names in sheet
-tab_s <- gs_ws_ls(google_sheet)
+tabv <- gs_ws_ls(googsheet)
 # Set curl options
 library(httr)
 httr::set_config(config(ssl_verifypeer=0L))
 # Read data from sheet
-gs_read(google_sheet)
+gs_read(googsheet)
 # Read data from single tab of sheet
-gs_read(google_sheet, ws=tab_s[1])
-gs_read_csv(google_sheet, ws=tab_s[1])
+gs_read(googsheet, ws=tabv[1])
+gs_read_csv(googsheet, ws=tabv[1])
 # Or using dplyr pipes
-google_sheet %>% gs_read(ws=tab_s[1])
+googsheet %>% gs_read(ws=tabv[1])
 # Download data from sheet into file
-gs_download(google_sheet, ws=tab_s[1],
-      to="/Users/jerzy/Develop/lecture_slides/data/google_sheet.csv")
+gs_download(googsheet, ws=tabv[1],
+      to="/Users/jerzy/Develop/lecture_slides/data/googsheet.csv")
 # Open sheet in internet browser
-gs_browse(google_sheet)
-
+gs_browse(googsheet)
 # Verify that Rtools or XCode are working properly:
 devtools::find_rtools()  # Under Windows
 devtools::has_devel()
@@ -1663,7 +719,6 @@ data(package="Rcpp")
 ls("package:Rcpp")
 # Remove Rcpp from search path
 detach("package:Rcpp")
-
 # Define Rcpp function
 Rcpp::cppFunction("
   int times_two(int x)
@@ -1679,7 +734,6 @@ mult_rcpp(1:3, 6:4)
 # Multiply two vectors
 mult_vec_rcpp(2, 3)
 mult_vec_rcpp(1:3, 6:4)
-
 # Define Rcpp function with loop
 Rcpp::cppFunction("
 double inner_mult(NumericVector x, NumericVector y) {
@@ -1706,7 +760,6 @@ double inner_sugar(NumericVector x, NumericVector y) {
 # Run Rcpp Sugar function
 inner_sugar(1:3, 6:4)
 inner_sugar(1:3, 6:3)
-
 # Define R function with loop
 inner_multr <- function(x, y) {
     sumv <- 0
@@ -1726,32 +779,6 @@ summary(microbenchmark(
   Rcpp=inner_mult(1:10000, 1:10000),
   sugar=inner_sugar(1:10000, 1:10000),
   times=10))[, c(1, 4, 5)]
-
-# Define Ornstein-Uhlenbeck function in R
-nboot <- 1000
-bootd <- function(datav, nboot=nboot) {
-  bootd <- sapply(1:nboot, function(x) {
-    samplev <- datav[sample.int(nsimu, replace=TRUE)]
-    c(sd=sd(samplev), mad=mad(samplev))
-  })  # end sapply
-  bootd <- t(bootd)
-  # Analyze bootstrapped variance
-  head(bootd)
-  sum(is.na(bootd))
-  # Means and standard errors from bootstrap
-  apply(bootd, MARGIN=2,
-    function(x) c(mean=mean(x), stderror=sd(x)))
-
-  retp <- numeric(nsimu)
-  pricev <- numeric(nsimu)
-  pricev[1] <- eq_price
-  for (i in 2:nsimu) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
-    pricev[i] <- pricev[i-1] + retp[i]
-  }  # end for
-  pricev
-}  # end bootd
-
 # Define Ornstein-Uhlenbeck function in R
 sim_our <- function(nrows=1000, eq_price=5.0,
               volat=0.01, theta=0.01) {
@@ -1769,7 +796,6 @@ eq_price <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
-
 # Define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
 NumericVector sim_oucpp(double eq_price,
@@ -1797,7 +823,6 @@ summary(microbenchmark(
   rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
   Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
-
 # Source Rcpp function for Ornstein-Uhlenbeck process from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_ou.cpp")
 # Simulate Ornstein-Uhlenbeck process in Rcpp
@@ -1813,17 +838,15 @@ summary(microbenchmark(
   rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
   Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
-
 # Calculate uniformly distributed pseudo-random sequence
 unifun <- function(seedv, nrows=10) {
-  output <- numeric(nrows)
-  output[1] <- seedv
+  datav <- numeric(nrows)
+  datav[1] <- seedv
   for (i in 2:nrows) {
-    output[i] <- 4*output[i-1]*(1-output[i-1])
+    datav[i] <- 4*datav[i-1]*(1-datav[i-1])
   }  # end for
-  acos(1-2*output)/pi
+  acos(1-2*datav)/pi
 }  # end unifun
-
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifun.cpp")
 # Microbenchmark Rcpp code
@@ -1833,65 +856,6 @@ summary(microbenchmark(
   rloop=unifun(0.3, 1e5),
   Rcpp=unifuncpp(0.3, 1e5),
   times=10))[, c(1, 4, 5)]
-
-# Define Ornstein-Uhlenbeck function in R
-bootd <- function(datav, nboot=1000) {
-  bootd <- sapply(1:nboot, function(x) {
-    samplev <- datav[sample.int(nrows, replace=TRUE)]
-    c(sd=sd(samplev), mad=mad(samplev))
-  })  # end sapply
-  bootd <- t(bootd)
-  # Analyze bootstrapped variance
-  head(bootd)
-  sum(is.na(bootd))
-  # Means and standard errors from bootstrap
-  apply(bootd, MARGIN=2,
-    function(x) c(mean=mean(x), stderror=sd(x)))
-
-  retp <- numeric(nrows)
-  pricev <- numeric(nrows)
-  pricev[1] <- eq_price
-  for (i in 2:nrows) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
-    pricev[i] <- pricev[i-1] + retp[i]
-  }  # end for
-  pricev
-}  # end bootd
-# Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
-thetav <- 0.01; nrows <- 1000
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
-
-# Define Ornstein-Uhlenbeck function in R
-bootd <- function(datav, nboot=1000) {
-  bootd <- sapply(1:nboot, function(x) {
-    samplev <- datav[sample.int(nrows, replace=TRUE)]
-    c(sd=sd(samplev), mad=mad(samplev))
-  })  # end sapply
-  bootd <- t(bootd)
-  # Analyze bootstrapped variance
-  head(bootd)
-  sum(is.na(bootd))
-  # Means and standard errors from bootstrap
-  apply(bootd, MARGIN=2,
-  function(x) c(mean=mean(x), stderror=sd(x)))
-
-  retp <- numeric(nrows)
-  pricev <- numeric(nrows)
-  pricev[1] <- eq_price
-  for (i in 2:nrows) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
-    pricev[i] <- pricev[i-1] + retp[i]
-  }  # end for
-  pricev
-}  # end bootd
-# Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
-thetav <- 0.01; nrows <- 1000
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
-
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
@@ -1899,7 +863,6 @@ vec1 <- runif(1e5)
 vec2 <- runif(1e5)
 inner_vec(vec1, vec2)
 vec1 %*% vec2
-
 # Microbenchmark \emph{RcppArmadillo} code
 summary(microbenchmark(
   rcpp = inner_vec(vec1, vec2),
@@ -1910,7 +873,6 @@ summary(microbenchmark(
 #     expr     mean   median
 # 1 inner_vec 110.7067 110.4530
 # 2 rcode 585.5127 591.3575
-
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_arima.cpp")
 # Define AR(2) coefficients
@@ -1930,7 +892,6 @@ summary(microbenchmark(
   rcpp = sim_ar(coeff, innov),
   filter = filter(x=innov, filter=coeff, method="recursive"),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
@@ -1959,7 +920,6 @@ summary(microbenchmark(
   rcode = solve(matv),
   rcpp = inv_mat(matv),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/HighFreq.cpp")
@@ -1981,7 +941,6 @@ summary(microbenchmark(
 eigend$vectors[, 1:dimax] %*% (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])},
   rcpp = calc_inv(cormat, dimax=dimax),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Install package reticulate
 install.packages("reticulate")
 # Start Python session

@@ -18,7 +18,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/at_tach/attachp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/at_tempt/nattempts/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ba_se/basep/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/bar_rier/barp/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/be_ta/betav/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/be_ta/betac/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/beta_s/betas/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/brack_ets/brackets/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/capm_stats/capmstats/g' *.R*
@@ -272,7 +272,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/scale_d/scaled/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/sco_res/scorev/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/se_lect/indic/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/see_d/seedv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/se_ries/tseries/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/se_ries/timeser/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ser_ver/servfunc/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/set_osa/setosa/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/sharpe_ratios/sharper/g' *.R*
@@ -315,8 +315,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/tib_ble/tibblev/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/tick_er/ticker/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ticker_s/tickers/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/to_day/todayd/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/to_l/precision/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/to_l/precision/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/to_l/presv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/top_s/tops/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/bottom_s/bottoms/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/lo_cation/loc/g' *.R*
@@ -328,7 +327,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/trans_pose/transp/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/tranche_loss/tranchel/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ts_stx/stxts/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/typ_e/typev/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/t_series/tseries/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/t_series/timeser/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/u_nit/unitv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/un_if/unifv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/uni_form/unifunc/g' *.R*

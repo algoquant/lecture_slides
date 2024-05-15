@@ -5,30 +5,30 @@ help(getwd)
 # Open the hypertext documentation
 help.start()
 # Calculate cumulative sum of a vector
-vectorv <- runif(1e5)
+vecv <- runif(1e5)
 # Use compiled function
-cumsumv <- cumsum(vectorv)
+cumsumv <- cumsum(vecv)
 # Use for loop
-cumsumv2 <- vectorv
-for (i in 2:NROW(vectorv))
-  cumsumv2[i] <- (vectorv[i] + cumsumv2[i-1])
+cumsumv2 <- vecv
+for (i in 2:NROW(vecv))
+  cumsumv2[i] <- (vecv[i] + cumsumv2[i-1])
 # Compare the two methods
 all.equal(cumsumv, cumsumv2)
 # Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
-  cumsum=cumsum(vectorv),
+  cumsum=cumsum(vecv),
   loop_alloc={
-    cumsumv2 <- vectorv
-    for (i in 2:NROW(vectorv))
-cumsumv2[i] <- (vectorv[i] + cumsumv2[i-1])
+    cumsumv2 <- vecv
+    for (i in 2:NROW(vecv))
+cumsumv2[i] <- (vecv[i] + cumsumv2[i-1])
   },
   loop_nalloc={
     # Doesn't allocate memory to cumsumv3
-    cumsumv3 <- vectorv[1]
-    for (i in 2:NROW(vectorv))
+    cumsumv3 <- vecv[1]
+    for (i in 2:NROW(vecv))
 # This command adds an extra element to cumsumv3
-cumsumv3[i] <- (vectorv[i] + cumsumv3[i-1])
+cumsumv3[i] <- (vecv[i] + cumsumv3[i-1])
   },
   times=10))[, c(1, 4, 5)]
 # "<-" and "=" are valid assignment operators
@@ -51,7 +51,7 @@ var1 <- 3  # Define new object
 ls()  # List all objects in workspace
 # List objects starting with "v"
 ls(pattern=glob2rx("v*"))
-# Remove all objects starting with "v"
+# Delete all objects in workspace starting with "v"
 rm(list=ls(pattern=glob2rx("v*")))
 save.image()  # Save workspace to file .RData in cwd
 rm(var1)  # Remove object
@@ -61,7 +61,7 @@ ls()  # List objects
 var2 <- 5  # Define another object
 save(var1, var2,  # Save selected objects
      file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
-rm(list=ls())  # Remove all objects
+rm(list=ls())  # Delete all objects in workspace
 ls()  # List objects
 loadobj <- load(file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
 loadobj
@@ -119,7 +119,7 @@ normalizePath(file.path(R.home(), "etc"), winslash="/")
 normalizePath(file.path(R.home(), "bin/x64"), winslash="/")
 # R documentation directory
 normalizePath(file.path(R.home(), "doc/manual"), winslash="/")
-sample(dir(), 5)  # Get 5 file names - dir() listv all files
+sample(dir(), 5)  # Get 5 file names - dir() lists all files
 sample(dir(pattern="csv"), 5)  # List files containing "csv"
 sample(list.files(R.home()), 5)  # All files in R_HOME directory
 sample(list.files(R.home("etc")), 5)  # All files in "etc" sub-directory of R_HOME directory
@@ -154,36 +154,36 @@ globv <- 1
 # Get objects in current environment
 ls(environment())
 # Create new environment
-new_env <- new.env()
+envv <- new.env()
 # Get calling environment of new environment
-parent.env(new_env)
+parent.env(envv)
 # Assign Value to Name
-assign("new_var1", 3, envir=new_env)
+assign("var1", 3, envir=envv)
 # Create object in new environment
-new_env$new_var2 <- 11
+envv$var2 <- 11
 # Get objects in new environment
-ls(new_env)
+ls(envv)
 # Get objects in current environment
 ls(environment())
 # Environments are subset like listv
-new_env$new_var1
+envv$var1
 # Environments are subset like listv
-new_env[["new_var1"]]
+envv[["var1"]]
 search()  # Get search path for R objects
-my_list <- list(flowers=c("rose", "daisy", "tulip"),
-        trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
+listv <- list(flowers=c("rose", "daisy", "tulip"),
+      trees=c("pine", "oak", "maple"))
+listv$trees
+attach(listv)
 trees
 search()  # Get search path for R objects
-detach(my_list)
+detach(listv)
 head(trees)  # "trees" is in datasets base package
 library(rutils)  # Load package rutils
 # Define ETF symbols
 symbolv <- c("VTI", "VEU", "IEF", "VNQ")
 # Extract symbolv from rutils::etfenv
 pricev <- mget(symbolv, envir=rutils::etfenv)
-# prices is a list of xts series
+# pricev is a list of xts series
 class(pricev)
 class(pricev[[1]])
 # Extract Close prices

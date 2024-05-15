@@ -65,7 +65,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Machine Learning]{Machine Learning}
-\subtitle{FRE6871 \& FRE7241, Fall 2023}
+\subtitle{FRE6871 \& FRE7241, Spring 2024}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
@@ -629,10 +629,11 @@ matv <- matrix(rnorm(100), nc=10)
 invmatr <- solve(a=matv)
 round(invmatr %*% matv, 4)
 # Compile the C++ file using Rcpp
-Rcpp::sourceCpp(file="/Users/jerzy/Develop/Rcpp/test_fun.cpp")
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/calc_invmat.cpp")
 # Calculate the matrix inverse using C++
 invmat <- calc_invmat(matv)
 all.equal(invmat, invmatr)
+all.equal(invmat, MASS::ginv(matv))
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
@@ -736,7 +737,7 @@ retp <- matrix(rnorm(nassets*nrows), nc=nassets)
 # Calculate the correlated returns by applying Cholesky
 retscorr <- retp %*% cholmat
 # Calculate the covariance matrix
-covmat2 <- crossprod(retscorr) /(nrows-1)
+covmat2 <- cov(retscorr)
 all.equal(covmat, covmat2)
       @
   \end{columns}
@@ -1460,7 +1461,7 @@ which(cumsum(pcavar)/sum(pcavar) > 0.8)[1]
       \vskip1ex
       The \emph{principal component} (\emph{PC}) portfolios represent the different orthogonal modes of the return variance.
       \vskip1ex
-      The \emph{PC} portfolios typically consist of long or short positions of highly correlated groups of assets (clusters), so that they represent relative value portfolios.
+      The \emph{PC} portfolios typically consist of long or short positions of highly correlated groups of assets (compclusts), so that they represent relative value portfolios.
       <<echo=TRUE,eval=FALSE>>=
 # Plot barplots with PCA loadings (weights) in multiple panels
 pcad$rotation
@@ -1597,8 +1598,8 @@ max(eigenval)/min(eigenval)
       \includegraphics[width=0.4\paperwidth]{figure/pca_cond_num.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the condition numbers as function correlation
-corvec <- seq(0.1, 0.9, 0.1)
-condvec <- sapply(corvec, function(corv) {
+corv <- seq(0.1, 0.9, 0.1)
+condv <- sapply(corv, function(corv) {
   cormat <- matrix(rep(corv, ndata^2), nc=ndata)
   diag(cormat) <- rep(1, ndata)
   eigend <- eigen(cormat)
@@ -1606,7 +1607,7 @@ condvec <- sapply(corvec, function(corv) {
   max(eigenval)/min(eigenval)
 })  # end sapply
 # Plot the condition numbers
-plot(x=corvec, y=condvec, t="l",
+plot(x=corv, y=condv, t="l",
   main="Condition Number as Function of Correlation",
   xlab="correlation", ylab="condition number")
       @
@@ -1641,7 +1642,7 @@ set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 retp <- matrix(rnorm(nstocks*nrows), nc=nstocks)
 # Calculate the condition numbers as function of number of observations
 obsvec <- seq(20, nrows, 10)
-condvec <- sapply(obsvec, function(nobs) {
+condv <- sapply(obsvec, function(nobs) {
   cormat <- cor(retp[1:nobs, ])
   eigend <- eigen(cormat)
   eigenval <- eigend$values
@@ -1653,7 +1654,7 @@ condvec <- sapply(obsvec, function(nobs) {
       \includegraphics[width=0.4\paperwidth]{figure/pca_cond_num2.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the condition numbers
-plot(x=obsvec, y=condvec, t="l",
+plot(x=obsvec, y=condv, t="l",
   main="Condition Number as Function of Number of Observations",
   xlab="number of observations", ylab="condition number")
       @
@@ -1944,8 +1945,8 @@ max(eigenval)/min(abs(eigenval))
 # Calculate the AAPL and XLK returns
 retp <- na.omit(cbind(returns$AAPL, rutils::etfenv$returns$XLK))
 # Calculate the trailing correlations
-lambda <- 0.99
-covarv <- HighFreq::run_covar(retp, lambda)
+lambdaf <- 0.99
+covarv <- HighFreq::run_covar(retp, lambdaf)
 correlv <- covarv[, 1, drop=FALSE]/sqrt(covarv[, 2]*covarv[, 3])
       @
     \column{0.5\textwidth}
@@ -2040,15 +2041,15 @@ nrows <- NROW(retp)
 nstocks <- NCOL(retp)
 head(retp[, 1:5])
 # Calculate the average trailing portfolio correlations
-lambda <- 0.9
+lambdaf <- 0.9
 correlv <- sapply(retp, function(retp) {
-  covarv <- HighFreq::run_covar(cbind(retvti, retp), lambda)
+  covarv <- HighFreq::run_covar(cbind(retvti, retp), lambdaf)
   covarv[, 1, drop=FALSE]/sqrt(covarv[, 2]*covarv[, 3])
 })  # end sapply
 correlv[is.na(correlv)] <- 0
 correlp <- rowMeans(correlv)
 # Scatterplot of trailing stock volatilities and correlations
-volvti <- sqrt(HighFreq::run_var(retvti, lambda))
+volvti <- sqrt(HighFreq::run_var(retvti, lambdaf))
 endd <- rutils::calc_endpoints(retvti, interval="weeks")
 plot(x=volvti[endd], y=correlp[endd], 
  xlab="volatility", ylab="correlation",
@@ -2788,62 +2789,90 @@ plot(regmod, which=2, ask=FALSE)  # Plot just Q-Q
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Leverage} for Univariate Regression}
+% \subsection{The \protect\emph{Influence Matrix} of Univariate Regression}
+\subsection{Univariate Regression in Homogeneous Form}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      We can add an extra unit column to the \emph{predictor matrix} $\mathbb{X}$ so that the univariate regression can be written in \emph{homogeneous form} as:
+      The \emph{linear regression} can be written in \emph{homogeneous form} by defining a \emph{predictor matrix} $\mathbb{X} = (\mathbbm{1}, x)$ with two columns, with the unit column representing the intercept:
       \begin{displaymath}
         y = \mathbb{X} \beta + \varepsilon
       \end{displaymath}
-      With two \emph{regression coefficients}: $\beta = (\alpha, \beta_1)$, and a \emph{predictor matrix} $\mathbb{X}$ with two columns, with the first column equal to a unit vector.
+      The two \emph{regression coefficients} are combined into a vector: $\beta = (\alpha, \beta)$.
       \vskip1ex
-      After the second column of the \emph{predictor matrix} $\mathbb{X}$ is centered (de-meaned), its \emph{covariance matrix} is given by:
+      The solution for the regression coefficients $\beta$ is given by:
       \begin{displaymath}
-        \mathbb{X}^T \mathbb{X} =
-          \begin{pmatrix}
-            n & 0 \\
-            0 & \sum_{i=1}^n (x_i - \bar{x})^2 \\
-          \end{pmatrix}
+        \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T y = \hat{\mathbb{X}}^{inv} y
       \end{displaymath}
-      And the \emph{influence matrix} $\mathbb{H}$ is given by:
+      The matrix $\hat{\mathbb{X}}^{inv} = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T$ is the generalized inverse of the \emph{predictor matrix} $\hat{\mathbb{X}}$.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Define linear regression data
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nrows <- 100
+# Define predictor matrix
+predm <- runif(nrows)
+# Define response with noise
+noisev <- rnorm(nrows)
+respv <- (-3 + 2*predm + noisev)
+# Add unit column to predictor
+predm <- cbind(rep(1, nrows), predm)
+colnames(predm)[1] <- "intercept"
+# Solve the regression using lm()
+formulav <- respv ~ predm[, 2]
+regmod <- lm(formulav)  # Perform regression
+betalm <- regmod$coeff  # Regression coefficients
+# Solve the regression using the generalized inverse
+predinv <- MASS::ginv(predm)
+betac <- drop(predinv %*% respv)
+all.equal(betalm, betac, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Influence Matrix} of Univariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The fitted values $y_{fit}$ are equal to the response $y$ multiplied by the \emph{influence matrix} $H$:
+      \begin{displaymath}
+        y_{fit} = \mathbb{X} \beta = \mathbb{X} (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T y = \mathbb{H} y
+      \end{displaymath}
+      Where $\mathbb{H} = \mathbb{X} (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T$ is the \emph{influence matrix}.
+      \vskip1ex
+      The \emph{influence matrix} projects the response vector $y$ onto the regression line, to obtain the fitted values $y_{fit}$.
+      \vskip1ex
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+      \vskip1ex
+      For univariate regression, the \emph{influence matrix} $\mathbb{H}$ is given by:
       \begin{displaymath}
         \mathbb{H}_{ij} = [\mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T]_{ij} =
         \frac{1}{n} + \frac{(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i=1}^n (x_i - \bar{x})^2}
       \end{displaymath}
-      The first term above is due to the influence of the regression intercept $\alpha$, and the second term is due to the influence of the regression slope $\beta_1$.
-      \vskip1ex
-      The diagonal elements of the \emph{influence matrix} $\mathbb{H}_{ii}$ form the \emph{leverage vector}.
-        <<echo=TRUE,eval=FALSE>>=
-# Define linear regression data
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nrows <- 100
-predm <- runif(nrows)
-noisev <- rnorm(nrows)
-respv <- (-3 + 2*predm + noisev)
-      @
+      The first term is due to the influence of the regression intercept $\alpha$, and the second term is due to the influence of the regression slope $\beta$.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/reg_leverage.png}
-        <<echo=(-(1:3)),eval=FALSE>>=
-x11(width=6, height=5)  # Open x11 for plotting
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
-# Add unit column to the predictor matrix
-predm <- cbind(rep(1, nrows), predm)
-# Calculate the generalized inverse of the predictor matrix
-predinv <- MASS::ginv(predm)
+        <<echo=TRUE,eval=FALSE>>=
 # Calculate the influence matrix
 infmat <- predm %*% predinv
-# Plot the leverage vector
-ordern <- order(predm[, 2])
-plot(x=predm[ordern, 2], y=diag(infmat)[ordern],
-     type="l", lwd=3, col="blue",
-     xlab="predictor", ylab="leverage",
-     main="Leverage as Function of Predictor")
+# The influence matrix is idempotent
+all.equal(infmat, infmat %*% infmat)
+# Calculate the fitted values using influence matrix
+fitv <- drop(infmat %*% respv)
+all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
+# Calculate the fitted values from regression coefficients
+fitv <- drop(predm %*% betac)
+all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -2858,33 +2887,30 @@ plot(x=predm[ordern, 2], y=diag(infmat)[ordern],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{fitted values} $y_{fit}$ can be considered to be \emph{random variables} $\hat{y}_{fit}$:
+      The response values $y$ can be considered to be \emph{random variables} $\hat{y}$.  
+      Then the fitted values $y_{fit}$ are also \emph{random variables} $\hat{y}_{fit}$:
       \begin{displaymath}
         \hat{y}_{fit} = \mathbb{H} \hat{y} = \mathbb{H} (y_{fit} + \hat\varepsilon) = y_{fit} + \mathbb{H} \hat\varepsilon
       \end{displaymath}
-      The \emph{covariance matrix} of the \emph{fitted values} $\hat{y}_{fit}$ is:
+      The \emph{covariance matrix} of the fitted values $\hat{y}_{fit}$ is:
       \begin{align*}
         & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{H} \hat\varepsilon (\mathbb{H} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat\varepsilon \hat\varepsilon^T \mathbb{H}^T]}{d_{free}} = \\
         & \frac{\mathbb{H} \, \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{H}^T}{d_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
       \end{align*}
-      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+      The variance of the fitted values $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
       \vskip1ex
-      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
+      This is because the fitted values farther away from their mean are more sensitive to the variance of the regression slope.
       \vskip1ex
-      This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate the influence matrix
-infmat <- predm %*% predinv
-# The influence matrix is idempotent
-all.equal(infmat, infmat %*% infmat)
-      @
+      The diagonal elements of the \emph{influence matrix} $\mathbb{H}_{ii}$ form the \emph{leverage vector}.
+      \vskip1ex
+      The leverage is the amount by which the fitted values would change if the response values were shifted by a small amount.
+      \vskip1ex
+      The response values farther away from their mean have more \emph{leverage}, that is, more influence on the fitted values, than response values close to the mean.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/reg_fitsd.png}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the covariance and standard deviations of fitted values
-betac <- predinv %*% respv
-fitv <- drop(predm %*% betac)
 resids <- drop(respv - fitv)
 degf <- (NROW(predm) - NCOL(predm))
 residsd <- sqrt(sum(resids^2)/degf)
@@ -3163,7 +3189,7 @@ plot(regmod, which=2, ask=FALSE)  # Plot just Q-Q
         & y = \alpha + \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
         & y_{fit} = \alpha + \mathbb{X} \beta
       \end{flalign*}
-      Where $y_{fit}$ are the \emph{fitted values} of the model.
+      Where $y_{fit}$ are the fitted values of the model.
         <<echo=TRUE,eval=TRUE>>=
 # Define predictor matrix
 nrows <- 100
@@ -3244,7 +3270,7 @@ all.equal(c(1, weightv), c(alphac, betac), check.attributes=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      We can add an extra unit column to the \emph{predictor matrix} $\mathbb{X}$ to represent the intercept term, and express the \emph{linear regression} formula in \emph{homogeneous form}:
+      If an extra unit column is added to the \emph{predictor matrix} $\mathbb{X} = (\mathbbm{1}, \mathbb{X})$ for the intercept term, then the \emph{linear regression} can be written in \emph{homogeneous form}:
       \begin{displaymath}
         y = \mathbb{X} \beta + \varepsilon
       \end{displaymath}
@@ -3295,16 +3321,16 @@ all.equal(drop(betac), coef(regmod), check.attributes=FALSE)
         & y = \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
         & y_{fit} = \mathbb{X} \beta
       \end{flalign*}
-      Where $y_{fit}$ are the \emph{fitted values} of the model.
+      Where $y_{fit}$ are the fitted values of the model.
       \vskip1ex
-      The \emph{residuals} are equal to the \emph{response vector} minus the \emph{fitted values}: $\varepsilon = y - y_{fit}$.
+      The \emph{residuals} are equal to the \emph{response vector} minus the fitted values: $\varepsilon = y - y_{fit}$.
       \vskip1ex
       The \emph{residuals} $\varepsilon$ are orthogonal to the columns of the \emph{predictor matrix} $\mathbb{X}$ (the \emph{predictors}):
       \begin{flalign*}
         & \varepsilon^T \mathbb{X} = (y - \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y)^T \mathbb{X} = \\
         & y^T \mathbb{X} - y^T \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbb{X} = y^T \mathbb{X} - y^T \mathbb{X} = 0
       \end{flalign*}
-      Therefore the \emph{residuals} are also orthogonal to the \emph{fitted values}: $\varepsilon^T y_{fit} = \varepsilon^T \mathbb{X} \beta = 0$.
+      Therefore the \emph{residuals} are also orthogonal to the fitted values: $\varepsilon^T y_{fit} = \varepsilon^T \mathbb{X} \beta = 0$.
       \vskip1ex
       Since the first column of the \emph{predictor matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$.
     \column{0.5\textwidth}
@@ -3337,13 +3363,13 @@ all.equal(sum(resids), target=0)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The vector $y_{fit} = \mathbb{X} \beta$ are the \emph{fitted values} corresponding to the \emph{response vector} $y$:
+      The vector $y_{fit} = \mathbb{X} \beta$ are the fitted values corresponding to the \emph{response vector} $y$:
       \begin{displaymath}
         y_{fit} = \mathbb{X} \beta = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X} \mathbb{X}_{inv} y = \mathbb{H} y
       \end{displaymath}
-      Where $\mathbb{H} = \mathbb{X} \mathbb{X}_{inv} = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the \emph{influence matrix} (or hat matrix), which maps the \emph{response vector} $y$ into the \emph{fitted values} $y_{fit}$.
+      Where $\mathbb{H} = \mathbb{X} \mathbb{X}_{inv} = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the \emph{influence matrix} (or hat matrix), which maps the \emph{response vector} $y$ into the fitted values $y_{fit}$.
       \vskip1ex
-      The \emph{influence matrix} $\mathbb{H}$ is a projection matrix, and it measures the changes in the \emph{fitted values} $y_{fit}$ due to changes in the \emph{response vector} $y$.
+      The \emph{influence matrix} $\mathbb{H}$ is a projection matrix, and it measures the changes in the fitted values $y_{fit}$ due to changes in the \emph{response vector} $y$.
       \begin{displaymath}
         \mathbb{H}_{ij} = \frac{\partial{y^{fit}_i}}{\partial{y_j}}
       \end{displaymath}
@@ -3384,9 +3410,9 @@ all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
         & y = \bar{y} - \bar{\mathbb{X}} \beta + \mathbb{X} \beta \\
         & \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
       \end{flalign*}
-      The regression model with a centered (de-meaned) \emph{predictor matrix} produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
+      The regression model with a centered (de-meaned) \emph{predictor matrix} produces the same fitted values (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
       \vskip1ex
-      But the centered regression model has a different \emph{influence matrix}, which maps the centered \emph{response vector} $\hat{y}$ into the centered \emph{fitted values} $\hat{y}_{fit}$.
+      But the centered regression model has a different \emph{influence matrix}, which maps the centered \emph{response vector} $\hat{y}$ into the centered fitted values $\hat{y}_{fit}$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
@@ -3492,7 +3518,7 @@ colSums(predpca*drop(respv))/colSums(predpca^2)
       \end{displaymath}
       Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}, equal to the number of observations $n$, minus the number of \emph{predictors} $k$ (including the intercept term).
       \vskip1ex
-      The \emph{response vector} $y$ can also be considered to be a \emph{random variable} $\hat{y}$, equal to the sum of the deterministic \emph{fitted values} $y_{fit}$ plus the random \emph{residuals} $\hat\varepsilon$:
+      The \emph{response vector} $y$ can also be considered to be a \emph{random variable} $\hat{y}$, equal to the sum of the deterministic fitted values $y_{fit}$ plus the random \emph{residuals} $\hat\varepsilon$:
       \begin{displaymath}
         \hat{y} = \mathbb{X} \beta + \hat\varepsilon = y_{fit} + \hat\varepsilon
       \end{displaymath}
@@ -3577,18 +3603,18 @@ all.equal(MASS::ginv(crossprod(predm)), predinv %*% t(predinv))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{fitted values} $y_{fit}$ can also be considered to be \emph{random variables} $\hat{y}_{fit}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: $\hat{y}_{fit} = \mathbb{X} \hat\beta = \mathbb{X} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = y_{fit} + \mathbb{X} \mathbb{X}_{inv} \hat\varepsilon$.
+      The fitted values $y_{fit}$ can also be considered to be \emph{random variables} $\hat{y}_{fit}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: $\hat{y}_{fit} = \mathbb{X} \hat\beta = \mathbb{X} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = y_{fit} + \mathbb{X} \mathbb{X}_{inv} \hat\varepsilon$.
       \vskip1ex
-      The \emph{covariance matrix} of the \emph{fitted values} $\sigma^2_{fit}$ is:
+      The \emph{covariance matrix} of the fitted values $\sigma^2_{fit}$ is:
       \begin{align*}
         & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat\varepsilon \hat\varepsilon^T \mathbb{H}^T]}{d_{free}} = \\
         & \frac{\mathbb{H} \, \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{H}^T}{d_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
       \end{align*}
       The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
       \vskip1ex
-      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
+      The variance of the fitted values $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
       \vskip1ex
-      This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
+      This is because the fitted values farther from their mean are more sensitive to the variance of the regression slope.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the influence matrix
 infmat <- predm %*% predinv
@@ -3750,13 +3776,13 @@ all.equal(fcastlm[1, "upr"], fcasth)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
+      The \emph{Total Sum of Squares} (\emph{TSS}), the \emph{Explained Sum of Squares} (\emph{ESS}), and the \emph{Residual Sum of Squares} (\emph{RSS}) are defined as:
       \begin{flalign*}
         & TSS = (y - \bar{y})^T (y - \bar{y})\\
         & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
         & RSS = (y - y_{fit})^T (y - y_{fit})
       \end{flalign*}
-      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$:
+      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the fitted values $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$:
       \begin{displaymath}
         (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
       \end{displaymath}
@@ -3796,7 +3822,7 @@ all.equal(tss, ess + rss)
       \end{displaymath}
       The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to $1$ for models fitting the data very well, and \emph{R-squared} close to $0$ for poorly fitting models.
       \vskip1ex
-      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
+      The \emph{R-squared} is equal to the squared correlation between the response and the fitted values:
       \begin{flalign*}
         & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
         & \frac{(y_{fit} - \bar{y})^T (y_{fit} - \bar{y})}{\sqrt{TSS \cdot ESS}} = \sqrt{\frac{ESS}{TSS}}
@@ -3918,7 +3944,7 @@ legend("topright", title="Degrees of Freedom", inset=0.0, bty="n",
       $\sigma^2_y = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar{y})^2$
       be their sample variances.
       \vskip1ex
-      The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom.
+      The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m-1$ and $n-1$ degrees of freedom.
       \vskip1ex
       The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance $\sigma^2_x$ is not significantly greater than $\sigma^2_y$).
       \vskip1ex
@@ -3951,17 +3977,21 @@ pf(fratio, nrows-1, nrows-1)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response}.
+      The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response} data.
       \vskip1ex
-      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_1 > p_2$.
+      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_1 < p_2$.
       \vskip1ex
-      Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}:
+      Then their \emph{Residual Sum of Squares} $RSS_1$ and $RSS_2$ are independent \emph{chi-squared} random variables with $df_1$ and $df_2$ degrees of freedom.
+      \vskip1ex
+      And their difference $(RSS_1 - RSS_2)$ follows a \emph{chi-squared} distribution with $(df_1 - df_2)$ degrees of freedom.
+      \vskip1ex
+      So the \emph{F}-statistic $F$:
       \begin{displaymath}
         F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
       \end{displaymath}
-      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+      Follows the \emph{F-distribution} with $(df_1 - df_2)$ and $df_2$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
     \column{0.5\textwidth}
-      If the \emph{restricted} model has only one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
+      If the \emph{restricted} model has only one parameter (the constant intercept term), then $df_1 = n - 1$, and its fitted values are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
       \vskip1ex
       Let the \emph{unrestricted} multivariate regression model be defined as:
       \begin{displaymath}
@@ -3986,17 +4016,19 @@ pf(fratio, nrows-1, nrows-1)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
+      The sum of the \emph{Explained Sum of Squares} (\emph{ESS}) and the \emph{Residual Sum of Squares} (\emph{RSS}) is equal to the \emph{Total Sum of Squares} (\emph{TSS}):
+      \begin{displaymath}
+        TSS = ESS + RSS
+      \end{displaymath}
+      A regression model that better explains the \emph{response} data will have a larger \emph{ESS} and a smaller \emph{RSS}.
+      \vskip1ex
+      The $RSS$ and the $ESS$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.  Where $k$ is the number of explanatory variables (including the intercept term).
       \vskip1ex
       Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}:
       \begin{displaymath}
         F = \frac{ESS/(k-1)}{RSS/(n-k)}
       \end{displaymath}
       Follows the \emph{F-distribution} with $(k-1)$ and $(n-k)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
-      \vskip1ex
-      The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance of $ESS$ is not significantly greater than of $RSS$).
-      \vskip1ex
-      A large value of the \emph{F-statistic} $F$ indicates that the variance of $ESS$ is significantly greater than that of $RSS$, and that the regression is statistically significant.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
@@ -4010,6 +4042,11 @@ all.equal(fstat, regsum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=fstat, df1=(ncols-1), df2=(nrows-ncols))
       @
+      The \emph{null hypothesis} of the \emph{F-test} test is that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance of $ESS$ is not significantly greater than of $RSS$).
+      \vskip1ex
+      A large value of the \emph{F-statistic} $F$ indicates that the $ESS$ is significantly greater than the $RSS$, and that the regression is able to explain the \emph{response} data well.
+      \vskip1ex
+      A regression model that better explains the \emph{response} data will have a larger \emph{ESS} and a smaller \emph{RSS}, so the \emph{F-statistic} $F$ will be significantly greater than $1$.
   \end{columns}
 \end{block}
 
@@ -4147,7 +4184,7 @@ all.equal(invreg, invmp, check.attributes=FALSE)
         & \mathbb{X}\mathbb{W} \mathbb{W}^{-1} (\mathbb{X}^T \mathbb{X})^{-1} {\mathbb{W}^T}^{-1} \mathbb{W}^T \mathbb{X}^T = \\
         & \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{H}
       \end{flalign*}
-      Since the \emph{influence matrix} $\mathbb{H}$ is the same, the transformed regression model produces the same \emph{fitted values} and \emph{residuals} as the original regression model, so it's equivalent to it.
+      Since the \emph{influence matrix} $\mathbb{H}$ is the same, the transformed regression model produces the same fitted values and \emph{residuals} as the original regression model, so it's equivalent to it.
       \vskip1ex
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4383,13 +4420,13 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $b$ be a binomial random variable, which either has the value $b = 1$ with probability $p$, or $b = 0$ with probability $(1-p)$.
+      Let $r$ be a binomial response variable, which either has the value $b = 1$ with probability $p$, or $b = 0$ with probability $(1-p)$.
       \vskip1ex
-      Then $b$ follows the binomial distribution:
+      Then the response $r$ follows the binomial distribution:
       \begin{displaymath}
         f(b) = b \, p + (1-b) \, (1-p)
       \end{displaymath}
-      The \emph{log-likelihood function} $\mathcal{L}(p | b)$ of the probability $p$ given the value $b$ is obtained from the logarithms of the binomial probabilities:
+      The \emph{log-likelihood function} $\mathcal{L}(p | b)$ of the probability $p$ given the value $r$ is obtained from the logarithms of the binomial probabilities:
       \begin{displaymath}
         \mathcal{L}(p | b) = b \, \log(p) + (1-b) \, \log(1-p)
       \end{displaymath}
@@ -4425,15 +4462,15 @@ legend(x="top", legend=c("b = 1", "b = 0"),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $b_i$ be binomial random variables, with probabilities $p_i$ that depend on the numerical variables $s_i$ through the logistic function: 
+      Let $r_i$ be binomial response variables, with probabilities $p_i$ that depend on the predictor variables $s_i$ through the logistic function: 
       \begin{displaymath}
         p_i = \frac{1}{1 + \exp(- \lambda_0 - \lambda_1 s_i)}
       \end{displaymath}
-      Let's assume that the $b_i$ and $s_i$ values are known (observed), and we want to find the parameters $\lambda_0$ and $\lambda_1$ that best fit the observations.
+      Let's assume that the $r_i$ response and $s_i$ predictor values are known (observed), and we want to find the parameters $\lambda_0$ and $\lambda_1$ that best fit the observations.
       \vskip1ex
       The \emph{log-likelihood function} $\mathcal{L}$ is equal to the sum of the individual \emph{log-likelihoods}:
       \begin{multline*}
-        \mathcal{L}(\lambda_0, \lambda_1 | b_i) = \sum_{i=1}^n {b_i \log(p_i) + (1-b_i) \log(1-p_i)}
+        \mathcal{L}(\lambda_0, \lambda_1 | r_i) = \sum_{i=1}^n {r_i \log(p_i) + (1-r_i) \log(1-p_i)}
       \end{multline*}
       The \emph{log-likelihood function} measures how \emph{likely} are the distribution parameters, given the observed values.
     \column{0.5\textwidth}
@@ -4616,7 +4653,6 @@ detach("package:ISLR")  # Remove ISLR from search path
 Default <- ISLR::Default
 Default$default <- (Default$default == "Yes")
 Default$student <- (Default$student == "Yes")
-colnames(Default)[1:2] <- c("default", "student")
 attach(Default)  # Attach Default to search path
 # Explore credit default data
 summary(Default)
@@ -4846,32 +4882,32 @@ summary(logmod)
       That's why the multifactor regression coefficient for \texttt{student} is negative, while the single factor coefficient for \texttt{student} is positive.
       <<echo=TRUE,eval=FALSE>>=
 # Fit single-factor logistic model with student as predictor
-glm_student <- glm(default ~ student, family=binomial(logit))
-summary(glm_student)
+logmodstud <- glm(default ~ student, family=binomial(logit))
+summary(logmodstud)
 # Multifactor coefficient is negative
 logmod$coefficients
 # Single-factor coefficient is positive
-glm_student$coefficients
+logmodstud$coefficients
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/islr_student_boxplot.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the cumulative defaults
-cum_defaults <- sapply(balance, function(balv) {
+defcum <- sapply(balance, function(balv) {
 c(student=sum(default[student & (balance <= balv)]),
   non_student=sum(default[!student & (balance <= balv)]))
 })  # end sapply
-total_defaults <- c(student=sum(student & default), 
+deftotal <- c(student=sum(student & default), 
             student=sum(!student & default))
-cum_defaults <- t(cum_defaults / total_defaults)
+defcum <- t(defcum / deftotal)
 # Plot cumulative defaults
 par(mfrow=c(1,2))  # Set plot panels
 ordern <- order(balance)
-plot(x=balance[ordern], y=cum_defaults[ordern, 1],
+plot(x=balance[ordern], y=defcum[ordern, 1],
      col="red", t="l", lwd=2, xlab="credit balance", ylab="",
      main="Cumulative defaults of\n students and non-students")
-lines(x=balance[ordern], y=cum_defaults[ordern, 2], col="blue", lwd=2)
+lines(x=balance[ordern], y=defcum[ordern, 2], col="blue", lwd=2)
 legend(x="topleft", bty="n", y.intersp=0.4,
        legend=c("students", "non-students"),
        col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
@@ -4949,7 +4985,7 @@ legend(x="topright", bty="n", y.intersp=0.4,
       \vskip1ex
       If the \emph{forecast probability} is \emph{less} than the \emph{discrimination threshold}, then the forecast is that the subject will not default and that the \emph{null hypothesis} is \texttt{TRUE}.
       \vskip1ex
-      The \emph{in-sample forecasts} are just the \emph{fitted values} of the \emph{glm} model.
+      The \emph{in-sample forecasts} are just the fitted values of the \emph{glm} model.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
@@ -5445,17 +5481,16 @@ legend(x="topright", legend=colnames(pricev),
       The function \texttt{HighFreq::run\_mean()} calculates the \emph{EMA} using the \texttt{C++} \emph{Armadillo} numerical library.
       \vskip1ex
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-arma::mat run_mean(const arma::mat& tseries, 
-                double lambda) {
+arma::mat run_mean(const arma::mat& tseries, double lambdaf) {
   arma::uword nrows = tseries.n_rows;
   arma::mat meanm(nrows, tseries.n_cols);
-  double lambda1 = 1-lambda;
+  double lambda1 = 1-lambdaf;
   
   meanm.row(0) = tseries.row(0);
   // Calculate the EMA
   for (arma::uword it = 1; it < nrows; it++) {
     // Calculate the means using the decay factor
-    meanm.row(it) = lambda*meanm.row(it-1) + 
+    meanm.row(it) = lambdaf*meanm.row(it-1) + 
           lambda1*tseries.row(it);
   }  // end for
   return meanm;
