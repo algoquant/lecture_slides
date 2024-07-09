@@ -627,9 +627,9 @@ stdeveff <- sqrt(drop(t(uu) %*% finv %*% uu))
 detf <- (c11*crr-cr1^2)  # det(fmat)
 sharper <- (stdeveff*detf)/(c11*retarget-cr1)
 # Calculate the risk-free rate as intercept of the tangent line
-riskf <- retarget - sharper*stdeveff
+raterf <- retarget - sharper*stdeveff
 # Calculate the risk-free rate from target return
-all.equal(riskf,
+all.equal(raterf,
   (retarget*cr1-crr)/(retarget*c11-cr1))
       @
   \end{columns}
@@ -672,10 +672,10 @@ text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
 points(x=stdeveff, y=retarget, col="red", lwd=6)
 text(x=stdeveff, y=retarget, labels="tangency\nportfolio", pos=2, cex=0.8)
 # Plot the risk-free point
-points(x=0, y=riskf, col="red", lwd=6)
-text(x=0, y=riskf, labels="risk-free", pos=4, cex=0.8)
+points(x=0, y=raterf, col="red", lwd=6)
+text(x=0, y=raterf, labels="risk-free", pos=4, cex=0.8)
 # Plot the tangent line
-abline(a=riskf, b=sharper, lwd=2, col="green")
+abline(a=raterf, b=sharper, lwd=2, col="green")
 text(x=0.6*stdev, y=0.8*retarget,
      labels="Capital Market Line", pos=2, cex=0.8,
      srt=180/pi*atan(aspratio*sharper))
@@ -799,16 +799,15 @@ text(x=0.6*stdev, y=0.8*retarget,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the mean excess returns
-riskf <- retarget - sharper*stdeveff
-retx <- (retm - riskf)
+raterf <- retarget - sharper*stdeveff
+retx <- (retm - raterf)
 # Calculate the efficient portfolio weights
 weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
 # Calculate the maximum Sharpe weights
 weightms <- drop(covinv %*% retx)/sum(covinv %*% retx)
 all.equal(weightv, weightms)
 # Calculate the maximum Sharpe mean return in two ways
-all.equal(sum(retm*weightv),
-  (cr1*riskf-crr)/(c11*riskf-cr1))
+all.equal(sum(retm*weightv), (cr1*raterf-crr)/(c11*raterf-cr1))
 # Calculate the maximum Sharpe daily returns
 retd <- (retp %*% weightms)
 # Calculate the maximum Sharpe variance in four ways
@@ -821,7 +820,7 @@ all.equal(var(retd),
 sqrt(252)*sum(weightv*retx)/
   sqrt(drop(t(weightv) %*% covmat %*% weightv))
 # Calculate the stock Sharpe ratios
-sqrt(252)*sapply((retp - riskf), function(x) mean(x)/sd(x))
+sqrt(252)*sapply((retp - raterf), function(x) mean(x)/sd(x))
       @
   \end{columns}
 \end{block}
@@ -846,7 +845,7 @@ wealthv <- xts::xts(wealthv, zoo::index(retp))
 colnames(wealthv) <- c("MaxSharpe", "MinVar")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, 
-  function(x) c(Sharpe=(mean(x)-riskf)/sd(x), Sortino=(mean(x)-riskf)/sd(x[x<0])))
+  function(x) c(Sharpe=(mean(x)-raterf)/sd(x), Sortino=(mean(x)-raterf)/sd(x[x<0])))
 # Plot the log wealth
 endd <- rutils::calc_endpoints(retp, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
@@ -877,11 +876,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the maximum Sharpe portfolios for different risk-free rates
 detf <- (c11*crr-cr1^2)  # det(fmat)
-riskfv <- retmvm*seq(from=1.3, to=20, by=0.1)
-riskfv <- c(riskfv, retmvm*seq(from=(-20), to=0.7, by=0.1))
-effront <- sapply(riskfv, function(riskf) {
+raterfv <- retmvm*seq(from=1.3, to=20, by=0.1)
+raterfv <- c(raterfv, retmvm*seq(from=(-20), to=0.7, by=0.1))
+effront <- sapply(raterfv, function(raterf) {
   # Calculate the maximum Sharpe mean return
-  reteffm <- (cr1*riskf-crr)/(c11*riskf-cr1)
+  reteffm <- (cr1*raterf-crr)/(c11*raterf-cr1)
   # Calculate the maximum Sharpe standard deviation
   stdev <- sqrt((c11*reteffm^2-2*cr1*reteffm+crr)/detf)
   c(return=reteffm, stdev=stdev)
@@ -904,18 +903,18 @@ text(x=stdevmv, y=retmvm, labels="minimum \nvariance", pos=4, cex=0.8)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the maximum Sharpe return and standard deviation
-riskf <- min(reteffv)
-retmax <- (cr1*riskf-crr)/(c11*riskf-cr1)
+raterf <- min(reteffv)
+retmax <- (cr1*raterf-crr)/(c11*raterf-cr1)
 stdevmax <- sqrt((c11*retmax^2-2*cr1*retmax+crr)/detf)
 # Plot the maximum Sharpe portfolio
 points(x=stdevmax, y=retmax, col="red", lwd=6)
 text(x=stdevmax, y=retmax, labels="Max Sharpe\nportfolio", pos=2, cex=0.8)
 # Plot the risk-free point
-points(x=0, y=riskf, col="red", lwd=6)
-text(x=0, y=riskf, labels="risk-free", pos=4, cex=0.8)
+points(x=0, y=raterf, col="red", lwd=6)
+text(x=0, y=raterf, labels="risk-free", pos=4, cex=0.8)
 # Plot the tangent line
 sharper <- (stdevmax*detf)/(c11*retmax-cr1)
-abline(a=riskf, b=sharper, lwd=2, col="green")
+abline(a=raterf, b=sharper, lwd=2, col="green")
 text(x=0.6*stdevmax, y=0.8*retmax, labels="Capital Market Line", 
      pos=2, cex=0.8, srt=180/pi*atan(aspratio*sharper))
       @
@@ -963,11 +962,11 @@ for (reteffm in reteffv) {
   # Calculate the slope of the tangent line
   sharper <- (stdev*detf)/(c11*reteffm-cr1)
   # Calculate the risk-free rate as intercept of the tangent line
-  riskf <- reteffm - sharper*stdev
+  raterf <- reteffm - sharper*stdev
   # Plot the tangent portfolio
   points(x=stdev, y=reteffm, col="red", lwd=3)
   # Plot the tangent line
-  abline(a=riskf, b=sharper, lwd=2, col="green")
+  abline(a=raterf, b=sharper, lwd=2, col="green")
 } # end for
       @
   \end{columns}
@@ -1129,7 +1128,7 @@ text(x=sqrt(252*diag(covmat)), y=252*retm,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<corr_two_assets,echo=TRUE,eval=FALSE>>=
-riskf <- 0.03
+raterf <- 0.03
 retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
 corrp <- 0.6
@@ -1139,7 +1138,7 @@ weightv <- seq(from=(-1), to=2, length.out=31)
 weightv <- cbind(weightv, 1-weightv)
 retp <- weightv %*% retp
 portfsd <- sqrt(rowSums(weightv*(weightv %*% covmat)))
-sharper <- (retp-riskf)/portfsd
+sharper <- (retp-raterf)/portfsd
 whichmax <- which.max(sharper)
 sharpem <- max(sharper)
 # Plot efficient frontier
@@ -1169,11 +1168,11 @@ text(x=portfsd[whichmax], y=retp[whichmax],
 points(stdevs, retp, col="green", lwd=3)
 text(stdevs, retp, labels=names(retp), pos=4, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
-points(x=0, y=riskf, col="blue", lwd=3)
-text(0, riskf, labels="risk-free\nrate", pos=4, cex=0.8)
-abline(a=riskf, b=sharpem, lwd=2, col="blue")
+points(x=0, y=raterf, col="blue", lwd=3)
+text(0, raterf, labels="risk-free\nrate", pos=4, cex=0.8)
+abline(a=raterf, b=sharpem, lwd=2, col="blue")
 rangev <- par("usr")
-text(portfsd[whichmax]/2, (retp[whichmax]+riskf)/2,
+text(portfsd[whichmax]/2, (retp[whichmax]+raterf)/2,
      labels="Capital Market Line", cex=0.8, , pos=3,
      srt=45*atan(sharpem*(rangev[2]-rangev[1])/
                    (rangev[4]-rangev[3])*
@@ -1208,9 +1207,9 @@ retp <- retp %*% t(weightv)
 portfv <- cbind(252*colMeans(retp),
   sqrt(252)*matrixStats::colSds(retp))
 colnames(portfv) <- c("returns", "stdev")
-riskf <- 0.06
+raterf <- 0.06
 portfv <- cbind(portfv,
-  (portfv[, "returns"]-riskf)/portfv[, "stdev"])
+  (portfv[, "returns"]-raterf)/portfv[, "stdev"])
 colnames(portfv)[3] <- "Sharpe"
 whichmax <- which.max(portfv[, "Sharpe"])
 sharpem <- portfv[whichmax, "Sharpe"]
@@ -1236,9 +1235,9 @@ stdevs <- sqrt(252)*sapply(retp, sd)
 points(stdevs, retm, col="green", lwd=6)
 text(stdevs, retm, labels=names(retp), pos=2, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
-points(x=0, y=riskf, col="blue", lwd=6)
-text(0, riskf, labels="risk-free", pos=4, cex=0.8)
-abline(a=riskf, b=sharpem, col="blue", lwd=2)
+points(x=0, y=raterf, col="blue", lwd=6)
+text(0, raterf, labels="risk-free", pos=4, cex=0.8)
+abline(a=raterf, b=sharpem, col="blue", lwd=2)
 rangev <- par("usr")
 text(max(portfv[, "stdev"])/3, 0.75*max(portfv[, "returns"]),
      labels="Capital Market Line", cex=0.8, , pos=3,
@@ -1682,10 +1681,10 @@ text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
 
 
 # Objective function equal to minus Sharpe ratio
-riskf <- 0.03
+raterf <- 0.03
 objfun <- function(weightv) {
   retp <- 100*rutils::etfenv$returns[, names(weightv)] %*% weightv / sum(weightv)
-  -mean(retp-riskf)/sd(retp)
+  -mean(retp-raterf)/sd(retp)
 }  # end objfun
 # Perform portfolio optimization
 optiml <- optim(par=weightv,
@@ -1704,18 +1703,18 @@ points(x=optim_sd, y=optim_ret,
        col="blue", lwd=3)
 text(x=optim_sd, y=optim_ret,
      labels="maxSR", pos=2, cex=0.8)
-sharpem <- (optim_ret-riskf)/optim_sd
+sharpem <- (optim_ret-raterf)/optim_sd
 # Plot individual assets
 retm <- 100*sapply(retp, mean)
 stdevs <- 100*sapply(retp, sd)
 points(stdevs, retm, col="green", lwd=3)
 text(stdevs, retm, labels=names(retm), pos=2, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
-points(x=0, y=riskf)
-text(0, riskf, labels="risk-free", pos=4, cex=0.8)
-abline(a=riskf, b=sharpem, col="blue")
+points(x=0, y=raterf)
+text(0, raterf, labels="risk-free", pos=4, cex=0.8)
+abline(a=raterf, b=sharpem, col="blue")
 rangev <- par("usr")
-text(optim_sd/3, (optim_ret+riskf)/2.5,
+text(optim_sd/3, (optim_ret+raterf)/2.5,
      labels="Capital Market Line", cex=0.8, , pos=3,
      srt=45*atan(sharpem*(rangev[2]-rangev[1])/
                    (rangev[4]-rangev[3])*
@@ -1909,7 +1908,7 @@ PerformanceAnalytics::chart.CumReturns(
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=(-(1:6)),eval=FALSE>>=
-riskf <- 0.03
+raterf <- 0.03
 retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
 corrp <- 0.6

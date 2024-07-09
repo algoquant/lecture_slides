@@ -4007,9 +4007,9 @@ bootd <- function(datav, nboot=nboot) {
 
   retp <- numeric(nsimu)
   pricev <- numeric(nsimu)
-  pricev[1] <- eq_price
+  pricev[1] <- priceq
   for (i in 2:nsimu) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    retp[i] <- thetav*(priceq - pricev[i-1]) + volat*rnorm(1)
     pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
@@ -4066,52 +4066,52 @@ static const double pi = 3.14159265;
       Simulating the Ornstein-Uhlenbeck Process in \emph{Rcpp} is about 30 times faster than in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in R
-sim_our <- function(nrows=1000, eq_price=5.0,
+sim_our <- function(nrows=1000, priceq=5.0,
                     volat=0.01, theta=0.01) {
   retp <- numeric(nrows)
   pricev <- numeric(nrows)
-  pricev[1] <- eq_price
+  pricev[1] <- priceq
   for (i in 2:nrows) {
-    retp[i] <- theta*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    retp[i] <- theta*(priceq - pricev[i-1]) + volat*rnorm(1)
     pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end sim_our
 # Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
+priceq <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
-NumericVector sim_oucpp(double eq_price, 
+NumericVector sim_oucpp(double priceq, 
                         double volat, 
                         double thetav, 
                         NumericVector innov) {
   int nrows = innov.size();
   NumericVector pricev(nrows);
   NumericVector retv(nrows);
-  pricev[0] = eq_price;
+  pricev[0] = priceq;
   for (int it = 1; it < nrows; it++) {
-    retv[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
+    retv[it] = thetav*(priceq - pricev[it-1]) + volat*innov[it-1];
     pricev[it] = pricev[it-1] + retv[it];
   }  // end for
   return pricev;
 }")  # end cppFunction
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-oucpp <- sim_oucpp(eq_price=eq_price,
+oucpp <- sim_oucpp(priceq=priceq,
   volat=sigmav, theta=thetav, innov=rnorm(nrows))
 all.equal(ousim, oucpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  rcode=sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav),
+  Rcpp=sim_oucpp(priceq=priceq, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4141,7 +4141,7 @@ summary(microbenchmark(
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_ou.cpp")
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-oucpp <- sim_oucpp(eq_price=eq_price,
+oucpp <- sim_oucpp(priceq=priceq,
   volat=sigmav,
   theta=thetav,
   innov=rnorm(nrows))
@@ -4149,8 +4149,8 @@ all.equal(ousim, oucpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  rcode=sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav),
+  Rcpp=sim_oucpp(priceq=priceq, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -4163,16 +4163,16 @@ using namespace Rcpp; // use Rcpp C++ namespace
 // The function sim_oucpp() simulates an Ornstein-Uhlenbeck process
 // export the function roll_maxmin() to R
 // [[Rcpp::export]]
-NumericVector sim_oucpp(double eq_price,
+NumericVector sim_oucpp(double priceq,
                           double volat,
                           double thetav,
                           NumericVector innov) {
   int(nrows = innov.size();
   NumericVector pricev*nrows);
   NumericVector retp*nrows);
-  pricev[0] = eq_price;
+  pricev[0] = priceq;
   for (int it = 1; it < nrows; it++) {
-    retp[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
+    retp[it] = thetav*(priceq - pricev[it-1]) + volat*innov[it-1];
     pricev[it] = pricev[it-1] + retp[it];
   }  // end for
   return pricev;
@@ -4279,18 +4279,18 @@ bootd <- function(datav, nboot=1000) {
 
   retp <- numeric(nrows)
   pricev <- numeric(nrows)
-  pricev[1] <- eq_price
+  pricev[1] <- priceq
   for (i in 2:nrows) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    retp[i] <- thetav*(priceq - pricev[i-1]) + volat*rnorm(1)
     pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
+priceq <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4369,18 +4369,18 @@ bootd <- function(datav, nboot=1000) {
 
   retp <- numeric(nrows)
   pricev <- numeric(nrows)
-  pricev[1] <- eq_price
+  pricev[1] <- priceq
   for (i in 2:nrows) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    retp[i] <- thetav*(priceq - pricev[i-1]) + volat*rnorm(1)
     pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
+priceq <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav)
       @
     \column{0.5\textwidth}
       \vspace{-1em}

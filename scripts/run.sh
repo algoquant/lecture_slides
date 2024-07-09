@@ -365,7 +365,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/y_var/yvar/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/y_lim/ylim/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/yc_/yc/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/_yc/_yc_/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/year_s/years/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/year_s/yearv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/joinrows/join_rows/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/joincols/join_cols/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/z_scores/zscores/g' *.R*

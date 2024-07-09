@@ -3430,17 +3430,17 @@ for (i in 2:nrows) {
   pricev[i] <- pricev[i-1] + retp[i]
 }  # end for
 # Simulate Ornstein-Uhlenbeck process in Rcpp
-pricecpp <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
-  theta=thetav, innov=matrix(innov))
-all.equal(pricev, drop(pricev_cpp))
+pricecpp <- HighFreq::sim_ou(prici=prici, priceq=priceq, 
+  theta=thetav, innov=matrix(sigmav*innov))
+all.equal(pricev, drop(pricecpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
   Rcode={for (i in 2:nrows) {
     retp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
     pricev[i] <- pricev[i-1] + retp[i]}},
-  Rcpp=HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
-    theta=thetav, innov=matrix(innov)),
+  Rcpp=HighFreq::sim_ou(prici=prici, priceq=priceq, 
+    theta=thetav, innov=matrix(sigmav*innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -3482,7 +3482,7 @@ summary(microbenchmark(
 plot(pricev, type="l", xlab="time", ylab="prices",
      main="Ornstein-Uhlenbeck Process")
 legend("topright", title=paste(c(paste0("sigmav = ", sigmav),
-     paste0("eq_price = ", ),
+     paste0("priceq = ", ),
      paste0("thetav = ", thetav)),
    collapse="\n"),
  legend="", cex=0.8, inset=0.1, bg="white", bty="n")
@@ -3669,10 +3669,10 @@ for (it in 4:nrows) {
   pricev[it] <- pricev[it-1] + retp[it]
 }  # end for
 # Simulate Dickey-Fuller process in Rcpp
-pricecpp <- HighFreq::sim_df(init_price=prici, eq_price=priceq, 
+pricecpp <- HighFreq::sim_df(prici=prici, priceq=priceq, 
    theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
 # Compare prices
-all.equal(pricev, drop(pricev_cpp))
+all.equal(pricev, drop(pricecpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
@@ -3680,7 +3680,7 @@ summary(microbenchmark(
   retp[it] <- thetav*(priceq - pricev[it-1]) + retp[(it-1):(it-3)] %*% coeff + innov[it]
   pricev[it] <- pricev[it-1] + retp[it]
   }},
-  Rcpp=HighFreq::sim_df(init_price=prici, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
+  Rcpp=HighFreq::sim_df(prici=prici, priceq=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -3731,13 +3731,13 @@ plot(arimav, t="l", main="AR(1) coefficient = 0.99")
 tseries::adf.test(arimav, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with mean reversion
 prici <- 0.0; priceq <- 0.0; thetav <- 0.1
-pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(prici=prici, priceq=priceq, 
   theta=thetav, innov=innov)
 plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with zero reversion
 thetav <- 0.0
-pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(prici=prici, priceq=priceq, 
   theta=thetav, innov=innov)
 plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)

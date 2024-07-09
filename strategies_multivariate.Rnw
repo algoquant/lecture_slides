@@ -251,10 +251,10 @@ for (it in 4:nrows) {
   pricev[it] <- pricev[it-1] + retp[it]
 }  # end for
 # Simulate Dickey-Fuller process in Rcpp
-pricecpp <- HighFreq::sim_df(init_price=prici, eq_price=priceq, 
+pricecpp <- HighFreq::sim_df(prici=prici, priceq=priceq, 
    theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
 # Compare prices
-all.equal(pricev, drop(pricev_cpp))
+all.equal(pricev, drop(pricecpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
@@ -262,7 +262,7 @@ summary(microbenchmark(
   retp[it] <- thetav*(priceq - pricev[it-1]) + retp[(it-1):(it-3)] %*% coeff + innov[it]
   pricev[it] <- pricev[it-1] + retp[it]
   }},
-  Rcpp=HighFreq::sim_df(init_price=prici, eq_price=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
+  Rcpp=HighFreq::sim_df(prici=prici, priceq=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -313,13 +313,13 @@ plot(arimav, t="l", main="AR(1) coefficient = 0.99")
 tseries::adf.test(arimav, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with mean reversion
 prici <- 0.0; priceq <- 0.0; thetav <- 0.1
-pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(prici=prici, priceq=priceq, 
   theta=thetav, innov=innov)
 plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with zero reversion
 thetav <- 0.0
-pricev <- HighFreq::sim_ou(init_price=prici, eq_price=priceq, 
+pricev <- HighFreq::sim_ou(prici=prici, priceq=priceq, 
   theta=thetav, innov=innov)
 plot(pricev, t="l", main=paste("OU coefficient =", thetav))
 tseries::adf.test(pricev, k=1)
@@ -552,7 +552,7 @@ betac <- covarv[, 1]/covarv[, 3]
 pricec <- (pricev$MSFT - betac*pricev$XLK)
 # Recalculate the mean of cointegrated portfolio prices
 meanv <- HighFreq::run_mean(pricec, lambda=lambdaf)
-vars <- sqrt(HighFreq::run_var(pricec, lambda=lambdaf))
+volp <- sqrt(HighFreq::run_var(pricec, lambda=lambdaf))
 # Simulate the pairs Bollinger strategy
 pricen <- zoo::coredata(pricec) # Numeric price
 pricem <- pricen - meanv # De-meaned price
@@ -612,7 +612,7 @@ betac <- covarv[, 1]/covarv[, 3]
 pricec <- (pricev$MSFT - betac*pricev$XLK)
 # Recalculate the mean of cointegrated portfolio prices
 meanv <- HighFreq::run_mean(pricec, lambda=0.3)
-vars <- sqrt(HighFreq::run_var(pricec, lambda=0.3))
+volp <- sqrt(HighFreq::run_var(pricec, lambda=0.3))
 # Simulate the pairs Bollinger strategy
 pricen <- zoo::coredata(pricec) # Numeric price
 pricem <- pricen - meanv # De-meaned price
@@ -889,7 +889,7 @@ sqrt(252)*sapply(rutils::diffit(wealthv[outsample, ]),
 # Plot out-of-sample stock portfolio returns
 dygraphs::dygraph(wealthv[endd], main="Out-of-Sample Log Prices of Stock Portfolio") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyEvent(datev[cutoff], label="in-sample", strokePattern="solid", color="green") %>%
+  dyEvent(datev[cutoff], label="cutoff", strokePattern="solid", color="green") %>%
   dyLegend(width=300)
       @
   \end{columns}
@@ -3468,8 +3468,8 @@ all.equal(inveigen, invreg)
       \end{enumerate}
       <<echo=TRUE,eval=FALSE>>=
 # Returns in excess of risk-free rate
-riskf <- 0.03/252
-retx <- (retp - riskf)
+raterf <- 0.03/252
+retx <- (retp - raterf)
 # Maximum Sharpe weights in-sample interval
 retis <- retp["/2014"]
 invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))
@@ -4012,7 +4012,7 @@ pnls <- lapply((lookb+1):(NROW(weeks)-1), function(tday) {
   # Calculate reduced inverse of covariance matrix
   # invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))  # if VXX and SVXY are included then no dimension reduction is better
   invred <- HighFreq::calc_invsd(cov(retis, use="pairwise.complete.obs"), dimax=dimax)
-  weightv <- invred %*% colMeans(retis - riskf, na.rm=TRUE)
+  weightv <- invred %*% colMeans(retis - raterf, na.rm=TRUE)
   # weightv <- drop(weightv/sqrt(sum(weightv^2)))
   # Calculate portfolio pnls out-of-sample
   xts::xts(retos %*% weightv, zoo::index(retos))
@@ -4255,8 +4255,8 @@ retp <- retstock["2000/"]
 retp[is.na(retp)] <- 0
 nstocks <- NCOL(retp)
 datev <- zoo::index(retp)
-riskf <- 0.03/252
-retx <- (retp - riskf)
+raterf <- 0.03/252
+retx <- (retp - raterf)
 retis <- retp["/2014"]
 retos <- retp["2015/"]
 # Maximum Sharpe weights in-sample interval
