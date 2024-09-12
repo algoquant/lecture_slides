@@ -41,7 +41,7 @@ knit_theme$set(thm)
 \definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
 % \bibliographystyle{amsalpha} % doesn't work
-\addbibresource{FRE_lectures.bib}
+% \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
 \renewcommand\bibfont{\footnotesize}
 \renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Univariate Investment Strategies]{Univariate Investment Strategies}
-\subtitle{FRE7241, Spring 2024}
+\subtitle{FRE7241, Fall 2024}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -174,7 +174,7 @@ endd <- rutils::calc_endpoints(rutils::etfenv$VTI, interval="weeks")
 dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endd]),
   main="Logarithm of VTI Prices") %>%
   dyOptions(colors="blue", strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -211,15 +211,15 @@ retp <- rutils::diffit(pricev)/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
       \includegraphics[width=0.45\paperwidth]{figure/portf_margin.png}
       <<echo=TRUE,eval=FALSE>>=
 # Funding rate per day
-frate <- 0.01/252
-# Margin account
+ratef <- 0.01/252
+# Margin account value
 marginv <- cumsum(retp)
 # Cumulative funding costs
-fcosts <- cumsum(frate*marginv)
+costf <- cumsum(ratef*marginv)
 # Add funding costs to margin account
-marginv <- (marginv + fcosts)
+marginv <- (marginv + costf)
 # dygraph plot of margin and funding costs
-datav <- cbind(marginv, fcosts)
+datav <- cbind(marginv, costf)
 colnamev <- c("Margin", "Cumulative Funding")
 colnames(datav) <- colnamev
 endd <- rutils::calc_endpoints(datav, interval="weeks")
@@ -228,7 +228,7 @@ dygraphs::dygraph(datav[endd], main="VTI Margin Funding Costs") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -303,7 +303,7 @@ dygraphs::dygraph(datav[endd], main="VTI Transaction Costs") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -326,7 +326,7 @@ dygraphs::dygraph(datav[endd], main="VTI Transaction Costs") %>%
       \vskip1ex
       This \emph{rebalancing} acts as a mean reverting strategy - selling shares when their price goes up, and vice versa.
       \vskip1ex
-      The portfolio with proportional wealth allocations has a slightly higher Sharpe ratio than the portfolio with a fixed number of shares.
+      The \emph{FDA} portfolio has a slightly higher Sharpe ratio than the \emph{FSA} portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI and IEF dollar returns
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
@@ -335,7 +335,7 @@ retd <- rutils::diffit(pricev)
 datev <- zoo::index(pricev)
 # Calculate the VTI and IEF percentage returns
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
-# Wealth of fixed shares equal to $0.5 each (without rebalancing)
+# Wealth of fixed shares equal to $0.5 each at start (without rebalancing)
 weightv <- c(0.5, 0.5)  # dollar weights
 wealthfs <- drop(cumprod(1 + retp) %*% weightv)
 # Or using the dollar returns
@@ -348,7 +348,7 @@ all.equal(wealthfs, drop(wealthfs2))
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_weighted_wealth.png}
       <<echo=TRUE,eval=FALSE>>=
-# Wealth of fixed dollars (with rebalancing)
+# Wealth of fixed dollars equal to $0.5 each (with rebalancing)
 wealthfd <- cumsum(retp %*% weightv)
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(log(wealthfs), wealthfd)
@@ -362,7 +362,7 @@ endd <- rutils::calc_endpoints(retp, interval="weeks")
 dygraphs::dygraph(wealthv[endd], main="Wealth of Weighted Portfolios") %>%
   dySeries(name=colnamev[1], col="blue", strokeWidth=2) %>%
   dySeries(name=colnamev[2], col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -406,7 +406,7 @@ dygraphs::dygraph(datav[endd], main="Fixed Dollar Portfolio Transaction Costs") 
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -421,22 +421,22 @@ dygraphs::dygraph(datav[endd], main="Fixed Dollar Portfolio Transaction Costs") 
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{proportional wealth allocation} strategy (\emph{PWA}), the total wealth $\omega_t$ is allocated to the assets $\omega_i$ proportional to the portfolio weights $w_i$: $\omega_i = w_i \omega_t$.
+      In the \emph{proportional wealth allocation} strategy (\emph{PWA}), the total wealth $\Pi_t$ is allocated to the assets $\Pi_i$ proportional to the portfolio weights $w_i$: $\Pi_i = w_i \Pi_t$.
       \vskip1ex
-      The total wealth $\omega_t$ is not fixed and is equal to the portfolio market value $\omega_t = \sum \omega_i$, so there's no margin account.
+      The total wealth $\Pi_t$ is not fixed and is equal to the portfolio market value $\Pi_t = \sum \Pi_i$, so there's no margin account.
       \vskip1ex
-      The portfolio is rebalanced daily to maintain the dollar allocations $\omega_i$ equal to the total wealth $\omega_t = \sum \omega_i$ times the portfolio weights: $w_i$: $\omega_i = w_i \omega_t$.
+      The portfolio is rebalanced daily to maintain the dollar allocations $\Pi_i$ equal to the total wealth $\Pi_t = \sum \Pi_i$ times the portfolio weights: $w_i$: $\Pi_i = w_i \Pi_t$.
       \vskip1ex
       Let $r_t$ be the percentage returns, $w_i$ be the portfolio weights, and $\bar{r}_t = \sum_{i=1}^n w_i r_t$ be the weighted percentage returns at time $t$.
       \vskip1ex
-      The total portfolio wealth at time $t$ is equal to the wealth at time $t-1$ multiplied by the weighted returns: $\omega_t = \omega_{t-1} (1 + \bar{r}_t)$.
+      The total portfolio wealth at time $t$ is equal to the wealth at time $t-1$ multiplied by the weighted returns: $\Pi_t = \Pi_{t-1} (1 + \bar{r}_t)$.
       \vskip1ex
-      The dollar amount of stock $i$ at time $t$ increases by $w_i r_t$ so it's equal to $w_i \omega_{t-1} (1 + r_t)$, while the target amount is $w_i \omega_t = w_i \omega_{t-1} (1 + \bar{r}_t)$
+      The dollar amount of stock $i$ at time $t$ increases by $w_i r_t$ so it's equal to $w_i \Pi_{t-1} (1 + r_t)$, while the target amount is $w_i \Pi_t = w_i \Pi_{t-1} (1 + \bar{r}_t)$
       \vskip1ex
       The dollar amount of stock $i$ needed to trade to rebalance back to the target weight is equal to:
       \begin{flalign*}
-        \varepsilon_i &= \left| w_i \omega_{t-1} (1 + \bar{r}_t) - w_i \omega_{t-1} (1 + r_t) \right|\\
-        &= w_i \omega_{t-1} \left| \bar{r}_t - r_t \right|
+        \varepsilon_i &= \left| w_i \Pi_{t-1} (1 + \bar{r}_t) - w_i \Pi_{t-1} (1 + r_t) \right|\\
+        &= w_i \Pi_{t-1} \left| \bar{r}_t - r_t \right|
       \end{flalign*}
       If $\bar{r}_t > r_t$ then an amount $\varepsilon_i$ of the stock $i$ needs to be bought, and if $\bar{r}_t < r_t$ then it needs to be sold.
     \column{0.5\textwidth}
@@ -446,10 +446,10 @@ dygraphs::dygraph(datav[endd], main="Fixed Dollar Portfolio Transaction Costs") 
 # Wealth of fixed shares (without rebalancing)
 wealthfs <- cumsum(retd %*% (weightv/prici))
 # Or compound the percentage returns
-wealthfs <- cumprod(1 + retp) %*% weightv
-# Wealth of equal wealth strategy (with rebalancing)
-wealthew <- cumprod(1 + retp %*% weightv)
-wealthv <- cbind(wealthfs, wealthew)
+wealthfs <- drop(cumprod(1 + retp) %*% weightv)
+# Wealth of proportional wealth strategy (with rebalancing)
+wealthpr <- cumprod(1 + retp %*% weightv)
+wealthv <- cbind(wealthfs, wealthpr)
 wealthv <- xts::xts(wealthv, datev)
 colnames(wealthv) <- c("Fixed shares", "Prop dollars")
 wealthv <- log(wealthv)
@@ -460,7 +460,7 @@ sqrt(252)*sapply(rutils::diffit(wealthv), function(x)
 dygraphs::dygraph(wealthv[endd], 
   main="Wealth of Proportional Wealth Allocations") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -477,11 +477,11 @@ dygraphs::dygraph(wealthv[endd],
     \column{0.5\textwidth}
       In each period the stocks must be rebalanced to maintain the proportional wealth allocations.
       \vskip1ex
-      The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = \omega_{t-1} \sum_{i=1}^n w_i \left| \bar{r}_t - r_t \right|$
+      The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = \Pi_{t-1} \sum_{i=1}^n w_i \left| \bar{r}_t - r_t \right|$
       \vskip1ex
       The \emph{transaction costs} $c^r_t$ are equal to half the \emph{bid-ask spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} \sum_{i=1}^n \varepsilon_i$.
       \vskip1ex
-      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{wealth} $\omega_t$: $\omega_t - \sum_{i=1}^t c^r_t$.
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{wealth} $\Pi_t$: $\Pi_t - \sum_{i=1}^t c^r_t$.
       <<echo=TRUE,eval=FALSE>>=
 # Returns in excess of weighted returns
 retw <- retp %*% weightv
@@ -491,18 +491,18 @@ sum(retx %*% weightv)
 # Calculate the weighted sum of absolute excess returns
 retx <- abs(retx) %*% weightv
 # Total dollar amount of stocks that need to be traded
-retx <- retx*rutils::lagit(wealthew)
+retx <- retx*rutils::lagit(wealthpr)
 # Cumulative transaction costs
 costs <- bidask*cumsum(retx)/2
 # Subtract transaction costs from wealth
-wealthew <- (wealthew - costs)
+wealthpr <- (wealthpr - costs)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_allocations_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of wealth and transaction costs
-wealthv <- cbind(wealthew, costs)
+wealthv <- cbind(wealthpr, costs)
 wealthv <- xts::xts(wealthv, datev)
 colnamev <- c("Wealth", "Cumulative Transaction Costs")
 colnames(wealthv) <- colnamev
@@ -512,7 +512,7 @@ dygraphs::dygraph(wealthv[endd],
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -529,9 +529,9 @@ dygraphs::dygraph(wealthv[endd],
     \column{0.5\textwidth}
       In the \emph{fixed share strategy} (\emph{FSA}), the number of shares is fixed, with their initial dollar value equal to the portfolio weights.
       \vskip1ex
-      In the \emph{proportional wealth allocation} strategy (\emph{PWA}), the portfolio is rebalanced daily to maintain the dollar allocations $\omega_i$ equal to the total wealth $\omega_t = \sum \omega_i$ times the portfolio weights: $w_i$: $\omega_i = w_i \omega_t$.
+      In the \emph{proportional wealth allocation} strategy (\emph{PWA}), the portfolio is rebalanced daily to maintain the dollar allocations $\Pi_i$ equal to the total wealth $\Pi_t = \sum \Pi_i$ times the portfolio weights: $w_i$: $\Pi_i = w_i \Pi_t$.
       \vskip1ex
-      In the \emph{proportional target allocation} strategy (\emph{PTA}), the portfolio is rebalanced only if the dollar allocations $\omega_i$ differ from their targets $w_i \omega_t$ more than the threshold value $\tau$: $\tau > \frac{\sum \left| \omega_i - w_i \omega_t \right|}{\omega_t}$.
+      In the \emph{proportional target allocation} strategy (\emph{PTA}), the portfolio is rebalanced only if the dollar allocations $\Pi_i$ differ from their targets $w_i \Pi_t$ more than the threshold value $\tau$: $\frac{\sum \left| \Pi_i - w_i \Pi_t \right|}{\Pi_t} > \tau$.
       \vskip1ex
       The \emph{PTA} strategy is path-dependent so it must be simulated using an explicit loop. 
       \vskip1ex
@@ -544,9 +544,9 @@ dygraphs::dygraph(wealthv[endd],
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of fixed shares (without rebalancing)
-wealthfs <- drop(apply(retp, 2, function(x) cumprod(1 + x)) %*% weightv)-1
-# Wealth of proportional wealth allocations (with rebalancing)
-wealthew <- cumprod(1 + retp %*% weightv) - 1
+wealthfs <- drop(cumprod(1 + retp) %*% weightv)-1
+# Wealth of proportional allocation (with rebalancing)
+wealthpr <- cumprod(1 + retp %*% weightv) - 1
 # Wealth of proportional target allocation (with rebalancing)
 retp <- zoo::coredata(retp)
 threshv <- 0.05
@@ -563,12 +563,12 @@ for (it in 2:NROW(retp)) {
   } # end if
 } # end for
 wealthv <- rowSums(wealthv) - 1
-wealthv <- cbind(wealthew, wealthv)
+wealthv <- cbind(wealthpr, wealthv)
 wealthv <- xts::xts(wealthv, datev)
 colnames(wealthv) <- c("Equal Wealths", "Proportional Target")
 dygraphs::dygraph(wealthv, main="Wealth of Proportional Target Allocations") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -671,7 +671,7 @@ dygraphs::dygraph(wealthv[endd],
   main="Stocks and Bonds With Equal Wealths") %>%
   dyOptions(colors=c("blue", "green", "blue", "red")) %>%
   dySeries("Combined", color="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -688,7 +688,7 @@ dygraphs::dygraph(wealthv[endd],
     \column{0.5\textwidth}
       The optimal stock and bond weights can be calculated using optimization.
       \vskip1ex
-      Using the past \texttt{20} years of data, the optimal \emph{VTI} weight is about \texttt{0.43}.
+      Using the past \texttt{20} years of data, the optimal \emph{VTI} weight is about \texttt{0.28}.
       \vskip1ex
       The comments and conclusions in these slides are based on \texttt{20} years of very positive stock and bond returns, when stocks and bonds have been in a secular bull market.  The conclusions would not hold if stocks and bonds had suffered from a bear market (losses) over that time.
       <<echo=TRUE,eval=FALSE>>=
@@ -887,7 +887,7 @@ legend(x="top", legend=c("Long", "Short"),
       \vskip1ex
       U.S. stocks in the last 40 years have had higher risk-adjusted wealth for longer holding periods.
       \vskip1ex
-      The risk-adjusted wealth is also higher for very short holding periods because the risk is low - there's not enough time for the wealth to significantly drop below par (\texttt{1}).
+      The risk-adjusted wealth may also be higher for very short holding periods because the risk is low - there's not enough time for the wealth to significantly drop below par (\texttt{1}).
       \vskip1ex
       The risk increases for intermediate holding periods, so the risk-adjusted wealth drops.
       \vskip1ex
@@ -1104,7 +1104,7 @@ colnames(datav) <- c("stocks", "bonds", "CPPI", "VTI")
 endd <- rutils::calc_endpoints(datav, interval="weeks")
 dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
   dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1119,56 +1119,39 @@ dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{standardized price} is the dollar amount of stock with unit dollar volatility.  The \emph{standardized price} is equal to the ratio of the stock price divided by its dollar volatility: $\frac{p}{\sigma_d}$
+      The \emph{standardized price} is the dollar amount of stock with unit dollar volatility.  
+      The \emph{standardized price} is equal to the stock price divided by its dollar volatility: $\frac{p}{\sigma_d}$
       \vskip1ex
       Multiplying the weights times the dollar returns of the \emph{standardized prices} is equivalent to buying \emph{share amounts} such that their dollar volatilities are proportional to the weights.
       \vskip1ex
       The equal volatility portfolio has lower absolute returns because it's overweight bonds.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the dollar returns of VTI and IEF
+# Calculate the dollar and percentage returns of VTI and IEF
 pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
+datev <- zoo::index(pricev)
 retd <- rutils::diffit(pricev)
-# Scale the stock prices to $1 at beginning
-prici <- as.numeric(pricev[1, ]) # Initial stock prices
-pricesc <- pricev
-pricesc$VTI <- pricesc$VTI/prici[1]
-pricesc$IEF <- pricesc$IEF/prici[2]
-sum(pricesc[1, ])
-retsc <- rutils::diffit(pricesc)
-# Wealth of fixed number of shares (without rebalancing)
-weightv <- c(0.5, 0.5) # Buy $0.5 of each stock
-wealthed <- 1 + cumsum(retsc %*% weightv)
-# Calculate the stock prices with unit dollar volatility
-stdev <- sapply(retd, sd)
-pricesd <- pricev
-pricesd$VTI <- pricev$VTI/stdev["VTI"]
-pricesd$IEF <- pricev$IEF/stdev["IEF"]
-retsd <- rutils::diffit(pricesd)
+retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
+# Wealth of fixed shares (without rebalancing)
+weightv <- c(0.5, 0.5) # Buy 0.5 shares of each stock
+wealthfs <- drop(pricev %*% weightv)
+# retd[1, ] <- pricev[1, ]
+# wealthfs <- cumsum(retd %*% weightv)
+# Calculate the standardized stock prices (fixed shares)
+pricesd <- lapply(pricev, function(x) x/sd(rutils::diffit(x)))
+pricesd <- do.call(cbind, pricesd)
+retsd <- rutils::diffit(pricesd) # Dollar returns
 sapply(retsd, sd)
-      @
-      <<echo=FALSE,eval=FALSE>>=
-# Or equivalent using lapply()
-# Calculate the standardized dollar returns
-retsd <- lapply(retd, function(x) x/sd(x))
-retsd <- do.call(cbind, retsd)
-sapply(retsd, sd)
-# Initial stock prices with unit dollar volatility
-prici <- as.numeric(pricev[1, ])/sapply(retd, sd)
-# Wealth of shares with equal dollar volatilities
-wealthev <- 1 + cumsum(retsd %*% weightv)/sum(prici*weightv)
+sapply(retd, sd)
+# Wealth with equal dollar volatilities
+wealthev <- drop(pricesd %*% weightv)
+wealthev <- wealthev*wealthfs[1]/wealthev[1]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_equal_volatility.png}
       <<echo=TRUE,eval=FALSE>>=
-# Scale the sum of stock prices at beginning to $1
-pricesd <- pricesd/sum(pricesd[1, ])
-retsd <- rutils::diffit(pricesd)
-sapply(retsd, sd)
-# Wealth of shares with equal dollar volatilities
-wealthev <- 1 + cumsum(retsd %*% weightv)
 # Calculate the Sharpe and Sortino ratios
-wealthv <- xts::xts(cbind(wealthed, wealthev), zoo::index(pricev))
+wealthv <- xts::xts(cbind(wealthfs, wealthev), datev)
 colnames(wealthv) <- c("Equal dollar", "Equal volatility")
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1177,7 +1160,48 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(log(wealthv[endd]), 
   main="Wealth of Equal Dollar And Equal Volatility") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Rolling Standardized Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{rolling standardized price} is equal to the stock price divided by its trailing dollar volatility: $\frac{p_t}{\sigma_t}$
+      \vskip1ex
+      When the volatility changes over time, then the rolling standardized prices also change over time.
+      \vskip1ex
+      The rolling standardized prices can become very large and very volatile when the volatility is very low.
+      \vskip1ex
+      The trailing volatility is calculated from past returns using the recursive formula: $\sigma_t^2 = \lambda \sigma_{t-1}^2 + (1 - \lambda) r_t^2$.
+      \vskip1ex
+      Where $\lambda$ is the decay factor.
+      \vskip1ex
+      The functions \texttt{HighFreq::run\_mean()} and \texttt{HighFreq::run\_var()} calculate the trailing mean and variance by recursively updating the past estimates with the new values, using the decay factor $\lambda$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_prices.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing dollar volatilities
+vold <- HighFreq::run_var(retd, lambda=0.99)
+vold <- sqrt(vold)
+# Calculate the standardized prices with unit dollar volatilities
+pricerp <- pricev/vold
+pricerp <- pricerp*sum(pricev[1, ])/sum(pricerp[1, ])
+# Plot the rolling standardized prices
+pricec <- cbind(pricerp$VTI, pricev$VTI)
+colnames(pricec) <- c("Standardized", "VTI")
+dygraph(pricec[endd], main="Rolling Standardized Prices of VTI") %>%
+  dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1192,72 +1216,47 @@ dygraphs::dygraph(log(wealthv[endd]),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{Risk Parity} strategy the dollar allocations are rebalanced daily so that their dollar volatilities remain equal.
+      In the \emph{Risk Parity} strategy the dollar allocations are rebalanced daily so that their dollar volatilities remain proportional to the weights.
       \vskip1ex
-      If the volatility changes over time, then the standardized prices with unit dollar volatility also change over time.
+      The dollar returns of risk parity are equal to the standardized prices times their percentage returns.
       \vskip1ex
-      So the portfolio allocations must be rebalanced to ensure that their volatilities remain equal.
+      The risk parity strategy for stocks and bonds has a higher Sharpe ratio than the proportional wealth strategy. 
       \vskip1ex
-      The risk parity dollar returns are equal to the standardized prices times their percentage returns.
+      The absolute returns can also be higher if the standardized prices become very large when the volatility is very low.
       \vskip1ex
       The risk parity strategy is also called the equal risk contributions (ERC) strategy.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the wealth of proportional wealth allocations (with rebalancing)
-retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
-weightv <- c(0.5, 0.5)
-wealthew <- cumprod(1 + retp %*% weightv)
-# Calculate the trailing dollar volatilities
-vold <- HighFreq::run_var(retd, lambda=0.9)
-vold <- sqrt(vold)
-vold[vold == 0] <- 1
-# Calculate the standardized prices with unit dollar volatilities
-pricerp <- pricev/vold
-pricerp <- rutils::lagit(pricerp)
-pricerp[1, ] <- 1
-# Scale the sum of stock prices to $1
-pricerp <- pricerp/rowSums(pricerp)
-# Calculate the percentage returns of risk parity
-retrp <- retp*pricerp
-# Calculate the wealth of risk parity
-wealthrp <- cumprod(1 + retrp %*% weightv)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Risk Parity Strategy Performance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The risk parity strategy for stocks and bonds has a higher Sharpe ratio, but lower absolute returns than the proportional wealth strategy. 
       \vskip1ex
-      Risk parity works better for assets with low correlations and very different volatilities, like stocks and bonds.
+      Risk parity works better for assets with negative or low correlations, like stocks and bonds.
       \vskip1ex
       The shiny app \texttt{app\_risk\_parity\_strat.R} allows users to study the performance of the risk parity strategy as a function of its weight parameters.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the dollar returns of risk parity
+retrp <- retp*rutils::lagit(pricerp)
+retrp[1, ] <- pricerp[1, ]
+# Calculate the wealth of risk parity
+wealthrp <- cumsum(retrp %*% weightv)
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity.png}
       <<echo=TRUE,eval=FALSE>>=
+# Wealth of proportional allocation (with rebalancing)
+weightv <- c(0.5, 0.5) # Keep 0.5 of wealth in each stock
+wealthpr <- cumprod(1 + retp %*% weightv)
+wealthpr <- wealthpr*sum(pricev[1, ]*weightv)
 # Calculate the log wealths
-wealthv <- cbind(wealthew, wealthrp)
-wealthv <- xts::xts(wealthv, zoo::index(pricev))
-colnames(wealthv) <- c("PropDollars", "Risk Parity")
+wealthv <- cbind(wealthpr, wealthrp)
+wealthv <- xts::xts(wealthv, datev)
+colnames(wealthv) <- c("PropAlloc", "Risk Parity")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot a dygraph of the log wealths
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(log(wealthv[endd]), 
-  main="Log Wealth of Risk Parity vs Equal Wealths") %>%
+  main="Log Wealth of Risk Parity vs Proportional Allocation") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1272,13 +1271,13 @@ dygraphs::dygraph(log(wealthv[endd]),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The t-value of the \emph{Treynor-Mazuy} test is positive and significant, indicating market timing skill of the risk parity strategy for \emph{VTI} and \emph{IEF}. 
-      \vskip1ex
       The risk parity strategy reduces allocations to assets with rising volatilities, which is often accompanied by negative returns.
       \vskip1ex
-      This allows the risk parity strategy to time the markets better - selling when prices are about to drop and buying when prices are rising.
+      This allows the risk parity strategy to time the markets better - selling when prices are about to drop and buying when prices are rising.  But only when the changes of the volatility are significant.
       \vskip1ex
-      The t-value of the equal wealth strategy is negative, because it buys the stock as its prices drop, the opposite of risk parity.
+      But the t-value of the risk parity strategy is negative, because it's contrarian when the volatility is stable.
+      \vskip1ex
+      The t-value of the proportional wealth allocation strategy is negative, because it's contrarian, i.e. it buys stocks when their prices drop.
       <<echo=TRUE,eval=FALSE>>=
 # Test risk parity market timing of VTI using Treynor-Mazuy test
 retrp <- rutils::diffit(wealthv)
@@ -1292,17 +1291,17 @@ summary(regmod)
 resids <- regmod$residuals
 plot.default(x=retvti, y=resids, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for Risk Parity vs VTI", line=0.5)
-# Plot fitted (predicted) response values
-coefreg <- summary(regmod)$coeff
-fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
-tvalue <- round(coefreg["Treynor", "t value"], 2)
-points.default(x=retvti, y=fitv, pch=16, col="red")
-text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_timing_skill.png}
       <<echo=TRUE,eval=FALSE>>=
+# Plot fitted (predicted) response values
+coefreg <- summary(regmod)$coeff
+fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
+tvalue <- round(coefreg["Treynor", "t value"], 2)
+points.default(x=retvti, y=fitv, pch=16, col="red")
+text(x=0.0, y=0.9*max(resids), paste("Risk Parity t-value =", tvalue))
 # Test for equal wealth strategy market timing of VTI using Treynor-Mazuy test
 regmod <- lm(prop ~ VTI + Treynor, data=desm)
 summary(regmod)
@@ -1310,7 +1309,7 @@ summary(regmod)
 coefreg <- summary(regmod)$coeff
 fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 points.default(x=retvti, y=fitv, pch=16, col="blue")
-text(x=0.0, y=0.6*max(resids), paste("Prop Alloc t-value =", round(coefreg["Treynor", "t value"], 2)))
+text(x=0.0, y=0.7*max(resids), paste("Prop Alloc t-value =", round(coefreg["Treynor", "t value"], 2)))
       @
   \end{columns}
 \end{block}
@@ -1327,11 +1326,11 @@ text(x=0.0, y=0.6*max(resids), paste("Prop Alloc t-value =", round(coefreg["Trey
     \column{0.5\textwidth}
       In each period the stocks must be rebalanced to maintain the equal wealths.
       \vskip1ex
-      The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = \omega_{t-1} \sum_{i=1}^n w_i \left| \bar{r}_t - r_t \right|$
+      The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = \Pi_{t-1} \sum_{i=1}^n w_i \left| \bar{r}_t - r_t \right|$
       \vskip1ex
       The \emph{transaction costs} $c^r_t$ are equal to half the \emph{bid-ask spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} \sum_{i=1}^n \varepsilon_i$.
       \vskip1ex
-      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{wealth} $\omega_t$: $\omega_t - \sum_{i=1}^t c^r_t$.
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{wealth} $\Pi_t$: $\Pi_t - \sum_{i=1}^t c^r_t$.
       <<echo=TRUE,eval=FALSE>>=
 # Returns in excess of weighted returns
 retx <- lapply(retp, function(x) (retw - x))
@@ -1340,18 +1339,18 @@ sum(retx %*% weightv)
 # Calculate the weighted sum of absolute excess returns
 retx <- abs(retx) %*% weightv
 # Total dollar amount of stocks that need to be traded
-retx <- retx*rutils::lagit(wealthew)
+retx <- retx*rutils::lagit(wealthpr)
 # Cumulative transaction costs
 costs <- bidask*cumsum(retx)/2
 # Subtract transaction costs from wealth
-wealthew <- (wealthew - costs)
+wealthpr <- (wealthpr - costs)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_allocations_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of wealth and transaction costs
-wealthv <- cbind(wealthew, costs)
+wealthv <- cbind(wealthpr, costs)
 wealthv <- xts::xts(wealthv, datev)
 colnamev <- c("Wealth", "Cumulative Transaction Costs")
 colnames(wealthv) <- colnamev
@@ -1360,7 +1359,7 @@ dygraphs::dygraph(wealthv, main="Transaction Costs With Equal Wealths") %>%
   dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
   dySeries(name=colnamev[1], axis="y", col="blue") %>%
   dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -1410,7 +1409,7 @@ sqrt(252)*sapply(wealthv, function(x)
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Sell in May Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # OR: Open x11 for plotting
 x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
@@ -1437,8 +1436,8 @@ legend("topleft", legend=colnames(wealthv),
       The \emph{Sell in May} strategy doesn't demonstrate any ability of \emph{timing} the \emph{VTI} ETF.
       <<echo=TRUE,eval=FALSE>>=
 # Test if Sell in May strategy can time VTI
-desm <- cbind(wealth$sell_in_may, 0.5*(retp+abs(retp)), retp^2)
-colnames(desm) <- c("VTI", "Merton", "Treynor")
+desm <- cbind(wealthv, 0.5*(retp+abs(retp)), retp^2)
+colnames(desm) <- c(colnames(wealthv), "Merton", "Treynor")
 # Perform Merton-Henriksson test
 regmod <- lm(pnlinmay ~ VTI + Merton, data=desm)
 summary(regmod)
@@ -1665,7 +1664,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="VTI Stop-loss Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1680,7 +1679,7 @@ shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
   main="VTI Stop-loss Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
@@ -1822,7 +1821,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="VTI Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1838,7 +1837,7 @@ shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
   main="VTI Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
@@ -1948,7 +1947,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="USO Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1964,7 +1963,7 @@ shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
   main="USO Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
@@ -2022,7 +2021,7 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008/2009"], main="VTI EMA Prices") %>%
   dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Standard plot of  EMA prices with custom line colors
 x11(width=6, height=5)
 plot_theme <- chart_theme()
@@ -2085,7 +2084,7 @@ colnamev <- colnames(pricev)
 dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EMA Prices") %>%
   dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Standard plot of  EMA prices with custom line colors
 plot_theme <- chart_theme()
 colorv <- c("blue", "red")
@@ -2132,7 +2131,7 @@ shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 dyplot <- dygraphs::dygraph(pricev, main="VTI EMA Prices") %>%
   dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=3, col="red") %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
       <<echo=FALSE,eval=FALSE,purl=FALSE>>=
 # Equivalent code to the above
@@ -2204,7 +2203,7 @@ cor(wealthv)[1, 2]
 colorv <- c("blue", "red")
 dyplot <- dygraphs::dygraph(cumsum(wealthv), main="Performance of Crossover Strategy") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% 
@@ -2316,7 +2315,7 @@ sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=paste("EMA Crossover Strategy", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>% 
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2368,7 +2367,7 @@ cor(wealthv)[1, 2]
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Crossover Strategy Trading at the Open Price") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Standard plot of crossover strategy wealth
 quantmod::chart_Series(cumsum(wealthv)[endd], theme=plot_theme,
              name="Crossover Strategy Trading at the Open Price")
@@ -2420,7 +2419,7 @@ colnames(wealthv) <- c("EMA", "EMA w Costs")
 colorv <- c("blue", "red")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Crossover Strategy With Transaction Costs") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2630,7 +2629,7 @@ cor(wealthv)[1, 2]
 # Plot dygraph of crossover strategy wealth
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Performance of Optimal Trend Following Crossover Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2762,7 +2761,7 @@ colnames(wealthv) <- c("VTI", "EMA PnL")
 colorv <- c("blue", "red")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Mean Reverting Crossover Strategy (No Costs)") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2820,7 +2819,7 @@ colorv <- c("blue", "red", "green", "purple")
 dygraphs::dygraph(cumsum(retc)[endd], main="Performance of Combined Crossover Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Standard plot of crossover strategy wealth
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorv
@@ -2859,7 +2858,7 @@ colnames(retc) <- c("VTI", "EMA PnL")
 colorv <- c("blue", "red")
 dygraphs::dygraph(cumsum(retc)[endd], main="Performance of Ensemble of Crossover Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Standard plot of crossover strategy wealth
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- colorv
@@ -2925,7 +2924,7 @@ dyplot <- dygraphs::dygraph(pricev, main="VTI Dual EMA Prices") %>%
   dySeries(name=colnamev[1], strokeWidth=1, col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=2, col="red") %>%
   dySeries(name=colnamev[3], strokeWidth=2, col="purple") %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
 }  # end for
@@ -3276,7 +3275,7 @@ pricev <- xts(cbind(vwap, vwapr), zoo::index(ohlc))
 colnames(pricev) <- c("VWAP rolling", "VWAP recursive")
 dygraphs::dygraph(pricev["2009"], main="VWAP Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3336,7 +3335,7 @@ shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
   main=paste("VWAP Crossover Strategy, Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
@@ -3382,7 +3381,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   paste("VWAP Strategy Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3588,7 +3587,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sa
       \vskip1ex
       The decay factor $\lambda$ determines the rate of decay of the weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       \vskip1ex
-      The functions \texttt{HighFreq::run\_mean()} and \texttt{HighFreq::run\_var()} calculate the trailing mean and variance by recursively updating the past estimates with the new values, using the weight decay factor $\lambda$.
+      The functions \texttt{HighFreq::run\_mean()} and \texttt{HighFreq::run\_var()} calculate the trailing mean and variance by recursively updating the past estimates with the new values, using the decay factor $\lambda$.
       <<echo=TRUE,eval=FALSE>>=
 # Extract the log VTI prices
 pricev <- log(na.omit(rutils::etfenv$prices$VTI))
@@ -3613,7 +3612,7 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Bollinger Band
   dySeries(name=colnamev[2], strokeWidth=2, col="green") %>%
   dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="red") %>%
   dySeries(name=colnamev[4], strokeWidth=2, strokePattern="dashed", col="red") %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3652,7 +3651,7 @@ dygraphs::dygraph(priceb["2008-09/2009-09"],
   dySeries(name=colnamev[1], strokeWidth=2, col="blue") %>%
   dySeries(name=colnamev[2], strokeWidth=2, strokePattern="dashed", col="red") %>%
   dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="green") %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3730,7 +3729,7 @@ pnls <- retp*posv
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Bollinger Band} strategy has two parameters: the weight decay factor $\lambda$ and the standard deviation multiple $n$.
+      The \emph{Bollinger Band} strategy has two parameters: the decay factor $\lambda$ and the standard deviation multiple $n$.
       \vskip1ex
       The best strategy parameters can be found using backtest simulation, but it risks overfitting the parameters to the in-sample data, and poor performance out-of-sample.
       \vskip1ex
@@ -3754,7 +3753,7 @@ captiont <- paste("Bollinger Strategy", "/ \n",
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3808,7 +3807,7 @@ captiont <- paste("Bollinger Strategy", "/ \n",
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -3903,7 +3902,7 @@ captiont <- paste("Bollinger Strategy for Daytime VTI", "/ \n",
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4029,7 +4028,7 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Hampel Bands")
   dySeries(name=colnamev[2], strokeWidth=2, col="green") %>%
   dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="red") %>%
   dySeries(name=colnamev[4], strokeWidth=2, strokePattern="dashed", col="red") %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4710,7 +4709,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Top and Bottom Strategy In-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4780,7 +4779,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Strategy Out-of-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4926,7 +4925,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Forecasting Returns") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4998,7 +4997,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Logistic Strategy Out-of-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=200)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}

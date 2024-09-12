@@ -61,13 +61,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#2]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#2, Spring 2024}
+\subtitle{Lecture\#2, Fall 2024}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{April 1, 2024}
+\date{September 16, 2024}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -79,6 +79,711 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Plotting Probability Distributions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Normal (Gaussian)} probability density function is given by:
+      \begin{displaymath}
+        \phi(x, \mu, \sigma) = \frac{e^{-(x-\mu)^2/{2 \sigma^2}}}{\sigma \sqrt{2 \pi}}
+      \end{displaymath}
+      The \emph{Standard Normal} distribution $\phi(0, 1)$ is a special case of the \emph{Normal} $\phi(\mu, \sigma)$ with $\mu=0$ and $\sigma=1$.
+      \vskip1ex
+      The function \texttt{dnorm()} calculates the \emph{Normal} probability density.
+      <<echo=TRUE,eval=FALSE>>=
+xvar <- seq(-5, 7, length=100)
+yvar <- dnorm(xvar, mean=1.0, sd=2.0)
+plot(xvar, yvar, type="l", lty="solid", xlab="", ylab="")
+title(main="Normal Density Function", line=0.5)
+startp <- 3; endd <- 5  # Set lower and upper bounds
+# Set polygon base
+subv <- ((xvar >= startp) & (xvar <= endd))
+polygon(c(startp, xvar[subv], endd),  # Draw polygon
+        c(-1, yvar[subv], -1), col="red")
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.45\paperwidth]{figure/norm_dist}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Plots of several \emph{Normal} distributions with different values of $\sigma$, using the function \texttt{curve()} for plotting functions given by their name.
+      <<norm_dist_mult_curves,echo=(-(1:1)),eval=FALSE,fig.show="hide">>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
+# Create plot colors
+colorv <- c("red", "black", "blue", "green")
+# Create legend labels
+labelv <- paste("sigma", sigmavs, sep="=")
+for (indeks in 1:4) {  # Plot four curves
+  curve(expr=dnorm(x, sd=sigmavs[indeks]),
+        xlim=c(-4, 4), xlab="", ylab="", lwd=2,
+        col=colorv[indeks], add=as.logical(indeks-1))
+}  # end for
+# Add title
+title(main="Normal Distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, title="Sigmas", y.intersp=0.4, 
+       labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colorv)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/norm_dist_mult_curves-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal} Probability Distributions Plotted as Lines}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Plots of several \emph{Normal} distributions with different values of $\sigma$.
+      <<norm_dist_mult,echo=(-(1:2)),eval=FALSE,fig.show="hide">>=
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+xvar <- seq(-4, 4, length=100)
+sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
+# Create plot colors
+colorv <- c("red", "black", "blue", "green")
+# Create legend labels
+labelv <- paste("sigma", sigmavs, sep="=")
+# Plot the first chart
+plot(xvar, dnorm(xvar, sd=sigmavs[1]),
+     type="n", xlab="", ylab="", main="Normal Distributions")
+# Add lines to plot
+for (indeks in 1:4) {
+  lines(xvar, dnorm(xvar, sd=sigmavs[indeks]),
+        lwd=2, col=colorv[indeks])
+}  # end for
+# Add legend
+legend("topright", inset=0.05, title="Sigmas", y.intersp=0.4, 
+       labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colorv)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/norm_dist_mult-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Log-normal} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If \texttt{x} follows the \emph{Normal} distribution $\phi(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution $\log\phi()$:
+      \begin{displaymath}
+        \log\phi(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/{2 \sigma^2})}{y \sigma \sqrt{2 \pi}}
+      \end{displaymath}
+      With mean equal to: $\bar{y} = \mathbb{E}[y] = e^{(\mu + \sigma^2/2)}$, and median equal to: $\tilde{y} = e^\mu$
+      \vskip1ex
+      With variance equal to: $\sigma_y^2 = (e^{\sigma^2}-1) e^{(2\mu + \sigma^2)}$, and skewness (third moment) equal to: $\varsigma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
+      <<echo=TRUE,eval=FALSE>>=
+# Standard deviations of log-normal distribution
+sigmavs <- c(0.5, 1, 1.5)
+# Create plot colors
+colorv <- c("black", "red", "blue")
+# Plot all curves
+for (indeks in 1:NROW(sigmavs)) {
+  curve(expr=dlnorm(x, sdlog=sigmavs[indeks]),
+        type="l", xlim=c(0, 3), lwd=2,
+        xlab="", ylab="", col=colorv[indeks],
+        add=as.logical(indeks-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/log_norm_dist.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+       paste("sigma", sigmavs, sep="="), y.intersp=0.4, 
+       cex=0.8, lwd=2, lty=rep(1, NROW(sigmavs)), col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Chi-squared} Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
+      \vskip1ex
+      Then the random variable $X = \sum_{i=1}^k z^2_i$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      \begin{displaymath}
+        f(x) = \frac{x^{k/2-1} \, e^{-x/2}}{2^{k/2} \, \Gamma(k/2)}
+      \end{displaymath}
+      \vskip1ex
+      The \emph{Chi-squared} distribution with $k$ degrees of freedom has mean equal to $k$ and variance equal to $2k$.
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Degrees of freedom
+degf <- c(2, 5, 8, 11)
+# Plot four curves in loop
+colorv <- c("red", "black", "blue", "green")
+for (indeks in 1:4) {
+  curve(expr=dchisq(x, df=degf[indeks]),
+        xlim=c(0, 20), ylim=c(0, 0.3),
+        xlab="", ylab="", col=colorv[indeks],
+        lwd=2, add=as.logical(indeks-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chisq_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="Chi-squared Distributions", line=0.5)
+# Add legend
+labelv <- paste("df", degf, sep="=")
+legend("topright", inset=0.05, bty="n", y.intersp=0.4, 
+       title="Degrees of freedom", labelv,
+       cex=0.8, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Chi-squared} Distribution Plotted as Line}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
+      \vskip1ex
+      Then the random variable $X = \sum_{i=1}^k z^2_i$ is distributed according to the \emph{Chi-squared} distribution with \texttt{k} degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      \begin{displaymath}
+        f(x) = \frac{x^{k/2-1} \, e^{-x/2}}{2^{k/2} \, \Gamma(k/2)}
+      \end{displaymath}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+degf <- c(2, 5, 8, 11)  # df values
+# Create plot colors
+colorv <- c("red", "black", "blue", "green")
+# Create legend labels
+labelv <- paste("df", degf, sep="=")
+# Plot an empty chart
+xvar <- seq(0, 20, length=100)
+plot(xvar, dchisq(xvar, df=degf[1]),
+     type="n", xlab="", ylab="", ylim=c(0, 0.3))
+# Add lines to plot
+for (indeks in 1:4) {
+  lines(xvar, dchisq(xvar, df=degf[indeks]),
+        lwd=2, col=colorv[indeks])
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chisq_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="Chi-squared Distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, y.intersp=0.4, 
+       title="Degrees of freedom", labelv,
+       cex=0.8, lwd=6, lty=1, bty="n", col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fisher's \protect\emph{F-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\chi^2_m$ and $\chi^2_n$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      Then the random variable:
+      \begin{displaymath}
+        F = \frac{\chi^2_m / m}{\chi^2_n / n}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        f(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{m/2-1}}{(n+mF)^{(m+n)/2}}
+      \end{displaymath}
+      The \emph{F-distribution} depends on the ratio $F$ and also on the degrees of freedom, $m$ and $n$.
+      \vskip1ex
+      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}. 
+      <<echo=TRUE,eval=FALSE>>=
+# Plot four curves in loop
+degf <- c(3, 5, 9, 21)  # Degrees of freedom
+colorv <- c("black", "red", "blue", "green")
+for (indeks in 1:NROW(degf)) {
+  curve(expr=df(x, df1=degf[indeks], df2=3),
+    xlim=c(0, 4), xlab="", ylab="", lwd=2, 
+    col=colorv[indeks], add=as.logical(indeks-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/f_dist.png}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="F-Distributions", line=0.5)
+# Add legend
+labelv <- paste("degf", degf, sep=" = ")
+legend("topright", title="Degrees of Freedom", inset=0.0, bty="n",
+       y.intersp=0.4, labelv, cex=1.2, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_1,\ldots , z_{\nu}$ be independent standard normal random variables, with sample mean: $\bar{z}=\frac{1}{\nu} \sum_{i=1}^{\nu} z_i$ ($\mathbb{E}[\bar{z}]=\mu$) and sample variance: $\hat\sigma^2=\frac{1}{\nu-1} \sum_{i=1}^{\nu} (z_i-\bar{z})^2$
+      \vskip1ex
+      Then the random variable (\emph{t-ratio}):
+      \begin{displaymath}
+        t = \frac{\bar{z} - \mu}{\hat\sigma / \sqrt{\nu}}
+      \end{displaymath}
+      Follows the \emph{t-distribution} with $\nu$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)} \, (1 + t^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+degf <- c(3, 6, 9)  # df values
+colorv <- c("black", "red", "blue", "green")
+labelv <- c("normal", paste("df", degf, sep="="))
+# Plot a Normal probability distribution
+curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
+for (indeks in 1:3) {  # Plot three t-distributions
+  curve(expr=dt(x, df=degf[indeks]),
+        lwd=2, col=colorv[indeks+1], add=TRUE)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="t-distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n",
+       title="Degrees\n of freedom", labelv,
+       y.intersp=0.4, cex=0.8, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Student's \protect\emph{t-distribution} Plotted as Line}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_1,\ldots , z_{\nu}$ be independent standard normal random variables, with sample mean: $\bar{z}=\frac{1}{\nu} \sum_{i=1}^{\nu} z_i$ ($\mathbb{E}[\bar{z}]=\mu$) and sample variance: $\hat\sigma^2=\frac{1}{\nu-1} \sum_{i=1}^{\nu} (z_i-\bar{z})^2$
+      \vskip1ex
+      Then the random variable (\emph{t-ratio}):
+      \begin{displaymath}
+        t = \frac{\bar{z} - \mu}{\hat\sigma / \sqrt{\nu}}
+      \end{displaymath}
+      Follows the \emph{t-distribution} with $\nu$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)} \, (1 + t^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+xvar <- seq(-4, 4, length=100)
+degf <- c(3, 6, 9)  # df values
+colorv <- c("black", "red", "blue", "green")
+labelv <- c("normal", paste("df", degf, sep="="))
+# Plot chart of normal distribution
+plot(xvar, dnorm(xvar), type="l", lwd=2, xlab="", ylab="")
+for (indeks in 1:3) {  # Add lines for t-distributions
+  lines(xvar, dt(xvar, df=degf[indeks]),
+        lwd=2, col=colorv[indeks+1])
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="t-distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n",
+       title="Degrees\n of freedom", labelv,
+       y.intersp=0.4, cex=0.8, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Non-standard Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The non-standard Student's \emph{t-distribution} has the probability density function:
+      \begin{displaymath}
+        f(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{t - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+       It has non-zero mean equal to the location parameter $\mu$, and a standard deviation proportional to the scale parameter $\sigma$.
+        <<echo=TRUE,eval=FALSE>>=
+dev.new(width=6, height=5, noRStudioGD=TRUE)
+# x11(width=6, height=5)
+# Define density of non-standard t-distribution
+tdistr <- function(x, dfree, loc=0, scalev=1) {
+  dt((x-loc)/scalev, df=dfree)/scalev
+}  # end tdistr
+# Or
+tdistr <- function(x, dfree, loc=0, scalev=1) {
+  gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2)*scalev)*
+    (1+((x-loc)/scalev)^2/dfree)^(-(dfree+1)/2)
+}  # end tdistr
+# Calculate vector of scale values
+scalev <- c(0.5, 1.0, 2.0)
+colorv <- c("blue", "black", "red")
+labelv <- paste("scale", format(scalev, digits=2), sep="=")
+# Plot three t-distributions
+for (indeks in 1:3) {
+  curve(expr=tdistr(x, dfree=3, scalev=scalev[indeks]), xlim=c(-3, 3),
+        xlab="", ylab="", lwd=2, col=colorv[indeks], add=(indeks>1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_scale.png}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="t-distributions with Different Scale Parameters", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n", title="Scale Parameters", labelv,
+       y.intersp=0.4, cex=0.8, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Cauchy} Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Cauchy} distribution is Student's \emph{t-distribution} with one degree of freedom $\nu=1$, with the probability density function:
+      \begin{displaymath}
+        f(x) = \frac{1}{\pi \sigma} \frac{1}{((x - \mu)/\sigma)^2 + 1}
+      \end{displaymath}
+      Where $\mu$ is the location parameter (equal to the mean) and $\sigma$ is the scale parameter.
+      \vskip1ex
+      Since the \emph{Cauchy} distribution has an infinite standard deviation, its measure of dispersion is the \emph{interquartile range} (IQR), which is equal to $\sigma$.
+      \vskip1ex
+      The \emph{interquartile range} is a \emph{robust} measure of dispersion (scale), defined as the difference between the \texttt{75th} minus the \texttt{25th} percentiles.
+      \vskip1ex
+      The function \texttt{dcauchy()} calculates the \emph{Cauchy} probability density.
+      \vskip1ex
+      The probability density of the \emph{Cauchy} distribution decreases as the second power for large values of $x$:
+      \begin{displaymath}
+        f(x) \propto 1/x^2
+      \end{displaymath}
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/cauchy_dist.png}\\
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot the Normal and Cauchy probability distributions
+curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
+curve(expr=dcauchy, lwd=3, col="blue", add=TRUE)
+# Add title
+title(main="Cauchy and Normal Distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n",
+       y.intersp=0.4, title=NULL,leg=c("Normal", "Cauchy"),
+       cex=0.8, lwd=6, lty=1, col=c("black", "blue"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Pareto} Distribution and \protect\emph{Zipf's} Law}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The probability density of Student's \emph{t-distribution} decreases as a power for large values of $x$:
+      \begin{displaymath}
+        f(x) \propto {\left| x \right|}^{-(\nu+1)}
+      \end{displaymath}
+      The probability density of the \emph{Pareto} distribution decreases as a power of the random variable $x$: 
+      \begin{displaymath}
+        f(x) = \alpha x^{-(\alpha + 1)}
+      \end{displaymath}
+      For $x > 1$ and decay parameter $\alpha > 1$.
+      \vskip1ex
+      The mean $\mu$ and variance $\sigma^2$ of the \emph{Pareto} distribution are equal to:
+      \begin{displaymath}
+        \mu = \frac{\alpha}{\alpha - 1} \qquad \sigma^2 = \frac{\alpha}{(\alpha - 1)^2 (\alpha - 2)}
+      \end{displaymath}
+      \emph{Zipf's law} is analogous to the \emph{Pareto} distribution, and applies to discrete variables.
+      \vskip1ex
+      \emph{Zipf's law} states that the frequency $f$ of a given value is inversely proportional to its rank $n$ in the frequency table: $f(n) \propto n^{-s}$.
+      \vskip1ex
+      For example, \emph{Zipf's law} applies to the frequency of words in a natural language.
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/pareto_dist.png}\\
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Define Pareto function
+paretofun <- function(x, alpha) alpha*x^(-alpha-1)
+colorv <- c("red", "blue", "green")
+alphas <- c(1.0, 2.0, 3.0)
+for (indeks in 1:3) {  # Plot three curves
+  curve(expr=paretofun(x, alphas[indeks]),
+  xlim=c(1, 2), ylim=c(0.0, 3.5), xlab="", ylab="", 
+  lwd=3, col=colorv[indeks], add=as.logical(indeks-1))
+}  # end for
+# Add title and legend
+title(main="Pareto Distributions", line=0.5)
+labelv <- paste("alpha", 1:3, sep=" = ")
+legend("topright", inset=0.2, bty="n", y.intersp=0.4, 
+       title=NULL, labelv, cex=0.8, lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Poisson} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Poisson} distribution gives the probability of the number of events observed in an interval of space or time.
+      \vskip1ex
+      The \emph{Poisson} probability function is given by:
+      \begin{displaymath}
+        f(n; \lambda) = \frac{{\lambda^n}{\cdot}{e^{-\lambda}}}{n!}
+      \end{displaymath}
+      The \emph{Poisson} random variable \texttt{n} is the number of events observed in the interval.
+      \vskip1ex
+      The parameter $\lambda$ is the average number of events that are observed in the interval.
+      \vskip1ex
+      An example of a \emph{Poisson} distribution is the number of mail items received each day.
+      \vskip1ex
+      The function \texttt{dpois()} returns the probability density of the \emph{Poisson} distribution.
+      \vskip1ex
+      The function \texttt{rpois()} returns random numbers following the \emph{Poisson} distribution.
+      <<echo=TRUE,eval=TRUE>>=
+# Poisson frequency
+eventv <- 0:11  # Poisson events
+poissonf <- dpois(eventv, lambda=4)
+names(poissonf) <- as.character(eventv)
+# Poisson function
+poissonfun <- function(x, lambdaf) {exp(-lambdaf)*lambdaf^x/factorial(x)}
+curve(expr=poissonfun(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
+      xlab="No. of events", ylab="Frequency of events", lwd=2, col="blue")
+legend(x="topright", legend="Poisson density", title="", bty="n",
+       inset=0.05, cex=0.8, bg="white", lwd=6, lty=1, col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/poiss_dist.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Visualizing Data}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Bar Charts of Table Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{barplot()} plots a bar chart for a table of data.
+      \vskip1ex
+      The function \texttt{rpois()} produces random numbers from the \emph{Poisson} distribution.
+      \vskip1ex
+      The function \texttt{table()} calculates the frequency distribution of categorical data.
+      <<echo=TRUE,eval=TRUE>>=
+# Simulate Poisson variables
+poissonv <- rpois(1000, lambda=4)
+head(poissonv)
+# Calculate contingency table
+poissonf <- table(poissonv)
+poissonf
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.45\paperwidth]{figure/bar_chart.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create barplot of table data
+barplot(poissonf, col="lightgrey",
+        xlab="counts", ylab="number of observations",
+        main="Barplot of Poisson Count Data")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Histograms of Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      If the argument \texttt{freq} is \texttt{TRUE} then the frequencies (counts) are plotted, and if it's \texttt{FALSE} then the probability density is plotted (with total area equal to $1$).
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
+      \vskip1ex
+      The function \texttt{lines()} draws a line through specified points.
+      <<poisbarplot,echo=TRUE,eval=FALSE,fig.show="hide">>=
+# Create histogram of Poisson variables
+histp <- hist(poissonv, col="lightgrey", xlab="count",
+     ylab="frequency", freq=FALSE, main="Poisson histogram")
+lines(density(poissonv, adjust=1.5), lwd=2, col="blue")
+# Poisson probability distribution function
+poissonfun <- function(x, lambdaf)
+        {exp(-lambdaf)*lambdaf^x/factorial(x)}
+curve(expr=poissonfun(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
+# Add legend
+legend("topright", inset=0.01, title="Poisson histogram",
+       c("histogram density", "probability"), cex=1.1, lwd=6,
+       y.intersp=0.4, lty=1, bty="n", col=c("blue", "red"))
+# total area under histogram
+diff(histp$breaks) %*% histp$density
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.45\paperwidth]{figure/hist_poiss.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Boxplots of Distributions of Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Box-and-whisker plots (\emph{boxplots}) are graphical representations of a distribution of values.
+      \vskip1ex
+      The bottom and top box edges (\emph{hinges}) are equal to the first and third quartiles, and the \emph{box} width is equal to the interquartile range (\emph{IQR}).
+      \vskip1ex
+      The nominal range is equal to 1.5 times the \emph{IQR} above and below the box \emph{hinges}.
+      \vskip1ex
+      The \emph{whiskers} are dashed vertical lines representing values beyond the first and third quartiles, but within the nominal range.
+      \vskip1ex
+      The \emph{whiskers} end at the last values within the nominal range, while the open circles represent outlier values beyond the nominal range.
+      \vskip1ex
+      The function \texttt{boxplot()} has two \texttt{methods}: one for \texttt{vectors} and \texttt{data frames}, and another for \texttt{formula} objects (for categorical variables).
+      <<box_plots,eval=FALSE>>=
+# boxplot of Poisson count data
+boxplot(x=poissonv, ylab="counts",
+        main="Poisson box plot")
+# boxplot method for formula
+boxplot(formula=mpg ~ cyl, data=mtcars,
+        main="Mileage by number of cylinders",
+        xlab="Cylinders", ylab="Miles per gallon")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/boxplot.png}\\
+      \includegraphics[width=0.4\paperwidth]{figure/boxplot_poiss.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 

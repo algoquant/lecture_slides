@@ -31,8 +31,11 @@ knit_theme$set(thm)
 \usepackage{fancybox}
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
 % \bibliographystyle{amsalpha} % doesn't work
-\addbibresource{FRE_lectures.bib}
+% \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
 \renewcommand\bibfont{\footnotesize}
 \renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
@@ -57,7 +60,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Univariate]{Time Series Univariate}
-\subtitle{FRE6871 \& FRE7241, Spring 2024}
+\subtitle{FRE6871 \& FRE7241, Fall 2024}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -74,511 +77,125 @@ knit_theme$set(thm)
 \maketitle
 
 
+
 %%%%%%%%%%%%%%%
-\section{Package \protect\emph{tseries} for Time Series Analysis}
+\section{Performing Aggregations Over Time Series}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{tseries} for Time Series Analysis}
+\subsection{Defining Look-back Time Intervals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for time series analysis and computational finance, such as:
-      \begin{itemize}
-        \item downloading historical data,
-        \item plotting time series,
-        \item calculating risk and performance measures,
-        \item statistical \emph{hypothesis testing},
-        \item calibrating models to time series,
-        \item portfolio optimization,
-      \end{itemize}
-      Package \emph{tseries} accepts time series of class \texttt{"ts"} and \texttt{"zoo"}, and also has its own class \texttt{"irts"} for irregular spaced time-series objects.
+      A time \emph{period} is the time between two neighboring points in time.
       \vskip1ex
-      The package \emph{zoo} is designed for managing \emph{time series} and ordered data objects.
+      A time \emph{interval} is the time spanned by one or more time \emph{periods}.
       \vskip1ex
-      The function \texttt{zoo::coredata()} extracts the underlying numeric data from a complex data object.
+      A \emph{look-back interval} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{start point} and ending at an \emph{end point}.
+      \vskip1ex
+      The \emph{start points} are the \emph{end points} lagged by the \emph{look-back interval}.
+      \vskip1ex
+      The look-back \emph{intervals} may or may not \emph{overlap} with their neighboring intervals.
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Get documentation for package tseries
-packageDescription("tseries")  # Get short description
-
-help(package="tseries")  # Load help page
-
-library(tseries)  # Load package tseries
-
-data(package="tseries")  # List all datasets in "tseries"
-
-ls("package:tseries")  # List all objects in "tseries"
-
-detach("package:tseries")  # Remove tseries from search path
-      @
+      A \emph{trailing aggregation} is performed over a vector of \emph{end points} in time.
+      \vskip1ex
+      An example of a trailing aggregation are moving average prices.
+      \vskip1ex
+      An \emph{interval aggregation} is specified by \emph{end points} separated by many time \emph{periods}.
+      \vskip1ex
+      Examples of interval aggregations are monthly asset returns, or trailing 12-month asset returns calculated every month.
   \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{OHLC} Time Series Using Package \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for plotting time series:
-      \begin{itemize}
-        \item \texttt{seqplot.ts()} for plotting two time series in same panel.
-        \item \texttt{plotOHLC()} for plotting \emph{OHLC} time series.
-      \end{itemize}
-      The function \texttt{plotOHLC()} from package \emph{tseries} plots \emph{OHLC} time series.
-      <<tseries_OHLC,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-# Get start and end dates
-datev <- time(stxts_adj)
-endd <- datev[NROW(datev)]
-startd <- round((4*endd + datev[1])/5)
-# Plot using plotOHLC
-plotOHLC(window(stxts_adj,
-                start=startd,
-                end=endd)[, 1:4],
-         xlab="", ylab="")
-title(main="MSFT OHLC Prices")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/tseries_OHLC-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Two Time Series Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{seqplot.ts()} from package \emph{tseries} plots two time series in same panel.
-      \vskip1ex
-      A \emph{ts} time series can be created from a \emph{zoo} time series using the function \emph{ts()}, after extracting the data and date attributes from the \emph{zoo} time series.
-      \vskip1ex
-      The function \texttt{decimal\_date()} from package \emph{lubridate} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates.
-      <<tseries_seqplot,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(lubridate)  # Load lubridate
-# Get start and end dates of msft
-startd <- lubridate::decimal_date(start(msft))
-endd <- lubridate::decimal_date(end(msft))
-# Calculate frequency of msft
-tstep <- NROW(msft)/(endd-startd)
-# Extract data from msft
-datav <- zoo::coredata(
-  window(msft, start=as.Date("2015-01-01"),
-         end=end(msft)))
-# Create ts object using ts()
-stxts <- ts(data=datav,
-  start=lubridate::decimal_date(as.Date("2015-01-01")),
-  frequency=tstep)
-seqplot.ts(x=stxts[, 1], y=stxts[, 4], xlab="", ylab="")
-title(main="MSFT Open and Close Prices", line=-1)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/tseries_seqplot-1}\\
-      \vspace{-3em}
-      The function \texttt{zoo::coredata()} extracts the underlying numeric data from a complex data object.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Risk and Performance Estimation Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for calculating risk and performance:
-      \begin{itemize}
-        \item \texttt{maxdrawdown()} for calculating the maximum drawdown,
-        \item \texttt{sharpe()} for calculating the \emph{Sharpe} ratio (defined as the excess return divided by the standard deviation),
-        \item \texttt{sterling()} for calculating the \emph{Sterling} ratio (defined as the return divided by the maximum drawdown),
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(tseries)  # Load package tseries
-# Calculate maximum drawdown
-maxdrawdown(msft_adj[, "AdjClose"])
-max_drawd <- maxdrawdown(msft_adj[, "AdjClose"])
-zoo::index(msft_adj)[max_drawd$from]
-zoo::index(msft_adj)[max_drawd$to]
-# Calculate Sharpe ratio
-sharpe(msft_adj[, "AdjClose"])
-# Calculate Sterling ratio
-sterling(as.numeric(msft_adj[, "AdjClose"]))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Hypothesis Testing Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for testing statistical hypothesis on time series:
-      \begin{itemize}
-        \item \texttt{jarque.bera.test()} \emph{Jarque-Bera} test for normality of distribution of returns,
-        \item \texttt{adf.test()} \emph{Augmented Dickey-Fuller} test for existence of unit roots,
-        \item \texttt{pp.test()} \emph{Phillips-Perron} test for existence of unit roots,
-        \item \texttt{kpss.test()} \emph{KPSS} test for stationarity,
-        \item \texttt{po.test()} \emph{Phillips-Ouliaris} test for cointegration,
-        \item \texttt{bds.test()} \emph{BDS} test for randomness,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-msft <- suppressWarnings(  # Load MSFT data
-  get.hist.quote(instrument="MSFT",
-                 start=Sys.Date()-365,
-                 end=Sys.Date(),
-                 origin="1970-01-01")
-)  # end suppressWarnings
-class(msft)
-dim(msft)
-tail(msft, 4)
-
-# Calculate Sharpe ratio
-sharpe(msft[, "Close"], r=0.01)
-# Add title
-plot(msft[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Calibrating Time Series Models Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for calibrating models to time series:
-      \begin{itemize}
-        \item \texttt{garch()} for calibrating \emph{GARCH} volatility models,
-        \item \texttt{arma()} for calibrating \emph{ARMA} models,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(tseries)  # Load package tseries
-msft <- suppressWarnings(  # Load MSFT data
-  get.hist.quote(instrument="MSFT",
-                 start=Sys.Date()-365,
-                 end=Sys.Date(),
-                 origin="1970-01-01")
-)  # end suppressWarnings
-class(msft)
-dim(msft)
-tail(msft, 4)
-
-# Calculate Sharpe ratio
-sharpe(msft[, "Close"], r=0.01)
-# Add title
-plot(msft[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for miscellaneous functions:
-      \vskip1ex
-      \texttt{portfolio.optim()} for calculating mean-variance efficient portfolios.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(tseries)  # Load package tseries
-msft <- suppressWarnings(  # Load MSFT data
-  get.hist.quote(instrument="MSFT",
-                 start=Sys.Date()-365,
-                 end=Sys.Date(),
-                 origin="1970-01-01")
-)  # end suppressWarnings
-class(msft)
-dim(msft)
-tail(msft, 4)
-
-# Calculate Sharpe ratio
-sharpe(msft[, "Close"], r=0.01)
-# Add title
-plot(msft[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{quantmod} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data.
-      \vskip1ex
-      \emph{quantmod} operates on time series of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
-      \begin{itemize}
-        \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
-        \item \texttt{getFinancials()} for downloading financial statements,
-        \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
-        \item \texttt{Op()}, \texttt{Cl()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
-        \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
-        \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
-        \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Load package quantmod
-library(quantmod)
-# Get documentation for package quantmod
-# Get short description
-packageDescription("quantmod")
-# Load help page
-help(package="quantmod")
-# List all datasets in "quantmod"
-data(package="quantmod")
-# List all objects in "quantmod"
-ls("package:quantmod")
-# Remove quantmod from search path
-detach("package:quantmod")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{OHLC} Time Series Using \texttt{chartSeries()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{chartSeries()} from package \emph{quantmod} can produce a variety of plots for \emph{OHLC} time series, including candlestick plots, bar plots, and line plots.
-      \vskip1ex
-      The argument \texttt{"type"} determines the type of plot (candlesticks, bars, or lines).
-      \vskip1ex
-      The argument \texttt{"theme"} accepts a \texttt{"chart.theme"} object, containing parameters that determine the plot appearance (colors, size, fonts).
-      \vskip1ex
-      \texttt{chartSeries()} automatically plots the volume data in a separate panel.
-      \vskip1ex
-      \emph{Candlestick} plots are designed to visualize \emph{OHLC} time series.
-      <<chartSeries_basic,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-# Plot OHLC candlechart with volume
-chartSeries(etfenv$VTI["2014-11"],
-            name="VTI",
-            theme=chartTheme("white"))
-# Plot OHLC bar chart with volume
-chartSeries(etfenv$VTI["2014-11"],
-            type="bars",
-            name="VTI",
-            theme=chartTheme("white"))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_basic-1}\\
-      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices.
-      \vskip1ex
-      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Redrawing Plots Using \texttt{reChart()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{reChart()} redraws plots using the same data set, but using additional parameters that control the plot appearance.
-      \vskip1ex
-      The argument \texttt{"subset"} allows subsetting the data to a smaller range of dates.
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-# Plot OHLC candlechart with volume
-chartSeries(etfenv$VTI["2008-11/2009-04"], name="VTI")
-# Redraw plot only for Feb-2009, with white theme
-reChart(subset="2009-02", theme=chartTheme("white"))
-      @
-    \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_black.png}\\
-      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_white.png}
-  \end{columns}
+    \includegraphics[width=0.9\paperwidth]{figure/intervals_overlapping.png}
 \end{block}
 
 \end{frame}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Technical Indicators Using \texttt{chartSeries()}}
+\subsection{Defining \protect\emph{Trailing} Look-back Time Intervals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The argument \texttt{"TA"} allows adding technical indicators to the plot.
+      A \emph{trailing aggregation} is performed over a vector of \emph{end points} in time.
       \vskip1ex
-      The technical indicators are functions provided by the package \emph{TTR}.
+      The first \emph{end point} is equal to zero $0$.
       \vskip1ex
-      The function \texttt{newTA()} allows defining new technical indicators.
-      <<chartSeries_TA,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-# Candlechart with Bollinger Bands
-chartSeries(etfenv$VTI["2014"],
-            TA="addBBands(): addBBands(draw='percent'): addVo()",
-            name="VTI with Bollinger Bands",
-            theme=chartTheme("white"))
-# Candlechart with two Moving Averages
-chartSeries(etfenv$VTI["2014"],
-            TA="addVo(): addEMA(10): addEMA(30)",
-            name="VTI with Moving Averages",
-            theme=chartTheme("white"))
-# Candlechart with Commodity Channel Index
-chartSeries(etfenv$VTI["2014"],
-            TA="addVo(): addBBands(): addCCI()",
-            name="VTI with Technical Indicators",
-            theme=chartTheme("white"))
-      @
+      The \emph{start points} are the \emph{end points} lagged by the \emph{look-back interval}.
+      \vskip1ex
+      An example of a trailing aggregation are moving average prices.
     \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_TA-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding Indicators and Lines Using \texttt{addTA()}}
-\begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{addTA()} adds indicators and lines to plots, and allows plotting lines representing a single vector of data.
-      \vskip1ex
-      The \texttt{addTA()} function argument \texttt{"on"} determines on which plot panel (subplot) the indicator is drawn.
-      \vskip1ex
-      \texttt{"on=NA"} is the default, and draws in a new plot panel below the existing plot.
-      \vskip1ex
-      \texttt{"on=1"} draws in the foreground of the main plot panel, and \texttt{"on=-1"} draws in the background.
-      <<chartSeries_addTA,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-ohlc <- rutils::etfenv$VTI["2009-02/2009-03"]
-VTI_close <- quantmod::Cl(ohlc)
-VTI_vol <- quantmod::Vo(ohlc)
-# Calculate volume-weighted average price
-vwapv <- TTR::VWAP(price=VTI_close, volume=VTI_vol, n=10)
-# Plot OHLC candlechart with volume
-chartSeries(ohlc, name="VTI plus VWAP", theme=chartTheme("white"))
-# Add VWAP to main plot
-addTA(ta=vwapv, on=1, col='red')
-# Add price minus VWAP in extra panel
-addTA(ta=(VTI_close-vwapv), col='red')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_addTA-3}\\
-      The function \texttt{VWAP()} from package \emph{TTR} calculates the Volume Weighted Average Price as the average of past prices multiplied by their trading volumes, divided by the total volume.
-      \vskip1ex
-      The argument \texttt{"n"} represents the number of look-back intervals used for averaging,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Shading Plots Using \texttt{addTA()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{addTA()} accepts Boolean vectors for shading of plots.
-      \vskip1ex
-      The function \texttt{addLines()} draws vertical or horizontal lines in plots.
-      <<chartSeries_addTA_shade,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
+      <<echo=TRUE,eval=FALSE>>=
 ohlc <- rutils::etfenv$VTI
-VTI_close <- quantmod::Cl(ohlc)
-VTI_vol <- quantmod::Vo(ohlc)
-vwapv <- TTR::VWAP(price=VTI_close, volume=VTI_vol, n=10)
-VTI_close <- VTI_close["2009-02/2009-03"]
-ohlc <- ohlc["2009-02/2009-03"]
-vwapv <- vwapv["2009-02/2009-03"]
-# Plot OHLC candlechart with volume
-chartSeries(ohlc, name="VTI plus VWAP shaded",
-            theme=chartTheme("white"))
-# Add VWAP to main plot
-addTA(ta=vwapv, on=1, col='red')
-# Add price minus VWAP in extra panel
-addTA(ta=(VTI_close-vwapv), col='red')
-# Add background shading of areas
-addTA((VTI_close-vwapv) > 0, on=-1,
-      col="lightgreen", border="lightgreen")
-addTA((VTI_adj-vwapv) < 0, on=-1,
-      col="lightgrey", border="lightgrey")
-# Add vertical and horizontal lines at vwapv minimum
-addLines(v=which.min(vwapv), col='red')
-addLines(h=min(vwapv), col='red')
+# Number of data points
+nrows <- NROW(ohlc["2018-06/"])
+# Define endd at each point in time
+endd <- 0:nrows
+# Number of data points in lookb interval
+lookb <- 22
+# startp are endd lagged by lookb
+startp <- c(rep_len(0, lookb), endd[1:(NROW(endd)-lookb)])
+head(startp, 33)
+      @
+  \end{columns}
+    \vspace{-1em}
+    \includegraphics[width=0.9\paperwidth]{figure/intervals_rolling.png}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining Equally Spaced \protect\emph{end points} of a Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The neighboring \emph{end points} may be separated by a fixed number of periods, equal to \texttt{npoints}.
+      \vskip1ex
+      If the total number of data points is not an integer multiple of \texttt{npoints}, then a stub interval must be added either at the beginning or at the end of the \emph{end points}.
+      \vskip1ex
+      The function \texttt{xts::endpoints()} extracts the indices of the last observations in each calendar period of an \emph{xts} series.
+      <<echo=TRUE,eval=FALSE>>=
+# Number of data points
+closep <- quantmod::Cl(ohlc["2018/"])
+nrows <- NROW(closep)
+# Number of periods between endpoints
+npoints <- 21
+# Number of npoints that fit over nrows
+nagg <- nrows %/% npoints
+# If(nrows==npoints*nagg then whole number
+endd <- (0:nagg)*npoints
+# Stub interval at beginning
+endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
+# Else stub interval at end
+endd <- c((0:nagg)*npoints, nrows)
+# Or use xts::endpoints()
+endd <- xts::endpoints(closep, on="weeks")
       @
     \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_addTA_shade-7}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/intervals_end_points.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot data and endpoints as vertical lines
+plot.xts(closep, col="blue", lwd=2, xlab="", ylab="",
+         main="Prices with Endpoints as Vertical Lines")
+addEventLines(xts(rep("endpoint", NROW(endd)-1), zoo::index(closep)[endd]),
+              col="red", lwd=2, pos=4)
+# Or
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- "blue"
+quantmod::chart_Series(closep, theme=plot_theme,
+  name="prices with endpoints as vertical lines")
+abline(v=endd, col="red", lwd=2)
+      @
   \end{columns}
 \end{block}
 
@@ -586,46 +203,126 @@ addLines(h=min(vwapv), col='red')
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Time Series Using \texttt{chart\_Series()}}
+\subsection{Defining \protect\emph{Overlapping} Look-back Time Intervals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{chart\_Series()} from package \emph{quantmod} is an improved version of \texttt{chartSeries()}, with better aesthetics.
+      \emph{Overlapping} time intervals can be defined if the \emph{start points} are equal to the \emph{end points} lagged by the \emph{look-back interval}.
       \vskip1ex
-      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package in \texttt{R}, so that standard plotting functions can be used in conjunction with \texttt{chart\_Series()}.
-      <<chart_Series_shaded,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-ohlc <- rutils::etfenv$VTI
-VTI_adj <- quantmod::Cl(ohlc)
-VTI_vol <- quantmod::Vo(ohlc)
-vwapv <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-ohlc <- ohlc["2009-02/2009-03"]
-vwapv <- vwapv["2009-02/2009-03"]
-# OHLC candlechart VWAP in main plot,
-chart_Series(x=ohlc, # Volume in extra panel
-             TA="add_Vo(); add_TA(vwapv, on=1)",
-             name="VTI plus VWAP shaded")
-# Add price minus VWAP in extra panel
-add_TA(VTI_adj-vwapv, col='red')
-# Add background shading of areas
-add_TA((VTI_adj-vwapv) > 0, on=-1,
-      col="lightgreen", border="lightgreen")
-add_TA((VTI_adj-vwapv) < 0, on=-1,
-      col="lightgrey", border="lightgrey")
-# Add vertical and horizontal lines
-abline(v=which.min(vwapv), col='red')
-abline(h=min(vwapv), col='red')
+      An example of an overlapping interval aggregation are trailing 12-month asset returns calculated every month.
+      <<echo=TRUE,eval=FALSE>>=
+# Number of data points
+nrows <- NROW(rutils::etfenv$VTI["2019/"])
+# Number of npoints that fit over nrows
+npoints <- 21
+nagg <- nrows %/% npoints
+# Stub interval at beginning
+endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
       @
     \column{0.5\textwidth}
+      The length of the \emph{look-back interval} can be defined either as the number of data points, or as the number of \emph{end points} to look back over.
+      <<echo=TRUE,eval=FALSE>>=
+# lookb defined as number of data points
+lookb <- 252
+# startp are endd lagged by lookb
+startp <- (endd - lookb + 1)
+startp <- ifelse(startp < 0, 0, startp)
+# lookb defined as number of endd
+lookb <- 12
+startp <- c(rep_len(0, lookb), endd[1:(NROW(endd)- lookb)])
+# Bind startp with endd
+cbind(startp, endd)
+      @
+  \end{columns}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/chart_Series_shaded}\\
-      \texttt{chart\_Series()} also has its own functions for adding indicators: \texttt{add\_TA()}, \texttt{add\_BBands()}, etc.
+    \includegraphics[width=0.9\paperwidth]{figure/intervals_overlapping.png}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining \protect\emph{Non-overlapping} Look-back Time Intervals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Non-overlapping} time intervals can be defined if \emph{start points} are equal to the previous \emph{end points}.
       \vskip1ex
-      Note that functions associated with \texttt{chart\_Series()} contain an underscore in their name,
+      In that case the look-back \emph{intervals} are non-overlapping and \emph{contiguous} (each \emph{start point} is the \emph{end point} of the previous interval).
+      \vskip1ex
+      If the \emph{start points} are defined as the previous \emph{end points} plus $1$, then the \emph{intervals} are \emph{exclusive}.
+      \vskip1ex
+      \emph{Exclusive intervals} are used for calculating \emph{out-of-sample} aggregations over future intervals.
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+# Number of data points
+nrows <- NROW(rutils::etfenv$VTI["2019/"])
+# Number of data points per interval
+npoints <- 21
+# Number of npointss that fit over nrows
+nagg <- nrows %/% npoints
+# Define endd with beginning stub
+endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
+# Define contiguous startp
+startp <- c(0, endd[1:(NROW(endd)-1)])
+# Define exclusive startp
+startp <- c(0, endd[1:(NROW(endd)-1)]+1)
+      @
+  \end{columns}
+    \vspace{-1em}
+    \includegraphics[width=0.9\paperwidth]{figure/intervals_non_overlapping.png}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Trailing Aggregations Using \texttt{sapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Aggregations performed over time series can be extremely slow if done improperly, therefore it's very important to find the fastest methods of performing aggregations.
+      \vskip1ex
+      The \texttt{sapply()} functional allows performing aggregations over the look-back \emph{intervals}.
+      \vskip1ex
+      The \texttt{sapply()} functional by default returns a vector or matrix, not an \emph{xts} series.
+      \vskip1ex
+      The vector or matrix returned by \texttt{sapply()} therefore needs to be coerced into an \emph{xts} series.
+      \vskip1ex
+      The variable \texttt{lookb} is the size of the look-back interval, equal to the number of data points used for applying the aggregation function (including the current point).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<TRUE,eval=FALSE>>=
+# Extract time series of VTI log prices
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
+endd <- 0:NROW(closep)  # End points at each point
+npts <- NROW(endd)
+lookb <- 22  # Number of data points per look-back interval
+# startp are multi-period lag of endd
+startp <- c(rep_len(0, lookb), endd[1:(npts - lookb)])
+# Define list of look-back intervals for aggregations over past
+lookbv <- lapply(2:npts, function(it) {
+    startp[it]:endd[it]
+})  # end lapply
+# Define aggregation function
+aggfun <- function(xtsv) c(max=max(xtsv), min=min(xtsv))
+# Perform aggregations over lookbv list
+aggs <- sapply(lookbv,
+    function(lookb) aggfun(closep[lookb])
+)  # end sapply
+# Coerce aggs into matrix and transpose it
+if (is.vector(aggs))
+  aggs <- t(aggs)
+aggs <- t(aggs)
+# Coerce aggs into xts series
+aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
+      @
   \end{columns}
 \end{block}
 
@@ -633,43 +330,47 @@ abline(h=min(vwapv), col='red')
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plot and Theme Objects of \texttt{chart\_Series()}}
+\subsection{Performing Trailing Aggregations Using \texttt{lapply()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{chart\_Series()} creates a \emph{plot object} and returns it \emph{invisibly}.
+      The \texttt{lapply()} functional allows performing aggregations over the look-back \emph{intervals}.
       \vskip1ex
-      A \emph{plot object} is an environment of class \emph{replot}, containing parameters specifying a plot.
+      The \texttt{lapply()} functional by default returns a list, not an \emph{xts} series.
       \vskip1ex
-      A plot can be rendered by calling, plotting, or printing the \emph{plot object}.
+      If \texttt{lapply()} returns a list of \emph{xts} series, then this list can be collapsed into a single \emph{xts} series using the function \texttt{do\_call\_rbind()} from package \emph{rutils}.
       \vskip1ex
-      A plot \emph{theme object} is a \texttt{list} containing parameters that determine the plot appearance (colors, size, fonts).
-      \vskip1ex
-      The function \texttt{chart\_theme()} returns the \emph{theme object}.
+      The function \texttt{chart\_Series()} from package \emph{quantmod} can produce a variety of time series plots.
       \vskip1ex
       \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects}.
       \vskip1ex
-      Plot and theme objects can be modified directly, or by using accessor and setter functions.
+      A plot \emph{theme object} is a list containing parameters that determine the plot appearance (colors, size, fonts).
       \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects}.
+      The function \texttt{chart\_theme()} returns the theme object.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-library(quantmod)
-ohlc <- rutils::etfenv$VTI["2009-02/2009-03"]
-# Extract plot object
-chobj <- chart_Series(x=ohlc, plot=FALSE)
-class(chobj)
-ls(chobj)
-class(chobj$get_ylim)
-class(chobj$set_ylim)
-# ls(chobj$Env)
-class(chobj$Env$actions)
-plotheme <- chart_theme()
-class(plotheme)
-ls(plotheme)
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Perform aggregations over lookbv list
+aggs <- lapply(lookbv,
+    function(lookb) aggfun(closep[lookb])
+)  # end lapply
+# rbind list into single xts or matrix
+aggs <- rutils::do_call(rbind, aggs)
+# Convert into xts
+aggs <- xts::xts(aggs, order.by=zoo::index(closep))
+aggs <- cbind(aggs, closep)
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red", "green")
+x11(width=6, height=5)
+quantmod::chart_Series(aggs, theme=plot_theme,
+             name="price aggregations")
+legend("top", legend=colnames(aggs),
+  bg="white", lty=1, lwd=6, y.intersp=0.4,
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -678,38 +379,57 @@ ls(plotheme)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Customizing \texttt{chart\_Series()} Plots}
+\subsection{Defining Functionals for Trailing Aggregations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{chart\_Series()} plots can be customized by modifying the plot and theme objects.
+      The functional \texttt{roll\_agg()} performs trailing aggregations of its function argument \texttt{FUN}, over an \emph{xts} series (\texttt{x\_ts}), and a look-back interval (\texttt{lookb}).
       \vskip1ex
-      Plot and theme objects can be modified directly, or by using accessor and setter functions.
+      The argument \texttt{FUN} is an aggregation function over a subset of \texttt{x\_ts} series.
       \vskip1ex
-      A plot is rendered by calling, plotting, or printing the plot object.
+      The dots \texttt{"..."} argument is passed into \texttt{FUN} as additional arguments.
       \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects}.
-      <<chart_Series_custom_axis,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.height=4,fig.show='hide'>>=
-library(quantmod)
-ohlc <- rutils::etfenv$VTI["2010-04/2010-05"]
-# Extract, modify theme, format tick marks "%b %d"
-plotheme <- chart_theme()
-plotheme$format.labels <- "%b %d"
-# Create plot object
-chobj <- chart_Series(x=ohlc, theme=plotheme, plot=FALSE)
-# Extract ylim using accessor function
-ylim <- chobj$get_ylim()
-ylim[[2]] <- structure(range(quantmod::Cl(ohlc)) + c(-1, 1),
-  fixed=TRUE)
-# Modify plot object to reduce y-axis range
-chobj$set_ylim(ylim)  # use setter function
-# Render the plot
-plot(chobj)
-      @
+      The argument \texttt{lookb} is equal to the number of periods of \texttt{x\_ts} series which are passed to the aggregation function \texttt{FUN}.
+      \vskip1ex
+      The functional \texttt{roll\_agg()} calls \texttt{lapply()}, which loops over the length of series \texttt{x\_ts}.
+      \vskip1ex
+      Note that two different intervals may be used with \texttt{roll\_agg()}.
+      \vskip1ex
+      The first interval is the argument \texttt{lookb}.
+      \vskip1ex
+      A second interval may be one of the variables bound to the dots \texttt{"..."} argument, and passed to the aggregation function \texttt{FUN} (for example, an \emph{EMA} window).
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/chart_Series_custom_axis-1}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+# Define functional for trailing aggregations
+roll_agg <- function(xtsv, lookb, FUN, ...) {
+# Define end points at every period
+  endd <- 0:NROW(xtsv)
+  npts <- NROW(endd)
+# Define starting points as lag of endd
+  startp <- c(rep_len(0, lookb), endd[1:(npts- lookb)])
+# Perform aggregations over lookbv list
+  aggs <- lapply(2:npts, function(it)
+    FUN(xtsv[startp[it]:endd[it]], ...)
+  )  # end lapply
+# rbind list into single xts or matrix
+  aggs <- rutils::do_call(rbind, aggs)
+# Coerce aggs into xts series
+  if (!is.xts(aggs))
+    aggs <- xts(aggs, order.by=zoo::index(xtsv))
+  aggs
+}  # end roll_agg
+# Define aggregation function
+aggfun <- function(xtsv)
+  c(max=max(xtsv), min=min(xtsv))
+# Perform aggregations over trailing interval
+aggs <- roll_agg(closep, lookb=lookb, FUN=aggfun)
+class(aggs)
+dim(aggs)
+      @
   \end{columns}
 \end{block}
 
@@ -717,37 +437,301 @@ plot(chobj)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting \texttt{chart\_Series()} in Multiple Panels}
+\subsection{Benchmarking Speed of Trailing Aggregations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package, allowing easy plotting in multiple panels.
+      The speed of trailing aggregations using \texttt{apply()} loops can be greatly increased by simplifying the aggregation function
       \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows adding extra plot elements.
+      For example, an aggregation function that returns a vector is over \texttt{13} times faster than a function that returns an \emph{xts} object.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+# Define aggregation function that returns a vector
+agg_vector <- function(xtsv)
+  c(max=max(xtsv), min=min(xtsv))
+# Define aggregation function that returns an xts
+agg_xts <- function(xtsv)
+  xts(t(c(max=max(xtsv), min=min(xtsv))), order.by=end(xtsv))
+# Benchmark the speed of aggregation functions
+library(microbenchmark)
+summary(microbenchmark(
+  agg_vector=roll_agg(closep, lookb=lookb, FUN=agg_vector),
+  agg_xts=roll_agg(closep, lookb=lookb, FUN=agg_xts),
+  times=10))[, c(1, 4, 5)]
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Benchmarking Functionals for Trailing Aggregations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+      Several packages contain functionals designed for performing trailing aggregations:
+      \begin{itemize}
+        \item \texttt{rollapply.zoo()} from package \emph{zoo},
+        \item \texttt{rollapply.xts()} from package \emph{xts},
+        \item \texttt{apply.rolling()} from package \emph{PerformanceAnalytics},
+      \end{itemize}
+      These functionals don't require specifying the \emph{end points}, and instead calculate the \emph{end points} from the trailing interval width.
+      \vskip1ex
+      These functionals can only apply functions that return a single value, not a vector.
+      \vskip1ex
+      These functionals return an \emph{xts} series with leading \texttt{NA} values at points before the trailing interval can fit over the data.
+      \vskip1ex
+      The argument \texttt{align="right"} of \texttt{rollapply()} determines that aggregations are taken from the past.
+      \vskip1ex
+      The functional \texttt{rollapply.xts} is the fastest, about as fast as performing an \texttt{lapply()} loop directly.
+    \column{0.55\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+# Define aggregation function that returns a single value
+aggfun <- function(xtsv)  max(xtsv)
+# Perform aggregations over a trailing interval
+aggs <- xts:::rollapply.xts(closep, width=lookb,
+                    FUN=aggfun, align="right")
+# Perform aggregations over a trailing interval
+library(PerformanceAnalytics)  # Load package PerformanceAnalytics
+aggs <- apply.rolling(closep, width=lookb, FUN=aggfun)
+# Benchmark the speed of the functionals
+library(microbenchmark)
+summary(microbenchmark(
+  roll_agg=roll_agg(closep, lookb=lookb, FUN=max),
+  roll_xts=xts:::rollapply.xts(closep, width=lookb, FUN=max, align="right"),
+  apply_rolling=apply.rolling(closep, width=lookb, FUN=max),
+  times=10))[, c(1, 4, 5)]
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%
+\subsection{Trailing Aggregations Using \protect\emph{Vectorized} Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return the cumulative sums, minima, and maxima of \emph{vectors} and \emph{time series} objects.
+      \vskip1ex
+      The methods for these functions are implemented as \emph{vectorized compiled} functions, and are therefore much faster than \texttt{apply()} loops.
+      \vskip1ex
+      The \texttt{cumsum()} function can be used to efficiently calculate the trailing sum of an an \emph{xts} series.
+      \vskip1ex
+      Using the function \texttt{cumsum()} is over \texttt{25} times faster than using \texttt{apply()} loops.
+      \vskip1ex
+      But trailing volatilities and higher moments can't be easily calculated using \texttt{cumsum()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+# Trailing sum using cumsum()
+roll_sum <- function(xtsv, lookb) {
+  cumsumv <- cumsum(na.omit(xtsv))
+  datav <- (cumsumv - rutils::lagit(x=cumsumv, lagg=lookb))
+  datav[1:lookb, ] <- cumsumv[1:lookb, ]
+  colnames(datav) <- paste0(colnames(xtsv), "_stdev")
+  datav
+}  # end roll_sum
+aggs <- roll_sum(closep, lookb=lookb)
+# Perform trailing aggregations using lapply loop
+aggs <- lapply(2:npts, function(it)
+    sum(closep[startp[it]:endd[it]])
+)  # end lapply
+# rbind list into single xts or matrix
+aggs <- rutils::do_call(rbind, aggs)
+head(aggs)
+tail(aggs)
+# Benchmark the speed of both methods
+library(microbenchmark)
+summary(microbenchmark(
+  roll_sum=roll_sum(closep, lookb=lookb),
+  s_apply=sapply(lookbv,
+    function(lookb) sum(closep[lookb])),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Time Series Using Function \texttt{filter()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{filter()} applies a linear filter to time series, vectors, and matrices, and returns a time series of class \texttt{"ts"}.
+      \vskip1ex
+      The function \texttt{filter()} with the argument \texttt{method="convolution"} calculates the \emph{convolution} of the vector $r_t$ with the filter $\varphi_i$:
+      \begin{displaymath}
+        f_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_p r_{t-p}
+      \end{displaymath}
+      Where $f_t$ is the filtered output vector, and $\varphi_i$ are the filter coefficients.
+      \vskip1ex
+      \texttt{filter()} with \texttt{method="recursive"} calculates a \emph{recursive} filter over the vector of random \emph{innovations} $\xi_t$ as follows:
+      \begin{displaymath}
+        r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_p r_{t-p} + \xi_t
+      \end{displaymath}
+      Where $r_t$ is the filtered output vector, and $\varphi_i$ are the filter coefficients.
+      \vskip1ex
+      The \emph{recursive} filter describes an \emph{AR(p)} process, which is a special case of an \emph{ARIMA} process.
+      \vskip1ex
+      \texttt{filter()} is very fast because it calculates the filter by calling compiled \texttt{C++} functions.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Extract time series of VTI log prices
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
+# Calculate EMA prices using filter()
+lookb <- 21
+weightv <- exp(-0.1*1:lookb)
+weightv <- weightv/sum(weightv)
+pricef <- stats::filter(closep, filter=weightv,
+                         method="convolution", sides=1)
+pricef <- as.numeric(pricef)
+# filter() returns time series of class "ts"
+class(pricef)
+# Filter using compiled C++ function directly
+getAnywhere(C_cfilter)
+str(stats:::C_cfilter)
+priceff <- .Call(stats:::C_cfilter, closep, 
+                     filter=weightv, sides=1, circular=FALSE)
+all.equal(as.numeric(pricef), priceff, check.attributes=FALSE)
+# Calculate EMA prices using HighFreq::roll_conv()
+pricecpp <- HighFreq::roll_conv(closep, weightv=weightv)
+all.equal(pricef[-(1:lookb)],
+          as.numeric(pricecpp)[-(1:lookb)],
+          check.attributes=FALSE)
+# Benchmark speed of trailing calculations
+library(microbenchmark)
+summary(microbenchmark(
+  filter=filter(closep, filter=weightv, method="convolution", sides=1),
+  priceff=.Call(stats:::C_cfilter, closep, filter=weightv, sides=1, circular=FALSE),
+  cumsumv=cumsum(closep),
+  rcpp=HighFreq::roll_conv(closep, weightv=weightv)
+  ), times=10)[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Trailing Aggregations Using Package \protect\emph{TTR}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{TTR} contains functions for calculating trailing aggregations over \emph{vectors} and \emph{time series} objects:
+      \begin{itemize}
+        \item \texttt{runSum()} for trailing sums,
+        \item \texttt{runMin()} and \texttt{runMax()} for trailing minima and maxima,
+        \item \texttt{runSD()} for trailing standard deviations,
+        \item \texttt{runMedian()} and \texttt{runMAD()} for trailing medians and Median Absolute Deviations (\emph{MAD}),
+        \item \texttt{runCor()} for trailing correlations,
+      \end{itemize}
+      The trailing \emph{TTR} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} or \texttt{Fortran} code).
+      \vskip1ex
+      But the trailing \emph{TTR} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing maximum and minimum over a vector of data
+roll_maxminr <- function(vecv, lookb) {
+  nrows <- NROW(vecv)
+  max_min <- matrix(numeric(2:nrows), nc=2)
+  # Loop over periods
+  for (it in 1:nrows) {
+    sub_vec <- vecv[max(1, it-lookb+1):it]
+    max_min[it, 1] <- max(sub_vec)
+    max_min[it, 2] <- min(sub_vec)
+  }  # end for
+  return(max_min)
+}  # end roll_maxminr
+max_minr <- roll_maxminr(closep, lookb)
+max_minr <- xts::xts(max_minr, zoo::index(closep))
+library(TTR)  # Load package TTR
+max_min <- cbind(TTR::runMax(x=closep, n=lookb),
+                 TTR::runMin(x=closep, n=lookb))
+all.equal(max_min[-(1:lookb), ], max_minr[-(1:lookb), ], check.attributes=FALSE)
+# Benchmark the speed of TTR::runMax
+library(microbenchmark)
+summary(microbenchmark(
+  rcode=roll_maxminr(closep, lookb),
+  ttr=TTR::runMax(closep, n=lookb),
+  times=10))[, c(1, 4, 5)]
+# Benchmark the speed of TTR::runSum
+summary(microbenchmark(
+  vector_r=cumsum(coredata(closep)),
+  rutils=rutils::roll_sum(closep, lookb=lookb),
+  ttr=TTR::runSum(closep, n=lookb),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trailing \protect\emph{Weighted} Aggregations Using Package \protect\emph{roll}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{roll} contains functions for calculating \emph{weighted} trailing aggregations over \emph{vectors} and \emph{time series} objects:
+      \begin{itemize}
+        \item \texttt{roll\_sum()}, \texttt{roll\_max()}, \texttt{roll\_mean()}, and \texttt{roll\_median()} for \emph{weighted} trailing sums, maximums, means, and medians,
+        \item \texttt{roll\_var()} for \emph{weighted} trailing variance,
+        \item \texttt{roll\_scale()} for trailing scaling and centering of time series,
+        \item \texttt{roll\_lm()} for trailing regression,
+        \item \texttt{roll\_pcr()} for trailing principal component regressions of time series,
+      \end{itemize}
+      The \emph{roll} functions are about \texttt{1,000} times faster than \texttt{apply()} loops!
+      \vskip1ex
+      The \emph{roll} functions are extremely fast because they perform calculations in \emph{parallel} in compiled \texttt{C++} code, using packages \emph{Rcpp} and \emph{RcppArmadillo}.
+      \vskip1ex
+      The \emph{roll} functions accept \emph{xts} time series, and they return \emph{xts}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)
-# Calculate VTI and XLF volume-weighted average price
-vwapv <- TTR::VWAP(price=quantmod::Cl(rutils::etfenv$VTI),
-            volume=quantmod::Vo(rutils::etfenv$VTI), n=10)
-XLF_vwap <- TTR::VWAP(price=quantmod::Cl(rutils::etfenv$XLF),
-            volume=quantmod::Vo(rutils::etfenv$XLF), n=10)
-# Open graphics device, and define
-# Plot area with two horizontal panels
-x11(); par(mfrow=c(2, 1))
-chobj <- chart_Series(  # Plot in top panel
-  x=etfenv$VTI["2009-02/2009-04"],
-  name="VTI", plot=FALSE)
-add_TA(vwapv["2009-02/2009-04"], lwd=2, on=1, col='blue')
-# Plot in bottom panel
-chobj <- chart_Series(x=etfenv$XLF["2009-02/2009-04"],
-  name="XLF", plot=FALSE)
-add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
+# Calculate trailing VTI variance using package roll
+library(roll)  # Load roll
+retp <- na.omit(rutils::etfenv$returns$VTI)
+lookb <- 22
+# Calculate trailing sum using roll::roll_sum
+sumroll <- roll::roll_sum(retp, width=lookb, min_obs=1)
+# Calculate trailing sum using rutils
+sumrutils <- rutils::roll_sum(retp, lookb=lookb)
+all.equal(sumroll[-(1:lookb), ], 
+          sumrutils[-(1:lookb), ], check.attributes=FALSE)
+# Benchmark speed of trailing calculations
+library(microbenchmark)
+summary(microbenchmark(
+  cumsumv=cumsum(retp),
+  roll=roll::roll_sum(retp, width=lookb),
+  RcppRoll=RcppRoll::roll_sum(retp, n=lookb),
+  rutils=rutils::roll_sum(retp, lookb=lookb),
+  times=10))[, c(1, 4, 5)]
       @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/chart_Series_panels.png}
   \end{columns}
 \end{block}
 
@@ -755,205 +739,627 @@ add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{zoo} Plots With Two \texttt{"y"} Axes}
+\subsection{Trailing \protect\emph{Weighted} Aggregations Using Package \protect\emph{RcppRoll}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{plot.zoo()} plots time series.
-      \vskip1ex
-      The function \texttt{axis()} plots customized axes in an existing plot.
-      <<echo=TRUE,eval=FALSE>>=
-# Open plot window and set plot margins
-x11(width=6, height=4)
-par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
-# Plot first time series without x-axis
-zoo::plot.zoo(pricev[, 1], lwd=2, col="orange",
-              xlab=NA, ylab=NA, xaxt="n")
-# Create X-axis date labels and add X-axis
-datev <- pretty(zoo::index(pricev))
-axis(side=1, at=datev, labels=format(datev, "%b-%d-%y"))
-# Plot second time series without y-axis
-par(new=TRUE)  # Allow new line on same plot
-zoo::plot.zoo(pricev[, 2], xlab=NA, ylab=NA,
-              lwd=2, yaxt="n", col="blue", xaxt="n")
-# Plot second y-axis on right
-axis(side=4, lwd=2, col="blue")
-# Add axis labels
-mtext(colnamev[1], cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-5), col="orange")
-mtext(colnamev[2], cex=1.2, lwd=3, side=4, las=2, adj=1.5, padj=(-5), col="blue")
-# Add title and legend
-title(main=paste(colnamev, collapse=" and "), line=0.5)
-legend("top", legend=colnamev, cex=1.0, bg="white",
-       lty=1, lwd=6, col=c("orange", "blue"), bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth, height=0.35\paperwidth]{figure/zoo_2yaxis.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{OHLC} Time Series Using Package \protect\emph{dygraphs}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{dygraph()} from package \emph{dygraphs} creates interactive plots for \emph{xts} time series.
-      \vskip1ex
-      The function \texttt{dyCandlestick()} creates a \emph{candlestick} plot object for \emph{OHLC} data, and uses the first four columns to plot \emph{candlesticks}, and it plots any additional columns as lines.
-      \vskip1ex
-      The function \texttt{dyOptions()} adds options (like colors, etc.) to a \emph{dygraph} plot.
-      <<echo=TRUE,eval=FALSE>>=
-library(dygraphs)
-# Calculate volume-weighted average price
-ohlc <- rutils::etfenv$VTI
-vwapv <- TTR::VWAP(price=quantmod::Cl(ohlc),
-    volume=quantmod::Vo(ohlc), n=20)
-# Add VWAP to OHLC data
-datav <- cbind(ohlc[, 1:4], vwapv)["2009-01/2009-04"]
-# Create dygraphs object
-dyplot <- dygraphs::dygraph(datav)
-# Increase line width and color
-dyplot <- dygraphs::dyOptions(dyplot, 
-  colors="red", strokeWidth=3)
-# Convert dygraphs object to candlestick plot
-dyplot <- dygraphs::dyCandlestick(dyplot)
-# Render candlestick plot
-dyplot
-# Candlestick plot using pipes syntax
-dygraphs::dygraph(datav) %>% dyCandlestick() %>% 
-  dyOptions(colors="red", strokeWidth=3)
-# Candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(datav), 
-  colors="red", strokeWidth=3))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick.png}
-      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices.
-      \vskip1ex
-      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{dygraphs} \protect\emph{OHLC} Plots With Background Shading}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{dyShading()} adds shading to a \emph{dygraphs} plot object.
-      \vskip1ex
-      The function \texttt{dyShading()} requires a vector of dates for shading.
-      <<echo=TRUE,eval=FALSE>>=
-# Create candlestick plot with background shading
-indic <- (quantmod::Cl(datav) > datav[, "VWAP"])
-whichv <- which(rutils::diffit(indic) != 0)
-indic <- rbind(first(indic), indic[whichv, ], last(indic))
-datev <- zoo::index(indic)
-indic <- ifelse(drop(coredata(indic)), "lightgreen", "antiquewhite")
-# Create dygraph object without rendering it
-dyplot <- dygraphs::dygraph(datav) %>% dyCandlestick() %>% 
-  dyOptions(colors="red", strokeWidth=3)
-# Add shading
-for (i in 1:(NROW(indic)-1)) {
-    dyplot <- dyplot %>% 
-      dyShading(from=datev[i], to=datev[i+1], color=indic[i])
-}  # end for
-# Render the dygraph object
-dyplot
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick_shaded.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{dygraphs} Plots With Two \texttt{"y"} Axes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{dyAxis()} from package \emph{dygraphs} plots customized axes to a \emph{dygraphs} plot object.
-      \vskip1ex
-      The function \texttt{dySeries()} adds a time series to a \emph{dygraphs} plot object.
-      <<echo=TRUE,eval=FALSE>>=
-library(dygraphs)
-# Prepare VTI and IEF prices
-pricev <- cbind(quantmod::Cl(rutils::etfenv$VTI), quantmod::Cl(rutils::etfenv$IEF))
-pricev <- na.omit(pricev)
-colnamev <- rutils::get_name(colnames(pricev))
-colnames(pricev) <- colnamev
-# dygraphs plot with two y-axes
-library(dygraphs)
-dygraphs::dygraph(pricev, main=paste(colnamev, collapse=" and ")) %>%
-  dyAxis(name="y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis(name="y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="red") %>%
-  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="blue")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth, height=0.35\paperwidth]{figure/dygraphs_2yaxis.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Package \protect\emph{qmao} for Quantitative Financial Modeling}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Package \protect\emph{qmao} for Quantitative Financial Modeling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{qmao} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data,
-package \emph{quantmod}
-      \vskip1ex
-      \emph{qmao} uses time series of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
+      The package
+      \href{https://cran.r-project.org/web/packages/RcppRoll/index.html}{\color{blue}{\emph{RcppRoll}}}
+      contains functions for calculating \emph{weighted} trailing aggregations over \emph{vectors} and \emph{time series} objects:
       \begin{itemize}
-        \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
-        \item \texttt{getFinancials()} for downloading financial statements,
-        \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
-        \item \texttt{Op()}, \texttt{Cl()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
-        \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
-        \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
-        \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
+        \item \texttt{roll\_sum()} for \emph{weighted} trailing sums,
+        \item \texttt{roll\_min()} and \texttt{roll\_max()} for \emph{weighted} trailing minima and maxima,
+        \item \texttt{roll\_sd()} for \emph{weighted} trailing standard deviations,
+        \item \texttt{roll\_median()} for \emph{weighted} trailing medians,
+      \end{itemize}
+      The \emph{RcppRoll} functions accept \emph{xts} objects, but they return matrices, not \emph{xts} objects.
+      \vskip1ex
+      The trailing \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code).
+      \vskip1ex
+      But the trailing \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(RcppRoll)  # Load package RcppRoll
+# Calculate trailing sum using RcppRoll
+sumroll <- RcppRoll::roll_sum(retp, align="right", n=lookb)
+# Calculate trailing sum using rutils
+sumrutils <- rutils::roll_sum(retp, lookb=lookb)
+all.equal(sumroll, coredata(sumrutils[-(1:(lookb-1))]), 
+          check.attributes=FALSE)
+# Benchmark speed of trailing calculations
+library(microbenchmark)
+summary(microbenchmark(
+  cumsumv=cumsum(retp),
+  RcppRoll=RcppRoll::roll_sum(retp, n=lookb),
+  rutils=rutils::roll_sum(retp, lookb=lookb),
+  times=10))[, c(1, 4, 5)]
+# Calculate EMA prices using RcppRoll
+closep <- quantmod::Cl(rutils::etfenv$VTI)
+weightv <- exp(0.1*1:lookb)
+pricema <- RcppRoll::roll_mean(closep,
+      align="right", n=lookb, weights=weightv)
+pricema <- cbind(closep,
+  rbind(coredata(closep[1:(lookb-1), ]), pricema))
+colnames(pricema) <- c("VTI", "VTI EMA")
+# Plot an interactive dygraph plot
+dygraphs::dygraph(pricema)
+# Or static plot of EMA prices with custom line colors
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red")
+quantmod::chart_Series(pricema, theme=plot_theme, name="EMA prices")
+legend("top", legend=colnames(pricema),
+       bg="white", lty=1, lwd=6,
+       col=plot_theme$col$line.col, bty="n")
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Trailing Aggregations Using Package \protect\emph{caTools}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{caTools} contains functions for calculating trailing interval aggregations over a \texttt{vector} of data:
+      \begin{itemize}
+        \item \texttt{runmin()} and \texttt{runmax()} for trailing minima and maxima,
+        \item \texttt{runsd()} for trailing standard deviations,
+        \item \texttt{runmad()} for trailing Median Absolute Deviations (\emph{MAD}),
+        \item \texttt{runquantile()} for trailing quantiles,
+      \end{itemize}
+      Time series need to be coerced to \emph{vectors} before they are passed to \emph{caTools} functions.
+      \vskip1ex
+      The trailing \emph{caTools} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code).
+      \vskip1ex
+      The argument \texttt{"endrule"} determines how the end values of the data are treated.
+      \vskip1ex
+      The argument \texttt{"align"} determines whether the interval is centered (default), left-aligned or right-aligned, with \texttt{align="center"} the fastest option.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+library(caTools)  # Load package "caTools"
+# Get documentation for package "caTools"
+packageDescription("caTools")  # Get short description
+help(package="caTools")  # Load help page
+data(package="caTools")  # List all datasets in "caTools"
+ls("package:caTools")  # List all objects in "caTools"
+detach("package:caTools")  # Remove caTools from search path
+# Median filter
+lookb <- 2
+closep <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
+med_ian <- runmed(x=closep, k=lookb)
+# Vector of trailing volatilities
+sigmav <- runsd(x=closep, k=lookb,
+                endrule="constant", align="center")
+# Vector of trailing quantiles
+quantvs <- runquantile(x=closep, k=lookb,
+  probs=0.9, endrule="constant", align="center")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Trailing Aggregations Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{RcppArmadillo} functions for calculating trailing aggregations are often the fastest.
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
+#include <RcppArmadillo.h> // include C++ header file from Armadillo library
+using namespace arma; // use C++ namespace from Armadillo library
+// declare dependency on RcppArmadillo
+// [[Rcpp::depends(RcppArmadillo)]]
+
+// export the function roll_maxmin() to R
+// [[Rcpp::export]]
+arma::mat roll_maxmin(const arma::vec& vecv,
+                      const arma::uword& lookb) {
+  arma::uword.n_rows = vecv.size();
+  arma::mat max_min[nrows, 2);
+  arma::vec sub_vec;
+  // startup period
+  max_min(0, 0) = vecv[0];
+  max_min(0, 1) = vecv[0];
+  for (uword it = 1; it < lookb; it++) {
+    sub_vec = vecv.subvec(0, it);
+    max_min(it, 0) = sub_vec.max();
+    max_min(it, 1) = sub_vec.min();
+  }  // end for
+  // remaining periods
+  for (uword it = lookb; it <.n_rows; it++) {
+    sub_vec = vecv.subvec(it- lookb + 1, it);
+    max_min(it, 0) = sub_vec.max();
+    max_min(it, 1) = sub_vec.min();
+  }  // end for
+  return max_min;
+}  // end roll_maxmin
+    \end{lstlisting}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/trailing_maxmin.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Compile Rcpp functions
+Rcpp::sourceCpp(file="/Users/jerzy/Develop/R/Rcpp/roll_maxmin.cpp")
+max_minarma <- roll_maxmin(closep, lookb)
+max_minarma <- xts::xts(max_minr, zoo::index(closep))
+max_min <- cbind(TTR::runMax(x=closep, n=lookb),
+                 TTR::runMin(x=closep, n=lookb))
+all.equal(max_min[-(1:lookb), ], max_minarma[-(1:lookb), ], check.attributes=FALSE)
+# Benchmark the speed of TTR::runMax
+library(microbenchmark)
+summary(microbenchmark(
+  arma=roll_maxmin(closep, lookb),
+  ttr=TTR::runMax(closep, n=lookb),
+  times=10))[, c(1, 4, 5)]
+# Dygraphs plot with max_min lines
+datav <- cbind(closep, max_minarma)
+colnames(datav)[2:3] <- c("max", "min")
+colorv <- c("blue", "red", "green")
+dygraphs::dygraph(datav, main=paste(colnames(closep), "max and min lines")) %>%
+  dyOptions(colors=colorv) %>% dyLegend(show="always", width=300)
+# Standard plot with max_min lines
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colors
+quantmod::chart_Series(datav["2008/2009"], theme=plot_theme,
+  name=paste(colnames(closep), "max and min lines"))
+legend(x="topright", title=NULL, legend=colnames(datav),
+       inset=0.1, cex=0.9, bg="white", bty="n",
+       lwd=6, lty=1, col=colorv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Determining Calendar \protect\emph{end points} of \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{xts::endpoints()} extracts the indices of the last observations in each calendar period of an \emph{xts} series.
+      \vskip1ex
+      For example:\\ \-\ \texttt{endpoints(x, on="hours")}\\
+      extracts the indices of the last observations in each hour.
+      \vskip1ex
+      The \emph{end points} calculated by \texttt{endpoints()} aren't always equally spaced, and aren't the same as those calculated from fixed intervals.
+      \vskip1ex
+      For example, the last observations in each day aren't equally spaced due to weekends and holidays.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Indices of last observations in each hour
+endd <- xts::endpoints(closep, on="hours")
+head(endd)
+# extract the last observations in each hour
+head(closep[endd, ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Non-overlapping Aggregations Using \texttt{sapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{apply()} functionals allow for applying a function over intervals of an \emph{xts} series defined by a vector of \emph{end points}.
+      \vskip1ex
+      The \texttt{sapply()} functional by default returns a vector or matrix, not an \emph{xts} series.
+      \vskip1ex
+      The vector or matrix returned by \texttt{sapply()} therefore needs to be coerced into an \emph{xts} series.
+      \vskip1ex
+      The function \texttt{chart\_Series()} from package \emph{quantmod} can produce a variety of time series plots.
+      \vskip1ex
+      \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects}.
+      \vskip1ex
+      A plot \emph{theme object} is a list containing parameters that determine the plot appearance (colors, size, fonts).
+      \vskip1ex
+      The function \texttt{chart\_theme()} returns the theme object.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Extract time series of VTI log prices
+closep <- log(na.omit(rutils::etfenv$prices$VTI))
+# Number of data points
+nrows <- NROW(closep)
+# Number of data points per interval
+lookb <- 22
+# Number of lookbv that fit over nrows
+nagg <- nrows %/% lookb
+# Define endd with beginning stub
+endd <- c(0, nrows-lookb*nagg + (0:nagg)*lookb)
+# Define contiguous startp
+startp <- c(0, endd[1:(NROW(endd)-1)])
+# Define list of look-back intervals for aggregations over past
+lookbv <- lapply(2:NROW(endd), function(it) {
+    startp[it]:endd[it]
+})  # end lapply
+lookbv[[1]]
+lookbv[[2]]
+# Perform sapply() loop over lookbv list
+aggs <- sapply(lookbv, function(lookb) {
+  xtsv <- closep[lookb]
+  c(max=max(xtsv), min=min(xtsv))
+})  # end sapply
+# Coerce aggs into matrix and transpose it
+if (is.vector(aggs))
+  aggs <- t(aggs)
+aggs <- t(aggs)
+# Coerce aggs into xts series
+aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
+head(aggs)
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+quantmod::chart_Series(aggs, theme=plot_theme,
+             name="price aggregations")
+legend("top", legend=colnames(aggs),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Non-overlapping Aggregations Using \texttt{lapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{apply()} functionals allow for applying a function over intervals of an \emph{xts} series defined by a vector of \emph{end points}.
+      \vskip1ex
+      The \texttt{lapply()} functional by default returns a list, not an \emph{xts} series.
+      \vskip1ex
+      If \texttt{lapply()} returns a list of \emph{xts} series, then this list can be collapsed into a single \emph{xts} series using the function \texttt{do\_call\_rbind()} from package \emph{rutils}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+# Perform lapply() loop over lookbv list
+aggs <- lapply(lookbv, function(lookb) {
+  xtsv <- closep[lookb]
+  c(max=max(xtsv), min=min(xtsv))
+})  # end lapply
+# rbind list into single xts or matrix
+aggs <- rutils::do_call(rbind, aggs)
+# Coerce aggs into xts series
+aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
+head(aggs)
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+quantmod::chart_Series(aggs, theme=plot_theme, name="price aggregations")
+legend("top", legend=colnames(aggs),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Interval Aggregations Using \texttt{period.apply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{period.apply()} from package \emph{xts} performs \emph{aggregations} over non-overlapping intervals of an \emph{xts} series defined by a vector of \emph{end points}.
+      \vskip1ex
+      Internally \texttt{period.apply()} performs an \texttt{sapply()} loop, and is therefore about as fast as an \texttt{sapply()} loop.
+      \vskip1ex
+      The package \emph{xts} also has several specialized functionals for aggregating data over \emph{end points}:
+      \begin{itemize}
+        \item \texttt{period.sum()} calculate the sum for each period,
+        \item \texttt{period.max()} calculate the maximum for each period,
+        \item \texttt{period.min()} calculate the minimum for each period,
+        \item \texttt{period.prod()} calculate the product for each period,
       \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Load package qmao
-library(qmao)
-# Get documentation for package qmao
-# Get short description
-packageDescription("qmao")
-# Load help page
-help(package="qmao")
-# List all datasets in "qmao"
-data(package="qmao")
-# List all objects in "qmao"
-ls("package:qmao")
-# Remove qmao from search path
-detach("package:qmao")
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+# Define functional for trailing aggregations over endd
+roll_agg <- function(xtsv, endd, FUN, ...) {
+  nrows <- NROW(endd)
+# startp are single-period lag of endd
+  startp <- c(1, endd[1:(nrows-1)])
+# Perform aggregations over lookbv list
+  aggs <- lapply(lookbv,
+    function(lookb) FUN(xtsv[lookb], ...))  # end lapply
+# rbind list into single xts or matrix
+  aggs <- rutils::do_call(rbind, aggs)
+  if (!is.xts(aggs))
+    aggs <-  # Coerce aggs into xts series
+    xts(aggs, order.by=zoo::index(xtsv[endd]))
+  aggs
+}  # end roll_agg
+# Apply sum() over endd
+aggs <- roll_agg(closep, endd=endd, FUN=sum)
+aggs <- period.apply(closep, INDEX=endd, FUN=sum)
+# Benchmark the speed of aggregation functions
+summary(microbenchmark(
+  roll_agg=roll_agg(closep, endd=endd, FUN=sum),
+  period_apply=period.apply(closep, INDEX=endd, FUN=sum),
+  times=10))[, c(1, 4, 5)]
+aggs <- period.sum(closep, INDEX=endd)
+head(aggs)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Aggregations of \protect\emph{xts} Over Calendar Periods}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{xts} has convenience wrapper functionals for \texttt{period.apply()}, that apply functions over calendar periods:
+      \begin{itemize}
+        \item \texttt{apply.daily()} applies functions over daily periods,
+        \item \texttt{apply.weekly()} applies functions over weekly periods,
+        \item \texttt{apply.monthly()} applies functions over monthly periods,
+        \item \texttt{apply.quarterly()} applies functions over quarterly periods,
+        \item \texttt{apply.yearly()} applies functions over yearly periods,
+      \end{itemize}
+      These functionals don't require specifying a vector of \emph{end points}, because they determine the \emph{end points} from the calendar periods.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+# Load package HighFreq
+library(HighFreq)
+# Extract closing minutely prices
+closep <- quantmod::Cl(rutils::etfenv$VTI["2019"])
+# Apply "mean" over daily periods
+aggs <- apply.daily(closep, FUN=sum)
+head(aggs)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Aggregations Over Overlapping Intervals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{period.apply()} performs aggregations over \emph{non-overlapping} intervals.
+      \vskip1ex
+      But it's often necessary to perform aggregations over \emph{overlapping} intervals, defined by a vector of \emph{end points} and a \emph{look-back interval}.
+      \vskip1ex
+      The \emph{start points} are defined as the \emph{end points} lagged by the interval width (number of periods in the \emph{look-back interval}).
+      \vskip1ex
+      Each point in time has an associated \emph{look-back interval}, which starts at a certain number of periods in the past (\emph{start\_point}) and ends at that point (\emph{end\_point}).
+      \vskip1ex
+      The variable \texttt{lookb} is equal to the number of end points in the \emph{look-back interval}, while (\texttt{lookb - 1}) is equal to the number of intervals in the look-back.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define endd with beginning stub
+npoints <- 5
+nrows <- NROW(closep)
+nagg <- nrows %/% npoints
+endd <- c(0, nrows-npoints*nagg + (0:nagg)*npoints)
+# Number of data points in lookb interval
+lookb <- 22
+# startp are endd lagged by lookb
+startp <- (endd - lookb + 1)
+startp <- ifelse(startp < 0, 0, startp)
+# Perform lapply() loop over lookbv list
+aggs <- lapply(2:NROW(endd), function(it) {
+      xtsv <- closep[startp[it]:endd[it]]
+      c(max=max(xtsv), min=min(xtsv))
+})  # end lapply
+# rbind list into single xts or matrix
+aggs <- rutils::do_call(rbind, aggs)
+# Coerce aggs into xts series
+aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+quantmod::chart_Series(aggs, theme=plot_theme,
+             name="price aggregations")
+legend("top", legend=colnames(aggs),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Extending Interval Aggregations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Interval aggregations produce values only at the \emph{end points}, but they can be carried forward in time using the function \texttt{na.locf.xts()} from package \emph{xts}.
+      <<echo=TRUE,eval=FALSE>>=
+aggs <- cbind(closep, aggs)
+tail(aggs)
+aggs <- na.omit(xts:::na.locf.xts(aggs))
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red", "green")
+quantmod::chart_Series(aggs, theme=plot_theme, name="price aggregations")
+legend("top", legend=colnames(aggs),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/agg_interval_carryfwd.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Interval Aggregations of \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The method \texttt{aggregate.zoo()} performs aggregations of \emph{zoo} series over non-overlapping intervals defined by a vector of aggregation groups (minutes, hours, days, etc.).
+      \vskip1ex
+      For example, \texttt{aggregate.zoo()} can calculate the average monthly returns.
+      <<echo=(-(1:3)),eval=FALSE>>=
+# Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # Load package zoo
+# Create zoo time series of random returns
+datev <- Sys.Date() + 0:365
+zoo_series <- zoo(rnorm(NROW(datev)), order.by=datev)
+# Create monthly dates
+dates_agg <- as.Date(as.yearmon(zoo::index(zoo_series)))
+# Perform monthly mean aggregation
+zoo_agg <- aggregate(zoo_series, by=datev_agg, FUN=mean)
+# Merge with original zoo - union of dates
+zoo_agg <- cbind(zoo_series, zoo_agg)
+# Replace NA's using locf
+zoo_agg <- na.locf(zoo_agg, na.rm=FALSE)
+# Extract aggregated zoo
+zoo_agg <- zoo_agg[zoo::index(zoo_series), 2]
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/zoo_agg-1}
+      \vspace{-7em}
+      <<zoo_agg,echo=(-(1:1)),eval=FALSE,fig.show="hide">>=
+# library(rutils)  # Load package rutils
+# Plot original and aggregated cumulative returns
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, bty="n",
+       title="Aggregated Prices", y.intersp=0.4,
+       leg=c("orig prices", "agg prices"),
+       lwd=2, bg="white", col=c("black", "red"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interpolating \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{zoo} has two functions for replacing \texttt{NA} values using interpolation:
+      \begin{itemize}
+        \item \texttt{na.approx()} performs linear interpolation,
+        \item \texttt{na.spline()} performs spline interpolation,
+      \end{itemize}
+      \vspace{-1em}
+      <<zoo_interpol,echo=(-(1:1)),eval=FALSE,fig.show="hide">>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Perform monthly mean aggregation
+zoo_agg <- aggregate(zoo_series, by=datev_agg, FUN=mean)
+# Merge with original zoo - union of dates
+zoo_agg <- cbind(zoo_series, zoo_agg)
+# Replace NA's using linear interpolation
+zoo_agg <- na.approx(zoo_agg)
+# Extract interpolated zoo
+zoo_agg <- zoo_agg[zoo::index(zoo_series), 2]
+# Plot original and interpolated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
+       leg=c("orig prices", "interpol prices"), lwd=2, bg="white",
+       col=c("black", "red"), bty="n", y.intersp=0.4)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/zoo_interpol-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Trailing Aggregations Over \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{zoo} has several functions for trailing calculations:
+      \begin{itemize}
+        \item \texttt{rollapply()} performing aggregations over a trailing (sliding) interval,
+        \item \texttt{rollmean()} calculating trailing means,
+        \item \texttt{rollmedian()} calculating trailing median,
+        \item \texttt{rollmax()} calculating trailing max,
+      \end{itemize}
+      \vspace{-1em}
+      <<zoo_roll,echo=(-(1:1)),eval=FALSE,fig.show="hide">>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# "mean" aggregation over interval with width=11
+zoo_mean <- rollapply(zoo_series, width=11, FUN=mean, align="right")
+# Merge with original zoo - union of dates
+zoo_mean <- cbind(zoo_series, zoo_mean)
+# Replace NA's using na.locf
+zoo_mean <- na.locf(zoo_mean, na.rm=FALSE, fromLast=TRUE)
+# Extract mean zoo
+zoo_mean <- zoo_mean[zoo::index(zoo_series), 2]
+# Plot original and interpolated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_mean), lwd=2, col="red")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
+       leg=c("orig prices", "mean prices"), lwd=2, bg="white",
+       col=c("black", "red"), bty="n", y.intersp=0.4)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/zoo_roll-1}
+      \vspace{-3em}
+      The argument \texttt{align="right"} determines that aggregations are taken from the past,
   \end{columns}
 \end{block}
 
@@ -963,6 +1369,164 @@ detach("package:qmao")
 
 %%%%%%%%%%%%%%%
 \section{Time Series of Asset Prices}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Brownian motion $B_T$ is a stochastic process, with the increments $\mathrm{d} B_t$ which are independent and normally distributed, with mean zero and variance equal to $\mathrm{d} t$.
+      \begin{displaymath}
+        \mathrm{d} B_t = \xi_t \sqrt{\mathrm{d} t}
+      \end{displaymath}
+      Where the $\xi_t$ are random and independent \emph{innovations} following the standard normal distribution $\phi(0, 1)$, with the expected values: $\mathbb{E}[\xi_t] = 0$, $\mathbb{E}[\xi^2_t] = 1$, and $\mathbb{E}[\xi_{t1} \xi_{t2}] = 0$.
+      \vskip1ex
+      The Brownian motion path $B_T$ is equal to the sum of its increments $\mathrm{d} B_t$:
+      \begin{displaymath}
+        B_T = \sum_{i=1}^n \mathrm{d} B_t
+      \end{displaymath}
+      Where the number of time increments $n$ is equal to the total time of evolution $T$ divided by the increment size ${\mathrm{d} t}$: $n = T/{\mathrm{d} t}$.
+      \vskip1ex
+      The variance of Brownian motion is equal to the time of its evolution $T$:
+      \begin{displaymath}
+        \sigma^2 = \mathbb{E}[(\sum_{i=1}^n \xi_t \sqrt{\mathrm{d} t})^2] = \sum_{i=1}^n \mathbb{E}[\xi^2_t] \mathrm{d} t = T
+      \end{displaymath}
+      
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/brown_path.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate a Brownian motion path
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+pathv <- cumsum(rnorm(nrows))
+plot(pathv, type="l", xlab="time", ylab="path",
+     main="Brownian Motion")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Maximum Value of Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The distribution of the maximum value $m$ of a Brownian motion path $B_t$ can be calculated using the \emph{reflection principle}.
+      \vskip1ex
+      The \emph{reflection principle} states that the mirror image (reflection) of a Brownian motion path has the same probability as the original path.
+      \vskip1ex
+      The probability that the Brownian motion path $B_t$ is at some point greater than some value $m$ is the sum of the joint probability, that after the Brownian motion reaches the value $m$, it ends up greater than $m$, plus the joint probability that it ends up less than $m$:
+      \begin{scriptsize}
+      \begin{displaymath}
+        p(B_t {>} m) = p((B_t {>} m) \& (B_T {>} m)) + p((B_t {>} m) \& (B_T {<} m))
+      \end{displaymath}
+      \end{scriptsize}
+      By the \emph{reflection principle}, both probabilities are equal, and also \begin{scriptsize}$p((B_t {>} m) \& (B_T {>} m)) = p(B_T {>} m)$\end{scriptsize}, so that:
+      \begin{scriptsize}
+      \begin{displaymath}
+        p(B_t > m) = 2 p(B_T > m)
+      \end{displaymath}
+      \end{scriptsize}
+      And the probability density of the maximum value $m$ is equal to:
+      \begin{displaymath}
+        \varphi(m) = \sqrt{\frac{2}{\pi T}} e^{-\frac{m^2}{2 T}}
+      \end{displaymath}
+      The average value of the maximum value is equal to:
+      \begin{displaymath}
+        \bar{m} = \sqrt{\frac{2 T}{\pi}}
+      \end{displaymath}
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/brown_max.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the density of Brownian Motion
+curve(expr=dnorm(x), xlim=c(-4, 4), ylim=c(0, 0.9), 
+  xlab="B_T", ylab="density", lwd=2, col="blue")
+# Plot the density of the maximum of Brownian Motion
+curve(expr=2*dnorm(x), xlim=c(0, 4), xlab="", ylab="", 
+  lwd=2, col="red", add=TRUE)
+lines(x=c(0, 0), y=c(0, sqrt(2/pi)), lwd=2, col="red")
+lines(x=c(-4, 0), y=c(0, 0), lwd=2, col="red")
+title(main="Probability Density of 
+      The Maximum Value of Brownian Motion", line=0.5)
+legend("topright", inset=0.0, bty="n", y.intersp=0.4,
+       title=NULL, c("Brownian", "Max"), lwd=6, 
+       col=c("blue", "red"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Range of Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The range of a Brownian motion path $B_t$ is equal to the difference between its maximum value minus its minimum value.  The range is also called the drawdown.
+      \vskip1ex
+      The probability density of the range $r$ is equal to the infinite series:
+      \begin{scriptsize}
+      \begin{displaymath}
+        p(r) = 2 \sum_{n=1}^\infty { \frac{\sin{(n-0.5) \pi}}{(n-0.5) \pi} (1-e^{-\frac{(n-0.5)^2 \pi^2 T}{2r^2}}) }
+      \end{displaymath}
+      \end{scriptsize}
+      The average value of the range is equal to:
+      \begin{displaymath}
+        \bar{r} = \sqrt{\frac{\pi T}{2}}
+      \end{displaymath}
+      <<echo=TRUE,eval=FALSE>>=
+# Series element
+fun1 <- function(n, r) { 2*sin((n-0.5)*pi)/((n-0.5)*pi) *
+  (1-exp(-((n-0.5)^2)*pi^2/2/r^2)) }
+# fun2 <- function(x) { sum(sapply(1:10, function(n) fun1(n, x))) }
+# fun2 <- function(x) { fun1(1, x) + fun1(2, x) + fun1(3, x) + fun1(4, x) + fun1(5, x) + fun1(6, x) }
+# Sum of fun1
+fun2 <- function(x) { 
+  valf <- 0
+  for (n in 1:20) { valf <- valf + fun1(n, x) }
+  return(valf)
+  } # end fun2
+# Theoretical average value of the range
+fun2(2)
+# Average value of the range from integration (not quite close)
+integrate(fun2, lower=0.01, upper=4)
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/brown_range.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the density of Brownian Motion
+curve(expr=dnorm(x), xlim=c(-4, 4), ylim=c(0, 1.0), 
+  xlab="B_T", ylab="density", lwd=2, col="blue")
+# Plot the density of the range of Brownian Motion
+curve(expr=fun2(x), xlim=c(0, 4), xlab="", ylab="", 
+  lwd=2, col="red", add=TRUE)
+lines(x=c(0, 0), y=c(0, fun2(0.01)), lwd=2, col="red")
+lines(x=c(-4, 0), y=c(0, 0), lwd=2, col="red")
+title(main="Probability Density of 
+      The Range of Brownian Motion", line=0.5)
+legend("topright", inset=0.0, bty="n", y.intersp=0.4,
+       title=NULL, c("Brownian", "Max"), lwd=6, 
+       col=c("blue", "red"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -1115,30 +1679,30 @@ title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
     \column{0.5\textwidth}
       If the percentage asset returns $r_t \mathrm{d} t = \mathrm{d} \log{p_t}$ follow \emph{Brownian motion}:
       \begin{displaymath}
-        r_t \mathrm{d} t = \mathrm{d} \log{p_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} W_t
+        r_t \mathrm{d} t = \mathrm{d} \log{p_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} B_t
       \end{displaymath}
       Then asset prices $p_t$ follow \emph{Geometric Brownian motion} (GBM):
       \begin{displaymath}
-        \mathrm{d} p_t = \mu p_t \mathrm{d}t + \sigma \, p_t \mathrm{d} W_t
+        \mathrm{d} p_t = \mu p_t \mathrm{d}t + \sigma \, p_t \mathrm{d} B_t
       \end{displaymath}
-      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian Motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      Where $\sigma$ is the volatility of asset returns, and $B_t$ is a \emph{Brownian Motion}, with $\mathrm{d} B_t$ following the normal distribution $\phi(0, \sqrt{\mathrm{d}t})$, with the volatility $\sqrt{\mathrm{d}t}$, equal to the square root of the time increment $\mathrm{d}t$.
       \vskip1ex
       The solution of \emph{Geometric Brownian motion} is equal to:
       \begin{displaymath}
-        p_t = p_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, W_t]
+        p_t = p_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, B_t]
       \end{displaymath}
       The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (according to Ito's lemma).
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/brown_geom.png}
       <<echo=TRUE,eval=FALSE>>=
-# Define daily volatility and growth rate
+# Define the daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 1000
 # Simulate geometric Brownian motion
 retp <- sigmav*rnorm(nrows) + drift - sigmav^2/2
 pricev <- exp(cumsum(retp))
 plot(pricev, type="l", xlab="time", ylab="prices",
-     main="geometric Brownian motion")
+     main="Geometric Brownian Motion")
       @
   \end{columns}
 \end{block}
@@ -1321,7 +1885,7 @@ curve(expr=pnorm(sigmav*sqrt(x)/2),
       \vskip1ex
       For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
       <<echo=TRUE,eval=FALSE>>=
-# Define daily volatility and growth rate
+# Define the daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 5000
 npaths <- 10
 # Simulate multiple paths of geometric Brownian motion
@@ -1357,7 +1921,7 @@ plot.zoo(pricev, main="Multiple paths of geometric Brownian motion",
       \vskip1ex
       For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
       <<echo=TRUE,eval=FALSE>>=
-# Define daily volatility and growth rate
+# Define the daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 10000
 npaths <- 100
 # Simulate multiple paths of geometric Brownian motion
@@ -1539,30 +2103,30 @@ plot.zoo(fractv[-(1:2),],
     \column{0.5\textwidth}
       If the percentage asset returns $r_t \mathrm{d} t = \mathrm{d} \log{p_t}$ follow \emph{Brownian motion}:
       \begin{displaymath}
-        r_t \mathrm{d} t = \mathrm{d} \log{p_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} W_t
+        r_t \mathrm{d} t = \mathrm{d} \log{p_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} B_t
       \end{displaymath}
       Then asset prices $p_t$ follow \emph{Geometric Brownian motion} (GBM):
       \begin{displaymath}
-        \mathrm{d} p_t = \mu p_t \mathrm{d}t + \sigma \, p_t \mathrm{d} W_t
+        \mathrm{d} p_t = \mu p_t \mathrm{d}t + \sigma \, p_t \mathrm{d} B_t
       \end{displaymath}
-      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian Motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      Where $\sigma$ is the volatility of asset returns, and $B_t$ is a \emph{Brownian Motion}, with $\mathrm{d} B_t$ following the normal distribution $\phi(0, \sqrt{\mathrm{d}t})$, with the volatility $\sqrt{\mathrm{d}t}$, equal to the square root of the time increment $\mathrm{d}t$.
       \vskip1ex
       The solution of \emph{Geometric Brownian motion} is equal to:
       \begin{displaymath}
-        p_t = p_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, W_t]
+        p_t = p_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, B_t]
       \end{displaymath}
       The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (according to Ito's lemma).
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/brown_geom.png}
       <<echo=TRUE,eval=FALSE>>=
-# Define daily volatility and growth rate
+# Define the daily volatility and growth rate
 sigmav <- 0.01; drift <- 0.0; nrows <- 1000
 # Simulate geometric Brownian motion
 retp <- sigmav*rnorm(nrows) + drift - sigmav^2/2
 pricev <- exp(cumsum(retp))
 plot(pricev, type="l", xlab="time", ylab="prices",
-     main="geometric Brownian motion")
+     main="Geometric Brownian Motion")
       @
   \end{columns}
 \end{block}
@@ -3101,7 +3665,7 @@ summary(microbenchmark(
       \vskip1ex
       If $\varphi < 1.0$ then the influence of the innovation $\xi_t$ decays exponentially.
       \vskip1ex
-      If $\varphi = 1.0$ then the influence of the random innovations $\xi_t$ persists indefinitely, so that the variance of $r_t$ increases linearly with time.
+      If $\varphi = 1.0$ then the influence of the random innovations $\xi_t$ persists indefinitely, so that the variance of $r_t$ is proportional to time.
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/ar_acf.png}\\
       An \emph{AR(1)} process has an exponentially decaying \emph{ACF}.
@@ -3317,7 +3881,7 @@ tseries::adf.test(cumsum(arimav))
       \vskip1ex
       And its variance is equal to: $\sigma^2 = \mathbb{E}[r^2_i] = \frac{\sigma_{\xi}^2}{1 - \varphi^2}$.
       \vskip1ex
-      If $\varphi = 1$, then the \emph{variance} grows over time and becomes infinite over time, so the process isn't \emph{stationary}.
+      If $\varphi = 1$, then the \emph{variance} grows over time and becomes infinite over time, so the process is not \emph{stationary}.
       \vskip1ex
       The variance of the \emph{Brownian Motion} $r_t = r_{t-1} + \xi$ is proportional to time: $\sigma^2_i = \mathbb{E}[r^2_i] = i \sigma_{\xi}^2$
     \column{0.5\textwidth}
@@ -3372,13 +3936,10 @@ nrows <- 1000; sigmav <- 0.01
 # Simulate 5 paths of Brownian motion
 pricev <- matrix(rnorm(5*nrows, sd=sigmav), nc=5)
 pricev <- matrixStats::colCumsums(pricev)
-# Open plot window on Mac
-dev.new(width=6, height=4, noRStudioGD=TRUE)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(2, 2, 3, 1), oma=c(0, 0, 0, 0))
 # Plot 5 paths of Brownian motion
 matplot(y=pricev, main="Brownian Motion Paths",
-        xlab="", ylab="", type="l", lty="solid", lwd=1, col="blue")
+  xlab="time", ylab="path", 
+  type="l", lty="solid", lwd=1, col="blue")
 # Save plot to png file on Mac
 quartz.save("figure/brown_paths.png", type="png", width=6, height=4)
       @
@@ -3458,9 +4019,9 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The \emph{Ornstein-Uhlenbeck} process in continuous time is:
       \begin{displaymath}
-        \mathrm{d} p_t = \theta \, (\mu - p_t) \, \mathrm{d} t + \sigma \, \mathrm{d} W_t
+        \mathrm{d} p_t = \theta \, (\mu - p_t) \, \mathrm{d} t + \sigma \, \mathrm{d} B_t
       \end{displaymath}
-      Where $W_t$ is a \emph{Brownian Motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      Where $B_t$ is a \emph{Brownian Motion}, with $\mathrm{d} B_t$ following the normal distribution $\phi(0, \sqrt{\mathrm{d}t})$, with the volatility $\sqrt{\mathrm{d}t}$, equal to the square root of the time increment $\mathrm{d}t$.
       \vskip1ex
       The solution of the \emph{Ornstein-Uhlenbeck} process is given by:
       \begin{displaymath}

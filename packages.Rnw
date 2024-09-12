@@ -27,7 +27,7 @@ knit_theme$set(thm)
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
 % \bibliographystyle{amsalpha} % doesn't work
-\addbibresource{FRE_lectures.bib}
+% \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
 \renewcommand\bibfont{\footnotesize}
 \renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
@@ -51,7 +51,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[\texttt{R} Packages]{\texttt{R} Packages}
-\subtitle{FRE6871 \& FRE7241, Spring 2024}
+\subtitle{FRE6871 \& FRE7241, Fall 2024}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -602,6 +602,893 @@ select  # code of primitive function from package 'MASS'
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 getAnywhere("cbind.ts")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{tseries} for Time Series Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{tseries} for Time Series Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{tseries} contains functions for time series analysis and computational finance, such as:
+      \begin{itemize}
+        \item downloading historical data,
+        \item plotting time series,
+        \item calculating risk and performance measures,
+        \item statistical \emph{hypothesis testing},
+        \item calibrating models to time series,
+        \item portfolio optimization,
+      \end{itemize}
+      Package \emph{tseries} accepts time series of class \texttt{"ts"} and \texttt{"zoo"}, and also has its own class \texttt{"irts"} for irregular spaced time-series objects.
+      \vskip1ex
+      The package \emph{zoo} is designed for managing \emph{time series} and ordered data objects.
+      \vskip1ex
+      The function \texttt{zoo::coredata()} extracts the underlying numeric data from a complex data object.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Get documentation for package tseries
+packageDescription("tseries")  # Get short description
+
+help(package="tseries")  # Load help page
+
+library(tseries)  # Load package tseries
+
+data(package="tseries")  # List all datasets in "tseries"
+
+ls("package:tseries")  # List all objects in "tseries"
+
+detach("package:tseries")  # Remove tseries from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{OHLC} Time Series Using Package \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{tseries} contains functions for plotting time series:
+      \begin{itemize}
+        \item \texttt{seqplot.ts()} for plotting two time series in same panel.
+        \item \texttt{plotOHLC()} for plotting \emph{OHLC} time series.
+      \end{itemize}
+      The function \texttt{plotOHLC()} from package \emph{tseries} plots \emph{OHLC} time series.
+      <<tseries_OHLC,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
+# Get start and end dates
+datev <- time(stxts_adj)
+endd <- datev[NROW(datev)]
+startd <- round((4*endd + datev[1])/5)
+# Plot using plotOHLC
+plotOHLC(window(stxts_adj,
+                start=startd,
+                end=endd)[, 1:4],
+         xlab="", ylab="")
+title(main="MSFT OHLC Prices")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/tseries_OHLC-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Two Time Series Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{seqplot.ts()} from package \emph{tseries} plots two time series in same panel.
+      \vskip1ex
+      A \emph{ts} time series can be created from a \emph{zoo} time series using the function \emph{ts()}, after extracting the data and date attributes from the \emph{zoo} time series.
+      \vskip1ex
+      The function \texttt{decimal\_date()} from package \emph{lubridate} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates.
+      <<tseries_seqplot,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(lubridate)  # Load lubridate
+# Get start and end dates of msft
+startd <- lubridate::decimal_date(start(msft))
+endd <- lubridate::decimal_date(end(msft))
+# Calculate frequency of msft
+tstep <- NROW(msft)/(endd-startd)
+# Extract data from msft
+datav <- zoo::coredata(
+  window(msft, start=as.Date("2015-01-01"),
+         end=end(msft)))
+# Create ts object using ts()
+stxts <- ts(data=datav,
+  start=lubridate::decimal_date(as.Date("2015-01-01")),
+  frequency=tstep)
+seqplot.ts(x=stxts[, 1], y=stxts[, 4], xlab="", ylab="")
+title(main="MSFT Open and Close Prices", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/tseries_seqplot-1}\\
+      \vspace{-3em}
+      The function \texttt{zoo::coredata()} extracts the underlying numeric data from a complex data object.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk and Performance Estimation Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{tseries} contains functions for calculating risk and performance:
+      \begin{itemize}
+        \item \texttt{maxdrawdown()} for calculating the maximum drawdown,
+        \item \texttt{sharpe()} for calculating the \emph{Sharpe} ratio (defined as the excess return divided by the standard deviation),
+        \item \texttt{sterling()} for calculating the \emph{Sterling} ratio (defined as the return divided by the maximum drawdown),
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(tseries)  # Load package tseries
+# Calculate maximum drawdown
+maxdrawdown(msft_adj[, "AdjClose"])
+max_drawd <- maxdrawdown(msft_adj[, "AdjClose"])
+zoo::index(msft_adj)[max_drawd$from]
+zoo::index(msft_adj)[max_drawd$to]
+# Calculate Sharpe ratio
+sharpe(msft_adj[, "AdjClose"])
+# Calculate Sterling ratio
+sterling(as.numeric(msft_adj[, "AdjClose"]))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hypothesis Testing Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{tseries} contains functions for testing statistical hypothesis on time series:
+      \begin{itemize}
+        \item \texttt{jarque.bera.test()} \emph{Jarque-Bera} test for normality of distribution of returns,
+        \item \texttt{adf.test()} \emph{Augmented Dickey-Fuller} test for existence of unit roots,
+        \item \texttt{pp.test()} \emph{Phillips-Perron} test for existence of unit roots,
+        \item \texttt{kpss.test()} \emph{KPSS} test for stationarity,
+        \item \texttt{po.test()} \emph{Phillips-Ouliaris} test for cointegration,
+        \item \texttt{bds.test()} \emph{BDS} test for randomness,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+msft <- suppressWarnings(  # Load MSFT data
+  get.hist.quote(instrument="MSFT",
+                 start=Sys.Date()-365,
+                 end=Sys.Date(),
+                 origin="1970-01-01")
+)  # end suppressWarnings
+class(msft)
+dim(msft)
+tail(msft, 4)
+
+# Calculate Sharpe ratio
+sharpe(msft[, "Close"], r=0.01)
+# Add title
+plot(msft[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calibrating Time Series Models Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{tseries} contains functions for calibrating models to time series:
+      \begin{itemize}
+        \item \texttt{garch()} for calibrating \emph{GARCH} volatility models,
+        \item \texttt{arma()} for calibrating \emph{ARMA} models,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(tseries)  # Load package tseries
+msft <- suppressWarnings(  # Load MSFT data
+  get.hist.quote(instrument="MSFT",
+                 start=Sys.Date()-365,
+                 end=Sys.Date(),
+                 origin="1970-01-01")
+)  # end suppressWarnings
+class(msft)
+dim(msft)
+tail(msft, 4)
+
+# Calculate Sharpe ratio
+sharpe(msft[, "Close"], r=0.01)
+# Add title
+plot(msft[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{tseries} contains functions for miscellaneous functions:
+      \vskip1ex
+      \texttt{portfolio.optim()} for calculating mean-variance efficient portfolios.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(tseries)  # Load package tseries
+msft <- suppressWarnings(  # Load MSFT data
+  get.hist.quote(instrument="MSFT",
+                 start=Sys.Date()-365,
+                 end=Sys.Date(),
+                 origin="1970-01-01")
+)  # end suppressWarnings
+class(msft)
+dim(msft)
+tail(msft, 4)
+
+# Calculate Sharpe ratio
+sharpe(msft[, "Close"], r=0.01)
+# Add title
+plot(msft[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{quantmod} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data.
+      \vskip1ex
+      \emph{quantmod} operates on time series of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
+      \begin{itemize}
+        \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
+        \item \texttt{getFinancials()} for downloading financial statements,
+        \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
+        \item \texttt{Op()}, \texttt{Cl()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
+        \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
+        \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
+        \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load package quantmod
+library(quantmod)
+# Get documentation for package quantmod
+# Get short description
+packageDescription("quantmod")
+# Load help page
+help(package="quantmod")
+# List all datasets in "quantmod"
+data(package="quantmod")
+# List all objects in "quantmod"
+ls("package:quantmod")
+# Remove quantmod from search path
+detach("package:quantmod")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{OHLC} Time Series Using \texttt{chartSeries()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chartSeries()} from package \emph{quantmod} can produce a variety of plots for \emph{OHLC} time series, including candlestick plots, bar plots, and line plots.
+      \vskip1ex
+      The argument \texttt{"type"} determines the type of plot (candlesticks, bars, or lines).
+      \vskip1ex
+      The argument \texttt{"theme"} accepts a \texttt{"chart.theme"} object, containing parameters that determine the plot appearance (colors, size, fonts).
+      \vskip1ex
+      \texttt{chartSeries()} automatically plots the volume data in a separate panel.
+      \vskip1ex
+      \emph{Candlestick} plots are designed to visualize \emph{OHLC} time series.
+      <<chartSeries_basic,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+# Plot OHLC candlechart with volume
+chartSeries(etfenv$VTI["2014-11"],
+            name="VTI",
+            theme=chartTheme("white"))
+# Plot OHLC bar chart with volume
+chartSeries(etfenv$VTI["2014-11"],
+            type="bars",
+            name="VTI",
+            theme=chartTheme("white"))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_basic-1}\\
+      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices.
+      \vskip1ex
+      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Redrawing Plots Using \texttt{reChart()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{reChart()} redraws plots using the same data set, but using additional parameters that control the plot appearance.
+      \vskip1ex
+      The argument \texttt{"subset"} allows subsetting the data to a smaller range of dates.
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)
+# Plot OHLC candlechart with volume
+chartSeries(etfenv$VTI["2008-11/2009-04"], name="VTI")
+# Redraw plot only for Feb-2009, with white theme
+reChart(subset="2009-02", theme=chartTheme("white"))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_black.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_white.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Technical Indicators Using \texttt{chartSeries()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The argument \texttt{"TA"} allows adding technical indicators to the plot.
+      \vskip1ex
+      The technical indicators are functions provided by the package \emph{TTR}.
+      \vskip1ex
+      The function \texttt{newTA()} allows defining new technical indicators.
+      <<chartSeries_TA,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+# Candlechart with Bollinger Bands
+chartSeries(etfenv$VTI["2014"],
+            TA="addBBands(): addBBands(draw='percent'): addVo()",
+            name="VTI with Bollinger Bands",
+            theme=chartTheme("white"))
+# Candlechart with two Moving Averages
+chartSeries(etfenv$VTI["2014"],
+            TA="addVo(): addEMA(10): addEMA(30)",
+            name="VTI with Moving Averages",
+            theme=chartTheme("white"))
+# Candlechart with Commodity Channel Index
+chartSeries(etfenv$VTI["2014"],
+            TA="addVo(): addBBands(): addCCI()",
+            name="VTI with Technical Indicators",
+            theme=chartTheme("white"))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_TA-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adding Indicators and Lines Using \texttt{addTA()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{addTA()} adds indicators and lines to plots, and allows plotting lines representing a single vector of data.
+      \vskip1ex
+      The \texttt{addTA()} function argument \texttt{"on"} determines on which plot panel (subplot) the indicator is drawn.
+      \vskip1ex
+      \texttt{"on=NA"} is the default, and draws in a new plot panel below the existing plot.
+      \vskip1ex
+      \texttt{"on=1"} draws in the foreground of the main plot panel, and \texttt{"on=-1"} draws in the background.
+      <<chartSeries_addTA,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+library(TTR)
+ohlc <- rutils::etfenv$VTI["2009-02/2009-03"]
+VTI_close <- quantmod::Cl(ohlc)
+VTI_vol <- quantmod::Vo(ohlc)
+# Calculate volume-weighted average price
+vwapv <- TTR::VWAP(price=VTI_close, volume=VTI_vol, n=10)
+# Plot OHLC candlechart with volume
+chartSeries(ohlc, name="VTI plus VWAP", theme=chartTheme("white"))
+# Add VWAP to main plot
+addTA(ta=vwapv, on=1, col='red')
+# Add price minus VWAP in extra panel
+addTA(ta=(VTI_close-vwapv), col='red')
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_addTA-3}\\
+      The function \texttt{VWAP()} from package \emph{TTR} calculates the Volume Weighted Average Price as the average of past prices multiplied by their trading volumes, divided by the total volume.
+      \vskip1ex
+      The argument \texttt{"n"} represents the number of look-back intervals used for averaging,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Shading Plots Using \texttt{addTA()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{addTA()} accepts Boolean vectors for shading of plots.
+      \vskip1ex
+      The function \texttt{addLines()} draws vertical or horizontal lines in plots.
+      <<chartSeries_addTA_shade,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+library(TTR)
+ohlc <- rutils::etfenv$VTI
+VTI_close <- quantmod::Cl(ohlc)
+VTI_vol <- quantmod::Vo(ohlc)
+vwapv <- TTR::VWAP(price=VTI_close, volume=VTI_vol, n=10)
+VTI_close <- VTI_close["2009-02/2009-03"]
+ohlc <- ohlc["2009-02/2009-03"]
+vwapv <- vwapv["2009-02/2009-03"]
+# Plot OHLC candlechart with volume
+chartSeries(ohlc, name="VTI plus VWAP shaded",
+            theme=chartTheme("white"))
+# Add VWAP to main plot
+addTA(ta=vwapv, on=1, col='red')
+# Add price minus VWAP in extra panel
+addTA(ta=(VTI_close-vwapv), col='red')
+# Add background shading of areas
+addTA((VTI_close-vwapv) > 0, on=-1,
+      col="lightgreen", border="lightgreen")
+addTA((VTI_adj-vwapv) < 0, on=-1,
+      col="lightgrey", border="lightgrey")
+# Add vertical and horizontal lines at vwapv minimum
+addLines(v=which.min(vwapv), col='red')
+addLines(h=min(vwapv), col='red')
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chartSeries_addTA_shade-7}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Time Series Using \texttt{chart\_Series()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chart\_Series()} from package \emph{quantmod} is an improved version of \texttt{chartSeries()}, with better aesthetics.
+      \vskip1ex
+      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package in \texttt{R}, so that standard plotting functions can be used in conjunction with \texttt{chart\_Series()}.
+      <<chart_Series_shaded,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+library(TTR)
+ohlc <- rutils::etfenv$VTI
+VTI_adj <- quantmod::Cl(ohlc)
+VTI_vol <- quantmod::Vo(ohlc)
+vwapv <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+VTI_adj <- VTI_adj["2009-02/2009-03"]
+ohlc <- ohlc["2009-02/2009-03"]
+vwapv <- vwapv["2009-02/2009-03"]
+# OHLC candlechart VWAP in main plot,
+chart_Series(x=ohlc, # Volume in extra panel
+             TA="add_Vo(); add_TA(vwapv, on=1)",
+             name="VTI plus VWAP shaded")
+# Add price minus VWAP in extra panel
+add_TA(VTI_adj-vwapv, col='red')
+# Add background shading of areas
+add_TA((VTI_adj-vwapv) > 0, on=-1,
+      col="lightgreen", border="lightgreen")
+add_TA((VTI_adj-vwapv) < 0, on=-1,
+      col="lightgrey", border="lightgrey")
+# Add vertical and horizontal lines
+abline(v=which.min(vwapv), col='red')
+abline(h=min(vwapv), col='red')
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chart_Series_shaded}\\
+      \texttt{chart\_Series()} also has its own functions for adding indicators: \texttt{add\_TA()}, \texttt{add\_BBands()}, etc.
+      \vskip1ex
+      Note that functions associated with \texttt{chart\_Series()} contain an underscore in their name,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plot and Theme Objects of \texttt{chart\_Series()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chart\_Series()} creates a \emph{plot object} and returns it \emph{invisibly}.
+      \vskip1ex
+      A \emph{plot object} is an environment of class \emph{replot}, containing parameters specifying a plot.
+      \vskip1ex
+      A plot can be rendered by calling, plotting, or printing the \emph{plot object}.
+      \vskip1ex
+      A plot \emph{theme object} is a \texttt{list} containing parameters that determine the plot appearance (colors, size, fonts).
+      \vskip1ex
+      The function \texttt{chart\_theme()} returns the \emph{theme object}.
+      \vskip1ex
+      \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects}.
+      \vskip1ex
+      Plot and theme objects can be modified directly, or by using accessor and setter functions.
+      \vskip1ex
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+library(quantmod)
+ohlc <- rutils::etfenv$VTI["2009-02/2009-03"]
+# Extract plot object
+chobj <- chart_Series(x=ohlc, plot=FALSE)
+class(chobj)
+ls(chobj)
+class(chobj$get_ylim)
+class(chobj$set_ylim)
+# ls(chobj$Env)
+class(chobj$Env$actions)
+plotheme <- chart_theme()
+class(plotheme)
+ls(plotheme)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Customizing \texttt{chart\_Series()} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart\_Series()} plots can be customized by modifying the plot and theme objects.
+      \vskip1ex
+      Plot and theme objects can be modified directly, or by using accessor and setter functions.
+      \vskip1ex
+      A plot is rendered by calling, plotting, or printing the plot object.
+      \vskip1ex
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects}.
+      <<chart_Series_custom_axis,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.height=4,fig.show='hide'>>=
+library(quantmod)
+ohlc <- rutils::etfenv$VTI["2010-04/2010-05"]
+# Extract, modify theme, format tick marks "%b %d"
+plotheme <- chart_theme()
+plotheme$format.labels <- "%b %d"
+# Create plot object
+chobj <- chart_Series(x=ohlc, theme=plotheme, plot=FALSE)
+# Extract ylim using accessor function
+ylim <- chobj$get_ylim()
+ylim[[2]] <- structure(range(quantmod::Cl(ohlc)) + c(-1, 1),
+  fixed=TRUE)
+# Modify plot object to reduce y-axis range
+chobj$set_ylim(ylim)  # use setter function
+# Render the plot
+plot(chobj)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/chart_Series_custom_axis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{chart\_Series()} in Multiple Panels}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package, allowing easy plotting in multiple panels.
+      \vskip1ex
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows adding extra plot elements.
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(rutils)
+# Calculate VTI and XLF volume-weighted average price
+vwapv <- TTR::VWAP(price=quantmod::Cl(rutils::etfenv$VTI),
+            volume=quantmod::Vo(rutils::etfenv$VTI), n=10)
+XLF_vwap <- TTR::VWAP(price=quantmod::Cl(rutils::etfenv$XLF),
+            volume=quantmod::Vo(rutils::etfenv$XLF), n=10)
+# Open graphics device, and define
+# Plot area with two horizontal panels
+x11(); par(mfrow=c(2, 1))
+chobj <- chart_Series(  # Plot in top panel
+  x=etfenv$VTI["2009-02/2009-04"],
+  name="VTI", plot=FALSE)
+add_TA(vwapv["2009-02/2009-04"], lwd=2, on=1, col='blue')
+# Plot in bottom panel
+chobj <- chart_Series(x=etfenv$XLF["2009-02/2009-04"],
+  name="XLF", plot=FALSE)
+add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/chart_Series_panels.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{zoo} Plots With Two \texttt{"y"} Axes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{plot.zoo()} plots time series.
+      \vskip1ex
+      The function \texttt{axis()} plots customized axes in an existing plot.
+      <<echo=TRUE,eval=FALSE>>=
+# Open plot window and set plot margins
+x11(width=6, height=4)
+par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
+# Plot first time series without x-axis
+zoo::plot.zoo(pricev[, 1], lwd=2, col="orange",
+              xlab=NA, ylab=NA, xaxt="n")
+# Create X-axis date labels and add X-axis
+datev <- pretty(zoo::index(pricev))
+axis(side=1, at=datev, labels=format(datev, "%b-%d-%y"))
+# Plot second time series without y-axis
+par(new=TRUE)  # Allow new line on same plot
+zoo::plot.zoo(pricev[, 2], xlab=NA, ylab=NA,
+              lwd=2, yaxt="n", col="blue", xaxt="n")
+# Plot second y-axis on right
+axis(side=4, lwd=2, col="blue")
+# Add axis labels
+mtext(colnamev[1], cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-5), col="orange")
+mtext(colnamev[2], cex=1.2, lwd=3, side=4, las=2, adj=1.5, padj=(-5), col="blue")
+# Add title and legend
+title(main=paste(colnamev, collapse=" and "), line=0.5)
+legend("top", legend=colnamev, cex=1.0, bg="white",
+       lty=1, lwd=6, col=c("orange", "blue"), bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth, height=0.35\paperwidth]{figure/zoo_2yaxis.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{OHLC} Time Series Using Package \protect\emph{dygraphs}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{dygraph()} from package \emph{dygraphs} creates interactive plots for \emph{xts} time series.
+      \vskip1ex
+      The function \texttt{dyCandlestick()} creates a \emph{candlestick} plot object for \emph{OHLC} data, and uses the first four columns to plot \emph{candlesticks}, and it plots any additional columns as lines.
+      \vskip1ex
+      The function \texttt{dyOptions()} adds options (like colors, etc.) to a \emph{dygraph} plot.
+      <<echo=TRUE,eval=FALSE>>=
+library(dygraphs)
+# Calculate volume-weighted average price
+ohlc <- rutils::etfenv$VTI
+vwapv <- TTR::VWAP(price=quantmod::Cl(ohlc),
+    volume=quantmod::Vo(ohlc), n=20)
+# Add VWAP to OHLC data
+datav <- cbind(ohlc[, 1:4], vwapv)["2009-01/2009-04"]
+# Create dygraphs object
+dyplot <- dygraphs::dygraph(datav)
+# Increase line width and color
+dyplot <- dygraphs::dyOptions(dyplot, 
+  colors="red", strokeWidth=3)
+# Convert dygraphs object to candlestick plot
+dyplot <- dygraphs::dyCandlestick(dyplot)
+# Render candlestick plot
+dyplot
+# Candlestick plot using pipes syntax
+dygraphs::dygraph(datav) %>% dyCandlestick() %>% 
+  dyOptions(colors="red", strokeWidth=3)
+# Candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(datav), 
+  colors="red", strokeWidth=3))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick.png}
+      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices.
+      \vskip1ex
+      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{dygraphs} \protect\emph{OHLC} Plots With Background Shading}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{dyShading()} adds shading to a \emph{dygraphs} plot object.
+      \vskip1ex
+      The function \texttt{dyShading()} requires a vector of dates for shading.
+      <<echo=TRUE,eval=FALSE>>=
+# Create candlestick plot with background shading
+indic <- (quantmod::Cl(datav) > datav[, "VWAP"])
+whichv <- which(rutils::diffit(indic) != 0)
+indic <- rbind(first(indic), indic[whichv, ], last(indic))
+datev <- zoo::index(indic)
+indic <- ifelse(drop(coredata(indic)), "lightgreen", "antiquewhite")
+# Create dygraph object without rendering it
+dyplot <- dygraphs::dygraph(datav) %>% dyCandlestick() %>% 
+  dyOptions(colors="red", strokeWidth=3)
+# Add shading
+for (i in 1:(NROW(indic)-1)) {
+    dyplot <- dyplot %>% 
+      dyShading(from=datev[i], to=datev[i+1], color=indic[i])
+}  # end for
+# Render the dygraph object
+dyplot
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick_shaded.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{dygraphs} Plots With Two \texttt{"y"} Axes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{dyAxis()} from package \emph{dygraphs} plots customized axes to a \emph{dygraphs} plot object.
+      \vskip1ex
+      The function \texttt{dySeries()} adds a time series to a \emph{dygraphs} plot object.
+      <<echo=TRUE,eval=FALSE>>=
+library(dygraphs)
+# Prepare VTI and IEF prices
+pricev <- cbind(quantmod::Cl(rutils::etfenv$VTI), quantmod::Cl(rutils::etfenv$IEF))
+pricev <- na.omit(pricev)
+colnamev <- rutils::get_name(colnames(pricev))
+colnames(pricev) <- colnamev
+# dygraphs plot with two y-axes
+library(dygraphs)
+dygraphs::dygraph(pricev, main=paste(colnamev, collapse=" and ")) %>%
+  dyAxis(name="y", label=colnamev[1], independentTicks=TRUE) %>%
+  dyAxis(name="y2", label=colnamev[2], independentTicks=TRUE) %>%
+  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="red") %>%
+  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth, height=0.35\paperwidth]{figure/dygraphs_2yaxis.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{qmao} for Quantitative Financial Modeling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Package \protect\emph{qmao} for Quantitative Financial Modeling}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{qmao} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data,
+package \emph{quantmod}
+      \vskip1ex
+      \emph{qmao} uses time series of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
+      \begin{itemize}
+        \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
+        \item \texttt{getFinancials()} for downloading financial statements,
+        \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
+        \item \texttt{Op()}, \texttt{Cl()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
+        \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
+        \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
+        \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load package qmao
+library(qmao)
+# Get documentation for package qmao
+# Get short description
+packageDescription("qmao")
+# Load help page
+help(package="qmao")
+# List all datasets in "qmao"
+data(package="qmao")
+# List all objects in "qmao"
+ls("package:qmao")
+# Remove qmao from search path
+detach("package:qmao")
       @
   \end{columns}
 \end{block}
