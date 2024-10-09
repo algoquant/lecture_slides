@@ -609,13 +609,13 @@ legend("topleft", legend=colnames(wealthv),
   col=plot_theme$col$line.col, bty="n")
 
 # Test if Sell in May strategy can time VTI
-desm <- cbind(wealth$sell_in_may, 0.5*(retp+abs(retp)), retp^2)
-colnames(desm) <- c("VTI", "Merton", "Treynor")
+desm <- cbind(wealthv, 0.5*(retp+abs(retp)), retp^2)
+colnames(desm)[3:4] <- c("Merton", "Treynor")
 # Perform Merton-Henriksson test
-regmod <- lm(pnlinmay ~ VTI + Merton, data=desm)
+regmod <- lm(sell_in_may ~ VTI + Merton, data=desm)
 summary(regmod)
 # Perform Treynor-Mazuy test
-regmod <- lm(pnlinmay ~ VTI + Treynor, data=desm)
+regmod <- lm(sell_in_may ~ VTI + Treynor, data=desm)
 summary(regmod)
 # Plot Treynor-Mazuy residual scatterplot
 resids <- (pnlinmay - regmod$coeff["VTI"]*retp)
@@ -961,6 +961,9 @@ legend("topleft", legend=colnames(pricev), y.intersp=0.5,
 # Calculate the EMA prices recursively using C++ code
 lambdaf <- 0.984
 pricema <- HighFreq::run_mean(closep, lambda=lambdaf)
+pricev <- cbind(closep, pricema)
+colnames(pricev) <- c("VTI", "VTI EMA")
+colnamev <- colnames(pricev)
 # Calculate the positions, either: -1, 0, or 1
 indic <- sign(closep - pricema)
 posv <- rutils::lagit(indic, lagg=1)
@@ -1191,7 +1194,7 @@ stretduster(compclust)  # Stop R processes over cluster under Windows
 pnltrend <- mclapply(lambdav, function(lambdaf) {
   library(quantmod)
   # Simulate crossover strategy and Calculate the returns
-  sim_ema(closep=closep, lambdaf=lambdaf, lookb=lookb)[, "pnls"]
+  sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
 }, mc.cores=ncores)  # end mclapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)

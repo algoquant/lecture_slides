@@ -2393,7 +2393,7 @@ summary(microbenchmark(
       \vskip1ex
       The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
       \vskip1ex
-      Bootstrapping shows that for asset returns, the \emph{Median Absolute Deviation} (\emph{MAD}) has a smaller relative standard error than the standard deviation.
+      Bootstrapping shows that for stock returns, the \emph{Median Absolute Deviation} (\emph{MAD}) has a smaller relative standard error than the standard deviation does.
       \vskip1ex
       Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data.
     \column{0.5\textwidth}
@@ -2413,10 +2413,10 @@ nboot <- 10000
 bootd <- parLapply(compclust, 1:nboot, function(x, retp, nsimu) {
   samplev <- retp[sample.int(nsimu, replace=TRUE)]
   c(sd=sd(samplev), mad=mad(samplev))
-}, retp=retp, nsimu=nsimu)  # end parLapply
+}, retp=retp, nsimu=nrows)  # end parLapply
 # Bootstrap sd and MAD under Mac-OSX or Linux
 bootd <- mclapply(1:nboot, function(x) {
-  samplev <- retp[sample.int(nsimu, replace=TRUE)]
+  samplev <- retp[sample.int(nrows, replace=TRUE)]
   c(sd=sd(samplev), mad=mad(samplev))
 }, mc.cores=ncores)  # end mclapply
 stopCluster(compclust)  # Stop R processes over cluster under Windows
@@ -3296,7 +3296,7 @@ apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
 sigmav <- 1.0  # Volatility
 drift <- 0.0  # Drift
 nsteps <- 100  # Number of simulation steps
-nsimu <- 10000  # Number of simulation paths
+nsimu <- 1000  # Number of simulation paths
 # Calculate matrix of normal variables
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 datav <- rnorm(nsimu*nsteps, mean=drift, sd=sigmav)
@@ -3304,9 +3304,10 @@ datav <- matrix(datav, nc=nsimu)
 # Simulate paths of Brownian motion
 pathm <- matrixStats::colCumsums(datav)
 # Tilt the datav
-lambdaf <- 0.04  # Tilt parameter
+lambdaf <- 0.1  # Tilt parameter
 datat <- datav + lambdaf  # Tilt the random numbers
 patht <- matrixStats::colCumsums(datat)
+zoo::plot.zoo(patht[, sample(nsimu, 20)], main="Paths of Brownian Motion", xlab="time steps", ylab=NA, plot.type="single")
 # Calculate path weights
 weightm <- exp(-lambdaf*datat + lambdaf^2/2)
 weightm <- matrixStats::colProds(weightm)

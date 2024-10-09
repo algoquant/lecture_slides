@@ -941,7 +941,7 @@ invmat <- solve(covshrink)
     \column{0.5\textwidth}
       The inverse of a square matrix $\mathbb{A}$ can be calculated approximately using the recursive \emph{Schulz formula}:
       \begin{displaymath}
-        \mathbb{A}_{i+1}^{-1} \leftarrow 2 \mathbb{A}_i^{-1} - \mathbb{A}_i^{-1} \mathbb{A} \mathbb{A}_i^{-1}
+        \mathbb{A}_{i+1}^{-1} = 2 \mathbb{A}_i^{-1} - \mathbb{A}_i^{-1} \mathbb{A} \mathbb{A}_i^{-1}
       \end{displaymath}
       The \emph{Schulz formula} requires a good initial value for the inverse matrix $\mathbb{A}_1^{-1}$ or else the recursion diverges.
       \vskip1ex
@@ -2049,7 +2049,7 @@ correlv <- sapply(retp, function(retp) {
 correlv[is.na(correlv)] <- 0
 correlp <- rowMeans(correlv)
 # Scatterplot of trailing stock volatilities and correlations
-volvti <- sqrt(HighFreq::run_var(retvti, lambdaf))
+volvti <- sqrt(HighFreq::run_var(retvti, lambdaf)[, 2])
 endd <- rutils::calc_endpoints(retvti, interval="weeks")
 plot(x=volvti[endd], y=correlp[endd], 
  xlab="volatility", ylab="correlation",
@@ -3649,9 +3649,9 @@ plot(fitsd, type="l", lwd=3, col="blue",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Bootstrapping the regression of asset returns shows that the actual standard errors can be over twice as large as those reported by the function \texttt{lm()}.
+      Bootstrapping the regression of stock returns shows that the actual standard errors can be much larger as the theoretical standard errors reported by the function \texttt{lm()}.
       \vskip1ex
-      This is because the function \texttt{lm()} assumes that the data is normally distributed, while in reality asset returns have very large skewness and kurtosis.
+      This is because the function \texttt{lm()} assumes that the data is normally distributed, while in reality stock returns have very large skewness and kurtosis.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -3667,8 +3667,11 @@ formulav <- paste(colnames(retp)[1],
 # Standard regression
 regmod <- lm(formulav, data=retp)
 regsum <- summary(regmod)
+cdata <- coredata(retp)
+plot(cdata[, 1], cdata[, 2], 
+  xlab="XLE", ylab="XLF", main="Stock Returns")
+abline(regmod, lwd=3, col="red")
 # Bootstrap of regression
-# Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 bootd <- sapply(1:100, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
@@ -3678,9 +3681,8 @@ bootd <- sapply(1:100, function(x) {
 # Means and standard errors from regression
 regsum$coefficients
 # Means and standard errors from bootstrap
-dim(bootd)
-t(apply(bootd, MARGIN=1,
-      function(x) c(mean=mean(x), stderror=sd(x))))
+t(apply(bootd, MARGIN=1, function(x) 
+  c(mean=mean(x), stderror=sd(x))))
       @
   \end{columns}
 \end{block}
@@ -4141,7 +4143,7 @@ barplot(svdec$d, main="Singular Values of ETF Returns")
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the generalized inverse from SVD
 invmat <- svdec$v %*% (t(svdec$u) / svdec$d)
-# Verify inverse property of inverse
+# Verify inverse property of the inverse
 all.equal(zoo::coredata(retp), retp %*% invmat %*% retp)
 # Calculate the regularized inverse from SVD
 dimax <- 1:3

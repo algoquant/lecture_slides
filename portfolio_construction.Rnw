@@ -473,19 +473,19 @@ all.equal(var(retmv),
 # Calculate vector of mean returns
 retm <- colMeans(retp)
 # Specify the target return
-retarget <- 1.5*mean(retp)
+retarg <- 1.5*mean(retp)
 # Products of inverse with mean returns and unit vector
 c11 <- drop(t(unitv) %*% covinv %*% unitv)
 cr1 <- drop(t(unitv) %*% covinv %*% retm)
 crr <- drop(t(retm) %*% covinv %*% retm)
 fmat <- matrix(c(c11, cr1, cr1, crr), nc=2)
 # Solve for the Lagrange multipliers
-lagm <- solve(a=fmat, b=c(2, 2*retarget))
+lagm <- solve(a=fmat, b=c(2, 2*retarg))
 # Calculate the efficient portfolio weights
 weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
 # Calculate constraints
 all.equal(1, sum(weightv))
-all.equal(retarget, sum(retm*weightv))
+all.equal(retarg, sum(retm*weightv))
       @
   \end{columns}
 \end{block}
@@ -535,9 +535,9 @@ all.equal(retarget, sum(retm*weightv))
 # Calculate the efficient portfolio returns
 reteff <- drop(retp %*% weightv)
 reteffm <- mean(reteff)
-all.equal(reteffm, retarget)
+all.equal(reteffm, retarg)
 # Calculate the efficient portfolio variance in three ways
-uu <- c(1, retarget)
+uu <- c(1, retarg)
 finv <- solve(fmat)
 detf <- (c11*crr-cr1^2)  # det(fmat)
 all.equal(var(reteff), 
@@ -570,8 +570,8 @@ retmvm <- sum(weightv*retm)
 varmv <- 1/c11
 stdevmv <- sqrt(varmv)
 # Calculate efficient frontier from target returns
-targetv <- retmvm*(1+seq(from=(-1), to=1, by=0.1))
-stdevs <- sapply(targetv, function(rett) {
+retargv <- retmvm*(1+seq(from=(-1), to=1, by=0.1))
+stdevs <- sapply(retargv, function(rett) {
   uu <- c(1, rett)
   sqrt(drop(t(uu) %*% finv %*% uu))
 })  # end sapply
@@ -581,7 +581,7 @@ stdevs <- sapply(targetv, function(rett) {
       \includegraphics[width=0.45\paperwidth]{figure/eff_front.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the efficient frontier
-plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2,
+plot(x=stdevs, y=retargv, t="l", col="blue", lwd=2,
      main="Efficient Frontier and Minimum Variance Portfolio",
      xlab="standard deviation", ylab="return")
 points(x=stdevmv, y=retmvm, col="green", lwd=6)
@@ -621,16 +621,16 @@ text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
       \end{align*}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate standard deviation of efficient portfolio
-uu <- c(1, retarget)
+uu <- c(1, retarg)
 stdeveff <- sqrt(drop(t(uu) %*% finv %*% uu))
 # Calculate the slope of the tangent line
 detf <- (c11*crr-cr1^2)  # det(fmat)
-sharper <- (stdeveff*detf)/(c11*retarget-cr1)
+sharper <- (stdeveff*detf)/(c11*retarg-cr1)
 # Calculate the risk-free rate as intercept of the tangent line
-raterf <- retarget - sharper*stdeveff
+raterf <- retarg - sharper*stdeveff
 # Calculate the risk-free rate from target return
 all.equal(raterf,
-  (retarget*cr1-crr)/(retarget*c11-cr1))
+  (retarg*cr1-crr)/(retarg*c11-cr1))
       @
   \end{columns}
 \end{block}
@@ -654,9 +654,9 @@ all.equal(raterf,
       For a given \emph{risk-free} rate $r_f$, the \emph{tangency portfolio} has the highest \emph{Sharpe ratio} among all the \emph{efficient portfolios}.
       <<echo=TRUE,eval=FALSE>>=
 # Plot efficient frontier
-aspratio <- 1.0*max(stdevs)/diff(range(targetv))
-plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2, asp=aspratio,
-     xlim=c(0.4, 0.6)*max(stdevs), ylim=c(0.2, 0.9)*max(targetv), 
+aspectr <- 1.0*max(stdevs)/diff(range(retargv)) # Aspect ratio
+plot(x=stdevs, y=retargv, t="l", col="blue", lwd=2, asp=aspectr,
+     xlim=c(0.4, 0.6)*max(stdevs), ylim=c(0.2, 0.9)*max(retargv), 
      main="Efficient Frontier and Capital Market Line",
      xlab="standard deviation", ylab="return")
 # Plot the minimum variance portfolio
@@ -669,16 +669,16 @@ text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
       \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent2.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the tangent portfolio
-points(x=stdeveff, y=retarget, col="red", lwd=6)
-text(x=stdeveff, y=retarget, labels="tangency\nportfolio", pos=2, cex=0.8)
+points(x=stdeveff, y=retarg, col="red", lwd=6)
+text(x=stdeveff, y=retarg, labels="tangency\nportfolio", pos=2, cex=0.8)
 # Plot the risk-free point
 points(x=0, y=raterf, col="red", lwd=6)
 text(x=0, y=raterf, labels="risk-free", pos=4, cex=0.8)
 # Plot the tangent line
 abline(a=raterf, b=sharper, lwd=2, col="green")
-text(x=0.6*stdev, y=0.8*retarget,
+text(x=0.6*stdev, y=0.8*retarg,
      labels="Capital Market Line", pos=2, cex=0.8,
-     srt=180/pi*atan(aspratio*sharper))
+     srt=180/pi*atan(aspectr*sharper))
       @
   \end{columns}
 \end{block}
@@ -799,7 +799,7 @@ text(x=0.6*stdev, y=0.8*retarget,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the mean excess returns
-raterf <- retarget - sharper*stdeveff
+raterf <- retarg - sharper*stdeveff
 retx <- (retm - raterf)
 # Calculate the efficient portfolio weights
 weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
@@ -815,7 +815,7 @@ detf <- (c11*crr-cr1^2)  # det(fmat)
 all.equal(var(retd), 
   t(weightv) %*% covmat %*% weightv,
   (t(retx) %*% covinv %*% retx)/sum(covinv %*% retx)^2, 
-  (c11*retarget^2-2*cr1*retarget+crr)/detf)
+  (c11*retarg^2-2*cr1*retarg+crr)/detf)
 # Calculate the maximum Sharpe ratio
 sqrt(252)*sum(weightv*retx)/
   sqrt(drop(t(weightv) %*% covmat %*% weightv))
@@ -889,8 +889,8 @@ effront <- effront[, order(effront["return", ])]
 # Plot the efficient frontier
 reteffv <- effront["return", ]
 stdevs <- effront["stdev", ]
-aspratio <- 0.6*max(stdevs)/diff(range(reteffv))
-plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2, asp=aspratio,
+aspectr <- 0.6*max(stdevs)/diff(range(reteffv)) # Aspect ratio
+plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2, asp=aspectr,
   main="Maximum Sharpe Portfolio and Efficient Frontier",
   xlim=c(0.0, max(stdevs)), xlab="standard deviation", ylab="return")
 # Plot the minimum variance portfolio
@@ -916,7 +916,7 @@ text(x=0, y=raterf, labels="risk-free", pos=4, cex=0.8)
 sharper <- (stdevmax*detf)/(c11*retmax-cr1)
 abline(a=raterf, b=sharper, lwd=2, col="green")
 text(x=0.6*stdevmax, y=0.8*retmax, labels="Capital Market Line", 
-     pos=2, cex=0.8, srt=180/pi*atan(aspratio*sharper))
+     pos=2, cex=0.8, srt=180/pi*atan(aspectr*sharper))
       @
   \end{columns}
 \end{block}

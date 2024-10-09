@@ -287,16 +287,16 @@ dygraphs::dygraph(datav[endd], main="VTI Margin Funding Costs") %>%
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_single_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
-# bidask equal to 1 bp for liquid ETFs
+# The bid-ask spread is equal to 1 bp for liquid ETFs
 bidask <- 0.001
 # Cumulative transaction costs
-costs <- bidask*cumsum(abs(retp))/2
+costv <- bidask*cumsum(abs(retp))/2
 # Subtract transaction costs from margin account
 marginv <- cumsum(retp)
-marginv <- (marginv - costs)
+marginv <- (marginv - costv)
 # dygraph plot of margin and transaction costs
-datav <- cbind(marginv, costs)
-colnamev <- c("Margin", "Cumulative Transaction Costs")
+datav <- cbind(marginv, costv)
+colnamev <- c("Margin", "Transaction Costs")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav[endd], main="VTI Transaction Costs") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
@@ -393,13 +393,13 @@ dygraphs::dygraph(wealthv[endd], main="Wealth of Weighted Portfolios") %>%
 # Margin account for fixed dollars (with rebalancing)
 marginv <- cumsum(retp %*% weightv)
 # Cumulative transaction costs
-costs <- bidask*cumsum(abs(retp) %*% weightv)/2
+costv <- bidask*cumsum(abs(retp) %*% weightv)/2
 # Subtract transaction costs from margin account
-marginv <- (marginv - costs)
+marginv <- (marginv - costv)
 # dygraph plot of margin and transaction costs
-datav <- cbind(marginv, costs)
+datav <- cbind(marginv, costv)
 datav <- xts::xts(datav, datev)
-colnamev <- c("Margin", "Cumulative Transaction Costs")
+colnamev <- c("Margin", "Transaction Costs")
 colnames(datav) <- colnamev
 dygraphs::dygraph(datav[endd], main="Fixed Dollar Portfolio Transaction Costs") %>%
   dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
@@ -485,7 +485,7 @@ dygraphs::dygraph(wealthv[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Returns in excess of weighted returns
 retw <- retp %*% weightv
-retx <- lapply(retp, function(x) (retw - x))
+retx <- lapply(retp, function(x) (x - retw))
 retx <- do.call(cbind, retx)
 sum(retx %*% weightv)
 # Calculate the weighted sum of absolute excess returns
@@ -493,18 +493,18 @@ retx <- abs(retx) %*% weightv
 # Total dollar amount of stocks that need to be traded
 retx <- retx*rutils::lagit(wealthpr)
 # Cumulative transaction costs
-costs <- bidask*cumsum(retx)/2
+costv <- bidask*cumsum(retx)/2
 # Subtract transaction costs from wealth
-wealthpr <- (wealthpr - costs)
+wealthpr <- (wealthpr - costv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_allocations_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of wealth and transaction costs
-wealthv <- cbind(wealthpr, costs)
+wealthv <- cbind(wealthpr, costv)
 wealthv <- xts::xts(wealthv, datev)
-colnamev <- c("Wealth", "Cumulative Transaction Costs")
+colnamev <- c("Wealth", "Transaction Costs")
 colnames(wealthv) <- colnamev
 dygraphs::dygraph(wealthv[endd], 
   main="Transaction Costs With Equal Wealths") %>%
@@ -973,7 +973,8 @@ text(x=weightm, y=0.7*max(riskrets), pos=4, cex=1.2,
     \column{0.5\textwidth}
       The \emph{All-Weather} portfolio is a portfolio with proportional allocations of stocks ($30\%$), bonds ($55\%$), and commodities and precious metals ($15\%$) (approximately).
       \vskip1ex
-      The \emph{All-Weather} portfolio was designed by Bridgewater Associates, the largest hedge fund in the world:\\
+      The \emph{All-Weather} portfolio was developed by 
+      \href{https://www.bridgewater.com/research-and-insights}{\emph{Bridgewater Associates}}, the largest hedge fund in the world:\\
       {\tiny
       \url{https://www.bridgewater.com/research-library/the-all-weather-strategy/} \\
       \url{http://www.nasdaq.com/article/remember-the-allweather-portfolio-its-having-a-killer-year-cm685511} \\
@@ -1113,52 +1114,50 @@ dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Standardized Stock Prices}
+\subsection{Risk Parity Strategy For Stocks and Bonds}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{standardized price} is the dollar amount of stock with unit dollar volatility.  
-      The \emph{standardized price} is equal to the stock price divided by its dollar volatility: $\frac{p}{\sigma_d}$
+      The weights of the risk parity strategy are proportional to the inverse of the stock dollar volatilities: $w_i \propto \frac{1}{\sigma_i}$.
       \vskip1ex
-      Multiplying the weights times the dollar returns of the \emph{standardized prices} is equivalent to buying \emph{share amounts} such that their dollar volatilities are proportional to the weights.
+      So that the stock allocations (\emph{dollar amounts}) have equal dollar volatilities.
       \vskip1ex
-      The equal volatility portfolio has lower absolute returns because it's overweight bonds.
+      The risk parity strategy has a higher Sharpe ratio than the equal dollar portfolio because it's overweight bonds. 
+      But it also has lower absolute returns.
+      \vskip1ex
+      The risk parity strategy was developed in the early \texttt{1990s} by \href{https://www.bridgewater.com/research-and-insights}{\emph{Bridgewater Associates}}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the dollar and percentage returns of VTI and IEF
 pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
 datev <- zoo::index(pricev)
 retd <- rutils::diffit(pricev)
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
-# Wealth of fixed shares (without rebalancing)
-weightv <- c(0.5, 0.5) # Buy 0.5 shares of each stock
-wealthfs <- drop(pricev %*% weightv)
-# retd[1, ] <- pricev[1, ]
-# wealthfs <- cumsum(retd %*% weightv)
-# Calculate the standardized stock prices (fixed shares)
-pricesd <- lapply(pricev, function(x) x/sd(rutils::diffit(x)))
-pricesd <- do.call(cbind, pricesd)
-retsd <- rutils::diffit(pricesd) # Dollar returns
-sapply(retsd, sd)
-sapply(retd, sd)
-# Wealth with equal dollar volatilities
-wealthev <- drop(pricesd %*% weightv)
-wealthev <- wealthev*wealthfs[1]/wealthev[1]
+# Calculate the risk parity weights
+weightv <- 1/sapply(retd, sd)
+weightv <- weightv/sum(weightv)
+# Wealth of risk parity
+wealthrp <- drop(pricev %*% weightv)
+# Wealth of equal dollar (without rebalancing)
+weightv <- 1/as.numeric(pricev[1, ])
+weightv <- weightv/sum(weightv)
+wealthed <- (pricev %*% weightv)
+wealthed <- wealthrp[1]*wealthed/wealthed[1]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_equal_volatility.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_insample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
-wealthv <- xts::xts(cbind(wealthfs, wealthev), datev)
-colnames(wealthv) <- c("Equal dollar", "Equal volatility")
+wealthv <- xts::xts(cbind(wealthed, wealthrp), datev)
+colnames(wealthv) <- c("Equal dollar", "Risk parity")
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(log(wealthv[endd]), 
-  main="Wealth of Equal Dollar And Equal Volatility") %>%
+  main="Wealth of Equal Dollar And Risk parity") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
@@ -1169,37 +1168,40 @@ dygraphs::dygraph(log(wealthv[endd]),
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Rolling Standardized Stock Prices}
+\subsection{The Rolling Risk Parity Allocations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{rolling standardized price} is equal to the stock price divided by its trailing dollar volatility: $\frac{p_t}{\sigma_t}$
+      In practice, the dollar volatility $\sigma_t$ changes over time so it must be recalculated, and the weights must be updated: $w_t \propto \frac{1}{\sigma_t}$.
       \vskip1ex
-      When the volatility changes over time, then the rolling standardized prices also change over time.
+      The stock allocations (\emph{dollar amounts}) increase when the volatility is low, and vice versa.
       \vskip1ex
-      The rolling standardized prices can become very large and very volatile when the volatility is very low.
+      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of returns $r_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the returns minus the trailing means $(r_t - \bar{r}_t)^2$, using the decay factor $\lambda$:
+      \begin{flalign*}
+        & \bar{r}_t = \lambda \bar{r}_{t-1} + (1-\lambda) r_t \\
+        & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (r_t - \bar{r}_t)^2
+      \end{flalign*}
+      Where $\sigma^2_t$ is the trailing variance at time $t$.
       \vskip1ex
-      The trailing volatility is calculated from past returns using the recursive formula: $\sigma_t^2 = \lambda \sigma_{t-1}^2 + (1 - \lambda) r_t^2$.
-      \vskip1ex
-      Where $\lambda$ is the decay factor.
-      \vskip1ex
-      The functions \texttt{HighFreq::run\_mean()} and \texttt{HighFreq::run\_var()} calculate the trailing mean and variance by recursively updating the past estimates with the new values, using the decay factor $\lambda$.
+      The decay factor $\lambda$ determines how quickly the variance estimates are updated, with smaller values of $\lambda$ producing faster updating, giving more weight to recent returns, and vice versa.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_prices.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_alloc.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing dollar volatilities
-vold <- HighFreq::run_var(retd, lambda=0.99)
-vold <- sqrt(vold)
-# Calculate the standardized prices with unit dollar volatilities
-pricerp <- pricev/vold
-pricerp <- pricerp*sum(pricev[1, ])/sum(pricerp[1, ])
-# Plot the rolling standardized prices
-pricec <- cbind(pricerp$VTI, pricev$VTI)
-colnames(pricec) <- c("Standardized", "VTI")
-dygraph(pricec[endd], main="Rolling Standardized Prices of VTI") %>%
+lambdav <- 0.99
+vold <- HighFreq::run_var(retd, lambda=lambdav)
+vold <- sqrt(vold[, 2])
+# Calculate the rolling risk parity weights
+weightv <- 1/vold
+weightv <- weightv/rowSums(weightv)
+# Calculate the risk parity allocations
+pricerp <- pricev*weightv
+# Plot the risk parity allocations
+colnames(pricerp) <- c("Stocks", "Bonds")
+dygraph(log(pricerp[endd]), main="Risk Parity Allocations") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
@@ -1210,51 +1212,49 @@ dygraph(pricec[endd], main="Rolling Standardized Prices of VTI") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Risk Parity Strategy For Stocks and Bonds}
+\subsection{Rolling Risk Parity Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{Risk Parity} strategy the dollar allocations are rebalanced daily so that their dollar volatilities remain proportional to the weights.
+      In the \emph{Risk Parity} strategy the stock allocations are rebalanced daily so that their dollar volatilities remain equal.
       \vskip1ex
-      The dollar returns of risk parity are equal to the standardized prices times their percentage returns.
+      The dollar returns of risk parity $r_d$ are equal to the percentage returns of the original prices $r_t$ times the stock allocations $p_a$: $r_d = r_t p_a$.
       \vskip1ex
       The risk parity strategy for stocks and bonds has a higher Sharpe ratio than the proportional wealth strategy. 
+      But it also has lower absolute returns.
       \vskip1ex
-      The absolute returns can also be higher if the standardized prices become very large when the volatility is very low.
+      The absolute returns can be increased by increasing the leverage - buying more stocks and bonds with borrowed money.
       \vskip1ex
-      The risk parity strategy is also called the equal risk contributions (ERC) strategy.
+      Risk parity performs better for assets with negative or low correlations of returns, like stocks and bonds.
       \vskip1ex
-      Risk parity works better for assets with negative or low correlations, like stocks and bonds.
-      \vskip1ex
-      The shiny app \texttt{app\_risk\_parity\_strat.R} allows users to study the performance of the risk parity strategy as a function of its weight parameters.
+      Risk parity performed poorly during the Covid crisis because of the 
+      \href{https://tinyurl.com/bdhwp62n}{\emph{simultaneous losses of both stocks and bonds}} (positive correlations).
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the dollar returns of risk parity
 retrp <- retp*rutils::lagit(pricerp)
 retrp[1, ] <- pricerp[1, ]
 # Calculate the wealth of risk parity
-wealthrp <- cumsum(retrp %*% weightv)
+wealthrp <- cumsum(rowSums(retrp))
+# Wealth of proportional allocation (with rebalancing)
+wealthpr <- cumprod(1 + rowMeans(retp))
+wealthpr <- wealthpr*wealthrp[1]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_wealth.png}
       <<echo=TRUE,eval=FALSE>>=
-# Wealth of proportional allocation (with rebalancing)
-weightv <- c(0.5, 0.5) # Keep 0.5 of wealth in each stock
-wealthpr <- cumprod(1 + retp %*% weightv)
-wealthpr <- wealthpr*sum(pricev[1, ]*weightv)
-# Calculate the log wealths
+# Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(wealthpr, wealthrp)
 wealthv <- xts::xts(wealthv, datev)
 colnames(wealthv) <- c("PropAlloc", "Risk Parity")
-# Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot a dygraph of the log wealths
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(log(wealthv[endd]), 
-  main="Log Wealth of Risk Parity vs Proportional Allocation") %>%
+  main="Log Wealth of Proportional Allocation vs Risk Parity") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
@@ -1271,13 +1271,13 @@ dygraphs::dygraph(log(wealthv[endd]),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The risk parity strategy reduces allocations to assets with rising volatilities, which is often accompanied by negative returns.
+      The risk parity strategy reduces allocations to assets with higher volatilities, which is often accompanied by negative returns.
       \vskip1ex
-      This allows the risk parity strategy to time the markets better - selling when prices are about to drop and buying when prices are rising.  But only when the changes of the volatility are significant.
+      This allows the risk parity strategy to time the markets better - selling when prices are droppng and buying when prices are rising.  But only when the changes of the volatility are significant.
       \vskip1ex
       But the t-value of the risk parity strategy is negative, because it's contrarian when the volatility is stable.
       \vskip1ex
-      The t-value of the proportional wealth allocation strategy is negative, because it's contrarian, i.e. it buys stocks when their prices drop.
+      The t-value of the proportional wealth allocation strategy is negative, because it's contrarian - it buys stocks when their prices drop.
       <<echo=TRUE,eval=FALSE>>=
 # Test risk parity market timing of VTI using Treynor-Mazuy test
 retrp <- rutils::diffit(wealthv)
@@ -1318,47 +1318,34 @@ text(x=0.0, y=0.7*max(resids), paste("Prop Alloc t-value =", round(coefreg["Trey
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Transaction Costs of Risk Parity Strategy}
+\subsection{Transaction Costs of Risk Parity Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In each period the stocks must be rebalanced to maintain the equal wealths.
+      The risk parity strategy has higher transaction costs because it trades more shares than the proportional wealth strategy, and it may also use leverage to buy more shares.
       \vskip1ex
-      The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = \Pi_{t-1} \sum_{i=1}^n w_i \left| \bar{r}_t - r_t \right|$
-      \vskip1ex
-      The \emph{transaction costs} $c^r_t$ are equal to half the \emph{bid-ask spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} \sum_{i=1}^n \varepsilon_i$.
-      \vskip1ex
-      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_t$ must be subtracted from the \emph{wealth} $\Pi_t$: $\Pi_t - \sum_{i=1}^t c^r_t$.
+      But the higher transaction costs are not large enough to completely cancel the higher returns of the strategy.
       <<echo=TRUE,eval=FALSE>>=
-# Returns in excess of weighted returns
-retx <- lapply(retp, function(x) (retw - x))
-retx <- do.call(cbind, retx)
-sum(retx %*% weightv)
-# Calculate the weighted sum of absolute excess returns
-retx <- abs(retx) %*% weightv
 # Total dollar amount of stocks that need to be traded
-retx <- retx*rutils::lagit(wealthpr)
-# Cumulative transaction costs
-costs <- bidask*cumsum(retx)/2
-# Subtract transaction costs from wealth
-wealthpr <- (wealthpr - costs)
+notx <- rutils::diffit(pricerp)
+# The bid-ask spread is equal to 1 bp for liquid ETFs
+bidask <- 0.001
+# Calculate the cumulative transaction costs
+costv <- 0.5*bidask*cumsum(rowSums(abs(notx)))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_proportional_allocations_transaction_costs.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_transaction_costs.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of wealth and transaction costs
-wealthv <- cbind(wealthpr, costs)
+wealthv <- cbind(wealthrp, wealthrp-costv)
 wealthv <- xts::xts(wealthv, datev)
-colnamev <- c("Wealth", "Cumulative Transaction Costs")
+colnamev <- c("Risk Parity", "With Costs")
 colnames(wealthv) <- colnamev
-dygraphs::dygraph(wealthv, main="Transaction Costs With Equal Wealths") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=3) %>%
+dygraphs::dygraph(wealthv[endd], main="Risk Parity Including Transaction Costs") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -1394,9 +1381,9 @@ posv[datev == "11-03"] <- 1
 posv <- zoo::na.locf(posv, na.rm=FALSE)
 posv <- zoo::na.locf(posv, fromLast=TRUE)
 # Calculate the strategy returns
-pnlinmay <- posv*retp
-wealthv <- cbind(retp, pnlinmay)
-colnames(wealthv) <- c("VTI", "sell_in_may")
+pnlmay <- posv*retp
+wealthv <- cbind(retp, pnlmay)
+colnames(wealthv) <- c("VTI", "sellmay")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1439,13 +1426,13 @@ legend("topleft", legend=colnames(wealthv),
 desm <- cbind(wealthv, 0.5*(retp+abs(retp)), retp^2)
 colnames(desm) <- c(colnames(wealthv), "Merton", "Treynor")
 # Perform Merton-Henriksson test
-regmod <- lm(pnlinmay ~ VTI + Merton, data=desm)
+regmod <- lm(sellmay ~ VTI + Merton, data=desm)
 summary(regmod)
 # Perform Treynor-Mazuy test
-regmod <- lm(pnlinmay ~ VTI + Treynor, data=desm)
+regmod <- lm(sellmay ~ VTI + Treynor, data=desm)
 summary(regmod)
 # Plot Treynor-Mazuy residual scatterplot
-resids <- (pnlinmay - regmod$coeff["VTI"]*retp)
+resids <- (desm$sellmay - regmod$coeff["VTI"]*retp)
 plot.default(x=retp, y=resids, xlab="VTI", ylab="residuals")
 title(main="Treynor-Mazuy Market Timing Test\n for Sell in May vs VTI", line=0.5)
 # Plot fitted (predicted) response values
@@ -2119,6 +2106,9 @@ legend("topleft", legend=colnames(pricev), y.intersp=0.5,
 # Calculate the EMA prices recursively using C++ code
 lambdaf <- 0.984
 pricema <- HighFreq::run_mean(closep, lambda=lambdaf)
+pricev <- cbind(closep, pricema)
+colnames(pricev) <- c("VTI", "VTI EMA")
+colnamev <- colnames(pricev)
 # Calculate the positions, either: -1, 0, or 1
 indic <- sign(closep - pricema)
 posv <- rutils::lagit(indic, lagg=1)
@@ -2135,7 +2125,7 @@ dyplot <- dygraphs::dygraph(pricev, main="VTI EMA Prices") %>%
       @
       <<echo=FALSE,eval=FALSE,purl=FALSE>>=
 # Equivalent code to the above
-# Determine trade dates right after EMA has crossed prices
+# Determine the trade dates right after EMA has crossed prices
 indic <- sign(closep - pricema)
 crossd <- (rutils::diffit(indic) != 0)
 crossd <- which(crossd) + 1
@@ -2285,7 +2275,7 @@ text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
       \vskip1ex
       There's a tradeoff between switching positions too early and risking a whipsaw, and waiting too long and missing an emerging trend.
       <<echo=TRUE,eval=FALSE>>=
-# Determine trade dates right after EMA has crossed prices
+# Determine the trade dates right after EMA has crossed prices
 indic <- sign(closep - pricema)
 # Calculate the positions from lagged indicator
 lagg <- 2
@@ -2341,7 +2331,7 @@ indic <- sign(closep - pricema)
 posv <- rutils::lagit(indic, lagg=1)
 # Calculate the daily pnl for days without trades
 pnls <- retp*posv
-# Determine trade dates right after EMA has crossed prices
+# Determine the trade dates right after EMA has crossed prices
 crossd <- which(rutils::diffit(posv) != 0)
 # Calculate the realized pnl for days with trades
 openp <- quantmod::Op(ohlc)
@@ -2409,12 +2399,12 @@ legend("top", legend=colnames(wealthv),
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_ema_transcosts.png}
       <<echo=TRUE,eval=FALSE>>=
-# bidask equal to 1 bp for liquid ETFs
+# The bid-ask spread is equal to 1 bp for liquid ETFs
 bidask <- 0.001
 # Calculate the transaction costs
-costs <- 0.5*bidask*abs(poslag - posv)
+costv <- 0.5*bidask*abs(poslag - posv)
 # Plot strategy with transaction costs
-wealthv <- cbind(pnls, pnls - costs)
+wealthv <- cbind(pnls, pnls - costv)
 colnames(wealthv) <- c("EMA", "EMA w Costs")
 colorv <- c("blue", "red")
 dygraphs::dygraph(cumsum(wealthv)[endd], main="Crossover Strategy With Transaction Costs") %>%
@@ -2464,8 +2454,8 @@ sim_ema <- function(closep, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
   posv <- rutils::lagit(posv, lagg=1)
   # Calculate the PnLs of strategy
   pnls <- retp*posv
-  costs <- 0.5*bidask*abs(rutils::diffit(posv))
-  pnls <- (pnls - costs)
+  costv <- 0.5*bidask*abs(rutils::diffit(posv))
+  pnls <- (pnls - costv)
   # Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
@@ -2494,7 +2484,7 @@ sim_ema <- function(closep, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
 lambdav <- seq(from=0.97, to=0.99, by=0.004)
 # Perform lapply() loop over lambdav
 pnltrend <- lapply(lambdav, function(lambdaf) {
-  # Simulate crossover strategy and Calculate the returns
+  # Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
 })  # end lapply
 pnltrend <- do.call(cbind, pnltrend)
@@ -2549,15 +2539,15 @@ clusterExport(compclust,
 # Perform parallel loop over lambdav under Windows
 pnltrend <- parLapply(compclust, lambdav, function(lambdaf) {
   library(quantmod)
-  # Simulate crossover strategy and Calculate the returns
-  sim_ema(closep=closep, lambdaf=lambdaf, lookb=lookb)[, "pnls"]
+  # Simulate crossover strategy and calculate the returns
+  sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
 })  # end parLapply
-stretduster(compclust)  # Stop R processes over cluster under Windows
+stopCluster(compclust)  # Stop R processes over cluster under Windows
 # Perform parallel loop over lambdav under Mac-OSX or Linux
 pnltrend <- mclapply(lambdav, function(lambdaf) {
   library(quantmod)
-  # Simulate crossover strategy and Calculate the returns
-  sim_ema(closep=closep, lambdaf=lambdaf, lookb=lookb)[, "pnls"]
+  # Simulate crossover strategy and calculate the returns
+  sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
 }, mc.cores=ncores)  # end mclapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
@@ -2669,14 +2659,14 @@ legend("top", legend=colnames(wealthv),
 lambdav <- seq(0.6, 0.7, 0.01)
 # Perform lapply() loop over lambdav
 pnlrevert <- lapply(lambdav, function(lambdaf) {
-  # Simulate crossover strategy and Calculate the returns
+  # Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, trend=(-1))[, "pnls"]
 })  # end lapply
 pnlrevert <- do.call(cbind, pnlrevert)
 colnames(pnlrevert) <- paste0("lambda=", lambdav)
 # Plot dygraph of mean reverting crossover strategies
 colorv <- colorRampPalette(c("blue", "red"))(NROW(lambdav))
-dygraphs::dygraph(cumsum(pnlrevert)[endd], main="Returns of Mean Reverting Crossover Strategies (No Costs)") %>%
+dygraphs::dygraph(cumsum(pnlrevert)[endd], main="Returns of Mean Reverting Crossover Strategies (No costv)") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dyLegend(show="always", width=400)
 # Plot crossover strategies with custom line colors
@@ -2759,7 +2749,7 @@ wealthv <- cbind(retp, revertopt)
 colnames(wealthv) <- c("VTI", "EMA PnL")
 # Plot dygraph of crossover strategy wealth
 colorv <- c("blue", "red")
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Mean Reverting Crossover Strategy (No Costs)") %>%
+dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Mean Reverting Crossover Strategy (No costv)") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
@@ -2878,7 +2868,7 @@ legend("topleft", legend=colnames(pnls),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating the Dual EMA Crossover Strategy}
+\subsection{Dual EMA Crossover Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2888,36 +2878,34 @@ legend("topleft", legend=colnames(pnls),
       \vskip1ex
       The stock position flips when the fast moving \emph{EMA} crosses the slow moving \emph{EMA}.
       <<echo=TRUE,eval=FALSE>>=
+# Extract the log VTI prices
+ohlc <- log(rutils::etfenv$VTI)
+datev <- zoo::index(ohlc)
+nrows <- NROW(ohlc)
+closep <- quantmod::Cl(ohlc)
+colnames(closep) <- "VTI"
+retp <- rutils::diffit(closep)  # VTI returns
 # Calculate the fast and slow EMAs
 lambdafa <- 0.89
 lambdasl <- 0.95
 # Calculate the EMA prices
 emaf <- HighFreq::run_mean(closep, lambda=lambdafa)
 emas <- HighFreq::run_mean(closep, lambda=lambdasl)
-# Calculate the EMA prices
 pricev <- cbind(closep, emaf, emas)
 colnames(pricev) <- c("VTI", "EMA fast", "EMA slow")
-# Calculate the positions, either: -1, 0, or 1
+# Determine the positions and the trade dates right after the EMAs have crossed
 indic <- sign(emaf - emas)
-lagg <- 2
-indic <- HighFreq::roll_sum(indic, lagg)
-posv <- rep(NA_integer_, nrows)
-posv[1] <- 0
-posv <- ifelse(indic == lagg, 1, posv)
-posv <- ifelse(indic == (-lagg), -1, posv)
-posv <- zoo::na.locf(posv, na.rm=FALSE)
-posv <- xts::xts(posv, order.by=zoo::index(closep))
-posv <- rutils::lagit(posv, lagg=1)
+posv <- rutils::lagit(indic)
+crossd <- (rutils::diffit(posv) != 0)
+# Create colors for background shading
+shadev <- posv[crossd]
+shadev <- ifelse(shadev == 1, "lightgreen", "antiquewhite")
+crossd <- c(datev[crossd], end(closep))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ewm_dual_strat.png}
       <<echo=TRUE,eval=FALSE>>=
-# Create colors for background shading
-crossd <- (rutils::diffit(posv) != 0)
-shadev <- posv[crossd]
-crossd <- c(zoo::index(shadev), end(posv))
-shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Plot dygraph
 colnamev <- colnames(pricev)
 dyplot <- dygraphs::dygraph(pricev, main="VTI Dual EMA Prices") %>%
@@ -2951,7 +2939,7 @@ dyplot
 pnls <- retp*posv
 colnames(pnls) <- "Strategy"
 wealthv <- cbind(retp, pnls)
-# Annualized Sharpe ratio of Dual crossover strategy
+# Annualized Sharpe ratio of dual crossover strategy
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
 cor(wealthv)[1, 2]
@@ -3016,8 +3004,8 @@ sim_ema2 <- function(closep, lambdafa=0.1, lambdasl=0.01,
   posv <- rutils::lagit(posv, lagg=1)
   # Calculate the PnLs of strategy
   pnls <- retp*posv
-  costs <- 0.5*bidask*abs(rutils::diffit(posv))
-  pnls <- (pnls - costs)
+  costv <- 0.5*bidask*abs(rutils::diffit(posv))
+  pnls <- (pnls - costv)
   # Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
@@ -3058,14 +3046,14 @@ calc_sharpe <- function(closep, lambdafa, lambdasl, bidask, trend, lagg) {
 calc_sharpe <- Vectorize(FUN=calc_sharpe, 
   vectorize.args=c("lambdafa", "lambdasl"))
 # Calculate the matrix of PnLs
-sharpem <- outer(lambdafv, lambdasv, FUN=calc_sharpe, closep=closep, 
-                 bidask=0.0, trend=1, lagg=2)
+sharpem <- outer(lambdafv, lambdasv, FUN=calc_sharpe, 
+                 closep=closep, bidask=0.0, trend=1, lagg=1)
 # Or perform two sapply() loops over lambda vectors
 sharpem <- sapply(lambdasv, function(lambdasl) {
   sapply(lambdafv, function(lambdafa) {
     if (lambdafa >= lambdasl) return(NA)
-    calc_sharpe(closep=closep, lambdafa=lambdafa, lambdasl=lambdasl, 
-                bidask=0.0, trend=1, lagg=2)
+    calc_sharpe(closep=closep, lambdafa=lambdafa, 
+            lambdasl=lambdasl, bidask=0.0, trend=1, lagg=1)
   })  # end sapply
 })  # end sapply
 colnames(sharpem) <- lambdasv
@@ -3093,14 +3081,14 @@ whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
 lambdafa <- lambdafv[whichv[1]]
 lambdasl <- lambdasv[whichv[2]]
 crossopt <- sim_ema2(closep=closep, lambdafa=lambdafa, lambdasl=lambdasl, 
-  bidask=0.0, trend=1, lagg=2)
+  bidask=0.0, trend=1, lagg=1)
 pnls <- crossopt[, "pnls"]
 wealthv <- cbind(retp, pnls)
 colnames(wealthv)[2] <- "EMA"
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Annualized Sharpe ratio of Dual crossover strategy
+# Annualized Sharpe ratio of dual crossover strategy
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
 cor(wealthv)[1, 2]
@@ -3148,7 +3136,7 @@ outsample <- (nrows %/% 2 + 1):nrows
 # Calculate the matrix of PnLs
 sharpem <- outer(lambdafv, lambdasv, 
                  FUN=calc_sharpe, closep=closep[insample, ], 
-                 bidask=0.0, trend=1, lagg=2)
+                 bidask=0.0, trend=1, lagg=1)
 colnames(sharpem) <- lambdasv
 rownames(sharpem) <- lambdafv
 # Calculate the PnLs for the optimal strategy
@@ -3156,7 +3144,7 @@ whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
 lambdafa <- lambdafv[whichv[1]]
 lambdasl <- lambdasv[whichv[2]]
 pnls <- sim_ema2(closep=closep, lambdafa=lambdafa, lambdasl=lambdasl, 
-                 bidask=0.0, trend=1, lagg=2)[, "pnls"]
+                 bidask=0.0, trend=1, lagg=1)[, "pnls"]
 wealthv <- cbind(retp, pnls)
 colnames(wealthv)[2] <- "EMA"
 # Calculate the Sharpe and Sortino ratios in-sample and out-of-sample
@@ -3467,8 +3455,8 @@ sim_vwap <- function(ohlc, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
   posv <- rutils::lagit(posv, lagg=1)
   # Calculate the PnLs of strategy
   pnls <- retp*posv
-  costs <- 0.5*bidask*abs(rutils::diffit(posv))
-  pnls <- (pnls - costs)
+  costv <- 0.5*bidask*abs(rutils::diffit(posv))
+  pnls <- (pnls - costv)
   # Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
@@ -3579,38 +3567,36 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sa
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Bollinger Bands} improve the moving average feature by adding information about the volatility.
-      \vskip1ex
       The Bollinger Bands are three time series, with the middle band equal to the trailing mean prices, the upper band equal to the mean prices plus the trailing standard deviation, and the lower band equal to the mean prices minus the standard deviation.
       \vskip1ex
       The Bollinger Bands are often used to indicate that prices are cheap if they are below the lower band, and rich (expensive) if they are above the upper band.
       \vskip1ex
-      The decay factor $\lambda$ determines the rate of decay of the weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
+      The function \texttt{HighFreq::run\_var()} calculates the trailing mean and variance of the prices $p_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the prices minus the trailing means $(p_t - \bar{p}_t)^2$, using the decay factor $\lambda$:
+      \begin{flalign*}
+        & \bar{p}_t = \lambda \bar{p}_{t-1} + (1-\lambda) p_t \\
+        & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (p_t - \bar{p}_t)^2
+      \end{flalign*}
+      Where $\bar{p}_t$ and $\sigma^2_t$ are the trailing mean and variance at time $t$.
       \vskip1ex
-      The functions \texttt{HighFreq::run\_mean()} and \texttt{HighFreq::run\_var()} calculate the trailing mean and variance by recursively updating the past estimates with the new values, using the decay factor $\lambda$.
-      <<echo=TRUE,eval=FALSE>>=
-# Extract the log VTI prices
-pricev <- log(na.omit(rutils::etfenv$prices$VTI))
-nrows <- NROW(pricev)
-# Calculate the trailing mean prices
-lambdaf <- 0.9
-pricem <- HighFreq::run_mean(pricev, lambda=lambdaf)
-# Calculate the trailing volatilities
-volp <- HighFreq::run_var(pricev, lambda=lambdaf)
-volp <- sqrt(volp)
-      @
+      The decay factor $\lambda$ determines how quickly the mean and variance estimates are updated, with smaller values of $\lambda$ producing faster updating, giving more weight to recent prices, and vice versa.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/bollinger_feature.png}
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the trailing mean prices and volatilities
+pricev <- log(na.omit(rutils::etfenv$prices$VTI))
+lambdaf <- 0.9
+volp <- HighFreq::run_var(pricev, lambda=lambdaf)
+pricema <- volp[, 1]
+volp <- sqrt(volp[, 2])
 # Dygraphs plot of Bollinger bands
-priceb <- cbind(pricev, pricem, pricem+volp, pricem-volp)
+priceb <- cbind(pricev, pricema, pricema+volp, pricema-volp)
 colnames(priceb)[2:4] <- c("mean", "upper", "lower")
 colnamev <- colnames(priceb)
 dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Bollinger Bands") %>%
   dySeries(name=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], strokeWidth=2, col="green") %>%
-  dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="red") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, col="purple") %>%
+  dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="green") %>%
   dySeries(name=colnamev[4], strokeWidth=2, strokePattern="dashed", col="red") %>%
   dyLegend(show="always", width=300)
       @
@@ -3627,7 +3613,7 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Bollinger Band
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Centering (de-meaning) the prices provides a better view of the \emph{Bollinger Bands}.
+      Centering (de-meaning) the prices provides a better illustration of the \emph{Bollinger Bands}.
       \vskip1ex
       The centered prices tend to be range-bound between the \emph{Bollinger Bands}.
       \vskip1ex
@@ -3641,7 +3627,7 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Bollinger Band
       \includegraphics[width=0.45\paperwidth]{figure/bollinger_demean.png}
       <<echo=TRUE,eval=FALSE>>=
 # Center the prices
-pricec <- pricev - pricem
+pricec <- pricev - pricema
 # Dygraphs plot of Bollinger bands
 priceb <- cbind(pricec, volp, -volp)
 colnames(priceb) <- c("price", "upper", "lower")
@@ -3649,8 +3635,8 @@ colnamev <- colnames(priceb)
 dygraphs::dygraph(priceb["2008-09/2009-09"], 
   main="Centered VTI Prices and Bollinger Bands") %>%
   dySeries(name=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], strokeWidth=2, strokePattern="dashed", col="red") %>%
-  dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="green") %>%
+  dySeries(name=colnamev[2], strokeWidth=2, strokePattern="dashed", col="green") %>%
+  dySeries(name=colnamev[3], strokeWidth=2, strokePattern="dashed", col="red") %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -3666,29 +3652,34 @@ dygraphs::dygraph(priceb["2008-09/2009-09"],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Bollinger Band} strategy switches to long \texttt{\$1} dollar of the stock when prices are cheap (below the lower band), and sells short \texttt{-\$1} dollar of stock when prices are rich (expensive - above the upper band).  It goes flat \texttt{\$0} dollar of stock (unwinds) if the stock reaches a fair (mean) price.
+      The \emph{Bollinger Strategy} switches to long \texttt{\$1} dollar of the stock when prices are cheap (below the lower band), and sells short \texttt{-\$1} dollar when prices are rich (expensive - above the upper band).  It goes flat (unwinds) if the stock reaches a fair (mean) price.
       \vskip1ex
-      The strategy is therefore always either long \texttt{\$1} dollar of stock, or short \texttt{-\$1} dollar of stock, or flat \texttt{\$0} dollar of stock.
+      The strategy is therefore always either long \texttt{\$1} dollar of stock, or short \texttt{-\$1} dollar, or flat the stock (\texttt{\$0} dollars).
       \vskip1ex
       The upper and lower Bollinger bands can be chosen to be a multiple of the standard deviations above and below the mean prices.
       \vskip1ex
-      The Bollinger strategy is a \emph{mean reverting} (contrarian) strategy because it bets on prices reverting to their mean value.
+      The \emph{Bollinger Strategy} is a \emph{mean reverting} (contrarian) strategy because it bets on prices reverting to their mean value.
       \vskip1ex
-      The Bollinger strategy is a type of \emph{statistical arbitrage} strategy.  
+      The \emph{Bollinger Strategy} can be considered an extension of the crossover strategy, which utilizes information about the volatility of the returns.
+      \vskip1ex
+      The \emph{Bollinger Strategy} switches its position only after the stock price crosses the Bollinger band, instead of the moving average price, which delays trades and reduces \emph{"whipsaws"}.
+      \vskip1ex
+      The \emph{Bollinger Strategy} is a type of \emph{statistical arbitrage} strategy.  
       \vskip1ex
       \emph{Statistical arbitrage} strategies try to exploit short-term anomalies in prices, when prices diverge from their equilibrium values and then revert back to them.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the trailing mean prices and volatilities
+# Calculate the EMA prices and volatilities
 lambdaf <- 0.1
-pricem <- HighFreq::run_mean(pricev, lambda=lambdaf)
 volp <- HighFreq::run_var(pricev, lambda=lambdaf)
-volp <- sqrt(volp)
+pricema <- volp[, 1]
+volp <- sqrt(volp[, 2])
 # Prepare the simulation parameters
 pricen <- as.numeric(pricev) # Numeric price
-pricec <- pricen - pricem # Centered price
+pricec <- pricen - pricema # Centered price
 threshv <- volp
+nrows <- NROW(pricev)
 posv <- integer(nrows) # Stock positions
 posv[1] <- 0 # Initial position
 # Calculate the positions from Bollinger bands
@@ -3867,12 +3858,12 @@ retd <- (closep - openp)
 # Calculate the cumulative daytime VTI returns
 priced <- cumsum(retd)
 lambdaf <- 0.1
-pricem <- HighFreq::run_mean(priced, lambda=lambdaf)
 volp <- HighFreq::run_var(priced, lambda=lambdaf)
-volp <- sqrt(volp)
+pricema <- volp[, 1]
+volp <- sqrt(volp[, 2])
 # Calculate the positions from Bollinger bands
 threshv <- volp
-pricec <- zoo::coredata(priced - pricem)
+pricec <- zoo::coredata(priced - pricema)
 posv <- rep(NA_integer_, nrows)
 posv[1] <- 0
 posv <- ifelse(pricec > threshv, -1, posv)
@@ -3925,12 +3916,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
 pricev <- log(quantmod::Cl(HighFreq::SPY))
 nrows <- NROW(pricev)
 lambdaf <- 0.1
-pricem <- HighFreq::run_mean(pricev, lambda=lambdaf)
 volp <- HighFreq::run_var(pricev, lambda=lambdaf)
-volp <- sqrt(volp)
+pricema <- volp[, 1]
+volp <- sqrt(volp[, 2])
 # Calculate the positions from Bollinger bands
 threshv <- volp
-pricec <- zoo::coredata(pricev - pricem)
+pricec <- zoo::coredata(pricev - pricema)
 posv <- rep(NA_integer_, nrows)
 posv[1] <- 0
 posv <- ifelse(pricec > threshv, -1, posv)
@@ -3944,8 +3935,8 @@ retp <- rutils::diffit(pricev)
 pnls <- retp*posv
 # Subtract transaction costs from the pnls
 bidask <- 0.0001 # Bid-ask spread equal to 1 basis point
-costs <- 0.5*bidask*abs(rutils::diffit(posv))
-pnls <- (pnls - costs)
+costv <- 0.5*bidask*abs(rutils::diffit(posv))
+pnls <- (pnls - costv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4129,8 +4120,8 @@ ntrades <- sum(abs(rutils::diffit(posv)) > 0)
 retp <- rutils::diffit(pricev)
 pnls <- retp*posv
 # Subtract transaction costs from the pnls
-costs <- 0.5*bidask*abs(rutils::diffit(posv))
-pnls <- (pnls - costs)
+costv <- 0.5*bidask*abs(rutils::diffit(posv))
+pnls <- (pnls - costv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
