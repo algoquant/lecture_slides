@@ -98,11 +98,11 @@ retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 raterf <- 0.03/252
 retp <- (retp - raterf)
 regmod <- lm(XLP ~ VTI, data=retp)
-regmodsum <- summary(regmod)
+regsum <- summary(regmod)
 # Get regression coefficients
-coef(regmodsum)
+coef(regsum)
 # Get alpha and beta
-coef(regmodsum)[, 1]
+coef(regsum)[, 1]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -114,7 +114,7 @@ plot(XLP ~ VTI, data=rutils::etfenv$returns, main="Regression XLP ~ VTI",
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), pch=1, col="blue", asp=1)
 # Add regression line and perpendicular line
 abline(regmod, lwd=2, col="red")
-abline(a=0, b=-1/coef(regmodsum)[2, 1], lwd=2, col="blue")
+abline(a=0, b=-1/coef(regsum)[2, 1], lwd=2, col="blue")
       @
   \end{columns}
 \end{block}
@@ -148,7 +148,7 @@ abline(a=0, b=-1/coef(regmodsum)[2, 1], lwd=2, col="blue")
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Get regression coefficients
-coef(regmodsum)
+coef(regsum)
 # Calculate regression coefficients from scratch
 betac <- drop(cov(retp$XLP, retp$VTI)/var(retp$VTI))
 alphac <- drop(mean(retp$XLP) - betac*mean(retp$VTI))
@@ -193,9 +193,9 @@ betam <- sapply(symbolv, function(symbol) {
 # Perform regression
   regmod <- lm(formulav, data=retp)
 # Get regression summary
-  regmodsum <- summary(regmod)
+  regsum <- summary(regmod)
 # Collect regression statistics
-  with(regmodsum, 
+  with(regsum, 
     c(beta=coefficients[2, 1], 
       pbeta=coefficients[2, 4],
       alpha=coefficients[1, 1], 
@@ -433,15 +433,15 @@ PerformanceAnalytics::table.CAPM(Ra=retp[, c("XLP", "XLF")],
       <<echo=TRUE,eval=FALSE>>=
 capmstats <- table.CAPM(Ra=retp[, symbolv], 
               Rb=retp$VTI, scale=252)
-colnamev <- strsplit(colnames(capmstats), split=" ")
-colnamev <- do.call(cbind, colnamev)[1, ]
-colnames(capmstats) <- colnamev
+colv <- strsplit(colnames(capmstats), split=" ")
+colv <- do.call(cbind, colv)[1, ]
+colnames(capmstats) <- colv
 capmstats <- t(capmstats)
 capmstats <- capmstats[, -1]
-colnamev <- colnames(capmstats)
-whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnamev)
-colnamev[whichv] <- c("Alpha", "Information", "Treynor")
-colnames(capmstats) <- colnamev
+colv <- colnames(capmstats)
+whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colv)
+colv[whichv] <- c("Alpha", "Information", "Treynor")
+colnames(capmstats) <- colv
 capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
 # Copy capmstats into etfenv and save to .RData file
 etfenv <- rutils::etfenv
@@ -515,12 +515,12 @@ datev <- zoo::index(retp[endd, ])
 pricev <- rutils::etfenv$prices$VTI[datev]
 datav <- cbind(pricev, betac)
 colnames(datav)[2] <- "beta"
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue") %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -580,12 +580,12 @@ datev <- zoo::index(retp[endd, ])
 pricev <- log(rutils::etfenv$prices$VTI[datev])
 datav <- cbind(pricev, betac)
 colnames(datav)[2] <- "beta"
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}
@@ -627,12 +627,12 @@ betac <- covarv[, 1]/covarv[, 3]
 # dygraph plot of trailing XLP beta and VTI prices
 datav <- cbind(pricev, betac[endd])[-(1:11)] # Remove warmup period
 colnames(datav)[2] <- "beta"
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
       @
   \end{columns}

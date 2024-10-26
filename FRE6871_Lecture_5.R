@@ -531,9 +531,9 @@ confmat <- table(actual=!testset$default,
 forecast=(fcast < threshv))
 confmat
 # Calculate the FALSE positive (type I error)
-sum(!testset$default & (fcast < threshv))
+sum(!testset$default & (fcast > threshv))
 # Calculate the FALSE negative (type II error)
-sum(testset$default & (fcast > threshv))
+sum(testset$default & (fcast < threshv))
 
 # Calculate the FALSE positive and FALSE negative rates
 confmat <- confmat / rowSums(confmat)

@@ -1076,21 +1076,25 @@ text(x=sqrt(252*diag(covmat)), y=252*retm,
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Efficient Frontier for Two-asset Portfolios}
+\subsection{draft: Efficient Frontier for Two-stock Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The covariance matrix for two assets is equal to:
+      The covariance matrix for two stocks is equal to:
       \begin{displaymath}
         \mathbb{C} = \begin{pmatrix}
           \sigma^2_1 & \sigma_{12} \\
           \sigma_{12} & \sigma^2_2
         \end{pmatrix}
       \end{displaymath}
-      Where $\sigma_{12}$ is the covariance of returns between the two assets,
-      The excess returns of a two-asset portfolio are equal to:
+      Where $\sigma_{11}$ is the variance, and $\sigma_{12}$ is the covariance of returns between the two stocks.
+      \vskip1ex
+      The excess returns of a two-stock portfolio are equal to:
+      \vskip1ex
+      Any linear combination of a portfolio of two stocks is a maximum Sharpe portfolio corresponding to some value of the risk-free rate.
+      \vskip1ex
       \begin{displaymath}
         R = w \mu_1 + (1 - w) \mu_2
       \end{displaymath}
@@ -1120,51 +1124,49 @@ text(x=sqrt(252*diag(covmat)), y=252*retm,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Efficient Frontier for Two-asset Portfolios}
+\subsection{Efficient Frontier for Two-stock Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<corr_two_assets,echo=TRUE,eval=FALSE>>=
-raterf <- 0.03
-retp <- c(asset1=0.05, asset2=0.06)
-stdevs <- c(asset1=0.4, asset2=0.5)
-corrp <- 0.6
-covmat <- matrix(c(1, corrp, corrp, 1), nc=2)
+      The \emph{efficient frontier} for a two-stock portfolio illustrates its dependence on the correlation and the risk-free rate.
+      <<echo=TRUE,eval=FALSE>>=
+# Define the parameters
+raterf <- 0.02 # Risk-free rate
+retp <- c(stock1=0.06, stock2=0.09) # Returns
+stdevs <- c(stock1=0.4, stock2=0.5) # Standard deviations
+corrp <- 0.6 # Correlation
+covmat <- matrix(c(1, corrp, corrp, 1), nc=2) # Covariance matrix
 covmat <- t(t(stdevs*covmat)*stdevs)
-weightv <- seq(from=(-1), to=2, length.out=31)
+weightv <- seq(from=(-1), to=2, length.out=71) # Weights
 weightv <- cbind(weightv, 1-weightv)
-retp <- weightv %*% retp
-portfsd <- sqrt(rowSums(weightv*(weightv %*% covmat)))
-sharper <- (retp-raterf)/portfsd
-whichmax <- which.max(sharper)
-sharpem <- max(sharper)
-# Plot efficient frontier
-x11(widthp <- 6, heightp <- 5)
-par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(portfsd, retp, t="l",
- main=paste0("Efficient frontier and CML for two assets\ncorrelation = ", 100*corrp, "%"),
+retport <- weightv %*% retp # Portfolio returns
+portfsd <- sqrt(rowSums(weightv*(weightv %*% covmat))) # Portfolio volatility
+sharper <- (retport-raterf)/portfsd # Portfolio Sharpe ratios
+# Plot the efficient frontier
+# x11(widthp <- 6, heightp <- 5) # Windows
+dev.new(widthp <- 6, heightp <- 5, noRStudioGD=TRUE) # Mac
+plot(portfsd, retport, t="l",
+ main=paste0("Efficient Frontier and CML for Two Stocks\ncorrelation = ", 100*corrp, "%"),
  xlab="standard deviation", ylab="return",
- lwd=2, col="orange",
- xlim=c(0, max(portfsd)),
- ylim=c(0.02, max(retp)))
-# Add efficient portfolio (maximum Sharpe ratio portfolio)
-points(portfsd[whichmax], retp[whichmax],
-       col="blue", lwd=3)
-text(x=portfsd[whichmax], y=retp[whichmax],
-     labels=paste(c("efficient portfolio\n",
-       structure(c(weightv[whichmax], 1-weightv[whichmax]),
-               names=names(retp))), collapse=" "),
-     pos=2, cex=0.8)
-      @
+ lwd=2, col="orange", xlim=c(0, max(portfsd)), ylim=c(0.01, max(retport)))
+# Add the maximum Sharpe portfolio
+whichmax <- which.max(sharper)
+sharpem <- max(sharper) # Maximum Sharpe ratio
+retmax <- retport[whichmax]
+sdeff <- portfsd[whichmax]
+weightm <- round(weightv[whichmax], 2)
+points(sdeff, retmax, col="blue", lwd=3)
+text(x=sdeff, y=retmax, labels=paste(c("Max Sharpe\n",
+  structure(c(weightm, (1-weightm)), names=c("stock1", "stock2"))), collapse=" "),
+  pos=2, cex=0.8)
+@
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/cml_two_assets.png}
-      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_two_stocks.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot individual assets
+# Plot individual stocks
 points(stdevs, retp, col="green", lwd=3)
 text(stdevs, retp, labels=names(retp), pos=4, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
@@ -1172,12 +1174,11 @@ points(x=0, y=raterf, col="blue", lwd=3)
 text(0, raterf, labels="risk-free\nrate", pos=4, cex=0.8)
 abline(a=raterf, b=sharpem, lwd=2, col="blue")
 rangev <- par("usr")
-text(portfsd[whichmax]/2, (retp[whichmax]+raterf)/2,
+text(sdeff/2, (retmax+raterf)/2,
      labels="Capital Market Line", cex=0.8, , pos=3,
      srt=45*atan(sharpem*(rangev[2]-rangev[1])/
-                   (rangev[4]-rangev[3])*
-                   heightp/widthp)/(0.25*pi))
-      @
+                   (rangev[4]-rangev[3])*heightp/widthp)/(0.25*pi))
+@
   \end{columns}
 \end{block}
 
@@ -1203,9 +1204,9 @@ weightv <- seq(from=(-1), to=2, length.out=31)
 weightv <- cbind(weightv, 1-weightv)
 # Calculate portfolio returns and volatilities
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
-retp <- retp %*% t(weightv)
-portfv <- cbind(252*colMeans(retp),
-  sqrt(252)*matrixStats::colSds(retp))
+retport <- retp %*% t(weightv)
+portfv <- cbind(252*colMeans(retport),
+  sqrt(252)*matrixStats::colSds(retport))
 colnames(portfv) <- c("returns", "stdev")
 raterf <- 0.06
 portfv <- cbind(portfv,
@@ -1229,11 +1230,11 @@ text(x=portfv[whichmax, "stdev"], y=portfv[whichmax, "returns"],
       \includegraphics[width=0.45\paperwidth]{figure/eff_front_stocks_bonds.png}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot individual assets
-retm <- 252*sapply(retp, mean)
-stdevs <- sqrt(252)*sapply(retp, sd)
+# Plot individual stocks
+retm <- 252*sapply(retport, mean)
+stdevs <- sqrt(252)*sapply(retport, sd)
 points(stdevs, retm, col="green", lwd=6)
-text(stdevs, retm, labels=names(retp), pos=2, cex=0.8)
+text(stdevs, retm, labels=names(retport), pos=2, cex=0.8)
 # Add point at risk-free rate and draw Capital Market Line
 points(x=0, y=raterf, col="blue", lwd=6)
 text(0, raterf, labels="risk-free", pos=4, cex=0.8)
@@ -1263,8 +1264,7 @@ text(max(portfv[, "stdev"])/3, 0.75*max(portfv[, "returns"]),
 # Plot portfolios in x11() window
 x11(widthp <- 6, heightp <- 5)
 # Calculate cumulative returns of VTI and IEF
-retsoptim <- lapply(retp,
-  function(retp) exp(cumsum(retp)))
+retsoptim <- lapply(retp, function(retp) exp(cumsum(retp)))
 retsoptim <- rutils::do_call(cbind, retsoptim)
 # Calculate the efficient portfolio returns
 retsoptim <- cbind(exp(cumsum(retp %*%
@@ -1754,6 +1754,9 @@ text(optim_sd/3, (optim_ret+raterf)/2.5,
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# Create initial vector of portfolio weights
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
 # Optimization to find weights with maximum Sharpe ratio
 optiml <- optim(par=weightv,
                    fn=objfun,

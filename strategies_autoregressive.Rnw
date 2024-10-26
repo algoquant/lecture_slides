@@ -1299,7 +1299,7 @@ colnames(pnls) <- names(fcasts)
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample PnLs
 colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls))
-colnamev <- colnames(pnls)
+colv <- colnames(pnls)
 endd <- rutils::calc_endpoints(pnls, interval="weeks")
 dygraphs::dygraph(cumsum(pnls)[endd],
   main="Autoregressive Strategies Out-of-sample") %>%
@@ -2503,7 +2503,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Kitchen Sink Model of Stock Returns}
+\subsection{Kitchen Sink Model of Stock Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2529,13 +2529,10 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the returns of VTI, TLT, VXX, and SVXY
-retp <- na.omit(rutils::etfenv$returns[, c("VTI", "TLT", "VXX", "SVXY")])
+# Calculate the returns of VTI, TLT, and VXX
+retp <- na.omit(rutils::etfenv$returns[, c("VTI", "TLT", "VXX")])
 datev <- zoo::index(retp)
 nrows <- NROW(retp)
-# Calculate VTI returns and trading volumes
-ohlc <- rutils::etfenv$VTI
-volumv <- rutils::diffit(quantmod::Vo(ohlc))[datev]
 # Define the response and the VTI predictor matrix
 respv <- retp$VTI
 orderp <- 5
@@ -2543,11 +2540,6 @@ predm <- lapply(1:orderp, rutils::lagit, input=respv)
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, nrows), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
-# Add the volume predictor matrix
-predx <- lapply(1:orderp, rutils::lagit, input=volumv)
-predx <- rutils::do_call(cbind, predx)
-colnames(predx) <- paste0("Vol", 1:orderp)
-predm <- cbind(predm, predx)
 # Add the TLT predictor matrix
 predx <- lapply(1:orderp, rutils::lagit, input=retp$TLT)
 predx <- rutils::do_call(cbind, predx)
@@ -2557,11 +2549,6 @@ predm <- cbind(predm, predx)
 predx <- lapply(1:orderp, rutils::lagit, input=retp$VXX)
 predx <- rutils::do_call(cbind, predx)
 colnames(predx) <- paste0("VXX", 1:orderp)
-predm <- cbind(predm, predx)
-# Add the SVXY predictor matrix
-predx <- lapply(1:orderp, rutils::lagit, input=retp$SVXY)
-predx <- rutils::do_call(cbind, predx)
-colnames(predx) <- paste0("SVXY", 1:orderp)
 predm <- cbind(predm, predx)
 # Perform the multivariate linear regression
 regmod <- lm(respv ~ predm - 1)
@@ -2574,7 +2561,7 @@ summary(regmod)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Kitchen Sink Autoregressive Strategy}
+\subsection{Kitchen Sink Autoregressive Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2605,14 +2592,15 @@ fcasts <- fcasts/fcastv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_kitchen_sink.png}
+      % \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_coeff.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_pnl.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the autoregressive strategy PnLs
 pnls <- respv*fcasts
 pnls <- pnls*sd(respv[respv<0])/sd(pnls[pnls<0])
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
 wealthv <- cbind(respv, pnls)
-colnames(wealthv) <- c("VTI", "Kitchen_sink")
+colnames(wealthv) <- c("VTI", "Kitchen sink")
 sqrt(252)*sapply(wealthv[insample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
@@ -2633,7 +2621,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Kitchen Sink Strategy With Dimension Reduction}
+\subsection{Kitchen Sink Strategy With Dimension Reduction}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2675,7 +2663,7 @@ pnls <- sd(respv)*do.call(cbind, pnls)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_dimreg.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_pnl_dimreg.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
 wealthv <- cbind(respv, pnls)
@@ -2699,7 +2687,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Shrinkage of the Kitchen Sink Coefficients}
+\subsection{Shrinkage of the Kitchen Sink Coefficients}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2741,22 +2729,9 @@ optiml <- optim(par=numeric(ncoeff),
                 lower=rep(-10000, ncoeff))
 # Extract the AR coefficients
 coeff <- optiml$par
-
-# Perform optimization using DEoptim
-optiml <- suppressMessages(DEoptim::DEoptim(fn=objfun,
-  respv=respv[insample, ],
-  predm=predm[insample, ],
-  lambdaf=2.0, 
-  upper=rep(10000, ncoeff),
-  lower=rep(-10000, ncoeff),
-  control=list(trace=FALSE, itermax=1000, parallelType=1)))
-# Extract the AR coefficients
-coeff <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-
 names(coeff) <- coeffn
 barplot(coeff ~ coeffn, xlab="", ylab="t-value", col="grey",
         main="AR Coefficients With Shrinkage")
-
       @
   \end{columns}
 \end{block}
@@ -2765,7 +2740,7 @@ barplot(coeff ~ coeffn, xlab="", ylab="t-value", col="grey",
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Kitchen Sink Strategy With Shrinkage}
+\subsection{Kitchen Sink Strategy With Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2777,16 +2752,16 @@ barplot(coeff ~ coeffn, xlab="", ylab="t-value", col="grey",
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the forecasts of VTI (fitted values)
 fcasts <- predm %*% coeff
-# fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
-# fcastv[1:100] <- 1
-# fcasts <- fcasts/fcastv
+fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
+fcastv[1:100] <- 1
+fcasts <- fcasts/fcastv
 # Calculate the autoregressive strategy PnLs
 pnls <- respv*fcasts
 pnls <- pnls*sd(respv[respv<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_pnl_shrink.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
 wealthv <- cbind(respv, pnls)
@@ -2808,8 +2783,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 \end{block}
 
 \end{frame}
-
-
 
 
 %%%%%%%%%%%%%%%
@@ -3065,7 +3038,7 @@ fcasts <- predm %*% coeff
 pnls <- sign(fcasts)*retp
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3080,10 +3053,10 @@ sqrt(252)*sapply(wealthv[outsample, ],
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Kitchen Sink Strategy Out-of-sample") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyEvent(datev[cutoff], label="cutoff", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=300)
       @
@@ -3128,7 +3101,7 @@ pnls <- sign(fcasts)*retp
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3143,10 +3116,10 @@ sqrt(252)*sapply(wealthv[outsample, ],
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Kitchen Sink Strategy Out-of-sample") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyEvent(datev[cutoff], label="cutoff", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=300)
       @
@@ -3812,13 +3785,13 @@ summary(regmod)
 # Plot YC steepener principal component with VTI
 datav <- cbind(retp, pcar[, 2])
 colnames(datav) <- c("VTI", "Steepener")
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(cumsum(datav), 
   main="VTI and Yield Curve Steepener") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", strokeWidth=2, col="red") %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colv[2], axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -3866,14 +3839,14 @@ apply(factv, 2, sd)
 # Plot dygraph of in-sample IR strategy
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Yield Curve Strategy In-sample") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -3911,13 +3884,13 @@ pnls <- sign(fcasts)*respv[outsample, ]
 # Plot dygraph of out-of-sample IR PCA strategy
 wealthv <- cbind(retp[outsample, ], pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv), 
   main="Yield Curve Strategy Out-of-Sample") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -3964,13 +3937,13 @@ pnls <- do.call(rbind, pnls)
 vti <- rutils::diffit(closep[zoo::index(pnls),])
 wealthv <- cbind(vti, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Rolling Yearly Yield Curve Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4018,13 +3991,13 @@ pnls <- do.call(rbind, pnls)
 vti <- rutils::diffit(closep[zoo::index(pnls),])
 wealthv <- cbind(vti, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Rolling Monthly Yield Curve Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4066,13 +4039,13 @@ pnls <- do.call(rbind, pnls)
 vti <- rutils::diffit(closep[zoo::index(pnls),])
 wealthv <- cbind(vti, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Rolling Weekly Yield Curve Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4202,13 +4175,13 @@ pnls <- do.call(rbind, pnls)
 vti <- rutils::diffit(closep[zoo::index(pnls),])
 wealthv <- cbind(vti, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Rolling Monthly Shrinkage YC Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4252,13 +4225,13 @@ pnls <- do.call(rbind, pnls)
 vti <- rutils::diffit(closep[zoo::index(pnls),])
 wealthv <- cbind(vti, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Rolling Weekly Shrinkage YC Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4433,13 +4406,13 @@ pnls <- do.call(rbind, pnls)
 vti <- rutils::diffit(closep[zoo::index(pnls),])
 wealthv <- cbind(vti, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Rolling Monthly Shrinkage YC Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4483,13 +4456,13 @@ pnls <- do.call(rbind, pnls)
 vti <- rutils::diffit(closep[zoo::index(pnls),])
 wealthv <- cbind(vti, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Rolling Weekly Shrinkage YC Strategy") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4518,8 +4491,8 @@ tvalues <- sapply(naggs, function(nagg) {
   predm <- cbind(rep(1, NROW(predm)), predm)
   predm <- rutils::lagit(predm)
   regmod <- lm(respv ~ predm - 1)
-  modsum <- summary(regmod)
-  max(abs(modsum$coefficients[, 3][-1]))
+  regsum <- summary(regmod)
+  max(abs(regsum$coefficients[, 3][-1]))
 })  # end sapply
 naggs[which.max(tvalues)]
 plot(naggs, tvalues, t="l", col="blue", lwd=2)
@@ -4543,13 +4516,13 @@ pnls <- sign(fcasts)*respv
 # Plot dygraph of in-sample IR strategy
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Aggregated YC Strategy In-sample") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4587,13 +4560,13 @@ pnls <- sign(fcasts)*respv[outsample, ]
 # Plot dygraph of out-of-sample YC strategy
 wealthv <- cbind(retp[outsample, ], pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-colnamev <- colnames(wealthv)
+colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Aggregated YC Strategy Out-of-Sample") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
