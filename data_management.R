@@ -59,9 +59,9 @@ dframe <- edit(dframe)
 write.table(x=dframe, file="clipboard", sep="\t")
 # Wrapper function for copying data frame from R into clipboard
 # by default, data is tab delimited, with a header
-write_clip <- function(data, row.names=FALSE, col.names=TRUE, ...) {
+write_clip <- function(data, namev=FALSE, col.names=TRUE, ...) {
   write.table(x=data, file="clipboard", sep="\t",
-      row.names=row.names, col.names=col.names, ...)
+      row.names=namev, col.names=col.names, ...)
 }  # end write_clip
 write_clip(data=dframe)
 # Wrapper function for copying data frame from clipboard into R
@@ -102,7 +102,7 @@ close(filecon)
 filecon = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
 # Read the first 1000 rows
 data10 <- read.csv(filecon, nrows=1e3)
-colnamev <- colnames(data10)
+colv <- colnames(data10)
 # Write to a file
 countv <- 1
 write.csv(data10, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
@@ -110,7 +110,7 @@ write.csv(data10, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, "
 # Can produce error without getting to end of file
 while (isOpen(filecon)) {
   datav <- read.csv(filecon, nrows=1e3)
-  colnames(datav) <- colnamev
+  colnames(datav) <- colv
   write.csv(datav, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
   countv <- countv + 1
 }  # end while
@@ -135,15 +135,15 @@ MASS::write.matrix(matv, file="matrix.csv", sep=",")
 readmat <- scan(file="matrix.csv", sep=",", skip=1,
   what=numeric())
 # Read colnames
-colnamev <- readLines(con="matrix.csv", n=1)
-colnamev  # this is a string!
+colv <- readLines(con="matrix.csv", n=1)
+colv  # this is a string!
 # Convert to char vector
-colnamev <- strsplit(colnamev, split=",")[[1]]
+colv <- strsplit(colv, split=",")[[1]]
 readmat  # readmat is a vector, not matrix!
 # Coerce by row to matrix
-readmat <- matrix(readmat, ncol=NROW(colnamev), byrow=TRUE)
+readmat <- matrix(readmat, ncol=NROW(colv), byrow=TRUE)
 # Restore colnames
-colnames(readmat) <- colnamev
+colnames(readmat) <- colv
 readmat
 # Scan() is a little faster than read.csv()
 library(microbenchmark)
@@ -153,7 +153,7 @@ summary(microbenchmark(
     skip=1, what=numeric()),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Read data from a csv file, including row names
-matv <- read.csv(file="matrix_bad.csv", row.names=1)
+matv <- read.csv(file="data/matrix_bad.csv", row.names=1)
 matv
 class(matv)
 # Columns with bad data are character or factor
@@ -162,11 +162,11 @@ sapply(matv, class)
 matv$col2 <- as.numeric(matv$col2)
 # Or
 # Copy row names
-rownames <- row.names(matv)
+namev <- rownames(matv)
 # sapply loop over columns and coerce to numeric
 matv <- sapply(matv, as.numeric)
 # Restore row names
-row.names(matv) <- rownames
+rownames(matv) <- namev
 # Replace NAs with zero
 matv[is.na(matv)] <- 0
 # matrix without NAs
@@ -809,10 +809,10 @@ write.zoo(pricev, file="zooseries.csv", sep=",")
 # Save pricev to a binary .RData file
 save(pricev, file="pricev.RData")
 # Select ETF symbols for asset allocation
-symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
- "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
- "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
- "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ", "QQQ")
+symbolv <- c("SPY", "VTI", "QQQ", "VEU", "EEM", "XLY", "XLP", 
+"XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", 
+"IWB", "IWD", "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", 
+"VXX", "SVXY", "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
 # Read etf database into data frame
 etflist <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etf_list.csv")
 rownames(etflist) <- etflist$Symbol
@@ -840,10 +840,10 @@ etflist["USO", "Name"] <- "WTI Oil Futures Fund"
 etflist["GLD", "Name"] <- "Physical Gold Fund"
 print(xtable::xtable(etflist), comment=FALSE, size="tiny", include.rownames=FALSE)
 # Select ETF symbols for asset allocation
-symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
- "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
- "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
- "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ", "QQQ")
+symbolv <- c("SPY", "VTI", "QQQ", "VEU", "EEM", "XLY", "XLP",
+"XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW",
+"IWB", "IWD", "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO",
+"VXX", "SVXY", "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
 library(rutils)  # Load package rutils
 etfenv <- new.env()  # New environment for data
 # Boolean vector of symbols already downloaded
@@ -919,11 +919,11 @@ tail(pricev[[1]])
 pricev <- lapply(pricev, quantmod::Cl)
 # Collapse list into time series the hard way
 prices2 <- cbind(pricev[[1]], pricev[[2]], pricev[[3]], pricev[[4]])
-class(pricev2)
-dim(pricev2)
+class(price2)
+dim(price2)
 # Collapse list into time series using do.call()
 pricev <- do.call(cbind, pricev)
-all.equal(pricev2, pricev)
+all.equal(price2, pricev)
 class(pricev)
 dim(pricev)
 # Or extract and cbind in single step
@@ -1091,7 +1091,7 @@ namev <- rutils::get_name(colnames(sp500env$LOW), field=2)
 # namev <- do.call(rbind, strsplit(colnames(sp500env$LOW),
 #                                   split="[.]"))[, 2]
 # Rename "LOW" colnames to "LOWES"
-colnames(sp500env$LOW) <- paste("LOVES", namev, sep=".")
+colnames(sp500env$LOW) <- paste("LOWES", namev, sep=".")
 sp500env$LOWES <- sp500env$LOW
 rm(LOW, envir=sp500env)
 # Rename BF-B colnames to "BFB"
@@ -1150,16 +1150,16 @@ indeks <- xts(rowSums(pricev)/ncols, zoo::index(pricev))
 colnames(indeks) <- "index"
 # Combine index with VTI
 datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
-colnamev <- c("index", "VTI")
-colnames(datav) <- colnamev
+colv <- c("index", "VTI")
+colnames(datav) <- colv
 # Plot index with VTI
 endd <- rutils::calc_endpoints(datav, interval="weeks")
 dygraphs::dygraph(log(datav)[endd],
   main="S&P 500 Price-weighted Index and VTI") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="red") %>%
-  dySeries(name=colnamev[2], axis="y2", col="blue")
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="red") %>%
+  dySeries(name=colv[2], axis="y2", col="blue")
 # Save the environment to compressed .RData file
 dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
 save(sp500env, file=paste0(dirn, "sp500.RData"))
@@ -1319,10 +1319,10 @@ save(ohlc, file="/Users/jerzy/Data/spy_daily.RData")
 dygraphs::dygraph(ohlc[, 1:4], main=paste("Candlestick Plot of", symboln, "OHLC prices")) %>%
   dygraphs::dyCandlestick()
 # Select ETF symbols for asset allocation
-symbolv <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
- "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
- "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
- "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ", "QQQ")
+symbolv <- c("SPY", "VTI", "QQQ", "VEU", "EEM", "XLY", "XLP",
+"XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW",
+"IWB", "IWD", "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO",
+"VXX", "SVXY", "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
 # Setup code
 etfenv <- new.env()  # New environment for data
 # Boolean vector of symbols already downloaded
@@ -1383,15 +1383,15 @@ etfenv$riskstats <- riskstats
 # Calculate the beta, alpha, Treynor ratio, and other performance statistics
 capmstats <- PerformanceAnalytics::table.CAPM(Ra=retp[, symbolv],
                                          Rb=retp[, "VTI"], scale=252)
-colnamev <- strsplit(colnames(capmstats), split=" ")
-colnamev <- do.call(cbind, colnamev)[1, ]
-colnames(capmstats) <- colnamev
+colv <- strsplit(colnames(capmstats), split=" ")
+colv <- do.call(cbind, colv)[1, ]
+colnames(capmstats) <- colv
 capmstats <- t(capmstats)
 capmstats <- capmstats[, -1]
-colnamev <- colnames(capmstats)
-whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnamev)
-colnamev[whichv] <- c("Alpha", "Information", "Treynor")
-colnames(capmstats) <- colnamev
+colv <- colnames(capmstats)
+whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colv)
+colv[whichv] <- c("Alpha", "Information", "Treynor")
+colnames(capmstats) <- colv
 capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
 # Copy capmstats into etfenv
 etfenv$capmstats <- capmstats
@@ -1575,22 +1575,22 @@ finally=cat(paste0("Processing file name = ", filens[it], "\n"), append=TRUE)
     )  # end tryCatch
 }  # end for
 # Create new environment for data
-vix_env <- new.env()
+vixenv <- new.env()
 # Download VIX data for the months 6, 7, and 8 in 2018
 library(qmao)
 quantmod::getSymbols("VX", Months=1:12,
-  Years=2018, src="cfe", auto.assign=TRUE, env=vix_env)
+  Years=2018, src="cfe", auto.assign=TRUE, env=vixenv)
 # Or
 qmao::getSymbols.cfe(Symbols="VX",
-  Months=6:8, Years=2018, env=vix_env,
+  Months=6:8, Years=2018, env=vixenv,
   verbose=FALSE, auto.assign=TRUE)
 # Calculate the classes of all the objects
-# In the environment vix_env
-unlist(eapply(vix_env, function(x) {class(x)[1]}))
-class(vix_env$VX_M18)
-colnames(vix_env$VX_M18)
+# In the environment vixenv
+unlist(eapply(vixenv, function(x) {class(x)[1]}))
+class(vixenv$VX_M18)
+colnames(vixenv$VX_M18)
 # Save the data to a binary file called "vix_cboe.RData".
-save(vix_env,
+save(vixenv,
   file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
 # Install and load package readxl
 install.packages("readxl")

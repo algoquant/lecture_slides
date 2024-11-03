@@ -9,7 +9,6 @@ dim(eigenvec)
 barplot(eigend$values, xlab="", ylab="", las=3,
   names.arg=paste0("ev", 1:NROW(eigend$values)),
   main="Eigenvalues of a real symmetric matrix")
-
 # Eigenvectors form an orthonormal basis
 round(t(eigenvec) %*% eigenvec, digits=4)
 # Diagonalize matrix using eigenvector matrix
@@ -21,7 +20,6 @@ matrixe <- eigenvec %*% (eigend$values * t(eigenvec))
 # diagmat <- diag(eigend$values)
 # matrixe <- eigenvec %*% (diagmat %*% t(eigenvec))
 all.equal(matv, matrixe)
-
 # Create a random positive semi-definite matrix
 matv <- matrix(runif(25), nc=5)
 matv <- t(matv) %*% matv
@@ -32,7 +30,6 @@ eigend$values
 barplot(eigend$values, las=3, xlab="", ylab="",
   names.arg=paste0("ev", 1:NROW(eigend$values)),
   main="Eigenvalues of positive semi-definite matrix")
-
 # Perform singular value decomposition
 matv <- matrix(rnorm(50), nc=5)
 svdec <- svd(matv)
@@ -41,7 +38,6 @@ all.equal(matv, svdec$u %*% (svdec$d*t(svdec$v)))
 # Columns of U and V are orthonormal
 round(t(svdec$u) %*% svdec$u, 4)
 round(t(svdec$v) %*% svdec$v, 4)
-
 # Dimensions of left and right matrices
 nrows <- 6 ; ncols <- 4
 # Calculate the left matrix
@@ -73,7 +69,6 @@ retsq <- t(matv) %*% matv
 eigend <- eigen(retsq)
 all.equal(eigend$values, singval^2)
 all.equal(abs(eigend$vectors), abs(rightmat))
-
 # Create a random positive semi-definite matrix
 matv <- matrix(runif(25), nc=5)
 matv <- t(matv) %*% matv
@@ -91,7 +86,6 @@ all.equal(invmat, inveigen)
 # Decompose diagonal matrix with inverse of eigenvalues
 # diagmat <- diag(1/eigend$values)
 # inveigen <- eigenvec %*% (diagmat %*% t(eigenvec))
-
 # Random rectangular matrix: nrows > ncols
 nrows <- 6 ; ncols <- 4
 matv <- matrix(runif(nrows*ncols), nc=ncols)
@@ -115,7 +109,6 @@ all.equal(invsvd, invmat)
 # Calculate the Moore-Penrose pseudo-inverse
 invmp <- MASS::ginv(t(matv) %*% matv) %*% t(matv)
 all.equal(invmp, invmat)
-
 # Create a random singular matrix
 # More columns than rows: ncols > nrows
 nrows <- 4 ; ncols <- 6
@@ -127,7 +120,6 @@ svdec <- svd(matv)
 invsvd <- svdec$v %*% (t(svdec$u) / svdec$d)
 # Inverse property doesn't hold
 all.equal(matv, matv %*% invsvd %*% matv)
-
 # Set tolerance for determining zero singular values
 precv <- sqrt(.Machine$double.eps)
 # Check for zero singular values
@@ -144,13 +136,11 @@ all.equal(invsvd, invmat)
 # Calculate the Moore-Penrose pseudo-inverse
 invmp <- MASS::ginv(t(matv) %*% matv) %*% t(matv)
 all.equal(invmp, invmat)
-
 # Diagonalize the unit matrix
 unitmat <- matv %*% invmat
 round(unitmat, 4)
 round(matv %*% invmat, 4)
 round(t(svdec$u) %*% unitmat %*% svdec$v, 4)
-
 # Define a square matrix
 matv <- matrix(c(1, 2, -1, 2), nc=2)
 vecv <- c(2, 1)
@@ -163,7 +153,6 @@ matv %*% solutionv
 # Calculate the solution of linear system
 solutionv <- solve(a=matv, b=vecv)
 matv %*% solutionv
-
 # Create a random matrix
 matv <- matrix(rnorm(100), nc=10)
 # Calculate the matrix inverse using solve()
@@ -182,7 +171,6 @@ summary(microbenchmark(
   solve=solve(matv),
   cpp=calc_invmat(matv),
   times=10))[, c(1, 4, 5)]
-
 # Create large random positive semi-definite matrix
 matv <- matrix(runif(1e4), nc=100)
 matv <- t(matv) %*% matv
@@ -211,7 +199,6 @@ summary(microbenchmark(
   solve=solve(matv),
   cholmat=chol2inv(chol(matv)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Calculate the random covariance matrix
 covmat <- matrix(runif(25), nc=5)
 covmat <- t(covmat) %*% covmat
@@ -227,7 +214,6 @@ retscorr <- retp %*% cholmat
 # Calculate the covariance matrix
 covmat2 <- cov(retscorr)
 all.equal(covmat, covmat2)
-
 # Simulate random stock returns
 nassets <- 10
 nrows <- 100
@@ -247,7 +233,6 @@ barplot(eigend$values, # Plot eigenvalues
   xlab="", ylab="", las=3,
   names.arg=paste0("ev", 1:NROW(eigend$values)),
   main="Eigenvalues of Covariance Matrix")
-
 # Calculate the eigenvalues and eigenvectors
 # as function of number of returns
 ndata <- ((nassets/2):(2*nassets))
@@ -260,7 +245,6 @@ eigenval <- sapply(ndata, function(x) {
 plot(y=eigenval, x=ndata, t="l", xlab="", ylab="", lwd=3, col="blue",
   main="Smallest eigenvalue of covariance matrix
   as function of number of returns")
-
 # Create rectangular matrix with collinear columns
 matv <- matrix(rnorm(10*8), nc=10)
 # Calculate the covariance matrix
@@ -283,14 +267,12 @@ invreg <- eigenvec[, notzero] %*%
   (t(eigenvec[, notzero]) / eigenval[notzero])
 # Verify that invmat is same as invreg
 all.equal(invmat, invreg)
-
 # Calculate the regularized inverse matrix using cutoff
 dimax <- 3
 invmat <- eigenvec[, 1:dimax] %*%
   (t(eigenvec[, 1:dimax]) / eigend$values[1:dimax])
 # Verify that invmat is same as invreg
 all.equal(invmat, invreg)
-
 # Create a random covariance matrix
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 matv <- matrix(rnorm(5e2), nc=5)
@@ -307,7 +289,6 @@ alphac <- 0.5
 covshrink <- (1-alphac)*covmat + alphac*targetmat
 # Calculate the inverse matrix
 invmat <- solve(covshrink)
-
 # Create a random matrix
 matv <- matrix(rnorm(100), nc=10)
 # Calculate the inverse of matv
@@ -320,7 +301,6 @@ invmatr <- invmat + matrix(rnorm(100, sd=0.1), nc=10)
 invmatr <- (2*invmatr - invmatr %*% matv %*% invmatr)
 # Calculate the sum of the off-diagonal elements
 sum((invmatr %*% matv)[upper.tri(matv)])
-
 # Calculate the recursive inverse of matv in a loop
 invmatr <- invmat + matrix(rnorm(100, sd=0.1), nc=10)
 iterv <- sapply(1:5, function(x) {
@@ -332,7 +312,6 @@ iterv <- sapply(1:5, function(x) {
 # Plot the iterations
 plot(x=1:5, y=iterv, t="l", xlab="iterations", ylab="error",
      main="Iterations of Recursive Matrix Inverse")
-
 # Symbols for constant maturity Treasury rates
 symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
 # Create new environment for time series
@@ -352,7 +331,6 @@ sapply(ratesenv, class)
 sapply(ls(), function(namev) class(get(namev)))
 # Save the time series environment into a binary .RData file
 save(ratesenv, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
-
 # Get class of time series object DGS10
 class(get(x="DGS10", envir=ratesenv))
 # Another way
@@ -366,7 +344,6 @@ dygraphs::dygraph(ratesenv$DGS10, main="10-year Treasury Rate") %>%
 x11(width=6, height=5)
 par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
 chart_Series(ratesenv$DGS10["1990/"], name="10-year Treasury Rate")
-
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get most recent yield curve
@@ -387,7 +364,6 @@ ycurves <- ycurves[, order(as.numeric(colnames(ycurves)))]
 colnames(ycurves) <- paste0(colnames(ycurves), "yr")
 ycurves <- t(ycurves)
 colnames(ycurves) <- substr(colnames(ycurves), start=1, stop=4)
-
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Plot using matplot()
@@ -399,7 +375,6 @@ axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
 legend("topleft", legend=colnames(ycurves), y.intersp=1.0,
  bty="n", col=colorv, lty=1, lwd=6, inset=0.05, cex=1.0)
-
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
@@ -425,7 +400,6 @@ axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
 legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
  bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
-
 # Alternative plot using matplot()
 matplot(ycurves, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
   type="l", xlab="maturity", ylab="yield", col=colorv)
@@ -434,7 +408,6 @@ axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
 legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
  bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
-
 # Extract rates from ratesenv
 symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
 ratem <- mget(symbolv, envir=ratesenv)
@@ -455,7 +428,6 @@ library(corrplot)
 ordern <- corrMatOrder(cormat, order="hclust",
   hclust.method="complete")
 cormat <- cormat[ordern, ordern]
-
 # Plot the correlation matrix
 x11(width=6, height=6)
 colorv <- colorRampPalette(c("red", "white", "blue"))
@@ -466,7 +438,6 @@ title("Correlation of Treasury Rates", line=1)
 # Draw rectangles on the correlation matrix plot
 corrRect.hclust(cormat, k=NROW(cormat) %/% 2,
   method="complete", col="red")
-
 # Create initial vector of portfolio weights
 nweights <- NROW(symbolv)
 weightv <- rep(1/sqrt(nweights), nweights)
@@ -484,7 +455,6 @@ summary(microbenchmark(
   transp=t(retp) %*% retp,
   sumv=sum(retp*retp),
   times=10))[, c(1, 4, 5)]
-
 # Find weights with maximum variance
 optiml <- optim(par=weightv,
   fn=objfun,
@@ -500,7 +470,6 @@ x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 barplot(weights1, names.arg=names(weights1),
   xlab="", ylab="", main="First Principal Component Loadings")
-
 # pc1 weights and returns
 pc1 <- drop(retp %*% weights1)
 # Redefine objective function
@@ -516,7 +485,6 @@ optiml <- optim(par=weightv,
              method="L-BFGS-B",
              upper=rep(5.0, nweights),
              lower=rep(-5.0, nweights))
-
 # pc2 weights and returns
 weights2 <- optiml$par
 pc2 <- drop(retp %*% weights2)
@@ -524,7 +492,6 @@ sum(pc1*pc2)
 # Plot second principal component loadings
 barplot(weights2, names.arg=names(weights2),
   xlab="", ylab="", main="Second Principal Component Loadings")
-
 eigend <- eigen(covmat)
 eigend$vectors
 # Compare with optimization
@@ -539,7 +506,6 @@ all.equal(eigend$values[2], var(pc2), check.attributes=FALSE)
 # Plot eigenvalues
 barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
   las=3, xlab="", ylab="", main="Principal Component Variances")
-
 # Eigen decomposition of correlation matrix
 eigend <- eigen(cormat)
 # Perform PCA with scaling
@@ -556,7 +522,6 @@ pcad <- prcomp(retp, scale=FALSE)
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
     check.attributes=FALSE)
-
 # Perform principal component analysis PCA
 pcad <- prcomp(retp, scale=TRUE)
 # Plot standard deviations
@@ -564,7 +529,6 @@ barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
   las=3, xlab="", ylab="",
   main="Scree Plot: Volatilities of Principal Components
   of Treasury rates")
-
 x11(width=6, height=7)
 # Calculate principal component loadings (weights)
 pcad$rotation
@@ -575,7 +539,6 @@ for (ordern in 1:NCOL(pcad$rotation)) {
   barplot(pcad$rotation[, ordern], las=3, xlab="", ylab="", main="")
   title(paste0("PC", ordern), line=-2.0, col.main="red")
 }  # end for
-
 # Standardize (center and scale) the returns
 retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
 retp <- rutils::do_call(cbind, retp)
@@ -597,12 +560,10 @@ for (ordern in 1:NCOL(retpcac)) {
   plot.zoo(retpcac[, ordern], ylim=rangev, xlab="", ylab="")
   title(paste0("PC", ordern), line=-1, col.main="red")
 }  # end for
-
 # Invert all the principal component time series
 retpca <- retp %*% pcad$rotation
 solved <- retpca %*% solve(pcad$rotation)
 all.equal(coredata(retp), solved)
-
 # Invert first 3 principal component time series
 solved <- retpca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
 solved <- xts::xts(solved, zoo::index(retp))
@@ -619,7 +580,6 @@ for (symbol in symbolv) {
    title=NULL, inset=0.0, cex=1.0, lwd=6,
    lty=1, col=c("black", "blue"))
 }  # end for
-
 library(quantmod)  # Load quantmod
 library(RQuantLib)  # Load RQuantLib
 # Specify curve parameters
@@ -646,15 +606,12 @@ ratev <- DiscountCurve(params=curvep, tsQuotes=pricev, times=datev)
 # Plot the zero rates
 x11()
 plot(x=ratev$zerorates, t="l", main="zerorates")
-
 # Formula of linear model with zero intercept
 formulav <- z ~ x + y - 1
 formulav
-
 # Collapse vector of strings into single text string
 paste0("x", 1:5)
 paste(paste0("x", 1:5), collapse="+")
-
 # Create formula from text string
 formulav <- as.formula(
   # Coerce text strings to formula
@@ -666,7 +623,6 @@ class(formulav)
 formulav
 # Modify the formula using "update"
 update(formulav, log(.) ~ . + beta)
-
 # Define explanatory (predm) variable
 nrows <- 100
 # Initialize the random number generator
@@ -675,12 +631,10 @@ predm <- runif(nrows)
 noisev <- rnorm(nrows)
 # Response equals linear form plus random noise
 respv <- (-3 + 2*predm + noisev)
-
 # Calculate the regression beta
 betac <- cov(predm, respv)/var(predm)
 # Calculate the regression alpha
 alphac <- mean(respv) - betac*mean(predm)
-
 # Specify regression formula
 formulav <- respv ~ predm
 regmod <- lm(formulav)  # Perform regression
@@ -690,7 +644,6 @@ eval(regmod$call$formula)  # Regression formula
 regmod$coeff  # Regression coefficients
 all.equal(coef(regmod), c(alphac, betac),
       check.attributes=FALSE)
-
 # x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 # par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
@@ -703,14 +656,12 @@ title(main="Simple Regression", line=0.5)
 abline(regmod, lwd=3, col="blue")
 # Plot fitted (forecast) response values
 points(x=predm, y=regmod$fitted.values, pch=16, col="blue")
-
 # Plot response without noise
 lines(x=predm, y=(respv-noisev), col="red", lwd=3)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.0, cex=1.0, y.intersp=0.3,
        bty="n", lwd=6, lty=1, col=c("red", "blue"))
-
 # Calculate the residuals
 fitv <- (alphac + betac*predm)
 resids <- (respv - fitv)
@@ -721,7 +672,6 @@ all.equal(sum(resids*predm), target=0)
 all.equal(sum(resids*fitv), target=0)
 # Sum of residuals is equal to zero
 all.equal(mean(resids), target=0)
-
 x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
@@ -732,7 +682,6 @@ colnames(datav) <- c("predictor", "residuals")
 plot(datav)
 title(main="Residuals of the Linear Regression", line=-1)
 abline(h=0, lwd=3, col="red")
-
 # Calculate the centered (de-meaned) predictor and response vectors
 predc <- predm - mean(predm)
 respc <- respv - mean(respv)
@@ -744,11 +693,9 @@ residsd <- sqrt(sum(resids^2)/degf)
 betasd <- residsd/sqrt(sum(predc^2))
 # Standard error of alpha
 alphasd <- residsd*sqrt(1/nrows + mean(predm)^2/sum(predc^2))
-
 regsum <- summary(regmod)  # Copy regression summary
 regsum  # Print the summary to console
 attributes(regsum)$names  # get summary elements
-
 regsum$coeff
 # Standard errors
 regsum$coefficients[2, "Std. Error"]
@@ -760,7 +707,6 @@ regsum$adj.r.squared
 # F-statistic and ANOVA
 regsum$fstatistic
 anova(regmod)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # High noise compared to coefficient
@@ -769,7 +715,6 @@ regmod <- lm(formulav)  # Perform regression
 # Values of regression coefficients are not
 # Statistically significant
 summary(regmod)
-
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 regstats <- function(stdev) {  # Noisy regression
   set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # initialize number generator
@@ -797,7 +742,6 @@ for (it in 1:NCOL(statsmat)) {
   title(main=colnames(statsmat)[it], line=-1.0)
   axis(1, at=1:(NROW(statsmat)), labels=rownames(statsmat))
 }  # end for
-
 regstats <- function(datav) {  # get regression
 # Perform regression and get summary
   colnamev <- colnames(datav)
@@ -827,17 +771,14 @@ for (it in 1:NCOL(statsmat)) {
   axis(1, at=1:(NROW(statsmat)),
  labels=rownames(statsmat))
 }  # end for
-
 # Set plot paramaters - margins and font scale
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2, 2))  # Plot 2x2 panels
 plot(regmod)  # Plot diagnostic scatterplots
 plot(regmod, which=2)  # Plot just Q-Q
-
 library(lmtest)  # Load lmtest
 # Perform Durbin-Watson test
 lmtest::dwtest(regmod)
-
 # Define linear regression data
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nrows <- 100
@@ -857,7 +798,6 @@ betalm <- regmod$coeff  # Regression coefficients
 predinv <- MASS::ginv(predm)
 betac <- drop(predinv %*% respv)
 all.equal(betalm, betac, check.attributes=FALSE)
-
 # Calculate the influence matrix
 infmat <- predm %*% predinv
 # The influence matrix is idempotent
@@ -868,7 +808,6 @@ all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate the fitted values from regression coefficients
 fitv <- drop(predm %*% betac)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
-
 # Calculate the covariance and standard deviations of fitted values
 resids <- drop(respv - fitv)
 degf <- (NROW(predm) - NCOL(predm))
@@ -881,7 +820,6 @@ fitdata <- fitdata[order(fitv), ]
 plot(fitdata, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Univariate Regression")
-
 # Calculate the response without random noise for univariate regression,
 # equal to weighted sum over columns of predictor.
 respn <- predm %*% c(-1, 1)
@@ -893,7 +831,6 @@ fitm <- lapply(1:50, function(it) {
   infmat %*% respv
 })  # end lapply
 fitm <- rutils::do_call(cbind, fitm)
-
 x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
@@ -908,7 +845,6 @@ legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.05, cex=1.0, lwd=6, y.intersp=0.4,
        bty="n", lty=1, col=c("red", "blue"))
-
 # Define new predictor
 newdata <- (max(predm[, 2]) + 10*(1:5)/nrows)
 predn <- cbind(rep(1, NROW(newdata)), newdata)
@@ -920,7 +856,6 @@ pred2 <- MASS::ginv(crossprod(predm))
 predsd <- residsd*sqrt(predn %*% pred2 %*% t(predn))
 # Combine the forecast values and standard errors
 fcast <- cbind(forecast=fcast, stdev=diag(predsd))
-
 # Prepare plot data
 xdata <- c(predm[, 2], newdata)
 ydata <- c(fitv, fcast[, 1])
@@ -943,7 +878,6 @@ legend(x="topleft", # Add legend
        legend=c("forecasts", "+2SD", "-2SD"),
        title=NULL, inset=0.05, cex=1.0, lwd=6, y.intersp=0.4,
        bty="n", lty=1, col=c("blue", "red", "green"))
-
 # Perform univariate regression
 dframe <- data.frame(resp=respv, pred=predm[, 2])
 regmod <- lm(resp ~ pred, data=dframe)
@@ -961,7 +895,6 @@ plot(x=xdata, y=ydata, xlim=xlim, ylim=ylim,
      xlab="predictor", ylab="forecast",
      main="Forecasts from lm() Regression")
 points(x=predm[, 2], y=respv, col="blue")
-
 abline(regmod, col="blue", lwd=3)
 points(x=newdata, y=fcastlm[, "fit"], pch=16, col="blue")
 lines(x=newdata, y=fcastlm[, "lwr"], lwd=3, col="green")
@@ -970,7 +903,6 @@ legend(x="topleft", # Add legend
        legend=c("forecasts", "+2SD", "-2SD"),
        title=NULL, inset=0.05, cex=0.8, lwd=6, y.intersp=0.4,
        bty="n", lty=1, col=c("blue", "red", "green"))
-
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(lmtest)
 # Spurious regression in unit root time series
@@ -985,7 +917,6 @@ regsum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dwtest <- lmtest::dwtest(regmod)
 c(dwtest$statistic[[1]], dwtest$p.value)
-
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 plot(formulav, xlab="", ylab="")  # Plot scatterplot using formula
@@ -993,7 +924,6 @@ title(main="Spurious Regression", line=-1)
 # Add regression line
 abline(regmod, lwd=2, col="red")
 plot(regmod, which=2, ask=FALSE)  # Plot just Q-Q
-
 # Define predictor matrix
 nrows <- 100
 ncols <- 5
@@ -1007,7 +937,6 @@ weightv <- runif(3:(ncols+2), min=(-1), max=1)
 # Response equals weighted predictor plus random noise
 noisev <- rnorm(nrows, sd=2)
 respv <- (1 + predm %*% weightv + noisev)
-
 # Perform multivariate regression using lm()
 regmod <- lm(respv ~ predm)
 # Solve multivariate regression using matrix algebra
@@ -1023,7 +952,6 @@ alphac <- mean(respv) - sum(colSums(predm)*betac)/nrows
 all.equal(coef(regmod), c(alphac, betac), check.attributes=FALSE)
 # Compare with actual coefficients
 all.equal(c(1, weightv), c(alphac, betac), check.attributes=FALSE)
-
 # Add intercept column to predictor matrix
 predm <- cbind(rep(1, nrows), predm)
 ncols <- NCOL(predm)
@@ -1036,7 +964,6 @@ betac <- predinv %*% respv
 # Perform multivariate regression without intercept term
 regmod <- lm(respv ~ predm - 1)
 all.equal(drop(betac), coef(regmod), check.attributes=FALSE)
-
 # Calculate the fitted values from regression coefficients
 fitv <- drop(predm %*% betac)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
@@ -1049,7 +976,6 @@ sapply(resids %*% predm, all.equal, target=0)
 all.equal(sum(resids*fitv), target=0)
 # Sum of residuals is equal to zero
 all.equal(sum(resids), target=0)
-
 # Calculate the influence matrix
 infmat <- predm %*% predinv
 # The influence matrix is idempotent
@@ -1060,7 +986,6 @@ all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate the fitted values from regression coefficients
 fitv <- drop(predm %*% betac)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
-
 # Calculate the centered (de-meaned) fitted values
 predc <- t(t(predm) - colMeans(predm))
 fittedc <- drop(predc %*% betac)
@@ -1074,7 +999,6 @@ all.equal(resids, regmod$residuals, check.attributes=FALSE)
 infmatc <- predc %*% MASS::ginv(predc)
 # Compare the fitted values
 all.equal(fittedc, drop(infmatc %*% respc), check.attributes=FALSE)
-
 # Perform PCA of the predictors
 pcad <- prcomp(predm, center=FALSE, scale=FALSE)
 # Calculate the PCA predictors
@@ -1098,7 +1022,6 @@ round(t(predpca) %*% predpca, 6)
 drop(MASS::ginv(predpca) %*% respv)
 # Calculate the PCA regression coefficients directly
 colSums(predpca*drop(respv))/colSums(predpca^2)
-
 # Regression model summary
 regsum <- summary(regmod)
 # Degrees of freedom of residuals
@@ -1108,7 +1031,6 @@ degf <- (nrows - ncols)
 all.equal(degf, regsum$df[2])
 # Variance of residuals
 residsd <- sum(resids^2)/degf
-
 # Inverse of predictor matrix squared
 pred2 <- MASS::ginv(crossprod(predm))
 # pred2 <- t(predm) %*% predm
@@ -1128,12 +1050,10 @@ all.equal(betapvals, regsum$coeff[, 4], check.attributes=FALSE)
 # The square of the generalized inverse is equal
 # to the inverse of the square
 all.equal(MASS::ginv(crossprod(predm)), predinv %*% t(predinv))
-
 # Calculate the influence matrix
 infmat <- predm %*% predinv
 # The influence matrix is idempotent
 all.equal(infmat, infmat %*% infmat)
-
 # Calculate the covariance and standard deviations of fitted values
 fitcovar <- residsd*infmat
 fitsd <- sqrt(diag(fitcovar))
@@ -1144,7 +1064,6 @@ fitsd <- fitsd[order(fitv), ]
 plot(fitsd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Multivariate Regression")
-
 # Load time series of ETF percentage returns
 retp <- rutils::etfenv$returns[, c("XLF", "XLE")]
 retp <- na.omit(retp)
@@ -1175,7 +1094,6 @@ regsum$coefficients
 dim(bootd)
 t(apply(bootd, MARGIN=1,
 function(x) c(mean=mean(x), stderror=sd(x))))
-
 # New data predictor is a data frame or row vector
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
@@ -1184,7 +1102,6 @@ colnames(newdata) <- colnamev
 newdata <- as.matrix(newdata)
 fcast <- drop(newdata %*% betac)
 predsd <- drop(sqrt(newdata %*% betacovar %*% t(newdata)))
-
 # Create formula from text string
 formulav <- paste0("respv ~ ",
   paste(colnames(predm), collapse=" + "), " - 1")
@@ -1202,13 +1119,11 @@ fcastl <- (fcast - tquant*predsd)
 all.equal(fcastlm[1, "fit"], fcast)
 all.equal(fcastlm[1, "lwr"], fcastl)
 all.equal(fcastlm[1, "upr"], fcasth)
-
 # TSS = ESS + RSS
 tss <- sum((respv-mean(respv))^2)
 ess <- sum((fitv-mean(fitv))^2)
 rss <- sum(resids^2)
 all.equal(tss, ess + rss)
-
 # Set regression attribute for intercept
 attributes(regmod$terms)$intercept <- 1
 # Regression summary
@@ -1220,7 +1135,6 @@ all.equal(rsquared, regsum$r.squared)
 corfit <- drop(cor(respv, fitv))
 # Squared correlation between response and fitted values
 all.equal(corfit^2, rsquared)
-
 nrows <- NROW(predm)
 ncols <- NCOL(predm)
 # Degrees of freedom of residuals
@@ -1229,7 +1143,6 @@ degf <- (nrows - ncols)
 rsqadj <- (1-sum(resids^2)/degf/var(respv))
 # Compare adjusted R-squared from lm()
 all.equal(drop(rsqadj), regsum$adj.r.squared)
-
 # Plot four curves in loop
 degf <- c(3, 5, 9, 21)  # Degrees of freedom
 colorv <- c("black", "red", "blue", "green")
@@ -1238,14 +1151,12 @@ for (indeks in 1:NROW(degf)) {
     xlim=c(0, 4), xlab="", ylab="", lwd=2,
     col=colorv[indeks], add=as.logical(indeks-1))
 }  # end for
-
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
 labelv <- paste("degf", degf, sep=" = ")
 legend("topright", title="Degrees of Freedom", inset=0.0, bty="n",
        y.intersp=0.4, labelv, cex=1.2, lwd=6, lty=1, col=colorv)
-
 sigmax <- var(rnorm(nrows))
 sigmay <- var(rnorm(nrows))
 fratio <- sigmax/sigmay
@@ -1253,7 +1164,6 @@ fratio <- sigmax/sigmay
 pf(fratio, nrows-1, nrows-1)
 # p-value for fratios
 1-pf((10:20)/10, nrows-1, nrows-1)
-
 # F-statistic from lm()
 regsum$fstatistic
 # Degrees of freedom of residuals
@@ -1263,7 +1173,6 @@ fstat <- (ess/(ncols-1))/(rss/degf)
 all.equal(fstat, regsum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
 1-pf(q=fstat, df1=(ncols-1), df2=(nrows-ncols))
-
 library(lmtest)  # Load lmtest
 # Define predictor matrix
 predm <- 1:30

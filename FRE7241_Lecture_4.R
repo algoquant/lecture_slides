@@ -18,12 +18,10 @@ pricestock <- pricestock[, pricel > 1]
 retd <- rutils::diffit(pricestock)
 retp <- retd/rutils::lagit(pricestock)
 retp[1, ] <- 0
-
 # Wealth of fixed shares portfolio
 wealthfs <- rowMeans(cumprod(1 + retp))
 # Wealth of equal wealth portfolio (with rebalancing)
 wealthew <- cumprod(1 + rowMeans(retp))
-
 # Calculate combined log wealth
 wealthv <- cbind(wealthfs, wealthew)
 wealthv <- log(wealthv)
@@ -38,13 +36,11 @@ dygraphs::dygraph(wealthv[endd],
   main="Wealth of Fixed Share and Equal Wealth Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Select a random, fixed share sub-portfolio of 5 stocks
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nstocks <- NCOL(retp)
 samplev <- sample.int(n=nstocks, size=5, replace=FALSE)
 wealthr <- rowMeans(cumprod(1 + retp[, samplev]))
-
 # Plot dygraph of all stocks and random sub-portfolio
 wealthv <- cbind(wealthfs, wealthr)
 wealthv <- log(wealthv)
@@ -54,7 +50,6 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(wealthv[endd], main="Stock Index and Random Portfolio") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Select 10 random fixed share sub-portfolios
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nportf <- 10
@@ -68,7 +63,6 @@ colnames(wealthr) <- paste0("portf", 1:nportf)
 wealthr <- wealthr[, order(wealthr[nrows])]
 round(head(wealthr), 3)
 round(tail(wealthr), 3)
-
 # Plot dygraph of all stock index and random sub-portfolios
 colorv <- colorRampPalette(c("red", "blue"))(nportf)
 colorv <- c("green", colorv)
@@ -80,7 +74,6 @@ dygraphs::dygraph(wealthv[endd], main="Stock Index and Random Portfolios") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dySeries(name=colnamev[1], strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-
 # Define in-sample and out-of-sample intervals
 cutoff <- nrows %/% 2
 datev[cutoff]
@@ -96,7 +89,6 @@ symbolv <- names(head(pricet, 10))
 wealthb <- rowMeans(pricev[insample, symbolv])
 wealthos <- wealthb[cutoff]*rowMeans(cumprod(1 + retp[outsample, symbolv]))
 wealthb <- c(wealthb, wealthos)
-
 # Combine the fixed share wealth with the 10 best performing stocks
 wealthv <- cbind(wealthfs, wealthb)
 wealthv <- xts::xts(log(wealthv), order.by=datev)
@@ -112,7 +104,6 @@ dygraphs::dygraph(wealthv[endd], main="Out-of-Sample Log Prices of Stock Portfol
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyEvent(datev[cutoff], label="cutoff", strokePattern="solid", color="green") %>%
   dyLegend(width=300)
-
 # Calculate the stock volatilities, betas, and alphas
 # Perform parallel loop under Mac-OSX or Linux
 library(parallel)  # Load package parallel
@@ -136,7 +127,6 @@ medianv <- median(riskv)
 # Calculate the returns of low and high volatility stocks
 retlow <- rowMeans(retp[, (riskv <= medianv)], na.rm=TRUE)
 rethigh <- rowMeans(retp[, (riskv > medianv)], na.rm=TRUE)
-
 wealthv <- cbind(retlow, rethigh, retlow - 0.25*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_vol", "high_vol", "long_short")
@@ -150,7 +140,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks In
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=300)
-
 # Merton-Henriksson test
 desm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
 colnames(desm)[2:3] <- c("Merton", "Treynor")
@@ -167,7 +156,6 @@ fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["Treynor", "t value"], 2)
 points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
-
 # Calculate the in-sample stock volatilities, betas, and alphas
 riskretis <- mclapply(retp[insample], function(rets) {
   combv <- na.omit(cbind(rets, retvti))
@@ -197,7 +185,6 @@ wealthv <- cbind(retlow, rethigh, retlow - 0.25*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_vol", "high_vol", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -208,7 +195,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Volatility Stocks Ou
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=300)
-
 # Calculate the median idiosyncratic volatility
 riskv <- riskret[, "ivol"]
 medianv <- median(riskv)
@@ -219,7 +205,6 @@ wealthv <- cbind(retlow, rethigh, retlow - 0.25*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_vol", "high_vol", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -230,7 +215,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volati
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=300)
-
 # Merton-Henriksson test
 desm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
 colnames(desm)[2:3] <- c("Merton", "Treynor")
@@ -247,7 +231,6 @@ fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["Treynor", "t value"], 2)
 points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
-
 # Calculate the median in-sample idiosyncratic volatility
 riskv <- riskretis[, "ivol"]
 medianv <- median(riskv)
@@ -258,7 +241,6 @@ wealthv <- cbind(retlow, rethigh, retlow - 0.25*rethigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_vol", "high_vol", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -269,7 +251,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Idiosyncratic Volati
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=300)
-
 # Calculate the median beta
 riskv <- riskret[, "beta"]
 medianv <- median(riskv)
@@ -280,7 +261,6 @@ wealthv <- cbind(betalow, betahigh, betalow - 0.25*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev)
 colnamev <- c("low_beta", "high_beta", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -291,7 +271,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks In-Sampl
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=300)
-
 # Merton-Henriksson test
 desm <- cbind(VTI=retvti, 0.5*(retvti+abs(retvti)), retvti^2)
 colnames(desm)[2:3] <- c("Merton", "Treynor")
@@ -308,7 +287,6 @@ fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["Treynor", "t value"], 2)
 points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
-
 # Calculate the median beta
 riskv <- riskretis[, "beta"]
 medianv <- median(riskv)
@@ -319,7 +297,6 @@ wealthv <- cbind(betalow, betahigh, betalow - 0.25*betahigh)
 wealthv <- xts::xts(wealthv, order.by=datev[outsample])
 colnamev <- c("low_beta", "high_beta", "long_short")
 colnames(wealthv) <- colnamev
-
 # Calculate the out-of-sample Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -330,7 +307,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Low and High Beta Stocks Out-Of-S
   dySeries(name=colnamev[2], col="red", strokeWidth=1) %>%
   dySeries(name=colnamev[3], col="green", strokeWidth=2) %>%
   dyLegend(width=300)
-
 # Calculate the trailing percentage volatilities
 volp <- HighFreq::run_var(retp, lambda=0.15)
 volp <- sqrt(volp[, (nstocks+1):(2*nstocks)])
@@ -346,7 +322,6 @@ retlow <- rowMeans(weightv*retp)
 weightv <- (volp > medianv)
 weightv <- rutils::lagit(weightv)
 rethigh <- rowMeans(weightv*retp)
-
 # Combined wealth
 wealthv <- cbind(retlow, rethigh)
 wealthv <- xts::xts(wealthv, datev)
@@ -360,7 +335,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Wealth of Low and High Volatility Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the returns of equal wealth portfolio
 retew <- rowMeans(retp, na.rm=TRUE)
 retew[1] <- 0
@@ -376,13 +350,11 @@ colnames(wealthv) <- colnamev
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot of log wealth
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Equal Weight and Long-Short Vol Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the trailing dollar volatilities
 lambdav <- 0.99
 vold <- HighFreq::run_var(retd, lambda=lambdav)
@@ -392,7 +364,6 @@ vold[vold == 0] <- 1
 # Calculate the rolling risk parity weights
 weightv <- 1/vold
 weightv <- weightv/rowSums(weightv)
-
 # Wealth of equal wealth portfolio (with rebalancing)
 wealthew <- cumprod(1 + rowMeans(retp))
 # Calculate the risk parity allocations
@@ -402,7 +373,6 @@ retrp <- retp*rutils::lagit(pricerp)
 retrp[1, ] <- pricerp[1, ]
 # Calculate the wealth of risk parity
 wealthrp <- cumsum(rowSums(retrp))
-
 # Combined wealth
 wealthv <- cbind(wealthrp[1]*wealthew, wealthrp)
 wealthv <- xts::xts(wealthv, datev)
@@ -417,7 +387,6 @@ dygraphs::dygraph(wealthv[endd],
   main="Wealth of Equal Wealth and Risk Parity Portfolios") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=400)
-
 # Objective function equal to the sum of returns
 objfun <- function(retp) sum(na.omit(retp))
 # Objective function equal to the Sharpe ratio
@@ -436,7 +405,6 @@ objfun <- function(retp) {
     if (varv > 0) mean(retp)/varv else 0
   } else 0
 }  # end objfun
-
 # Load daily S&P500 percentage stock returns
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 # Select returns of 100 stocks
@@ -458,21 +426,18 @@ sum(is.na(perfstat))
 sum(!is.finite(perfstat))
 hist(perfstat)
 sort(perfstat, decreasing=TRUE)
-
 # Calculate weights proportional to performance statistic
 # With quadratic constraint
 weightv <- perfstat/sqrt(sum(perfstat^2))
 sum(weightv^2)
 sum(weightv)
 weightv
-
 # Calculate weights proportional to performance statistic
 # With linear constraint
 weightv <- perfstat/sum(perfstat)
 sum(weightv^2)
 sum(weightv)
 weightv
-
 # Calculate the weighted returns using transpose
 retw <- t(t(retp)*perfstat)
 # Or using Rcpp
@@ -498,12 +463,10 @@ summary(microbenchmark(
   trans=t(t(retp)*perfstat),
   rcpp=HighFreq::mult_mat(perfstat, retp),
   times=10))[, c(1, 4, 5)]
-
 # Box constraints
 weightv[weightv > 1] <- 1
 weightv[weightv < 0] <- 0
 weightv
-
 # Calculate the performance statistics for all stocks
 perfstat <- sapply(retp, objfun)
 sum(is.na(perfstat))
@@ -537,7 +500,6 @@ pnls <- sd(retew)/sd(pnls)*pnls
 wealthv <- xts(cbind(retew, pnls), datev)
 colnames(wealthv) <- c("Equal Weight", "Momentum")
 dygraph(cumsum(wealthv))
-
 # Calculate a vector of monthly end points
 endd <- rutils::calc_endpoints(retp, interval="months")
 npts <- NROW(endd)
@@ -568,7 +530,6 @@ pnls <- lapply(3:(npts-1), function(tday) {
   drop(pnlos)
 })  # end lapply
 pnls <- rutils::do_call(c, pnls)
-
 # Calculate the average of all stock returns
 retew <- rowMeans(retp, na.rm=TRUE)
 # Add initial startup interval to the momentum returns
@@ -579,13 +540,11 @@ wealthv <- xts::xts(wealthv, order.by=datev)
 colnames(wealthv) <- c("Index", "Strategy")
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot dygraph of stock index and momentum strategy
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Stock Index and Momentum Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 btmomtop <- function(retp, objfun, lookb=12, rebalf="months", topstocks=10,
  bidask=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
   # Perform loop over end points
@@ -617,7 +576,6 @@ btmomtop <- function(retp, objfun, lookb=12, rebalf="months", topstocks=10,
   pnls <- rutils::do_call(c, pnls)
   pnls
 }  # end btmomtop
-
 # Perform backtests for vector of look-back intervals
 lookbv <- seq(3, 15, by=1)
 endd <- rutils::calc_endpoints(retp, interval="months")
@@ -628,12 +586,10 @@ library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
 pnll <- mclapply(lookbv, btmomtop, retp=retp, endd=endd, objfun=objfun, mc.cores=ncores)
 sharper <- sqrt(252)*sapply(pnll, function(pnl) mean(pnl)/sd(pnl))
-
 # Plot Sharpe ratios of momentum strategies
 plot(x=lookbv, y=sharper, t="l",
   main="Momentum Sharpe as Function of Look-back Interval",
   xlab="look-back (months)", ylab="Sharpe")
-
 # Calculate best pnls of momentum strategy
 whichmax <- which.max(sharper)
 lookbv[whichmax]
@@ -646,13 +602,11 @@ wealthv <- xts::xts(wealthv, order.by=datev)
 colnames(wealthv) <- c("Index", "Strategy")
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot dygraph of stock index and momentum strategy
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Optimal Momentum Strategy for Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 btmomweight <- function(retp, objfun, lookb=12, rebalf="months",
   bidask=0.0, endd=rutils::calc_endpoints(retp, interval=rebalf), ...) {
   # Perform loop over end points
@@ -676,7 +630,6 @@ btmomweight <- function(retp, objfun, lookb=12, rebalf="months",
   })  # end lapply
   rutils::do_call(c, pnls)
 }  # end btmomweight
-
 # Perform backtests for vector of look-back intervals
 lookbv <- seq(3, 15, by=1)
 pnll <- lapply(lookbv, btmomweight, retp=retp, endd=endd, objfun=objfun)
@@ -689,7 +642,6 @@ sharper <- sqrt(252)*sapply(pnll, function(pnl) mean(pnl)/sd(pnl))
 plot(x=lookbv, y=sharper, t="l",
   main="Momentum Sharpe as Function of Look-back Interval",
   xlab="look-back (months)", ylab="Sharpe")
-
 # Calculate best pnls of momentum strategy
 whichmax <- which.max(sharper)
 lookbv[whichmax]
@@ -709,7 +661,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
   dyLegend(show="always", width=300)
-
 # To simplify, set NAs to zero
 retp[is.na(retp)] <- 0
 # Calculate the trailing average returns and variance using C++ code
@@ -730,7 +681,6 @@ pnls <- rowSums(weightv*retp, na.rm=TRUE)
 bidask <- 0.0
 costv <- 0.5*bidask*rowSums(abs(rutils::diffit(weightv)))
 pnls <- (pnls - costv)
-
 # Scale the momentum volatility to the equal weight index
 volew <- sd(retew)
 pnls <- volew*pnls/sd(pnls)
@@ -748,7 +698,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
   dyLegend(show="always", width=300)
-
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
 btmomdaily <- function(retp, lambdaf=0.9, trend=1, bidask=0.0, ...) {
@@ -770,7 +719,6 @@ btmomdaily <- function(retp, lambdaf=0.9, trend=1, bidask=0.0, ...) {
   costv <- 0.5*bidask*rowSums(abs(rutils::diffit(weightv)))
   (pnls - costv)
 }  # end btmomdaily
-
 # Simulate multiple daily stock momentum strategies
 lambdav <- seq(0.99, 0.998, 0.001)
 pnls <- sapply(lambdav, btmomdaily, retp=retp)
@@ -779,7 +727,6 @@ pnls <- apply(pnls, MARGIN=2, function(pnl) volew*pnl/sd(pnl))
 colnames(pnls) <- paste0("lambda=", lambdav)
 pnls <- xts::xts(pnls, datev)
 tail(pnls)
-
 # Plot dygraph of daily stock momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd],
@@ -795,7 +742,6 @@ quantmod::chart_Series(cumsum(pnls)[endd],
 legend("bottomleft", legend=colnames(pnls),
   inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
-
 # Define backtest functional for daily momentum strategy
 # If trend=(-1) then it backtests a mean reverting strategy
 btmomdailyhold <- function(retp, lambdaf=0.9, trend=1, bidask=0.0, ...) {
@@ -817,7 +763,6 @@ btmomdailyhold <- function(retp, lambdaf=0.9, trend=1, bidask=0.0, ...) {
   costv <- 0.5*bidask*rowSums(abs(rutils::diffit(weightv)))
   (pnls - costv)
 }  # end btmomdailyhold
-
 # Simulate multiple daily stock momentum strategies with holding periods
 lambdav <- seq(0.99, 0.998, 0.001)
 pnls <- sapply(lambdav, btmomdailyhold, retp=retp)
@@ -825,7 +770,6 @@ pnls <- sapply(lambdav, btmomdailyhold, retp=retp)
 pnls <- apply(pnls, MARGIN=2, function(pnl) volew*pnl/sd(pnl))
 colnames(pnls) <- paste0("lambda=", lambdav)
 pnls <- xts::xts(pnls, datev)
-
 # dygraph of daily stock momentum strategies with holding period
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd],
@@ -841,7 +785,6 @@ quantmod::chart_Series(cumsum(pnls)[endd],
 legend("bottomleft", legend=colnames(pnls),
   inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
-
 # Calculate best pnls of momentum strategy
 sharper <- sqrt(252)*sapply(pnls, function(pnl) mean(pnl)/sd(pnl))
 whichmax <- which.max(sharper)
@@ -853,7 +796,6 @@ colnames(wealthv) <- c("Index", "Momentum", "Combined")
 cor(wealthv)
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot dygraph of stock index and momentum strategy
 endd <- rutils::calc_endpoints(retp, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
@@ -861,7 +803,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
   dyLegend(show="always", width=300)
-
 # Perform sapply loop over lookbv
 lambdav <- seq(0.2, 0.7, 0.1)
 pnls <- sapply(lambdav, btmomdaily, retp=retp, trend=(-1))
@@ -869,7 +810,6 @@ pnls <- sapply(lambdav, btmomdaily, retp=retp, trend=(-1))
 pnls <- apply(pnls, MARGIN=2, function(pnl) volew*pnl/sd(pnl))
 colnames(pnls) <- paste0("lambda=", lambdav)
 pnls <- xts::xts(pnls, datev)
-
 # Plot dygraph of mean reverting daily stock momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd],
@@ -884,7 +824,6 @@ quantmod::chart_Series(cumsum(pnls)[endd],
 legend("topleft", legend=colnames(pnls),
   inset=0.05, bg="white", cex=0.7, lwd=rep(6, NCOL(retp)),
   col=plot_theme$col$line.col, bty="n")
-
 # Calculate the scaled prices of VTI vs MTUM ETF
 wealthv <- na.omit(rutils::etfenv$prices[, c("VTI", "MTUM")])
 wealthv <- rutils::diffit(log(wealthv))
@@ -892,14 +831,12 @@ colnames(wealthv) <- c("VTI", "MTUM")
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot of scaled prices of VTI vs MTUM ETF
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="VTI vs MTUM ETF") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(width=300)
-
 # Calculate the PCA loadings for standardized returns
 retsc <- lapply(retp, function(x) (x - mean(x))/sd(x))
 retsc <- do.call(cbind, retsc)
@@ -917,7 +854,6 @@ round((t(retpca) %*% retpca)[1:5, 1:5], 4)
 pcad <- prcomp(retsc, center=FALSE, scale=FALSE)
 all.equal(abs(pcad$x), abs(retpca), check.attributes=FALSE)
 retpca <- xts::xts(retpca, order.by=datev)
-
 # Simulate daily PCA momentum strategies for multiple lambdaf parameters
 dimax <- 11
 lambdav <- seq(0.97, 0.99, 0.005)
@@ -931,7 +867,6 @@ sharper <- sqrt(252)*sapply(pnls, function(pnl) mean(pnl)/sd(pnl))
 plot(x=lambdav, y=sharper, t="l",
   main="PCA Momentum Sharpe as Function of Decay Factor",
   xlab="lambdaf", ylab="Sharpe")
-
 # Plot dygraph of daily PCA momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 endd <- rutils::calc_endpoints(pnls, interval="weeks")
@@ -939,7 +874,6 @@ dygraphs::dygraph(cumsum(pnls)[endd],
   main="Daily PCA Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=400)
-
 # Calculate best pnls of PCA momentum strategy
 whichmax <- which.max(sharper)
 lambdav[whichmax]
@@ -950,14 +884,12 @@ colnames(wealthv) <- c("Index", "Momentum", "Combined")
 cor(wealthv)
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot dygraph of stock index and PCA momentum strategy
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Optimal Daily Momentum Strategy for Stocks") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
   dyLegend(show="always", width=300)
-
 # Simulate daily PCA momentum strategies for multiple lambdaf parameters
 lambdav <- seq(0.4, 0.8, 0.1)
 pnls <- mclapply(lambdav, btmomdailyhold, retp=retpca[, (dimax+1):NCOL(retpca)],
@@ -971,14 +903,12 @@ sharper <- sqrt(252)*sapply(pnls, function(pnl) mean(pnl)/sd(pnl))
 plot(x=lambdav, y=sharper, t="l",
   main="PCA Momentum Sharpe as Function of Decay Factor",
   xlab="lambdaf", ylab="Sharpe")
-
 # Plot dygraph of daily PCA momentum strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 dygraphs::dygraph(cumsum(pnls)[endd],
   main="Mean Reverting Daily PCA Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=400)
-
 # Define in-sample and out-of-sample intervals
 cutoff <- nrows %/% 2
 datev[cutoff]
@@ -1000,7 +930,6 @@ sharper <- sqrt(252)*sapply(pnls, function(pnl) mean(pnl)/sd(pnl))
 plot(x=lambdav, y=sharper, t="l",
   main="PCA Momentum Sharpe as Function of Decay Factor",
   xlab="lambdaf", ylab="Sharpe")
-
 # Calculate a vector of weekly end points
 endd <- rutils::calc_endpoints(retpca, interval="weeks")
 # Plot dygraph of daily out-of-sample PCA momentum strategies
@@ -1009,7 +938,6 @@ dygraphs::dygraph(cumsum(pnls)[endd],
   main="Daily Out-of-Sample PCA Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Simulate daily PCA momentum strategies for multiple lambdaf parameters
 lambdav <- seq(0.4, 0.8, 0.1)
 pnls <- mclapply(lambdav, btmomdailyhold, retp=retpca[, (dimax+1):(nstocks-10)],
@@ -1023,7 +951,6 @@ sharper <- sqrt(252)*sapply(pnls, function(pnl) mean(pnl)/sd(pnl))
 plot(x=lambdav, y=sharper, t="l",
   main="PCA Momentum Sharpe as Function of Decay Factor",
   xlab="lambdaf", ylab="Sharpe")
-
 # Calculate a vector of weekly end points
 endd <- rutils::calc_endpoints(retpca, interval="weeks")
 # Plot dygraph of daily S&P500 momentum strategies
@@ -1032,7 +959,6 @@ dygraphs::dygraph(cumsum(pnls)[endd],
   main="Mean Reverting Daily Out-of-Sample PCA Momentum Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Extract ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
@@ -1048,7 +974,6 @@ sharper <- sqrt(252)*sapply(pnll, function(pnl) mean(pnl)/sd(pnl))
 plot(x=lookbv, y=sharper, t="l",
   main="Momentum Sharpe as Function of Look-back Interval",
   xlab="look-back (months)", ylab="Sharpe")
-
 # Calculate best pnls of momentum strategy
 whichmax <- which.max(sharper)
 lookbv[whichmax]
@@ -1067,7 +992,6 @@ wealthv <- xts::xts(wealthv, order.by=datev)
 sharper <- sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sharper
-
 captiont <- "Optimal Momentum for ETFs"
 colnames(wealthv) <- paste(colnames(wealthv), round(sharper[1, ], 3), sep=" = ")
 # Plot dygraph of all-weather benchmark and momentum strategy
@@ -1075,7 +999,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dySeries(name=colnames(wealthv)[3], strokeWidth=3) %>%
   dyLegend(show="always", width=500)
-
 # Calculate the momentum weights
 lookb <- lookbv[whichmax]
 weightv <- lapply(2:npts, function(tday) {
@@ -1095,7 +1018,6 @@ retvti <- cumsum(retp$VTI)
 datav <- cbind(retvti[endd], weightv)
 colnames(datav) <- c("VTI", paste0(colnames(retp), "_weight"))
 zoo::plot.zoo(datav, xlab=NULL, main="Momentum Weights")
-
 # Calculate ETF betas
 betasetf <- sapply(retp, function(x) cov(retp$VTI, x)/var(retp$VTI))
 # Momentum beta is equal weights times ETF betas
@@ -1104,7 +1026,6 @@ betac <- xts::xts(betac, order.by=datev[endd])
 colnames(betac) <- "momentum_beta"
 datav <- cbind(betac, retvti[endd])
 zoo::plot.zoo(datav, main="Momentum Beta & VTI Price", xlab="")
-
 # Aggregate the returns to monthly intervals
 retvti <- retp$VTI
 desm <- cbind(pnls, retvti, 0.5*(retvti+abs(retvti)), retvti^2)
@@ -1125,7 +1046,6 @@ fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 tvalue <- round(coefreg["Treynor", "t value"], 2)
 points.default(x=retvti, y=fitv, pch=16, col="red")
 text(x=0.0, y=max(resids), paste("Treynor test t-value =", tvalue))
-
 # Standardize the returns
 pnlsd <- (pnls-mean(pnls))/sd(pnls)
 retvti <- (retvti-mean(retvti))/sd(retvti)
@@ -1133,7 +1053,6 @@ retvti <- (retvti-mean(retvti))/sd(retvti)
 apply(cbind(pnlsd, retvti), 2, function(x)
   sapply(c(skew=3, kurt=4),
     function(e) sum(x^e)))/NROW(retvti)
-
 # Calculate kernel density of VTI
 densvti <- density(retvti)
 # Plot histogram of momentum returns
@@ -1147,7 +1066,6 @@ lines(densvti, col='blue', lwd=2)
 legend("topright", inset=0.0, cex=1.0, title=NULL,
  leg=c("Momentum", "VTI"), bty="n", y.intersp=0.5,
  lwd=6, bg="white", col=c("red", "blue"))
-
 # Combine momentum strategy with all-weather
 wealthv <- cbind(retaw, pnls, 0.5*(pnls + retaw))
 colnames(wealthv) <- c("All-weather", "Momentum", "Combined")
@@ -1157,14 +1075,12 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Calculate strategy correlations
 cor(wealthv)
-
 # Plot ETF momentum strategy combined with All-Weather
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Optimal Momentum Strategy and All-weather for ETFs") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the trailing variance
 lookb <- 152
 varm <- HighFreq::roll_var(retp, lookb=lookb)
@@ -1180,7 +1096,6 @@ pnls <- rowSums(weightv*retp)
 bidask <- 0.0
 costv <- 0.5*bidask*rowSums(abs(rutils::diffit(weightv)))
 pnls <- (pnls - costv)
-
 # Scale the momentum volatility to all-weather
 pnls <- sd(retaw)*pnls/sd(pnls)
 # Calculate the wealth of momentum returns

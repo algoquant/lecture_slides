@@ -7,7 +7,6 @@ startp <- 3; endd <- 5  # Set lower and upper bounds
 subv <- ((xvar >= startp) & (xvar <= endd))
 polygon(c(startp, xvar[subv], endd),  # Draw polygon
   c(-1, yvar[subv], -1), col="red")
-
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 sigmavs <- c(0.5, 1, 1.5, 2)  # Sigma values
 # Create plot colors
@@ -24,7 +23,6 @@ title(main="Normal Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, title="Sigmas", y.intersp=0.4,
  labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colorv)
-
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 xvar <- seq(-4, 4, length=100)
@@ -44,7 +42,6 @@ for (indeks in 1:4) {
 # Add legend
 legend("topright", inset=0.05, title="Sigmas", y.intersp=0.4,
  labelv, cex=0.8, lwd=2, lty=1, bty="n", col=colorv)
-
 # Standard deviations of log-normal distribution
 sigmavs <- c(0.5, 1, 1.5)
 # Create plot colors
@@ -56,13 +53,11 @@ for (indeks in 1:NROW(sigmavs)) {
   xlab="", ylab="", col=colorv[indeks],
   add=as.logical(indeks-1))
 }  # end for
-
 # Add title and legend
 title(main="Log-normal Distributions", line=0.5)
 legend("topright", inset=0.05, title="Sigmas",
  paste("sigma", sigmavs, sep="="), y.intersp=0.4,
  cex=0.8, lwd=2, lty=rep(1, NROW(sigmavs)), col=colorv)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
@@ -75,7 +70,6 @@ for (indeks in 1:4) {
   xlab="", ylab="", col=colorv[indeks],
   lwd=2, add=as.logical(indeks-1))
 }  # end for
-
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
@@ -83,7 +77,6 @@ labelv <- paste("df", degf, sep="=")
 legend("topright", inset=0.05, bty="n", y.intersp=0.4,
        title="Degrees of freedom", labelv,
        cex=0.8, lwd=6, lty=1, col=colorv)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 degf <- c(2, 5, 8, 11)  # df values
@@ -100,14 +93,12 @@ for (indeks in 1:4) {
   lines(xvar, dchisq(xvar, df=degf[indeks]),
 lwd=2, col=colorv[indeks])
 }  # end for
-
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, y.intersp=0.4,
        title="Degrees of freedom", labelv,
        cex=0.8, lwd=6, lty=1, bty="n", col=colorv)
-
 # Plot four curves in loop
 degf <- c(3, 5, 9, 21)  # Degrees of freedom
 colorv <- c("black", "red", "blue", "green")
@@ -116,14 +107,12 @@ for (indeks in 1:NROW(degf)) {
     xlim=c(0, 4), xlab="", ylab="", lwd=2,
     col=colorv[indeks], add=as.logical(indeks-1))
 }  # end for
-
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
 labelv <- paste("degf", degf, sep=" = ")
 legend("topright", title="Degrees of Freedom", inset=0.0, bty="n",
        y.intersp=0.4, labelv, cex=1.2, lwd=6, lty=1, col=colorv)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 degf <- c(3, 6, 9)  # df values
@@ -135,14 +124,12 @@ for (indeks in 1:3) {  # Plot three t-distributions
   curve(expr=dt(x, df=degf[indeks]),
 lwd=2, col=colorv[indeks+1], add=TRUE)
 }  # end for
-
 # Add title
 title(main="t-distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n",
        title="Degrees\n of freedom", labelv,
        y.intersp=0.4, cex=0.8, lwd=6, lty=1, col=colorv)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 xvar <- seq(-4, 4, length=100)
@@ -155,14 +142,12 @@ for (indeks in 1:3) {  # Add lines for t-distributions
   lines(xvar, dt(xvar, df=degf[indeks]),
 lwd=2, col=colorv[indeks+1])
 }  # end for
-
 # Add title
 title(main="t-distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n",
        title="Degrees\n of freedom", labelv,
        y.intersp=0.4, cex=0.8, lwd=6, lty=1, col=colorv)
-
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 # x11(width=6, height=5)
 # Define density of non-standard t-distribution
@@ -183,13 +168,11 @@ for (indeks in 1:3) {
   curve(expr=tdistr(x, dfree=3, scalev=scalev[indeks]), xlim=c(-3, 3),
 xlab="", ylab="", lwd=2, col=colorv[indeks], add=(indeks>1))
 }  # end for
-
 # Add title
 title(main="t-distributions with Different Scale Parameters", line=0.5)
 # Add legend
 legend("topright", inset=0.05, bty="n", title="Scale Parameters", labelv,
        y.intersp=0.4, cex=0.8, lwd=6, lty=1, col=colorv)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot the Normal and Cauchy probability distributions
@@ -201,7 +184,6 @@ title(main="Cauchy and Normal Distributions", line=0.5)
 legend("topright", inset=0.05, bty="n",
        y.intersp=0.4, title=NULL,leg=c("Normal", "Cauchy"),
        cex=0.8, lwd=6, lty=1, col=c("black", "blue"))
-
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Define Pareto function
@@ -218,7 +200,6 @@ title(main="Pareto Distributions", line=0.5)
 labelv <- paste("alpha", 1:3, sep=" = ")
 legend("topright", inset=0.2, bty="n", y.intersp=0.4,
  title=NULL, labelv, cex=0.8, lwd=6, lty=1, col=colorv)
-
 # Poisson frequency
 eventv <- 0:11  # Poisson events
 poissonf <- dpois(eventv, lambda=4)
@@ -229,19 +210,16 @@ curve(expr=poissonfun(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
 xlab="No. of events", ylab="Frequency of events", lwd=2, col="blue")
 legend(x="topright", legend="Poisson density", title="", bty="n",
  inset=0.05, cex=0.8, bg="white", lwd=6, lty=1, col="blue")
-
 # Simulate Poisson variables
 poissonv <- rpois(1000, lambda=4)
 head(poissonv)
 # Calculate contingency table
 poissonf <- table(poissonv)
 poissonf
-
 # Create barplot of table data
 barplot(poissonf, col="lightgrey",
   xlab="counts", ylab="number of observations",
   main="Barplot of Poisson Count Data")
-
 # Create histogram of Poisson variables
 histp <- hist(poissonv, col="lightgrey", xlab="count",
      ylab="frequency", freq=FALSE, main="Poisson histogram")
@@ -256,7 +234,6 @@ legend("topright", inset=0.01, title="Poisson histogram",
  y.intersp=0.4, lty=1, bty="n", col=c("blue", "red"))
 # total area under histogram
 diff(histp$breaks) %*% histp$density
-
 # boxplot of Poisson count data
 boxplot(x=poissonv, ylab="counts",
   main="Poisson box plot")
@@ -264,7 +241,6 @@ boxplot(x=poissonv, ylab="counts",
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
-
 # Get size of an object
 vecv <- runif(1e6)
 object.size(vecv)
@@ -294,7 +270,6 @@ objframe[order(objframe[, 2], decreasing=TRUE), ]
 gdata::ll()[order(ll()$KB, decreasing=TRUE), ]
 # Get sizes of objects in etfenv environment
 gdata::ll(unit="bytes", etfenv)
-
 library(SOAR)  # Load package SOAR
 # Get sizes of objects in workspace
 sort(sapply(mget(ls()), object.size))
@@ -304,7 +279,6 @@ sort(sapply(mget(ls()), object.size))
 search()  # Get search path for R objects
 ls()  # List object cache
 find("etf_list")  # Find object on search path
-
 # Get R memory
 vcells <- gc()["Vcells", "used"]
 # Create vector with 1,000,000 elements
@@ -313,7 +287,6 @@ numv <- numeric(1000000)
 gc()["Vcells", "used"] - vcells
 # Get total size of all objects in workspace
 print(object.size(x=mget(ls())), units="MB")
-
 library(microbenchmark)
 vecv <- runif(1e6)
 # sqrt() and "^0.5" are the same
@@ -324,7 +297,6 @@ microbenchmark(
   power = vecv^0.5,
   sqrt = sqrt(vecv),
   times=10)
-
 # sum() is a compiled primitive function
 sum
 # mean() is a generic function
@@ -345,7 +317,6 @@ summary(microbenchmark(
   inop = {1 %in% vecv},
   anyfun = any(vecv == 1),
   times=10))[, c(1, 4, 5)]
-
 library(microbenchmark)
 matv <- matrix(1:9, ncol=3, # Create matrix
   dimnames=list(paste0("row", 1:3),
@@ -367,7 +338,6 @@ summary(microbenchmark(
   as.data.frame.matrix(matv),
   as.data.frame(matv),
   times=10))[, c(1, 4, 5)]
-
 # Calculate matrix of random data with 5,000 rows
 matv <- matrix(rnorm(10000), ncol=2)
 # Allocate memory for row sums
@@ -386,7 +356,6 @@ summary(microbenchmark(
     rowsumv[i] <- sum(matv[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 vecv <- rnorm(5000)
 summary(microbenchmark(
 # Compiled C++ function
@@ -412,7 +381,6 @@ summary(microbenchmark(
       cumsumv <- c(cumsumv, vecv[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
-
 # Disable JIT
 jit_level <- compiler::enableJIT(0)
 # Create inefficient function
@@ -452,7 +420,6 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 # enable JIT
 compiler::enableJIT(jit_level)
-
 # Define functions for profiling
 profun <- function() {fastfun(); slowfun()}
 fastfun <- function() Sys.sleep(0.1)
@@ -465,7 +432,6 @@ replicate(n=10, profun())
 Rprof(NULL)
 # Compile summary of profiling from file
 summaryRprof("/Users/jerzy/Develop/data_def/profile.out")
-
 # Profile plotting of regression
 profvis::profvis({
   plot(price ~ carat, data=ggplot2::diamonds)
@@ -493,7 +459,6 @@ profvis::profvis(
   shiny::runExample(example="06_tabsets",
             display.mode="normal")
 )  # end profvis
-
 # Calculate cumulative sum of a vector
 vecv <- runif(1e5)
 # Use compiled function
@@ -521,7 +486,6 @@ cumsumv2[i] <- (vecv[i] + cumsumv2[i-1])
 cumsumv3[i] <- (vecv[i] + cumsumv3[i-1])
   },
   times=10))[, c(1, 4, 5)]
-
 library(microbenchmark)
 vecv <- runif(1e6)
 # sqrt() and "^0.5" are the same
@@ -532,7 +496,6 @@ microbenchmark(
   power = vecv^0.5,
   sqrt = sqrt(vecv),
   times=10)
-
 # Calculate matrix of random data with 5,000 rows
 matv <- matrix(rnorm(10000), ncol=2)
 # Allocate memory for row sums
@@ -551,7 +514,6 @@ summary(microbenchmark(
     rowsumv[i] <- sum(matv[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 vecv <- rnorm(5000)
 summary(microbenchmark(
 # Allocate full memory for cumulative sum
@@ -575,7 +537,6 @@ summary(microbenchmark(
       cumsumv <- c(cumsumv, vecv[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
-
 vec1 <- rnorm(1000000)
 vec2 <- rnorm(1000000)
 vecbig <- numeric(1000000)
@@ -600,7 +561,6 @@ summary(microbenchmark(
 # Cumulative sum using "cumsum"
   vectorized = cumsum(vecbig),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Calculate matrix of random data with 5,000 rows
 matv <- matrix(rnorm(10000), ncol=2)
 # Calculate row sums two different ways
@@ -609,7 +569,6 @@ summary(microbenchmark(
   rowsumv = rowSums(matv),
   applyloop = apply(matv, 1, sum),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(microbenchmark)
 str(pmax)
 # Calculate row maximums two different ways
@@ -619,7 +578,6 @@ summary(microbenchmark(
   lapply=unlist(lapply(1:NROW(matv),
   function(indeks) max(matv[indeks, ]))),
   times=10))[, c(1, 4, 5)]
-
 install.packages("matrixStats")  # Install package matrixStats
 library(matrixStats)  # Load package matrixStats
 # Calculate row mininmum values two different ways
@@ -632,7 +590,6 @@ summary(microbenchmark(
     function(indeks) matv[, indeks])),
   as_dframe = do.call(pmin.int, as.data.frame.matrix(matv)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 install.packages("Rfast")  # Install package Rfast
 library(Rfast)  # Load package Rfast
 # Benchmark speed of calculating ranks
@@ -650,7 +607,6 @@ summary(microbenchmark(
   matrixStats = matrixStats::colMedians(matv),
   Rfast = Rfast::colMedians(matv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 summary(microbenchmark(  # Assign values to vector three different ways
 # Fast vectorized assignment loop performed in C using brackets "[]"
   brackets = {vecv <- numeric(10); vecv[] <- 2},
@@ -667,7 +623,6 @@ summary(microbenchmark(  # Assign values to vector two different ways
     for (indeks in 4:7)
       vecv[indeks] <- rnorm(1)},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Define function vectorized automatically
 myfun <- function(input, param) {
   param*input
@@ -683,7 +638,6 @@ means <- structure(-1:1, names=paste0("mean=", -1:1))
 rnorm(1, sd=stdevs)
 # "mean" argument of rnorm() isn't vectorized
 rnorm(1, mean=means)
-
 # Loop over stdevs produces vector output
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 sapply(stdevs, function(stdev) rnorm(n=2, sd=stdev))
@@ -696,7 +650,6 @@ sapply(means, function(meanv) rnorm(n=2, mean=meanv))
 # Same
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 sapply(means, rnorm, n=2)
-
 # rnorm() vectorized with respect to "stdev"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (NROW(sd)==1)
@@ -714,7 +667,6 @@ set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 vec_rnorm(n=2, sd=stdevs)
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 vec_rnorm(n=2, mean=means)
-
 str(sum)
 # na.rm is bound by name
 mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
@@ -723,7 +675,6 @@ str(rnorm)
 mapply(rnorm, n=5, mean=means, sd=stdevs)
 mapply(function(input, e_xp) input^e_xp,
  1:5, seq(from=1, by=0.2, length.out=5))
-
 # rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (NROW(mean)==1 && NROW(sd)==1)
@@ -735,7 +686,6 @@ vec_rnorm <- function(n, mean=0, sd=1) {
 vec_rnorm(n=2, sd=stdevs)
 # Call vec_rnorm() on vector of "mean"
 vec_rnorm(n=2, mean=means)
-
 # Create two numeric vectors
 vec1 <- sin(0.25*pi*1:20)
 vec2 <- cos(0.25*pi*1:20)
@@ -752,7 +702,6 @@ par(oma=c(0, 1, 1, 1), mar=c(0, 2, 2, 1),
 zoo::plot.zoo(vec3, lwd=2, ylim=c(-1, 1),
   xlab="", col=c("green", "blue", "red"),
   main="ifelse() Calculates The Max of Two Data Sets")
-
 # Calculate cumulative sum of a vector
 vecv <- runif(1e5)
 # Use compiled function
@@ -780,7 +729,6 @@ cumsumv2[i] <- (cumsumv2[i] + cumsumv2[i-1])
 cumsumv3[i] <- (vecv[i] + cumsumv3[i-1])
   },
   times=10))[, c(1, 4, 5)]
-
 library(parallel)  # Load package parallel
 # Get short description
 packageDescription("parallel")
@@ -788,7 +736,6 @@ packageDescription("parallel")
 help(package="parallel")
 # List all objects in "parallel"
 ls("package:parallel")
-
 # Define function that pauses execution
 paws <- function(x, sleep_time=0.01) {
   Sys.sleep(sleep_time)
@@ -811,7 +758,6 @@ summary(microbenchmark(
   parallel = mclapply(1:10, paws, mc.cores=ncores),
   times=10)
 )[, c(1, 4, 5)]
-
 # Compare speed of lapply with parallel computing
 runv <- 3:10
 timev <- sapply(runv, function(nruns) {
@@ -826,7 +772,6 @@ colnames(timev) <- c("standard", "parallel")
 rownames(timev) <- runv
 # Stop R processes over cluster under Windows
 stopCluster(compclust)
-
 x11(width=6, height=5)
 plot(x=rownames(timev),
      y=timev[, "standard"],
@@ -839,7 +784,6 @@ y=timev[, "parallel"], lwd=2, col="green")
 legend(x="topleft", legend=colnames(timev),
  inset=0.1, cex=1.0, bty="n", bg="white",
  y.intersp=0.3, lwd=2, lty=1, col=c("blue", "green"))
-
 library(parallel)  # Load package parallel
 # Calculate number of available cores
 ncores <- detectCores() - 1
@@ -864,7 +808,6 @@ summary(microbenchmark(
 )[, c(1, 4, 5)]
 # Stop R processes over cluster under Windows
 stopCluster(compclust)
-
 library(parallel)  # Load package parallel
 # Calculate number of available cores
 ncores <- detectCores() - 1
@@ -892,7 +835,6 @@ parSapply(compclust, c("VTI", "IEF", "DBC"), function(symbol) {
 })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(compclust)
-
 library(parallel)  # Load package parallel
 # Calculate number of available cores
 ncores <- detectCores() - 1
@@ -908,7 +850,6 @@ sum(unlist(datav))
 stopCluster(compclust)
 # Perform parallel loop under Mac-OSX or Linux
 datav <- mclapply(1:10, rnorm, mc.cores=ncores, n=100)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
@@ -936,7 +877,6 @@ summary(microbenchmark(
   monte_carlo = datav[cutoff],
   quantv = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Sample from Standard Normal Distribution
 nsimu <- 1000; datav <- rnorm(nsimu)
 # Sample mean and standard deviation
@@ -956,7 +896,6 @@ sd(datav)/sqrt(nsimu)
 sd(bootd[, "mean"])
 # Standard error of median from bootstrap
 sd(bootd[, "median"])
-
 # Plot the densities of the bootstrap data
 x11(width=6, height=5)
 plot(density(bootd[, "mean"]), lwd=3, xlab="Estimator Value",
@@ -966,7 +905,6 @@ abline(v=mean(bootd[, "mean"]), lwd=2, col="red")
 legend("topright", inset=0.05, cex=0.8, title=NULL,
  leg=c("mean", "median"), bty="n", y.intersp=0.4,
  lwd=6, bg="white", col=c("green", "blue"))
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nsimu <- 1000
@@ -989,7 +927,6 @@ summary(microbenchmark(
     matrixStats::colMedians(samplev)
     },
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
@@ -1014,7 +951,6 @@ apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
 # Standard error from formula
 sd(datav)/sqrt(nsimu)
 stopCluster(compclust)  # Stop R processes over cluster under Windows
-
 nsimu <- 1000
 datav <- rnorm(nsimu)
 sd(datav); mad(datav)
@@ -1049,7 +985,6 @@ stopCluster(compclust)  # Stop R processes over cluster
 bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
 apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
-
 # Calculate time series of VTI returns
 library(rutils)
 retp <- rutils::etfenv$returns$VTI
@@ -1064,7 +999,6 @@ summary(microbenchmark(
   sample.int = sample.int(1e3),
   sample = sample(1e3),
   times=10))[, c(1, 4, 5)]
-
 # Sample from time series of VTI returns
 library(rutils)
 retp <- rutils::etfenv$returns$VTI
@@ -1095,7 +1029,6 @@ stderrors <- apply(bootd, MARGIN=2,
 stderrors
 # Relative standard errors
 stderrors[2, ]/stderrors[1, ]
-
 # Initialize random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Define predictor and response variables
@@ -1117,7 +1050,6 @@ bootd <- sapply(1:nboot, function(x) {
   desm <- desm[samplev, ]
   cov(desm[, 1], desm[, 2])/var(desm[, 2])
 })  # end sapply
-
 x11(width=6, height=5)
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 # Mean and standard error of beta regression coefficient
@@ -1129,7 +1061,6 @@ plot(density(bootd), lwd=2, xlab="Regression slopes",
 abline(v=mean(bootd), lwd=2, col="red")
 text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
-
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
@@ -1146,7 +1077,6 @@ bootd <- mclapply(1:1000, function(x) {
   cov(desm[, 1], desm[, 2])/var(desm[, 2])
 }, mc.cores=ncores)  # end mclapply
 stopCluster(compclust)  # Stop R processes over cluster under Windows
-
 # Collapse the bootstrap list into a vector
 class(bootd)
 bootd <- unlist(bootd)
@@ -1160,7 +1090,6 @@ plot(density(bootd),
 abline(v=mean(bootd), lwd=2, col="red")
 text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 barl <- 20  # Barrier level
@@ -1183,7 +1112,6 @@ plot(pathv, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barl, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 barl <- 20  # Barrier level
@@ -1203,7 +1131,6 @@ plot(pathv, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barl, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-
 # Define Brownian motion parameters
 sigmav <- 1.0  # Volatility
 drift <- 0.0  # Drift
@@ -1224,7 +1151,6 @@ sum(payouts[payouts > 0])/npaths
 barl <- 50
 crossi <- (colSums(pathm > barl) > 0)
 sum(crossi)/npaths
-
 # Plot in window
 x11(width=6, height=5)
 par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
@@ -1236,7 +1162,6 @@ zoo::plot.zoo(pathm[, indeks], main="Paths of Brownian Motion",
   xlab="time steps", ylab=NA, plot.type="single")
 abline(h=strikep, col="red", lwd=3)
 text(x=(nsteps-60), y=strikep, labels="strike price", pos=3, cex=1)
-
 # Calculate percentage returns from VTI prices
 library(rutils)
 pricev <- quantmod::Cl(rutils::etfenv$VTI)
@@ -1253,7 +1178,6 @@ samplev <- retp[sample.int(nrows, replace=TRUE)]
 samplev <- prici*exp(cumsum(samplev))
 # Calculate if prices crossed barrier
 sum(samplev > barl) > 0
-
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
@@ -1280,7 +1204,6 @@ bootd <- mclapply(1:nboot, function(x) {
 bootd <- rutils::do_call(c, bootd)
 # Calculate frequency of crossing barrier
 sum(bootd)/nboot
-
 # Calculate percentage returns from VTI prices
 library(rutils)
 ohlc <- rutils::etfenv$VTI
@@ -1300,7 +1223,6 @@ ohlcboot <- cbind(ohlcboot, priceboot)
 barl <- 1.5*max(pricev)
 # Calculate if High bootstrapped prices crossed barrier level
 sum(ohlcboot[, 2] > barl) > 0
-
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
@@ -1331,7 +1253,6 @@ stopCluster(compclust)  # Stop R processes over cluster under Windows
 bootd <- rutils::do_call(rbind, bootd)
 # Calculate frequency of crossing barrier
 sum(bootd)/nboot
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
@@ -1352,7 +1273,6 @@ bootd <- sapply(1:nboot, function(x) {
 # Standard error of quantile from bootstrap
 sd(bootd)
 sqrt(2)*sd(bootd)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot a Normal probability distribution
@@ -1367,7 +1287,6 @@ abline(v=1, lwd=3, col="red", lty="dashed")
 arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
  code=2, angle=20, length=grid::unit(0.2, "cm"))
 text(x=0.3, 0.1, labels=bquote(lambda), pos=3, cex=2)
-
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection") # Reset random number generator
 # Sample from Standard Normal Distribution
 nsimu <- 1000
@@ -1397,7 +1316,6 @@ bootd <- sapply(1:nboot, function(x) {
   c(naivemc=naivemc, impsample=isample)
 }) # end sapply
 apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
-
 # Quantile from Naive Monte Carlo
 confl <- 0.02
 qnorm(confl)  # Exact value
@@ -1423,7 +1341,6 @@ bootd <- sapply(1:nboot, function(x) {
   c(naivemc=naivemc, impsample=isample)
 }) # end sapply
 apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
-
 # VaR and CVaR from Naive Monte Carlo
 varisk <- datav[cutoff]
 sum((datav <= varisk)*datav)/sum((datav <= varisk))
@@ -1446,7 +1363,6 @@ bootd <- sapply(1:nboot, function(x) {
   c(naivemc=naivemc, impsample=isample)
 }) # end sapply
 apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
-
 # Calculate matrix of random data
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection") # Reset random number generator
 nsimu <- 1000; nboot <- 100
@@ -1464,7 +1380,6 @@ calc_vars <- function(lambdaf, confl=0.05) {
 }  # end calc_vars
 # Bootstrap vector of VaR for a single tilt parameter
 bootd <- calc_vars(-1.5)
-
 # Define vector of tilt parameters
 lambdav <- seq(-3.0, -1.2, by=0.2)
 # Calculate vector of VaR for vector of tilt parameters
@@ -1479,7 +1394,6 @@ plot(x=lambdav, y=stdevs,
      main="Standard Errors of Simulated VaR",
      xlab="tilt parameter", ylab="standard error",
      type="l", col="blue", lwd=2)
-
 # Binomial sample
 nsimu <- 1000
 probv <- 0.1
@@ -1499,7 +1413,6 @@ bootd <- sapply(1:nboot, function(x) {
     impsample=weightv*sum(rbinom(n=nsimu, size=1, probt))/nsimu)
 }) # end sapply
 apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
-
 # Define Brownian motion parameters
 sigmav <- 1.0  # Volatility
 drift <- 0.0  # Drift

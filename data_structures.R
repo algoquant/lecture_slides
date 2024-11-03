@@ -26,7 +26,7 @@ c(typeof(myvar), mode(myvar), class(myvar))
 # A simple vector has no attributes
 attributes(5:10)
 myvar <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-# Named vector has "namev" attribute
+# Named vector has "names" attribute
 attributes(myvar)
 myvar <- 1:10
 is.vector(myvar)  # Is the object a vector?

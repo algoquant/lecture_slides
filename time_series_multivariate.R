@@ -1,21 +1,21 @@
 # Perform regression using formula
 retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
-riskfree <- 0.03/252
-retp <- (retp - riskfree)
+raterf <- 0.03/252
+retp <- (retp - raterf)
 regmod <- lm(XLP ~ VTI, data=retp)
-regmodsum <- summary(regmod)
+regsum <- summary(regmod)
 # Get regression coefficients
-coef(regmodsum)
+coef(regsum)
 # Get alpha and beta
-coef(regmodsum)[, 1]
+coef(regsum)[, 1]
 # Plot scatterplot of returns with aspect ratio 1
 plot(XLP ~ VTI, data=rutils::etfenv$returns, main="Regression XLP ~ VTI",
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), pch=1, col="blue", asp=1)
 # Add regression line and perpendicular line
 abline(regmod, lwd=2, col="red")
-abline(a=0, b=-1/coef(regmodsum)[2, 1], lwd=2, col="blue")
+abline(a=0, b=-1/coef(regsum)[2, 1], lwd=2, col="blue")
 # Get regression coefficients
-coef(regmodsum)
+coef(regsum)
 # Calculate regression coefficients from scratch
 betac <- drop(cov(retp$XLP, retp$VTI)/var(retp$VTI))
 alphac <- drop(mean(retp$XLP) - betac*mean(retp$VTI))
@@ -42,9 +42,9 @@ betam <- sapply(symbolv, function(symbol) {
 # Perform regression
   regmod <- lm(formulav, data=retp)
 # Get regression summary
-  regmodsum <- summary(regmod)
+  regsum <- summary(regmod)
 # Collect regression statistics
-  with(regmodsum, 
+  with(regsum, 
     c(beta=coefficients[2, 1], 
 pbeta=coefficients[2, 4],
 alpha=coefficients[1, 1], 
@@ -82,23 +82,23 @@ plot(retsann ~ betac, xlab="betas", ylab="returns",
 retvti <- retsann["VTI"]
 points(x=1, y=retvti, col="red", lwd=3, pch=21)
 # Plot Security Market Line
-riskfree <- 0.01
-abline(a=riskfree, b=(retvti-riskfree), col="green", lwd=2)
+raterf <- 0.01
+abline(a=raterf, b=(retvti-raterf), col="green", lwd=2)
 # Add labels
 text(x=betac, y=retsann, labels=names(betac), pos=2, cex=0.8)
 # Find optimal risk-free rate by minimizing residuals
-rss <- function(riskfree) {
-  sum((retsann - riskfree - betac*(retvti-riskfree))^2)
+rss <- function(raterf) {
+  sum((retsann - raterf - betac*(retvti-raterf))^2)
 }  # end rss
 optimrss <- optimize(rss, c(-1, 1))
-riskfree <- optimrss$minimum
+raterf <- optimrss$minimum
 # Or simply
 retsadj <- (retsann - retvti*betac)
 betadj <- (1-betac)
-riskfree <- sum(retsadj*betadj)/sum(betadj^2)
-abline(a=riskfree, b=(retvti-riskfree), col="blue", lwd=2)
+raterf <- sum(retsadj*betadj)/sum(betadj^2)
+abline(a=raterf, b=(retvti-raterf), col="blue", lwd=2)
 legend(x="topleft", bty="n", title="Security Market Line",
- legend=c("optimal fit", "riskfree=0.01"),
+ legend=c("optimal fit", "raterf=0.01"),
  y.intersp=0.5, cex=1.0, lwd=6, lty=1, col=c("blue", "green"))
 # Load S&P500 constituent stock returns
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
@@ -126,15 +126,15 @@ plot(retsann ~ betac, xlab="betas", ylab="returns",
      main="Security Market Line for Stocks")
 points(x=1, y=retvti, col="red", lwd=3, pch=21)
 # Plot Security Market Line
-riskfree <- 0.01
-abline(a=riskfree, b=(retvti-riskfree), col="green", lwd=2)
+raterf <- 0.01
+abline(a=raterf, b=(retvti-raterf), col="green", lwd=2)
 # Find optimal risk-free rate by minimizing residuals
 retsadj <- (retsann - retvti*betac)
 betadj <- (1-betac)
-riskfree <- sum(retsadj*betadj)/sum(betadj^2)
-abline(a=riskfree, b=(retvti-riskfree), col="blue", lwd=2)
+raterf <- sum(retsadj*betadj)/sum(betadj^2)
+abline(a=raterf, b=(retvti-raterf), col="blue", lwd=2)
 legend(x="topleft", bty="n", title="Security Market Line",
- legend=c("optimal fit", "riskfree=0.01"),
+ legend=c("optimal fit", "raterf=0.01"),
  y.intersp=0.5, cex=1.0, lwd=6, lty=1, col=c("blue", "green"))
 library(PerformanceAnalytics)
 # Calculate XLP Treynor ratio
@@ -145,15 +145,15 @@ PerformanceAnalytics::table.CAPM(Ra=retp[, c("XLP", "XLF")],
                            Rb=retp$VTI, scale=252)
 capmstats <- table.CAPM(Ra=retp[, symbolv],
         Rb=retp$VTI, scale=252)
-colnamev <- strsplit(colnames(capmstats), split=" ")
-colnamev <- do.call(cbind, colnamev)[1, ]
-colnames(capmstats) <- colnamev
+colv <- strsplit(colnames(capmstats), split=" ")
+colv <- do.call(cbind, colv)[1, ]
+colnames(capmstats) <- colv
 capmstats <- t(capmstats)
 capmstats <- capmstats[, -1]
-colnamev <- colnames(capmstats)
-whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colnamev)
-colnamev[whichv] <- c("Alpha", "Information", "Treynor")
-colnames(capmstats) <- colnamev
+colv <- colnames(capmstats)
+whichv <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), colv)
+colv[whichv] <- c("Alpha", "Information", "Treynor")
+colnames(capmstats) <- colv
 capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
 # Copy capmstats into etfenv and save to .RData file
 etfenv <- rutils::etfenv
@@ -195,12 +195,12 @@ datev <- zoo::index(retp[endd, ])
 pricev <- rutils::etfenv$prices$VTI[datev]
 datav <- cbind(pricev, betac)
 colnames(datav)[2] <- "beta"
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue") %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Calculate XLP and VTI returns
 retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
@@ -237,12 +237,12 @@ datev <- zoo::index(retp[endd, ])
 pricev <- log(rutils::etfenv$prices$VTI[datev])
 datav <- cbind(pricev, betac)
 colnames(datav)[2] <- "beta"
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Calculate the trailing betas
 lambdaf <- 0.99
@@ -251,12 +251,12 @@ betac <- covarv[, 1]/covarv[, 3]
 # dygraph plot of trailing XLP beta and VTI prices
 datav <- cbind(pricev, betac[endd])[-(1:11)] # Remove warmup period
 colnames(datav)[2] <- "beta"
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", col="blue", strokeWidth=2) %>%
-  dySeries(name=colnamev[2], axis="y2", col="red", strokeWidth=2) %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
+  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=500)
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")

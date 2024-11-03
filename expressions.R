@@ -148,26 +148,26 @@ head(DAX)
 head(EuStockMarkets[, "DAX"])
 identical(DAX, EuStockMarkets[, "DAX"])
 # Create new environment
-test_env <- new.env()
+envv <- new.env()
 # Pass string as name to create new object
-assign("myvar1", 2, envir=test_env)
+assign("myvar1", 2, envir=envv)
 # Create new object using $ string referencing
-test_env$myvar2 <- 1
+envv$myvar2 <- 1
 # List objects in new environment
-ls(test_env)
+ls(envv)
 # Reference an object by name
-test_env$myvar1
+envv$myvar1
 # Reference an object by string name using get
-get("myvar1", envir=test_env)
+get("myvar1", envir=envv)
 # Retrieve and assign value to object
 assign("myvar1",
-       2*get("myvar1", envir=test_env),
-       envir=test_env)
-get("myvar1", envir=test_env)
+       2*get("myvar1", envir=envv),
+       envir=envv)
+get("myvar1", envir=envv)
 # Return all objects in an environment
-mget(ls(test_env), envir=test_env)
+mget(ls(envv), envir=envv)
 # Delete environment
-rm(test_env)
+rm(envv)
 rm(list=ls())  # Delete all objects in workspace
 # Convert string to symbol
 as.symbol("some_string")
@@ -273,24 +273,24 @@ switch(3, a="aaahh", b="bee", c="see", d=2,
 switch("cc", a="aaahh", b="bee", c="see", d=2,
        "else this")
 # Measure of central tendency
-calc_center <- function(inputv, method=c("mean", "mean_narm", "median")) {
+centerf <- function(inputv, method=c("mean", "mean_narm", "median")) {
 # validate "method" argument
   method <- match.arg(method)
   switch(method,
  mean=mean(inputv),
  mean_narm=mean(inputv, na.rm=TRUE),
  median=median(inputv))
-}  # end calc_center
+}  # end centerf
 myvar <- rnorm(100, mean=2)
-calc_center(myvar, "mean")
-calc_center(myvar, "mean_narm")
-calc_center(myvar, "median")
+centerf(myvar, "mean")
+centerf(myvar, "mean_narm")
+centerf(myvar, "median")
 for (indeks in vecv) {expvs}
 rm(list=ls())
 colorl <- list("red", "white", "blue")
 # Loop over list
-for (some_color in colorl) {
-  print(some_color)
+for (colorv in colorl) {
+  print(colorv)
 }  # end for
 # Loop over vector
 for (indeks in 1:3) {
@@ -312,16 +312,14 @@ for (i in seq_along(vecv)) {
 # Modifying vecv inside sapply() has no effect
 vecv <- integer(7)
 vecv
-sapply(seq_along(vecv),
- function(i) {
-   vecv[i] <- i^2
- })  # end sapply
+sapply(seq_along(vecv), function(i) {
+  vecv[i] <- i^2
+})  # end sapply
 vecv
 # Super-assignment operator "<<-" allows modifying vecv
-sapply(seq_along(vecv),
- function(i) {
-   vecv[i] <<- i^2 # "<<-" !!!
- })  # end sapply
+sapply(seq_along(vecv), function(i) {
+  vecv[i] <<- i^2 # "<<-" !!!
+})  # end sapply
 vecv
 # sapply() loop returns vector of values
 vecv <- sapply(seq_along(vecv), function(i) (i^2))
@@ -522,8 +520,7 @@ rbind(listv[[indeks]], listv[[indeks+1]])
 }  # end do_call_rbind
 all.equal(matv, do_call_rbind(listv))
 library(microbenchmark)
-airquality[(airquality$Solar.R > 320 &
-        !is.na(airquality$Solar.R)), ]
+airquality[(airquality$Solar.R > 320 & !is.na(airquality$Solar.R)), ]
 subset(x=airquality, subset=(Solar.R > 320))
 summary(microbenchmark(
     subset=subset(x=airquality, subset=(Solar.R > 320)),
@@ -538,21 +535,21 @@ virgin <- iris[iris$Species=="virginica", ]
 dim(setosa)
 head(setosa, 2)
 # Split iris into list based on Species
-splitiris <- split(iris, iris$Species)
-str(splitiris, max.confl=1)
-names(splitiris)
-dim(splitiris$setosa)
-head(splitiris$setosa, 2)
-all.equal(setosa, splitiris$setosa)
+irisplit <- split(iris, iris$Species)
+str(irisplit, max.confl=1)
+names(irisplit)
+dim(irisplit$setosa)
+head(irisplit$setosa, 2)
+all.equal(setosa, irisplit$setosa)
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
 # Split mtcars data frame based on number of cylinders
-split_cars <- split(mtcars, mtcars$cyl)
-str(split_cars, max.confl=1)
-names(split_cars)
+carsplit <- split(mtcars, mtcars$cyl)
+str(carsplit, max.confl=1)
+names(carsplit)
 # Aggregate the mean mpg over split mtcars data frame
-sapply(split_cars, function(x) mean(x$mpg))
+sapply(carsplit, function(x) mean(x$mpg))
 # Or: split mpg column and aggregate the mean
 sapply(split(mtcars$mpg, mtcars$cyl), mean)
 # Same but using with()
@@ -573,18 +570,18 @@ tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 with(mtcars, tapply(X=mpg, INDEX=cyl, FUN=mean))
 # Function sapply() instead of tapply()
 with(mtcars, sapply(sort(unique(cyl)), function(x) {
- structure(mean(mpg[x==cyl]), names=x)
-     }))  # end with
+  structure(mean(mpg[x==cyl]), names=x)
+}))  # end with
 # Function by() instead of tapply()
 with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
 # Get several mpg stats for each cylinder group
-cardata <- sapply(split_cars, function(x) {
+cardata <- sapply(carsplit, function(x) {
   c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
 }  # end anonymous function
 )  # end sapply
 cardata  # sapply() produces a matrix
 # Now same using lapply
-cardata <- lapply(split_cars, function(x) {
+cardata <- lapply(carsplit, function(x) {
   c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
 }  # end anonymous function
 )  # end sapply

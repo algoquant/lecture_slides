@@ -16,7 +16,6 @@ do.call(cbind, list(1:2, 3:5))
 do.call(cbind, list(1, NULL, 3, 4))
 # NA element isn't skipped
 do.call(cbind, list(1, NA, 3, 4))
-
 library(microbenchmark)
 listv <- lapply(1:5, rnorm, n=10)
 matv <- do.call(rbind, listv)
@@ -35,7 +34,6 @@ rbind(listv[[indeks]], listv[[indeks+1]])
   listv[[1]]
 }  # end do_call_rbind
 all.equal(matv, do_call_rbind(listv))
-
 library(microbenchmark)
 airquality[(airquality$Solar.R > 320 & !is.na(airquality$Solar.R)), ]
 subset(x=airquality, subset=(Solar.R > 320))
@@ -44,7 +42,6 @@ summary(microbenchmark(
     brackets=airquality[(airquality$Solar.R > 320 &
             !is.na(airquality$Solar.R)), ],
 times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 unique(iris$Species)  # Species has three distinct values
 # Split into separate data frames by hand
 setosa <- iris[iris$Species=="setosa", ]
@@ -59,7 +56,6 @@ names(splitiris)
 dim(splitiris$setosa)
 head(splitiris$setosa, 2)
 all.equal(setosa, splitiris$setosa)
-
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
@@ -83,7 +79,6 @@ aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
 aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate multiple columns using formula syntax
 aggregate(x=(cbind(mpg, hp) ~ cyl), data=mtcars, FUN=mean)
-
 # Mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
@@ -94,7 +89,6 @@ with(mtcars, sapply(sort(unique(cyl)), function(x) {
      }))  # end with
 # Function by() instead of tapply()
 with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
-
 # Get several mpg stats for each cylinder group
 cardata <- sapply(split_cars, function(x) {
   c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
@@ -109,7 +103,6 @@ cardata <- lapply(split_cars, function(x) {
 is.list(cardata)  # lapply produces a list
 # do.call flattens list into a matrix
 do.call(cbind, cardata)
-
 # Download CRSPpanel.txt from the NYU share drive
 # Read the file using read.table() with header and sep arguments
 paneld <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt",
@@ -135,7 +128,6 @@ aggregate(x=Sector, by=list(Industry), FUN=unique)
 sapply(unique(Industry), function(x) {
   Sector[match(x, Industry)]
 })  # end sapply
-
 # Split paneld based on Sector column
 panelds <- split(paneld, Sector)
 # Number of companies in each Sector
@@ -158,7 +150,6 @@ secind2 <- tapply(X=Industry, INDEX=Sector, FUN=unique)
 # Coerce secind2 into a jagged array
 secind2 <- drop(as.matrix(secind2))
 all.equal(secind2, secind)
-
 # Average ROE in each Industry
 sapply(split(ROE, Industry), mean)
 # Average, min, and max ROE in each Industry
@@ -178,7 +169,6 @@ t(sapply(panelds, FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
 aggregate(x=paneld[, c("ROE", "EPS.EXCLUDE.EI")],
   by=list(paneld$Industry), FUN=mean)
-
 # ?options  # Get info on global options
 getOption("warn")  # Global option for "warn"
 options("warn")  # Global option for "warn"
@@ -202,7 +192,6 @@ options(warn=1)
 calc_sqrt()
 options(warn=3)
 calc_sqrt()
-
 # Function valido validates its arguments
 valido <- function(inputv=NULL) {
 # Check if argument is valid and return double
@@ -227,7 +216,6 @@ valido <- function(inputv) {
 valido(3)
 valido("a")
 valido()
-
 # valido() validates its arguments and assertions
 valido <- function(inputv) {
 # Check if argument is valid and return double
@@ -241,10 +229,8 @@ valido <- function(inputv) {
 valido(3)
 valido("a")
 valido()
-
 # Print the call stack
 traceback()
-
 valido <- function(inputv) {
 # Check argument using long form '&&' operator
   stopifnot(!missing(inputv) && is.numeric(inputv))
@@ -260,7 +246,6 @@ valido <- function(inputv) {
 }  # end valido
 valido()
 valido("a")
-
 # sumtwo() returns the sum of its two arguments
 sumtwo <- function(input1, input2) {  # Even more robust
 # Check if at least one argument is not missing
@@ -283,14 +268,12 @@ sumtwo(5, 'a')
 sumtwo('a', 5)
 sumtwo('a', 'b')
 sumtwo()
-
 # Flag "valido" for debugging
 debug(valido)
 # Calling "valido" starts debugger
 valido(3)
 # unflag "valido" for debugging
 undebug(valido)
-
 valido <- function(inputv) {
   browser()  # Pause and invoke debugger
 # Check argument using long form '&&' operator
@@ -301,7 +284,6 @@ valido()  # Invokes debugger
 options("error")  # Show default NULL "error" option
 options(error=recover)  # Set "error" option to "recover"
 options(error=NULL)  # Set back to default "error" option
-
 str(tryCatch)  # Get arguments of tryCatch()
 tryCatch(  # Without error handler
   {  # Evaluate expressions
@@ -310,7 +292,6 @@ tryCatch(  # Without error handler
   },
   finally=print(paste0("numv = ", numv))
 )  # end tryCatch
-
 tryCatch(  # With error handler
   {  # Evaluate expressions
     numv <- 101  # Assign
@@ -326,7 +307,6 @@ tryCatch(  # With error handler
   },  # end warning handler
   finally=print(paste0("numv = ", numv))
 )  # end tryCatch
-
 # Apply loop without tryCatch
 apply(matrix(1:5), 1, function(numv) {  # Anonymous function
     stopifnot(!(numv == 3))  # Check for error
@@ -336,7 +316,6 @@ apply(matrix(1:5), 1, function(numv) {  # Anonymous function
     paste0("(return) numv = ", numv)
   }  # end anonymous function
 )  # end apply
-
 # Apply loop with tryCatch
 apply(as.matrix(1:5), 1, function(numv) {  # Anonymous function
     tryCatch(  # With error handler
@@ -354,7 +333,6 @@ finally=print(paste0("(finally) numv = ", numv))
     )  # end tryCatch
   }  # end anonymous function
 )  # end apply
-
 Sys.Date()  # Get today's date
 as.Date(1e3)  # Coerce numeric into date object
 datetime <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
@@ -375,7 +353,6 @@ attributes(datetime) <- list(class="Date")
 datetime  # "Date" object
 structure(0, class="Date")  # "Date" object
 structure(10000.25, class="Date")
-
 datetime <- Sys.time()  # Get today's date and time
 datetime
 class(datetime)  # POSIXct object
@@ -389,7 +366,6 @@ as.POSIXct("2014-07-14 13:30:10", tz="UTC")
 # Format argument allows parsing different date-time string formats
 as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
      tz="America/New_York")
-
 # Same moment of time corresponds to different clock times
 timeny <- as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
 timeldn <- as.POSIXct("2014-07-14 13:30:10", tz="UTC")
@@ -407,7 +383,6 @@ timev <- seq(
   by="10 min")
 head(timev, 3)
 tail(timev, 3)
-
 # POSIXct is stored as integer moment of time
 datetimen <- as.numeric(datetime)
 # Same moment of time corresponds to different clock times
@@ -418,7 +393,6 @@ as.POSIXct("2014-07-14 13:30:10", tz="America/New_York") -
   as.POSIXct("2014-07-14 13:30:10", tz="UTC")
 # Add 20 seconds to POSIXct
 datetime + 20
-
 datetime  # POSIXct date and time
 # Parse POSIXct to string representing the clock time
 format(datetime)
@@ -436,7 +410,6 @@ as.POSIXct(Sys.Date())
 as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
      origin="1970-01-01",
      tz="UTC")
-
 # Parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
 datetime <- as.POSIXlt("2014-07-14 18:30:10")
 datetime
@@ -450,7 +423,6 @@ trunc(datetime, units="hours")  # Truncate to closest hour
 trunc(datetime, units="days")  # Truncate to closest day
 methods(trunc)  # Trunc methods
 trunc.POSIXt
-
 # Set time-zone to UTC
 Sys.setenv(TZ="UTC")
 Sys.timezone()  # Get time-zone
@@ -471,7 +443,6 @@ as.POSIXct(format(datetime, tz="America/New_York"))
 # Difference between New_York time and UTC
 as.POSIXct(format(Sys.time(), tz="UTC")) -
   as.POSIXct(format(Sys.time(), tz="America/New_York"))
-
 library(lubridate)  # Load lubridate
 # Parse strings into date-times
 as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
@@ -479,17 +450,14 @@ datetime <- lubridate::mdy("07-14-2014", tz="America/New_York")
 datetime
 class(datetime)  # POSIXct object
 lubridate::dmy("14.07.2014", tz="America/New_York")
-
 # Parse numeric into date-times
 as.POSIXct(as.character(14072014), format="%d%m%Y",
                   tz="America/New_York")
 lubridate::dmy(14072014, tz="America/New_York")
-
 # Parse decimal to date-times
 lubridate::decimal_date(datetime)
 lubridate::date_decimal(2014.25, tz="America/New_York")
 date_decimal(decimal_date(datetime), tz="America/New_York")
-
 library(lubridate)  # Load lubridate
 datetime <- lubridate::ymd_hms(20140714142010,
                tz="America/New_York")
@@ -505,27 +473,23 @@ as.POSIXct(format(datetime, tz="America/New_York"),
 datetime - with_tz(datetime, "UTC")
 # Different moments of time
 datetime - force_tz(datetime, "UTC")
-
 library(lubridate)  # Load lubridate
 # Daylight Savings Time handling periods vs durations
 datetime <- as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
 datetime
 datetime + lubridate::ddays(1)  # Add duration
 datetime + lubridate::days(1)  # Add period
-
 leap_year(2012)  # Leap year
 datetime <- lubridate::dmy(01012012, tz="America/New_York")
 datetime
 datetime + lubridate::dyears(1)  # Add duration
 datetime + lubridate::years(1)  # Add period
-
 library(lubridate)  # Load lubridate
 datetime <- lubridate::ymd_hms(20140714142010, tz="America/New_York")
 datetime
 # Add periods to a date-time
 c(datetime + lubridate::seconds(1), datetime + lubridate::minutes(1),
   datetime + lubridate::days(1), datetime + period(months=1))
-
 # Create vectors of dates
 datetime <- lubridate::ymd(20140714, tz="America/New_York")
 datetime + 0:2 * period(months=1)  # Monthly dates
@@ -533,7 +497,6 @@ datetime + period(months=0:2)
 datetime + 0:2 * period(months=2)  # bi-monthly dates
 datetime + seq(0, 5, by=2) * period(months=1)
 seq(datetime, length=3, by="2 months")
-
 library(lubridate)  # Load lubridate
 # Adding monthly periods can create invalid dates
 datetime <- lubridate::ymd(20120131, tz="America/New_York")
@@ -542,22 +505,17 @@ datetime + period(months=1)
 datetime + period(months=2)
 # Create vector of end-of-month dates
 datetime %m-% months(13:1)
-
 library(zoo)  # Load zoo
 library(RQuantLib)  # Load RQuantLib
-
 # Create daily date series of class "Date"
 datev <- Sys.Date() + -5:2
 datev
-
 # Create Boolean vector of business days
 # Use RQuantLib calendar
 isbusday <- RQuantLib::isBusinessDay(
   calendar="UnitedStates/GovernmentBond", datev)
-
 # Create daily series of business days
 datev[isbusday]
-
 library(zoo)  # Load package zoo
 datetime <- Sys.Date()  # Create date series of class "Date"
 datev <- datetime + 0:365  # Daily series over one year
@@ -576,7 +534,6 @@ head(qrtv, 4)  # Print first few dates
 # Parse quarterly "zoo" dates to POSIXct
 Sys.setenv(TZ="UTC")
 as.POSIXct(head(qrtv, 4))
-
 library(lubridate)  # Load lubridate
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
@@ -593,7 +550,6 @@ as.Date(date_decimal(zoo::coredata(time(timeser))))
 # bi-monthly geometric Brownian motion starting mid-1990
 timeser <- ts(data=exp(cumsum(rnorm(96)/100)),
        frequency=6, start=1990.5)
-
 # Show some methods for class "ts"
 matrix(methods(class="ts")[3:8], ncol=2)
 # "tsp" attribute specifies the date-time index
@@ -604,22 +560,18 @@ tail(time(timeser), 11)
 diff(tail(time(timeser), 11))
 # Subset the time series
 window(timeser, start=1992, end=1992.25)
-
 # Create plot
 plot(timeser, type="l", col="red", lty="solid",
      xlab="", ylab="")
 title(main="Brownian Motion", line=1)  # Add title
-
 class(EuStockMarkets)  # Multiple ts object
 dim(EuStockMarkets)
 head(EuStockMarkets, 3)  # Get first three rows
 # EuStockMarkets index is equally spaced
 diff(tail(time(EuStockMarkets), 11))
-
 par(mar=c(1, 2, 1, 1), oma=c(0, 0, 0, 0))
 # Plot all the columns in separate panels
 plot(EuStockMarkets, main="EuStockMarkets", xlab="")
-
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot in single panel
 plot(EuStockMarkets, main="EuStockMarkets",
@@ -630,7 +582,6 @@ legend(x=1992, y=8000,
  legend=colnames(EuStockMarkets),
  col=c("black", "red", "blue", "green"),
  lwd=6, lty=1)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
@@ -641,7 +592,6 @@ zoots
 attributes(zoots)
 class(zoots)  # Class "zoo"
 tail(zoots, 3)  # Get last few elements
-
 library(zoo)  # Load package zoo
 zoo::coredata(zoots)  # Extract coredata
 zoo::index(zoots)  # Extract time index
@@ -653,7 +603,6 @@ zoo::coredata(zoots) <- rep(1, NROW(zoots))  # Replace coredata
 cumsum(zoots)  # Cumulative sum
 cummax(cumsum(zoots))
 cummin(cumsum(zoots))
-
 library(zoo)  # Load package zoo
 zoots <- zoo(matrix(cumsum(rnorm(10)), nc=1),
   order.by=seq(from=as.Date("2013-06-15"), by="day", len=10))
@@ -661,7 +610,6 @@ colnames(zoots) <- "zoots"
 tail(zoots)
 dim(zoots)
 attributes(zoots)
-
 library(zoo)  # Load package zoo
 zoo::coredata(zoots) <- (1:10)^2  # Replace coredata
 zoots
@@ -671,7 +619,6 @@ lag(zoots, k=-1)  # Proper one day lag
 diff(zoots)  # Diff with one day lag
 # Proper lag and original length
 lag(zoots, -2, na.pad=TRUE)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
@@ -681,11 +628,9 @@ datev <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 datav <- exp(cumsum(rnorm(NROW(datev))/100))
 # Create zoo series of geometric Brownian motion
 zoots <- zoo(x=datav, order.by=datev)
-
 # Plot using method plot.zoo()
 plot.zoo(zoots, xlab="", ylab="")
 title(main="Brownian Motion", line=1)  # Add title
-
 library(zoo)  # Load package zoo
 # Subset zoo as matrix
 zoots[459:463, 1]
@@ -695,7 +640,6 @@ window(zoots,
  end=as.Date("2014-10-19"))
 # Subset zoo using Date object
 zoots[as.Date("2014-10-15")]
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
@@ -716,7 +660,6 @@ plot(exp(cumsum(zoo3)/100), xlab="", ylab="")
 abline(v=end(zoo1), col="blue", lty="dashed")
 abline(v=start(zoo2), col="red", lty="dashed")
 title(main="Brownian Motions Stitched Together", line=1)  # Add title
-
 # Create daily date series of class "Date"
 index1 <- Sys.Date() + -3:1
 # Create zoo time series of random returns
@@ -727,7 +670,6 @@ zoo2 <- zoo(rnorm(NROW(index2)), order.by=index2)
 merge(zoo1, zoo2)  # union of dates
 # Intersection of dates
 merge(zoo1, zoo2, all=FALSE)
-
 # Create matrix containing NA values
 matv <- sample(18)
 matv[sample(NROW(matv), 4)] <- NA
@@ -752,7 +694,6 @@ retp <- rutils::etfenv$returns
 retp[1, is.na(retp[1, ])] <- 0
 retp <- zoo::na.locf(retp, na.rm=FALSE)
 sum(is.na(retp))
-
 # Replace NAs in xts time series
 pricev <- rutils::etfenv$prices[, 1]
 head(pricev)
@@ -766,7 +707,6 @@ summary(microbenchmark(
   zoo=zoo::na.locf(pricev, fromLast=TRUE),
   xts=xts:::na.locf.xts(pricev, fromLast=TRUE),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 # methods(as.zoo)  # Many methods of coercing into zoo
@@ -783,7 +723,6 @@ head(zoots, 3)
 zoots <- as.zoo(EuStockMarkets)
 zoo::index(zoots) <- date_decimal(zoo::index(zoots))
 head(zoots, 3)
-
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 # Initialize the random number generator
@@ -810,7 +749,6 @@ timeser <- ts(data=datav, start=startd, frequency=tstep)
 window(timeser, start=start(timeser), end=start(timeser)+4/365)
 head(time(timeser))  # Display index dates
 head(as.Date(date_decimal(zoo::coredata(time(timeser)))))
-
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 # Create weekday Boolean vector
@@ -827,7 +765,6 @@ datev <- seq(from=start(zoots), by="day", length.out=NROW(zoots))
 zoo::index(zoots) <- datev
 timeser <- as.ts(zoots)
 head(timeser, 7)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(xts)  # Load package xts
@@ -843,7 +780,6 @@ class(xtsv)  # Class "xts"
 attributes(xtsv)
 # Get the time zone of an xts object
 tzone(xtsv)
-
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 class(zoo_stx)
 # as.xts() coerces zoo series into xts series
@@ -854,7 +790,6 @@ head(pricexts[, 1:4], 4)
 # Plot using plot.xts method
 xts::plot.xts(pricexts[, "Close"], xlab="", ylab="", main="")
 title(main="Stock Prices")  # Add title
-
 library(xts)  # Load xts
 library(lubridate)  # Load lubridate
 # Coerce EuStockMarkets into class xts
@@ -884,7 +819,6 @@ chart_Series(x=xtsv, theme=plotheme,
 legend("topleft", legend=colnames(EuStockMarkets),
  inset=0.2, cex=0.7, , lty=rep(1, NCOL(xtsv)),
  lwd=3, col=colorv, bg="white")
-
 library(rutils)
 library(ggplot2)
 pricev <- rutils::etfenv$prices[, 1]
@@ -902,7 +836,6 @@ plotobj <- qplot(x=zoo::index(pricev),
   )  # end theme
 # Render ggplot object
 plotobj
-
 library(rutils)  # Load xts time series data
 library(reshape2)
 library(ggplot2)
@@ -923,7 +856,6 @@ ggplot(data=dframe,
     legend.position=c(0.2, 0.8),
     plot.title=element_text(vjust=-2.0)
   )  # end theme
-
 # Load rutils which contains etfenv dataset
 library(rutils)
 library(dygraphs)
@@ -933,7 +865,6 @@ pricev <- na.omit(pricev)
 dygraph(pricev, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
   dyRangeSelector()
-
 # Load rutils which contains etfenv dataset
 library(rutils)
 library(plotly)
@@ -955,7 +886,6 @@ plotobj <- plot_ly(data=dframe, x=~datev, y=~VTI, type="scatter", mode="lines", 
 plotobj <- add_trace(p=plotobj, x=~datev, y=~IEF, type="scatter", mode="lines", name="IEF")
 plotobj <- layout(p=plotobj, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 plotobj
-
 # Subset xts using a date range string
 pricev <- rutils::etfenv$prices
 pricesub <- pricev["2014-10-15/2015-01-10", 1:4]
@@ -977,7 +907,6 @@ summary(microbenchmark(
   bracket=pricev[10:20, ],
   subset=xts::.subset_xts(pricev, 10:20),
   times=10))[, c(1, 4, 5)]
-
 # Specify string representing a date
 datev <- "2014-10-15"
 # Subset prices in two different ways
@@ -997,7 +926,6 @@ summary(microbenchmark(
   boolean=(pricev[zoo::index(pricev) >= datev]),
   date=(pricev[paste0(datev, "/")]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 pricev <- HighFreq::SPY["2012-04"]
 # Subset recurring time interval using "T notation",
 pricev <- pricev["T10:30:00/T15:00:00"]
@@ -1005,7 +933,6 @@ first(pricev["2012-04-16"])  # First element of day
 last(pricev["2012-04-16"])  # Last element of day
 # Suppress timezone warning messages
 options(xts_check_tz=FALSE)
-
 # Create time series with overlapping time indices
 vti1 <- rutils::etfenv$VTI["/2015"]
 vti2 <- rutils::etfenv$VTI["2014/"]
@@ -1025,7 +952,6 @@ vti <- rbind(vti1, vti2)
 vti <- vti[!duplicated(datev), ]
 vtifl <- vti[!duplicated(datev, fromLast=TRUE), ]
 all.equal(vti, vtifl)
-
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
 str(pricev)  # Display structure of xts
@@ -1038,7 +964,6 @@ c(is.matrix(pricezoo), is.matrix(pricezoo[, 1]))
 # xts always have a dim attribute
 rbind(base=dim(pricev), subs=dim(pricev[, 1]))
 c(is.matrix(pricev), is.matrix(pricev[, 1]))
-
 # Lag of zoo shortens it by one row
 rbind(base=dim(pricezoo), lag=dim(lag(pricezoo)))
 # Lag of xts doesn't shorten it
@@ -1046,14 +971,12 @@ rbind(base=dim(pricev), lag=dim(lag(pricev)))
 # Lag of zoo is in opposite direction from xts
 head(lag(pricezoo, -1), 4)
 head(lag(pricev), 4)
-
 # library(rutils)  # Load package rutils
 # Indices of last observations in each hour
 endd <- xts::endpoints(pricev, on="hours")
 head(endd)
 # Extract the last observations in each hour
 head(pricev[endd, ])
-
 # Lower the periodicity to months
 pricem <- to.period(x=pricev, period="months", name="MSFT")
 # Convert colnames to standard OHLC format
@@ -1070,7 +993,6 @@ colnames(pricey) <- sapply(
   function(namev) namev[-1]
   )  # end sapply
 head(pricey)
-
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 library(quantmod)  # Load package quantmod
 # as.xts() coerces zoo series into xts series
@@ -1084,7 +1006,6 @@ plotheme$col$up.col <- c("green")
 plotheme$col$dn.col <- c("red")
 chart_Series(x=pricexts["2016-05/2016-06", 1:4], theme=plotheme,
   name="Candlestick Plot of OHLC Stock Prices")
-
 library(dygraphs)
 # Create dygraphs object
 dyplot <- dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4])
@@ -1100,7 +1021,6 @@ dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4]) %>%
 dygraphs::dyCandlestick(dygraphs::dyOptions(
   dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4]),
   colors="red", strokeWidth=3))
-
 # Create zoo time series
 datev <- seq(from=as.Date("2014-07-14"), by="day", length.out=10)
 timeser <- zoo(x=sample(10), order.by=datev)

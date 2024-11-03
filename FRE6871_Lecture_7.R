@@ -1,44 +1,33 @@
 cat("Enter\ttab")  # Cat() parses backslash escape sequences
 print("Enter\ttab")
-
 textv <- print("hello")
 textv  # Print() returns its argument
-
 # Create string
 textv <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
 cat(textv, file="mytext.txt")  # Write to text file
-
 cat("Title: My Text",  # Write several lines to text file
     "Some numbers: 1,2,3,...",
     "Rprofile files contain code executed at R startup,",
     file="mytext.txt", sep="\n")
-
 save(textv, file="mytext.RData")  # Write to binary file
-
 print(pi)
 print(pi, digits=10)
 getOption("digits")
 foo <- 12
 bar <- "weeks"
 sprintf("There are %i %s in the year", foo, bar)
-
 # Read text from file
 scan(file="mytext.txt", what=character(), sep="\n")
-
 # Read lines from file
 readLines(con="mytext.txt")
-
 # Read text from console
 inputv <- readline("Enter a number: ")
 class(inputv)
 # Coerce to numeric
 inputv <- as.numeric(inputv)
-
 # Read text from file and display in editor:
 # file.show("mytext.txt")
 # file.show("mytext.txt", pager="")
-
 setwd("/Users/jerzy/Develop/lecture_slides/data")
 dframe <- data.frame(type=c("rose", "daisy", "tulip"),
   color=c("red", "white", "yellow"),
@@ -52,7 +41,6 @@ write.table(dframe, file="florist.txt")
 readf <- read.table(file="florist.txt")
 readf  # A data frame
 all.equal(readf, dframe)
-
 # Write matrix to text file, and then read it back
 write.table(matv, file="matrix.txt")
 readmat <- read.table(file="matrix.txt")
@@ -63,34 +51,26 @@ all.equal(readmat, matv)
 readmat <- as.matrix(readmat)
 class(readmat)
 all.equal(readmat, matv)
-
 # Create a data frame
 dframe <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-
 # Launch spreadsheet-style data editor
 dframe <- edit(dframe)
-
 # Copy the data frame to clipboard
 write.table(x=dframe, file="clipboard", sep="\t")
-
 # Wrapper function for copying data frame from R into clipboard
 # by default, data is tab delimited, with a header
 write_clip <- function(data, namev=FALSE, col.names=TRUE, ...) {
   write.table(x=data, file="clipboard", sep="\t",
       row.names=namev, col.names=col.names, ...)
 }  # end write_clip
-
 write_clip(data=dframe)
-
 # Wrapper function for copying data frame from clipboard into R
 # by default, data is tab delimited, with a header
 read_clip <- function(file="clipboard", sep="\t", header=TRUE, ...) {
   read.table(file=file, sep=sep, header=header, ...)
 }  # end read_clip
-
 dframe <- read.table("clipboard", header=TRUE)
 dframe <- read_clip()
-
 # Write data frame to CSV file, and then read it back
 write.csv(dframe, file="florist.csv")
 readf <- read.csv(file="florist.csv")
@@ -104,13 +84,11 @@ all.equal(readf, dframe)
 readf <- read.csv(file="florist.csv", row.names=1)
 readf
 all.equal(readf, dframe)
-
 # Write data frame to CSV file, without row names
 write.csv(dframe, row.names=FALSE, file="florist.csv")
 readf <- read.csv(file="florist.csv")
 readf  # A data frame without row names
 all.equal(readf, dframe)
-
 # Open a read connection to a file
 filecon = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
 # Read the first 10 rows
@@ -136,7 +114,6 @@ while (isOpen(filecon)) {
   write.csv(datav, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
   countv <- countv + 1
 }  # end while
-
 # Write matrix to csv file, and then read it back
 write.csv(matv, file="matrix.csv")
 readmat <- read.csv(file="matrix.csv", row.names=1)
@@ -150,7 +127,6 @@ readmat <- read.csv(file="matrix_ex_rows.csv")
 readmat <- as.matrix(readmat)
 readmat  # A matrix without row names
 all.equal(readmat, matv)
-
 setwd("/Users/jerzy/Develop/lecture_slides/data")
 library(MASS)  # Load package "MASS"
 # Write to CSV file by row - it's very SLOW!!!
@@ -176,7 +152,6 @@ summary(microbenchmark(
   scan=scan(file="matrix.csv", sep=",",
     skip=1, what=numeric()),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Read data from a csv file, including row names
 matv <- read.csv(file="data/matrix_bad.csv", row.names=1)
 matv
@@ -196,7 +171,6 @@ rownames(matv) <- namev
 matv[is.na(matv)] <- 0
 # matrix without NAs
 matv
-
 setwd("/Users/jerzy/Develop/lecture_slides/data")
 rm(list=ls())
 # Initialize the random number generator
@@ -226,14 +200,12 @@ pricezoo <- zoo::zoo(
   drop(as.matrix(pricezoo[, -1])),
   order.by=as.Date(pricezoo[, 1]))
 all.equal(pricezoo, pricev)
-
 library(zoo)  # Load package zoo
 # Write zoo series to CSV file, and then read it back
 write.zoo(pricev, file="zooseries.csv", sep=",", col.names=TRUE)
 pricezoo <- read.zoo(file="zooseries.csv",
   header=TRUE, sep=",", drop=FALSE)
 all.equal(pricev, drop(pricezoo))
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Create zoo with POSIXct date-time index
@@ -271,7 +243,6 @@ zooread <- read.csv.zoo(file="zooseries.csv", header=FALSE,
   format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
 head(zooread, 3)
 all.equal(zooseries, zooread, check.attributes=FALSE) # Works
-
 # Read time series from CSV file, with numeric date-time
 datazoo <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/es_ohlc.csv",
   header=TRUE, sep=",")
@@ -285,7 +256,6 @@ datazoo <- xts::xts(as.matrix(datazoo[, -1]),
 # An xts series
 class(datazoo)
 head(datazoo, 3)
-
 rm(list=ls())  # Delete all objects in workspace
 var1 <- 1; var2 <- 2
 ls()  # List all objects
@@ -304,7 +274,6 @@ save(ls()[1], file="my_data.RData")
 save(list=ls()[1], file="my_data.RData")
 # Save whole list by passing it to the "list" argument
 save(list=ls(), file="my_data.RData")
-
 rm(list=ls())  # Delete all objects in workspace
 # Load objects from file
 loadobj <- load(file="my_data.RData")
@@ -326,34 +295,24 @@ save(list=loadobj, file="my_data.RData")
 rm(list=loadobj)
 # Remove the object "loadobj"
 rm(loadobj)
-
 sink("sinkdata.txt")# Redirect text output to file
-
 cat("Redirect text output from R\n")
 print(runif(10))
 cat("\nEnd data\nbye\n")
-
 sink()  # turn redirect off
-
 pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
-
 cat("Redirect data from R into pdf file\n")
 myvar <- seq(-2*pi, 2*pi, len=100)
 plot(x=myvar, y=sin(myvar), main="Sine wave",
    xlab="", ylab="", type="l", lwd=2, col="red")
 cat("\nEnd data\nbye\n")
-
 dev.off()  # turn pdf output off
-
 png("r_plot.png")  # Redirect graphics output to png file
-
 cat("Redirect graphics from R into png file\n")
 plot(x=myvar, y=sin(myvar), main="Sine wave",
  xlab="", ylab="", type="l", lwd=2, col="red")
 cat("\nEnd data\nbye\n")
-
 dev.off()  # turn png output off
-
 # Install package data.table
 install.packages("data.table")
 # Load package data.table
@@ -369,7 +328,6 @@ data(package="data.table")
 ls("package:data.table")
 # Remove data.table from search path
 detach("package:data.table")
-
 # Create a data table
 library(data.table)
 dtable <- data.table::data.table(
@@ -396,7 +354,6 @@ summary(microbenchmark(
   dt=dtable[, .N],
   rcode=NROW(dtable),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Read a data table from CSV file
 dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
 filen <- file.path(dirn, "weather_delays14.csv")
@@ -422,7 +379,6 @@ summary(microbenchmark(
   write_csv=write.csv(dtable, file="dtable2.csv"),
   cat=cat(unlist(dtable), file="dtable3.csv"),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Select first five rows of dtable
 dtable[1:5]
 # Select rows with JFK flights
@@ -449,7 +405,6 @@ dtable[, .(orig=origin, mon=month)]
 # Select all columns except origin
 head(dtable[, !"origin"])
 head(dtable[, -"origin"])
-
 # Select flights with positive carrier_delay
 dtable[carrier_delay > 0]
 # Number of flights with carrier_delay
@@ -474,7 +429,6 @@ dtable[origin=="JFK", NROW(aircraft_delay)]
 dtable[origin=="JFK", .N]
 # In R
 sum(dtable[, origin]=="JFK")
-
 # Number of flights from each airport
 dtable[, .N, by=origin]
 # Same, but add names to output
@@ -495,7 +449,6 @@ dtable[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
 # Average and max delays from each airport and month
 dtable[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
      keyby=.(airport=origin, month=month)]
-
 # Sort ascending by origin, then descending by dest
 dtables <- dtable[order(origin, -dest)]
 dtables
@@ -515,7 +468,6 @@ dtables[, .(mean_delay=mean(aircraft_delay)),
 # Chained brackets to sort output by month
 dtables[, .(mean_delay=mean(aircraft_delay)),
   by=.(month=month)][order(month)]
-
 # Select weather_delay and aircraft_delay in two different ways
 dtable[1:7, .SD,
      .SDcols=c("weather_delay", "aircraft_delay")]
@@ -542,7 +494,6 @@ dtable[, lapply(.SD, mean),
 dtable[, .(weather_delay=mean(weather_delay),
          aircraft_delay=mean(aircraft_delay)),
      by=.(origin)]
-
 # Add tot_delay column
 dtable[, tot_delay := (carrier_delay + aircraft_delay)]
 head(dtable, 4)
@@ -569,7 +520,6 @@ summary(microbenchmark(
   dt=dtable[, tot_delay := (carrier_delay + aircraft_delay)],
   rcode=(dtable[, "tot_delay"] <- dtable[, "carrier_delay"] + dtable[, "aircraft_delay"]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Add a key based on the "origin" column
 setkey(dtable, origin)
 haskey(dtable)
@@ -593,7 +543,6 @@ summary(microbenchmark(
   with_key=dtable[.("JFK", "MIA")],
   standard_r=dtable[origin == "JFK" & dest == "MIA"],
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Create data frame and coerce it to data table
 dtable <- data.frame(col1=sample(7), col2=sample(7), col3=sample(7))
 class(dtable); dtable
@@ -609,7 +558,6 @@ summary(microbenchmark(
   asdataframe=data.table:::as.data.frame.data.table(dtable),
   setDF=data.table::setDF(dtable),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Coerce xts to a data frame
 pricev <- rutils::etfenv$VTI
 class(pricev); head(pricev)
@@ -627,7 +575,6 @@ class(dtable); head(dtable)
 # Dates are not coerced to strings
 sapply(dtable, class)
 all.equal(pricev, dtable, check.attributes=FALSE)
-
 # Install package fst
 install.packages("fst")
 # Load package fst
@@ -643,7 +590,6 @@ data(package="fst")
 ls("package:fst")
 # Remove fst from search path
 detach("package:fst")
-
 # Read a data frame from CSV file
 dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
 filen <- file.path(dirn, "weather_delays14.csv")
@@ -667,7 +613,6 @@ summary(microbenchmark(
   fst=fst::read_fst("dframe.fst"),
   read_csv=read.csv(filen),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Coerce TAQ xts to a data frame
 library(HighFreq)
 taq <- HighFreq::SPY_TAQ
@@ -692,7 +637,6 @@ dim(taq); dim(refst)
 fst:::print.fst_table(refst)
 # Subset reference to .fst just like a data table
 refst[1e4:(1e4+5), ]
-
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 library(tseries)  # Load package tseries
 # Download MSFT data in ts format
@@ -717,7 +661,6 @@ tsp(pricadj)  # frequency=1
 head(time(pricadj))
 head(pricadj)
 tail(pricadj)
-
 library(tseries)  # Load package tseries
 # Download MSFT data
 pricezoo <- suppressWarnings(
@@ -729,12 +672,10 @@ pricezoo <- suppressWarnings(
       "AdjClose","Volume"),
     origin="1970-01-01")
 )  # end suppressWarnings
-
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 class(pricezoo)
 dim(pricezoo)
 head(pricezoo, 4)
-
 library(tseries)  # Load package tseries
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 # Calculate price adjustment vector
@@ -747,7 +688,6 @@ pricedj[, c("Open","High","Low","Close")] <-
   ratio*pricezoo[, c("Open","High","Low","Close")]
 head(pricedj)
 tail(pricedj)
-
 library(tseries)  # Load package tseries
 # Download EUR/USD data
 priceur <- suppressWarnings(
@@ -766,12 +706,10 @@ save(pricezoo, pricedj,
      pricev, pricadj,
      priceur, pricecombo,
      file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
-
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 # Inspect the data
 class(priceur)
 head(priceur, 4)
-
 library(tseries)  # Load package tseries
 # Download price and volume data for symbolv into list of zoo objects
 pricev <- suppressWarnings(
@@ -793,7 +731,6 @@ names(pricev) <- as.numeric(sapply(symbolv,
 write.zoo(pricev, file="zooseries.csv", sep=",")
 # Save pricev to a binary .RData file
 save(pricev, file="pricev.RData")
-
 # Select ETF symbols for asset allocation
 symbolv <- c("SPY", "VTI", "QQQ", "VEU", "EEM", "XLY", "XLP", 
 "XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", 
@@ -824,9 +761,7 @@ etflist["VXX", "Name"] <- "Long VIX Futures"
 etflist["DBC", "Name"] <- "Commodity Futures Fund"
 etflist["USO", "Name"] <- "WTI Oil Futures Fund"
 etflist["GLD", "Name"] <- "Physical Gold Fund"
-
 print(xtable::xtable(etflist), comment=FALSE, size="tiny", include.rownames=FALSE)
-
 # Select ETF symbols for asset allocation
 symbolv <- c("SPY", "VTI", "QQQ", "VEU", "EEM", "XLY", "XLP",
 "XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW",
@@ -863,7 +798,6 @@ finally=print(paste0("Symbol = ", symboln))
 }  # end while
 # Download all symbolv using single command - creates pacing error
 # quantmod::getSymbols.av(symbolv, env=etfenv, adjust=TRUE, from="2005-01-03", output.size="full", api.key="T7NHW54ES8GG501C")
-
 ls(etfenv)  # List files in etfenv
 # Get class of object in etfenv
 class(get(x=symbolv[1], envir=etfenv))
@@ -880,25 +814,21 @@ eapply(etfenv, class)
 lapply(ls(), function(namev) class(get(namev)))
 # Get end dates of all objects in etfenv
 as.Date(sapply(etfenv, end))
-
 library(rutils)  # Load package rutils
 # Check of object is an OHLC time series
 is.OHLC(etfenv$VTI)
 # Adjust single OHLC object using its name
 etfenv$VTI <- adjustOHLC(etfenv$VTI, use.Adjusted=TRUE)
-
 # Adjust OHLC object using string as name
 assign(symbolv[1], adjustOHLC(
     get(x=symbolv[1], envir=etfenv), use.Adjusted=TRUE),
   envir=etfenv)
-
 # Adjust objects in environment using vector of strings
 for (symboln in ls(etfenv)) {
   assign(symboln,
    adjustOHLC(get(symboln, envir=etfenv), use.Adjusted=TRUE),
    envir=etfenv)
 }  # end for
-
 library(rutils)  # Load package rutils
 # Define ETF symbols
 symbolv <- c("VTI", "VEU", "IEF", "VNQ")
@@ -932,7 +862,6 @@ pricev <- do.call(cbind,
 # Same, but works only for OHLC series - produces error
 pricev <- do.call(cbind,
   eapply(rutils::etfenv, quantmod::Cl)[symbolv])
-
 # Column names end with ".Close"
 colnames(pricev)
 strsplit(colnames(pricev), split="[.]")
@@ -955,7 +884,6 @@ etfenv$prices <- pricev
 assign("pricev", pricev, envir=etfenv)
 # Save to .RData file
 save(etfenv, file="etf_data.RData")
-
 # Extract VTI prices
 pricev <- etfenv$prices[ ,"VTI"]
 pricev <- na.omit(pricev)
@@ -985,7 +913,6 @@ dim(retp)
 # assign("retp", retp, envir=etfenv)
 etfenv$retp <- retp
 save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
-
 library(rutils)
 startd <- "2012-05-10"; endd <- "2013-11-20"
 # Select all objects in environment and return as environment
@@ -1014,7 +941,6 @@ assign("prices", rutils::do_call(cbind,
                   colnames(xtsv) <- colname(xtsv)
                   xtsv
          })), envir=newenv)
-
 # Load data frame of S&P500 constituents from CSV file
 sp500 <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
 # Inspect data frame of S&P500 constituents
@@ -1035,7 +961,6 @@ which(symbolv=="BRK.B")
 # Rename "BRK.B" to "BRK-B" and "BF.B" to "BF-B"
 symbolv[which(symbolv=="BRK.B")] <- "BRK-B"
 symbolv[which(symbolv=="BF.B")] <- "BF-B"
-
 # Load package rutils
 library(rutils)
 # Create new environment for data
@@ -1068,7 +993,6 @@ class(sp500env$AAPL)
 class(zoo::index(sp500env$AAPL))
 tail(sp500env$AAPL)
 symbolv[!isdown]
-
 # The date-time index of AAPL is POSIXct
 class(zoo::index(sp500env$AAPL))
 # Coerce the date-time index of AAPL to Date
@@ -1079,7 +1003,6 @@ for (symboln in ls(sp500env)) {
   zoo::index(ohlc) <- as.Date(zoo::index(ohlc))
   assign(symboln, ohlc, envir=sp500env)
 }  # end for
-
 # "LOW.Low" is a bad column name
 colnames(sp500env$LOW)
 strsplit(colnames(sp500env$LOW), split="[.]")
@@ -1108,14 +1031,12 @@ save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 # BRKB <- quantmod::getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
 # colnames(BRKB) <- paste("BRKB", namev, sep=".")
 # sp500env$BRKB <- BRKB
-
 # Plot OHLC candlestick chart for LOWES
 chart_Series(x=sp500env$LOWES["2019-12/"],
   TA="add_Vo()", name="LOWES OHLC Stock Prices")
 # Plot dygraph
 dygraphs::dygraph(sp500env$LOWES["2019-12/", -5], main="LOWES OHLC Stock Prices") %>%
   dyCandlestick()
-
 # Load S&P500 constituent stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 pricev <- eapply(sp500env, quantmod::Cl)
@@ -1140,13 +1061,11 @@ save(pricev, prices100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 save(retp, returns100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-
 # Calculate number of constituents without prices
 datav <- rowSums(is.na(pricev))
 datav <- xts::xts(datav, order.by=zoo::index(pricev))
 dygraphs::dygraph(datav, main="Number of S&P500 Constituents Without Prices") %>%
   dyOptions(colors="blue", strokeWidth=2)
-
 # Calculate price weighted index of constituent
 ncols <- NCOL(pricev)
 pricev <- zoo::na.locf(pricev, fromLast=TRUE)
@@ -1164,7 +1083,6 @@ dygraphs::dygraph(log(datav)[endd],
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", col="red") %>%
   dySeries(name=colv[2], axis="y2", col="blue")
-
 # Save the environment to compressed .RData file
 dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
 save(sp500env, file=paste0(dirn, "sp500.RData"))
@@ -1187,7 +1105,6 @@ filens <- eapply(sp500env , function(xtsv) {
   filen
 })  # end eapply
 unlist(filens)
-
 # Load the environment from compressed .RData file
 dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
 load(file=paste0(dirn, "sp500.RData"))
@@ -1210,7 +1127,6 @@ for (filen in filens) {
   symboln <- rutils::get_name(colnames(xtsv)[1])
   assign(symboln, xtsv, envir=sp500env)
 }  # end for
-
 # Remove all files from environment(if necessary)
 rm(list=ls(sp500env), envir=sp500env)
 # Download in while loop from Alpha Vantage and copy into environment
@@ -1241,7 +1157,6 @@ for (symboln in ls(sp500env)) {
     adjustOHLC(get(x=symboln, envir=sp500env), use.Adjusted=TRUE),
     envir=sp500env)
 }  # end for
-
 library(rutils)  # Load package rutils
 # Assign name SP500 to ^GSPC symbol
 quantmod::setSymbolLookup(SP500=list(name="^GSPC", src="yahoo"))
@@ -1252,10 +1167,8 @@ options(getSymbols.sources=NULL)
 # Download S&P500 prices into etfenv
 quantmod::getSymbols("SP500", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
-
 chart_Series(x=etfenv$SP500["2016/"],
        TA="add_Vo()", name="S&P500 index")
-
 library(rutils)  # Load package rutils
 # Assign name DJIA to ^DJI symbol
 setSymbolLookup(DJIA=list(name="^DJI", src="yahoo"))
@@ -1268,7 +1181,6 @@ quantmod::getSymbols("DJIA", env=etfenv,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etfenv$DJIA["2016/"],
        TA="add_Vo()", name="DJIA index")
-
 # Calculate prices from OHLC data of the S&P500 stocks
 pricev <- eapply(sp500env, quantmod::Cl)
 pricev <- rutils::do_call(cbind, pricev)
@@ -1295,7 +1207,6 @@ save(pricev, prices100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 save(retp, returns100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-
 # Setup code
 symboln <- "SPY"
 startd <- as.Date("1990-01-01")
@@ -1330,7 +1241,6 @@ save(ohlc, file="/Users/jerzy/Data/spy_daily.RData")
 # Candlestick plot of SPY OHLC prices
 dygraphs::dygraph(ohlc[, 1:4], main=paste("Candlestick Plot of", symboln, "OHLC prices")) %>%
   dygraphs::dyCandlestick()
-
 # Select ETF symbols for asset allocation
 symbolv <- c("SPY", "VTI", "QQQ", "VEU", "EEM", "XLY", "XLP",
 "XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW",
@@ -1340,7 +1250,6 @@ symbolv <- c("SPY", "VTI", "QQQ", "VEU", "EEM", "XLY", "XLP",
 etfenv <- new.env()  # New environment for data
 # Boolean vector of symbols already downloaded
 isdown <- symbolv %in% ls(etfenv)
-
 # Download data from Polygon using while loop
 while (sum(!isdown) > 0) {
   for (symboln in symbolv[!isdown]) {
@@ -1374,7 +1283,6 @@ Sys.sleep(1)
   isdown <- symbolv %in% ls(etfenv)
 }  # end while
 save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
-
 # Extract Close prices
 prices <- eapply(etfenv, quantmod::Cl)
 prices <- do.call(cbind, prices)
@@ -1411,7 +1319,6 @@ capmstats <- capmstats[order(capmstats[, "Alpha"], decreasing=TRUE), ]
 # Copy capmstats into etfenv
 etfenv$capmstats <- capmstats
 save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
-
 library(rutils)  # Load package rutils
 library(RCurl)  # Load package RCurl
 library(XML)  # Load package XML
@@ -1433,7 +1340,6 @@ sp500$namev <- gsub("[.]", "_", sp500$names)
 write.csv(sp500,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_Yahoo.csv",
   row.names=FALSE)
-
 library(rutils)  # Load package rutils
 # Load data frame of S&P500 constituents from CSV file
 sp500 <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_Yahoo.csv")
@@ -1459,7 +1365,6 @@ for (symboln in sp500$names) {
 save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 chart_Series(x=sp500env$BRKB["2016/"],
        TA="add_Vo()", name="BRK-B stock")
-
 # Download U.S. unemployment rate data
 unrate <- quantmod::getSymbols("UNRATE",
    auto.assign=FALSE, src="FRED")
@@ -1468,7 +1373,6 @@ dygraphs::dygraph(unrate["1990/"], main="U.S. Unemployment Rate") %>%
   dyOptions(colors="blue", strokeWidth=2)
 # Or
 quantmod::chart_Series(unrate["1990/"], name="U.S. Unemployment Rate")
-
 library(rutils)  # Load package rutils
 install.packages("devtools")
 library(devtools)
@@ -1483,7 +1387,6 @@ packageDescription("Quandl")
 help(package="Quandl")
 # Remove Quandl from search path
 detach("package:Quandl")
-
 library(rutils)  # Load package rutils
 # Download EOD AAPL prices from WIKI free database
 pricev <- Quandl(code="WIKI/AAPL",
@@ -1506,7 +1409,6 @@ chart_Series(prof_it, name="AAPL gross profits")
 pricev <- Quandl(code="PE/AAPL_HURST",
     startd="2013-01-01", type="xts")
 chart_Series(pricev["2016/", 1], name="AAPL Hurst")
-
 library(rutils)  # Load package rutils
 # Load S&P500 stock Quandl codes
 sp500 <- read.csv(
@@ -1523,7 +1425,6 @@ tickers <- matrix(unlist(
 # Or
 tickers <- do_call_rbind(
   strsplit(sp500$free_code, split="/"))[, 2]
-
 library(rutils)  # Load package rutils
 sp500env <- new.env()  # new environment for data
 # Remove all files (if necessary)
@@ -1541,7 +1442,6 @@ for (ticker in tickers[!isdown]) {
 }  # end for
 save(sp500env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 chart_Series(x=sp500env$XOM["2016/"], TA="add_Vo()", name="XOM stock")
-
 library(rutils)
 library(Quandl)
 # Register Quandl API key
@@ -1559,7 +1459,6 @@ chart_Series(x=pricev["2008-06/2009-06"],
 dygraphs::dygraph(pricev["2008-06/2009-06", -5],
   main="S&P500 Futures") %>%
   dyCandlestick()
-
 # Read CBOE futures expiration dates
 datev <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/futures_expiration_dates_codes.csv",
   row.names=1)
@@ -1586,7 +1485,6 @@ error=function(msg) {
 finally=cat(paste0("Processing file name = ", filens[it], "\n"), append=TRUE)
     )  # end tryCatch
 }  # end for
-
 # Create new environment for data
 vixenv <- new.env()
 # Download VIX data for the months 6, 7, and 8 in 2018
@@ -1605,7 +1503,6 @@ colnames(vixenv$VX_M18)
 # Save the data to a binary file called "vix_cboe.RData".
 save(vixenv,
   file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
-
 # Load package HighFreq
 library(HighFreq)
 # Or load the high frequency data file directly:
@@ -1613,7 +1510,6 @@ library(HighFreq)
 head(HighFreq::SPY_TAQ)
 head(HighFreq::SPY)
 tail(HighFreq::SPY)
-
 library(HighFreq)
 # Read TAQ trade data from csv file
 taq <- data.table::fread(file="/Users/jerzy/Develop/lecture_slides/data/xlk_tick_trades_20200316.csv")
@@ -1646,7 +1542,6 @@ as.numeric(last(datev)) - as.numeric(first(datev))
 NROW(taq)/(6.5*3600)
 # Select TAQ data columns
 taq <- taq[, .(price=PRICE, volume=SIZE)]
-
 # Coerce trade ticks to xts series
 xlk <- xts::xts(taq[, .(price, volume)], datev)
 colnames(xlk) <- c("price", "volume")
@@ -1654,26 +1549,22 @@ save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades_20200316.RData")
 # Plot histogram of the trading volumes
 hist(xlk$volume, main="Histogram of XLK Trading Volumes",
      breaks=1e5, xlim=c(1, 400), xlab="number of shares")
-
 # Plot dygraph
 dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
   dyOptions(colors="blue", strokeWidth=1)
 # Plot in x11 window
 x11(width=6, height=5)
 quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
-
 pricev <- read.zoo(file="/Users/jerzy/Develop/lecture_slides/data/bid_ask_bounce.csv",
   header=TRUE, sep=",")
 pricev <- as.xts(pricev)
 dygraphs::dygraph(pricev$Close,
   main="S&P500 Futures Prices Bid-Ask Bounce") %>%
   dyOptions(colors="blue", strokeWidth=2)
-
 # Plot dygraph of trade prices of at least 100 shares
 dygraphs::dygraph(xlk$price[xlk$volume >= 100, ],
   main="XLK Prices for Trades of At Least 100 Shares") %>%
   dyOptions(colors="blue", strokeWidth=1)
-
 # Select the large trade lots of at least 100 shares
 dim(taq)
 tickb <- taq[taq$volume >= 100]
@@ -1688,7 +1579,6 @@ data.table::fwrite(tickb, file="/Users/jerzy/Develop/data/xlk_tick_trades_202003
 # Coerce trade prices to xts
 xlkb <- xts::xts(tickb[, .(price, volume)], tickb$index)
 colnames(xlkb) <- c("price", "volume")
-
 # Plot dygraph of the large lots
 dygraphs::dygraph(xlkb$price,
   main="XLK Prices for Trades of At Least 100 Shares") %>%
@@ -1697,7 +1587,6 @@ dygraphs::dygraph(xlkb$price,
 x11(width=6, height=5)
 quantmod::chart_Series(x=xlk$price,
   name="XLK Trade Ticks for 2020-03-16 (large lots only)")
-
 # Calculate the centered Hampel filter to remove bad prices
 lookb <- 71 # Look-back interval
 halfb <- lookb %/% 2 # Half-back interval
@@ -1716,7 +1605,6 @@ zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
 range(zscores); mad(zscores)
 madz <- mad(zscores[abs(zscores) > 0])
 hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
-
 # Define discrimination threshold value
 threshv <- 6*madz
 # Identify good prices with small z-scores
@@ -1734,7 +1622,6 @@ dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
 x11(width=6, height=5)
 quantmod::chart_Series(x=priceg,
   name="Clean XLK Intraday Prices for 2020-03-16")
-
 # Add 200 random price spikes to the clean prices
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nspikes <- 200
@@ -1762,7 +1649,6 @@ threshv <- 3*madz
 isgood <- (abs(zscores) < threshv)
 # Calculate the number of bad prices
 sum(!isgood)
-
 # Calculate the confusion matrix
 table(actual=!ispike, forecast=isgood)
 sum(!isgood)
@@ -1770,7 +1656,6 @@ sum(!isgood)
 sum(!ispike & !isgood)
 # FALSE negative (type II error)
 sum(ispike & isgood)
-
 # Confusion matrix as function of threshold
 confun <- function(actualv, zscores, threshv) {
     confmat <- table(actualv, (abs(zscores) < threshv))
@@ -1791,7 +1676,6 @@ truepos <- (1 - errorr[, "typeII"])
 truepos <- (truepos + rutils::lagit(truepos))/2
 falsepos <- rutils::diffit(errorr[, "typeI"])
 abs(sum(truepos*falsepos))
-
 # Plot ROC curve for Hampel classifier
 plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
@@ -1799,7 +1683,6 @@ plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      main="ROC Curve for Hampel Classifier",
      type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
-
 # Load log VXX prices
 load("/Users/jerzy/Develop/lecture_slides/data/pricevxx.RData")
 nrows <- NROW(pricev)
@@ -1821,7 +1704,6 @@ isgood <- (abs(zscores) < threshv)
 sum(!isgood)
 # Dates of the bad prices
 zoo::index(pricev[!isgood])
-
 # Calculate the false positives
 falsep <- !isgood
 falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
@@ -1836,7 +1718,6 @@ dygraphs::dygraph(datam, main="VXX Prices With Z-Scores and False Positives") %>
   dySeries(name=colv[2], axis="y2", strokeWidth=1, col="red") %>%
   dyEvent(zoo::index(pricev[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
   dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green")
-
 # Replace bad stock prices with the previous good prices
 priceg <- pricev
 priceg[!isgood] <- NA
@@ -1853,7 +1734,6 @@ threshv <- 9*madz
 isgood <- (abs(zscores) < threshv)
 sum(!isgood)
 zoo::index(priceg[!isgood])
-
 # Calculate the false positives
 falsep <- !isgood
 falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
@@ -1861,7 +1741,6 @@ falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
 dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
   dyEvent(zoo::index(priceg[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
   dyOptions(colors="blue", strokeWidth=1)
-
 # Add 200 random price spikes to the clean prices
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nspikes <- 200
@@ -1885,7 +1764,6 @@ errorr <- t(errorr)
 rownames(errorr) <- threshv
 errorr <- rbind(c(1, 0), errorr)
 errorr <- rbind(errorr, c(0, 1))
-
 # Calculate the area under the ROC curve (AUC)
 truepos <- (1 - errorr[, "typeII"])
 truepos <- (truepos + rutils::lagit(truepos))/2
@@ -1898,7 +1776,6 @@ plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      main="ROC Curve for Daily Hampel Classifier",
      type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
-
 # Round time index to seconds
 tickg[, zoo::index := as.POSIXct(round.POSIXt(index, "secs"))]
 # Aggregate to OHLC by seconds
@@ -1907,7 +1784,6 @@ ohlc <- tickg[, .(open=first(price), high=max(price), low=min(price), close=last
 tickg[, zoo::index := as.POSIXct(round.POSIXt(index, "mins"))]
 # Aggregate to OHLC by minutes
 ohlc <- tickg[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
-
 # Coerce OHLC prices to xts
 ohlc <- xts::xts(ohlc[, -"index"], ohlc$index)
 # Plot dygraph of the OHLC prices
@@ -1917,11 +1793,9 @@ dygraphs::dygraph(ohlc[, -5], main="XLK Trade Ticks for 2020-03-16 (OHLC)") %>%
 x11(width=6, height=5)
 quantmod::chart_Series(x=ohlc, TA="add_Vo()",
   name="XLK Trade Ticks for 2020-03-16 (OHLC)")
-
 # Load package HighFreq
 library(HighFreq)
 head(HighFreq::SPY)
-
 # Load package HighFreq
 library(HighFreq)
 # Define symbol
@@ -1931,7 +1805,6 @@ dirout <- "/Users/jerzy/Develop/data/hfreq/scrub/"
 symboln <- load(file.path(dirout, paste0(symboln, ".RData")))
 interval <-"2013-11-11 09:30:00/2013-11-11 10:30:00"
 chart_Series(SPY[interval], name=symboln)
-
 # Install package HighFreq from github
 devtools::install_github(repo="algoquant/HighFreq")
 # Load package HighFreq
@@ -1947,7 +1820,6 @@ data(package=HighFreq)
 ls("package:HighFreq")
 # Remove HighFreq from search path
 detach("package:HighFreq")
-
 # Load package HighFreq
 library(HighFreq)
 # You can see SPY when listing objects in HighFreq
@@ -1962,7 +1834,6 @@ head(HighFreq::SPY)
 data(hf_data)
 # HighFreq datasets are now loaded and in the workspace
 head(HighFreq::SPY)
-
 library(rutils)  # Load package rutils
 # Calculate SPY percentage returns
 ohlc <- HighFreq::SPY
@@ -1979,7 +1850,6 @@ tseries::jarque.bera.test(retp)
 optiml <- MASS::fitdistr(retp, densfun="t", df=2)
 loc <- optiml$estimate[1]
 scalev <- optiml$estimate[2]
-
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot histogram of SPY returns
@@ -1997,7 +1867,6 @@ curve(expr=dnorm(x, mean=mean(retp),
 legend("topright", inset=0.05, bty="n",
   leg=c("t-distr", "normal"), y.intersp=0.1,
   lwd=6, lty=1, col=c("red", "blue"))
-
 # Hourly SPY percentage returns
 closep <- log(Cl(xts::to.period(x=ohlc, period="hours")))
 retsh <- rutils::diffit(closep)
@@ -2011,7 +1880,6 @@ sapply(list(minutely=retp, hourly=retsh, daily=retd),
  function(rets) {sapply(c(var=2, skew=3, kurt=4),
           function(x) mean(rets^x))
 })  # end sapply
-
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
@@ -2025,7 +1893,6 @@ lines(density(retd, bw=0.4), lwd=3, col="red")
 legend("topright", inset=0.05, bty="n",
   leg=c("minutely", "hourly", "daily"), y.intersp=0.1,
   lwd=6, lty=1, col=c("blue", "green", "red"))
-
 # Calculate rolling volatility of SPY returns
 ret2013 <- retp["2013-11-11/2013-11-15"]
 # Calculate rolling volatility
@@ -2050,7 +1917,6 @@ vol_rolling <- cbind(vol_rolling, vol_scaled)
 vol_rolling <- na.omit(vol_rolling)
 sum(is.na(vol_rolling))
 sapply(vol_rolling, range)
-
 # Plot rolling volatility
 x11(width=6, height=5)
 plot_theme <- chart_theme()
@@ -2060,7 +1926,6 @@ chart_Series(vol_rolling, theme=plot_theme,
 legend("topright", legend=colnames(vol_rolling),
   inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.1,
   col=plot_theme$col$line.col, bty="n")
-
 # Volatility of SPY
 sqrt(HighFreq::calcvar_ohlc(ohlc))
 # Daily SPY volatility and volume
@@ -2078,7 +1943,6 @@ dygraphs::dygraph(datav,
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", col="red", strokeWidth=3) %>%
   dySeries(name=colv[2], axis="y2", col="blue", strokeWidth=3)
-
 # Regress log of daily volume vs volatility
 datav <- log(cbind(volumd, volatd))
 colv <- colnames(datav)
@@ -2095,7 +1959,6 @@ summary(regmod)
 plot(formulav, data=dframe, main="SPY Daily Trading Volume vs Volatility (log scale)")
 abline(regmod, lwd=3, col="red")
 mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
-
 # 60 minutes of data in lookb interval
 lookb <- 60 # Look-back interval
 vol2013 <- volumv["2013"]
@@ -2114,7 +1977,6 @@ datav <- sapply(seq_along(endd), function(it) {
 datav <- t(datav)
 datav <- rutils::diffit(log(datav))
 dframe <- as.data.frame(datav)
-
 formulav <- as.formula(paste(colnames(datav), collapse="~"))
 regmod <- lm(formulav, data=dframe)
 lmtest::dwtest(regmod)
@@ -2123,7 +1985,6 @@ plot(formulav, data=dframe,
      main="SPY Hourly Trading Volume vs Volatility (log scale)")
 abline(regmod, lwd=3, col="red")
 mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
-
 # Scale returns using volume (volume clock)
 retsc <- ifelse(volumv > 1e4, retp/sqrt(volumv), 0)
 retsc <- retsc/sd(retsc)
@@ -2133,7 +1994,6 @@ sapply(list(retp=retp, retsc=retsc),
   function(rets) {sapply(c(skew=3, kurt=4),
      function(x) sum((rets/sd(rets))^x)/nrows)
 })  # end sapply
-
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
@@ -2147,7 +2007,6 @@ curve(expr=dnorm, add=TRUE, lwd=3, col="green")
 legend("topright", inset=0.05, bty="n", y.intersp=0.1,
   leg=c("minutely", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
-
 # Ljung-Box test for minutely SPY returns
 Box.test(retp, lag=10, type="Ljung")
 # Ljung-Box test for daily SPY returns
@@ -2162,7 +2021,6 @@ sapply(list(minutely=retp, hourly=retsh, daily=retd),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
-
 # Set plot parameters
 x11(width=6, height=8)
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
@@ -2178,7 +2036,6 @@ title("Partial Autocorrelations of Scaled SPY Returns", line=1)
 # Calculate the sums of partial autocorrelations
 sum(pacfl$acf)
 sum(pacfs$acf)
-
 # Calculate market illiquidity
 liquidv <- sqrt(volumd)/volatd
 # Plot market illiquidity
@@ -2190,7 +2047,6 @@ chart_Series(liquidv["2010"], theme=plot_theme,
 plot_theme$col$line.col <- c("red")
 chart_Series(volatd["2010"],
   theme=plot_theme, name="SPY Volatility in 2010")
-
 # Calculate intraday time index with hours and minutes
 datev <- format(zoo::index(retp), "%H:%M")
 # Aggregate the mean volume
@@ -2212,7 +2068,6 @@ chart_Series(volumagg[c(-1, -NROW(volumagg))], theme=plot_theme,
 plot_theme$col$line.col <- c("red")
 chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
   name="Intraday Seasonality of SPY Volatility")
-
 # Calculate market liquidity
 liquidv <- sqrt(volumagg)/volagg
 # Plot intraday seasonality of market liquidity
@@ -2224,7 +2079,6 @@ chart_Series(liquidv[c(-1, -NROW(liquidv))], theme=plot_theme,
 plot_theme$col$line.col <- c("red")
 chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
   name="Intraday Seasonality of SPY Volatility")
-
 # Verify that Rtools or XCode are working properly:
 devtools::find_rtools()  # Under Windows
 devtools::has_devel()
@@ -2243,7 +2097,6 @@ data(package="Rcpp")
 ls("package:Rcpp")
 # Remove Rcpp from search path
 detach("package:Rcpp")
-
 # Define Rcpp function
 Rcpp::cppFunction("
   int times_two(int x)
@@ -2259,7 +2112,6 @@ mult_rcpp(1:3, 6:4)
 # Multiply two vectors
 mult_vec_rcpp(2, 3)
 mult_vec_rcpp(1:3, 6:4)
-
 # Define Rcpp function with loop
 Rcpp::cppFunction("
 double inner_mult(NumericVector x, NumericVector y) {
@@ -2286,7 +2138,6 @@ double inner_sugar(NumericVector x, NumericVector y) {
 # Run Rcpp Sugar function
 inner_sugar(1:3, 6:4)
 inner_sugar(1:3, 6:3)
-
 # Define R function with loop
 inner_multr <- function(x, y) {
     sumv <- 0
@@ -2306,7 +2157,6 @@ summary(microbenchmark(
   Rcpp=inner_mult(1:10000, 1:10000),
   sugar=inner_sugar(1:10000, 1:10000),
   times=10))[, c(1, 4, 5)]
-
 # Define Ornstein-Uhlenbeck function in R
 sim_our <- function(nrows=1000, priceq=5.0,
               volat=0.01, theta=0.01) {
@@ -2324,7 +2174,6 @@ priceq <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
 ousim <- sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav)
-
 # Define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
 NumericVector sim_oucpp(double priceq,
@@ -2352,7 +2201,6 @@ summary(microbenchmark(
   rcode=sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav),
   Rcpp=sim_oucpp(priceq=priceq, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
-
 # Source Rcpp function for Ornstein-Uhlenbeck process from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_ou.cpp")
 # Simulate Ornstein-Uhlenbeck process in Rcpp
@@ -2368,7 +2216,6 @@ summary(microbenchmark(
   rcode=sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav),
   Rcpp=sim_oucpp(priceq=priceq, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
-
 # Calculate uniformly distributed pseudo-random sequence
 unifun <- function(seedv, nrows=10) {
   datav <- numeric(nrows)
@@ -2378,7 +2225,6 @@ unifun <- function(seedv, nrows=10) {
   }  # end for
   acos(1-2*datav)/pi
 }  # end unifun
-
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/unifun.cpp")
 # Microbenchmark Rcpp code
@@ -2388,7 +2234,6 @@ summary(microbenchmark(
   rloop=unifun(0.3, 1e5),
   Rcpp=unifuncpp(0.3, 1e5),
   times=10))[, c(1, 4, 5)]
-
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
@@ -2396,7 +2241,6 @@ vec1 <- runif(1e5)
 vec2 <- runif(1e5)
 inner_vec(vec1, vec2)
 vec1 %*% vec2
-
 # Microbenchmark \emph{RcppArmadillo} code
 summary(microbenchmark(
   rcpp = inner_vec(vec1, vec2),
@@ -2407,7 +2251,6 @@ summary(microbenchmark(
 #     expr     mean   median
 # 1 inner_vec 110.7067 110.4530
 # 2 rcode 585.5127 591.3575
-
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_arima.cpp")
 # Define AR(2) coefficients
@@ -2427,7 +2270,6 @@ summary(microbenchmark(
   rcpp = sim_ar(coeff, innov),
   filter = filter(x=innov, filter=coeff, method="recursive"),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")
@@ -2456,7 +2298,6 @@ summary(microbenchmark(
   rcode = solve(matv),
   rcpp = inv_mat(matv),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp("/Users/jerzy/Develop/lecture_slides/scripts/HighFreq.cpp")
@@ -2478,7 +2319,6 @@ summary(microbenchmark(
 eigend$vectors[, 1:dimax] %*% (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])},
   rcpp = calc_inv(cormat, dimax=dimax),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Install package reticulate
 install.packages("reticulate")
 # Start Python session

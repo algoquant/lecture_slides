@@ -718,14 +718,14 @@ plot(x=stdcor[, "stdev"], y=stdcor[, "cor"],
  xlab="volatility", ylab="correlation",
  main="Monthly Stock Volatilities and Correlations")
 # Plot stock volatilities and correlations
-colnamev <- colnames(stdcor)
+colv <- colnames(stdcor)
 stdcor <- xts(stdcor, zoo::index(retvti[endd]))
 dygraphs::dygraph(stdcor,
   main="Monthly Stock Volatilities and Correlations") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=colv[2], axis="y2", label=colv[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
 # Calculate the median VTI volatility
 medianv <- median(stdcor[, "stdev"])
@@ -774,13 +774,13 @@ correlv <- covarv[, 1, drop=FALSE]/sqrt(covarv[, 2]*covarv[, 3])
 # Plot dygraph of XLK returns and AAPL correlations
 datav <- cbind(cumsum(retp$XLK), correlv)
 colnames(datav)[2] <- "correlation"
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 endd <- rutils::calc_endpoints(retp, interval="weeks")
 dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=colv[2], axis="y2", label=colv[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
 # Scatterplot of trailing stock volatilities and correlations
 volv <- sqrt(covarv[, 2])
@@ -798,12 +798,12 @@ plotly::plot_ly(data=datav, x=~volatility, y=~correlation,
 # Plot trailing stock volatilities and correlations
 datav <- xts(cbind(volv, correlv), zoo::index(retp))
 colnames(datav) <- c("volatility", "correlation")
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(datav[endd], main="AAPL Trailing Stock Volatility and Correlation") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=colv[2], axis="y2", label=colv[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
 # Calculate the portfolio returns
 retvti <- na.omit(rutils::etfenv$returns$VTI)
@@ -824,7 +824,7 @@ correlv <- sapply(retp, function(retp) {
 correlv[is.na(correlv)] <- 0
 correlp <- rowMeans(correlv)
 # Scatterplot of trailing stock volatilities and correlations
-volvti <- sqrt(HighFreq::run_var(retvti, lambdaf))
+volvti <- sqrt(HighFreq::run_var(retvti, lambdaf)[, 2])
 endd <- rutils::calc_endpoints(retvti, interval="weeks")
 plot(x=volvti[endd], y=correlp[endd],
  xlab="volatility", ylab="correlation",
@@ -832,13 +832,13 @@ plot(x=volvti[endd], y=correlp[endd],
 # Plot trailing stock volatilities and correlations
 datav <- xts(cbind(volvti, correlp), datev)
 colnames(datav) <- c("volatility", "correlation")
-colnamev <- colnames(datav)
+colv <- colnames(datav)
 dygraphs::dygraph(datav[endd],
   main="Trailing Stock Volatilities and Correlations") %>%
-  dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-  dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-  dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red") %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
+  dySeries(name=colv[2], axis="y2", label=colv[2], strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
 # Formula of linear model with zero intercept
 formulav <- z ~ x + y - 1
@@ -978,8 +978,8 @@ for (it in 1:NCOL(statsmat)) {
 }  # end for
 regstats <- function(datav) {  # get regression
 # Perform regression and get summary
-  colnamev <- colnames(datav)
-  formulav <- paste(colnamev[2], colnamev[1], sep="~")
+  colv <- colnames(datav)
+  formulav <- paste(colv[2], colv[1], sep="~")
   regsum <- summary(lm(formulav, data=datav))
 # Extract regression statistics
   with(regsum, c(pval=coefficients[2, 4],
@@ -1122,7 +1122,7 @@ newdata <- (max(predm[, 2]) + 10*(1:5)/nrows)
 predn <- cbind(rep(1, NROW(newdata)), newdata)
 # Calculate the forecast values
 fcast <- drop(predn %*% betac)
-# Calculate the inverse of the predictor matrix squared
+# Calculate the inverse of the squared predictor matrix
 pred2 <- MASS::ginv(crossprod(predm))
 # Calculate the standard errors
 predsd <- residsd*sqrt(predn %*% pred2 %*% t(predn))
@@ -1303,15 +1303,15 @@ degf <- (nrows - ncols)
 all.equal(degf, regsum$df[2])
 # Variance of residuals
 residsd <- sum(resids^2)/degf
-# Inverse of predictor matrix squared
+# Inverse of the squared predictor matrix
 pred2 <- MASS::ginv(crossprod(predm))
 # pred2 <- t(predm) %*% predm
 # Variance of residuals
 residsd <- sum(resids^2)/degf
 # Calculate the covariance matrix of betas
-betacovar <- residsd*pred2
-# round(betacovar, 3)
-betasd <- sqrt(diag(betacovar))
+covm <- residsd*pred2
+# round(covm, 3)
+betasd <- sqrt(diag(covm))
 all.equal(betasd, regsum$coeff[, 2], check.attributes=FALSE)
 # Calculate the t-values of betas
 betatvals <- drop(betac)/betasd
@@ -1348,8 +1348,11 @@ formulav <- paste(colnames(retp)[1],
 # Standard regression
 regmod <- lm(formulav, data=retp)
 regsum <- summary(regmod)
+cdata <- coredata(retp)
+plot(cdata[, 1], cdata[, 2],
+  xlab="XLE", ylab="XLF", main="Stock Returns")
+abline(regmod, lwd=3, col="red")
 # Bootstrap of regression
-# Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 bootd <- sapply(1:100, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
@@ -1359,17 +1362,16 @@ bootd <- sapply(1:100, function(x) {
 # Means and standard errors from regression
 regsum$coefficients
 # Means and standard errors from bootstrap
-dim(bootd)
-t(apply(bootd, MARGIN=1,
-function(x) c(mean=mean(x), stderror=sd(x))))
+t(apply(bootd, MARGIN=1, function(x)
+  c(mean=mean(x), stderror=sd(x))))
 # New data predictor is a data frame or row vector
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
-colnamev <- colnames(predm)
-colnames(newdata) <- colnamev
+colv <- colnames(predm)
+colnames(newdata) <- colv
 newdata <- as.matrix(newdata)
 fcast <- drop(newdata %*% betac)
-predsd <- drop(sqrt(newdata %*% betacovar %*% t(newdata)))
+predsd <- drop(sqrt(newdata %*% covm %*% t(newdata)))
 # Create formula from text string
 formulav <- paste0("respv ~ ",
   paste(colnames(predm), collapse=" + "), " - 1")
@@ -1469,7 +1471,7 @@ svdec <- svd(retp)
 barplot(svdec$d, main="Singular Values of ETF Returns")
 # Calculate the generalized inverse from SVD
 invmat <- svdec$v %*% (t(svdec$u) / svdec$d)
-# Verify inverse property of inverse
+# Verify inverse property of the inverse
 all.equal(zoo::coredata(retp), retp %*% invmat %*% retp)
 # Calculate the regularized inverse from SVD
 dimax <- 1:3
@@ -1724,9 +1726,9 @@ legend(x="topleft", inset=0.1, bty="n", y.intersp=0.4,
  legend=c("cumulative defaults", "fitted values"),
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
 # Fit multifactor logistic regression model
-colnamev <- colnames(Default)
-formulav <- as.formula(paste(colnamev[1],
-  paste(colnamev[-1], collapse="+"), sep=" ~ "))
+colv <- colnames(Default)
+formulav <- as.formula(paste(colv[1],
+  paste(colv[-1], collapse="+"), sep=" ~ "))
 formulav
 logmod <- glm(formulav, data=Default, family=binomial(logit))
 summary(logmod)
@@ -1804,24 +1806,13 @@ confmat <- table(actual=!testset$default,
 forecast=(fcast < threshv))
 confmat
 # Calculate the FALSE positive (type I error)
-sum(!testset$default & (fcast < threshv))
+sum(!testset$default & (fcast > threshv))
 # Calculate the FALSE negative (type II error)
-sum(testset$default & (fcast > threshv))
+sum(testset$default & (fcast < threshv))
 # Calculate the FALSE positive and FALSE negative rates
 confmat <- confmat / rowSums(confmat)
 c(typeI=confmat[2, 1], typeII=confmat[1, 2])
 detach(Default)
-# Below is an unsuccessful attempt to draw confusion matrix using xtable
-confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
-dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
-                             actual=c("FALSE", "TRUE"))
-print(xtable::xtable(confusion_matrix,
-caption="Confusion Matrix"),
-caption.placement="top",
-comment=FALSE, size="scriptsize",
-include.rownames=TRUE,
-include.colnames=TRUE)
-# end unsuccessful attempt to draw confusion table using xtable
 # Confusion matrix as function of threshold
 confun <- function(actualv, fcast, threshv) {
     confmat <- table(actualv, (fcast < threshv))

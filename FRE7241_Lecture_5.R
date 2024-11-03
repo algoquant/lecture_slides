@@ -16,7 +16,6 @@ all.equal(retmv, (retp %*% covinv %*% unitv)/c11)
 all.equal(var(retmv),
   t(weightmv) %*% covmat %*% weightmv,
   1/(t(unitv) %*% covinv %*% unitv))
-
 # Calculate vector of mean returns
 retm <- colMeans(retp)
 # Specify the target return
@@ -33,7 +32,6 @@ weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
 # Calculate constraints
 all.equal(1, sum(weightv))
 all.equal(retarget, sum(retm*weightv))
-
 # Calculate the efficient portfolio returns
 reteff <- drop(retp %*% weightv)
 reteffm <- mean(reteff)
@@ -45,7 +43,6 @@ detf <- (c11*crr-cr1^2)  # det(fmat)
 all.equal(var(reteff),
   drop(t(uu) %*% finv %*% uu),
   (c11*reteffm^2-2*cr1*reteffm+crr)/detf)
-
 # Calculate the daily and mean minvar portfolio returns
 c11 <- drop(t(unitv) %*% covinv %*% unitv)
 weightv <- drop(covinv %*% unitv/c11)
@@ -60,7 +57,6 @@ stdevs <- sapply(targetv, function(rett) {
   uu <- c(1, rett)
   sqrt(drop(t(uu) %*% finv %*% uu))
 })  # end sapply
-
 # Plot the efficient frontier
 plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2,
      main="Efficient Frontier and Minimum Variance Portfolio",
@@ -68,7 +64,6 @@ plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2,
 points(x=stdevmv, y=retmvm, col="green", lwd=6)
 text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
      pos=4, cex=0.8)
-
 # Calculate standard deviation of efficient portfolio
 uu <- c(1, retarget)
 stdeveff <- sqrt(drop(t(uu) %*% finv %*% uu))
@@ -80,7 +75,6 @@ raterf <- retarget - sharper*stdeveff
 # Calculate the risk-free rate from target return
 all.equal(raterf,
   (retarget*cr1-crr)/(retarget*c11-cr1))
-
 # Plot efficient frontier
 aspratio <- 1.0*max(stdevs)/diff(range(targetv))
 plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2, asp=aspratio,
@@ -91,7 +85,6 @@ plot(x=stdevs, y=targetv, t="l", col="blue", lwd=2, asp=aspratio,
 points(x=stdevmv, y=retmvm, col="green", lwd=6)
 text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
      pos=4, cex=0.8)
-
 # Plot the tangent portfolio
 points(x=stdeveff, y=retarget, col="red", lwd=6)
 text(x=stdeveff, y=retarget, labels="tangency\nportfolio", pos=2, cex=0.8)
@@ -103,7 +96,6 @@ abline(a=raterf, b=sharper, lwd=2, col="green")
 text(x=0.6*stdev, y=0.8*retarget,
      labels="Capital Market Line", pos=2, cex=0.8,
      srt=180/pi*atan(aspratio*sharper))
-
 # Calculate the mean excess returns
 raterf <- retarget - sharper*stdeveff
 retx <- (retm - raterf)
@@ -127,7 +119,6 @@ sqrt(252)*sum(weightv*retx)/
   sqrt(drop(t(weightv) %*% covmat %*% weightv))
 # Calculate the stock Sharpe ratios
 sqrt(252)*sapply((retp - raterf), function(x) mean(x)/sd(x))
-
 # Calculate optimal portfolio returns
 wealthv <- cbind(retp %*% weightms, retp %*% weightmv)
 wealthv <- xts::xts(wealthv, zoo::index(retp))
@@ -141,7 +132,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Maximum Sharpe and Minimum Variance Portfolios") %>%
   dyOptions(colors=c("blue", "green"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
-
 # Calculate the maximum Sharpe portfolios for different risk-free rates
 detf <- (c11*crr-cr1^2)  # det(fmat)
 raterfv <- retmvm*seq(from=1.3, to=20, by=0.1)
@@ -164,7 +154,6 @@ plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2, asp=aspratio,
 # Plot the minimum variance portfolio
 points(x=stdevmv, y=retmvm, col="green", lwd=6)
 text(x=stdevmv, y=retmvm, labels="minimum \nvariance", pos=4, cex=0.8)
-
 # Calculate the maximum Sharpe return and standard deviation
 raterf <- min(reteffv)
 retmax <- (cr1*raterf-crr)/(c11*raterf-cr1)
@@ -180,7 +169,6 @@ sharper <- (stdevmax*detf)/(c11*retmax-cr1)
 abline(a=raterf, b=sharper, lwd=2, col="green")
 text(x=0.6*stdevmax, y=0.8*retmax, labels="Capital Market Line",
      pos=2, cex=0.8, srt=180/pi*atan(aspratio*sharper))
-
 # Plot the efficient frontier
 reteffv <- effront["return", ]
 stdevs <- effront["stdev", ]
@@ -188,7 +176,6 @@ plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2,
   xlim=c(0.0, max(stdevs)),
   main="Efficient Frontier and Tangent Lines",
   xlab="standard deviation", ylab="return")
-
 # Calculate vector of mean returns
 reteffv <- min(reteffv) + diff(range(reteffv))*c(0.2, 0.4, 0.6, 0.8)
 # Plot the tangent lines
@@ -204,7 +191,6 @@ for (reteffm in reteffv) {
   # Plot the tangent line
   abline(a=raterf, b=sharper, lwd=2, col="green")
 } # end for
-
 # Calculate random portfolios
 nportf <- 1000
 randportf <- sapply(1:nportf, function(it) {
@@ -232,14 +218,12 @@ points(x=effront[marketp, "stdev"],
  y=effront[marketp, "return"], col="green", lwd=6)
 text(x=effront[marketp, "stdev"], y=effront[marketp, "return"],
      labels="market\nportfolio", pos=2, cex=0.8)
-
 # Plot individual assets
 points(x=sqrt(252*diag(covmat)),
  y=252*retm, col="blue", lwd=6)
 text(x=sqrt(252*diag(covmat)), y=252*retm,
      labels=names(retm),
      col="blue", pos=1, cex=0.8)
-
 raterf <- 0.03
 retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
@@ -270,7 +254,6 @@ text(x=portfsd[whichmax], y=retp[whichmax],
  structure(c(weightv[whichmax], 1-weightv[whichmax]),
          names=names(retp))), collapse=" "),
      pos=2, cex=0.8)
-
 # Plot individual assets
 points(stdevs, retp, col="green", lwd=3)
 text(stdevs, retp, labels=names(retp), pos=4, cex=0.8)
@@ -284,7 +267,6 @@ text(portfsd[whichmax]/2, (retp[whichmax]+raterf)/2,
      srt=45*atan(sharpem*(rangev[2]-rangev[1])/
              (rangev[4]-rangev[3])*
              heightp/widthp)/(0.25*pi))
-
 # Plot portfolios in x11() window
 x11(widthp <- 6, heightp <- 5)
 par(oma=c(0, 0, 0, 0), mar=c(3,3,2,1)+0.1, mgp=c(2, 1, 0), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
@@ -315,7 +297,6 @@ text(x=portfv[whichmax, "stdev"], y=portfv[whichmax, "returns"],
      labels=paste(c("efficient portfolio\n",
   structure(c(weightv[whichmax, 1], weightv[whichmax, 2]), names=symbolv)), collapse=" "),
      pos=3, cex=0.8)
-
 # Plot individual assets
 retm <- 252*sapply(retp, mean)
 stdevs <- sqrt(252)*sapply(retp, sd)
@@ -331,7 +312,6 @@ text(max(portfv[, "stdev"])/3, 0.75*max(portfv[, "returns"]),
      srt=45*atan(sharpem*(rangev[2]-rangev[1])/
              (rangev[4]-rangev[3])*
              heightp/widthp)/(0.25*pi))
-
 # Plot portfolios in x11() window
 x11(widthp <- 6, heightp <- 5)
 # Calculate cumulative returns of VTI and IEF
@@ -351,7 +331,6 @@ chart_Series(retsoptim, theme=plot_theme,
 legend("top", legend=colnames(retsoptim),
    cex=0.8, inset=0.1, bg="white", lty=1,
    lwd=6, col=plot_theme$col$line.col, bty="n")
-
 library(rutils)
 library(Rglpk)
 # Vector of symbol names
@@ -381,7 +360,6 @@ optiml <- Rglpk::Rglpk_solve_LP(
 all.equal(optiml$optimum, sum(objvec*optiml$solution))
 optiml$solution
 coeffm %*% optiml$solution
-
 # Calculate the VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 confl <- 0.1
@@ -397,7 +375,6 @@ varmin <- (-0.05)
 histp <- hist(retp, col="lightgrey",
   xlab="returns", breaks=100, xlim=c(varmin, 0.01),
   ylab="frequency", freq=FALSE, main="VTI Returns Histogram")
-
 # Plot density of losses
 densv <- density(retp, adjust=1.5)
 lines(densv, lwd=3, col="blue")
@@ -412,7 +389,6 @@ polygon(
   c(0, densv$y[rangev], 0),
   col=rgb(1, 0, 0,0.5), border=NA)
 text(x=1.5*varisk, y=ymax/7, labels="CVaR", lwd=2, pos=2)
-
 library(rutils)  # Load rutils
 library(Rglpk)
 # Vector of symbol names and returns
@@ -443,7 +419,6 @@ optiml <- Rglpk_solve_LP(obj=objvec, mat=coeffm, dir=logop, rhs=consv, types=rep
 all.equal(optiml$optimum, sum(objvec*optiml$solution))
 coeffm %*% optiml$solution
 as.numeric(optiml$solution[1:ncols])
-
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
@@ -473,7 +448,6 @@ objvec <- Vectorize(FUN=function(weightv)
   vectorize.args="weightv")  # end Vectorize
 objvec(1)
 objvec(1:3)
-
 # Plot objective function with respect to third weight
 curve(expr=objvec, type="l", xlim=c(-4.0, 1.0),
 xlab=paste("weight of", names(weightv[3])),
@@ -482,7 +456,6 @@ title(main="Objective Function", line=(-1))  # Add title
 points(x=optiml[1], y=optiml[2], col="green", lwd=6)
 text(x=optiml[1], y=optiml[2],
      labels="minimum objective", pos=4, cex=0.8)
-
 #below is simplified code for plotting objective function
 # Create vector of DBC weights
 weightv <- seq(from=-4, to=1, by=0.1)
@@ -494,7 +467,6 @@ title(main="Objective Function", line=(-1))  # Add title
 points(x=optiml[1], y=optiml[2], col="green", lwd=6)
 text(x=optiml[1], y=optiml[2],
      labels="minimum objective", pos=4, cex=0.8)
-
 # Vectorize function with respect to all weights
 objvec <- Vectorize(
   FUN=function(w1, w2, w3) objfun(c(w1, w2, w3), retp),
@@ -510,7 +482,6 @@ persp(w2, w3, -gridm,
 theta=45, phi=30, shade=0.5,
 col=rainbow(50), border="green",
 main="objective function")
-
 # Interactive perspective plot of objective function
 library(rgl)
 rgl::persp3d(z=-gridm, zlab="objective",
@@ -521,7 +492,6 @@ rgl::persp3d(
   col="green", axes=FALSE)
 # Render the 3d surface plot of function
 rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)
-
 # Optimization to find weights with maximum Sharpe ratio
 optiml <- optim(par=weightv,
              fn=objfun,
@@ -534,7 +504,6 @@ optiml$par
 optiml$par <- optiml$par/sum(optiml$par)
 # Optimal Sharpe ratio
 -objfun(optiml$par)
-
 x11(width=6, height=5)
 par(oma=c(1, 1, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot in two vertical panels
@@ -564,7 +533,6 @@ legend("top", legend=colnames(retsoptim), cex=1.0,
 PerformanceAnalytics::chart.CumReturns(
   cbind(retp %*% optiml$par, retp),
   lwd=2, ylab="", legend.loc="topleft", main="")
-
 raterf <- 0.03
 retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
@@ -591,7 +559,6 @@ objfun <- function(x) {
   t(x) %*% covmat %*% x
 }  # end objfun
 unlist(optimize(f=objfun, interval=c(-1, 2)))
-
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
@@ -617,7 +584,6 @@ optiml <- quadprog::solve.QP(Dmat=2*covmat,
             Amat=a_mat,
             bvec=b_vec,
             meq=1)
-
 # Rastrigin function with vector argument for optimization
 rastrigin <- function(vecv, param=25){
   sum(vecv^2 - param*cos(vecv))
@@ -634,7 +600,6 @@ optiml$optim$bestmem
 rastrigin(optiml$optim$bestmem)
 summary(optiml)
 plot(optiml)
-
 # Calculate daily percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
@@ -655,7 +620,6 @@ optiml <- DEoptim::DEoptim(fn=objfun,
   control=list(trace=FALSE, itermax=100, parallelType=1))
 weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
 names(weightv) <- colnames(retp)
-
 # Objective with shrinkage penalty
 objfun <- function(weightv, retp, lambdaf, alpha) {
   retp <- retp %*% weightv

@@ -896,10 +896,10 @@ nboot <- 10000
 bootd <- parLapply(compclust, 1:nboot, function(x, retp, nsimu) {
   samplev <- retp[sample.int(nsimu, replace=TRUE)]
   c(sd=sd(samplev), mad=mad(samplev))
-}, retp=retp, nsimu=nsimu)  # end parLapply
+}, retp=retp, nsimu=nrows)  # end parLapply
 # Bootstrap sd and MAD under Mac-OSX or Linux
 bootd <- mclapply(1:nboot, function(x) {
-  samplev <- retp[sample.int(nsimu, replace=TRUE)]
+  samplev <- retp[sample.int(nrows, replace=TRUE)]
   c(sd=sd(samplev), mad=mad(samplev))
 }, mc.cores=ncores)  # end mclapply
 stopCluster(compclust)  # Stop R processes over cluster under Windows
@@ -907,11 +907,11 @@ bootd <- rutils::do_call(rbind, bootd)
 # Standard error of standard deviation assuming normal distribution of returns
 sd(retp)/sqrt(nsimu)
 # Means and standard errors from bootstrap
-stderrors <- apply(bootd, MARGIN=2,
+stderr <- apply(bootd, MARGIN=2,
   function(x) c(mean=mean(x), stderror=sd(x)))
-stderrors
+stderr
 # Relative standard errors
-stderrors[2, ]/stderrors[1, ]
+stderr[2, ]/stderr[1, ]
 # Initialize random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Define predictor and response variables
@@ -1300,7 +1300,7 @@ apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
 sigmav <- 1.0  # Volatility
 drift <- 0.0  # Drift
 nsteps <- 100  # Number of simulation steps
-nsimu <- 10000  # Number of simulation paths
+nsimu <- 1000  # Number of simulation paths
 # Calculate matrix of normal variables
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 datav <- rnorm(nsimu*nsteps, mean=drift, sd=sigmav)
@@ -1308,9 +1308,10 @@ datav <- matrix(datav, nc=nsimu)
 # Simulate paths of Brownian motion
 pathm <- matrixStats::colCumsums(datav)
 # Tilt the datav
-lambdaf <- 0.04  # Tilt parameter
+lambdaf <- 0.1  # Tilt parameter
 datat <- datav + lambdaf  # Tilt the random numbers
 patht <- matrixStats::colCumsums(datat)
+zoo::plot.zoo(patht[, sample(nsimu, 20)], main="Paths of Brownian Motion", xlab="time steps", ylab=NA, plot.type="single")
 # Calculate path weights
 weightm <- exp(-lambdaf*datat + lambdaf^2/2)
 weightm <- matrixStats::colProds(weightm)
@@ -1642,62 +1643,62 @@ bootd <- function(datav, nboot=nboot) {
     function(x) c(mean=mean(x), stderror=sd(x)))
   retp <- numeric(nsimu)
   pricev <- numeric(nsimu)
-  pricev[1] <- eq_price
+  pricev[1] <- priceq
   for (i in 2:nsimu) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    retp[i] <- thetav*(priceq - pricev[i-1]) + volat*rnorm(1)
     pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end bootd
 # Define Ornstein-Uhlenbeck function in R
-sim_our <- function(nrows=1000, eq_price=5.0,
+sim_our <- function(nrows=1000, priceq=5.0,
               volat=0.01, theta=0.01) {
   retp <- numeric(nrows)
   pricev <- numeric(nrows)
-  pricev[1] <- eq_price
+  pricev[1] <- priceq
   for (i in 2:nrows) {
-    retp[i] <- theta*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    retp[i] <- theta*(priceq - pricev[i-1]) + volat*rnorm(1)
     pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end sim_our
 # Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
+priceq <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav)
 # Define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
-NumericVector sim_oucpp(double eq_price,
+NumericVector sim_oucpp(double priceq,
                   double volat,
                   double thetav,
                   NumericVector innov) {
   int nrows = innov.size();
   NumericVector pricev(nrows);
   NumericVector retv(nrows);
-  pricev[0] = eq_price;
+  pricev[0] = priceq;
   for (int it = 1; it < nrows; it++) {
-    retv[it] = thetav*(eq_price - pricev[it-1]) + volat*innov[it-1];
+    retv[it] = thetav*(priceq - pricev[it-1]) + volat*innov[it-1];
     pricev[it] = pricev[it-1] + retv[it];
   }  // end for
   return pricev;
 }")  # end cppFunction
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-oucpp <- sim_oucpp(eq_price=eq_price,
+oucpp <- sim_oucpp(priceq=priceq,
   volat=sigmav, theta=thetav, innov=rnorm(nrows))
 all.equal(ousim, oucpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  rcode=sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav),
+  Rcpp=sim_oucpp(priceq=priceq, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
 # Source Rcpp function for Ornstein-Uhlenbeck process from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/sim_ou.cpp")
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-oucpp <- sim_oucpp(eq_price=eq_price,
+oucpp <- sim_oucpp(priceq=priceq,
   volat=sigmav,
   theta=thetav,
   innov=rnorm(nrows))
@@ -1705,8 +1706,8 @@ all.equal(ousim, oucpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  rcode=sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav),
-  Rcpp=sim_oucpp(eq_price=eq_price, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
+  rcode=sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav),
+  Rcpp=sim_oucpp(priceq=priceq, volat=sigmav, theta=thetav, innov=rnorm(nrows)),
   times=10))[, c(1, 4, 5)]
 # Calculate uniformly distributed pseudo-random sequence
 unifun <- function(seedv, nrows=10) {
@@ -1741,18 +1742,18 @@ bootd <- function(datav, nboot=1000) {
     function(x) c(mean=mean(x), stderror=sd(x)))
   retp <- numeric(nrows)
   pricev <- numeric(nrows)
-  pricev[1] <- eq_price
+  pricev[1] <- priceq
   for (i in 2:nrows) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    retp[i] <- thetav*(priceq - pricev[i-1]) + volat*rnorm(1)
     pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
+priceq <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav)
 # Define Ornstein-Uhlenbeck function in R
 bootd <- function(datav, nboot=1000) {
   bootd <- sapply(1:nboot, function(x) {
@@ -1768,18 +1769,18 @@ bootd <- function(datav, nboot=1000) {
   function(x) c(mean=mean(x), stderror=sd(x)))
   retp <- numeric(nrows)
   pricev <- numeric(nrows)
-  pricev[1] <- eq_price
+  pricev[1] <- priceq
   for (i in 2:nrows) {
-    retp[i] <- thetav*(eq_price - pricev[i-1]) + volat*rnorm(1)
+    retp[i] <- thetav*(priceq - pricev[i-1]) + volat*rnorm(1)
     pricev[i] <- pricev[i-1] + retp[i]
   }  # end for
   pricev
 }  # end bootd
 # Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigmav <- 0.01
+priceq <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-ousim <- sim_our(nrows, eq_price=eq_price, volat=sigmav, theta=thetav)
+ousim <- sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav)
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp(file="/Users/jerzy/Develop/lecture_slides/scripts/armadillo_functions.cpp")

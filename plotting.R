@@ -116,13 +116,13 @@ zoo::plot.zoo(zoo_stxeur[, 2], xlab=NA, ylab=NA,
 # Plot second y-axis on right
 axis(side=4, col="red")
 # Add axis labels
-colnamev <- colnames(zoo_stxeur)
-mtext(colnamev[1], side=2, adj=-0.5)
-mtext(colnamev[2], side=4, adj=1.5, col="red")
+colv <- colnames(zoo_stxeur)
+mtext(colv[1], side=2, adj=-0.5)
+mtext(colv[2], side=4, adj=1.5, col="red")
 # Add title and legend
-title(main=paste0(colnamev, collapse=" and "),
+title(main=paste0(colv, collapse=" and "),
 line=0.5)
-legend("top", legend=colnamev,
+legend("top", legend=colv,
   bg="white", lty=1, lwd=6, y.intersp=0.4,
   col=c("black", "red"), bty="n")
 Slightly different method using par("usr")
@@ -133,12 +133,12 @@ par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
 lines(zoo_stxeur[, 2], col="red", lwd=2)  # Second plot
 axis(side=4, col="red")  # Second y-axis on right
 # Add axis labels
-mtext(colnamev[1], side=2, adj=-0.5)
-mtext(colnamev[2], side=4, adj=1.5, col="red")
+mtext(colv[1], side=2, adj=-0.5)
+mtext(colv[2], side=4, adj=1.5, col="red")
 # Add title and legend
-title(main=paste0(colnamev, collapse=" and "),
+title(main=paste0(colv, collapse=" and "),
 line=0.5)
-legend("top", legend=colnamev,
+legend("top", legend=colv,
   bg="white", lty=1, lwd=6, y.intersp=0.4,
   col=c("black", "red"), bty="n")
 graph_params <- par()  # get existing parameters
@@ -535,12 +535,12 @@ servfun <- shiny::shinyServer(function(input, output) {
   })  # end reactive code
   # Return the dygraph plot to output argument
   output$dyplot <- dygraphs::renderDygraph({
-    colnamev <- colnames(vwapv())
-    dygraphs::dygraph(vwapv(), main=paste(colnamev[1], "VWAP")) %>%
-dyAxis("y", label=colnamev[1], independentTicks=TRUE) %>%
-dyAxis("y2", label=colnamev[2], independentTicks=TRUE) %>%
-dySeries(name=colnamev[1], axis="y", label=colnamev[1], strokeWidth=2, col="blue") %>%
-dySeries(name=colnamev[2], axis="y2", label=colnamev[2], strokeWidth=2, col="red")
+    colv <- colnames(vwapv())
+    dygraphs::dygraph(vwapv(), main=paste(colv[1], "VWAP")) %>%
+dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
+dySeries(name=colv[2], axis="y2", label=colv[2], strokeWidth=2, col="red")
   })  # end output plot
 })  # end server code
 Return a Shiny app object
@@ -612,7 +612,7 @@ renderPlot({
 library(zoo)  # Load zoo
 library(ggplot2)  # Load ggplot2
 library(scales)  # Load scales
-my_ggplot <- ggplot(  # Specify data and aesthetics
+plotobj <- ggplot(  # Specify data and aesthetics
   data=mtcars, mapping=aes(x=hp, y=mpg)) +
   geom_point() +  # Plot points
   ggtitle("basic scatter plot") +  # Add title
@@ -620,13 +620,13 @@ my_ggplot <- ggplot(  # Specify data and aesthetics
   plot.title=element_text(vjust=-2.0),
   plot.background=element_blank()
   )  # end theme
-my_ggplot  # Render the plot
+plotobj  # Render the plot
 # install.packages("directlabels", repo="http://r-forge.r-project.org")
 library(ggplot2)  # Load ggplot2
 library(scales)  # Load scales
 library(gridExtra)  # Load gridExtra
 library(directlabels)  # Load directlabels
-my_ggplot <- ggplot(  # Data and aesthetics
+plotobj <- ggplot(  # Data and aesthetics
   data=mtcars, mapping=aes(x=hp, y=mpg)) +
   geom_point() +  # Plot points
   theme(  # Customize plot object
@@ -636,19 +636,18 @@ my_ggplot <- ggplot(  # Data and aesthetics
   plot.background=element_blank()
   ) +
   scale_colour_discrete(guide="none")  # no label guide
-car_names <- rownames(mtcars)
-gg_labels <- geom_text(aes(  # ggplot2 labels
-  label=car_names, color=car_names, size=5))
-d_labels <- geom_dl(mapping=aes(  # Directlabels
-  label=car_names, color=car_names),
-  method=list("last.bumpup", cex=0.7,
-        hjust=1))
+namev <- rownames(mtcars)
+labelv <- geom_text(aes(  # ggplot2 labels
+  label=namev, color=namev, size=5))
+labelv <- geom_dl(mapping=aes(  # Directlabels
+  label=namev, color=namev),
+  method=list("last.bumpup", cex=0.7, hjust=1))
 # Render plots in single column
-grid.arrange(my_ggplot +
-  ggtitle("ggplot2 labels") + gg_labels,
-  my_ggplot + ggtitle("directlabels") +
-    d_labels, ncol=1)  # end grid.arrange
-my_ggplot <- ggplot(data=iris,
+grid.arrange(plotobj +
+  ggtitle("ggplot2 labels") + labelv,
+  plotobj + ggtitle("directlabels") +
+    labelv, ncol=1)  # end grid.arrange
+plotobj <- ggplot(data=iris,
       mapping=aes(Petal.Length, Sepal.Length)) +
   geom_point(aes(shape=Species, color=Species)) +
   geom_dl(aes(label=Species, color=Species),
@@ -656,7 +655,7 @@ my_ggplot <- ggplot(data=iris,
   scale_shape_manual(values=c(setosa=1,
     virginica=6, versicolor=3), guide="none") +
   scale_colour_discrete(guide="none")  # no label guide
-my_ggplot  # Render the plot
+plotobj  # Render the plot
 library(ggplot2)  # Load ggplot2
 library(scales)  # Load scales
 library(gridExtra)  # Load gridExtra

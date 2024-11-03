@@ -79,31 +79,31 @@ calc_skew(retp)
 # Use default value of arguments
 calc_skew()
 str(plot)  # Dots for additional plot parameters
-bind_dots <- function(inputv, ...) {
+bindd <- function(inputv, ...) {
   paste0("inputv=", inputv, ", dots=", paste(..., sep=", "))
-}  # end bind_dots
-bind_dots(1, 2, 3)  # "inputv" bound by position
-bind_dots(2, inputv=1, 3)  # "inputv" bound by name
-bind_dots(1, 2, 3, argv=10)  # Named argument bound to dots
-bind_dots <- function(arg1, arg2, ...) {
+}  # end bindd
+bindd(1, 2, 3)  # "inputv" bound by position
+bindd(2, inputv=1, 3)  # "inputv" bound by name
+bindd(1, 2, 3, argv=10)  # Named argument bound to dots
+bindd <- function(arg1, arg2, ...) {
   arg1 + 2*arg2 + sum(...)
-}  # end bind_dots
-bind_dots(3, 2)  # Bind arguments by position
-bind_dots(3, 2, 5, 8)  # Extra arguments bound to dots
+}  # end bindd
+bindd(3, 2)  # Bind arguments by position
+bindd(3, 2, 5, 8)  # Extra arguments bound to dots
 str(sum)  # Dots before other arguments
 sum(1, 2, 3)  # Dots bind before other arguments
 sum(1, 2, NA, 3, na.rm=TRUE)
-bind_dots <- function(..., inputv) {
+bindd <- function(..., inputv) {
   paste0("inputv=", inputv, ", dots=", paste(..., sep=", "))
-}  # end bind_dots
+}  # end bindd
 # Arguments after dots must be bound by full name
-bind_dots(1, 2, 3, inputv=10)
-bind_dots(1, 2, 3, inputv=10, argv=4)  # Dots bound
-bind_dots(1, 2, 3)  # "inputv" not bound
-bind_dots <- function(..., inputv=10) {
+bindd(1, 2, 3, inputv=10)
+bindd(1, 2, 3, inputv=10, argv=4)  # Dots bound
+bindd(1, 2, 3)  # "inputv" not bound
+bindd <- function(..., inputv=10) {
   paste0("inputv=", inputv, ", dots=", paste(..., sep=", "))
-}  # end bind_dots
-bind_dots(1, 2, 3)  # "inputv" not bound, but has default
+}  # end bindd
+bindd(1, 2, 3)  # "inputv" not bound, but has default
 # Wrapper for mean() with default na.rm=TRUE
 meanfun <- function(x, na.rm=TRUE, ...) {
   mean(x=x, na.rm=na.rm, ...)
@@ -422,10 +422,9 @@ testfun(1, 2, 3, param2=4, param1=5)
 # Anonymous function passed to testfun
 testfun(funn=(function(x) (x + 3)), 5)
 # Anonymous function is default value
-testfun <-
-  function(..., funn=function(x, y, z) {x+y+z}) {
-    funn <- match.fun(funn)
-    funn(...)  # Execute function call
+testfun <- function(..., funn=function(x, y, z) {x+y+z}) {
+  funn <- match.fun(funn)
+  funn(...)  # Execute function call
 }  # end testfun
 testfun(2, 3, 4)  # Use default funn
 testfun(2, 3, 4, 5)
