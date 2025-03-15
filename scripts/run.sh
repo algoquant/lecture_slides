@@ -160,7 +160,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/medi_an/medianv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/meth_od/method/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/mo_ment/moment/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/mod_el/modelt/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/model_sum/modelsum/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/model_sum/regsum/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/month_codes/codes/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/month_s/months/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/ms_e/mse/g' *.R*
@@ -183,6 +183,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/n_simu/nsimu/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/n_stocks/nstocks/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/n_trades/ntrades/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/n_weights/nweights/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/num_weights/nweights/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/n_portf/nportf/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/na_ive/naivemc/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/nam_e/namev/g' *.R*
@@ -192,7 +193,6 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/num_ber/numv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/num_cols/ncols/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/num_rows/nrows/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/num_var/numv/g' *.R*
-LC_CTYPE=C && LANG=C && sed -i '' 's/num_weights/nweights/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/numcores/ncores/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/numcols/ncols/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/numrows/nrows/g' *.R*
@@ -360,6 +360,7 @@ LC_CTYPE=C && LANG=C && sed -i '' 's/win_dow/lookb/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/look_back/lookb/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/x_lim/xlim/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/x_ts/xtsv/g' *.R*
+LC_CTYPE=C && LANG=C && sed -i '' 's/xt_s/xtsv/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/x_var/xvar/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/y_var/yvar/g' *.R*
 LC_CTYPE=C && LANG=C && sed -i '' 's/y_lim/ylim/g' *.R*

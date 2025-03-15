@@ -60,13 +60,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#6]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#6, Fall 2024}
+\subtitle{Lecture\#6, Spring 2025}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{October 8, 2024}
+\date{October 8, 2025}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -1198,27 +1198,27 @@ arma::mat calc_inv(const arma::mat& matv,
       Fast portfolio optimization using matrix algebra can be implemented using \protect\emph{RcppArmadillo}.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 arma::vec calc_weights(const arma::mat& returns, // Asset returns
-                       Rcpp::List controlv) { // List of portfolio optimization parameters
+                       Rcpp::List controll) { // List of portfolio optimization parameters
   
   // Unpack the control list of portfolio optimization parameters
   // Type of portfolio optimization model
-  std::string method = Rcpp::as<std::string>(controlv["method"]);
+  std::string method = Rcpp::as<std::string>(controll["method"]);
   // Threshold level for discarding small singular values
-  double eigen_thresh = Rcpp::as<double>(controlv["eigen_thresh"]);
+  double eigen_thresh = Rcpp::as<double>(controll["eigen_thresh"]);
   // Dimension reduction
-  arma::uword dimax = Rcpp::as<int>(controlv["dimax"]);
+  arma::uword dimax = Rcpp::as<int>(controll["dimax"]);
   // Confidence level for calculating the quantiles of returns
-  double confl = Rcpp::as<double>(controlv["confl"]);
+  double confl = Rcpp::as<double>(controll["confl"]);
   // Shrinkage intensity of returns
-  double alpha = Rcpp::as<double>(controlv["alpha"]);
+  double alpha = Rcpp::as<double>(controll["alpha"]);
   // Should the weights be ranked?
-  bool rankw = Rcpp::as<int>(controlv["rankw"]);
+  bool rankw = Rcpp::as<int>(controll["rankw"]);
   // Should the weights be centered?
-  bool centerw = Rcpp::as<int>(controlv["centerw"]);
+  bool centerw = Rcpp::as<int>(controll["centerw"]);
   // Method for scaling the weights
-  std::string scalew = Rcpp::as<std::string>(controlv["scalew"]);
+  std::string scalew = Rcpp::as<std::string>(controll["scalew"]);
   // Volatility target for scaling the weights
-  double vol_target = Rcpp::as<double>(controlv["vol_target"]);
+  double vol_target = Rcpp::as<double>(controll["vol_target"]);
 
   // Initialize the variables
   arma::uword ncols = returns.n_cols;
@@ -1369,7 +1369,7 @@ arma::vec calc_weights(const arma::mat& returns, // Asset returns
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 arma::mat back_test(const arma::mat& retx, // Asset excess returns
                     const arma::mat& retp, // Asset returns
-                    Rcpp::List controlv, // List of portfolio optimization model parameters
+                    Rcpp::List controll, // List of portfolio optimization model parameters
                     arma::uvec startp, // Start points
                     arma::uvec endp, // End points
                     double lambdaf = 0.0, // Decay factor for averaging the portfolio weights
@@ -1386,7 +1386,7 @@ arma::mat back_test(const arma::mat& retx, // Asset excess returns
   for (arma::uword it = 1; it < endp.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate the portfolio weights
-    weightv = coeff*calc_weights(retx.rows(startp(it-1), endp(it-1)), controlv);
+    weightv = coeff*calc_weights(retx.rows(startp(it-1), endp(it-1)), controll);
     // Calculate the weights as the weighted sum with past weights
     weightv = lambda1*weightv + lambdaf*weights_past;
     // Calculate out-of-sample returns
@@ -1429,11 +1429,11 @@ startp[startp < 0] <- 0
 # Specify dimension reduction and return shrinkage using list of portfolio optimization parameters
 dimax <- 9
 alphac <- 0.7
-controlv <- HighFreq::param_portf(method="maxsharpe", 
+controll <- HighFreq::param_portf(method="maxsharpe", 
   dimax=dimax, alpha=alphac)
 # Perform backtest in Rcpp - takes long!!!
 pnls <- HighFreq::back_test(retx=retx, retp=retp,
-  startp=startp, endd=endd, controlv=controlv)
+  startp=startp, endd=endd, controll=controll)
 pnls <- pnls*sd(retew)/sd(pnls)
       @
     \column{0.5\textwidth}
@@ -1476,10 +1476,10 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 # Perform backtest over vector of dimension reduction parameters
 dimv <- seq(from=3, to=40, by=2)
 pnls <- mclapply(dimv, function(dimax) {
-  controlv <- HighFreq::param_portf(method="maxsharpe", 
+  controll <- HighFreq::param_portf(method="maxsharpe", 
     dimax=dimax, alpha=alphac)
   HighFreq::back_test(retx=retx, retp=retp,
-    startp=startp, endd=endd, controlv=controlv)
+    startp=startp, endd=endd, controll=controll)
 })  # end lapply
 profilev <- sapply(pnls, sum)
 whichmax <- which.max(profilev)
@@ -1516,10 +1516,10 @@ plot(x=dimv, y=profilev, t="l", xlab="dimax", ylab="pnl",
 # Perform backtest over vector of return shrinkage intensities
 alphav <- seq(from=0.5, to=0.9, by=0.1)
 pnls <- mclapply(alphav, function(alphac) {
-  controlv <- HighFreq::param_portf(method="maxsharpe", 
+  controll <- HighFreq::param_portf(method="maxsharpe", 
             dimax=dimax, alpha=alphac)
   HighFreq::back_test(retx=retx, retp=retp,
-            startp=startp, endd=endd, controlv=controlv)
+            startp=startp, endd=endd, controll=controll)
 })  # end lapply
 profilev <- sapply(pnls, sum)
 whichmax <- which.max(profilev)
@@ -1557,7 +1557,7 @@ plot(x=alphav, y=profilev, t="l",
       But if the \emph{look-back interval} is too short, then there's not enough data, and estimates will have high \emph{variance}.
       <<echo=TRUE,eval=FALSE>>=
 # Create list of model parameters
-controlv <- HighFreq::param_portf(method="maxsharpe", 
+controll <- HighFreq::param_portf(method="maxsharpe", 
             dimax=dimax, alpha=alphac)
 # Perform backtest over look-backs
 lookbv <- seq(from=5, to=16, by=1)
@@ -1565,7 +1565,7 @@ pnls <- mclapply(lookbv, function(lookb) {
   startp <- c(rep_len(0, lookb), endd[1:(npts-lookb)])
   startp <- (startp - 1) ; startp[startp < 0] <- 0
   HighFreq::back_test(retx=retx, retp=retp,
-    startp=startp, endd=endd, controlv=controlv)
+    startp=startp, endd=endd, controll=controll)
 })  # end lapply
 profilev <- sapply(pnls, sum)
 plot(x=lookbv, y=profilev, t="l", main="Strategy PnL as Function of Look-back Interval",

@@ -60,7 +60,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Univariate]{Time Series Univariate}
-\subtitle{FRE6871 \& FRE7241, Fall 2024}
+\subtitle{FRE6871 \& FRE7241, Spring 2025}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -2538,7 +2538,6 @@ Box.test(rethigh, lag=10, type="Ljung")
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
 \subsection{Autocorrelations of Low and High Volatility Stocks}
 \begin{frame}[fragile,t]{\subsecname}
@@ -2548,51 +2547,82 @@ Box.test(rethigh, lag=10, type="Ljung")
     \column{0.5\textwidth}
       Low volatility stocks have more significant negative autocorrelations than high volatility stocks.
       \vskip1ex
-      But even the lowest volatility quantile of stocks has less significant negative autocorrelations than \emph{VTI} does.
+      The lowest volatility quantile of stocks has negative autocorrelations similar to \emph{VTI}.
       <<echo=TRUE,eval=FALSE>>=
 # Load daily S&P500 stock returns
-load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-# Calculate the stock volatilities and Ljung-Box test statistics
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returnstop.RData")
+# Calculate the stock volatilities and the sum of the ACF
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
-statm <- mclapply(returns, function(retp) {
+statm <- mclapply(retstock, function(retp) {
   retp <- na.omit(retp)
-  c(stdev=sd(retp), lbstat=Box.test(retp, lag=10, type="Ljung")$statistic)
+  # Calculate the sum of the ACF
+  acfsum <- sum(pacf(retp, lag=10, plot=FALSE)$acf)
+  # Calculate the Ljung-Box statistic
+  lbstat <- unname(Box.test(retp, lag=10, type="Ljung")$statistic)
+  c(stdev=sd(retp), acfsum=acfsum, lbstat=lbstat)
 }, mc.cores=ncores)  # end mclapply
 statm <- do.call(rbind, statm)
-colnames(statm)[2] <- "lbstat"
-# Calculate the median volatility
-stdev <- statm[, "stdev"]
-lbstat <- statm[, "lbstat"]
-stdevm <- median(stdev)
-# Calculate the Ljung-Box statistics for stock volatility quantiles
-quants <- quantile(stdev, c(0.001, seq(0.1, 0.9, 0.1), 0.999))
-lbstatq <- sapply(2:NROW(quants), function(it) {
-  mean(lbstat[(stdev > quants[it-1]) & (stdev < quants[it])])
-}) # end sapply
-# Calculate the Ljung-Box statistics for low and high volatility stocks
-lowvol <- (stdev < stdevm)
-mean(statm[lowvol, "lbstat"])
-mean(statm[!lowvol, "lbstat"])
-# Compare the Ljung-Box statistics for lowest volatility stocks with VTI
-lbstatq[1]
-Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
+statm <- as.data.frame(statm)
+# Calculate the ACF sum for stock volatility quantiles
+confl <- seq(0.1, 0.9, 0.1)
+stdq <- quantile(statm[, "stdev"], confl)
+acfq <- quantile(statm[, "acfsum"], confl)
+plot(stdq, acfq, xlab="volatility", ylab="PACF Sum",
+     main="PACF Sum vs Volatility")
+# Compare the ACF sum for stock volatility quantile with VTI
+acfq[1]
+sum(pacf(na.omit(rutils::etfenv$returns$VTI), lag=10, plot=FALSE)$acf)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/acf_stocks.png}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_scatter_stocks.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot Ljung-Box test statistic for volatility quantiles
-plot(x=quants[-NROW(quants)], y=lbstatq, lwd=1, col="blue", 
-     # xlim=c(0.01, 0.05), ylim=c(0, 100),
-     xlab="volatility", ylab="Ljung-Box Stat", 
-     main="Ljung-Box Statistic For Stock Volatility Quantiles")
+# Scatter plot of the sum of the ACF vs the standard deviation
+regmod <- lm(acfsum ~ stdev, data=statm)
+plot(acfsum ~ stdev, data=statm, xlab="SD", ylab="PACF Sum", 
+     xlim=c(0.5*min(stdq), 1.5*max(stdq)), ylim=c(1.5*min(acfq), 7*max(acfq)),
+     main="PACF Sum vs SD")
+abline(regmod, lwd=3, col="red")
+tvalue <- summary(regmod)$coefficients[2, "t value"]
+tvalue <- round(tvalue, 3)
+text(x=mean(stdq), y=6*max(acfq), 
+     lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
       @
   \end{columns}
 \end{block}
 
 \end{frame}
 
+
+%%%%%%%%%%%%%%%
+\subsection{Ljung-Box Statistics of Low and High Volatility Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A larger value of the \emph{Ljung-Box} statistic means that the autocorrelations are more statistically significant.
+      \vskip1ex
+      The lowest volatility quantile of stocks has slightly more significant negative autocorrelations than \emph{VTI} does.
+      <<echo=TRUE,eval=FALSE>>=
+# Compare the Ljung-Box statistics for lowest volatility stocks with VTI
+lbstatq <- rev(quantile(statm[, "lbstat"], confl))
+lbstatq[1]
+Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_lbtest_stocks.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Ljung-Box test statistic for volatility quantiles
+plot(stdq, lbstatq, xlab="volatility", ylab="Ljung-Box Stat", 
+     main="Ljung-Box Statistic For Stock Volatility Quantiles")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -2771,8 +2801,8 @@ agglog <- log(aggv)
 # Calculate the Hurst from regression slope using formula
 hurstexp <- cov(volog, agglog)/var(agglog)
 # Or using function lm()
-model <- lm(volog ~ agglog)
-coef(model)[2]
+regmod <- lm(volog ~ agglog)
+coef(regmod)[2]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2874,8 +2904,8 @@ rangelog <- log(rrange)
 agglog <- log(aggv)
 hurstexp <- cov(rangelog, agglog)/var(agglog)
 # Or using function lm()
-model <- lm(rangelog ~ agglog)
-coef(model)[2]
+regmod <- lm(rangelog ~ agglog)
+coef(regmod)[2]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3032,8 +3062,8 @@ dygraphs::dygraph(get(namev, pricev), main=namev)
 namev <- names(which.min(volv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
 # Calculate the regression of the Hurst exponents versus volatilities
-model <- lm(hurstv ~ volv)
-summary(model)
+regmod <- lm(hurstv ~ volv)
+summary(regmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3044,7 +3074,7 @@ plot(hurstv ~ volv, xlab="Volatility", ylab="Hurst",
      main="Hurst Exponents Versus Volatilities of Stocks")
 # Add regression line
 abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(volv), y=max(hurstv), 
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
@@ -3075,8 +3105,8 @@ volatos <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep["2010/"])))
 })  # end sapply
 # Calculate the regression of the out-of-sample versus in-sample volatility
-model <- lm(volatos ~ volatis)
-summary(model)
+regmod <- lm(volatos ~ volatis)
+summary(regmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3087,7 +3117,7 @@ plot(volatos ~ volatis, xlab="In-sample Volatility", ylab="Out-of-sample Volatil
      main="Out-of-Sample Versus In-Sample Volatility of Stocks")
 # Add regression line
 abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(volatis), y=max(volatos), 
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
@@ -3120,8 +3150,8 @@ hurstos <- sapply(pricev, function(closep) {
   HighFreq::calc_hurst(closep["2010/"], aggv=aggv)
 })  # end sapply
 # Calculate the regression of the out-of-sample versus in-sample Hurst exponents
-model <- lm(hurstos ~ hurstis)
-summary(model)
+regmod <- lm(hurstos ~ hurstis)
+summary(regmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3132,7 +3162,7 @@ plot(hurstos ~ hurstis, xlab="In-sample Hurst", ylab="Out-of-sample Hurst",
      main="Out-of-Sample Versus In-Sample Hurst Exponents of Stocks")
 # Add regression line
 abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(hurstis), y=max(hurstos), 
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
@@ -3167,8 +3197,8 @@ sum(is.null(volum))
 # Calculate the Hurst exponents of stocks
 hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
 # Calculate the regression of the Hurst exponents versus trading volumes
-model <- lm(hurstv ~ volum)
-summary(model)
+regmod <- lm(hurstv ~ volum)
+summary(regmod)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3179,7 +3209,7 @@ plot(hurstv ~ volum, xlab="Trading Volume", ylab="Hurst",
      main="Hurst Exponents Versus Trading Volumes of Stocks")
 # Add regression line
 abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=quantile(volum, 0.998), y=max(hurstv), 
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
@@ -3238,11 +3268,11 @@ plot(hurstv, xlab=NA, ylab=NA, xaxt="n",
 axis(side=1, at=(1:NROW(hurstv)), labels=names(hurstv))
 # Calculate the regression of the PCA Hurst exponents versus their order
 orderv <- 1:NROW(hurstv)
-model <- lm(hurstv ~ orderv)
-summary(model)
+regmod <- lm(hurstv ~ orderv)
+summary(regmod)
 # Add regression line
 abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(orderv), y=max(hurstv), 
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
@@ -3291,11 +3321,11 @@ plot(hurstv, xlab=NA, ylab=NA, xaxt="n",
 # Add X-axis with PCA labels
 axis(side=1, at=(1:NROW(hurstv)), labels=names(hurstv))
 # Calculate the regression of the PCA Hurst exponents versus their order
-model <- lm(hurstv ~ orderv)
-summary(model)
+regmod <- lm(hurstv ~ orderv)
+summary(regmod)
 # Add regression line
 abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(orderv), y=max(hurstv), 
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
