@@ -71,7 +71,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{March 17, 2025}
+\date{April 8, 2025}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -83,6 +83,845 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Serial Dependence of Returns}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function of Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{autocorrelation} of lag $k$ of a time series of returns $r_t$ is equal to:
+      \begin{displaymath}
+        \rho_k = \frac{\sum_{t=k+1}^n (r_t-\bar{r})(r_{t-k}-\bar{r})}{(n-k) \, \sigma^2}
+      \end{displaymath}
+      The \emph{autocorrelation function} (\emph{ACF}) is the vector of autocorrelation coefficients $\rho_k$.
+      \vskip1ex
+      The function \texttt{stats::acf()} calculates and plots the autocorrelation function of a time series.
+      \vskip1ex
+      The function \texttt{stats::acf()} has the drawback that it plots the lag zero autocorrelation (which is trivially equal to $1$).
+      <<echo=TRUE,eval=FALSE>>=
+# Open plot window under MS Windows
+x11(width=6, height=4)
+par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
+# Calculate VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
+# Plot autocorrelations of VTI returns using stats::acf()
+stats::acf(retp, lag=10, xlab="lag", main="")
+title(main="ACF of VTI Returns", line=-1)
+# Calculate two-tailed 95% confidence interval
+qnorm(0.975)/sqrt(NROW(retp))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_vti.png}\\
+      The \emph{VTI} time series of returns has small, but statistically significant negative autocorrelations.
+      \vskip1ex
+      The horizontal dashed lines are two-tailed confidence intervals of the autocorrelation estimator at \texttt{95\%} significance level: $\frac{\Phi^{-1}(0.975)}{\sqrt{n}}$.
+      \vskip1ex
+      But the visual inspection of the \emph{ACF} plot alone is not enough to test whether autocorrelations are statistically significant or not.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{acf()} has the drawback that it plots the lag zero autocorrelation (which is simply equal to $1$).
+      \vskip1ex
+      Inspection of the data returned by \texttt{acf()} shows how to omit the lag zero autocorrelation.
+      \vskip1ex
+      The function \texttt{acf()} returns the \emph{ACF} data invisibly, i.e. the return value can be assigned to a variable, but otherwise it isn't automatically printed to the console.
+      \vskip1ex
+      The function \texttt{rutils::plot\_acf()} from package \emph{rutils} is a wrapper for \texttt{acf()}, and it omits the lag zero autocorrelation.
+      <<echo=TRUE,eval=FALSE>>=
+# Get the ACF data returned invisibly
+acfl <- acf(retp, plot=FALSE)
+summary(acfl)
+# Print the ACF data
+print(acfl)
+dim(acfl$acf)
+dim(acfl$lag)
+head(acfl$acf)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+plot_acf <- function(xtsv, lagg=10, plotobj=TRUE,
+                     xlab="Lag", ylab="", main="", ...) {
+  # Calculate the ACF without a plot
+  acfl <- acf(x=xtsv, lag.max=lagg, plot=FALSE, ...)
+  # Remove first element of ACF data
+  acfl$acf <- array(data=acfl$acf[-1],
+    dim=c((dim(acfl$acf)[1]-1), 1, 1))
+  acfl$lag <- array(data=acfl$lag[-1],
+    dim=c((dim(acfl$lag)[1]-1), 1, 1))
+  # Plot ACF
+  if (plotobj) {
+    ci <- qnorm((1+0.95)/2)/sqrt(NROW(xtsv))
+    ylim <- c(min(-ci, range(acfl$acf[-1])),
+              max(ci, range(acfl$acf[-1])))
+    plot(acfl, xlab=xlab, ylab=ylab,
+         ylim=ylim, main="", ci=0)
+    title(main=main, line=0.5)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }  # end if
+  # Return the ACF data invisibly
+  invisible(acfl)
+}  # end plot_acf
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelations of Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{VTI} returns appear to have some small, yet significant negative autocorrelations at \texttt{lag=1}.
+      \vskip1ex
+      But the visual inspection of the \emph{ACF} plot alone is not enough to test whether autocorrelations are statistically significant or not.
+      <<echo=TRUE,eval=FALSE>>=
+# Autocorrelations of VTI returns
+rutils::plot_acf(retp, lag=10, main="ACF of VTI returns")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_vti_bis.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ljung-Box Test for Autocorrelations of Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Ljung-Box} test, tests if the autocorrelations of a time series are \emph{statistically significant}.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{Ljung-Box} test is that the autocorrelations are equal to zero.
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations.
+      \vskip1ex
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom.
+      \vskip1ex
+      The \emph{Ljung-Box} statistic is small for time series that have \emph{statistically insignificant} autocorrelations.
+      \vskip1ex
+      The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Ljung-Box test for VTI returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(retp, lag=10, type="Ljung")
+# Ljung-Box test for random returns
+Box.test(rnorm(NROW(retp)), lag=10, type="Ljung")
+library(Ecdat)  # Load Ecdat
+macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macrodata) <- c("unemprate", "3mTbill")
+macrodiff <- na.omit(diff(macrodata))
+# Changes in 3 month T-bill rate are autocorrelated
+Box.test(macrodiff[, "3mTbill"], lag=10, type="Ljung")
+# Changes in unemployment rate are autocorrelated
+Box.test(macrodiff[, "unemprate"], lag=10, type="Ljung")
+      @
+      The \emph{p}-value for \emph{VTI} returns is small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that \emph{VTI} returns do have some small autocorrelations.
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelations of Squared VTI Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Squared random returns are not autocorrelated.
+      \vskip1ex
+      But squared \emph{VTI} returns do have statistically significant autocorrelations.
+      \vskip1ex
+      The autocorrelations of squared asset returns are a very important feature.
+      <<echo=TRUE,eval=FALSE>>=
+# Open plot window under MS Windows
+x11(width=6, height=7)
+# Set two vertical plot panels
+par(mfrow=c(2,1))
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+# Plot ACF of squared random returns
+rutils::plot_acf(rnorm(NROW(retp))^2, lag=10, 
+ main="ACF of Squared Random Returns")
+# Plot ACF of squared VTI returns
+rutils::plot_acf(retp^2, lag=10, 
+ main="ACF of Squared VTI Returns")
+# Ljung-Box test for squared VTI returns
+Box.test(retp^2, lag=10, type="Ljung")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_vti_squared.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelations in Intervals of Low and High Volatility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stock returns have significant negative autocorrelations in time intervals with high volatility, but much less in time intervals with low volatility.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the weekly end points
+endd <- rutils::calc_endpoints(retp, interval="weeks")
+npts <- NROW(endd)
+# Calculate the monthly VTI volatilities and their median volatility
+stdev <- sapply(2:npts, function(endp) {
+  sd(retp[endd[endp-1]:endd[endp]])
+})  # end sapply
+medianv <- median(stdev)
+# Calculate the stock returns of low volatility intervals
+retlow <- lapply(2:npts, function(endp) {
+  if (stdev[endp-1] <= medianv)
+    retp[endd[endp-1]:endd[endp]]
+})  # end lapply
+retlow <- rutils::do_call(c, retlow)
+# Calculate the stock returns of high volatility intervals
+rethigh <- lapply(2:npts, function(endp) {
+  if (stdev[endp-1] > medianv)
+    retp[endd[endp-1]:endd[endp]]
+})  # end lapply
+rethigh <- rutils::do_call(c, rethigh)
+# Plot ACF of low volatility returns
+rutils::plot_acf(retlow, lag=10, 
+ main="ACF of Low Volatility Returns")
+Box.test(retlow, lag=10, type="Ljung")
+# Plot ACF of high volatility returns
+rutils::plot_acf(rethigh, lag=10, 
+ main="ACF of High Volatility Returns")
+Box.test(rethigh, lag=10, type="Ljung")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_hivol.png}
+      <<echo=TRUE,eval=FALSE>>=
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelations of Low and High Volatility Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Low volatility stocks have more significant negative autocorrelations than high volatility stocks.
+      \vskip1ex
+      The lowest volatility quantile of stocks has negative autocorrelations similar to \emph{VTI}.
+      <<echo=TRUE,eval=FALSE>>=
+# Load daily S&P500 stock returns
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returnstop.RData")
+# Calculate the stock volatilities and the sum of the ACF
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1
+statm <- mclapply(retstock, function(retp) {
+  retp <- na.omit(retp)
+  # Calculate the sum of the ACF
+  acfsum <- sum(pacf(retp, lag=10, plot=FALSE)$acf)
+  # Calculate the Ljung-Box statistic
+  lbstat <- unname(Box.test(retp, lag=10, type="Ljung")$statistic)
+  c(stdev=sd(retp), acfsum=acfsum, lbstat=lbstat)
+}, mc.cores=ncores)  # end mclapply
+statm <- do.call(rbind, statm)
+statm <- as.data.frame(statm)
+# Calculate the ACF sum for stock volatility quantiles
+confl <- seq(0.1, 0.9, 0.1)
+stdq <- quantile(statm[, "stdev"], confl)
+acfq <- quantile(statm[, "acfsum"], confl)
+plot(stdq, acfq, xlab="volatility", ylab="PACF Sum",
+     main="PACF Sum vs Volatility")
+# Compare the ACF sum for stock volatility quantile with VTI
+acfq[1]
+sum(pacf(na.omit(rutils::etfenv$returns$VTI), lag=10, plot=FALSE)$acf)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_scatter_stocks.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Scatter plot of the sum of the ACF vs the standard deviation
+regmod <- lm(acfsum ~ stdev, data=statm)
+plot(acfsum ~ stdev, data=statm, xlab="SD", ylab="PACF Sum", 
+     xlim=c(0.5*min(stdq), 1.5*max(stdq)), ylim=c(1.5*min(acfq), 7*max(acfq)),
+     main="PACF Sum vs SD")
+abline(regmod, lwd=3, col="red")
+tvalue <- summary(regmod)$coefficients[2, "t value"]
+tvalue <- round(tvalue, 3)
+text(x=mean(stdq), y=6*max(acfq), 
+     lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ljung-Box Statistics of Low and High Volatility Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A larger value of the \emph{Ljung-Box} statistic means that the autocorrelations are more statistically significant.
+      \vskip1ex
+      The lowest volatility quantile of stocks has slightly more significant negative autocorrelations than \emph{VTI} does.
+      <<echo=TRUE,eval=FALSE>>=
+# Compare the Ljung-Box statistics for lowest volatility stocks with VTI
+lbstatq <- rev(quantile(statm[, "lbstat"], confl))
+lbstatq[1]
+Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_lbtest_stocks.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Ljung-Box test statistic for volatility quantiles
+plot(stdq, lbstatq, xlab="volatility", ylab="Ljung-Box Stat", 
+     main="Ljung-Box Statistic For Stock Volatility Quantiles")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelations of High Frequency Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{HighFreq} contains three time series of intraday 1-minute \emph{OHLC} price bars, called \texttt{SPY}, \texttt{TLT}, and \texttt{VXX}, for the \emph{SPY}, \emph{TLT}, and \emph{VXX} ETFs.
+      \vskip1ex
+      Minutely \emph{SPY} returns have statistically significant negative autocorrelations.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate SPY log prices and percentage returns
+ohlc <- HighFreq::SPY
+ohlc[, 1:4] <- log(ohlc[, 1:4])
+nrows <- NROW(ohlc)
+closep <- quantmod::Cl(ohlc)
+retp <- rutils::diffit(closep)
+colnames(retp) <- "SPY"
+# Open plot window under MS Windows
+x11(width=6, height=4)
+# Open plot window on Mac
+dev.new(width=6, height=4, noRStudioGD=TRUE)
+# Plot the autocorrelations of minutely SPY returns
+acfl <- rutils::plot_acf(as.numeric(retp), lag=10,
+     xlab="lag", ylab="Autocorrelation", main="")
+title("Autocorrelations of Minutely SPY Returns", line=1)
+# Calculate the sum of autocorrelations
+sum(acfl$acf)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_hf.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelations as Function of Aggregation Interval}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For \emph{minutely SPY} returns, the \emph{Ljung-Box} statistic is large and its \emph{p}-value is very small, so we can conclude that \emph{minutely SPY} returns have statistically significant autocorrelations.
+      \vskip1ex
+      The level of the autocorrelations depends on the sampling frequency, with higher frequency returns having more significant negative autocorrelations.
+      \vskip1ex
+      \emph{SPY} returns aggregated to longer time intervals are less autocorrelated.
+      \vskip1ex
+      As the returns are aggregated to a lower periodicity, they become less autocorrelated, with daily returns having almost insignificant autocorrelations.
+      \vskip1ex
+      The function \texttt{rutils::to\_period()} aggregates an \emph{OHLC} time series to a lower periodicity.  
+      <<echo=TRUE,eval=FALSE>>=
+# Ljung-Box test for minutely SPY returns
+Box.test(retp, lag=10, type="Ljung")
+# Calculate hourly SPY percentage returns
+closeh <- quantmod::Cl(xts::to.period(x=ohlc, period="hours"))
+retsh <- rutils::diffit(closeh)
+# Ljung-Box test for hourly SPY returns
+Box.test(retsh, lag=10, type="Ljung")
+# Calculate daily SPY percentage returns
+closed <- quantmod::Cl(xts::to.period(x=ohlc, period="days"))
+retd <- rutils::diffit(closed)
+# Ljung-Box test for daily SPY returns
+Box.test(retd, lag=10, type="Ljung")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_hf_agg.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Ljung-Box test statistics for aggregated SPY returns
+lbstat <- sapply(list(daily=retd, hourly=retsh, minutely=retp),
+  function(rets) {
+    Box.test(rets, lag=10, type="Ljung")$statistic
+})  # end sapply
+# Plot Ljung-Box test statistic for different aggregation intervals
+plot(lbstat, lwd=6, col="blue", xaxt="n", 
+     xlab="Aggregation interval", ylab="Ljung-Box Stat", 
+     main="Ljung-Box Statistic For Different Aggregations")
+# Add X-axis with labels
+axis(side=1, at=(1:3), labels=c("daily", "hourly", "minutely"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Volatility as a Function of the Aggregation Interval}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The estimated volatility $\sigma$ scales as the \emph{power} of the length of the aggregation time interval $\Delta t$:
+      \begin{displaymath}
+        \frac{\sigma_t}{\sigma} = {\Delta t} ^ H
+      \end{displaymath}
+      Where \texttt{H} is the \emph{Hurst} exponent, $\sigma$ is the return volatility, and $\sigma_t$ is the volatility of the aggregated returns.
+      \vskip1ex
+      If returns follow \emph{Brownian motion} then the volatility scales as the \emph{square root} of the length of the aggregation interval (\texttt{H = 0.5}).
+      \vskip1ex
+      If returns are \emph{mean reverting} then the volatility scales slower than the \emph{square root} (\texttt{H < 0.5}).
+      \vskip1ex
+      If returns are \emph{trending} then the volatility scales faster than the \emph{square root} (\texttt{H > 0.5}).
+      \vskip1ex
+      The length of the daily time interval is often approximated to be equal to \texttt{390 = 6.5*60} minutes, since the exchange trading session is equal to \texttt{6.5} hours, and daily volatility is dominated by the trading session.
+      \vskip1ex
+      The daily volatility is exaggerated by price jumps over the weekends and holidays, so it should be scaled.
+      \vskip1ex
+      The minutely volatility is exaggerated by overnight price jumps.
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+# Daily SPY volatility from daily returns
+sd(retd)
+# Minutely SPY volatility scaled to daily interval
+sqrt(6.5*60)*sd(retp)
+# Minutely SPY returns without overnight price jumps (unit per second)
+retp <- retp/rutils::diffit(xts::.index(retp))
+retp[1] <- 0
+# Daily SPY volatility from minutely returns
+sqrt(6.5*60)*60*sd(retp)
+# Daily SPY returns without weekend and holiday price jumps (unit per second)
+retd <- retd/rutils::diffit(xts::.index(retd))
+retd[1] <- 0
+# Daily SPY volatility without weekend and holiday price jumps
+24*60*60*sd(retd)
+      @
+      The package \emph{HighFreq} contains three time series of intraday 1-minute \emph{OHLC} price bars, called \texttt{SPY}, \texttt{TLT}, and \texttt{VXX}, for the \emph{SPY}, \emph{TLT}, and \emph{VXX} ETFs.
+      \vskip1ex
+      The function \texttt{rutils::to\_period()} aggregates an \emph{OHLC} time series to a lower periodicity.  
+      \vskip1ex
+      The function \texttt{zoo::index()} extracts the time index of a time series.
+      \vskip1ex
+      The function \texttt{xts::.index()} extracts the time index expressed in the number of seconds.
+      \vspace{-1em}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hurst Exponent From Volatility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For a single aggregation interval, the \emph{Hurst exponent} \texttt{H} is equal to:
+      \begin{displaymath}
+        H = \frac{\log{\sigma_t} - \log{\sigma}}{\log{\Delta t}}
+      \end{displaymath}
+      For a vector of aggregation intervals $\Delta t$, the \emph{Hurst exponent} \texttt{H} is equal to the regression slope between the logarithms of the aggregated volatilities $\sigma_t$ versus the logarithms of the aggregation intervals $\Delta t$:
+      \begin{displaymath}
+        H = \frac{\operatorname{cov}(\log{\sigma_t}, \log{\Delta t})}{\operatorname{var}(\log{\Delta t})}
+      \end{displaymath}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate volatilities for vector of aggregation intervals
+aggv <- seq.int(from=3, to=35, length.out=9)^2
+volv <- sapply(aggv, function(agg) {
+  naggs <- nrows %/% agg
+  endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
+  # endd <- rutils::calc_endpoints(closep, interval=agg)
+  sd(rutils::diffit(closep[endd]))
+})  # end sapply
+# Calculate the Hurst from single data point
+volog <- log(volv)
+agglog <- log(aggv)
+(last(volog) - first(volog))/(last(agglog) - first(agglog))
+# Calculate the Hurst from regression slope using formula
+hurstexp <- cov(volog, agglog)/var(agglog)
+# Or using function lm()
+regmod <- lm(volog ~ agglog)
+coef(regmod)[2]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hurst_vol.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the volatilities
+x11(width=6, height=4)
+par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
+plot(volog ~ agglog, lwd=6, col="red",
+     xlab="Aggregation intervals (log)", ylab="Volatility (log)",
+     main="Hurst Exponent for SPY From Volatilities")
+abline(model, lwd=3, col="blue")
+text(agglog[2], volog[NROW(volog)-1], 
+     paste0("Hurst = ", round(hurstexp, 4)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rescaled Range Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The range $R_{\Delta t}$ of prices $p_t$ over an interval $\Delta t$, is the difference between the highest attained price minus the lowest:
+      \begin{displaymath}
+        R_t = \max_{\Delta t}{[p_{\tau}]} - \min_{\Delta t}{[p_{\tau}]}
+      \end{displaymath}
+      The \emph{Rescaled Range} $RS_{\Delta t}$ is equal to the range $R_{\Delta t}$ divided by the standard deviation of the price differences $\sigma_t$: $RS_{\Delta t} = R_t / \sigma_t$.
+      \vskip1ex
+      The \emph{Rescaled Range} $RS_{\Delta t}$ for a time series of prices is calculated by:
+      \begin{itemize}
+        \item Dividing the time series into non-overlapping intervals of length $\Delta t$,
+        \item Calculating the \emph{rescaled range} $RS_{\Delta t}$ for each interval,
+        \item Calculating the average of the \emph{rescaled ranges} $RS_{\Delta t}$ for all the intervals.
+      \end{itemize}
+      \emph{Rescaled Range Analysis} (R/S) consists of calculating the average \emph{rescaled range} $RS_{\Delta t}$ as a function of the length of the aggregation interval $\Delta t$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate cumulative SPY returns
+closep <- cumsum(retp)
+nrows <- NROW(closep)
+# Calculate the rescaled range
+agg <- 500
+naggs <- nrows %/% agg
+endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
+# Or
+# endd <- rutils::calc_endpoints(closep, interval=agg)
+rrange <- sapply(2:NROW(endd), function(np) {
+  indeks <- (endd[np-1]+1):endd[np]
+  diff(range(closep[indeks]))/sd(retp[indeks])
+})  # end sapply
+mean(rrange)
+# Calculate the Hurst from single data point
+log(mean(rrange))/log(agg)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hurst Exponent From Rescaled Range}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The average \emph{Rescaled Range} $RS_{\Delta t}$ is proportional to the length of the aggregation interval $\Delta t$ raised to the power of the \emph{Hurst exponent} \texttt{H}:
+      \begin{displaymath}
+        RS_{\Delta t} \propto {\Delta t}^H
+      \end{displaymath}
+      So the \emph{Hurst exponent} \texttt{H} is equal to:
+      \begin{displaymath}
+        H = \frac{\log{RS_{\Delta t}}}{\log{\Delta t}}
+      \end{displaymath}
+      The Hurst exponents calculated from the \emph{rescaled range} and the \emph{volatility} are similar but not exactly equal because they use different methods to estimate price dispersion.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the rescaled range for vector of aggregation intervals
+rrange <- sapply(aggv, function(agg) {
+# Calculate the end points
+  naggs <- nrows %/% agg
+  endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
+# Calculate the rescaled ranges
+  rrange <- sapply(2:NROW(endd), function(np) {
+    indeks <- (endd[np-1]+1):endd[np]
+    diff(range(closep[indeks]))/sd(retp[indeks])
+  })  # end sapply
+  mean(na.omit(rrange))
+})  # end sapply
+# Calculate the Hurst as regression slope using formula
+rangelog <- log(rrange)
+agglog <- log(aggv)
+hurstexp <- cov(rangelog, agglog)/var(agglog)
+# Or using function lm()
+regmod <- lm(rangelog ~ agglog)
+coef(regmod)[2]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hurst_reg.png}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
+plot(rangelog ~ agglog, lwd=6, col="red",
+     xlab="aggregation intervals (log)",
+     ylab="rescaled range (log)",
+     main="Hurst Exponent for SPY From Rescaled Range")
+abline(model, lwd=3, col="blue")
+text(agglog[2], rangelog[NROW(rangelog)-1], 
+     paste0("Hurst = ", round(hurstexp, 4)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hurst Exponents of Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hurst exponents of stocks are typically slightly less than \texttt{0.5}, because their idiosyncratic risk components are mean-reverting.
+      \vskip1ex
+      The function \texttt{HighFreq::calc\_hurst()} calculates the Hurst exponent in \texttt{C++} using volatility ratios.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 constituent OHLC stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+class(sp500env$AAPL)
+head(sp500env$AAPL)
+# Calculate log stock prices after the year 2000
+pricev <- eapply(sp500env, function(ohlc) {
+  closep <- log(quantmod::Cl(ohlc)["2000/"])
+# Ignore short lived and penny stocks (less than $1)
+  if ((NROW(closep) > 4000) & (last(closep) > 0))
+    return(closep)
+})  # end eapply
+# Calculate the number of NULL prices
+sum(sapply(pricev, is.null))
+# Calculate the names of the stocks (remove NULL pricev)
+namev <- sapply(pricev, is.null)
+namev <- namev[!namev]
+namev <- names(namev)
+pricev <- pricev[namev]
+# Calculate the Hurst exponents of stocks
+aggv <- trunc(seq.int(from=3, to=10, length.out=5)^2)
+hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
+# Dygraph of stock with largest Hurst exponent
+namev <- names(which.max(hurstv))
+dygraphs::dygraph(get(namev, pricev), main=namev)
+# Dygraph of stock with smallest Hurst exponent
+namev <- names(which.min(hurstv))
+dygraphs::dygraph(get(namev, pricev), main=namev)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hurst_stocks.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot a histogram of the Hurst exponents of stocks
+hist(hurstv, breaks=20, xlab="Hurst", ylab="Count", 
+     main="Hurst Exponents of Stocks")
+# Add vertical line for H = 0.5
+abline(v=0.5, lwd=3, col='red')
+text(x=0.5, y=50, lab="H = 0.5", pos=4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stock Volatility and Hurst Exponents}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      There is a strong relationship between stock volatilities and Hurst exponents.
+      \vskip1ex
+      More volatile stocks tend to have larger Hurst exponents, closer to \texttt{0.5}. 
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the volatility of stocks
+volv <- sapply(pricev, function(closep) {
+    sqrt(HighFreq::calc_var(HighFreq::diffit(closep)))
+})  # end sapply
+# Dygraph of stock with highest volatility
+namev <- names(which.max(volv))
+dygraphs::dygraph(get(namev, pricev), main=namev)
+# Dygraph of stock with lowest volatility
+namev <- names(which.min(volv))
+dygraphs::dygraph(get(namev, pricev), main=namev)
+# Calculate the regression of the Hurst exponents versus volatilities
+regmod <- lm(hurstv ~ volv)
+summary(regmod)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hurst_stocks_volatility.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot scatterplot of the Hurst exponents versus volatilities
+plot(hurstv ~ volv, xlab="Volatility", ylab="Hurst", 
+     main="Hurst Exponents Versus Volatilities of Stocks")
+# Add regression line
+abline(model, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
+tvalue <- round(tvalue, 3)
+text(x=mean(volv), y=max(hurstv), 
+     lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-Sample Volatility of Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      There is a strong relationship between \emph{out-of-sample} and \emph{in-sample} stock volatility.
+      \vskip1ex
+      Highly volatile stocks \emph{in-sample} also tend to have high volatility \emph{out-of-sample}. 
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the in-sample volatility of stocks
+volatis <- sapply(pricev, function(closep) {
+    sqrt(HighFreq::calc_var(HighFreq::diffit(closep["/2010"])))
+})  # end sapply
+# Calculate the out-of-sample volatility of stocks
+volatos <- sapply(pricev, function(closep) {
+    sqrt(HighFreq::calc_var(HighFreq::diffit(closep["2010/"])))
+})  # end sapply
+# Calculate the regression of the out-of-sample versus in-sample volatility
+regmod <- lm(volatos ~ volatis)
+summary(regmod)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/volatility_stocks_outofsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot scatterplot of the out-of-sample versus in-sample volatility
+plot(volatos ~ volatis, xlab="In-sample Volatility", ylab="Out-of-sample Volatility", 
+     main="Out-of-Sample Versus In-Sample Volatility of Stocks")
+# Add regression line
+abline(model, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
+tvalue <- round(tvalue, 3)
+text(x=mean(volatis), y=max(volatos), 
+     lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-Sample Hurst Exponents of Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{out-of-sample} Hurst exponents of stocks have a significant positive correlation to the \emph{in-sample} Hurst exponents.
+      \vskip1ex
+      That means that stocks with larger \emph{in-sample} Hurst exponents tend to also have larger \emph{out-of-sample} Hurst exponents (but not always).
+      \vskip1ex
+      This is because stock volatility persists \emph{out-of-sample}, and Hurst exponents are larger for higher volatility stocks. 
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the in-sample Hurst exponents of stocks
+hurstis <- sapply(pricev, function(closep) {
+  HighFreq::calc_hurst(closep["/2010"], aggv=aggv)
+})  # end sapply
+# Calculate the out-of-sample Hurst exponents of stocks
+hurstos <- sapply(pricev, function(closep) {
+  HighFreq::calc_hurst(closep["2010/"], aggv=aggv)
+})  # end sapply
+# Calculate the regression of the out-of-sample versus in-sample Hurst exponents
+regmod <- lm(hurstos ~ hurstis)
+summary(regmod)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hurst_stocks_outofsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot scatterplot of the out-of-sample versus in-sample Hurst exponents
+plot(hurstos ~ hurstis, xlab="In-sample Hurst", ylab="Out-of-sample Hurst", 
+     main="Out-of-Sample Versus In-Sample Hurst Exponents of Stocks")
+# Add regression line
+abline(model, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
+tvalue <- round(tvalue, 3)
+text(x=mean(hurstis), y=max(hurstos), 
+     lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -138,42 +977,70 @@ bidask/mean(pricesell)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Autocorrelations of Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Daily stock returns often exhibit negative autocorrelations at one-day lags.
+      \vskip1ex
+      The \emph{VTI} returns appear to have some small, yet significant negative autocorrelations at \texttt{lag=1}, and some positive autocorrelations at larger lags.
+      \vskip1ex
+      The \emph{autocorrelation} of lag $k$ of a time series of returns $r_t$ is equal to:
+      \begin{displaymath}
+        \rho_k = \frac{\sum_{t=k+1}^n (r_t-\bar{r})(r_{t-k}-\bar{r})}{(n-k) \, \sigma^2}
+      \end{displaymath}
+      The function \texttt{rutils::plot\_acf()} calculates and plots the autocorrelations of a time series.
+      \vskip1ex
+      But the visual inspection of the \emph{ACF} plot alone is not enough to test whether autocorrelations are statistically significant or not.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the daily VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
+# Calculate the autocorrelations of daily VTI returns
+rutils::plot_acf(retp, lag=10, main="ACF of VTI returns")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_vti_bis.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Daily Mean Reverting Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The lag $k$ \emph{autocorrelation} of a time series of returns $r_t$ is equal to:
-      \begin{displaymath}
-        \rho_k = \frac{\sum_{t=k+1}^n (r_t-\bar{r})(r_{t-k}-\bar{r})}{(n-k) \, \sigma^2}
-      \end{displaymath}
-      The function \texttt{rutils::plot\_acf()} calculates and plots the autocorrelations of a time series.
-      \vskip1ex
-      Daily stock returns often exhibit some negative autocorrelations.
-      \vskip1ex
       The daily mean reverting strategy buys or sells short \texttt{\$1} of stock at the end of each day (depending on the sign of the previous daily return), and holds the position until the next day.
       \vskip1ex
       If the previous daily return was positive, it sells short \texttt{\$1} of stock.
       If the previous daily return was negative, it buys \texttt{\$1} of stock.
       \vskip1ex
-      Combining the mean reverting strategy with the stock produces the best risk-adjusted returns.
+      The mean reverting strategy has lower returns than \emph{VTI}, but it has a very low correlation to \emph{VTI}, so it has a positive \emph{alpha}.
+      \vskip1ex
+      Thanks to its low correlation to \emph{VTI}, the mean reverting strategy provides diversification of risk, and combined with \emph{VTI}, a higher \emph{Sharpe} ratio than \emph{VTI} alone (it has a positive marginal \emph{alpha}).
+      \vskip1ex
+      Strategies which have low or negative correlations to stocks, can contribute a significant marginal \emph{alpha}, even if they have low returns.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the VTI daily percentage returns
-retp <- na.omit(rutils::etfenv$returns$VTI)
-# Calculate the autocorrelations of VTI daily returns
-rutils::plot_acf(retp)
-# Simulate mean reverting strategy
+# Simulate the mean reverting strategy
 posv <- -rutils::lagit(sign(retp), lagg=1)
 pnls <- retp*posv
 # Subtract transaction costs from the pnls
 bidask <- 0.0001 # The bid-ask spread is equal to 1 basis point
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
+# Calculate the strategy beta and alpha
+betac <- cov(pnls, retp)/var(retp)
+alphac <- mean(pnls) - betac*mean(retp)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_vti.png}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls, (retp+pnls)/2)
@@ -186,6 +1053,7 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="VTI Daily Mean Reverting Strategy") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -206,12 +1074,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The daily mean reverting strategy with a holding period performs better than the simple daily strategy because of risk diversification.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate mean reverting strategy with two day holding period
-posv <- -rutils::roll_sum(sign(retp), look_back=2)/2
+posv <- -rutils::roll_sum(sign(retp), lookb=2)/2
 pnls <- retp*rutils::lagit(posv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_hold2day.png}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_hold2day.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
@@ -247,12 +1115,12 @@ load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retp <- na.omit(retstock$MSFT)
 rutils::plot_acf(retp)
 # Simulate mean reverting strategy with two day holding period
-posv <- -rutils::roll_sum(sign(retp), look_back=2)/2
+posv <- -rutils::roll_sum(sign(retp), lookb=2)/2
 pnls <- retp*rutils::lagit(posv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_msft.png}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_msft.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
@@ -288,7 +1156,7 @@ library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
 pnll <- mclapply(retstock, function(retp) {
   retp <- na.omit(retp)
-  posv <- -rutils::roll_sum(sign(retp), look_back=2)/2
+  posv <- -rutils::roll_sum(sign(retp), lookb=2)/2
   retp*rutils::lagit(posv)
 }, mc.cores=ncores)  # end mclapply
 pnls <- do.call(cbind, pnll)
@@ -301,7 +1169,7 @@ indeks <- indeks[-1]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_allstocks.png}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_allstocks.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(indeks, pnls)
@@ -348,7 +1216,7 @@ pnlhivol <- rowMeans(pnlhivol, na.rm=TRUE)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_simple_lowhigh.png}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_lowhigh.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(pnlovol, pnlhivol)
@@ -430,15 +1298,21 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       \vskip1ex
       Scaling the returns by their trailing volatilities reduces the profits in periods of high volatility, but doesn't improve profits in periods of low volatility.
       \vskip1ex
-      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
+      The function \texttt{HighFreq::run\_var()} calculates the trailing mean and variance of the returns $r_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the returns minus their trailing means $(r_t - \bar{r}_t)^2$, using the decay factor $\lambda$:
+      \begin{flalign*}
+        & \bar{r}_t = \lambda \bar{r}_{t-1} + (1 - \lambda) r_t \\
+        & \sigma^2_t = \lambda^2 \sigma^2_{t-1} + (1 - \lambda^2) (r_t - \bar{r}_t)^2
+      \end{flalign*}
+      Where $\bar{r}_t$ and $\sigma^2_t$ are the trailing mean and variance at time $t$.
+      \vskip1ex
+      The decay factor $\lambda$ determines how quickly the mean and variance estimates are updated, with smaller values of $\lambda$ producing faster updating, giving more weight to recent prices, and vice versa.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the trailing volatility
+# Calculate the EMA returns and volatilities
 volv <- HighFreq::run_var(retp, lambda=0.5)
-volv <- sqrt(volv)
+retma <- volv[, 1]
+volv <- sqrt(volv[, 2])
 # Scale the returns by their trailing volatility
 retsc <- ifelse(volv > 0, retp/volv, 0)
-# Calculate the EMA returns
-retma <- HighFreq::run_mean(retsc, lambda=0.1)
 # Calculate the positions and PnLs
 posv <- -rutils::lagit(retma, lagg=1)
 pnls <- retp*posv
@@ -587,9 +1461,9 @@ varv <- sum(resids^2)/(nrows-NROW(coeff))
 pred2 <- crossprod(predm)
 # Calculate the covariance matrix of the AR coefficients
 covmat <- varv*MASS::ginv(pred2)
-coeffsd <- sqrt(diag(covmat))
+coefsd <- sqrt(diag(covmat))
 # Calculate the t-values of the AR coefficients
-coefft <- drop(coeff/coeffsd)
+coefft <- drop(coeff/coefsd)
 coeffn <- paste0("phi", 0:(NROW(coefft)-1))
 # Plot the t-values of the AR coefficients
 barplot(coefft ~ coeffn, xlab="", ylab="t-value", col="grey", 
@@ -615,7 +1489,7 @@ barplot(coefft ~ coeffn, xlab="", ylab="t-value", col="grey",
       The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the trailing volatility of the residuals
-residv <- sqrt(HighFreq::run_var(resids, lambda=0.9))
+residv <- sqrt(HighFreq::run_var(resids, lambda=0.9)[, 2])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -658,9 +1532,9 @@ dygraphs::dygraph(datav[endd], main="Volatility of Residuals") %>%
       The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
       <<echo=TRUE,eval=FALSE>>=
 # Scale the forecasts by their volatility
-fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.2))
+fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.2)[, 2])
 posv <- ifelse(fcastv > 0, fcasts/fcastv, 0)
-# Simulate autoregressive strategy in-sample
+# Calculate the autoregressive strategy PnLs
 pnls <- retp*posv
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
@@ -676,7 +1550,7 @@ wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
+# Plot dygraph of the autoregressive strategy
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Autoregressive Strategy In-Sample") %>%
@@ -755,7 +1629,7 @@ wealthv <- cbind(retp, pnlh)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
+# Plot dygraph of the autoregressive strategy
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Autoregressive Strategy High Volatility Coefficients") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -769,7 +1643,7 @@ wealthv <- cbind(retp, pnll)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
+# Plot dygraph of the autoregressive strategy
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Autoregressive Strategy Low Volatility Coefficients") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -854,26 +1728,28 @@ predm <- cbind(rep(1, nrows), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
 predinv <- MASS::ginv(predm)
 coeff <- predinv %*% retw
-# Calculate the in-sample forecasts of VTI
+# Calculate the scaled in-sample forecasts of VTI
 fcasts <- predm %*% coeff
+fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
+fcastv[1:100] <- 1
+fcasts <- fcasts/fcastv
 # Winsorize the forecasts
 # fcasts <- winsorfun(fcasts/mad(fcasts), lambda=1.5)
-# Simulate autoregressive strategy in-sample
-pnls <- retp*fcasts
-# Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_winsor.png}
-      % \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_perf_capped.png}
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the autoregressive strategy PnLs
+pnls <- retp*fcasts
+# Scale the PnL volatility to that of VTI
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
+# Plot dygraph of the autoregressive strategy
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Winsorized Autoregressive Strategy In-Sample") %>%
@@ -900,7 +1776,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
       The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
       <<echo=TRUE,eval=FALSE>>=
 # Scale the returns by their trailing volatility
-varv <- HighFreq::run_var(retp, lambda=0.99)
+varv <- HighFreq::run_var(retp, lambda=0.99)[, 2]
 retsc <- ifelse(varv > 0, retp/sqrt(varv), 0)
 # Calculate the AR coefficients
 predm <- lapply(1:orderp, rutils::lagit, input=retsc)
@@ -909,24 +1785,27 @@ predm <- cbind(rep(1, nrows), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
 predinv <- MASS::ginv(predm)
 coeff <- predinv %*% retsc
-# Calculate the in-sample forecasts of VTI
+# Calculate the scaled in-sample forecasts of VTI
 fcasts <- predm %*% coeff
-# Simulate autoregressive strategy in-sample
-pnls <- retp*fcasts
-# Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
+fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
+fcastv[1:100] <- 1
+fcasts <- fcasts/fcastv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_volat_scaled.png}
       % \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_perf_capped.png}
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the autoregressive strategy PnLs
+pnls <- retp*fcasts
+# Scale the PnL volatility to that of VTI
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
+# Plot dygraph of the autoregressive strategy
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Autoregressive Strategy With Returns Scaled By Volatility") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -945,9 +1824,9 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of the autoregressive strategy can be improved by fitting its coefficients using returns divided by the trading volumes.
+      The performance of the autoregressive strategy can be improved by fitting its coefficients using returns divided by the trading volumes (returns in \emph{trading time}).
       \vskip1ex
-      The performance of the autoregressive strategy can be improved by fitting its coefficients using returns in \emph{trading time}, to account for time-dependent volatility.
+      Dividing the returns by the trading volumes reduces the effect of time-dependent volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns and trading volumes
 ohlc <- rutils::etfenv$VTI
@@ -956,12 +1835,10 @@ nrows <- NROW(ohlc)
 closep <- quantmod::Cl(ohlc)
 retp <- rutils::diffit(log(closep))
 volumv <- quantmod::Vo(ohlc)
-# Calculate trailing average volume
-volumr <- HighFreq::run_mean(volumv, lambda=0.25)
 # Scale the returns using volume clock to trading time
-retsc <- ifelse(volumv > 0, volumr*retp/volumv, 0)
+volumr <- HighFreq::run_mean(volumv, lambda=0.8)
+respv <- retp*volumr/volumv
 # Calculate the AR coefficients
-respv <- retsc
 orderp <- 5
 predm <- lapply(1:orderp, rutils::lagit, input=respv)
 predm <- rutils::do_call(cbind, predm)
@@ -969,25 +1846,28 @@ predm <- cbind(rep(1, nrows), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
 predinv <- MASS::ginv(predm)
 coeff <- predinv %*% respv
-# Calculate the in-sample forecasts of VTI
+# Calculate the scaled in-sample forecasts of VTI
 fcasts <- predm %*% coeff
-# Simulate autoregressive strategy in-sample
-pnls <- retp*fcasts
-# Scale the PnL volatility to that of VTI
-pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
+fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
+fcastv[1:100] <- 1
+fcasts <- fcasts/fcastv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_tradingtime.png}
-      % \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_perf_capped.png}
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the autoregressive strategy PnLs
+pnls <- retp*fcasts
+# Scale the PnL volatility to that of VTI
+pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of autoregressive strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+sqrt(252)*sapply(wealthv["2010/"], function(x) 
+    c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of the autoregressive strategy
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Autoregressive Strategy With Returns Scaled By Volume") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -1063,7 +1943,7 @@ dygraphs::dygraph(datav,
       The \emph{in-sample} forecasts are calculated by multiplying the predictor matrix by the fitted AR coefficients.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the forecasts as function of the AR order
+# Calculate the forecasts as a function of the AR order
 fcasts <- lapply(2:NCOL(predm), function(ordern) {
   # Calculate the fitted AR coefficients
   predinv <- MASS::ginv(predm[, 1:ordern])
@@ -1113,7 +1993,7 @@ plot(x=2:NCOL(predm), y=mse[, 1],
 nrows <- NROW(retp)
 insample <- 1:(nrows %/% 2)
 outsample <- (nrows %/% 2 + 1):nrows
-# Calculate the forecasts as function of the AR order
+# Calculate the forecasts as a function of the AR order
 fcasts <- lapply(2:NCOL(predm), function(ordern) {
   # Calculate the fitted AR coefficients
   predinv <- MASS::ginv(predm[insample, 1:ordern])
@@ -1241,9 +2121,9 @@ varv <- sum(resids^2)/(NROW(preds)-NROW(coeff))
 pred2 <- crossprod(preds)
 # Calculate the covariance matrix of the AR coefficients
 covmat <- varv*MASS::ginv(pred2)
-coeffsd <- sqrt(diag(covmat))
+coefsd <- sqrt(diag(covmat))
 # Calculate the t-values of the AR coefficients
-coefft <- drop(coeff/coeffsd)
+coefft <- drop(coeff/coefsd)
 # Calculate the out-of-sample forecast
 predn <- predm[tday, ]
 fcast <- drop(predn %*% coeff)
@@ -1280,8 +2160,8 @@ fcast/sqrt(varf)
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Perform rolling forecasting
-lookb <- 100
-fcasts <- sapply(1:nrows, function(tday) {
+lookb <- 500
+fcasts <- parallel::mclapply(1:nrows, function(tday) {
   if (tday > lookb) {
     # Define the rolling look-back range
     startp <- max(1, tday-lookb)
@@ -1302,8 +2182,8 @@ fcasts <- sapply(1:nrows, function(tday) {
     # Calculate the covariance matrix of the AR coefficients
     pred2 <- crossprod(preds)
     covmat <- varv*MASS::ginv(pred2)
-    coeffsd <- sqrt(diag(covmat))
-    coefft <- drop(coeff/coeffsd) # t-values of the AR coefficients
+    coefsd <- sqrt(diag(covmat))
+    coefft <- drop(coeff/coefsd) # t-values of the AR coefficients
     # Calculate the out-of-sample forecast
     predn <- predm[tday, ]
     fcast <- drop(predn %*% coeff)
@@ -1350,7 +2230,7 @@ c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_rolling.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of autoregressive strategy
+# Plot dygraph of the autoregressive strategy
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Rolling Autoregressive Strategy") %>%
@@ -1658,6 +2538,95 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelations of Aggregated Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stock returns aggregated over several days have much smaller autocorrelations.
+      \vskip1ex
+      But aggregating stock returns can reduce their noise and improve the performance of autoregressive strategies.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI returns over non-overlapping 2-day intervals
+pricev <- na.omit(rutils::etfenv$prices$VTI)
+reta <- rutils::diffit(log(pricev), lag=2)
+reta <- reta[2*(1:(NROW(pricev) %/% 2))]
+# Calculate the autocorrelations of daily VTI returns
+rutils::plot_acf(reta, lag=10, main="ACF of Aggregated 2-day VTI returns")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_vti_agg.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autoregressive Strategy With Aggregated Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The autoregressive strategy with aggregated stock returns calculates the AR coefficients and the forecasts using stock returns aggregated over several days.
+      \vskip1ex
+      The strategy holds the stock position for several days, and rebalances the position at the end of the aggregation interval.
+      \vskip1ex
+      In this example, the returns are calculated over 2-day intervals, and the stock is held for 2 days.  Effectively, there are two strategies, rebalancing every other day.
+      \vskip1ex
+      The aggregated autoregressive strategy has good performance both in periods of high volatility and in low volatility.
+      <<echo=TRUE,eval=FALSE>>=
+# Define the response and predictor matrices
+reta <- rutils::diffit(log(pricev), lag=2)/2
+orderp <- 5
+predm <- lapply(2*(1:orderp), rutils::lagit, input=reta)
+predm <- rutils::do_call(cbind, predm)
+predm <- cbind(rep(1, NROW(reta)), predm)
+colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
+# Calculate the AR coefficients
+predinv <- MASS::ginv(predm)
+coeff <- predinv %*% reta
+coeffn <- paste0("phi", 0:(NROW(coeff)-1))
+barplot(coeff ~ coeffn, xlab="", ylab="t-value", col="grey",
+        main="Coefficients of AR Forecasting Model")
+# Calculate the in-sample forecasts of VTI (fitted values)
+fcasts <- predm %*% coeff
+fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
+fcastv[1:100] <- 1
+fcasts <- fcasts/fcastv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_agg.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the autoregressive strategy PnLs
+pnls <- reta*fcasts
+pnls <- pnls*sd(reta[reta<0])/sd(pnls[pnls<0])
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(reta, pnls, (reta+pnls)/2)
+colnames(wealthv) <- c("VTI", "AR_Strategy", "Combined")
+cor(wealthv)
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv["2010/"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of the autoregressive strategy
+endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endd], 
+  main="Autoregressive Strategy With Aggregated Stock Returns") %>%
+  dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%
 \section{Daytime and Overnight Strategies}
@@ -1707,7 +2676,7 @@ colnames(reton) <- "overnight"
 wealthv <- cbind(retp, reton, retd)
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot log wealth
+# Plot dygraph of the Daytime and Overnight strategies
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd], 
   main="Wealth of Close-to-Close, Overnight, and Daytime Strategies") %>%
@@ -1799,7 +2768,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
 retc <- cumsum(retd)
 lambdaf <- 0.24
 retm <- rutils::lagit(HighFreq::run_mean(retc, lambda=lambdaf))
-retv <- sqrt(rutils::lagit(HighFreq::run_var(retc, lambda=lambdaf)))
+retv <- sqrt(rutils::lagit(HighFreq::run_var(retc, lambda=lambdaf)[, 2]))
 zscores <- ifelse(retv > 0, (retc - retm)/retv, 0)
 # Calculate the positions from the Bollinger z-scores
 posv <- rep(NA_integer_, nrows)
@@ -1878,471 +2847,6 @@ main="Overnight Trend For Daytime VTI Returns") %>%
 \end{block}
 
 \end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Publishing Interactive Documents}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Using Expression Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      It's sometimes convenient to create an \emph{expression} object containing plotting commands, to be able to later create plots using it.
-      \vskip1ex
-      The function \texttt{quote()} produces an \emph{expression} object without evaluating it.
-      \vskip1ex
-      The function \texttt{eval()} evaluates an \emph{expression} in a specified \emph{environment}.
-        <<echo=TRUE,eval=FALSE>>=
-# Create a plotting expression
-expv <- quote({
-  degf <- 2:20
-  rangev <- (1:NROW(degf))
-  indeks <- 4
-  # Plot a curve
-  curve(expr=dchisq(x, df=degf[indeks]),
-        xlim=c(0, 30), ylim=c(0, 0.2),
-        xlab="", ylab="", lwd=3, col="red")
-  # Add grey lines to plot
-  for (it in rangev[-indeks]) {
-    curve(expr=dchisq(x, df=degf[it]),
-          xlim=c(0, 30), ylim=c(0, 0.2),
-          xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
-  }  # end for
-  # Add title
-  title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
-  # Add legend
-  text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
-      degf[indeks]), pos=1, cex=1.3)
-})  # end quote
-@
-    \column{0.5\textwidth}
-      % \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth, height=0.3\paperwidth]{figure/chi_squared4.png}\\
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# View the plotting expression
-expv
-# Create plot by evaluating the plotting expression
-x11(width=6, height=4)
-eval(expv)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Animated Plots Using Package \protect\emph{animation}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \href{https://yihui.name/animation/}{\emph{animation}} allows creating animated plots in the form of \emph{gif} and \emph{html} documents.
-      \vskip1ex
-      The function \texttt{saveGIF()} produces a \emph{gif} image with an animated plot.
-      \vskip1ex
-      The function \texttt{saveHTML()} produces an \emph{html} document with an animated plot.
-        <<echo=TRUE,eval=FALSE>>=
-library(animation)
-# Create an expression for creating multiple plots
-expv <- quote({
-  degf <- 2:20
-  rangev <- (1:NROW(degf))
-  # Set image refesh interval
-  animation::ani.options(interval=0.5)
-  # Create multiple plots with curves
-  for (indeks in rangev) {
-    curve(expr=dchisq(x, df=degf[indeks]),
-          xlim=c(0, 30), ylim=c(0, 0.2),
-          xlab="", ylab="", lwd=3, col="red")
-    # Add grey lines to plot
-    for (it in rangev[-indeks]) {
-      curve(expr=dchisq(x, df=degf[it]),
-            xlim=c(0, 30), ylim=c(0, 0.2),
-            xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
-    }  # end for
-    # Add title
-    title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
-    # Add legend
-    text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
-      degf[indeks]), pos=1, cex=1.3)
-  }  # end for
-})  # end quote
-      @
-    \column{0.5\textwidth}
-      % \vspace{-1em}
-      % Must include package animate in header:
-      % \usepackage{animate}
-      \includegraphics[width=0.4\paperwidth, height=0.3\paperwidth]{figure/chi_squared4.png}
-      % \animategraphics[width=0.4\paperwidth, height=0.3\paperwidth]{2}{figure/png/chi_squared}{1}{19}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Create plot by evaluating the plotting expression
-x11(width=6, height=4)
-eval(expv)
-# Create gif with animated plot
-animation::saveGIF(expr=eval(expv),
-  movie.name="chi_squared.gif",
-  img.name="chi_squared")
-# Create html with animated plot
-animation::saveHTML(expr=eval(expv),
-  img.name="chi_squared",
-  htmlfile="chi_squared.html",
-  description="Chi-squared Distributions")  # end saveHTML
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Dynamic Documents Using \protect\emph{R markdown}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \href{https://daringfireball.net/projects/markdown/}{\emph{markdown}} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html}.
-      \vskip1ex
-      \href{https://rmarkdown.rstudio.com}{\emph{R Markdown}} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them.
-      \vskip1ex
-      An \emph{R Markdown} document (with extension \texttt{.Rmd}) contains:
-      \begin{itemize}
-        \item A \emph{YAML} header,
-        \item Text in \emph{R Markdown} code format,
-        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
-        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code).
-      \end{itemize}
-      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
----
-title: "My First R Markdown Document"
-author: Jerzy Pawlowski
-date: '`r format(Sys.time(), "%m/%d/%Y")`'
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-# install package quantmod if it can't be loaded successfully
-if (!require("quantmod"))
-  install.packages("quantmod")
-```
-
-### R Markdown
-This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
-
-One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
-
-You can read more about publishing documents using *R* here:
-https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
-
-You can read more about using *R* to create *HTML* documents with interactive plots here:
-https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
-
-Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
-
-Example of an *R* code chunk:
-```{r cars}
-summary(cars)
-```
-
-### Plots in *R Markdown* documents
-
-Plots can also be embedded, for example:
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-### Math formulas in *R Markdown* documents
-Math formulas can also be embedded in *R Markdown* documents.
-
-For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
-Or display formulas (the Cauchy-Schwarz inequality):
-
-$$
-  \left( \sum_{k=1}^n a_k b_k \right)^2
-  \leq
-  \left( \sum_{k=1}^n a_k^2 \right)
-  \left( \sum_{k=1}^n b_k^2 \right)
-$$
-
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{shiny} for Creating Interactive Applications}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{shiny} creates interactive applications running in \texttt{R}, with their outputs presented as live visualizations.
-      \vskip1ex
-      \emph{Shiny} allows changing the model parameters, recalculating the model, and displaying the resulting outputs as plots and charts.
-      \vskip1ex
-      A \emph{shiny app} is a file with \emph{shiny} commands and \texttt{R} code. 
-      \vskip1ex
-      The \emph{shiny} code consists of a \emph{shiny interface} and a \emph{shiny server}.
-      \vskip1ex
-      The \emph{shiny interface} contains widgets for data input and an area for plotting.
-      \vskip1ex
-      The \emph{shiny server} contains the \texttt{R} model code and the plotting code.
-      \vskip1ex
-      The function \texttt{shiny::fluidPage()} creates a GUI layout for the user inputs of model parameters and an area for plots and charts.
-      \vskip1ex
-      The function \texttt{shiny::renderPlot()} renders a plot from the outputs of a live model.
-      \vskip1ex
-      The function \texttt{shiny::shinyApp()} creates a \texttt{shiny app} from a \emph{shiny interface} and a \emph{shiny server}.
-      <<echo=TRUE,eval=FALSE>>=
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      % \includegraphics[width=0.3\paperwidth]{figure/shiny_simple.png}
-      % \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-## App setup code that runs only once at startup. 
-ndata <- 1e4
-stdev <- 1.0
-
-## Define the user interface
-uiface <- shiny::fluidPage(
-  # Create numeric input for the number of data points.
-  numericInput("ndata", "Number of data points:", value=ndata),
-  # Create slider input for the standard deviation parameter.
-  sliderInput("stdev", label="Standard deviation:",
-              min=0.1, max=3.0, value=stdev, step=0.1),
-  # Render plot in a panel.
-  plotOutput("plotobj", height=300, width=500)
-)  # end user interface
-
-## Define the server function
-servfun <- function(input, output) {
-  output$plotobj <- shiny::renderPlot({
-    # Simulate the data
-    datav <- rnorm(input$ndata, sd=input$stdev)
-    # Plot the data
-    par(mar=c(2, 4, 4, 0), oma=c(0, 0, 0, 0))
-    hist(datav, xlim=c(-4, 4), main="Histogram of Random Data")
-  })  # end renderPlot
-}  # end servfun
-
-# Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfun)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running Shiny Apps in \protect\emph{RStudio}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{shiny app} can be run by pressing the "Run App" button in \emph{RStudio}.
-      \vskip1ex
-      When the \emph{shiny app} is run, the \emph{shiny} commands are translated into 
-      \href{https://en.wikipedia.org/wiki/JavaScript}{\emph{JavaScript}} 
-      code, which creates a graphical user interface (GUI) with buttons, sliders, and boxes for data input, and also with the output plots and charts.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/shiny_simple.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Positioning and Sizing Widgets Within the Shiny GUI}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{shiny::fluidRow()} and \texttt{shiny::column()} allow positioning and sizing widgets within the \emph{shiny} GUI.
-      <<echo=TRUE,eval=FALSE>>=
-## Create elements of the user interface
-uiface <- shiny::fluidPage(
-  titlePanel("VWAP Moving Average"),
-  # Create single row of widgets with two slider inputs
-  fluidRow(
-    # Input stock symbol
-    column(width=3, selectInput("symbol", label="Symbol",
-                                choices=symbolv, selected=symbol)),
-    # Input look-back interval
-    column(width=3, sliderInput("lookb", label="Lookback interval",
-                                min=1, max=150, value=11, step=1))
-  ),  # end fluidRow
-  # Create output plot panel
-  mainPanel(dygraphs::dygraphOutput("dyplot"), width=12)
-)  # end fluidPage interface
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/shiny_vwap.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Shiny Apps With Reactive Expressions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{shiny} allows specifying reactive expressions which are evaluated only when their input data is updated.  
-      \vskip1ex
-      Reactive expressions avoid performing unnecessary calculations.
-      \vskip1ex
-      If the reactive expression is invalidated (recalculated), then other expressions that depend on its output are also recalculated. 
-      \vskip1ex
-      This way calculations cascade through the expressions that depend on each other.
-      \vskip1ex
-      The function \texttt{shiny::reactive()} transforms an expression into a reactive expression.
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      % \includegraphics[width=0.4\paperwidth]{figure/shiny_vwap.png}
-      % \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-## Define the server function
-servfun <- shiny::shinyServer(function(input, output) {
-  # Get the close and volume data in a reactive environment
-  closep <- shiny::reactive({
-    # Get the data
-    ohlc <- get(input$symbol, data_env)
-    closep <- log(quantmod::Cl(ohlc))
-    volum <- quantmod::Vo(ohlc)
-    # Return the data
-    cbind(closep, volum)
-  })  # end reactive code
-  
-  # Calculate the VWAP indicator in a reactive environment
-  vwapv <- shiny::reactive({
-    # Get model parameters from input argument
-    lookb <- input$lookb
-    # Calculate the VWAP indicator
-    closep <- closep()[, 1]
-    volum <- closep()[, 2]
-    vwapv <- HighFreq::roll_sum(tseries=closep*volum, lookb=lookb)
-    volumroll <- HighFreq::roll_sum(tseries=volum, lookb=lookb)
-    vwapv <- vwapv/volumroll
-    vwapv[is.na(vwapv)] <- 0
-    # Return the plot data
-    datav <- cbind(closep, vwapv)
-    colnames(datav) <- c(input$symbol, "VWAP")
-    datav
-  })  # end reactive code
-  
-  # Return the dygraph plot to output argument
-  output$dyplot <- dygraphs::renderDygraph({
-    colv <- colnames(vwapv())
-    dygraphs::dygraph(vwapv(), main=paste(colv[1], "VWAP")) %>%
-      dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
-      dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
-      dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
-      dySeries(name=colv[2], axis="y2", label=colv[2], strokeWidth=2, col="red")
-  })  # end output plot
-})  # end server code
-
-## Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfun)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reactive Event Handlers}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Event handlers are functions which evaluate expressions when an event occurs (like a button press).
-      \vskip1ex
-      The functions \texttt{shiny::observeEvent()} and \texttt{shiny::eventReactive()} are event handlers.
-      \vskip1ex
-      The function \texttt{shiny::eventReactive()} returns a value, while \texttt{shiny::observeEvent()} produces a side-effect, without returning a value.
-      \vskip1ex
-      The function \texttt{shiny::reactiveValues()} creates a list for storing reactive values, which can be updated by event handlers. 
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      % \includegraphics[width=0.4\paperwidth]{figure/shiny_vwap.png}
-      % \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-## Define the server function
-servfun <- shiny::shinyServer(function(input, output) {
-
-  # Create an empty list of reactive values.
-  value_s <- reactiveValues()
-  
-  # Get input parameters from the user interface.
-  nrows <- reactive({
-    # Add nrows to list of reactive values.
-    value_s*nrows <- input$nrows
-    input$nrows
-  })  # end reactive code
-  
-  # Broadcast a message to the console when the button is pressed.
-  observeEvent(eventExpr=input$button, handlerExpr={
-    cat("Input button pressed\n")
-  })  # end observeEvent
-  
-  # Send the data when the button is pressed.
-  datav <- eventReactive(eventExpr=input$button, valueExpr={
-    # eventReactive() executes on input$button, but not on nrows() or input$nrows.
-    cat("Sending", nrows(), "rows of data\n")
-    datav <- head(mtcars, input$nrows)
-    value_s$mpg <- mean(datav$mpg)
-    datav
-  })  # end eventReactive
-  #   datav
-  
-  # Draw table of the data when the button is pressed.
-  observeEvent(eventExpr=input$button, handlerExpr={
-    datav <- datav()
-    cat("Received", value_s*nrows, "rows of data\n")
-    cat("Average mpg = ", value_s$mpg, "\n")
-    cat("Drawing table\n")
-    output$tablev <- renderTable(datav) 
-  })  # end observeEvent
-  
-})  # end server code
-
-## Return a Shiny app object
-shiny::shinyApp(ui=uiface, server=servfun)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
 
 
 

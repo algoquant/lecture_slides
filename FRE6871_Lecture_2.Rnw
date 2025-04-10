@@ -67,7 +67,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{March 16, 2025}
+\date{March 31, 2025}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -1776,7 +1776,7 @@ datav <- mclapply(1:10, rnorm, mc.cores=ncores, n=100)
     \column{0.5\textwidth}
       \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution.
       \vskip1ex
-      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals.
+      The \emph{Monte Carlo} data samples can then be used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals.
       \vskip1ex
       The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} $p$.
       \vskip1ex
@@ -2003,7 +2003,7 @@ stopCluster(compclust)  # Stop R processes over cluster under Windows
 
 
 %%%%%%%%%%%%%%%
-\subsection{Parallel Bootstrapping of the \protect\emph{Median Absolute Deviation}}
+\subsection{Parallel Bootstrap of the \protect\emph{Median Absolute Deviation}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2059,110 +2059,6 @@ stopCluster(compclust)  # Stop R processes over cluster
 bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
 apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Resampling From Empirical Datasets}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Resampling is randomly selecting data from an existing dataset, to create a new dataset with similar properties to the existing dataset.
-      \vskip1ex
-      Resampling is usually performed with replacement, so that each draw is independent from the others.
-      \vskip1ex
-      Resampling is performed when it's not possible or convenient to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
-      \vskip1ex
-      The function \texttt{sample()} selects a random sample from a vector of data elements.
-      \vskip1ex
-      The function \texttt{sample.int()} is a \emph{method} that selects a random sample of \emph{integers}.
-      \vskip1ex
-      The function \texttt{sample.int()} with argument \texttt{replace=TRUE} selects a sample with replacement (the \emph{integers} can repeat).
-      \vskip1ex
-      The function \texttt{sample.int()} is a little faster than \texttt{sample()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate time series of VTI returns
-library(rutils)
-retp <- rutils::etfenv$returns$VTI
-retp <- na.omit(retp)
-nrows <- NROW(retp)
-# Sample from VTI returns
-samplev <- retp[sample.int(nrows, replace=TRUE)]
-c(sd=sd(samplev), mad=mad(samplev))
-# sample.int() is a little faster than sample()
-library(microbenchmark)
-summary(microbenchmark(
-  sample.int = sample.int(1e3), 
-  sample = sample(1e3), 
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Empirical Datasets}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrapping is usually performed by resampling from an observed (empirical) dataset.
-      \vskip1ex
-      Resampling consists of randomly selecting data from an existing dataset, with replacement.
-      \vskip1ex
-      Resampling produces a new \emph{bootstrapped} dataset with similar properties to the existing dataset.
-      \vskip1ex
-      The \emph{bootstrapped} dataset is used to recalculate the estimator many times.
-      \vskip1ex
-      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
-      \vskip1ex
-      Bootstrapping shows that for asset returns, the \emph{Median Absolute Deviation} (\emph{MAD}) has a smaller relative standard error than the standard deviation.
-      \vskip1ex
-      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Sample from time series of VTI returns
-library(rutils)
-retp <- rutils::etfenv$returns$VTI
-retp <- na.omit(retp)
-nrows <- NROW(retp)
-# Bootstrap sd and MAD under Windows
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1  # Number of cores
-compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
-clusterSetRNGStream(compclust, 1121)  # Reset random number generator in all cores
-nboot <- 10000
-bootd <- parLapply(compclust, 1:nboot, function(x, retp, nsimu) {
-  samplev <- retp[sample.int(nsimu, replace=TRUE)]
-  c(sd=sd(samplev), mad=mad(samplev))
-}, retp=retp, nsimu=nsimu)  # end parLapply
-# Bootstrap sd and MAD under Mac-OSX or Linux
-bootd <- mclapply(1:nboot, function(x) {
-  samplev <- retp[sample.int(nsimu, replace=TRUE)]
-  c(sd=sd(samplev), mad=mad(samplev))
-}, mc.cores=ncores)  # end mclapply
-stopCluster(compclust)  # Stop R processes over cluster under Windows
-bootd <- rutils::do_call(rbind, bootd)
-# Standard error of standard deviation assuming normal distribution of returns
-sd(retp)/sqrt(nsimu)
-# Means and standard errors from bootstrap
-stderrors <- apply(bootd, MARGIN=2,
-  function(x) c(mean=mean(x), stderror=sd(x)))
-stderrors
-# Relative standard errors
-stderrors[2, ]/stderrors[1, ]
       @
   \end{columns}
 \end{block}
@@ -2474,7 +2370,106 @@ text(x=(nsteps-60), y=strikep, labels="strike price", pos=3, cex=1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Time Series of Prices}
+\subsection{Resampling From Empirical Datasets}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Resampling is randomly selecting data from an existing dataset, to create a new dataset with similar properties to the existing dataset.
+      \vskip1ex
+      Resampling is usually performed with replacement, so that each draw is independent from the others.
+      \vskip1ex
+      Resampling is performed when it's not possible or convenient to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
+      \vskip1ex
+      The function \texttt{sample()} selects a random sample from a vector of data elements.
+      \vskip1ex
+      The function \texttt{sample.int()} is a \emph{method} that selects a random sample of \emph{integers}.
+      \vskip1ex
+      The function \texttt{sample.int()} with argument \texttt{replace=TRUE} selects a sample with replacement (the \emph{integers} can repeat).
+      \vskip1ex
+      The function \texttt{sample.int()} is a little faster than \texttt{sample()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate time series of VTI returns
+library(rutils)
+retp <- rutils::etfenv$returns$VTI
+retp <- na.omit(retp)
+nrows <- NROW(retp)
+# Sample from VTI returns
+samplev <- retp[sample.int(nrows, replace=TRUE)]
+c(sd=sd(samplev), mad=mad(samplev))
+# sample.int() is a little faster than sample()
+library(microbenchmark)
+summary(microbenchmark(
+  sample.int = sample.int(1e3), 
+  sample = sample(1e3), 
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrapping From Empirical Datasets}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Bootstrapping is usually performed by resampling from an observed (empirical) dataset.
+      \vskip1ex
+      Resampling consists of randomly selecting data from an existing dataset, with replacement.
+      \vskip1ex
+      Resampling produces a new \emph{bootstrapped} dataset with similar properties to the existing dataset.
+      \vskip1ex
+      The \emph{bootstrapped} dataset is used to recalculate the estimator many times.
+      \vskip1ex
+      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
+      \vskip1ex
+      Bootstrapping shows that for stock returns, the \emph{Median Absolute Deviation} (\emph{MAD}) has a smaller relative standard error than the standard deviation does.
+      \vskip1ex
+      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Bootstrap sd and MAD under Windows
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1  # Number of cores
+compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
+clusterSetRNGStream(compclust, 1121)  # Reset random number generator in all cores
+nboot <- 10000
+bootd <- parLapply(compclust, 1:nboot, function(x, retp, nsimu) {
+  samplev <- retp[sample.int(nsimu, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
+}, retp=retp, nsimu=nrows)  # end parLapply
+# Bootstrap sd and MAD under Mac-OSX or Linux
+bootd <- mclapply(1:nboot, function(x) {
+  samplev <- retp[sample.int(nrows, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
+}, mc.cores=ncores)  # end mclapply
+stopCluster(compclust)  # Stop R processes over cluster under Windows
+bootd <- rutils::do_call(rbind, bootd)
+# Standard error of standard deviation assuming normal distribution of returns
+sd(retp)/sqrt(nsimu)
+# Means and standard errors from bootstrap
+stderr <- apply(bootd, MARGIN=2,
+  function(x) c(mean=mean(x), stderror=sd(x)))
+stderr
+# Relative standard errors
+stderr[2, ]/stderr[1, ]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrap of Time Series of Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2486,14 +2481,14 @@ text(x=(nsteps-60), y=strikep, labels="strike price", pos=3, cex=1)
       \vskip1ex
       Below is a simulation of the frequency of bootstrapped prices crossing a barrier level.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate percentage returns from VTI prices
+# Calculate log returns from VTI prices
 library(rutils)
 pricev <- quantmod::Cl(rutils::etfenv$VTI)
+nrows <- NROW(pricev)
 prici <- as.numeric(pricev[1, ])
 retp <- rutils::diffit(log(pricev))
 class(retp); head(retp)
 sum(is.na(retp))
-nrows <- NROW(retp)
 # Define barrier level with respect to prices
 barl <- 1.5*max(pricev)
 # Calculate single bootstrap sample
@@ -2540,71 +2535,56 @@ sum(bootd)/nboot
 
 
 %%%%%%%%%%%%%%%
-\subsection{Bootstrapping From \protect\emph{OHLC} Prices}
+\subsection{Block Bootstrap of Time Series of Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Bootstrapping from \emph{OHLC} prices requires updating all the price columns, not just the \emph{Close} prices.
+      Bootstrapping from the empirical returns doesn't preserve the correlation structure of the returns.
       \vskip1ex
-      The \emph{Close} prices are bootstrapped first, and then the other columns are updated using the differences of the \emph{OHLC} price columns.
+      In block bootstrap, multiple rows of the time series data are sampled to generate new data.
       \vskip1ex
-      Below is a simulation of the frequency of the \emph{High} prices crossing a barrier level.
+      Block bootstrap requires a fixed time horizon, short enough to sample from the whole time series data.
+      \vskip1ex
+      For sampling from rows of data, it's better to convert the time series to a matrix.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate percentage returns from VTI prices
-library(rutils)
-ohlc <- rutils::etfenv$VTI
-pricev <- as.numeric(ohlc[, 4])
-prici <- pricev[1]
-retp <- rutils::diffit(log(pricev))
-nrows <- NROW(retp)
-# Calculate difference of OHLC price columns
-pricediff <- ohlc[, 1:3] - pricev
-class(retp); head(retp)
-# Calculate bootstrap prices from percentage returns
-datav <- sample.int(nrows, replace=TRUE)
-priceboot <- prici*exp(cumsum(retp[datav]))
-ohlcboot <- pricediff + priceboot
-ohlcboot <- cbind(ohlcboot, priceboot)
-# Define barrier level with respect to prices
-barl <- 1.5*max(pricev)
-# Calculate if High bootstrapped prices crossed barrier level
-sum(ohlcboot[, 2] > barl) > 0
+# Convert log prices to vector
+pricev <- log(as.numeric(pricev))
+# Define barrier level with respect to the prices
+barl <- 0.05*max(pricev)
+# Define time horizon of 1 year in days
+holdp <- 252
+# Sample the start dates for the bootstrap
+nboot <- 1e3
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+startd <- sample.int(nrows-holdp, nboot, replace=TRUE)
+# Bootstrap the cumulative returns
+samplev <- sapply(startd, function(x) {
+  pricev[x+holdp-1] - pricev[x]
+})  # end sapply
+# Faster way to calculate the cumulative returns
+samplev <- pricev[startd+holdp-1] - pricev[startd]
+# Calculate if any of the returns are above the barrier
+sum(samplev > barl) > 0
+# Plot the cumulative returns
+densv <- density(samplev)
+plot(densv, xlab="return", main="Return density")
+abline(v=barl, col="red", lwd=2)
+text(x=barl, y=0.7*max(densv$y), pos=2, "barrier")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/simu_block_barrier.png}
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1  # Number of cores
-compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
-# Perform parallel bootstrap under Windows
-clusterSetRNGStream(compclust, 1121)  # Reset random number generator in all cores
-clusterExport(compclust, c("prici", "barl", "pricediff"))
-nboot <- 10000
-bootd <- parLapply(compclust, 1:nboot, function(x, retp, nrows) {
-  # Calculate OHLC prices from percentage returns
-  datav <- sample.int(nrows, replace=TRUE)
-  priceboot <- prici*exp(cumsum(retp[datav]))
-  ohlcboot <- pricediff + priceboot
-  ohlcboot <- cbind(ohlcboot, priceboot)
-  # Calculate statistic
-  sum(ohlcboot[, 2] > barl) > 0
-}, retp=retp, nrows=nrows)  # end parLapply
-# Perform parallel bootstrap under Mac-OSX or Linux
-bootd <- mclapply(1:nboot, function(x) {
-  # Calculate OHLC prices from percentage returns
-  datav <- sample.int(nrows, replace=TRUE)
-  priceboot <- prici*exp(cumsum(retp[datav]))
-  ohlcboot <- pricediff + priceboot
-  ohlcboot <- cbind(ohlcboot, priceboot)
-  # Calculate statistic
-  sum(ohlcboot[, 2] > barl) > 0
-}, mc.cores=ncores)  # end mclapply
-stopCluster(compclust)  # Stop R processes over cluster under Windows
-bootd <- rutils::do_call(rbind, bootd)
-# Calculate frequency of crossing barrier
-sum(bootd)/nboot
+# Bootstrap the whole paths of cumulative returns
+samplev <- sapply(startd, function(x) {
+  pricev[x:(x+holdp-1)] - pricev[x]
+})  # end sapply
+dim(samplev)
+samplev[1:5, 1:5]
+# Calculate which of the paths crossed the barrier
+apply(samplev, 2, function(x) {sum(x > barl) > 0})
       @
   \end{columns}
 \end{block}
@@ -3001,7 +2981,7 @@ apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
 sigmav <- 1.0  # Volatility
 drift <- 0.0  # Drift
 nsteps <- 100  # Number of simulation steps
-nsimu <- 10000  # Number of simulation paths
+nsimu <- 1000  # Number of simulation paths
 # Calculate matrix of normal variables
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 datav <- rnorm(nsimu*nsteps, mean=drift, sd=sigmav)
@@ -3009,9 +2989,10 @@ datav <- matrix(datav, nc=nsimu)
 # Simulate paths of Brownian motion
 pathm <- matrixStats::colCumsums(datav)
 # Tilt the datav
-lambdaf <- 0.04  # Tilt parameter
+lambdaf <- 0.1  # Tilt parameter
 datat <- datav + lambdaf  # Tilt the random numbers
 patht <- matrixStats::colCumsums(datat)
+zoo::plot.zoo(patht[, sample(nsimu, 20)], main="Paths of Brownian Motion", xlab="time steps", ylab=NA, plot.type="single")
 # Calculate path weights
 weightm <- exp(-lambdaf*datat + lambdaf^2/2)
 weightm <- matrixStats::colProds(weightm)

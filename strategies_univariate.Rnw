@@ -451,7 +451,7 @@ wealthfs <- drop(cumprod(1 + retp) %*% weightv)
 wealthpr <- cumprod(1 + retp %*% weightv)
 wealthv <- cbind(wealthfs, wealthpr)
 wealthv <- xts::xts(wealthv, datev)
-colnames(wealthv) <- c("Fixed shares", "Prop dollars")
+colnames(wealthv) <- c("Fixed shares", "Prop wealth")
 wealthv <- log(wealthv)
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
@@ -545,7 +545,7 @@ dygraphs::dygraph(wealthv[endd],
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of fixed shares (without rebalancing)
 wealthfs <- drop(cumprod(1 + retp) %*% weightv)-1
-# Wealth of proportional allocation (with rebalancing)
+# Wealth of proportional wealth (with rebalancing)
 wealthpr <- cumprod(1 + retp %*% weightv) - 1
 # Wealth of proportional target allocation (with rebalancing)
 retp <- zoo::coredata(retp)
@@ -664,7 +664,7 @@ sapply(retp, function(x) {
       <<echo=TRUE,eval=FALSE>>=
 # Wealth of equal wealth strategy
 wealthv <- cumsum(retp)
-# Calculate the a vector of monthly end points
+# Calculate a vector of weekly end points
 endd <- rutils::calc_endpoints(retp, interval="weeks")
 # Plot cumulative log wealth
 dygraphs::dygraph(wealthv[endd], 
@@ -686,13 +686,14 @@ dygraphs::dygraph(wealthv[endd],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The optimal stock and bond weights can be calculated using optimization.
+      The optimal stock and bond weights, to obtain a portfolio with the highest Sharpe ratio, can be calculated using optimization.
       \vskip1ex
       Using the past \texttt{20} years of data, the optimal \emph{VTI} weight is about \texttt{0.28}.
       \vskip1ex
       The comments and conclusions in these slides are based on \texttt{20} years of very positive stock and bond returns, when stocks and bonds have been in a secular bull market.  The conclusions would not hold if stocks and bonds had suffered from a bear market (losses) over that time.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
+retp <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
 # Calculate the Sharpe ratios for vector of weights
 weightv <- seq(0.05, 0.95, 0.05)
@@ -704,8 +705,8 @@ sharpev <- sqrt(252)*sapply(weightv, function(weight) {
 # Calculate the optimal VTI weight
 weightm <- weightv[which.max(sharpev)]
 # Calculate the optimal weight using optimization
-calc_sharpe <- function(weight) {
-  weightv <- c(weight, 1-weight)
+calc_sharpe <- function(weightv) {
+  weightv <- c(weightv, 1-weightv)
   retp <- (retp[, 1:2] %*% weightv)
   -mean(retp)/sd(retp)
 }  # end calc_sharpe
@@ -732,40 +733,38 @@ text(x=weightm, y=0.7*max(sharpev), pos=4, cex=1.2,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Wealth Scenarios Using Bootstrap}
+\subsection{Simulating Return Scenarios Using Block Bootstrap}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The past data represents only one possible future scenario.  We can generate more scenarios using bootstrap simulation.
+      The past data represents only one possible market scenario.  We can generate more scenarios using bootstrap simulation.
       \vskip1ex
-      The bootstrap data is a list of simulated \emph{VTI} and \emph{IEF} returns, which represent possible realizations of future returns, based on past history.
+      In block bootstrap, multiple rows of the time series data are sampled to generate new data.
       \vskip1ex
-      For sampling from rows of data, it's better to convert time series to matrices.
+      The bootstrap data represents the possible cumulative returns of \emph{VTI} and \emph{IEF} over the given holding period, based on past history.
+      \vskip1ex
+      For sampling from rows of data, it's better to convert the time series to a matrix.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Coerce the returns from xts time series to matrix 
-retp <- zoo::coredata(retp[, 1:2])
-nrows <- NROW(retp)
-# Bootstrap the returns and Calculate the a list of random returns
-nboot <- 1e4
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1  # Number of cores
-# Perform parallel bootstrap under Windows
-compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
-clusterSetRNGStream(compclust, 1121)  # Reset random number generator in all cores
-clusterExport(compclust, c("retp", "nrows"))
-bootd <- parLapply(compclust, 1:nboot, function(x) {
-  retp[sample.int(nrows, replace=TRUE), ]
-})  # end parLapply
-# Perform parallel bootstrap under Mac-OSX or Linux
+# Coerce the log prices from xts time series to matrix 
+pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
+pricev <- log(zoo::coredata(pricev))
+nrows <- NROW(pricev)
+holdp <- 10*252 # Holding period of 10 years in days
+# Sample the start dates for the bootstrap
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-bootd <- mclapply(1:nboot, function(x) {
-  retp[sample.int(nrows, replace=TRUE), ]
-}, mc.cores=ncores)  # end mclapply
-is.list(bootd); NROW(bootd); dim(bootd[[1]])
+startd <- sample.int(nrows-holdp, 1e3, replace=TRUE)
+# Bootstrap the VTI and IEF returns
+retm <- sapply(startd, function(x) {
+  pricev[x+holdp-1, ] - pricev[x, ]
+})  # end sapply
+dim(retm)
+# Faster way to calculate the cumulative returns
+retm <- pricev[startd+holdp-1, ] - pricev[startd, ]
+dim(retm)
       @
   \end{columns}
 \end{block}
@@ -774,43 +773,35 @@ is.list(bootd); NROW(bootd); dim(bootd[[1]])
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Distributions of Terminal Wealth From Bootstrap}
+\subsection{The Distributions of Cumulative Returns From Bootstrap}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The distribution of \emph{VTI} and \emph{IEF} wealths can be calculated from the bootstrap data.
+      The distribution of \emph{VTI} and \emph{IEF} cumulative returns can be calculated from the bootstrap data.
       \vskip1ex
-      The distribution of \emph{VTI} wealth is much wider than \emph{IEF}, but it has a much greater mean value.
+      The distribution of \emph{VTI} returns is much wider than \emph{IEF}, but it has a much greater mean value.
+      \vskip1ex
+      The distributions of returns are bimodal (have two maxima) because there have been two historical market regimes: bull and bear markets.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the distribution of terminal wealths under Windows
-wealthv <- parLapply(compclust, bootd, function(retp) {
-  apply(retp, 2, function(x) prod(1 + x))
-})  # end parLapply
-# Calculate the distribution of terminal wealths under Mac-OSX or Linux
-wealthv <- mclapply(bootd, function(retp) {
-  apply(retp, 2, function(x) prod(1 + x))
-}, mc.cores=ncores)  # end mclapply
-wealthv <- do.call(rbind, wealthv)
-class(wealthv); dim(wealthv); tail(wealthv)
-# Calculate the means and standard deviations of the terminal wealths
-apply(wealthv, 2, mean)
-apply(wealthv, 2, sd)
-# Extract the terminal wealths of VTI and IEF
-vtiw <- wealthv[, "VTI"]
-iefw <- wealthv[, "IEF"]
+# Calculate the means and standard deviations of the returns
+apply(retm, 2, mean)
+apply(retm, 2, sd)
+# Extract the returns of VTI and IEF
+vtiw <- retm[, "VTI"]
+iefw <- retm[, "IEF"]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_wealth_vtiief.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_stock_vtiief.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the densities of the terminal wealths of VTI and IEF
+# Plot the densities of the returns of VTI and IEF
 vtim <- mean(vtiw); iefm <- mean(iefw)
 vtid <- density(vtiw); iefd <- density(iefw)
 plot(vtid, col="blue", lwd=3, xlab="wealth",
-     xlim=c(0, 2*max(iefd$x)), ylim=c(0, max(iefd$y)), 
-     main="Terminal Wealth Distributions of VTI and IEF")
+     xlim=c(0, max(vtid$x)), ylim=c(0, max(iefd$y)), 
+     main="Cumulative Return Distributions of VTI and IEF")
 lines(iefd, col="green", lwd=3)
 abline(v=vtim, col="blue", lwd=2, lty="dashed")
 text(x=vtim, y=0.5, labels="VTI mean", pos=4, cex=0.8)
@@ -827,45 +818,50 @@ legend(x="topright", legend=c("VTI", "IEF"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Distribution of Stock Wealth and Holding Period}
+\subsection{The Distribution of Stock Returns and Holding Period}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The distribution of stock wealth for short holding periods is close to symmetric around par (\texttt{1}).
+      The distribution of stock returns for short holding periods is close to symmetric.
       \vskip1ex
-      The distribution for long holding periods is highly positively skewed with a much larger mean.
+      The distributions for longer holding periods have larger means and standard deviations, and are more positively skewed, with a smaller kurtoisis.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the distributions of stock wealth
-holdv <- nrows*seq(0.1, 1.0, 0.1)
-wealthm <- mclapply(bootd, function(retp) {
-  sapply(holdv, function(holdp) {
-    prod(1 + retp[1:holdp, "VTI"])
-  })  # end sapply
-}, mc.cores=ncores)  # end mclapply
-wealthm <- do.call(rbind, wealthm)
-dim(wealthm)
+# Calculate the distributions of stock returns
+holdv <- round(nrows*seq(0.1, 0.5, 0.1))
+retm <- sapply(holdv, function(holdp) {
+  startd <- sample.int(nrows-holdp, 1e3, replace=TRUE)
+  pricev[startd+holdp-1, "VTI"] - pricev[startd, "VTI"]
+})  # end sapply
+dim(retm)
+colnames(retm) <- paste0(round(holdv/252), "years")
+# Calculate the skewness and kurtosis of the stock return distributions
+apply(retm, 2, function(x) {
+  # Standardize the returns
+  x <- (x - mean(x))/sd(x)
+  c(skew=mean(x^3), kurt=mean(x^4))
+}) # end apply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_wealth_longshort.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_stock_longshort.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the stock wealth for long and short holding periods
-wealth1 <- wealthm[, 9]
-wealth2 <- wealthm[, 1]
-mean1 <- mean(wealth1); mean2 <- mean(wealth2)
-dens1 <- density(wealth1); dens2 <- density(wealth2)
-plot(dens1, col="blue", lwd=3, xlab="wealth",
-     xlim=c(0, 3*max(dens2$x)), ylim=c(0, max(dens2$y)), 
-     main="Wealth Distributions for Long and Short Holding Periods")
+# Plot the stock returns for long and short holding periods
+ret1 <- retm[, 5]
+ret2 <- retm[, 1]
+mean1 <- mean(ret1); mean2 <- mean(ret2)
+dens1 <- density(ret1); dens2 <- density(ret2)
+plot(dens1, col="blue", lwd=3, xlab="return",
+     xlim=c(0, 2.5*max(dens2$x)), ylim=c(0, max(dens2$y)), 
+     main="Return Distributions for Long and Short Holding Periods")
 lines(dens2, col="green", lwd=3)
 abline(v=mean1, col="blue", lwd=2, lty="dashed")
 text(x=mean1, y=0.5, labels="Long", pos=4, cex=0.8)
 abline(v=mean2, col="green", lwd=2, lty="dashed")
 text(x=mean2, y=0.5, labels="Short", pos=4, cex=0.8)
-legend(x="top", legend=c("Long", "Short"),
-       inset=0.1, cex=1.0, bg="white", bty="n", y.intersp=0.5, 
+legend(x="topright", legend=c("Long", "Short"),
+       inset=0.0, cex=1.0, bg="white", bty="n", y.intersp=0.5, 
        lwd=6, lty=1, col=c("blue", "green"))
       @
   \end{columns}
@@ -875,38 +871,26 @@ legend(x="top", legend=c("Long", "Short"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Risk-adjusted Stock Wealth and Holding Period}
+\subsection{Risk-adjusted Stock Returns and Holding Period}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The downside risk is equal to the mean of the wealth below par (\texttt{1}).
+      The risk-adjusted return measure is equal to the mean return divided by its standard deviation.
       \vskip1ex
-      The risk-adjusted wealth measure is equal to the mean wealth divided by the downside risk.
-      \vskip1ex
-      U.S. stocks in the last 40 years have had higher risk-adjusted wealth for longer holding periods.
-      \vskip1ex
-      The risk-adjusted wealth may also be higher for very short holding periods because the risk is low - there's not enough time for the wealth to significantly drop below par (\texttt{1}).
-      \vskip1ex
-      The risk increases for intermediate holding periods, so the risk-adjusted wealth drops.
-      \vskip1ex
-      The mean wealth increases for longer holding periods, so the risk-adjusted wealth also increases.
+      During the bull market in the last \texttt{40} years, U.S. stocks have had higher risk-adjusted returns for longer holding periods.
       <<echo=TRUE,eval=FALSE>>=
-# Define the risk-adjusted wealth measure
-riskretfun <- function(wealthv) {
-  riskv <- 0.01 # Risk floor
-  if (min(wealthv) < 1) # Some wealth is below par
-    # Calculate the mean stock wealth below par
-    riskv <- mean((1-wealthv)[wealthv<1])
-  mean(wealthv)/riskv
+# Define the risk-adjusted return measure
+riskretfun <- function(retm) {
+  mean(retm)/sd(retm)
 }  # end riskretfun
-# Calculate the stock wealth risk-return ratios
-riskrets <- apply(wealthm, 2, riskretfun)
+# Calculate the stock risk-return ratios
+riskrets <- apply(retm, 2, riskretfun)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_wealth_riskreturn.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_stock_riskreturn.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the stock wealth risk-return ratios
 plot(x=holdv, y=riskrets, 
@@ -927,18 +911,20 @@ plot(x=holdv, y=riskrets,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The optimal stock and bond weights can be calculated using bootstrap simulation.
+      The optimal stock and bond weights can be calculated using block bootstrap simulation.
       \vskip1ex
-      Bootstrapping the past \texttt{20} years of data, the optimal \emph{VTI} weight is about \texttt{0.3}.
+      By bootstrapping the stock and bond returns over a \texttt{10} year holding period, the optimal \emph{VTI} weight is about \texttt{0.45}.
+      \vskip1ex
+      This weight is higher than the \texttt{0.28} calculated before, because now the risk is measured as the standard deviation of the terminal wealth, not as the standard deviation of the daily returns.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the distributions of portfolio wealth
+# Calculate the distributions of portfolio wealth for different weights of VTI
+holdp <- 10*252 # Holding period of 10 years in days
 weightv <- seq(0.05, 0.95, 0.05)
-wealthm <- mclapply(bootd, function(retp) {
-  sapply(weightv, function(weight) {
-    prod(1 + retp %*% c(weight, 1-weight))
+wealthm <- sapply(weightv, function(weight) {
+  sapply(startd, function(x) {
+    (pricev[x+holdp-1, ] - pricev[x, ]) %*% c(weight, 1-weight)
   })  # end sapply
-}, mc.cores=ncores)  # end mclapply
-wealthm <- do.call(rbind, wealthm)
+})  # end sapply
 dim(wealthm)
 # Calculate the portfolio risk-return ratios
 riskrets <- apply(wealthm, 2, riskretfun)
@@ -947,7 +933,7 @@ weightm <- weightv[which.max(riskrets)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_riskret_max.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_riskret_optim.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the portfolio risk-return ratios
 plot(x=weightv, y=riskrets, 
@@ -955,7 +941,7 @@ plot(x=weightv, y=riskrets,
      xlab="VTI weight", ylab="Ratio", 
      t="l", lwd=3, col="blue")
 abline(v=weightm, lty="dashed", lwd=1, col="blue")
-text(x=weightm, y=0.7*max(riskrets), pos=4, cex=1.2, 
+text(x=weightm, y=0.5*max(riskrets), pos=3, cex=1.2, 
      labels=paste("optimal VTI weight =", round(weightm, 2)))
       @
   \end{columns}
@@ -999,7 +985,7 @@ sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the cumulative wealth from returns
 wealthv <- cumsum(retp)
-# Calculate the a vector of monthly end points
+# Calculate a vector of weekly end points
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 # dygraph all-weather wealth
 dygraphs::dygraph(wealthv[endd], main="All-Weather Portfolio") %>%
@@ -1028,25 +1014,100 @@ legend("topleft", legend=colnames(wealthv),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{Constant Proportion Portfolio Insurance} (CPPI) strategy the portfolio is rebalanced between stocks and zero-coupon bonds, to protect against the loss of principal.
+      The \emph{Constant Proportion Portfolio Insurance} (CPPI) strategy rebalances its portfolio between stocks and zero-coupon bonds.
       \vskip1ex
-      A zero-coupon bond pays no coupon, but it's bought at a discount to par ($100\%$), and pays par at maturity.  The investor receives capital appreciation instead of coupons.
+      The CPPI strategy has a fixed maturity date, and it's designed to pay back the initial principal investment at maturity.
       \vskip1ex
-      Let $P$ be the investor principal amount (total initial invested dollar amount), and let $F$ be the zero-coupon \emph{bond floor}.  
-      The zero-coupon bond floor $F$ is set so that its value at maturity is equal to the principal $P$.  
-      This guarantees that the investor is paid back at least the full principal $P$.
+      When stock prices are declining, the CPPI strategy sells its stocks and buys bonds, to protect against the loss of principal at maturity.
       \vskip1ex
-      The stock investment is levered by the \emph{CPPI multiplier} $C$.  
-      The initial dollar amount invested in stocks is equal to the \emph{cushion} $(P - F)$ times the \emph{multiplier} $C$: $C * (P - F)$.
-      The remaining amount of the principal is invested in zero-coupon bonds and is equal to: $P - C * (P - F)$.
+      A zero-coupon bond pays no coupon, but it's bought at a discount to par ($\$100$), and pays par at maturity.  The investor receives capital appreciation instead of coupons.
+      \vskip1ex
+      The bond floor $F$ is set so that its value at maturity is equal to par - the initial principal investment.  
+      \vskip1ex
+      The value of the CPPI portfolio $P$, is equal to the sum of the stock $SV$ and bond $B$ values: $P = SV + B$.
+      \vskip1ex
+      The stock investment is levered by the \emph{CPPI multiplier} $C$ through borrowing.
+      The amount invested in stocks $SI$ is equal to the \emph{cushion} $(P - F)$ times the multiplier $C$: $SI = \max(C * (P - F), 0)$.
+      The remaining amount of the portfolio is invested in zero-coupon bonds and is equal to: $B = \max(P - C * (P - F), 0)$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      % The diagram was created in Pages and exported as a PDF file:
+      % /Users/jerzy/Develop/lecture_slides/figure/CPPI.pages
+      \includegraphics[width=0.35\paperwidth]{figure/portf_cppi_diagram.pdf}\\
+      Additional stock purchases can be funded by borrowing from a margin account.
+      \vskip1ex
+      The stock investment $SI$ is the dollar amount of stocks owned by the CPPI strategy.
+      The net value of the stocks $SV$ is equal to the stock investment $SI$ minus the borrowed amount $M$: $SV = SI - M$.
+      If there's no borrowing, then the stock value is equal to the stock investment $SV = SI$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{CPPI Strategy Scenarios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Assume a \emph{CPPI} strategy with a bond floor of $F = \$60$, and a multiplier of $C = 2$.
+      The initial stock investment is: $SI = 2 * (\$100 - \$60) = \$80$, and the amount invested in bonds is: $B = \$100 - \$80 = \$20$.
+      \vskip1ex
+      Assume that stocks have a positive return of $20\%$, so that the stock value increases to $SV = \$80 * 1.2 = \$96$, while the bond value remains: $B = \$20$.
+      So that the portfolio value (wealth) increases to: $P = SV + B = \$96 + \$20 = \$116$.
+      \vskip1ex
+      The stock investment $SI$ must increase to: $SI = 2 * (\$116 - \$60) = \$112$, while the bond investment must decrease to: $B = \$116 - \$112 = \$4$.
+      The additional $\$16$ of stocks is purchased from the sale of the bonds.
+      \vskip1ex
+      Assume next that stocks have another positive return of $20\%$, so that the stock value increases to $SV = \$112 * 1.2 = \$134.4$, while the bond value remains: $B = \$4$.
+      So that the wealth increases to $P = SV + B = \$134.4 + \$4 = \$138.4$.
+      \vskip1ex
+      The stock investment $SI$ must increase to: $SI = 2 * (\$134.4 - \$60) = \$148.8$, while the bond investment drops to zero: $B = \max(\$138.4 - \$148.8, 0) = \$0$.
+      The additional $\$14.4$ of stocks is purchased from the sale of $\$4$ of the bonds plus $\$10.4$ of borrowed money.
+    \column{0.5\textwidth}
+      If stock prices keep rising, then the stock investment and the CPPI portfolio value both increase, and the bond investment decreases.
+      \vskip1ex
+      But if stock prices decline, then the stock investment and the CPPI portfolio value both decrease, and the CPPI strategy sells its stocks and buys bonds.
+      \vskip1ex
+      Assume that stocks have a negative return of $-20\%$, so that the stock value increases to $SV = \$80 * 0.8 = \$64$.
+      Then the portfolio value (wealth) decreases to: $P = SV + B = \$64 + \$20 = \$84$.
+      \vskip1ex
+      The stock investment $SI$ must decrease to: $SI = 2 * (\$84 - \$60) = \$48$, while the bond investment must increase to: $B = \$84 - \$48 = \$36$.
+      The additional $\$16$ of bonds is purchased from the sale of the stocks.
+      \vskip1ex
+      If stock prices keep declining and the portfolio value $P$ drops to the bond floor $F$, then all the stocks are sold, and only the zero-coupon bond remains, so that at maturity the investor is paid back at least the full initial principal $P = \$100$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{CPPI Strategy Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulating the CPPI strategy requires performing a \texttt{for()} loop over time, since the strategy is path-dependent.
+      \vskip1ex
+      At each time step, the stock price and portfolio value are updated based on the stock return.
+      \vskip1ex
+      Then the CPPI leverage is applied to the stock investment based on the updated portfolio value.
+      \vskip1ex
+      Applying the CPPI leverage may require borrowing money to buy more stocks (we assume zero borrowing costs).
+      \vskip1ex
+      The amount invested in stocks changes both because the stock price changes and because of additional CPPI leverage. 
+      \vskip1ex
+      The stock purchases are funded from the sale of bonds and with borrowing from a margin account.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the VTI returns
-retp <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
-datev <- zoo::index(retp)
+retp <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(retp)
-retp <- drop(zoo::coredata(retp))
 # Bond floor
 bfloor <- 60
 # CPPI multiplier
@@ -1055,12 +1116,29 @@ coeff <- 2
 portfv <- numeric(nrows)
 # Initial principal
 portfv[1] <- 100
-# Stock allocation
+# Stock investment
+stocki <- numeric(nrows)
+stocki[1] <- max(coeff*(portfv[1] - bfloor), 0)
+# Stock value
 stockv <- numeric(nrows)
-stockv[1] <- min(coeff*(portfv[1] - bfloor), portfv[1])
-# Bond allocation
+stockv[1] <- stocki[1]
+# Bond value
 bondv <- numeric(nrows)
-bondv[1] <- (portfv[1] - stockv[1])
+bondv[1] <- max(portfv[1] - stocki[1], 0)
+# Margin account
+margv <- numeric(nrows)
+# Simulate the CPPI strategy
+for (t in 2:nrows) {
+  # Update the portfolio value
+  stocki[t] <- (1 + retp[t])*stocki[t-1]
+  stockv[t] <- stocki[t] - margv[t-1]
+  portfv[t] <- stockv[t] + bondv[t-1]
+  # Update the CPPI leverage
+  stockt <- max(coeff*(portfv[t] - bfloor), 0)
+  bondv[t] <- max(portfv[t] - stockt, 0)
+  margv[t] <- (bondv[t] - bondv[t-1]) + (stockt - stocki[t]) + margv[t-1]
+  stocki[t] <- stockt
+}  # end for
       @
   \end{columns}
 \end{block}
@@ -1075,36 +1153,59 @@ bondv[1] <- (portfv[1] - stockv[1])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If the stock price changes and the portfolio value becomes $P_t$, then the dollar amount invested in stocks must be adjusted to: $C * (P_t - F)$.  
-      The amount invested in stocks changes both because the stock price changes and because of rebalancing with the zero-coupon bonds. 
-      \vskip1ex
-      The amount invested in zero-coupon bonds is then equal to: $P_t - C * (P_t - F)$.
-      If the portfolio value drops to the \emph{bond floor} $P_t = F$, then all the stocks must be sold, with only the zero-coupon bonds remaining.
-      But if the stock price rises, more stocks must be purchased, and vice versa.
-      \vskip1ex
-      Therefore the \emph{CPPI} strategy is a \emph{trend following} strategy, buying stocks when their prices are rising, and selling when their prices are dropping.
+      The \emph{CPPI} strategy is a \emph{trend following} strategy, buying stocks when their prices are rising, and selling when their prices are dropping.
       \vskip1ex
       The \emph{CPPI} strategy can be considered a dynamic replication of a portfolio with a zero-coupon bond and a stock call option.
       \vskip1ex
       The \emph{CPPI} strategy is exposed to \emph{gap risk}, if stock prices drop suddenly by a large amount.  
-      The \emph{gap risk} is exacerbated by high leverage, when the \emph{multiplier} $C$ is large, say greater than $5$.
+      The \emph{gap risk} is exacerbated by high leverage, when the multiplier $C$ is large, say greater than $5$.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_cppi.png}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_cppi_perf.png}
       <<echo=TRUE,eval=FALSE>>=
-# Simulate CPPI strategy
-for (t in 2:nrows) {
-  portfv[t] <- portfv[t-1] + stockv[t-1]*retp[t]
-  stockv[t] <- min(coeff*(portfv[t] - bfloor), portfv[t])
-  bondv[t] <- (portfv[t] - stockv[t])
-}  # end for
-# dygraph plot of CPPI strategy
 pricev <- 100*cumprod(1 + retp)
-datav <- xts::xts(cbind(stockv, bondv, portfv, pricev), datev)
+datav <- cbind(stockv, bondv, portfv, pricev)["2008/2009"]
 colnames(datav) <- c("stocks", "bonds", "CPPI", "VTI")
 endd <- rutils::calc_endpoints(datav, interval="weeks")
-dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
-  dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
+dygraphs::dygraph(datav[endd], main="CPPI Strategy") %>%
+  dyOptions(colors=c("red", "green", "blue", "black"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{CPPI Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of the CPPI strategy depends on the level of the bond floor $F$ and the multiplier $C$, with larger returns for higher values of $C$, but also higher risk.
+      \vskip1ex
+      When stocks rally, the margin account grows and the bond allocation decreases.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_cppi_perffull.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the CPPI margin account
+margv <- cbind(pricev, margv)
+colnames(margv)[2] <- "margin"
+endd <- rutils::calc_endpoints(margv, interval="weeks")
+dygraphs::dygraph(margv[endd], main="CPPI Margin and VTI") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Calculate the Sharpe of CPPI wealth
+wealthv <- cbind(pricev, portfv)
+colnames(wealthv)[2] <- "CPPI"
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x)
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the CPPI wealth
+dygraphs::dygraph(log(wealthv[endd]), main="Wealth of CPPI and VTI") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -1120,11 +1221,11 @@ dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The weights of the risk parity strategy are proportional to the inverse of the stock dollar volatilities: $w_i \propto \frac{1}{\sigma_i}$.
+      The stock dollar amounts of the risk parity strategy are such that they have \emph{equal dollar volatilities}.
       \vskip1ex
-      So that the stock allocations (\emph{dollar amounts}) have equal dollar volatilities.
+      The stock dollar amounts must be inversely proportional to the dollar volatilities: $w_i \propto \frac{1}{\sigma_i}$.
       \vskip1ex
-      The risk parity strategy has a higher Sharpe ratio than the equal dollar portfolio because it's overweight bonds. 
+      The risk parity strategy has a higher Sharpe ratio than the fixed share strategy with equal initial dollar amounts because it's overweight bonds. 
       But it also has lower absolute returns.
       \vskip1ex
       The risk parity strategy was developed in the early \texttt{1990s} by \href{https://www.bridgewater.com/research-and-insights}{\emph{Bridgewater Associates}}.
@@ -1133,31 +1234,33 @@ dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
 pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
 datev <- zoo::index(pricev)
 retd <- rutils::diffit(pricev)
+retd[1, ] <- retd[2, ]
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Calculate the risk parity weights
 weightv <- 1/sapply(retd, sd)
 weightv <- weightv/sum(weightv)
-# Wealth of risk parity
+# Wealth of risk parity (fixed shares)
 wealthrp <- drop(pricev %*% weightv)
-# Wealth of equal dollar (without rebalancing)
+# Wealth of fixed shares (equal dollar)
 weightv <- 1/as.numeric(pricev[1, ])
 weightv <- weightv/sum(weightv)
-wealthed <- (pricev %*% weightv)
-wealthed <- wealthrp[1]*wealthed/wealthed[1]
+wealthfs <- (pricev %*% weightv)
+# Scale the wealthfs to start equal to wealthrp
+wealthfs <- wealthrp[1]*wealthfs/wealthfs[1]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/portf_risk_parity_insample.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
-wealthv <- xts::xts(cbind(wealthed, wealthrp), datev)
-colnames(wealthv) <- c("Equal dollar", "Risk parity")
+wealthv <- xts::xts(cbind(wealthfs, wealthrp), datev)
+colnames(wealthv) <- c("Fixed Shares", "Risk parity")
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the log wealth
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(log(wealthv[endd]), 
-  main="Wealth of Equal Dollar And Risk parity") %>%
+  main="Wealth of Fixed Shares And Risk parity") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
@@ -1180,8 +1283,8 @@ dygraphs::dygraph(log(wealthv[endd]),
       \vskip1ex
       The function \texttt{HighFreq::run\_var()} calculates the trailing variance of returns $r_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the returns minus the trailing means $(r_t - \bar{r}_t)^2$, using the decay factor $\lambda$:
       \begin{flalign*}
-        & \bar{r}_t = \lambda \bar{r}_{t-1} + (1-\lambda) r_t \\
-        & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (r_t - \bar{r}_t)^2
+        & \bar{r}_t = \lambda \bar{r}_{t-1} + (1 - \lambda) r_t \\
+        & \sigma^2_t = \lambda^2 \sigma^2_{t-1} + (1 - \lambda^2) (r_t - \bar{r}_t)^2
       \end{flalign*}
       Where $\sigma^2_t$ is the trailing variance at time $t$.
       \vskip1ex
@@ -1193,9 +1296,9 @@ dygraphs::dygraph(log(wealthv[endd]),
 # Calculate the trailing dollar volatilities
 lambdav <- 0.99
 vold <- HighFreq::run_var(retd, lambda=lambdav)
-vold <- sqrt(vold[, 2])
+vold <- sqrt(vold[, 3:4])
 # Calculate the rolling risk parity weights
-weightv <- 1/vold
+weightv <- ifelse(vold > 0, 1/vold, 1)
 weightv <- weightv/rowSums(weightv)
 # Calculate the risk parity allocations
 pricerp <- pricev*weightv
@@ -1220,7 +1323,7 @@ dygraph(log(pricerp[endd]), main="Risk Parity Allocations") %>%
     \column{0.5\textwidth}
       In the \emph{Risk Parity} strategy the stock allocations are rebalanced daily so that their dollar volatilities remain equal.
       \vskip1ex
-      The dollar returns of risk parity $r_d$ are equal to the percentage returns of the original prices $r_t$ times the stock allocations $p_a$: $r_d = r_t p_a$.
+      The dollar returns of risk parity $r_d$ are equal to the percentage returns $r_t$ times the stock allocations $p_a$: $r_d = r_t p_a$.
       \vskip1ex
       The risk parity strategy for stocks and bonds has a higher Sharpe ratio than the proportional wealth strategy. 
       But it also has lower absolute returns.
@@ -1237,7 +1340,7 @@ retrp <- retp*rutils::lagit(pricerp)
 retrp[1, ] <- pricerp[1, ]
 # Calculate the wealth of risk parity
 wealthrp <- cumsum(rowSums(retrp))
-# Wealth of proportional allocation (with rebalancing)
+# Wealth of proportional wealth (with rebalancing)
 wealthpr <- cumprod(1 + rowMeans(retp))
 wealthpr <- wealthpr*wealthrp[1]
       @
@@ -1248,13 +1351,13 @@ wealthpr <- wealthpr*wealthrp[1]
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(wealthpr, wealthrp)
 wealthv <- xts::xts(wealthv, datev)
-colnames(wealthv) <- c("PropAlloc", "Risk Parity")
+colnames(wealthv) <- c("PropWealth", "Risk Parity")
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot a dygraph of the log wealths
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(log(wealthv[endd]), 
-  main="Log Wealth of Proportional Allocation vs Risk Parity") %>%
+  main="Log of Proportional Wealth vs Risk Parity") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
@@ -1309,7 +1412,7 @@ summary(regmod)
 coefreg <- summary(regmod)$coeff
 fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 points.default(x=retvti, y=fitv, pch=16, col="blue")
-text(x=0.0, y=0.7*max(resids), paste("Prop Alloc t-value =", round(coefreg["Treynor", "t value"], 2)))
+text(x=0.0, y=0.7*max(resids), paste("Prop Wealth t-value =", round(coefreg["Treynor", "t value"], 2)))
       @
   \end{columns}
 \end{block}
@@ -1610,10 +1713,10 @@ for (i in 1:(nrows-1)) {
     pnls[i+1] <- 0 # Set PnLs = 0 if in stop-loss
 }  # end for
 # Same but without using loops in R
-pnls2 <- retp
+pnl2 <- retp
 insl <- rutils::lagit(dd < -stopl*pricem)
-pnls2 <- ifelse(insl, 0, pnls2)
-all.equal(pnls, pnls2, check.attributes=FALSE)
+pnl2 <- ifelse(insl, 0, pnl2)
+all.equal(pnls, pnl2, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -1978,7 +2081,7 @@ dyplot
     \column{0.5\textwidth}
       The \emph{Exponentially Weighted Moving Average Price} (\emph{EMA}) is defined as the weighted average of prices over a rolling interval:
       \begin{displaymath}
-        p^{EMA}_i = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
+        p^{EMA}_i = (1 - \lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
       \end{displaymath}
       Where the decay factor $\lambda$ determines the rate of decay of the \emph{EMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       \vskip1ex
@@ -2035,7 +2138,7 @@ legend("topleft", legend=colnames(pricev), y.intersp=0.5,
     \column{0.5\textwidth}
       The \emph{EMA} prices can be calculated recursively as follows:
       \begin{displaymath}
-        p^{EMA}_i = (1-\lambda) p_i + \lambda p^{EMA}_{i-1}
+        p^{EMA}_i = (1 - \lambda) p_i + \lambda p^{EMA}_{i-1}
       \end{displaymath}
       Where the decay factor $\lambda$ determines the rate of decay of the \emph{EMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       \vskip1ex
@@ -2565,7 +2668,7 @@ colnames(pnltrend) <- paste0("lambda=", lambdav)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of trend following \emph{EMA} strategies depends on the $\lambda$ decay factor, with smaller $\lambda$ parameters performing better than larger ones.
+      The performance of trend following \emph{EMA} strategies depends on the $\lambda$ decay factor, with larger $\lambda$ parameters closer to \texttt{1} performing better than larger ones.
       \vskip1ex
       The optimal $\lambda$ parameter applies significant weight to returns \texttt{8 - 12} months in the past, which is consistent with research on trend following strategies.
       \vskip1ex
@@ -3236,8 +3339,8 @@ legend("bottomright", legend=colnames(pricev),
       \end{displaymath}
       The volume weighted prices $\mu^{pv}$ and the mean trading volumes $\mu^v$ are both calculated recursively:
       \begin{flalign*}
-        \mu^v_t = \lambda \mu^v_{t-1} + (1-\lambda) v_t \\
-        \mu^{pv}_t = \lambda \mu^{pv}_{t-1} + (1-\lambda) v_t p_t
+        \mu^v_t = \lambda \mu^v_{t-1} + (1 - \lambda) v_t \\
+        \mu^{pv}_t = \lambda \mu^{pv}_{t-1} + (1 - \lambda) v_t p_t
       \end{flalign*}
       The recursive \emph{VWAP} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
       \vskip1ex
@@ -3573,8 +3676,8 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sa
       \vskip1ex
       The function \texttt{HighFreq::run\_var()} calculates the trailing mean and variance of the prices $p_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the prices minus the trailing means $(p_t - \bar{p}_t)^2$, using the decay factor $\lambda$:
       \begin{flalign*}
-        & \bar{p}_t = \lambda \bar{p}_{t-1} + (1-\lambda) p_t \\
-        & \sigma^2_t = \lambda \sigma^2_{t-1} + (1-\lambda) (p_t - \bar{p}_t)^2
+        & \bar{p}_t = \lambda \bar{p}_{t-1} + (1 - \lambda) p_t \\
+        & \sigma^2_t = \lambda^2 \sigma^2_{t-1} + (1 - \lambda^2) (p_t - \bar{p}_t)^2
       \end{flalign*}
       Where $\bar{p}_t$ and $\sigma^2_t$ are the trailing mean and variance at time $t$.
       \vskip1ex
@@ -3753,7 +3856,7 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Modified Bollinger Strategy}
+\subsection{The Patient Bollinger Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3761,9 +3864,9 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
     \column{0.5\textwidth}
       Unwinding the position when the stock reaches a fair (mean) price doesn't necessarily produce better performance.
       \vskip1ex
-      In the modified Bollinger Strategy the positions are held until the price reaches the opposite extreme, so that the strategy is always either long \texttt{\$1} dollar of stock or short \texttt{\$1} dollar of stock.
+      In the patient Bollinger Strategy the positions are held until the price reaches the opposite extreme, so that the strategy is always either long \texttt{\$1} dollar of stock or short \texttt{\$1} dollar of stock.
       <<echo=TRUE,eval=FALSE>>=
-# Simulate the modified Bollinger strategy
+# Simulate the patient Bollinger Strategy
 posv <- integer(nrows) # Stock positions
 posv[1] <- 0 # Initial position
 for (it in 2:nrows) {
@@ -3779,15 +3882,15 @@ for (it in 2:nrows) {
   }  # end if
 }  # end for
 # Calculate the PnLs
-pnls2 <- retp*posv
+pnl2 <- retp*posv
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_bollinger_mod.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe ratios
-wealthv <- cbind(pnls, pnls2)
-colnames(wealthv) <- c("Bollinger", "Modified")
+wealthv <- cbind(pnls, pnl2)
+colnames(wealthv) <- c("Bollinger", "Patient")
 sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
 sharper <- round(sharper, 3)
 # Dygraphs plot of Bollinger strategy
@@ -3815,11 +3918,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
     \column{0.5\textwidth}
       The Bollinger Strategy is path-dependent so simulating it requires performing a loop, which can be slow in \texttt{R}.  
       \vskip1ex
-      The modified Bollinger Strategy can be simulated quickly using the compiled \texttt{C++} functions \texttt{ifelse()} and \texttt{zoo::na.locf()}.
+      The patient Bollinger Strategy can be simulated quickly using the compiled \texttt{C++} functions \texttt{ifelse()} and \texttt{zoo::na.locf()}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Simulate the modified Bollinger strategy quickly
+# Simulate the patient Bollinger Strategy quickly
 posf <- rep(NA_integer_, nrows)
 posf[1] <- 0
 posf <- ifelse(pricec > threshv, -1, posf)

@@ -693,26 +693,26 @@ head(EuStockMarkets[, "DAX"])
 identical(DAX, EuStockMarkets[, "DAX"])
 
 # Create new environment
-test_env <- new.env()
+envv <- new.env()
 # Pass string as name to create new object
-assign("myvar1", 2, envir=test_env)
+assign("myvar1", 2, envir=envv)
 # Create new object using $ string referencing
-test_env$myvar2 <- 1
+envv$myvar2 <- 1
 # List objects in new environment
-ls(test_env)
+ls(envv)
 # Reference an object by name
-test_env$myvar1
+envv$myvar1
 # Reference an object by string name using get
-get("myvar1", envir=test_env)
+get("myvar1", envir=envv)
 # Retrieve and assign value to object
 assign("myvar1",
-       2*get("myvar1", envir=test_env),
-       envir=test_env)
-get("myvar1", envir=test_env)
+       2*get("myvar1", envir=envv),
+       envir=envv)
+get("myvar1", envir=envv)
 # Return all objects in an environment
-mget(ls(test_env), envir=test_env)
+mget(ls(envv), envir=envv)
 # Delete environment
-rm(test_env)
+rm(envv)
 
 rm(list=ls())  # Delete all objects in workspace
 # Convert string to symbol
@@ -994,8 +994,7 @@ matv*vec1
 # Multiply rows of matrix by vector
 t(vec1*t(matv))
 # Multiply rows of matrix by vector - transpose is very slow
-matrixp <- lapply(1:NCOL(matv), 
-  function(x) vec1[x]*matv[, x])
+matrixp <- lapply(1:NCOL(matv), function(x) vec1[x]*matv[, x])
 do.call(cbind, matrixp)
 library(microbenchmark)
 summary(microbenchmark(
@@ -1102,14 +1101,14 @@ loaded <- load(file="/Users/jerzy/Develop/data/my_data.RData")
 loaded  # Vector of loaded objects
 ls()  # List objects
 
-testfun <- function(arg1, arg2) {
+testfun <- function(first, second) {
 # Last statement of function is return value
-  arg1 + 2*arg2
+  first + 2*second
 }  # end testfun
-testfun(arg1=3, arg2=2)  # Bind by name
-testfun(first=3, second=2)  # Partial name binding
+testfun(first=3, second=2)  # Bind by name
+testfun(f=3, s=2)  # Partial name binding
 testfun(3, 2)  # Bind by position
-testfun(arg2=2, 3)  # mixed binding
+testfun(second=2, 3)  # mixed binding
 testfun(3, 2, 1)  # Too many arguments
 testfun(2)  # Not enough arguments
 
@@ -1417,8 +1416,7 @@ testfun(1, 2, 3, param2=4, param1=5)
 # Anonymous function passed to testfun
 testfun(funn=(function(x) (x + 3)), 5)
 # Anonymous function is default value
-testfun <-
-  function(..., funn=function(x, y, z) {x+y+z}) {
+testfun <- function(..., funn=function(x, y, z) {x+y+z}) {
     funn <- match.fun(funn)
     funn(...)  # Execute function call
 }  # end testfun
@@ -1427,8 +1425,7 @@ testfun(2, 3, 4, 5)
 # funn bound by name
 testfun(funn=sum, 2, 3, 4, 5)
 # Pass anonymous function to funn
-testfun(funn=function(x, y, z) {x*y*z},
-    2, 3, 4)
+testfun(funn=function(x, y, z) {x*y*z}, 2, 3, 4)
 
 str(sum)  # Sum() accepts multiple arguments
 # Sum() can't accept list of arguments
