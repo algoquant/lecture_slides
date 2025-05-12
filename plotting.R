@@ -724,10 +724,10 @@ persp(z=outer(xlim, ylim, FUN=fun2d),
 theta=45, phi=30, zlab="sine",
 shade=0.1, col="green",
 main="radial sine function")
-# Set rgl options
-options(rgl.useNULL=TRUE)
 # Load package rgl
 library(rgl)
+# Set rgl options
+options(rgl.useNULL=TRUE)
 # Create 3d scatter plot of function
 with(iris, rgl::plot3d(Sepal.Length, Sepal.Width, Petal.Length,
             type="s", col=as.numeric(Species)))

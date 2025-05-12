@@ -441,8 +441,8 @@ summary(microbenchmark(
   as_dframe=as.data.frame(matv),
   dframe=data.frame(matv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-library(microbenchmark)
 # lapply is faster than coercion function
+library(microbenchmark)
 summary(microbenchmark(
   aslist=as.list(as.data.frame.matrix(matv)),
   lapply=lapply(seq_along(matv[1, ]),

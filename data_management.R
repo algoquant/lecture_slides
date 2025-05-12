@@ -918,7 +918,7 @@ tail(pricev[[1]])
 # Extract close prices
 pricev <- lapply(pricev, quantmod::Cl)
 # Collapse list into time series the hard way
-prices2 <- cbind(pricev[[1]], pricev[[2]], pricev[[3]], pricev[[4]])
+price2 <- cbind(pricev[[1]], pricev[[2]], pricev[[3]], pricev[[4]])
 class(price2)
 dim(price2)
 # Collapse list into time series using do.call()
@@ -956,7 +956,7 @@ unlist(eapply(globalenv(), is.xts))
 write.zoo(pricev,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
 # Copy prices into etfenv
-etfenv$prices <- pricev
+etfenv$pricev <- pricev
 # Or
 assign("pricev", pricev, envir=etfenv)
 # Save to .RData file
@@ -1128,8 +1128,7 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 #   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns of the S&P500 constituent stocks
 # retp <- xts::diff.xts(log(pricev))
-retp <- xts::diff.xts(pricev)/
-  rutils::lagit(pricev, pad_zeros=FALSE)
+retp <- xts::diff.xts(pricev)/rutils::lagit(pricev, pad_zeros=FALSE)
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 samplev <- sample(NCOL(retp), s=100, replace=FALSE)
 prices100 <- pricev[, samplev]
@@ -1153,8 +1152,8 @@ datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
 colv <- c("index", "VTI")
 colnames(datav) <- colv
 # Plot index with VTI
-endd <- rutils::calc_endpoints(datav, interval="weeks")
-dygraphs::dygraph(log(datav)[endd],
+endw <- rutils::calc_endpoints(datav, interval="weeks")
+dygraphs::dygraph(log(datav)[endw],
   main="S&P 500 Price-weighted Index and VTI") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
@@ -1169,35 +1168,35 @@ for (symboln in ls(sp500env)) {
   zoo::write.zoo(sp500env$symbol, file=paste0(dirn, symboln, ".csv"))
 }  # end for
 # Or using lapply()
-filens <- lapply(ls(sp500env), function(symboln) {
+filev <- lapply(ls(sp500env), function(symboln) {
   xtsv <- get(symboln, envir=sp500env)
   zoo::write.zoo(xtsv, file=paste0(dirn, symboln, ".csv"))
   symboln
 })  # end lapply
-unlist(filens)
+unlist(filev)
 # Or using eapply() and data.table::fwrite()
-filens <- eapply(sp500env , function(xtsv) {
+filev <- eapply(sp500env , function(xtsv) {
   filen <- rutils::get_name(colnames(xtsv)[1])
   data.table::fwrite(data.table::as.data.table(xtsv), file=paste0(dirn, filen, ".csv"))
   filen
 })  # end eapply
-unlist(filens)
+unlist(filev)
 # Load the environment from compressed .RData file
 dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
 load(file=paste0(dirn, "sp500.RData"))
 # Get all the .csv file names in the directory
 dirn <- "/Users/jerzy/Develop/lecture_slides/data/SP500/"
-filens <- Sys.glob(paste0(dirn, "*.csv"))
+filev <- Sys.glob(paste0(dirn, "*.csv"))
 # Create new environment for data
 sp500env <- new.env()
-for (filen in filens) {
+for (filen in filev) {
   xtsv <- xts::as.xts(zoo::read.csv.zoo(filen))
   symboln <- rutils::get_name(colnames(xtsv)[1])
   # symboln <- strsplit(colnames(xtsv), split="[.]")[[1]][1]
   assign(symboln, xtsv, envir=sp500env)
 }  # end for
 # Or using fread()
-for (filen in filens) {
+for (filen in filev) {
   xtsv <- data.table::fread(filen)
   data.table::setDF(xtsv)
   xtsv <- xts::xts(xtsv[, -1], as.Date(xtsv[, 1]))
@@ -1272,8 +1271,7 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 # colnames(pricev) <- do.call(rbind,
 #   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns
-retp <- xts::diff.xts(pricev)/
-  rutils::lagit(pricev, pad_zeros=FALSE)
+retp <- xts::diff.xts(pricev)/rutils::lagit(pricev, pad_zeros=FALSE)
 # Select a random sample of 100 prices and returns
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 samplev <- sample(NCOL(retp), s=100, replace=FALSE)
@@ -1361,14 +1359,14 @@ Sys.sleep(1)
 }  # end while
 save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
 # Extract Close prices
-prices <- eapply(etfenv, quantmod::Cl)
-prices <- do.call(cbind, prices)
+pricev <- eapply(etfenv, quantmod::Cl)
+pricev <- do.call(cbind, pricev)
 # Drop ".Close" from colnames
-colnames(prices) <- do.call(rbind, strsplit(colnames(prices), split="[.]"))[, 1]
+colnames(pricev) <- do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate the log returns
-retp <- xts::diff.xts(log(prices))
+retp <- xts::diff.xts(log(pricev))
 # Copy prices and returns into etfenv
-etfenv$prices <- prices
+etfenv$pricev <- pricev
 etfenv$retp <- retp
 # Copy symbolv into etfenv
 etfenv$symbolv <- symbolv
@@ -1551,27 +1549,27 @@ dygraphs::dygraph(pricev["2008-06/2009-06", -5],
 # Read CBOE futures expiration dates
 datev <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/futures_expiration_dates_codes.csv",
   row.names=1)
+# Create directory for data
 dirn <- "/Users/jerzy/Develop/data/vix_data"
 dir.create(dirn)
-symbolv <- rownames(datev)
-filens <- file.path(dirn, paste0(symbolv, ".csv"))
-log_file <- file.path(dirn, "log_file.txt")
-cboe_url <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
-urls <- paste0(cboe_url, datev[, 1])
+namev <- rownames(datev)
+filev <- file.path(dirn, paste0(namev, ".csv"))
+filelog <- file.path(dirn, "log_file.txt")
+urlcboe <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
+urlv <- paste0(urlcboe, datev[, 1])
 # Download files in loop
-for (it in seq_along(urls)) {
+for (it in seq_along(urlv)) {
     tryCatch(  # Warning and error handler
-  download.file(urls[it],
-          destfile=filens[it], quiet=TRUE),
+  download.file(urlv[it], destfile=filev[it], quiet=TRUE),
 # Warning handler captures warning condition
 warning=function(msg) {
-  cat(paste0("Warning handler: ", msg, "\n"), file=log_file, append=TRUE)
+  cat(paste0("Warning handler: ", msg, "\n"), file=filelog, append=TRUE)
 },  # end warning handler
 # Error handler captures error condition
 error=function(msg) {
   cat(paste0("Error handler: ", msg, "\n"), append=TRUE)
 },  # end error handler
-finally=cat(paste0("Processing file name = ", filens[it], "\n"), append=TRUE)
+finally=cat(paste0("Processing file name = ", filev[it], "\n"), append=TRUE)
     )  # end tryCatch
 }  # end for
 # Create new environment for data

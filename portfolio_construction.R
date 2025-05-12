@@ -60,7 +60,7 @@ portf_maxSR <- add.objective(
   portfolio=portf_maxSR,
   type="risk",  # Minimize stdev
   name="stdev")
-# Calculate daily stock returns
+# Calculate daily ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
@@ -186,11 +186,11 @@ wealthv <- cbind(retp %*% weightms, retp %*% weightmv)
 wealthv <- xts::xts(wealthv, zoo::index(retp))
 colnames(wealthv) <- c("MaxSharpe", "MinVar")
 # Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv,
-  function(x) c(Sharpe=(mean(x)-raterf)/sd(x), Sortino=(mean(x)-raterf)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv, function(x)
+  (mean(x)-raterf)/c(Sharpe=sd(x), Sortino=sd(x[x<0])))
 # Plot the log wealth
-endd <- rutils::calc_endpoints(retp, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Maximum Sharpe and Minimum Variance Portfolios") %>%
   dyOptions(colors=c("blue", "green"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
@@ -413,6 +413,402 @@ chart_Series(retsoptim, theme=plot_theme,
 legend("top", legend=colnames(retsoptim),
    cex=0.8, inset=0.1, bg="white", lty=1,
    lwd=6, col=plot_theme$col$line.col, bty="n")
+# Calculate daily ETF percentage returns
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+nrows <- NROW(retp)
+# Create initial vector of portfolio weights
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+# Objective equal to minus Sharpe ratio
+objfun <- function(weightv, retp) {
+  retportf <- retp %*% weightv
+  stdev <- sd(retportf)
+  if (stdev == 0)
+    return(0)
+  else
+    return(-mean(retportf)/stdev)
+}  # end objfun
+# Objective for equal weight portfolio
+objfun(weightv, retp=retp)
+optiml <- unlist(optimize(f=function(weightv)
+    objfun(c(1, 1, weightv), retp=retp),
+  interval=c(-10, 10)))
+# Vectorize objective function with respect to third weight
+objvec <- function(weightv) sapply(weightv,
+  function(weightv) objfun(c(1, 1, weightv), retp=retp))
+# Or
+objvec <- Vectorize(FUN=function(weightv)
+    objfun(c(1, 1, weightv), retp=retp),
+  vectorize.args="weightv")  # end Vectorize
+objvec(1)
+objvec(1:3)
+# Plot objective function with respect to third weight
+curve(expr=objvec, type="l", xlim=c(-4.0, 1.0),
+xlab=paste("weight of", names(weightv[3])),
+ylab="", lwd=2)
+title(main="Sharpe Ratio", line=(-1))  # Add title
+points(x=optiml[1], y=optiml[2], col="green", lwd=6)
+text(x=optiml[1], y=optiml[2],
+     labels="maximum value", pos=4, cex=0.8)
+#Below is simplified plotting of objective function
+# Create vector of DBC weights
+weightv <- seq(from=-4, to=1, by=0.1)
+objv <- sapply(weightv, function(weightv)
+  objfun(c(1, 1, weightv), retp))
+plot(x=weightv, y=objv, t="l",
+xlab="weight of DBC", ylab="", lwd=2)
+title(main="Sharpe Ratio", line=(-1))  # Add title
+points(x=optiml[1], y=optiml[2], col="green", lwd=6)
+text(x=optiml[1], y=optiml[2],
+     labels="maximum value", pos=4, cex=0.8)
+# Vectorize function with respect to two weights
+objvec <- Vectorize(
+  FUN=function(w1, w2, w3) objfun(c(w1, w2, w3), retp),
+  vectorize.args=c("w2", "w3"))  # end Vectorize
+# Calculate objective on 2-d (w2 x w3) parameter grid
+w2 <- seq(-3, 7, length=50)
+w3 <- seq(-5, 5, length=50)
+gridm <- outer(w2, w3, FUN=objvec, w1=1)
+rownames(gridm) <- round(w2, 2)
+colnames(gridm) <- round(w3, 2)
+# Perspective plot of objective function
+persp(w2, w3, -gridm,
+theta=45, phi=30, shade=0.5,
+col=rainbow(50), border="green",
+main="objective function")
+# Interactive perspective plot of objective function
+library(rgl)
+rgl::persp3d(z=-gridm, zlab="objective",
+  col="green", main="objective function")
+rgl::persp3d(
+  x=function(w2, w3) {objvec(w1=1, w2, w3)},
+  xlim=c(-3, 7), ylim=c(-5, 5),
+  col="green", axes=FALSE)
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)
+# Vector of initial portfolio weights equal to 1
+weightv <- rep(1, nstocks)
+names(weightv) <- symbolv
+# Objective function equal to standard deviation of returns
+objfun <- function(weightv) {
+  retportf <- retp %*% weightv
+  sd(retportf)/sum(weightv)
+}  # end objfun
+# objfun() for equal weight portfolio
+objfun(weightv)
+objfun(2*weightv)
+# Perform portfolio optimization
+optiml <- optim(par=weightv,
+          fn=objfun,
+          method="L-BFGS-B",
+          upper=rep(10, nstocks),
+          lower=rep(-10, nstocks))
+# Rescale the optimal weights
+weightv <- optiml$par/sum(optiml$par)
+# Minimum variance portfolio returns
+retsoptim <- xts(x=retp %*% weightv,
+            order.by=zoo::index(retp))
+chart_Series(x=exp(cumsum(retsoptim)), name="minvar portfolio")
+# Add green point for minimum variance portfolio
+optim_sd <- 100*sd(retsoptim)
+optim_ret <- 100*mean(retsoptim)
+points(x=optim_sd, y=optim_ret, col="green", lwd=6)
+text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
+# Objective function equal to minus Sharpe ratio
+raterf <- 0.03
+objfun <- function(weightv) {
+  retp <- 100*rutils::etfenv$returns[, names(weightv)] %*% weightv / sum(weightv)
+  -mean(retp-raterf)/sd(retp)
+}  # end objfun
+# Perform portfolio optimization
+optiml <- optim(par=weightv,
+             fn=objfun,
+             method="L-BFGS-B",
+             upper=rep(10, nstocks),
+             lower=rep(-10, nstocks))
+# Maximum Sharpe ratio portfolio returns
+weightv <- optiml$par/sum(optiml$par)
+retsoptim <- xts(x=retp %*% weightv,
+            order.by=zoo::index(retp))
+chart_Series(x=exp(cumsum(retsoptim)), name="maxSR portfolio")
+optim_sd <- 100*sd(retsoptim)
+optim_ret <- 100*mean(retsoptim)
+points(x=optim_sd, y=optim_ret,
+ col="blue", lwd=3)
+text(x=optim_sd, y=optim_ret,
+     labels="maxSR", pos=2, cex=0.8)
+sharpem <- (optim_ret-raterf)/optim_sd
+# Plot individual assets
+retm <- 100*sapply(retp, mean)
+stdevs <- 100*sapply(retp, sd)
+points(stdevs, retm, col="green", lwd=3)
+text(stdevs, retm, labels=names(retm), pos=2, cex=0.8)
+# Add point at risk-free rate and draw Capital Market Line
+points(x=0, y=raterf)
+text(0, raterf, labels="risk-free", pos=4, cex=0.8)
+abline(a=raterf, b=sharpem, col="blue")
+rangev <- par("usr")
+text(optim_sd/3, (optim_ret+raterf)/2.5,
+     labels="Capital Market Line", cex=0.8, , pos=3,
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+             (rangev[4]-rangev[3])*
+             heightp/widthp)/(0.25*pi))
+# Create initial vector of portfolio weights
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+# Optimization to find weights with maximum Sharpe ratio
+optiml <- optim(par=weightv,
+          fn=objfun,
+          retp=retp,
+          method="L-BFGS-B",
+          control=list(factr=1e5),
+          upper=c(10, 10, 10),
+          lower=c(-10, -10, -10))
+# Optimal parameters
+weightv <- optiml$par
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+# Optimal Sharpe ratio
+-objfun(weightv, retp)
+# Calculate the weights from the inverse covariance matrix
+weightv <- drop(solve(cov(retp)) %*% sapply(retp, mean))
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+# barplot of optimal portfolio weights
+barplot(weightv, col=c("red", "green", "blue"),
+  main="Optimized portfolio weights")
+# Calculate the cumulative wealth of the optimized portfolio
+wealthv <- cbind(retp %*% weightv, retp)
+colnames(wealthv)[1] <- "combined"
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x)
+  (mean(x)-raterf)/c(Sharpe=sd(x), Sortino=sd(x[x<0])))
+# Plot the log wealth
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+colv <- colnames(wealthv)
+colr <- c("red", "blue", "green", "grey")
+dygraphs::dygraph(cumsum(wealthv)[endw],
+  main="Optimized Portfolio Returns") %>%
+  dyOptions(colors=colr, strokeWidth=1) %>%
+  dySeries(name=colv[1], col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Rastrigin function with vector argument for optimization
+rastrigin <- function(vecv, param=25){
+  sum(vecv^2 - param*cos(vecv))
+}  # end rastrigin
+vecv <- c(pi/6, pi/6)
+rastrigin(vecv=vecv)
+library(DEoptim)
+# Optimize rastrigin using DEoptim
+optiml <- DEoptim::DEoptim(rastrigin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# Optimal parameters and value
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
+# Perform optimization using DEoptim
+optiml <- DEoptim::DEoptim(fn=objfun,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp,
+  control=list(trace=FALSE, itermax=100, parallelType=1))
+weightv <- optiml$optim$bestmem
+names(weightv) <- colnames(retp)
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+# Objective with shrinkage penalty
+objfun <- function(weightv, retp, lambdaf, alphaf) {
+  retportf <- retp %*% weightv
+  stdev <- sd(retportf)
+  if (stdev == 0)
+    return(0)
+  else {
+    penaltyv <- lambdaf*((1-alphaf)*sum(weightv^2) +
+alphaf*sum(abs(weightv)))
+    return(-mean(retportf)/stdev + penaltyv)
+  }
+}  # end objfun
+# Objective for equal weight portfolio
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+lambdaf <- 0.5 ; alphaf <- 0.5
+objfun(weightv, retp=retp, lambdaf=lambdaf, alphaf=alphaf)
+# Perform optimization using DEoptim
+optiml <- DEoptim::DEoptim(fn=objfun,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp,
+  lambdaf=lambdaf,
+  alphaf=alphaf,
+  control=list(trace=FALSE, itermax=100, parallelType=1))
+weightv <- optiml$optim$bestmem
+names(weightv) <- colnames(retp)
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+# Load stock returns
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+datev <- zoo::index(na.omit(retstock$GOOGL))
+retp <- retstock[datev] # Subset the returns to GOOGL
+# Remove the stocks with any NA values
+numna <- sapply(retp, function(x) sum(is.na(x)))
+retp <- retp[, numna==0]
+# Select 100 random stocks
+retp <- retp[, sample(NCOL(retp), 100)]
+symbolv <- colnames(retp)
+datev <- zoo::index(retp)
+retis <- retp["/2014"] # In-sample returns
+raterf <- 0.03/252
+retx <- (retis - raterf) # Excess returns
+# Calculate the maximum Sharpe weights in-sample interval
+colmeanv <- colMeans(retx, na.rm=TRUE)
+covmat <- cov(retx, use="pairwise.complete.obs")
+invreg <- MASS::ginv(covmat)
+wmaxs <- drop(invreg %*% colmeanv)
+names(wmaxs) <- symbolv
+# Calculate the weights using optimization without shrinkage
+lambdaf <- 0.0 ; alphaf <- 1.0
+optiml <- optim(par=wmaxs,
+          fn=objfun,
+          retp=retx,
+          lambdaf=lambdaf,
+          alphaf=alphaf,
+          method="L-BFGS-B",
+          control=list(factr=1e5),
+          upper=c(10, 10, 10),
+          lower=c(-10, -10, -10))
+weighto <- optiml$par
+names(weighto) <- symbolv
+all.equal(weighto, wmaxs)
+# Calculate the portfolio weights with shrinkage
+lambdav <- seq(1.905e-7, 1.90525e-7, length=5)
+lambdav <- seq(0, 1e-6, length=7)
+ncores <- detectCores() - 1
+weightm <- mclapply(lambdav, function(lambdaf) {
+  optiml <- optim(par=wmaxs, fn=objfun,
+            retp=retx,
+            lambdaf=lambdaf, alphaf=0,
+            method="L-BFGS-B",
+            control=list(factr=1e5),
+            upper=c(10, 10, 10),
+            lower=c(-10, -10, -10))
+  optiml$par
+}) # end mclapply
+weightm <- do.call(cbind, weightm)
+colnames(weightm) <- paste0("lambda=", lambdav)
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(weightm))
+plot(sort(weightm[, 1]), xlab=NA, ylab="weight", col=colorv[1], lwd=2)
+for (i in 2:NCOL(weightm)) {
+  points(sort(weightm[, i]), col=colorv[i], lwd=2)
+} # end for
+apply(weightm, 2, function(x) sum(abs(x)))
+lambdav <- seq(0, 1e-6, length=7)
+ncores <- detectCores() - 1
+weightm <- mclapply(lambdav, function(lambdaf) {
+  optiml <- DEoptim::DEoptim(fn=objfun,
+                       upper=rep(10, NCOL(retp)),
+                       lower=rep(-10, NCOL(retp)),
+                       retp=retp,
+                       lambdaf=lambdaf,
+                       alphaf=0,
+                       control=list(trace=FALSE, itermax=100))
+  optiml$optim$bestmem
+}) # end mclapply
+weightm <- do.call(cbind, weightm)
+colnames(weightm) <- paste0("lambda=", lambdav)
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(weightm))
+plot(sort(weightm[, 1]), xlab=NA, ylab="weight", col=colorv[1], lwd=2)
+for (i in 2:NCOL(weightm)) {
+  points(sort(weightm[, i]), col=colorv[i], lwd=2)
+} # end for
+apply(weightm, 2, function(x) sum(abs(x)))
+foo <- apply(weightm, 2, function(x) x/sqrt(sum(x^2)))
+plot(sort(foo[, 1]), xlab=NA, ylab="weight", col=colorv[1], lwd=2)
+for (i in 2:NCOL(foo)) {
+  points(sort(foo[, i]), col=colorv[i], lwd=2)
+} # end for
+apply(foo, 2, function(x) sum(abs(x)))
+pnls <- HighFreq::mult_mat(weighto, retp)
+pnls <- rowMeans(pnls, na.rm=TRUE)
+pnls <- xts::xts(pnls, datev)
+pnls <- pnls*sd(retew["/2014"])/sd(pnls["/2014"])
+wealthv <- cbind(pnlmaxs, pnls)
+colnames(wealthv) <- c("MaxSharpe", "Shrink")
+# Calculate the in-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["/2014"], function(x)
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["2015/"], function(x)
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of cumulative portfolio returns
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
+  main="Out-of-Sample Maximum Sharpe Stock Portfolio") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyEvent(end(retis[, 1]), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
+# Load stock returns
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+datev <- zoo::index(na.omit(retstock$GOOGL))
+retp <- retstock[datev] # Subset the returns to GOOGL
+# Remove the stocks with any NA values
+numna <- sapply(retp, function(x) sum(is.na(x)))
+retp <- retp[, numna==0]
+# Select 100 random stocks
+retp <- retp[, sample(NCOL(retp), 100)]
+symbolv <- colnames(retp)
+datev <- zoo::index(retp)
+retis <- retp["/2014"] # In-sample returns
+raterf <- 0.03/252
+retx <- (retis - raterf) # Excess returns
+# Maximum Sharpe weights in-sample interval
+colmeanv <- colMeans(retx, na.rm=TRUE)
+covmat <- cov(retx, use="pairwise.complete.obs")
+invreg <- MASS::ginv(covmat)
+wmaxs <- drop(invreg %*% colmeanv)
+names(wmaxs) <- symbolv
+# Calculate the maximum Sharpe portfolio returns
+pnlmaxs <- HighFreq::mult_mat(wmaxs, retp)
+pnlmaxs <- rowMeans(pnlmaxs, na.rm=TRUE)
+pnlmaxs <- xts::xts(pnlmaxs, datev)
+retew <- xts::xts(rowMeans(retp, na.rm=TRUE), datev)
+pnlmaxs <- pnlmaxs*sd(retew["/2014"])/sd(pnlmaxs["/2014"])
+# Calculate the shrinkage portfolio returns
+lambdaf <- 1.0 ; alphaf <- 1.0
+optiml <- optim(par=wmaxs,
+          fn=objfun,
+          retp=retx,
+          lambdaf=lambdaf,
+          alphaf=alphaf,
+          method="L-BFGS-B",
+          control=list(factr=1e5),
+          upper=c(10, 10, 10),
+          lower=c(-10, -10, -10))
+weighto <- optiml$par
+names(weighto) <- symbolv
+pnls <- HighFreq::mult_mat(weighto, retp)
+pnls <- rowMeans(pnls, na.rm=TRUE)
+pnls <- xts::xts(pnls, datev)
+pnls <- pnls*sd(retew["/2014"])/sd(pnls["/2014"])
+wealthv <- cbind(pnlmaxs, pnls)
+colnames(wealthv) <- c("MaxSharpe", "Shrink")
+# Calculate the in-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["/2014"], function(x)
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["2015/"], function(x)
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of cumulative portfolio returns
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
+  main="Out-of-Sample Maximum Sharpe Stock Portfolio") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyEvent(end(retis[, 1]), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
+# Portfolio optimization
 library(rutils)
 library(Rglpk)
 # Vector of symbol names
@@ -501,190 +897,6 @@ optiml <- Rglpk_solve_LP(obj=objvec, mat=coeffm, dir=logop, rhs=consv, types=rep
 all.equal(optiml$optimum, sum(objvec*optiml$solution))
 coeffm %*% optiml$solution
 as.numeric(optiml$solution[1:ncols])
-# Calculate daily percentage returns
-symbolv <- c("VTI", "IEF", "DBC")
-nstocks <- NROW(symbolv)
-retp <- na.omit(rutils::etfenv$returns[, symbolv])
-# Create initial vector of portfolio weights
-weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
-# Objective equal to minus Sharpe ratio
-objfun <- function(weightv, retp) {
-  retp <- retp %*% weightv
-  if (sd(retp) == 0)
-    return(0)
-  else
-    -return(mean(retp)/sd(retp))
-}  # end objfun
-# Objective for equal weight portfolio
-objfun(weightv, retp=retp)
-optiml <- unlist(optimize(f=function(weightv)
-    objfun(c(1, 1, weightv), retp=retp),
-  interval=c(-4, 1)))
-# Vectorize objective function with respect to third weight
-objvec <- function(weightv) sapply(weightv,
-  function(weightv) objfun(c(1, 1, weightv), retp=retp))
-# Or
-objvec <- Vectorize(FUN=function(weightv)
-    objfun(c(1, 1, weightv), retp=retp),
-  vectorize.args="weightv")  # end Vectorize
-objvec(1)
-objvec(1:3)
-# Plot objective function with respect to third weight
-curve(expr=objvec, type="l", xlim=c(-4.0, 1.0),
-xlab=paste("weight of", names(weightv[3])),
-ylab="", lwd=2)
-title(main="Objective Function", line=(-1))  # Add title
-points(x=optiml[1], y=optiml[2], col="green", lwd=6)
-text(x=optiml[1], y=optiml[2],
-     labels="minimum objective", pos=4, cex=0.8)
-#below is simplified code for plotting objective function
-# Create vector of DBC weights
-weightv <- seq(from=-4, to=1, by=0.1)
-objv <- sapply(weightv, function(weightv)
-  objfun(c(1, 1, weightv)))
-plot(x=weightv, y=objv, t="l",
-xlab="weight of DBC", ylab="", lwd=2)
-title(main="Objective Function", line=(-1))  # Add title
-points(x=optiml[1], y=optiml[2], col="green", lwd=6)
-text(x=optiml[1], y=optiml[2],
-     labels="minimum objective", pos=4, cex=0.8)
-# Vectorize function with respect to all weights
-objvec <- Vectorize(
-  FUN=function(w1, w2, w3) objfun(c(w1, w2, w3), retp),
-  vectorize.args=c("w2", "w3"))  # end Vectorize
-# Calculate objective on 2-d (w2 x w3) parameter grid
-w2 <- seq(-3, 7, length=50)
-w3 <- seq(-5, 5, length=50)
-gridm <- outer(w2, w3, FUN=objvec, w1=1)
-rownames(gridm) <- round(w2, 2)
-colnames(gridm) <- round(w3, 2)
-# Perspective plot of objective function
-persp(w2, w3, -gridm,
-theta=45, phi=30, shade=0.5,
-col=rainbow(50), border="green",
-main="objective function")
-# Interactive perspective plot of objective function
-library(rgl)
-rgl::persp3d(z=-gridm, zlab="objective",
-  col="green", main="objective function")
-rgl::persp3d(
-  x=function(w2, w3) {-objvec(w1=1, w2, w3)},
-  xlim=c(-3, 7), ylim=c(-5, 5),
-  col="green", axes=FALSE)
-# Render the 3d surface plot of function
-rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)
-# Vector of initial portfolio weights equal to 1
-weightv <- rep(1, nstocks)
-names(weightv) <- symbolv
-# Objective function equal to standard deviation of returns
-objfun <- function(weightv) {
-  retp <- retp %*% weightv
-  sd(retp)/sum(weightv)
-}  # end objfun
-# objfun() for equal weight portfolio
-objfun(weightv)
-objfun(2*weightv)
-# Perform portfolio optimization
-optiml <- optim(par=weightv,
-          fn=objfun,
-          method="L-BFGS-B",
-          upper=rep(10, nstocks),
-          lower=rep(-10, nstocks))
-# Rescale the optimal weights
-weightv <- optiml$par/sum(optiml$par)
-# Minimum variance portfolio returns
-retsoptim <- xts(x=retp %*% weightv,
-            order.by=zoo::index(retp))
-chart_Series(x=exp(cumsum(retsoptim)), name="minvar portfolio")
-# Add green point for minimum variance portfolio
-optim_sd <- 100*sd(retsoptim)
-optim_ret <- 100*mean(retsoptim)
-points(x=optim_sd, y=optim_ret, col="green", lwd=6)
-text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
-# Objective function equal to minus Sharpe ratio
-raterf <- 0.03
-objfun <- function(weightv) {
-  retp <- 100*rutils::etfenv$returns[, names(weightv)] %*% weightv / sum(weightv)
-  -mean(retp-raterf)/sd(retp)
-}  # end objfun
-# Perform portfolio optimization
-optiml <- optim(par=weightv,
-             fn=objfun,
-             method="L-BFGS-B",
-             upper=rep(10, nstocks),
-             lower=rep(-10, nstocks))
-# Maximum Sharpe ratio portfolio returns
-weightv <- optiml$par/sum(optiml$par)
-retsoptim <- xts(x=retp %*% weightv,
-            order.by=zoo::index(retp))
-chart_Series(x=exp(cumsum(retsoptim)), name="maxSR portfolio")
-optim_sd <- 100*sd(retsoptim)
-optim_ret <- 100*mean(retsoptim)
-points(x=optim_sd, y=optim_ret,
- col="blue", lwd=3)
-text(x=optim_sd, y=optim_ret,
-     labels="maxSR", pos=2, cex=0.8)
-sharpem <- (optim_ret-raterf)/optim_sd
-# Plot individual assets
-retm <- 100*sapply(retp, mean)
-stdevs <- 100*sapply(retp, sd)
-points(stdevs, retm, col="green", lwd=3)
-text(stdevs, retm, labels=names(retm), pos=2, cex=0.8)
-# Add point at risk-free rate and draw Capital Market Line
-points(x=0, y=raterf)
-text(0, raterf, labels="risk-free", pos=4, cex=0.8)
-abline(a=raterf, b=sharpem, col="blue")
-rangev <- par("usr")
-text(optim_sd/3, (optim_ret+raterf)/2.5,
-     labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
-             (rangev[4]-rangev[3])*
-             heightp/widthp)/(0.25*pi))
-# Create initial vector of portfolio weights
-weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
-# Optimization to find weights with maximum Sharpe ratio
-optiml <- optim(par=weightv,
-             fn=objfun,
-             retp=retp,
-             method="L-BFGS-B",
-             upper=c(1.1, 10, 10),
-             lower=c(0.9, -10, -10))
-# Optimal parameters
-optiml$par
-optiml$par <- optiml$par/sum(optiml$par)
-# Optimal Sharpe ratio
--objfun(optiml$par)
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Plot in two vertical panels
-layout(matrix(c(1,2), 2),
- widths=c(1,1), heights=c(1,3))
-# barplot of optimal portfolio weights
-barplot(optiml$par, col=c("red", "green", "blue"),
-  main="Optimized portfolio weights")
-# Calculate cumulative returns of VTI, IEF, DBC
-retc <- lapply(retp,
-  function(retp) exp(cumsum(retp)))
-retc <- rutils::do_call(cbind, retc)
-# Calculate optimal portfolio returns with VTI, IEF, DBC
-retsoptim <- cbind(
-  exp(cumsum(retp %*% optiml$par)),
-  retc)
-colnames(retsoptim)[1] <- "retsoptim"
-# Plot optimal returns with VTI, IEF, DBC
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "red", "green", "blue")
-chart_Series(retsoptim, theme=plot_theme,
-       name="Optimized portfolio performance")
-legend("top", legend=colnames(retsoptim), cex=1.0,
-   inset=0.1, bg="white", lty=1, lwd=6,
-   col=plot_theme$col$line.col, bty="n")
-# Or plot non-compounded (simple) cumulative returns
-PerformanceAnalytics::chart.CumReturns(
-  cbind(retp %*% optiml$par, retp),
-  lwd=2, ylab="", legend.loc="topleft", main="")
 raterf <- 0.03
 retp <- c(asset1=0.05, asset2=0.06)
 stdevs <- c(asset1=0.4, asset2=0.5)
@@ -711,7 +923,7 @@ objfun <- function(x) {
   t(x) %*% covmat %*% x
 }  # end objfun
 unlist(optimize(f=objfun, interval=c(-1, 2)))
-# Calculate daily percentage returns
+# Calculate daily ETF percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
@@ -736,95 +948,6 @@ optiml <- quadprog::solve.QP(Dmat=2*covmat,
             Amat=a_mat,
             bvec=b_vec,
             meq=1)
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vecv, param=25){
-  sum(vecv^2 - param*cos(vecv))
-}  # end rastrigin
-vecv <- c(pi/6, pi/6)
-rastrigin(vecv=vecv)
-library(DEoptim)
-# Optimize rastrigin using DEoptim
-optiml <-  DEoptim(rastrigin,
-  upper=c(6, 6), lower=c(-6, -6),
-  DEoptim.control(trace=FALSE, itermax=50))
-# Optimal parameters and value
-optiml$optim$bestmem
-rastrigin(optiml$optim$bestmem)
-summary(optiml)
-plot(optiml)
-# Calculate daily percentage returns
-symbolv <- c("VTI", "IEF", "DBC")
-nstocks <- NROW(symbolv)
-retp <- na.omit(rutils::etfenv$returns[, symbolv])
-# Objective equal to minus Sharpe ratio
-objfun <- function(weightv, retp) {
-  retp <- retp %*% weightv
-  if (sd(retp) == 0)
-    return(0)
-  else
-    -return(mean(retp)/sd(retp))
-}  # end objfun
-# Perform optimization using DEoptim
-optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retp)),
-  lower=rep(-10, NCOL(retp)),
-  retp=retp,
-  control=list(trace=FALSE, itermax=100, parallelType=1))
-weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
-# Objective with shrinkage penalty
-objfun <- function(weightv, retp, lambdaf, alpha) {
-  retp <- retp %*% weightv
-  if (sd(retp) == 0)
-    return(0)
-  else {
-    penaltyv <- lambdaf*((1-alpha)*sum(weightv^2) +
-alpha*sum(abs(weightv)))
-    -return(mean(retp)/sd(retp) + penaltyv)
-  }
-}  # end objfun
-# Objective for equal weight portfolio
-weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
-lambdaf <- 0.5 ; alpha <- 0.5
-objfun(weightv, retp=retp, lambdaf=lambdaf, alpha=alpha)
-# Perform optimization using DEoptim
-optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retp)),
-  lower=rep(-10, NCOL(retp)),
-  retp=retp,
-  lambdaf=lambdaf,
-  alpha=alpha,
-  control=list(trace=FALSE, itermax=100, parallelType=1))
-weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
-# Objective with shrinkage penalty
-objfun <- function(weightv, retp, lambdaf, alpha) {
-  retp <- retp %*% weightv
-  if (sd(retp) == 0)
-    return(0)
-  else {
-    penaltyv <- lambdaf*((1-alpha)*sum(weightv^2) +
-alpha*sum(abs(weightv)))
-    -return(mean(retp)/sd(retp) + penaltyv)
-  }
-}  # end objfun
-# Objective for equal weight portfolio
-weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
-lambdaf <- 0.5 ; alpha <- 0.5
-objfun(weightv, retp=retp, lambdaf=lambdaf, alpha=alpha)
-# Perform optimization using DEoptim
-optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retp)),
-  lower=rep(-10, NCOL(retp)),
-  retp=retp,
-  lambdaf=lambdaf,
-  alpha=alpha,
-  control=list(trace=FALSE, itermax=100, parallelType=1))
-weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
-# Portfolio optimization
 library(PortfolioAnalytics)  # load package "PortfolioAnalytics"
 # get documentation for package "PortfolioAnalytics"
 packageDescription("PortfolioAnalytics")  # get short description
@@ -1416,9 +1539,9 @@ attachp <- 0.15; detachp <- 0.2
 # Expected tranche loss is sum of two terms
 tranchel <-
   # Loss between attachp and detachp
-  integrate(function(x, attachp) (x-attachp)*lossdistr(x,
-threshv=threshv, rho=rho, lgd=lgd),
-low=attachp, up=detachp, attachp=attachp)$value/(detachp-attachp) +
+  integrate(function(x) (x-attachp)*
+    lossdistr(x, threshv=threshv, rho=rho, lgd=lgd),
+    low=attachp, up=detachp)$value/(detachp-attachp) +
   # Loss in excess of detachp
   (1-cumlossdistr(x=detachp, threshv=threshv, rho=rho, lgd=lgd))
 # Plot probability distribution of losses

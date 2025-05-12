@@ -373,7 +373,7 @@ matplot(ycurves, main="Yield Curves in 2020 and 2023", xaxt="n", lwd=3, lty=1,
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=1.0,
+legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
  bty="n", col=colorv, lty=1, lwd=6, inset=0.05, cex=1.0)
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -406,7 +406,7 @@ matplot(ycurves, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
+legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
  bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
 # Extract rates from ratesenv
 symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
@@ -744,8 +744,8 @@ for (it in 1:NCOL(statsmat)) {
 }  # end for
 regstats <- function(datav) {  # get regression
 # Perform regression and get summary
-  colnamev <- colnames(datav)
-  formulav <- paste(colnamev[2], colnamev[1], sep="~")
+  colv <- colnames(datav)
+  formulav <- paste(colv[2], colv[1], sep="~")
   regsum <- summary(lm(formulav, data=datav))
 # Extract regression statistics
   with(regsum, c(pval=coefficients[2, 4],
@@ -850,7 +850,7 @@ newdata <- (max(predm[, 2]) + 10*(1:5)/nrows)
 predn <- cbind(rep(1, NROW(newdata)), newdata)
 # Calculate the forecast values
 fcast <- drop(predn %*% betac)
-# Calculate the inverse of the predictor matrix squared
+# Calculate the inverse of the squared predictor matrix
 pred2 <- MASS::ginv(crossprod(predm))
 # Calculate the standard errors
 predsd <- residsd*sqrt(predn %*% pred2 %*% t(predn))
@@ -1031,15 +1031,15 @@ degf <- (nrows - ncols)
 all.equal(degf, regsum$df[2])
 # Variance of residuals
 residsd <- sum(resids^2)/degf
-# Inverse of predictor matrix squared
+# Inverse of the squared predictor matrix
 pred2 <- MASS::ginv(crossprod(predm))
 # pred2 <- t(predm) %*% predm
 # Variance of residuals
 residsd <- sum(resids^2)/degf
 # Calculate the covariance matrix of betas
-betacovar <- residsd*pred2
-# round(betacovar, 3)
-betasd <- sqrt(diag(betacovar))
+covm <- residsd*pred2
+# round(covm, 3)
+betasd <- sqrt(diag(covm))
 all.equal(betasd, regsum$coeff[, 2], check.attributes=FALSE)
 # Calculate the t-values of betas
 betatvals <- drop(betac)/betasd
@@ -1077,11 +1077,10 @@ formulav <- paste(colnames(retp)[1],
 regmod <- lm(formulav, data=retp)
 regsum <- summary(regmod)
 cdata <- coredata(retp)
-plot(cdata[, 1], cdata[, 2], 
-     xlab="XLE", ylab="XLF", main="ETF Returns")
-abline(regmod, col="blue", lwd=3)
+plot(cdata[, 1], cdata[, 2],
+  xlab="XLE", ylab="XLF", main="Stock Returns")
+abline(regmod, lwd=3, col="red")
 # Bootstrap of regression
-# Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 bootd <- sapply(1:100, function(x) {
   samplev <- sample.int(nrows, replace=TRUE)
@@ -1091,17 +1090,16 @@ bootd <- sapply(1:100, function(x) {
 # Means and standard errors from regression
 regsum$coefficients
 # Means and standard errors from bootstrap
-dim(bootd)
-t(apply(bootd, MARGIN=1,
-function(x) c(mean=mean(x), stderror=sd(x))))
+t(apply(bootd, MARGIN=1, function(x)
+  c(mean=mean(x), stderror=sd(x))))
 # New data predictor is a data frame or row vector
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
-colnamev <- colnames(predm)
-colnames(newdata) <- colnamev
+colv <- colnames(predm)
+colnames(newdata) <- colv
 newdata <- as.matrix(newdata)
 fcast <- drop(newdata %*% betac)
-predsd <- drop(sqrt(newdata %*% betacovar %*% t(newdata)))
+predsd <- drop(sqrt(newdata %*% covm %*% t(newdata)))
 # Create formula from text string
 formulav <- paste0("respv ~ ",
   paste(colnames(predm), collapse=" + "), " - 1")

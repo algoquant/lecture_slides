@@ -381,8 +381,7 @@ zoots <- as.zoo(EuStockMarkets)
 class(zoo::index(zoots))  # Index is numeric
 head(zoots, 3)
 # Approximately convert index into class "Date"
-zoo::index(zoots) <-
-  as.Date(365*(zoo::index(zoots)-1970))
+zoo::index(zoots) <- as.Date(365*(zoo::index(zoots)-1970))
 head(zoots, 3)
 # Convert index into class "POSIXct"
 zoots <- as.zoo(EuStockMarkets)

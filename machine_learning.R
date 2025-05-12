@@ -118,8 +118,8 @@ matv <- t(matv) %*% matv
 svdec <- svd(matv)
 # Incorrect inverse from SVD because of zero singular values
 invsvd <- svdec$v %*% (t(svdec$u) / svdec$d)
-# Inverse property doesn't hold
-all.equal(matv, matv %*% invsvd %*% matv)
+# Generalized inverse property doesn't hold
+all.equal(matv %*% invsvd %*% matv, matv)
 # Set tolerance for determining zero singular values
 precv <- sqrt(.Machine$double.eps)
 # Check for zero singular values
@@ -129,7 +129,7 @@ notzero <- (svdec$d > (precv*svdec$d[1]))
 invsvd <- svdec$v[, notzero] %*%
   (t(svdec$u[, notzero]) / svdec$d[notzero])
 # Verify inverse property of matv
-all.equal(matv, matv %*% invsvd %*% matv)
+all.equal(matv %*% invsvd %*% matv, matv)
 # Calculate the regularized inverse using MASS::ginv()
 invmat <- MASS::ginv(matv)
 all.equal(invsvd, invmat)
@@ -254,7 +254,7 @@ invmat <- solve(covmat)
 # Calculate the regularized inverse of covmat
 invmat <- MASS::ginv(covmat)
 # Verify inverse property of matv
-all.equal(covmat, covmat %*% invmat %*% covmat)
+all.equal(covmat %*% invmat %*% covmat, covmat)
 # Perform eigen decomposition
 eigend <- eigen(covmat)
 eigenvec <- eigend$vectors
@@ -719,7 +719,7 @@ plot(x=stdcor[, "stdev"], y=stdcor[, "cor"],
  main="Monthly Stock Volatilities and Correlations")
 # Plot stock volatilities and correlations
 colv <- colnames(stdcor)
-stdcor <- xts(stdcor, zoo::index(retvti[endd]))
+stdcor <- xts(stdcor, zoo::index(retvti[endw]))
 dygraphs::dygraph(stdcor,
   main="Monthly Stock Volatilities and Correlations") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
@@ -775,8 +775,8 @@ correlv <- covarv[, 1, drop=FALSE]/sqrt(covarv[, 2]*covarv[, 3])
 datav <- cbind(cumsum(retp$XLK), correlv)
 colnames(datav)[2] <- "correlation"
 colv <- colnames(datav)
-endd <- rutils::calc_endpoints(retp, interval="weeks")
-dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
+endw <- rutils::calc_endpoints(retp, interval="weeks")
+dygraphs::dygraph(datav[endw], main="AAPL Correlations With XLK") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
@@ -784,12 +784,12 @@ dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
   dyLegend(show="always", width=300)
 # Scatterplot of trailing stock volatilities and correlations
 volv <- sqrt(covarv[, 2])
-plot(x=volv[endd], y=correlv[endd, ], pch=1, col="blue",
+plot(x=volv[endw], y=correlv[endd, ], pch=1, col="blue",
  xlab="AAPL volatility", ylab="Correlation",
  main="Trailing Volatilities and Correlations of AAPL vs XLK")
 # Interactive scatterplot of trailing stock volatilities and correlations
-datev <- zoo::index(retp[endd])
-datav <- data.frame(datev, volv[endd], correlv[endd, ])
+datev <- zoo::index(retp[endw])
+datav <- data.frame(datev, volv[endw], correlv[endd, ])
 colnames(datav) <- c("date", "volatility", "correlation")
 library(plotly)
 plotly::plot_ly(data=datav, x=~volatility, y=~correlation,
@@ -799,7 +799,7 @@ plotly::plot_ly(data=datav, x=~volatility, y=~correlation,
 datav <- xts(cbind(volv, correlv), zoo::index(retp))
 colnames(datav) <- c("volatility", "correlation")
 colv <- colnames(datav)
-dygraphs::dygraph(datav[endd], main="AAPL Trailing Stock Volatility and Correlation") %>%
+dygraphs::dygraph(datav[endw], main="AAPL Trailing Stock Volatility and Correlation") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
@@ -810,7 +810,6 @@ retvti <- na.omit(rutils::etfenv$returns$VTI)
 colnames(retvti) <- "VTI"
 datev <- zoo::index(retvti)
 retp <- retstock100
-retp[is.na(retp)] <- 0
 retp <- retp[datev]
 nrows <- NROW(retp)
 nstocks <- NCOL(retp)
@@ -825,15 +824,15 @@ correlv[is.na(correlv)] <- 0
 correlp <- rowMeans(correlv)
 # Scatterplot of trailing stock volatilities and correlations
 volvti <- sqrt(HighFreq::run_var(retvti, lambdaf)[, 2])
-endd <- rutils::calc_endpoints(retvti, interval="weeks")
-plot(x=volvti[endd], y=correlp[endd],
+endw <- rutils::calc_endpoints(retvti, interval="weeks")
+plot(x=volvti[endw], y=correlp[endw],
  xlab="volatility", ylab="correlation",
  main="Trailing Stock Volatilities and Correlations")
 # Plot trailing stock volatilities and correlations
 datav <- xts(cbind(volvti, correlp), datev)
 colnames(datav) <- c("volatility", "correlation")
 colv <- colnames(datav)
-dygraphs::dygraph(datav[endd],
+dygraphs::dygraph(datav[endw],
   main="Trailing Stock Volatilities and Correlations") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
@@ -1051,23 +1050,25 @@ title(main="Spurious Regression", line=-1)
 # Add regression line
 abline(regmod, lwd=2, col="red")
 plot(regmod, which=2, ask=FALSE)  # Plot just Q-Q
-# Define linear regression data
+# Define predictor matrix
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nrows <- 100
-# Define predictor matrix
 predm <- runif(nrows)
 # Define response with noise
 noisev <- rnorm(nrows)
 respv <- (-3 + 2*predm + noisev)
+# Solve the regression using lm()
+formulav <- respv ~ predm
+regmod <- lm(formulav)  # Perform regression
+betalm <- regmod$coeff  # Regression coefficients
 # Add unit column to predictor
 predm <- cbind(rep(1, nrows), predm)
 colnames(predm)[1] <- "intercept"
-# Solve the regression using lm()
-formulav <- respv ~ predm[, 2]
-regmod <- lm(formulav)  # Perform regression
-betalm <- regmod$coeff  # Regression coefficients
-# Solve the regression using the generalized inverse
+# Calculate the generalized inverse
 predinv <- MASS::ginv(predm)
+# Generalized inverse property is satisfied
+all.equal(predm %*% predinv %*% predm, predm)
+# Solve the regression using the generalized inverse
 betac <- drop(predinv %*% respv)
 all.equal(betalm, betac, check.attributes=FALSE)
 # Calculate the influence matrix
@@ -1684,6 +1685,14 @@ legend(x="topright", legend=c("non-defaulters", "defaulters"),
 wilcox.test(balance[default], balance[!default])
 # Perform Mann-Whitney test for the location of the incomes
 wilcox.test(income[default], income[!default])
+# Plot the densities of the balance amounts for defaulters and non-defaulters
+plot(density(balance[default]),
+     main="Balance Amounts for Defaulters and Non-Defaulters",
+     xlab="balance", ylab="density", col="red", lwd=2)
+lines(density(balance[!default]), col="blue", lwd=2)
+legend(x="topright", inset=0.0, bty="n", lwd=6, y.intersp=0.4,
+ legend=c("non-defaulters", "defaulters"),
+ col=c("blue", "red"))
 x11(width=6, height=5)
 # Set 2 plot panels
 par(mfrow=c(1,2))

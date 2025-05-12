@@ -9,7 +9,6 @@ stats::acf(retp, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)
 # Calculate two-tailed 95% confidence interval
 qnorm(0.975)/sqrt(NROW(retp))
-
 # Get the ACF data returned invisibly
 acfl <- acf(retp, plot=FALSE)
 summary(acfl)
@@ -18,7 +17,6 @@ print(acfl)
 dim(acfl$acf)
 dim(acfl$lag)
 head(acfl$acf)
-
 plot_acf <- function(xtsv, lagg=10, plotobj=TRUE,
                xlab="Lag", ylab="", main="", ...) {
   # Calculate the ACF without a plot
@@ -41,10 +39,8 @@ plot_acf <- function(xtsv, lagg=10, plotobj=TRUE,
   # Return the ACF data invisibly
   invisible(acfl)
 }  # end plot_acf
-
 # Autocorrelations of VTI returns
 rutils::plot_acf(retp, lag=10, main="ACF of VTI returns")
-
 # Ljung-Box test for VTI returns
 # 'lag' is the number of autocorrelation coefficients
 Box.test(retp, lag=10, type="Ljung")
@@ -58,7 +54,6 @@ macrodiff <- na.omit(diff(macrodata))
 Box.test(macrodiff[, "3mTbill"], lag=10, type="Ljung")
 # Changes in unemployment rate are autocorrelated
 Box.test(macrodiff[, "unemprate"], lag=10, type="Ljung")
-
 # Open plot window under MS Windows
 x11(width=6, height=7)
 # Set two vertical plot panels
@@ -72,7 +67,6 @@ rutils::plot_acf(retp^2, lag=10,
  main="ACF of Squared VTI Returns")
 # Ljung-Box test for squared VTI returns
 Box.test(retp^2, lag=10, type="Ljung")
-
 # Calculate the weekly end points
 endd <- rutils::calc_endpoints(retp, interval=5)
 npts <- NROW(endd)
@@ -101,9 +95,7 @@ Box.test(retlow, lag=10, type="Ljung")
 rutils::plot_acf(rethigh, lag=10,
  main="ACF of High Volatility Returns")
 Box.test(rethigh, lag=10, type="Ljung")
-
 NA
-
 # Load daily S&P500 stock returns
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returnstop.RData")
 # Calculate the stock volatilities and the sum of the ACF
@@ -128,7 +120,6 @@ plot(stdq, acfq, xlab="volatility", ylab="PACF Sum",
 # Compare the ACF sum for stock volatility quantile with VTI
 acfq[1]
 sum(pacf(na.omit(rutils::etfenv$returns$VTI), lag=10, plot=FALSE)$acf)
-
 # Scatter plot of the sum of the ACF vs the standard deviation
 regmod <- lm(acfsum ~ stdev, data=statm)
 plot(acfsum ~ stdev, data=statm, xlab="SD", ylab="PACF Sum",
@@ -139,16 +130,13 @@ tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(stdq), y=6*max(acfq),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
-
 # Compare the Ljung-Box statistics for lowest volatility stocks with VTI
 lbstatq <- rev(quantile(statm[, "lbstat"], confl))
 lbstatq[1]
 Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
-
 # Plot Ljung-Box test statistic for volatility quantiles
 plot(stdq, lbstatq, xlab="volatility", ylab="Ljung-Box Stat",
      main="Ljung-Box Statistic For Stock Volatility Quantiles")
-
 # Calculate SPY log prices and percentage returns
 ohlc <- HighFreq::SPY
 ohlc[, 1:4] <- log(ohlc[, 1:4])
@@ -166,7 +154,6 @@ acfl <- rutils::plot_acf(as.numeric(retp), lag=10,
 title("Autocorrelations of Minutely SPY Returns", line=1)
 # Calculate the sum of autocorrelations
 sum(acfl$acf)
-
 # Ljung-Box test for minutely SPY returns
 Box.test(retp, lag=10, type="Ljung")
 # Calculate hourly SPY percentage returns
@@ -179,7 +166,6 @@ closed <- quantmod::Cl(xts::to.period(x=ohlc, period="days"))
 retd <- rutils::diffit(closed)
 # Ljung-Box test for daily SPY returns
 Box.test(retd, lag=10, type="Ljung")
-
 # Ljung-Box test statistics for aggregated SPY returns
 lbstat <- sapply(list(daily=retd, hourly=retsh, minutely=retp),
   function(rets) {
@@ -191,7 +177,6 @@ plot(lbstat, lwd=6, col="blue", xaxt="n",
      main="Ljung-Box Statistic For Different Aggregations")
 # Add X-axis with labels
 axis(side=1, at=(1:3), labels=c("daily", "hourly", "minutely"))
-
 # Daily SPY volatility from daily returns
 sd(retd)
 # Minutely SPY volatility scaled to daily interval
@@ -206,7 +191,6 @@ retd <- retd/rutils::diffit(xts::.index(retd))
 retd[1] <- 0
 # Daily SPY volatility without weekend and holiday price jumps
 24*60*60*sd(retd)
-
 # Calculate volatilities for vector of aggregation intervals
 aggv <- seq.int(from=3, to=35, length.out=9)^2
 volv <- sapply(aggv, function(agg) {
@@ -224,7 +208,6 @@ hurstexp <- cov(volog, agglog)/var(agglog)
 # Or using function lm()
 regmod <- lm(volog ~ agglog)
 coef(regmod)[2]
-
 # Plot the volatilities
 x11(width=6, height=4)
 par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
@@ -234,7 +217,6 @@ plot(volog ~ agglog, lwd=6, col="red",
 abline(model, lwd=3, col="blue")
 text(agglog[2], volog[NROW(volog)-1],
      paste0("Hurst = ", round(hurstexp, 4)))
-
 # Calculate cumulative SPY returns
 closep <- cumsum(retp)
 nrows <- NROW(closep)
@@ -251,7 +233,6 @@ rrange <- sapply(2:NROW(endd), function(np) {
 mean(rrange)
 # Calculate the Hurst from single data point
 log(mean(rrange))/log(agg)
-
 # Calculate the rescaled range for vector of aggregation intervals
 rrange <- sapply(aggv, function(agg) {
 # Calculate the end points
@@ -271,7 +252,6 @@ hurstexp <- cov(rangelog, agglog)/var(agglog)
 # Or using function lm()
 regmod <- lm(rangelog ~ agglog)
 coef(regmod)[2]
-
 x11(width=6, height=4)
 par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
 plot(rangelog ~ agglog, lwd=6, col="red",
@@ -281,7 +261,6 @@ plot(rangelog ~ agglog, lwd=6, col="red",
 abline(model, lwd=3, col="blue")
 text(agglog[2], rangelog[NROW(rangelog)-1],
      paste0("Hurst = ", round(hurstexp, 4)))
-
 # Load S&P500 constituent OHLC stock prices
 load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 class(sp500env$AAPL)
@@ -309,14 +288,12 @@ dygraphs::dygraph(get(namev, pricev), main=namev)
 # Dygraph of stock with smallest Hurst exponent
 namev <- names(which.min(hurstv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
-
 # Plot a histogram of the Hurst exponents of stocks
 hist(hurstv, breaks=20, xlab="Hurst", ylab="Count",
      main="Hurst Exponents of Stocks")
 # Add vertical line for H = 0.5
 abline(v=0.5, lwd=3, col='red')
 text(x=0.5, y=50, lab="H = 0.5", pos=4)
-
 # Calculate the volatility of stocks
 volv <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep)))
@@ -330,7 +307,6 @@ dygraphs::dygraph(get(namev, pricev), main=namev)
 # Calculate the regression of the Hurst exponents versus volatilities
 regmod <- lm(hurstv ~ volv)
 summary(regmod)
-
 # Plot scatterplot of the Hurst exponents versus volatilities
 plot(hurstv ~ volv, xlab="Volatility", ylab="Hurst",
      main="Hurst Exponents Versus Volatilities of Stocks")
@@ -340,7 +316,6 @@ tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(volv), y=max(hurstv),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
-
 # Calculate the in-sample volatility of stocks
 volatis <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep["/2010"])))
@@ -352,7 +327,6 @@ volatos <- sapply(pricev, function(closep) {
 # Calculate the regression of the out-of-sample versus in-sample volatility
 regmod <- lm(volatos ~ volatis)
 summary(regmod)
-
 # Plot scatterplot of the out-of-sample versus in-sample volatility
 plot(volatos ~ volatis, xlab="In-sample Volatility", ylab="Out-of-sample Volatility",
      main="Out-of-Sample Versus In-Sample Volatility of Stocks")
@@ -362,7 +336,6 @@ tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(volatis), y=max(volatos),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
-
 # Calculate the in-sample Hurst exponents of stocks
 hurstis <- sapply(pricev, function(closep) {
   HighFreq::calc_hurst(closep["/2010"], aggv=aggv)
@@ -374,7 +347,6 @@ hurstos <- sapply(pricev, function(closep) {
 # Calculate the regression of the out-of-sample versus in-sample Hurst exponents
 regmod <- lm(hurstos ~ hurstis)
 summary(regmod)
-
 # Plot scatterplot of the out-of-sample versus in-sample Hurst exponents
 plot(hurstos ~ hurstis, xlab="In-sample Hurst", ylab="Out-of-sample Hurst",
      main="Out-of-Sample Versus In-Sample Hurst Exponents of Stocks")
@@ -384,7 +356,6 @@ tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(hurstis), y=max(hurstos),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
-
 # Load the roundtrip trades
 dtable <- data.table::fread("/Users/jerzy/Develop/lecture_slides/data/roundtrip_trades.csv")
 nrows <- NROW(dtable)
@@ -397,12 +368,10 @@ pricesell <- dtable$price[dtable$side == "sell"]
 bidask <- mean(pricebuy-pricesell)
 # Calculate the percentage bid-ask spread
 bidask/mean(pricesell)
-
 # Calculate the daily VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 # Calculate the autocorrelations of daily VTI returns
 rutils::plot_acf(retp, lag=10, main="ACF of VTI returns")
-
 # Simulate the mean reverting strategy
 posv <- -rutils::lagit(sign(retp), lagg=1)
 pnls <- retp*posv
@@ -413,7 +382,6 @@ pnls <- (pnls - costv)
 # Calculate the strategy beta and alpha
 betac <- cov(pnls, retp)/var(retp)
 alphac <- mean(pnls) - betac*mean(retp)
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls, (retp+pnls)/2)
 colnames(wealthv) <- c("VTI", "AR_Strategy", "Combined")
@@ -425,13 +393,10 @@ endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="VTI Daily Mean Reverting Strategy") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
-
   dyLegend(show="always", width=300)
-
 # Simulate mean reverting strategy with two day holding period
 posv <- -rutils::roll_sum(sign(retp), lookb=2)/2
 pnls <- retp*rutils::lagit(posv)
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
@@ -443,7 +408,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Daily Mean Reverting Strategy With Two Day Holding Period") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Load daily S&P500 stock returns
 load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 retp <- na.omit(retstock$MSFT)
@@ -451,7 +415,6 @@ rutils::plot_acf(retp)
 # Simulate mean reverting strategy with two day holding period
 posv <- -rutils::roll_sum(sign(retp), lookb=2)/2
 pnls <- retp*rutils::lagit(posv)
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("MSFT", "Strategy")
@@ -463,7 +426,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Daily Mean Reverting Strategy For MSFT") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Simulate mean reverting strategy for all S&P500 stocks
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
@@ -479,7 +441,6 @@ datev <- zoo::index(retstock)
 datev <- datev[-1]
 indeks <- rowMeans(retstock, na.rm=TRUE)
 indeks <- indeks[-1]
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(indeks, pnls)
 wealthv <- xts::xts(wealthv, datev)
@@ -492,7 +453,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Daily Mean Reverting Strategy For All Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the stock volatilities
 volv <- mclapply(retstock, function(retp) {
   sd(na.omit(retp))
@@ -506,7 +466,6 @@ pnlovol <- rowMeans(pnlovol, na.rm=TRUE)
 # Calculate the pnls for high volatility stocks
 pnlhivol <- do.call(cbind, pnll[volv >= medianv])
 pnlhivol <- rowMeans(pnlhivol, na.rm=TRUE)
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(pnlovol, pnlhivol)
 wealthv <- xts::xts(wealthv, datev)
@@ -518,7 +477,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Mean Reverting Strategy For Low and High Volatility Stocks") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the VTI daily percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 # Calculate the EMA returns recursively using C++ code
@@ -532,7 +490,6 @@ costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
@@ -544,7 +501,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="VTI EMA Daily Mean Reverting Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the EMA returns and volatilities
 volv <- HighFreq::run_var(retp, lambda=0.5)
 retma <- volv[, 1]
@@ -558,7 +514,6 @@ costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
@@ -570,7 +525,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="VTI EMA Daily Mean Reverting Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the VTI daily percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(retp)
@@ -582,18 +536,15 @@ predm <- rutils::do_call(cbind, predm)
 # Add constant column for intercept coefficient phi0
 predm <- cbind(rep(1, nrows), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
-
 # Calculate the fitted autoregressive coefficients
 predinv <- MASS::ginv(predm)
 coeff <- predinv %*% respv
 # Calculate the in-sample forecasts of VTI (fitted values)
 fcasts <- predm %*% coeff
-
 # Plot the AR coefficients
 coeffn <- paste0("phi", 0:(NROW(coeff)-1))
 barplot(coeff ~ coeffn, xlab="", ylab="t-value", col="grey",
   main="Coefficients of AR Forecasting Model")
-
 # Calculate the residuals (forecast errors)
 resids <- (fcasts - respv)
 # The residuals are orthogonal to the predictors and the forecasts
@@ -601,7 +552,6 @@ round(cor(resids, fcasts), 6)
 round(sapply(predm[, -1], function(x) cor(resids, x)), 6)
 # Calculate the variance of the residuals
 varv <- sum(resids^2)/(nrows-NROW(coeff))
-
 # Calculate the predictor matrix squared
 pred2 <- crossprod(predm)
 # Calculate the covariance matrix of the AR coefficients
@@ -613,10 +563,8 @@ coeffn <- paste0("phi", 0:(NROW(coefft)-1))
 # Plot the t-values of the AR coefficients
 barplot(coefft ~ coeffn, xlab="", ylab="t-value", col="grey",
   main="Coefficient t-values of AR Forecasting Model")
-
 # Calculate the trailing volatility of the residuals
 residv <- sqrt(HighFreq::run_var(resids, lambda=0.9)[, 2])
-
 # Plot dygraph of volatility of residuals
 datav <- cbind(cumsum(retp), residv)
 colnames(datav) <- c("VTI", "residual vol")
@@ -627,7 +575,6 @@ dygraphs::dygraph(datav[endd], main="Volatility of Residuals") %>%
   dySeries(name="VTI", axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name="residual vol", axis="y2", strokeWidth=2, col="red") %>%
   dyLegend(show="always", width=300)
-
 # Scale the forecasts by their volatility
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.2)[, 2])
 posv <- ifelse(fcastv > 0, fcasts/fcastv, 0)
@@ -637,7 +584,6 @@ costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
@@ -649,7 +595,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Autoregressive Strategy In-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the high volatility AR coefficients
 respv <- retp["2008/2011"]
 predm <- lapply(1:orderp, rutils::lagit, input=respv)
@@ -669,9 +614,7 @@ predinv <- MASS::ginv(predm)
 coeffl <- drop(predinv %*% respv)
 barplot(coeffl ~ coeffn, main="Low Volatility AR Coefficients",
   xlab="", ylab="coefficient", ylim=c(-0.1, 0.05))
-
 NA
-
 # Calculate the pnls for the high volatility AR coefficients
 predm <- lapply(1:orderp, rutils::lagit, input=retp)
 predm <- rutils::do_call(cbind, predm)
@@ -703,7 +646,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Autoregressive Strategy Low Volatility Coefficients") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 lambdav <- c(0.5, 1, 1.5)
 colorv <- c("red", "blue", "green")
 # Define the winsor function
@@ -720,7 +662,6 @@ title(main="Winsor function", line=0.5)
 legend("topleft", title="scale parameters\n",
    paste("lambdaf", lambdav, sep="="), inset=0.0, cex=1.0,
    lwd=6, bty="n", y.intersp=0.3, lty=1, col=colorv)
-
 # Winsorize the VTI returns
 retw <- winsorfun(retp/0.01, lambda=0.1)
 # Define the response and predictor matrices
@@ -737,7 +678,6 @@ fcastv[1:100] <- 1
 fcasts <- fcasts/fcastv
 # Winsorize the forecasts
 # fcasts <- winsorfun(fcasts/mad(fcasts), lambda=1.5)
-
 # Calculate the autoregressive strategy PnLs
 pnls <- retp*fcasts
 # Scale the PnL volatility to that of VTI
@@ -753,7 +693,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Winsorized Autoregressive Strategy In-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Scale the returns by their trailing volatility
 varv <- HighFreq::run_var(retp, lambda=0.99)[, 2]
 retsc <- ifelse(varv > 0, retp/sqrt(varv), 0)
@@ -769,7 +708,6 @@ fcasts <- predm %*% coeff
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
 fcastv[1:100] <- 1
 fcasts <- fcasts/fcastv
-
 # Calculate the autoregressive strategy PnLs
 pnls <- retp*fcasts
 # Scale the PnL volatility to that of VTI
@@ -784,7 +722,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Autoregressive Strategy With Returns Scaled By Volatility") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate VTI returns and trading volumes
 ohlc <- rutils::etfenv$VTI
 datev <- zoo::index(ohlc)
@@ -808,7 +745,6 @@ fcasts <- predm %*% coeff
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
 fcastv[1:100] <- 1
 fcasts <- fcasts/fcastv
-
 # Calculate the autoregressive strategy PnLs
 pnls <- retp*fcasts
 # Scale the PnL volatility to that of VTI
@@ -825,7 +761,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Autoregressive Strategy With Returns Scaled By Volume") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Define the response and predictor matrices
 respv <- retp
 orderp <- 5
@@ -843,7 +778,6 @@ cor(fcasts, retp)
 errorf <- (fcasts - retp)
 # Mean squared error
 mean(errorf^2)
-
 # Plot the forecasts
 datav <- cbind(retp, fcasts)["2020-01/2020-06"]
 colnames(datav) <- c("returns", "forecasts")
@@ -851,7 +785,6 @@ dygraphs::dygraph(datav,
   main="VTI Returns And Forecasts") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the forecasts as a function of the AR order
 fcasts <- lapply(2:NCOL(predm), function(ordern) {
   # Calculate the fitted AR coefficients
@@ -861,7 +794,6 @@ fcasts <- lapply(2:NCOL(predm), function(ordern) {
   drop(predm[, 1:ordern] %*% coeff)
 })  # end lapply
 names(fcasts) <- paste0("n=", 2:NCOL(predm))
-
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((respv - x)^2), cor=cor(respv, x))
@@ -872,7 +804,6 @@ rownames(mse) <- names(fcasts)
 plot(x=2:NCOL(predm), y=mse[, 1],
   xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
   main="MSE of In-sample AR(n) Forecasting Model for VTI")
-
 # Define in-sample and out-of-sample intervals
 nrows <- NROW(retp)
 insample <- 1:(nrows %/% 2)
@@ -886,7 +817,6 @@ fcasts <- lapply(2:NCOL(predm), function(ordern) {
   drop(predm[outsample, 1:ordern] %*% coeff)
 })  # end lapply
 names(fcasts) <- paste0("n=", 2:NCOL(predm))
-
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((respv[outsample] - x)^2), cor=cor(respv[outsample], x))
@@ -897,7 +827,6 @@ rownames(mse) <- names(fcasts)
 plot(x=2:NCOL(predm), y=mse[, 1],
   xlab="AR(n) order", ylab="MSE", type="l", lwd=2,
   main="MSE of Out-of-sample AR(n) Forecasting Model for VTI")
-
 # Calculate the optimal AR coefficients
 predinv <- MASS::ginv(predm[insample, 1:2])
 coeff <- drop(predinv %*% respv[insample])
@@ -908,7 +837,6 @@ pnls <- lapply(fcasts, function(fcast) {
 })  # end lapply
 pnls <- rutils::do_call(cbind, pnls)
 colnames(pnls) <- names(fcasts)
-
 # Plot dygraph of out-of-sample PnLs
 colorv <- colorRampPalette(c("red", "blue"))(NCOL(pnls))
 colv <- colnames(pnls)
@@ -917,7 +845,6 @@ dygraphs::dygraph(cumsum(pnls)[endd],
   main="Autoregressive Strategies Out-of-sample") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(width=300)
-
 # Define the look-back range
 lookb <- 100
 tday <- nrows
@@ -950,7 +877,6 @@ fcast <- drop(predn %*% coeff)
 varf <- drop(predn %*% covmat %*% t(predn))
 # Calculate the t-value of the out-of-sample forecast
 fcast/sqrt(varf)
-
 # Perform rolling forecasting
 lookb <- 500
 fcasts <- parallel::mclapply(1:nrows, function(tday) {
@@ -986,7 +912,6 @@ fcasts <- parallel::mclapply(1:nrows, function(tday) {
     return(c(volv=0, fcast=0, fstderr=0, coefft=rep(0, NCOL(predm))))
   } # end if
 })  # end sapply
-
 # Coerce fcasts to a time series
 fcasts <- t(fcasts)
 ncols <- NCOL(fcasts)
@@ -1000,14 +925,12 @@ wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x)
 c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-
 # Plot dygraph of the autoregressive strategy
 endd <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Rolling Autoregressive Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
 dyLegend(show="always", width=300)
-
 # Define backtesting function
 sim_fcasts <- function(lookb=100, ordern=5, fixedlb=TRUE) {
   # Perform rolling forecasting
@@ -1034,7 +957,6 @@ sim_fcasts <- function(lookb=100, ordern=5, fixedlb=TRUE) {
 # Simulate the rolling autoregressive forecasts
 fcasts <- sim_fcasts(lookb=100, ordern=5)
 c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
-
 library(parallel)  # Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
@@ -1045,7 +967,6 @@ lookbv <- seq(20, 600, 40)
 fcasts <- parLapply(compclust, lookbv, sim_fcasts, ordern=6)
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(lookbv, sim_fcasts, ordern=6, mc.cores=ncores)
-
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
@@ -1058,7 +979,6 @@ lookb <- lookbv[which.min(mse[, 1])]
 plot(x=lookbv, y=mse[, 1],
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR Forecasting Model As Function of Look-back")
-
 library(parallel)  # Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
@@ -1071,7 +991,6 @@ stopCluster(compclust)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts,
   lookb=lookb, mc.cores=ncores)
-
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
@@ -1084,7 +1003,6 @@ ordern <- orderv[which.min(mse[, 1])]
 plot(x=orderv, y=mse[, 1],
   xlab="AR order", ylab="MSE", type="l", lwd=2,
   main="MSE of Forecasting Model As Function of AR Order")
-
 # Simulate the rolling autoregressive forecasts
 fcasts <- sim_fcasts(lookb=lookb, ordern=ordern)
 # Calculate the strategy PnLs
@@ -1094,7 +1012,6 @@ pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 wealthv <- cbind(retp, pnls, (retp+pnls)/2)
 colnames(wealthv) <- c("VTI", "AR_Strategy", "Combined")
 cor(wealthv)
-
 # Annualized Sharpe ratios of VTI and AR strategy
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1104,7 +1021,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
   dyLegend(show="always", width=300)
-
 library(parallel)  # Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
@@ -1118,7 +1034,6 @@ stopCluster(compclust)  # Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts,
   lookb=lookb, fixedlb=FALSE, mc.cores=ncores)
-
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
@@ -1131,7 +1046,6 @@ ordern <- orderv[which.min(mse[, 1])]
 plot(x=orderv, y=mse[, 1],
   xlab="AR order", ylab="MSE", type="l", lwd=2,
   main="MSE With Expanding Look-back As Function of AR Order")
-
 # Simulate the autoregressive forecasts with expanding look-back
 fcasts <- sim_fcasts(lookb=lookb, ordern=ordern, fixedlb=FALSE)
 # Calculate the strategy PnLs
@@ -1141,7 +1055,6 @@ pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 wealthv <- cbind(retp, pnls, (retp+pnls)/2)
 colnames(wealthv) <- c("VTI", "AR_Strategy", "Combined")
 cor(wealthv)
-
 # Annualized Sharpe ratios of VTI and AR strategy
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1151,14 +1064,12 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
   dyLegend(show="always", width=300)
-
 # Calculate VTI returns over non-overlapping 2-day intervals
 pricev <- na.omit(rutils::etfenv$prices$VTI)
 reta <- rutils::diffit(log(pricev), lag=2)
 reta <- reta[2*(1:(NROW(pricev) %/% 2))]
 # Calculate the autocorrelations of daily VTI returns
 rutils::plot_acf(reta, lag=10, main="ACF of Aggregated 2-day VTI returns")
-
 # Define the response and predictor matrices
 reta <- rutils::diffit(log(pricev), lag=2)/2
 orderp <- 5
@@ -1177,7 +1088,6 @@ fcasts <- predm %*% coeff
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.8)[, 2])
 fcastv[1:100] <- 1
 fcasts <- fcasts/fcastv
-
 # Calculate the autoregressive strategy PnLs
 pnls <- reta*fcasts
 pnls <- pnls*sd(reta[reta<0])/sd(pnls[pnls<0])
@@ -1195,7 +1105,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Autoregressive Strategy With Aggregated Stock Returns") %>%
   dyOptions(colors=c("blue", "red", "green"), strokeWidth=1) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the log of OHLC VTI prices
 ohlc <- log(rutils::etfenv$VTI)
 nrows <- NROW(ohlc)
@@ -1212,7 +1121,6 @@ retd <- (closep - openp)
 colnames(retd) <- "daytime"
 reton <- (openp - rutils::lagit(closep, lagg=1, pad_zeros=FALSE))
 colnames(reton) <- "overnight"
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, reton, retd)
 sqrt(252)*sapply(wealthv, function(x)
@@ -1225,7 +1133,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   dySeries(name="overnight", strokeWidth=2, col="red") %>%
   dySeries(name="daytime", strokeWidth=2, col="green") %>%
   dyLegend(width=600)
-
 # Calculate the autocorrelations of daytime and overnight returns
 pacfl <- pacf(retd, lag.max=10, plot=FALSE)
 sum(pacfl$acf)
@@ -1236,7 +1143,6 @@ retma <- HighFreq::run_mean(retd, lambda=0.4)
 # Calculate the positions and PnLs
 posv <- -rutils::lagit(sign(retma), lagg=1)
 pnls <- retd*posv
-
 # Calculate the pnls and the transaction costs
 bidask <- 0.0001 # The bid-ask spread is equal to 1 basis point
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
@@ -1252,7 +1158,6 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Mean-Reversion Strategy For Daytime VTI Returns") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the z-scores of the cumulative daytime returns
 retc <- cumsum(retd)
 lambdaf <- 0.24
@@ -1266,7 +1171,6 @@ posv <- ifelse(zscores > 1, -1, posv)
 posv <- ifelse(zscores < -1, 1, posv)
 posv <- zoo::na.locf(posv)
 posv <- rutils::lagit(posv, lagg=1)
-
 # Calculate the pnls and the transaction costs
 pnls <- retd*posv
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
@@ -1281,13 +1185,11 @@ dygraphs::dygraph(cumsum(wealthv)[endd],
   main="Bollinger strategy For Daytime VTI Returns") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-
 # Calculate the pnls and the transaction costs
 posv <- sign(reton)
 pnls <- posv*retd
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
-
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retd, pnls)
 colnames(wealthv) <- c("VTI daytime", "Strategy")

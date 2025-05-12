@@ -48,7 +48,7 @@ all.equal(numv, 1.0)
 # ?.Machine
 # Machine precision
 .Machine$double.eps
-vecv <- sample(1e3, 1e3)
+vecv <- sample(1e2, 1e2)
 matv <- matrix(vecv, ncol=4)
 which(vecv == 5)
 match(5, vecv)
@@ -324,15 +324,15 @@ vecv
 # sapply() loop returns vector of values
 vecv <- sapply(seq_along(vecv), function(i) (i^2))
 rm(list=ls())
-# fib_seq <- numeric()  # zero length numeric vector
+# fibv <- numeric()  # zero length numeric vector
 # Pre-allocate vector instead of "growing" it
-fib_seq <- numeric(10)
-fib_seq[1] <- 0  # Initialize
-fib_seq[2] <- 1  # Initialize
+fibv <- numeric(10)
+fibv[1] <- 0  # Initialize
+fibv[2] <- 1  # Initialize
 for (i in 3:10) {  # Perform recurrence loop
-  fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
+  fibv[i] <- fibv[i-1] + fibv[i-2]
 }  # end for
-fib_seq
+fibv
 # Allocate character vector
 character()
 character(5)
@@ -424,13 +424,12 @@ matv*vec1
 # Multiply rows of matrix by vector
 t(vec1*t(matv))
 # Multiply rows of matrix by vector - transpose is very slow
-matrixp <- lapply(1:NCOL(matv), 
-  function(x) vec1[x]*matv[, x])
+matrixp <- lapply(1:NCOL(matv), function(x) vec1[x]*matv[, x])
 do.call(cbind, matrixp)
 library(microbenchmark)
 summary(microbenchmark(
   trans=t(vec1*t(matv)),
-  lapp={
+  lapply={
     matrixp <- lapply(1:NCOL(matv), function(x) vec1[x]*matv[, x])
     do.call(cbind, matrixp)
   },

@@ -27,8 +27,8 @@ pricen <- rutils::do_call(cbind, pricen)
 # pricen <- t(t(pricen)*prici)
 all.equal(pricen, pricev, check.attributes=FALSE)
 # Plot log VTI prices
-endd <- rutils::calc_endpoints(rutils::etfenv$VTI, interval="weeks")
-dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endd]),
+endw <- rutils::calc_endpoints(rutils::etfenv$VTI, interval="weeks")
+dygraphs::dygraph(log(quantmod::Cl(rutils::etfenv$VTI)[endw]),
   main="Logarithm of VTI Prices") %>%
   dyOptions(colors="blue", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -48,8 +48,8 @@ marginv <- (marginv + costf)
 datav <- cbind(marginv, costf)
 colv <- c("Margin", "Cumulative Funding")
 colnames(datav) <- colv
-endd <- rutils::calc_endpoints(datav, interval="weeks")
-dygraphs::dygraph(datav[endd], main="VTI Margin Funding Costs") %>%
+endw <- rutils::calc_endpoints(datav, interval="weeks")
+dygraphs::dygraph(datav[endw], main="VTI Margin Funding Costs") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", col="blue") %>%
@@ -66,7 +66,7 @@ marginv <- (marginv - costv)
 datav <- cbind(marginv, costv)
 colv <- c("Margin", "Transaction Costs")
 colnames(datav) <- colv
-dygraphs::dygraph(datav[endd], main="VTI Transaction Costs") %>%
+dygraphs::dygraph(datav[endw], main="VTI Transaction Costs") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", col="blue") %>%
@@ -97,8 +97,8 @@ sqrt(252)*sapply(rutils::diffit(wealthv), function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the log wealth
 colv <- colnames(wealthv)
-endd <- rutils::calc_endpoints(retp, interval="weeks")
-dygraphs::dygraph(wealthv[endd], main="Wealth of Weighted Portfolios") %>%
+endw <- rutils::calc_endpoints(retp, interval="weeks")
+dygraphs::dygraph(wealthv[endw], main="Wealth of Weighted Portfolios") %>%
   dySeries(name=colv[1], col="blue", strokeWidth=2) %>%
   dySeries(name=colv[2], col="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -113,7 +113,7 @@ datav <- cbind(marginv, costv)
 datav <- xts::xts(datav, datev)
 colv <- c("Margin", "Transaction Costs")
 colnames(datav) <- colv
-dygraphs::dygraph(datav[endd], main="Fixed Dollar Portfolio Transaction Costs") %>%
+dygraphs::dygraph(datav[endw], main="Fixed Dollar Portfolio Transaction Costs") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", col="blue") %>%
@@ -127,13 +127,13 @@ wealthfs <- drop(cumprod(1 + retp) %*% weightv)
 wealthpr <- cumprod(1 + retp %*% weightv)
 wealthv <- cbind(wealthfs, wealthpr)
 wealthv <- xts::xts(wealthv, datev)
-colnames(wealthv) <- c("Fixed shares", "Prop dollars")
+colnames(wealthv) <- c("Fixed shares", "Prop wealth")
 wealthv <- log(wealthv)
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the log wealth
-dygraphs::dygraph(wealthv[endd],
+dygraphs::dygraph(wealthv[endw],
   main="Wealth of Proportional Wealth Allocations") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -155,7 +155,7 @@ wealthv <- cbind(wealthpr, costv)
 wealthv <- xts::xts(wealthv, datev)
 colv <- c("Wealth", "Transaction Costs")
 colnames(wealthv) <- colv
-dygraphs::dygraph(wealthv[endd],
+dygraphs::dygraph(wealthv[endw],
   main="Transaction Costs With Equal Wealths") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
@@ -164,7 +164,7 @@ dygraphs::dygraph(wealthv[endd],
   dyLegend(show="always", width=300)
 # Wealth of fixed shares (without rebalancing)
 wealthfs <- drop(cumprod(1 + retp) %*% weightv)-1
-# Wealth of proportional allocation (with rebalancing)
+# Wealth of proportional wealth (with rebalancing)
 wealthpr <- cumprod(1 + retp %*% weightv) - 1
 # Wealth of proportional target allocation (with rebalancing)
 retp <- zoo::coredata(retp)
@@ -221,15 +221,16 @@ sapply(retp, function(x) {
 })  # end sapply
 # Wealth of equal wealth strategy
 wealthv <- cumsum(retp)
-# Calculate the a vector of monthly end points
-endd <- rutils::calc_endpoints(retp, interval="weeks")
+# Calculate a vector of weekly end points
+endw <- rutils::calc_endpoints(retp, interval="weeks")
 # Plot cumulative log wealth
-dygraphs::dygraph(wealthv[endd],
+dygraphs::dygraph(wealthv[endw],
   main="Stocks and Bonds With Equal Wealths") %>%
   dyOptions(colors=c("blue", "green", "blue", "red")) %>%
   dySeries("Combined", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Calculate the Sharpe ratios
+retp <- na.omit(rutils::etfenv$returns[, c("VTI", "IEF")])
 sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
 # Calculate the Sharpe ratios for vector of weights
 weightv <- seq(0.05, 0.95, 0.05)
@@ -241,8 +242,8 @@ sharpev <- sqrt(252)*sapply(weightv, function(weight) {
 # Calculate the optimal VTI weight
 weightm <- weightv[which.max(sharpev)]
 # Calculate the optimal weight using optimization
-calc_sharpe <- function(weight) {
-  weightv <- c(weight, 1-weight)
+calc_sharpe <- function(weightv) {
+  weightv <- c(weightv, 1-weightv)
   retp <- (retp[, 1:2] %*% weightv)
   -mean(retp)/sd(retp)
 }  # end calc_sharpe
@@ -256,48 +257,34 @@ plot(x=weightv, y=sharpev,
 abline(v=weightm, lty="dashed", lwd=1, col="blue")
 text(x=weightm, y=0.7*max(sharpev), pos=4, cex=1.2,
      labels=paste("optimal VTI weight =", round(weightm, 2)))
-# Coerce the returns from xts time series to matrix
-retp <- zoo::coredata(retp[, 1:2])
-nrows <- NROW(retp)
-# Bootstrap the returns and Calculate the a list of random returns
-nboot <- 1e4
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1  # Number of cores
-# Perform parallel bootstrap under Windows
-compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
-clusterSetRNGStream(compclust, 1121)  # Reset random number generator in all cores
-clusterExport(compclust, c("retp", "nrows"))
-bootd <- parLapply(compclust, 1:nboot, function(x) {
-  retp[sample.int(nrows, replace=TRUE), ]
-})  # end parLapply
-# Perform parallel bootstrap under Mac-OSX or Linux
+# Coerce the log prices from xts time series to matrix
+pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
+pricev <- log(zoo::coredata(pricev))
+nrows <- NROW(pricev)
+holdp <- 10*252 # Holding period of 10 years in days
+# Sample the start dates for the bootstrap
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-bootd <- mclapply(1:nboot, function(x) {
-  retp[sample.int(nrows, replace=TRUE), ]
-}, mc.cores=ncores)  # end mclapply
-is.list(bootd); NROW(bootd); dim(bootd[[1]])
-# Calculate the distribution of terminal wealths under Windows
-wealthv <- parLapply(compclust, bootd, function(retp) {
-  apply(retp, 2, function(x) prod(1 + x))
-})  # end parLapply
-# Calculate the distribution of terminal wealths under Mac-OSX or Linux
-wealthv <- mclapply(bootd, function(retp) {
-  apply(retp, 2, function(x) prod(1 + x))
-}, mc.cores=ncores)  # end mclapply
-wealthv <- do.call(rbind, wealthv)
-class(wealthv); dim(wealthv); tail(wealthv)
-# Calculate the means and standard deviations of the terminal wealths
-apply(wealthv, 2, mean)
-apply(wealthv, 2, sd)
-# Extract the terminal wealths of VTI and IEF
-vtiw <- wealthv[, "VTI"]
-iefw <- wealthv[, "IEF"]
-# Plot the densities of the terminal wealths of VTI and IEF
+startd <- sample.int(nrows-holdp, 1e3, replace=TRUE)
+# Bootstrap the VTI and IEF returns
+retm <- sapply(startd, function(x) {
+  pricev[x+holdp-1, ] - pricev[x, ]
+})  # end sapply
+dim(retm)
+# Faster way to calculate the cumulative returns
+retm <- pricev[startd+holdp-1, ] - pricev[startd, ]
+dim(retm)
+# Calculate the means and standard deviations of the returns
+apply(retm, 2, mean)
+apply(retm, 2, sd)
+# Extract the returns of VTI and IEF
+vtiw <- retm[, "VTI"]
+iefw <- retm[, "IEF"]
+# Plot the densities of the returns of VTI and IEF
 vtim <- mean(vtiw); iefm <- mean(iefw)
 vtid <- density(vtiw); iefd <- density(iefw)
 plot(vtid, col="blue", lwd=3, xlab="wealth",
-     xlim=c(0, 2*max(iefd$x)), ylim=c(0, max(iefd$y)),
-     main="Terminal Wealth Distributions of VTI and IEF")
+     xlim=c(0, max(vtid$x)), ylim=c(0, max(iefd$y)),
+     main="Cumulative Return Distributions of VTI and IEF")
 lines(iefd, col="green", lwd=3)
 abline(v=vtim, col="blue", lwd=2, lty="dashed")
 text(x=vtim, y=0.5, labels="VTI mean", pos=4, cex=0.8)
@@ -306,54 +293,55 @@ text(x=iefm, y=0.5, labels="IEF mean", pos=4, cex=0.8)
 legend(x="topright", legend=c("VTI", "IEF"),
  inset=0.1, cex=1.0, bg="white", bty="n", y.intersp=0.5,
  lwd=6, lty=1, col=c("blue", "green"))
-# Calculate the distributions of stock wealth
-holdv <- nrows*seq(0.1, 1.0, 0.1)
-wealthm <- mclapply(bootd, function(retp) {
-  sapply(holdv, function(holdp) {
-    prod(1 + retp[1:holdp, "VTI"])
-  })  # end sapply
-}, mc.cores=ncores)  # end mclapply
-wealthm <- do.call(rbind, wealthm)
-dim(wealthm)
-# Plot the stock wealth for long and short holding periods
-wealth1 <- wealthm[, 9]
-wealth2 <- wealthm[, 1]
-mean1 <- mean(wealth1); mean2 <- mean(wealth2)
-dens1 <- density(wealth1); dens2 <- density(wealth2)
-plot(dens1, col="blue", lwd=3, xlab="wealth",
-     xlim=c(0, 3*max(dens2$x)), ylim=c(0, max(dens2$y)),
-     main="Wealth Distributions for Long and Short Holding Periods")
+# Calculate the distributions of stock returns
+holdv <- round(nrows*seq(0.1, 0.5, 0.1))
+retm <- sapply(holdv, function(holdp) {
+  startd <- sample.int(nrows-holdp, 1e3, replace=TRUE)
+  pricev[startd+holdp-1, "VTI"] - pricev[startd, "VTI"]
+})  # end sapply
+dim(retm)
+colnames(retm) <- paste0(round(holdv/252), "years")
+# Calculate the skewness and kurtosis of the stock return distributions
+apply(retm, 2, function(x) {
+  # Standardize the returns
+  x <- (x - mean(x))/sd(x)
+  c(skew=mean(x^3), kurt=mean(x^4))
+}) # end apply
+# Plot the stock returns for long and short holding periods
+ret1 <- retm[, 5]
+ret2 <- retm[, 1]
+mean1 <- mean(ret1); mean2 <- mean(ret2)
+dens1 <- density(ret1); dens2 <- density(ret2)
+plot(dens1, col="blue", lwd=3, xlab="return",
+     xlim=c(0, 2.5*max(dens2$x)), ylim=c(0, max(dens2$y)),
+     main="Return Distributions for Long and Short Holding Periods")
 lines(dens2, col="green", lwd=3)
 abline(v=mean1, col="blue", lwd=2, lty="dashed")
 text(x=mean1, y=0.5, labels="Long", pos=4, cex=0.8)
 abline(v=mean2, col="green", lwd=2, lty="dashed")
 text(x=mean2, y=0.5, labels="Short", pos=4, cex=0.8)
-legend(x="top", legend=c("Long", "Short"),
- inset=0.1, cex=1.0, bg="white", bty="n", y.intersp=0.5,
+legend(x="topright", legend=c("Long", "Short"),
+ inset=0.0, cex=1.0, bg="white", bty="n", y.intersp=0.5,
  lwd=6, lty=1, col=c("blue", "green"))
-# Define the risk-adjusted wealth measure
-riskretfun <- function(wealthv) {
-  riskv <- 0.01 # Risk floor
-  if (min(wealthv) < 1) # Some wealth is below par
-    # Calculate the mean stock wealth below par
-    riskv <- mean((1-wealthv)[wealthv<1])
-  mean(wealthv)/riskv
+# Define the risk-adjusted return measure
+riskretfun <- function(retm) {
+  mean(retm)/sd(retm)
 }  # end riskretfun
-# Calculate the stock wealth risk-return ratios
-riskrets <- apply(wealthm, 2, riskretfun)
+# Calculate the stock risk-return ratios
+riskrets <- apply(retm, 2, riskretfun)
 # Plot the stock wealth risk-return ratios
 plot(x=holdv, y=riskrets,
      main="Stock Risk-Return Ratio as Function of Holding Period",
      xlab="Holding Period", ylab="Ratio",
      t="l", lwd=3, col="blue")
-# Calculate the distributions of portfolio wealth
+# Calculate the distributions of portfolio wealth for different weights of VTI
+holdp <- 10*252 # Holding period of 10 years in days
 weightv <- seq(0.05, 0.95, 0.05)
-wealthm <- mclapply(bootd, function(retp) {
-  sapply(weightv, function(weight) {
-    prod(1 + retp %*% c(weight, 1-weight))
+wealthm <- sapply(weightv, function(weight) {
+  sapply(startd, function(x) {
+    (pricev[x+holdp-1, ] - pricev[x, ]) %*% c(weight, 1-weight)
   })  # end sapply
-}, mc.cores=ncores)  # end mclapply
-wealthm <- do.call(rbind, wealthm)
+})  # end sapply
 dim(wealthm)
 # Calculate the portfolio risk-return ratios
 riskrets <- apply(wealthm, 2, riskretfun)
@@ -365,7 +353,7 @@ plot(x=weightv, y=riskrets,
      xlab="VTI weight", ylab="Ratio",
      t="l", lwd=3, col="blue")
 abline(v=weightm, lty="dashed", lwd=1, col="blue")
-text(x=weightm, y=0.7*max(riskrets), pos=4, cex=1.2,
+text(x=weightm, y=0.5*max(riskrets), pos=3, cex=1.2,
      labels=paste("optimal VTI weight =", round(weightm, 2)))
 # Extract the ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
@@ -378,10 +366,10 @@ colnames(retp)[4] <- "All Weather"
 sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
 # Calculate the cumulative wealth from returns
 wealthv <- cumsum(retp)
-# Calculate the a vector of monthly end points
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+# Calculate a vector of weekly end points
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 # dygraph all-weather wealth
-dygraphs::dygraph(wealthv[endd], main="All-Weather Portfolio") %>%
+dygraphs::dygraph(wealthv[endw], main="All-Weather Portfolio") %>%
   dyOptions(colors=c("blue", "green", "orange", "red")) %>%
   dySeries("All Weather", color="red", strokeWidth=2) %>%
   dyLegend(show="always", width=400)
@@ -394,10 +382,8 @@ legend("topleft", legend=colnames(wealthv),
   inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
   col=plot_theme$col$line.col, bty="n")
 # Calculate the VTI returns
-retp <- na.omit(rutils::etfenv$returns$VTI["2008/2009"])
-datev <- zoo::index(retp)
+retp <- na.omit(rutils::etfenv$returns$VTI)
 nrows <- NROW(retp)
-retp <- drop(zoo::coredata(retp))
 # Bond floor
 bfloor <- 60
 # CPPI multiplier
@@ -406,64 +392,92 @@ coeff <- 2
 portfv <- numeric(nrows)
 # Initial principal
 portfv[1] <- 100
-# Stock allocation
+# Stock investment
+stocki <- numeric(nrows)
+stocki[1] <- max(coeff*(portfv[1] - bfloor), 0)
+# Stock value
 stockv <- numeric(nrows)
-stockv[1] <- min(coeff*(portfv[1] - bfloor), portfv[1])
-# Bond allocation
+stockv[1] <- stocki[1]
+# Bond value
 bondv <- numeric(nrows)
-bondv[1] <- (portfv[1] - stockv[1])
-# Simulate CPPI strategy
+bondv[1] <- max(portfv[1] - stocki[1], 0)
+# Margin account
+margv <- numeric(nrows)
+# Simulate the CPPI strategy
 for (t in 2:nrows) {
-  portfv[t] <- portfv[t-1] + stockv[t-1]*retp[t]
-  stockv[t] <- min(coeff*(portfv[t] - bfloor), portfv[t])
-  bondv[t] <- (portfv[t] - stockv[t])
+  # Update the portfolio value
+  stocki[t] <- (1 + retp[t])*stocki[t-1]
+  stockv[t] <- stocki[t] - margv[t-1]
+  portfv[t] <- stockv[t] + bondv[t-1]
+  # Update the CPPI leverage
+  stockt <- max(coeff*(portfv[t] - bfloor), 0)
+  bondv[t] <- max(portfv[t] - stockt, 0)
+  margv[t] <- (bondv[t] - bondv[t-1]) + (stockt - stocki[t]) + margv[t-1]
+  stocki[t] <- stockt
 }  # end for
-# dygraph plot of CPPI strategy
 pricev <- 100*cumprod(1 + retp)
-datav <- xts::xts(cbind(stockv, bondv, portfv, pricev), datev)
+datav <- cbind(stockv, bondv, portfv, pricev)["2008/2009"]
 colnames(datav) <- c("stocks", "bonds", "CPPI", "VTI")
-endd <- rutils::calc_endpoints(datav, interval="weeks")
-dygraphs::dygraph(datav[endd], main="CPPI strategy") %>%
-  dyOptions(colors=c("red", "green", "blue", "orange"), strokeWidth=2) %>%
+endw <- rutils::calc_endpoints(datav, interval="weeks")
+dygraphs::dygraph(datav[endw], main="CPPI Strategy") %>%
+  dyOptions(colors=c("red", "green", "blue", "black"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Plot the CPPI margin account
+margv <- cbind(pricev, margv)
+colnames(margv)[2] <- "margin"
+endw <- rutils::calc_endpoints(margv, interval="weeks")
+dygraphs::dygraph(margv[endw], main="CPPI Margin and VTI") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Calculate the Sharpe of CPPI wealth
+wealthv <- cbind(pricev, portfv)
+colnames(wealthv)[2] <- "CPPI"
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x)
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot the CPPI wealth
+dygraphs::dygraph(log(wealthv[endw]), main="Wealth of CPPI and VTI") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Calculate the dollar and percentage returns of VTI and IEF
 pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
 datev <- zoo::index(pricev)
 retd <- rutils::diffit(pricev)
+retd[1, ] <- retd[2, ]
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Calculate the risk parity weights
 weightv <- 1/sapply(retd, sd)
 weightv <- weightv/sum(weightv)
-# Wealth of risk parity
+# Wealth of risk parity (fixed shares)
 wealthrp <- drop(pricev %*% weightv)
-# Wealth of equal dollar (without rebalancing)
+# Wealth of fixed shares (equal dollar)
 weightv <- 1/as.numeric(pricev[1, ])
 weightv <- weightv/sum(weightv)
-wealthed <- (pricev %*% weightv)
-wealthed <- wealthrp[1]*wealthed/wealthed[1]
+wealthfs <- (pricev %*% weightv)
+# Scale the wealthfs to start equal to wealthrp
+wealthfs <- wealthrp[1]*wealthfs/wealthfs[1]
 # Calculate the Sharpe and Sortino ratios
-wealthv <- xts::xts(cbind(wealthed, wealthrp), datev)
-colnames(wealthv) <- c("Equal dollar", "Risk parity")
+wealthv <- xts::xts(cbind(wealthfs, wealthrp), datev)
+colnames(wealthv) <- c("Fixed Shares", "Risk parity")
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the log wealth
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(log(wealthv[endd]),
-  main="Wealth of Equal Dollar And Risk parity") %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(log(wealthv[endw]),
+  main="Wealth of Fixed Shares And Risk parity") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Calculate the trailing dollar volatilities
 lambdav <- 0.99
 vold <- HighFreq::run_var(retd, lambda=lambdav)
-vold <- sqrt(vold[, 2])
+vold <- sqrt(vold[, 3:4])
 # Calculate the rolling risk parity weights
-weightv <- 1/vold
+weightv <- ifelse(vold > 0, 1/vold, 1)
 weightv <- weightv/rowSums(weightv)
 # Calculate the risk parity allocations
 pricerp <- pricev*weightv
 # Plot the risk parity allocations
 colnames(pricerp) <- c("Stocks", "Bonds")
-dygraph(log(pricerp[endd]), main="Risk Parity Allocations") %>%
+dygraph(log(pricerp[endw]), main="Risk Parity Allocations") %>%
   dyOptions(colors=c("red", "blue"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Calculate the dollar returns of risk parity
@@ -471,19 +485,19 @@ retrp <- retp*rutils::lagit(pricerp)
 retrp[1, ] <- pricerp[1, ]
 # Calculate the wealth of risk parity
 wealthrp <- cumsum(rowSums(retrp))
-# Wealth of proportional allocation (with rebalancing)
+# Wealth of proportional wealth (with rebalancing)
 wealthpr <- cumprod(1 + rowMeans(retp))
 wealthpr <- wealthpr*wealthrp[1]
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(wealthpr, wealthrp)
 wealthv <- xts::xts(wealthv, datev)
-colnames(wealthv) <- c("PropAlloc", "Risk Parity")
+colnames(wealthv) <- c("PropWealth", "Risk Parity")
 sqrt(252)*sapply(rutils::diffit(wealthv), function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot a dygraph of the log wealths
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(log(wealthv[endd]),
-  main="Log Wealth of Proportional Allocation vs Risk Parity") %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(log(wealthv[endw]),
+  main="Log of Proportional Wealth vs Risk Parity") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Test risk parity market timing of VTI using Treynor-Mazuy test
@@ -511,7 +525,7 @@ summary(regmod)
 coefreg <- summary(regmod)$coeff
 fitv <- regmod$fitted.values - coefreg["VTI", "Estimate"]*retvti
 points.default(x=retvti, y=fitv, pch=16, col="blue")
-text(x=0.0, y=0.7*max(resids), paste("Prop Alloc t-value =", round(coefreg["Treynor", "t value"], 2)))
+text(x=0.0, y=0.7*max(resids), paste("Prop Wealth t-value =", round(coefreg["Treynor", "t value"], 2)))
 # Total dollar amount of stocks that need to be traded
 notx <- rutils::diffit(pricerp)
 # The bid-ask spread is equal to 1 bp for liquid ETFs
@@ -523,7 +537,7 @@ wealthv <- cbind(wealthrp, wealthrp-costv)
 wealthv <- xts::xts(wealthv, datev)
 colv <- c("Risk Parity", "With Costs")
 colnames(wealthv) <- colv
-dygraphs::dygraph(wealthv[endd], main="Risk Parity Including Transaction Costs") %>%
+dygraphs::dygraph(wealthv[endw], main="Risk Parity Including Transaction Costs") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Calculate the positions
@@ -546,8 +560,8 @@ colnames(wealthv) <- c("VTI", "sellmay")
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot wealth of Sell in May strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Sell in May Strategy") %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main="Sell in May Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # OR: Open x11 for plotting
@@ -598,8 +612,8 @@ wealthv <- cbind(retp, reton, retd)
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot the log wealth
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Wealth of Close-to-Close, Overnight, and Daytime Strategies") %>%
   dySeries(name="daily", strokeWidth=2, col="blue") %>%
   dySeries(name="overnight", strokeWidth=2, col="red") %>%
@@ -629,8 +643,8 @@ colnames(wealthv) <- colv
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # dygraph plot VTI Turn of the Month strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Turn of the Month Strategy") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
@@ -653,10 +667,10 @@ for (i in 1:(nrows-1)) {
     pnls[i+1] <- 0 # Set PnLs = 0 if in stop-loss
 }  # end for
 # Same but without using loops in R
-pnls2 <- retp
+pnl2 <- retp
 insl <- rutils::lagit(dd < -stopl*pricem)
-pnls2 <- ifelse(insl, 0, pnls2)
-all.equal(pnls, pnls2, check.attributes=FALSE)
+pnl2 <- ifelse(insl, 0, pnl2)
+all.equal(pnls, pnl2, check.attributes=FALSE)
 # Combine the data
 wealthv <- cbind(retp, pnls)
 colv <- c("VTI", "Strategy")
@@ -665,8 +679,8 @@ colnames(wealthv) <- colv
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # dygraph plot the stop-loss strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="VTI Stop-loss Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -744,8 +758,8 @@ colnames(wealthv) <- colv
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # dygraph plot the stop-loss strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="VTI Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -803,8 +817,8 @@ colnames(wealthv) <- colv
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # dygraph plot the stop-start strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="USO Stop-Start Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -992,8 +1006,8 @@ colnames(wealthv) <- c("EMA", "Lagged")
 # Annualized Sharpe ratios of crossover strategies
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
 # Plot both strategies
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main=paste("EMA Crossover Strategy", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main=paste("EMA Crossover Strategy", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Calculate the positions, either: -1, 0, or 1
@@ -1019,12 +1033,12 @@ sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
 # The crossover strategy has a negative correlation to VTI
 cor(wealthv)[1, 2]
 # Plot dygraph of crossover strategy wealth
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Crossover Strategy Trading at the Open Price") %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main="Crossover Strategy Trading at the Open Price") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Standard plot of crossover strategy wealth
-quantmod::chart_Series(cumsum(wealthv)[endd], theme=plot_theme,
+quantmod::chart_Series(cumsum(wealthv)[endw], theme=plot_theme,
        name="Crossover Strategy Trading at the Open Price")
 legend("top", legend=colnames(wealthv),
  inset=0.05, bg="white", lty=1, lwd=6,
@@ -1037,7 +1051,7 @@ costv <- 0.5*bidask*abs(poslag - posv)
 wealthv <- cbind(pnls, pnls - costv)
 colnames(wealthv) <- c("EMA", "EMA w Costs")
 colorv <- c("blue", "red")
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Crossover Strategy With Transaction Costs") %>%
+dygraphs::dygraph(cumsum(wealthv)[endw], main="Crossover Strategy With Transaction Costs") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 sim_ema <- function(closep, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
@@ -1079,8 +1093,8 @@ pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
 # Plot dygraph of multiple crossover strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnltrend))
-endd <- rutils::calc_endpoints(pnltrend, interval="weeks")
-dygraphs::dygraph(cumsum(pnltrend)[endd], main="Cumulative Returns of Trend Following Crossover Strategies") %>%
+endw <- rutils::calc_endpoints(pnltrend, interval="weeks")
+dygraphs::dygraph(cumsum(pnltrend)[endw], main="Cumulative Returns of Trend Following Crossover Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dyLegend(show="always", width=400)
 # Plot crossover strategies with custom line colors
@@ -1135,7 +1149,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 cor(wealthv)[1, 2]
 # Plot dygraph of crossover strategy wealth
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Performance of Optimal Trend Following Crossover Strategy") %>%
+dygraphs::dygraph(cumsum(wealthv)[endw], main="Performance of Optimal Trend Following Crossover Strategy") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Plot EMA PnL with position shading
@@ -1160,7 +1174,7 @@ pnlrevert <- do.call(cbind, pnlrevert)
 colnames(pnlrevert) <- paste0("lambda=", lambdav)
 # Plot dygraph of mean reverting crossover strategies
 colorv <- colorRampPalette(c("blue", "red"))(NROW(lambdav))
-dygraphs::dygraph(cumsum(pnlrevert)[endd], main="Returns of Mean Reverting Crossover Strategies (No costv)") %>%
+dygraphs::dygraph(cumsum(pnlrevert)[endw], main="Returns of Mean Reverting Crossover Strategies (No costv)") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dyLegend(show="always", width=400)
 # Plot crossover strategies with custom line colors
@@ -1191,7 +1205,7 @@ wealthv <- cbind(retp, revertopt)
 colnames(wealthv) <- c("VTI", "EMA PnL")
 # Plot dygraph of crossover strategy wealth
 colorv <- c("blue", "red")
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Optimal Mean Reverting Crossover Strategy (No costv)") %>%
+dygraphs::dygraph(cumsum(wealthv)[endw], main="Optimal Mean Reverting Crossover Strategy (No costv)") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Standard plot of crossover strategy wealth
@@ -1220,7 +1234,7 @@ colnames(retc) <- c("VTI", "Trending", "Reverting", "Combined")
 sqrt(252)*sapply(retc, function(xtsv) mean(xtsv)/sd(xtsv))
 # Plot dygraph of crossover strategy wealth
 colorv <- c("blue", "red", "green", "purple")
-dygraphs::dygraph(cumsum(retc)[endd], main="Performance of Combined Crossover Strategies") %>%
+dygraphs::dygraph(cumsum(retc)[endw], main="Performance of Combined Crossover Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
   dyLegend(show="always", width=300)
@@ -1242,7 +1256,7 @@ retc <- cbind(retp, retc)
 colnames(retc) <- c("VTI", "EMA PnL")
 # Plot dygraph of crossover strategy wealth
 colorv <- c("blue", "red")
-dygraphs::dygraph(cumsum(retc)[endd], main="Performance of Ensemble of Crossover Strategies") %>%
+dygraphs::dygraph(cumsum(retc)[endw], main="Performance of Ensemble of Crossover Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Standard plot of crossover strategy wealth
@@ -1415,8 +1429,8 @@ sqrt(252)*sapply(wealthv[insample, ], function(x)
 sqrt(252)*sapply(wealthv[outsample, ], function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Dygraphs plot with custom line colors
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sample") %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main="Dual Crossover Strategy Out-of-Sample") %>%
   dyEvent(zoo::index(wealthv[last(insample)]), label="in-sample", strokePattern="solid", color="green") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
 # Calculate the log OHLC prices and volumes
@@ -1507,7 +1521,7 @@ colnames(wealthv) <- c("VTI", "VWAP", "Combined")
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
 # Plot dygraph of VWAP strategy combined with VTI
 colorv <- c("blue", "red", "purple")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+dygraphs::dygraph(cumsum(wealthv)[endw],
   paste("VWAP Strategy Sharpe", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dySeries(name="Combined", strokeWidth=3) %>%
@@ -1571,7 +1585,7 @@ pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdav)
 # Plot dygraph of multiple VWAP strategies
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
-dygraphs::dygraph(cumsum(pnls)[endd], main="Cumulative Returns of Trend Following VWAP Strategies") %>%
+dygraphs::dygraph(cumsum(pnls)[endw], main="Cumulative Returns of Trend Following VWAP Strategies") %>%
   dyOptions(colors=colorv, strokeWidth=1) %>%
   dyLegend(show="always", width=500)
 # Plot VWAP strategies with custom line colors
@@ -1584,8 +1598,8 @@ legend("topleft", legend=colnames(pnls), inset=0.1,
   bg="white", cex=0.8, lwd=rep(6, NCOL(pnls)),
   col=plot_theme$col$line.col, bty="n")
 # Dygraphs plot with custom line colors
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main="Dual Crossover Strategy Out-of-Sample") %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main="Dual Crossover Strategy Out-of-Sample") %>%
   dyEvent(zoo::index(wealthv[last(insample)]), label="in-sample", strokePattern="solid", color="green") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2)
 # Calculate the trailing mean prices and volatilities
@@ -1663,11 +1677,11 @@ colv <- colnames(wealthv)
 captiont <- paste("Bollinger Strategy", "/ \n",
   paste0(paste(colv[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
   "Number trades =", ntrades)
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-# Simulate the modified Bollinger strategy
+# Simulate the patient Bollinger Strategy
 posv <- integer(nrows) # Stock positions
 posv[1] <- 0 # Initial position
 for (it in 2:nrows) {
@@ -1683,10 +1697,10 @@ for (it in 2:nrows) {
   }  # end if
 }  # end for
 # Calculate the PnLs
-pnls2 <- retp*posv
+pnl2 <- retp*posv
 # Calculate the Sharpe ratios
-wealthv <- cbind(pnls, pnls2)
-colnames(wealthv) <- c("Bollinger", "Modified")
+wealthv <- cbind(pnls, pnl2)
+colnames(wealthv) <- c("Bollinger", "Patient")
 sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
 sharper <- round(sharper, 3)
 # Dygraphs plot of Bollinger strategy
@@ -1694,11 +1708,11 @@ colv <- colnames(wealthv)
 captiont <- paste("Bollinger Strategy", "/ \n",
   paste0(paste(colv[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
   "Number trades =", ntrades)
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-# Simulate the modified Bollinger strategy quickly
+# Simulate the patient Bollinger Strategy quickly
 posf <- rep(NA_integer_, nrows)
 posf[1] <- 0
 posf <- ifelse(pricec > threshv, -1, posf)
@@ -1746,8 +1760,8 @@ colv <- colnames(wealthv)
 captiont <- paste("Bollinger Strategy for Daytime VTI", "/ \n",
   paste0(paste(colv[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
   "Number trades =", ntrades)
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
 # Calculate the trailing mean prices and volatilities of SPY
@@ -1786,8 +1800,8 @@ colv <- colnames(wealthv)
 captiont <- paste("Bollinger Strategy for Minute SPY", "/ \n",
   paste0(paste(colv[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
   "Number trades =", ntrades)
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=100)
 # Extract time series of VTI log prices
@@ -1850,9 +1864,9 @@ sharper <- round(sharper, 3)
 captiont <- paste("Hampel Strategy", "/ \n",
   paste0(paste(colv[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
   "Number trades =", ntrades)
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colv <- colnames(wealthv)
-dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=100)
 # Calculate the trailing mean prices and volatilities of SPY
@@ -1891,8 +1905,8 @@ colv <- colnames(wealthv)
 captiont <- paste("Hampel Strategy for Minute SPY", "/ \n",
   paste0(paste(colv[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
   "Number trades =", ntrades)
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], main=captiont) %>%
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=100)
 # Extract the VTI log OHLC prices
@@ -1936,8 +1950,8 @@ pnls <- retp*posv
 # Plot dygraph of in-sample VTI strategy
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Price Tops and Bottoms Strategy In-Sample") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
   dyAxis("y2", label="Strategy", independentTicks=TRUE) %>%
@@ -1960,9 +1974,9 @@ colnames(volumz) <- "volume"
 # Calculate the trailing price regression z-scores
 datev <- matrix(zoo::index(closep))
 lookb <- 21
-controlv <- HighFreq::param_reg()
+controll <- HighFreq::param_reg()
 regs <- HighFreq::roll_reg(respv=closep, predm=datev,
-   lookb=lookb, controlv=controlv)
+   lookb=lookb, controll=controll)
 regs <- drop(regs[, NCOL(regs)])
 regs[1:lookb] <- 0
 # Plot dygraph of z-scores of VTI prices
@@ -2115,8 +2129,8 @@ colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Logistic Top and Bottom Strategy In-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -2163,8 +2177,8 @@ colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Logistic Strategy Out-of-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -2232,8 +2246,8 @@ colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Logistic Forecasting Returns") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
@@ -2282,8 +2296,8 @@ colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of in-sample VTI strategy
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Logistic Strategy Out-of-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)

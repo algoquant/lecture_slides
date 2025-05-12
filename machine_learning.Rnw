@@ -485,8 +485,8 @@ matv <- t(matv) %*% matv
 svdec <- svd(matv)
 # Incorrect inverse from SVD because of zero singular values
 invsvd <- svdec$v %*% (t(svdec$u) / svdec$d)
-# Inverse property doesn't hold
-all.equal(matv, matv %*% invsvd %*% matv)
+# Generalized inverse property doesn't hold
+all.equal(matv %*% invsvd %*% matv, matv)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -500,7 +500,7 @@ notzero <- (svdec$d > (precv*svdec$d[1]))
 invsvd <- svdec$v[, notzero] %*%
   (t(svdec$u[, notzero]) / svdec$d[notzero])
 # Verify inverse property of matv
-all.equal(matv, matv %*% invsvd %*% matv)
+all.equal(matv %*% invsvd %*% matv, matv)
 # Calculate the regularized inverse using MASS::ginv()
 invmat <- MASS::ginv(matv)
 all.equal(invsvd, invmat)
@@ -834,7 +834,7 @@ invmat <- solve(covmat)
 # Calculate the regularized inverse of covmat
 invmat <- MASS::ginv(covmat)
 # Verify inverse property of matv
-all.equal(covmat, covmat %*% invmat %*% covmat)
+all.equal(covmat %*% invmat %*% covmat, covmat)
 # Perform eigen decomposition
 eigend <- eigen(covmat)
 eigenvec <- eigend$vectors
@@ -1846,7 +1846,7 @@ plot(x=stdcor[, "stdev"], y=stdcor[, "cor"],
  main="Monthly Stock Volatilities and Correlations")
 # Plot stock volatilities and correlations
 colv <- colnames(stdcor)
-stdcor <- xts(stdcor, zoo::index(retvti[endd]))
+stdcor <- xts(stdcor, zoo::index(retvti[endw]))
 dygraphs::dygraph(stdcor, 
   main="Monthly Stock Volatilities and Correlations") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
@@ -1957,8 +1957,8 @@ correlv <- covarv[, 1, drop=FALSE]/sqrt(covarv[, 2]*covarv[, 3])
 datav <- cbind(cumsum(retp$XLK), correlv)
 colnames(datav)[2] <- "correlation"
 colv <- colnames(datav)
-endd <- rutils::calc_endpoints(retp, interval="weeks")
-dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
+endw <- rutils::calc_endpoints(retp, interval="weeks")
+dygraphs::dygraph(datav[endw], main="AAPL Correlations With XLK") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
@@ -1986,12 +1986,12 @@ dygraphs::dygraph(datav[endd], main="AAPL Correlations With XLK") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Scatterplot of trailing stock volatilities and correlations
 volv <- sqrt(covarv[, 2])
-plot(x=volv[endd], y=correlv[endd, ], pch=1, col="blue", 
+plot(x=volv[endw], y=correlv[endd, ], pch=1, col="blue", 
  xlab="AAPL volatility", ylab="Correlation",
  main="Trailing Volatilities and Correlations of AAPL vs XLK")
 # Interactive scatterplot of trailing stock volatilities and correlations
-datev <- zoo::index(retp[endd])
-datav <- data.frame(datev, volv[endd], correlv[endd, ])
+datev <- zoo::index(retp[endw])
+datav <- data.frame(datev, volv[endw], correlv[endd, ])
 colnames(datav) <- c("date", "volatility", "correlation")
 library(plotly)
 plotly::plot_ly(data=datav, x=~volatility, y=~correlation, 
@@ -2006,7 +2006,7 @@ plotly::plot_ly(data=datav, x=~volatility, y=~correlation,
 datav <- xts(cbind(volv, correlv), zoo::index(retp))
 colnames(datav) <- c("volatility", "correlation")
 colv <- colnames(datav)
-dygraphs::dygraph(datav[endd], main="AAPL Trailing Stock Volatility and Correlation") %>%
+dygraphs::dygraph(datav[endw], main="AAPL Trailing Stock Volatility and Correlation") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
@@ -2035,7 +2035,6 @@ retvti <- na.omit(rutils::etfenv$returns$VTI)
 colnames(retvti) <- "VTI"
 datev <- zoo::index(retvti)
 retp <- retstock100
-retp[is.na(retp)] <- 0
 retp <- retp[datev]
 nrows <- NROW(retp)
 nstocks <- NCOL(retp)
@@ -2050,8 +2049,8 @@ correlv[is.na(correlv)] <- 0
 correlp <- rowMeans(correlv)
 # Scatterplot of trailing stock volatilities and correlations
 volvti <- sqrt(HighFreq::run_var(retvti, lambdaf)[, 2])
-endd <- rutils::calc_endpoints(retvti, interval="weeks")
-plot(x=volvti[endd], y=correlp[endd], 
+endw <- rutils::calc_endpoints(retvti, interval="weeks")
+plot(x=volvti[endw], y=correlp[endw], 
  xlab="volatility", ylab="correlation",
  main="Trailing Stock Volatilities and Correlations")
       @
@@ -2063,7 +2062,7 @@ plot(x=volvti[endd], y=correlp[endd],
 datav <- xts(cbind(volvti, correlp), datev)
 colnames(datav) <- c("volatility", "correlation")
 colv <- colnames(datav)
-dygraphs::dygraph(datav[endd], 
+dygraphs::dygraph(datav[endw], 
   main="Trailing Stock Volatilities and Correlations") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
@@ -2804,30 +2803,37 @@ plot(regmod, which=2, ask=FALSE)  # Plot just Q-Q
       \vskip1ex
       The solution for the regression coefficients $\beta$ is given by:
       \begin{displaymath}
-        \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T y = \hat{\mathbb{X}}^{inv} y
+        \beta = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X}^{-1} y
       \end{displaymath}
-      The matrix $\hat{\mathbb{X}}^{inv} = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T$ is the generalized inverse of the \emph{predictor matrix} $\hat{\mathbb{X}}$.
+      The matrix $\mathbb{X}^{-1} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
       \vskip1ex
+      The generalized inverse $\mathbb{X}^{-1}$ satisfies the equation:
+      \begin{displaymath}
+        \mathbb{X} \mathbb{X}^{-1} \mathbb{X} = \mathbbm{X}
+      \end{displaymath}
+      Which is a generalization of the inverse property: $\mathbb{X}^{-1} \mathbb{X} = \mathbbm{1}$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-# Define linear regression data
+# Define predictor matrix
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nrows <- 100
-# Define predictor matrix
 predm <- runif(nrows)
 # Define response with noise
 noisev <- rnorm(nrows)
 respv <- (-3 + 2*predm + noisev)
+# Solve the regression using lm()
+formulav <- respv ~ predm
+regmod <- lm(formulav)  # Perform regression
+betalm <- regmod$coeff  # Regression coefficients
 # Add unit column to predictor
 predm <- cbind(rep(1, nrows), predm)
 colnames(predm)[1] <- "intercept"
-# Solve the regression using lm()
-formulav <- respv ~ predm[, 2]
-regmod <- lm(formulav)  # Perform regression
-betalm <- regmod$coeff  # Regression coefficients
-# Solve the regression using the generalized inverse
+# Calculate the generalized inverse
 predinv <- MASS::ginv(predm)
+# Generalized inverse property is satisfied
+all.equal(predm %*% predinv %*% predm, predm)
+# Solve the regression using the generalized inverse
 betac <- drop(predinv %*% respv)
 all.equal(betalm, betac, check.attributes=FALSE)
       @
@@ -2846,9 +2852,9 @@ all.equal(betalm, betac, check.attributes=FALSE)
     \column{0.5\textwidth}
       The fitted values $y_{fit}$ are equal to the response $y$ multiplied by the \emph{influence matrix} $H$:
       \begin{displaymath}
-        y_{fit} = \mathbb{X} \beta = \mathbb{X} (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T y = \mathbb{H} y
+        y_{fit} = \mathbb{X} \beta = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{H} y
       \end{displaymath}
-      Where $\mathbb{H} = \mathbb{X} (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T$ is the \emph{influence matrix}.
+      Where $\mathbb{H} = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the \emph{influence matrix}.
       \vskip1ex
       The \emph{influence matrix} projects the response vector $y$ onto the regression line, to obtain the fitted values $y_{fit}$.
       \vskip1ex
@@ -3824,6 +3830,10 @@ all.equal(tss, ess + rss)
       \end{displaymath}
       The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to $1$ for models fitting the data very well, and \emph{R-squared} close to $0$ for poorly fitting models.
       \vskip1ex
+      But the \emph{R-squared} doesn't measure the statistical significance of the fit.  
+      \vskip1ex
+      A regression may have a large \emph{R-squared}, but the coefficient \emph{p}-values may also be large, when the statistical significance of the regression is low.
+      \vskip1ex
       The \emph{R-squared} is equal to the squared correlation between the response and the fitted values:
       \begin{flalign*}
         & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
@@ -4726,6 +4736,14 @@ legend(x="topright", legend=c("non-defaulters", "defaulters"),
 wilcox.test(balance[default], balance[!default])
 # Perform Mann-Whitney test for the location of the incomes
 wilcox.test(income[default], income[!default])
+# Plot the densities of the balance amounts for defaulters and non-defaulters
+plot(density(balance[default]), 
+     main="Balance Amounts for Defaulters and Non-Defaulters",
+     xlab="balance", ylab="density", col="red", lwd=2)
+lines(density(balance[!default]), col="blue", lwd=2)
+legend(x="topright", inset=0.0, bty="n", lwd=6, y.intersp=0.4,
+       legend=c("non-defaulters", "defaulters"),
+       col=c("blue", "red"))
       @
     \column{0.5\textwidth}
       \vspace{-1em}

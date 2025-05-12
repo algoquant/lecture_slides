@@ -9,6 +9,7 @@ sapply(ratesenv, function(x) sum(is.na(x)))
 sapply(ls(ratesenv), function(namev) {
   assign(x=namev, value=na.omit(get(namev, ratesenv)),
    envir=ratesenv)
+  return(NULL)
 }) # end sapply
 sapply(ratesenv, function(x) sum(is.na(x)))
 # Get class of all objects in ratesenv
@@ -59,7 +60,7 @@ matplot(ycurves, main="Yield Curves in 2020 and 2023", xaxt="n", lwd=3, lty=1,
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
+legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
  bty="n", col=colorv, lty=1, lwd=6, inset=0.05, cex=1.0)
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -84,7 +85,7 @@ plot.zoo(ycurves, main="Yield Curve Since 2006", lwd=3, xaxt="n",
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
+legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
  bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
 # Alternative plot using matplot()
 matplot(ycurves, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
@@ -92,7 +93,7 @@ matplot(ycurves, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
+legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
  bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
 # Extract rates from ratesenv
 symbolv <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
@@ -261,7 +262,7 @@ par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 for (symbol in symbolv) {
   plot.zoo(cbind(retc[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
-  legend(x="topleft", bty="n", y.intersp=0.1,
+  legend(x="topleft", bty="n", y.intersp=0.5,
    legend=paste0(symboln, c("", " solved")),
    title=NULL, inset=0.0, cex=1.0, lwd=6,
    lty=1, col=c("black", "blue"))
@@ -371,7 +372,7 @@ colorv <- c("blue", "green")
 plot(volumm, col=colorv, lwd=3, major.ticks="days",
      format.labels="%b-%d", observation.based=TRUE,
      main="Volumes of ESU8 and ESM8 futures")
-legend("topleft", legend=colnames(volumm), col=colorv, y.intersp=0.1,
+legend("topleft", legend=colnames(volumm), col=colorv, y.intersp=0.5,
  title=NULL, bty="n", lty=1, lwd=6, inset=0.1, cex=0.7)
 # Find date when ESU8 volume exceeds ESM8
 exceeds <- (volumm[, "ESU8"] > volumm[, "ESM8"])
@@ -456,7 +457,7 @@ plot(futcurves[, 1], type="l", lty=1, col="blue", lwd=3,
 axis(1, at=(1:NROW(futcurves)), labels=rownames(futcurves))
 lines(futcurves[, 2], lty=1, lwd=3, col="red")
 legend(x="topright", legend=colnames(futcurves),
- inset=0.05, cex=1.0, bty="n", y.intersp=0.1,
+ inset=0.05, cex=1.0, bty="n", y.intersp=0.5,
  col=c("blue", "red"), lwd=6, lty=1)
 # Load VIX futures data from binary file
 load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
@@ -864,41 +865,30 @@ dygraphs::dygraph(xlkb$price,
 x11(width=6, height=5)
 quantmod::chart_Series(x=xlk$price,
   name="XLK Trade Ticks for 2020-03-16 (large lots only)")
-# Calculate the centered Hampel filter to remove bad prices
-lookb <- 71 # Look-back interval
-halfb <- lookb %/% 2 # Half-back interval
+# Load and plot intraday stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/xlk_tick_trades_20200316.RData")
 pricev <- xlk$price
-# Calculate the trailing median and MAD
-medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
-colnames(medianv) <- c("median")
-madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=lookb)
-# Center the median and the MAD
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-# Calculate the Z-scores
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
-# Define discrimination threshold value
-threshv <- 6*madz
-# Identify good prices with small z-scores
-isgood <- (abs(zscores) < threshv)
-# Calculate the number of bad prices
-sum(!isgood)
-# Scrub bad prices by replacing them with previous good prices
-priceg <- pricev
-priceg[!isgood] <- NA
-priceg <- zoo::na.locf(priceg)
-# Plot dygraph of the scrubbed prices
-dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
+dygraphs::dygraph(pricev, main="XLK Intraday Prices for 2020-03-16") %>%
   dyOptions(colors="blue", strokeWidth=1)
-# Plot using chart_Series()
-x11(width=6, height=5)
-quantmod::chart_Series(x=priceg,
-  name="Clean XLK Intraday Prices for 2020-03-16")
+# Calculate the lagged and advanced prices
+pricelag <- rutils::lagit(pricev)
+pricelag[1] <- pricelag[2]
+pricadv <- rutils::lagit(pricev, lagg=-1)
+pricadv[NROW(pricadv)] <- pricadv[NROW(pricadv)-1]
+# Calculate the z-scores
+diffl <- ifelse(abs(pricelag-pricadv) < 0.01, 0.01, abs(pricelag-pricadv))
+zscores <- (pricev - 0.5*(pricelag+pricadv))/diffl
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
+# Scrub the price spikes
+threshv <- 5*madz # Discrimination threshold
+indeks <- which(abs(zscores > threshv))
+pricev[indeks] <- as.numeric(pricev[indeks-1])
+# Plot dygraph of the scrubbed prices
+dygraphs::dygraph(pricev, main="Scrubbed XLK Intraday Prices") %>%
+  dyOptions(colors="blue", strokeWidth=1)
 # Calculate the centered Hampel filter to remove bad prices
 lookb <- 71 # Look-back interval
 halfb <- lookb %/% 2 # Half-back interval
@@ -916,7 +906,7 @@ zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
 # Z-scores have very fat tails
 range(zscores); mad(zscores)
 madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
+hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
 # Define discrimination threshold value
 threshv <- 6*madz
 # Identify good prices with small z-scores
@@ -1235,7 +1225,7 @@ curve(expr=dnorm(x, mean=mean(retp),
   sd=sd(retp)), add=TRUE, lwd=3, col="blue")
 # Add legend
 legend("topright", inset=0.05, bty="n",
-  leg=c("t-distr", "normal"), y.intersp=0.1,
+  leg=c("t-distr", "normal"), y.intersp=0.5,
   lwd=6, lty=1, col=c("red", "blue"))
 # Hourly SPY percentage returns
 closep <- log(Cl(xts::to.period(x=ohlc, period="hours")))
@@ -1261,7 +1251,7 @@ lines(density(retsh, bw=0.4), lwd=3, col="green")
 lines(density(retd, bw=0.4), lwd=3, col="red")
 # Add legend
 legend("topright", inset=0.05, bty="n",
-  leg=c("minutely", "hourly", "daily"), y.intersp=0.1,
+  leg=c("minutely", "hourly", "daily"), y.intersp=0.5,
   lwd=6, lty=1, col=c("blue", "green", "red"))
 # Calculate rolling volatility of SPY returns
 ret2013 <- retp["2013-11-11/2013-11-15"]
@@ -1294,7 +1284,7 @@ plot_theme$col$line.col <- c("blue", "red")
 chart_Series(vol_rolling, theme=plot_theme,
      name="Rolling Volatility with Overnight Spikes")
 legend("topright", legend=colnames(vol_rolling),
-  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.1,
+  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
   col=plot_theme$col$line.col, bty="n")
 # Volatility of SPY
 sqrt(HighFreq::calcvar_ohlc(ohlc))
@@ -1374,7 +1364,7 @@ plot(density(retp), xlim=c(-3, 3),
 lines(density(retsc, bw=0.4), lwd=3, col="red")
 curve(expr=dnorm, add=TRUE, lwd=3, col="green")
 # Add legend
-legend("topright", inset=0.05, bty="n", y.intersp=0.1,
+legend("topright", inset=0.05, bty="n", y.intersp=0.5,
   leg=c("minutely", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
 # Ljung-Box test for minutely SPY returns
@@ -1605,20 +1595,20 @@ detach("package:IBrokers")
 # Install package IBrokers2
 devtools::install_github(repo="algoquant/IBrokers2")
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Or connect to IB Gateway
-# Ib_connect <- ibgConnect(port=4002)
+# connib <- ibgConnect(port=4002)
 # Check connection
-IBrokers::isConnected(ib_connect)
+IBrokers::isConnected(connib)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Or connect to IB Gateway
-# Ib_connect <- ibgConnect(port=4002)
+# connib <- ibgConnect(port=4002)
 # Download account information from IB
 ac_count <- "DU1215081"
-ib_account <- IBrokers::reqAccountUpdates(conn=ib_connect,
+ib_account <- IBrokers::reqAccountUpdates(conn=connib,
                                     acctCode=ac_count)
 # Extract account balances
 balance_s <- ib_account[[1]]
@@ -1626,7 +1616,7 @@ balance_s$AvailableFunds
 # Extract contract names, net positions, and profits and losses
 IBrokers::twsPortfolioValue(ib_account)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Define AAPL stock contract (object)
 contractobj <- IBrokers::twsEquity("AAPL", primary="SMART")
 # Define CHF currency contract
@@ -1649,13 +1639,13 @@ contractobj <- IBrokers::twsFuture(symbol="QM",
 # Test if contract object is correct
 IBrokers::is.twsContract(contractobj)
 # Get list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
+IBrokers::reqContractDetails(conn=connib, Contract=contractobj)
 # Install the package twsInstrument
 install.packages("twsInstrument", repos="http://r-forge.r-project.org")
 # Define euro future using getContract() and Conid
 contractobj <- twsInstrument::getContract("317631411")
 # Get list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
+IBrokers::reqContractDetails(conn=connib, Contract=contractobj)
 # Define VIX monthly and weekly futures June 2019 contract
 symboln <- "VIX"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
@@ -1667,7 +1657,7 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
 contractobj <- IBrokers::twsFuture(symbol=symboln,
   local="VX40V8", exch="CFE", expiry="201906")
 # Get list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect,
+IBrokers::reqContractDetails(conn=connib,
   Contract=contractobj)
 # Define S&P Emini futures June 2019 contract
 symboln <- "ES"
@@ -1677,48 +1667,48 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
 dirn <- "/Users/jerzy/Develop/data/ib_data"
 dir.create(dirn)
 filen <- file.path(dirn, paste0(symboln, "201906.csv"))
-file_connect <- file(filen, open="w")
+filec <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Write header to file
-cat(paste(paste(symboln, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "Count"), sep="."), collapse=","), "\n", file=file_connect)
+cat(paste(paste(symboln, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "Count"), sep="."), collapse=","), "\n", file=filec)
 # Download historical data to file
-IBrokers::reqHistoricalData(conn=ib_connect,
+IBrokers::reqHistoricalData(conn=connib,
   Contract=contractobj,
   barSize="1 day", duration="6 M",
-  file=file_connect)
+  file=filec)
 # Close data file
-close(file_connect)
+close(filec)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Define IB contract objects for stock symbols
 symbolv <- c("AAPL", "F", "MSFT")
 contractv <- lapply(symbolv, IBrokers::twsEquity, primary="SMART")
 names(contractv) <- symbolv
 # Open file connections for data download
 dirn <- "/Users/jerzy/Develop/data/ib_data"
-filens <- file.path(dirn, paste0(symbolv, format(Sys.time(), format="_%m_%d_%Y_%H_%M"), ".csv"))
-file_connects <- lapply(filens, function(filen) file(filen, open="w"))
+filev <- file.path(dirn, paste0(symbolv, format(Sys.time(), format="_%m_%d_%Y_%H_%M"), ".csv"))
+fileconn <- lapply(filev, function(filen) file(filen, open="w"))
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Download historical 1-minute bar data to files
 for (it in 1:NROW(symbolv)) {
   symboln <- symbolv[it]
-  file_connect <- file_connects[[it]]
+  filec <- fileconn[[it]]
   contractobj <- contractv[[it]]
   cat("Downloading data for: ", symboln, "\n")
   # Write header to file
-  cat(paste(paste(symboln, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "XTRA", "Count"), sep="."), collapse=","), "\n", file=file_connect)
-  IBrokers::reqHistoricalData(conn=ib_connect,
+  cat(paste(paste(symboln, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "XTRA", "Count"), sep="."), collapse=","), "\n", file=filec)
+  IBrokers::reqHistoricalData(conn=connib,
                          Contract=contractobj,
                          barSize="1 min", duration="2 D",
-                         file=file_connect)
+                         file=filec)
   Sys.sleep(10) # 10s pause to avoid IB pacing violation
 }  # end for
 # Close data files
-for (file_connect in file_connects) close(file_connect)
+for (filec in fileconn) close(filec)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Define S&P Emini futures June 2018 contract
 symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
@@ -1726,18 +1716,18 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201806")
 # Open file connection for ESM8 data download
 filen <- file.path(dirn, paste0(symboln, "M8.csv"))
-file_connect <- file(filen, open="w")
+filec <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Download historical data to file
-IBrokers::reqHistoricalData(conn=ib_connect,
+IBrokers::reqHistoricalData(conn=connib,
   Contract=contractobj,
   barSize="1 day", duration="2 Y",
-  file=file_connect)
+  file=filec)
 # Close data file
-close(file_connect)
+close(filec)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Load OHLC data and coerce it into xts series
 pricev <- data.table::fread(filen)
 data.table::setDF(pricev)
@@ -1760,18 +1750,18 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
 dirn <- "/Users/jerzy/Develop/data/ib_data"
 dir.create(dirn)
 filen <- file.path(dirn, paste0(symboln, ".csv"))
-file_connect <- file(filen, open="w")
+filec <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Download historical data to file
-IBrokers::reqHistoricalData(conn=ib_connect,
+IBrokers::reqHistoricalData(conn=connib,
   Contract=contractobj,
   barSize="1 day", duration="6 M",
-  file=file_connect)
+  file=filec)
 # Close data file
-close(file_connect)
+close(filec)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Define S&P Emini futures June 2019 contract
 symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
@@ -1780,18 +1770,18 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
 dirn <- "/Users/jerzy/Develop/data/ib_data"
 # Dir.create(dirn)
 filen <- file.path(dirn, paste0(symboln, "_taq_live.csv"))
-file_connect <- file(filen, open="w")
+filec <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Download live data to file
-IBrokers::reqMktData(conn=ib_connect,
+IBrokers::reqMktData(conn=connib,
      Contract=contractobj,
      eventWrapper=eWrapper.MktData.CSV(1),
-     file=file_connect)
+     file=filec)
 # Close data file
-close(file_connect)
+close(filec)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Define S&P Emini futures June 2019 contract
 symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
@@ -1800,18 +1790,18 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
 dirn <- "/Users/jerzy/Develop/data/ib_data"
 # Dir.create(dirn)
 filen <- file.path(dirn, paste0(symboln, "_ohlc_live.csv"))
-file_connect <- file(filen, open="w")
+filec <- file(filen, open="w")
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Download live data to file
-IBrokers::reqRealTimeBars(conn=ib_connect,
+IBrokers::reqRealTimeBars(conn=connib,
      Contract=contractobj, barSize="1",
      eventWrapper=eWrapper.RealTimeBars.CSV(1),
-     file=file_connect)
+     file=filec)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Close data file
-close(file_connect)
+close(filec)
 # Load OHLC data and coerce it into xts series
 library(data.table)
 pricev <- data.table::fread(filen)
@@ -1832,24 +1822,24 @@ contractv <- list(ES=IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201
              ZN=IBrokers::twsFuture(symbol="ZN", exch="ECBOT", expiry="201906"))
 # Open the file connection for storing the bar data
 dirn <- "/Users/jerzy/Develop/data/ib_data"
-filens <- file.path(dirn, paste0(c("ES", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
-file_connects <- lapply(filens, function(filen) file(filen, open="w"))
+filev <- file.path(dirn, paste0(c("ES", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
+fileconn <- lapply(filev, function(filen) file(filen, open="w"))
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Download live data to file
-IBrokers::reqRealTimeBars(conn=ib_connect,
+IBrokers::reqRealTimeBars(conn=connib,
                     Contract=contractv,
                     barSize="1", useRTH=FALSE,
                     eventWrapper=eWrapper.RealTimeBars.CSV(NROW(contractv)),
-                    file=file_connects)
+                    file=fileconn)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Close data files
-for (file_connect in file_connects)
-  close(file_connect)
+for (filec in fileconn)
+  close(filec)
 library(data.table)
 # Load ES futures June 2019 contract and coerce it into xts series
-pricev <- data.table::fread(filens[1])
+pricev <- data.table::fread(filev[1])
 pricev <- xts::xts(pricev[, paste0("V", 2:6)],
   as.POSIXct.numeric(as.numeric(pricev[, V1]), tz="America/New_York", origin="1970-01-01"))
 colnames(pricev) <- c("Open", "High", "Low", "Close", "Volume")
@@ -1858,7 +1848,7 @@ library(dygraphs)
 dygraphs::dygraph(pricev[, 1:4], main="S&P500 ESM9 futures") %>%
   dyCandlestick()
 # Load ZN 10yr Treasury futures June 2019 contract
-pricev <- data.table::fread(filens[2])
+pricev <- data.table::fread(filev[2])
 pricev <- xts::xts(pricev[, paste0("V", 2:6)],
   as.POSIXct.numeric(as.numeric(pricev[, V1]), tz="America/New_York", origin="1970-01-01"))
 colnames(pricev) <- c("Open", "High", "Low", "Close", "Volume")
@@ -1878,43 +1868,43 @@ contractobj <- IBrokers::twsFuture(symbol="J7", exch="GLOBEX", expiry="201906")
 # Define Japanese yen currency futures June 2019 contract 6JZ8
 contractobj <- IBrokers::twsFuture(symbol="JPY", exch="GLOBEX", expiry="201906")
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
+connib <- IBrokers::twsConnect(port=7497)
+IBrokers::reqContractDetails(conn=connib, Contract=contractobj)
 # Request trade order ID
-order_id <- IBrokers::reqIds(ib_connect)
+order_id <- IBrokers::reqIds(connib)
 # Create buy market order object
 ib_order <- IBrokers::twsOrder(order_id,
   orderType="MKT", action="BUY", totalQuantity=1)
 # Place trade order
-IBrokers::placeOrder(ib_connect, contractobj, ib_order)
+IBrokers::placeOrder(connib, contractobj, ib_order)
 # Execute sell market order
-order_id <- IBrokers::reqIds(ib_connect)
+order_id <- IBrokers::reqIds(connib)
 ib_order <- IBrokers::twsOrder(order_id,
   orderType="MKT", action="SELL", totalQuantity=1)
-IBrokers::placeOrder(ib_connect, contractobj, ib_order)
+IBrokers::placeOrder(connib, contractobj, ib_order)
 # Execute buy market order
-order_id <- IBrokers::reqIds(ib_connect)
+order_id <- IBrokers::reqIds(connib)
 ib_order <- IBrokers::twsOrder(order_id,
   orderType="MKT", action="BUY", totalQuantity=1)
-IBrokers::placeOrder(ib_connect, contractobj, ib_order)
+IBrokers::placeOrder(connib, contractobj, ib_order)
 # Request trade order ID
-order_id <- IBrokers::reqIds(ib_connect)
+order_id <- IBrokers::reqIds(connib)
 # Create buy limit order object
 ib_order <- IBrokers::twsOrder(order_id, orderType="LMT",
   lmtPrice="1.1511", action="BUY", totalQuantity=1)
 # Place trade order
-IBrokers::placeOrder(ib_connect, contractobj, ib_order)
+IBrokers::placeOrder(connib, contractobj, ib_order)
 # Cancel trade order
-IBrokers::cancelOrder(ib_connect, order_id)
+IBrokers::cancelOrder(connib, order_id)
 # Execute sell limit order
-order_id <- IBrokers::reqIds(ib_connect)
+order_id <- IBrokers::reqIds(connib)
 ib_order <- IBrokers::twsOrder(order_id, orderType="LMT",
   lmtPrice="1.1512", action="SELL", totalQuantity=1)
-IBrokers::placeOrder(ib_connect, contractobj, ib_order)
+IBrokers::placeOrder(connib, contractobj, ib_order)
 # Cancel trade order
-IBrokers::cancelOrder(ib_connect, order_id)
+IBrokers::cancelOrder(connib, order_id)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 eWrapper_realtimebars <- function(n = 1) {
   eW <- eWrapper_new(NULL)
   # eW <- IBrokers::eWrapper(NULL)
@@ -1936,18 +1926,18 @@ eWrapper_realtimebars <- function(n = 1) {
     # Cancel previous trade orders
     buy_id <- eW$get.Data("buy_id")
     sell_id <- eW$get.Data("sell_id")
-    if (buy_id>0) IBrokers::cancelOrder(ib_connect, buy_id)
-    if (sell_id>0) IBrokers::cancelOrder(ib_connect, sell_id)
+    if (buy_id>0) IBrokers::cancelOrder(connib, buy_id)
+    if (sell_id>0) IBrokers::cancelOrder(connib, sell_id)
     # Execute buy limit order
-    buy_id <- IBrokers::reqIds(ib_connect)
+    buy_id <- IBrokers::reqIds(connib)
     buy_order <- IBrokers::twsOrder(buy_id, orderType="LMT",
                               lmtPrice=msg[6]-0.25, action="BUY", totalQuantity=1)
-    IBrokers::placeOrder(ib_connect, contractobj, buy_order)
+    IBrokers::placeOrder(connib, contractobj, buy_order)
     # Execute sell limit order
-    sell_id <- IBrokers::reqIds(ib_connect)
+    sell_id <- IBrokers::reqIds(connib)
     sell_order <- IBrokers::twsOrder(sell_id, orderType="LMT",
                                lmtPrice=msg[5]+0.25, action="SELL", totalQuantity=1)
-    IBrokers::placeOrder(ib_connect, contractobj, sell_order)
+    IBrokers::placeOrder(connib, contractobj, sell_order)
     # Copy new trade orders
     eW$assign.Data("buy_id", buy_id)
     eW$assign.Data("sell_id", sell_id)
@@ -1979,18 +1969,18 @@ eWrapper_realtimebars <- function(n = 1) {
     # Cancel previous trade orders
     buy_id <- eW$get.Data("buy_id")
     sell_id <- eW$get.Data("sell_id")
-    if (buy_id>0) IBrokers::cancelOrder(ib_connect, buy_id)
-    if (sell_id>0) IBrokers::cancelOrder(ib_connect, sell_id)
+    if (buy_id>0) IBrokers::cancelOrder(connib, buy_id)
+    if (sell_id>0) IBrokers::cancelOrder(connib, sell_id)
     # Execute buy limit order
-    buy_id <- IBrokers::reqIds(ib_connect)
+    buy_id <- IBrokers::reqIds(connib)
     buy_order <- IBrokers::twsOrder(buy_id, orderType="LMT",
                               lmtPrice=msg[6]-0.25, action="BUY", totalQuantity=1)
-    IBrokers::placeOrder(ib_connect, contractobj, buy_order)
+    IBrokers::placeOrder(connib, contractobj, buy_order)
     # Execute sell limit order
-    sell_id <- IBrokers::reqIds(ib_connect)
+    sell_id <- IBrokers::reqIds(connib)
     sell_order <- IBrokers::twsOrder(sell_id, orderType="LMT",
                                lmtPrice=msg[5]+0.25, action="SELL", totalQuantity=1)
-    IBrokers::placeOrder(ib_connect, contractobj, sell_order)
+    IBrokers::placeOrder(connib, contractobj, sell_order)
     # Copy new trade orders
     eW$assign.Data("buy_id", buy_id)
     eW$assign.Data("sell_id", sell_id)
@@ -2016,7 +2006,7 @@ gold_contract <- IBrokers::twsFuture(symbol="YG",
 # Define euro currency future June 2019 contract
 euro_contract <- IBrokers::twsFuture(symbol="EUR",
   exch="GLOBEX", expiry="201906")
-IBrokers::reqContractDetails(conn=ib_connect, Contract=euro_contract)
+IBrokers::reqContractDetails(conn=connib, Contract=euro_contract)
 # Define data directory
 dirn <- "/Users/jerzy/Develop/data/ib_data"
 # Dir.create(dirn)
@@ -2035,13 +2025,13 @@ raw_ewrapper <- eWrapper(debug=TRUE)
 # by replacing handler function errorMessage() in raw_ewrapper
 raw_ewrapper$errorMessage <- error_ewrapper$errorMessage
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
+connib <- IBrokers::twsConnect(port=7497)
 # Download raw data for multiple contracts for replay
-IBrokers::reqMktData(ib_connect,
+IBrokers::reqMktData(connib,
   list(snp_contract, vix_contract, trs_contract, gold_contract, euro_contract),
   eventWrapper=raw_ewrapper, file=raw_connect)
 # Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
+IBrokers::twsDisconnect(connib)
 # Close data files
 close(raw_connect)
 close(error_connect)
@@ -2053,14 +2043,14 @@ class(raw_connect) <- c("twsPlayback", class(raw_connect))
 # Replay the raw data
 IBrokers::reqMktData(raw_connect, list(snp_contract, vix_contract))
 # Open file for data
-file_connect <- file(file.path(dirn, "temp.csv"), open="w")
+filec <- file(file.path(dirn, "temp.csv"), open="w")
 # Download TAQ data to file
 IBrokers::reqMktData(conn=raw_connect,
      Contract=snp_contract,
      eventWrapper=eWrapper.MktData.CSV(1),
-     file=file_connect)
+     file=filec)
 # Close file for TAQ data
-close(file_connect)
+close(filec)
 # Close file with raw data
 IBrokers::twsDisconnect(raw_connect)
 # Define AAPL stock contract (object)
@@ -2082,13 +2072,13 @@ contractobj <- IBrokers::twsFuture(symbol="GC",
 # Test if contract object is correct
 IBrokers::is.twsContract(contractobj)
 # Get list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
+IBrokers::reqContractDetails(conn=connib, Contract=contractobj)
 # Install the package twsInstrument
 install.packages("twsInstrument", repos="http://r-forge.r-project.org")
 # Define euro future using getContract() and Conid
 contractobj <- twsInstrument::getContract("317631411")
 # Get list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
+IBrokers::reqContractDetails(conn=connib, Contract=contractobj)
 # Define AAPL stock contract (object)
 contractobj <- IBrokers::twsEquity("AAPL", primary="SMART")
 # Define CHF currency contract
@@ -2108,10 +2098,10 @@ contractobj <- IBrokers::twsFuture(symbol="GC",
 # Test if contract object is correct
 IBrokers::is.twsContract(contractobj)
 # Get list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
+IBrokers::reqContractDetails(conn=connib, Contract=contractobj)
 # Install the package twsInstrument
 install.packages("twsInstrument", repos="http://r-forge.r-project.org")
 # Define euro future using getContract() and Conid
 contractobj <- twsInstrument::getContract("317631411")
 # Get list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=contractobj)
+IBrokers::reqContractDetails(conn=connib, Contract=contractobj)

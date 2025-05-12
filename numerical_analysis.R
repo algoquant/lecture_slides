@@ -556,7 +556,7 @@ mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
 str(rnorm)
 # mapply vectorizes both arguments "mean" and "sd"
 mapply(rnorm, n=5, mean=means, sd=stdevs)
-mapply(function(input, e_xp) input^e_xp,
+mapply(function(input, expv) input^expv,
  1:5, seq(from=1, by=0.2, length.out=5))
 # rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- function(n, mean=0, sd=1) {
@@ -868,50 +868,6 @@ stopCluster(compclust)  # Stop R processes over cluster
 bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
 apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
-# Calculate time series of VTI returns
-library(rutils)
-retp <- rutils::etfenv$returns$VTI
-retp <- na.omit(retp)
-nrows <- NROW(retp)
-# Sample from VTI returns
-samplev <- retp[sample.int(nrows, replace=TRUE)]
-c(sd=sd(samplev), mad=mad(samplev))
-# sample.int() is a little faster than sample()
-library(microbenchmark)
-summary(microbenchmark(
-  sample.int = sample.int(1e3),
-  sample = sample(1e3),
-  times=10))[, c(1, 4, 5)]
-# Sample from time series of VTI returns
-library(rutils)
-retp <- rutils::etfenv$returns$VTI
-retp <- na.omit(retp)
-nrows <- NROW(retp)
-# Bootstrap sd and MAD under Windows
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1  # Number of cores
-compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
-clusterSetRNGStream(compclust, 1121)  # Reset random number generator in all cores
-nboot <- 10000
-bootd <- parLapply(compclust, 1:nboot, function(x, retp, nsimu) {
-  samplev <- retp[sample.int(nsimu, replace=TRUE)]
-  c(sd=sd(samplev), mad=mad(samplev))
-}, retp=retp, nsimu=nrows)  # end parLapply
-# Bootstrap sd and MAD under Mac-OSX or Linux
-bootd <- mclapply(1:nboot, function(x) {
-  samplev <- retp[sample.int(nrows, replace=TRUE)]
-  c(sd=sd(samplev), mad=mad(samplev))
-}, mc.cores=ncores)  # end mclapply
-stopCluster(compclust)  # Stop R processes over cluster under Windows
-bootd <- rutils::do_call(rbind, bootd)
-# Standard error of standard deviation assuming normal distribution of returns
-sd(retp)/sqrt(nsimu)
-# Means and standard errors from bootstrap
-stderr <- apply(bootd, MARGIN=2,
-  function(x) c(mean=mean(x), stderror=sd(x)))
-stderr
-# Relative standard errors
-stderr[2, ]/stderr[1, ]
 # Initialize random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Define predictor and response variables
@@ -1045,16 +1001,56 @@ zoo::plot.zoo(pathm[, indeks], main="Paths of Brownian Motion",
   xlab="time steps", ylab=NA, plot.type="single")
 abline(h=strikep, col="red", lwd=3)
 text(x=(nsteps-60), y=strikep, labels="strike price", pos=3, cex=1)
-# Calculate percentage returns from VTI prices
+# Calculate time series of VTI returns
+library(rutils)
+retp <- rutils::etfenv$returns$VTI
+retp <- na.omit(retp)
+nrows <- NROW(retp)
+# Sample from VTI returns
+samplev <- retp[sample.int(nrows, replace=TRUE)]
+c(sd=sd(samplev), mad=mad(samplev))
+# sample.int() is a little faster than sample()
+library(microbenchmark)
+summary(microbenchmark(
+  sample.int = sample.int(1e3),
+  sample = sample(1e3),
+  times=10))[, c(1, 4, 5)]
+# Bootstrap sd and MAD under Windows
+library(parallel)  # Load package parallel
+ncores <- detectCores() - 1  # Number of cores
+compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
+clusterSetRNGStream(compclust, 1121)  # Reset random number generator in all cores
+nboot <- 10000
+bootd <- parLapply(compclust, 1:nboot, function(x, retp, nsimu) {
+  samplev <- retp[sample.int(nsimu, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
+}, retp=retp, nsimu=nrows)  # end parLapply
+# Bootstrap sd and MAD under Mac-OSX or Linux
+bootd <- mclapply(1:nboot, function(x) {
+  samplev <- retp[sample.int(nrows, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
+}, mc.cores=ncores)  # end mclapply
+stopCluster(compclust)  # Stop R processes over cluster under Windows
+bootd <- rutils::do_call(rbind, bootd)
+# Standard error of standard deviation assuming normal distribution of returns
+sd(retp)/sqrt(nrows)
+# Means and standard errors from bootstrap
+stderr <- apply(bootd, MARGIN=2,
+  function(x) c(mean=mean(x), stderror=sd(x)))
+stderr
+# Relative standard errors
+stderr[2, ]/stderr[1, ]
+# Calculate log returns from VTI prices
 library(rutils)
 pricev <- quantmod::Cl(rutils::etfenv$VTI)
-prici <- as.numeric(pricev[1, ])
-retp <- rutils::diffit(log(pricev))
+pricev <- log(as.numeric(pricev))
+nrows <- NROW(pricev)
+prici <- pricev[1]
+retp <- rutils::diffit(pricev)
 class(retp); head(retp)
 sum(is.na(retp))
-nrows <- NROW(retp)
 # Define barrier level with respect to prices
-barl <- 1.5*max(pricev)
+barl <- 2*max(pricev)
 # Calculate single bootstrap sample
 samplev <- retp[sample.int(nrows, replace=TRUE)]
 # Calculate prices from percentage returns
@@ -1071,7 +1067,7 @@ nboot <- 10000
 bootd <- parLapply(compclust, 1:nboot, function(x, retp, nrows) {
   samplev <- retp[sample.int(nrows, replace=TRUE)]
   # Calculate prices from percentage returns
-  samplev <- prici*exp(cumsum(samplev))
+  samplev <- prici*cumsum(samplev)
   # Calculate if prices crossed barrier
   sum(samplev > barl) > 0
 }, retp=retp, nrows=nrows)  # end parLapply
@@ -1080,13 +1076,41 @@ stopCluster(compclust)  # Stop R processes over cluster under Windows
 bootd <- mclapply(1:nboot, function(x) {
   samplev <- retp[sample.int(nrows, replace=TRUE)]
   # Calculate prices from percentage returns
-  samplev <- prici*exp(cumsum(samplev))
+  samplev <- prici*cumsum(samplev)
   # Calculate if prices crossed barrier
   sum(samplev > barl) > 0
 }, mc.cores=ncores)  # end mclapply
 bootd <- rutils::do_call(c, bootd)
 # Calculate frequency of crossing barrier
 sum(bootd)/nboot
+# Define barrier level with respect to the prices
+barl <- 0.1*max(pricev)
+# Define time horizon of 1 year in days
+holdp <- 252
+# Sample the start dates for the bootstrap
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+startd <- sample.int(nrows-holdp, nboot, replace=TRUE)
+# Bootstrap the cumulative returns
+samplev <- sapply(startd, function(x) {
+  pricev[x+holdp-1] - pricev[x]
+})  # end sapply
+# Faster way to calculate the cumulative returns
+samplev <- pricev[startd+holdp-1] - pricev[startd]
+# Calculate if any of the returns are above the barrier
+sum(samplev > barl) > 0
+# Plot the cumulative returns
+densv <- density(samplev)
+plot(densv, xlab="return", main="Return density")
+abline(v=barl, col="red", lwd=2)
+text(x=barl, y=0.7*max(densv$y), pos=2, "barrier")
+# Bootstrap the whole paths of cumulative returns
+samplev <- sapply(startd, function(x) {
+  pricev[x:(x+holdp-1)] - pricev[x]
+})  # end sapply
+dim(samplev)
+samplev[1:5, 1:5]
+# Calculate which of the paths crossed the barrier
+apply(samplev, 2, function(x) {sum(x > barl) > 0})
 # Calculate percentage returns from VTI prices
 library(rutils)
 ohlc <- rutils::etfenv$VTI

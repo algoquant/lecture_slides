@@ -830,7 +830,6 @@ x11(width=6, height=4)
 par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
-retp <- drop(zoo::coredata(retp))
 # Plot autocorrelations of VTI returns using stats::acf()
 stats::acf(retp, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)
@@ -980,36 +979,45 @@ rutils::plot_acf(rethigh, lag=10,
 Box.test(rethigh, lag=10, type="Ljung")
 NA
 # Load daily S&P500 stock returns
-load(file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
-# Calculate the stock volatilities and Ljung-Box test statistics
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returnstop.RData")
+# Calculate the stock volatilities and the sum of the ACF
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1
-statm <- mclapply(returns, function(retp) {
+statm <- mclapply(retstock, function(retp) {
   retp <- na.omit(retp)
-  c(stdev=sd(retp), lbstat=Box.test(retp, lag=10, type="Ljung")$statistic)
+  # Calculate the sum of the ACF
+  acfsum <- sum(pacf(retp, lag=10, plot=FALSE)$acf)
+  # Calculate the Ljung-Box statistic
+  lbstat <- unname(Box.test(retp, lag=10, type="Ljung")$statistic)
+  c(stdev=sd(retp), acfsum=acfsum, lbstat=lbstat)
 }, mc.cores=ncores)  # end mclapply
 statm <- do.call(rbind, statm)
-colnames(statm)[2] <- "lbstat"
-# Calculate the median volatility
-stdev <- statm[, "stdev"]
-lbstat <- statm[, "lbstat"]
-stdevm <- median(stdev)
-# Calculate the Ljung-Box statistics for stock volatility quantiles
-quants <- quantile(stdev, c(0.001, seq(0.1, 0.9, 0.1), 0.999))
-lbstatq <- sapply(2:NROW(quants), function(it) {
-  mean(lbstat[(stdev > quants[it-1]) & (stdev < quants[it])])
-}) # end sapply
-# Calculate the Ljung-Box statistics for low and high volatility stocks
-lowvol <- (stdev < stdevm)
-mean(statm[lowvol, "lbstat"])
-mean(statm[!lowvol, "lbstat"])
+statm <- as.data.frame(statm)
+# Calculate the ACF sum for stock volatility quantiles
+confl <- seq(0.1, 0.9, 0.1)
+stdq <- quantile(statm[, "stdev"], confl)
+acfq <- quantile(statm[, "acfsum"], confl)
+plot(stdq, acfq, xlab="volatility", ylab="PACF Sum",
+     main="PACF Sum vs Volatility")
+# Compare the ACF sum for stock volatility quantile with VTI
+acfq[1]
+sum(pacf(na.omit(rutils::etfenv$returns$VTI), lag=10, plot=FALSE)$acf)
+# Scatter plot of the sum of the ACF vs the standard deviation
+regmod <- lm(acfsum ~ stdev, data=statm)
+plot(acfsum ~ stdev, data=statm, xlab="SD", ylab="PACF Sum",
+     xlim=c(0.5*min(stdq), 1.5*max(stdq)), ylim=c(1.5*min(acfq), 7*max(acfq)),
+     main="PACF Sum vs SD")
+abline(regmod, lwd=3, col="red")
+tvalue <- summary(regmod)$coefficients[2, "t value"]
+tvalue <- round(tvalue, 3)
+text(x=mean(stdq), y=6*max(acfq),
+     lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
 # Compare the Ljung-Box statistics for lowest volatility stocks with VTI
+lbstatq <- rev(quantile(statm[, "lbstat"], confl))
 lbstatq[1]
 Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
 # Plot Ljung-Box test statistic for volatility quantiles
-plot(x=quants[-NROW(quants)], y=lbstatq, lwd=1, col="blue",
-     # xlim=c(0.01, 0.05), ylim=c(0, 100),
-     xlab="volatility", ylab="Ljung-Box Stat",
+plot(stdq, lbstatq, xlab="volatility", ylab="Ljung-Box Stat",
      main="Ljung-Box Statistic For Stock Volatility Quantiles")
 # Calculate SPY log prices and percentage returns
 ohlc <- HighFreq::SPY
@@ -1080,15 +1088,15 @@ agglog <- log(aggv)
 # Calculate the Hurst from regression slope using formula
 hurstexp <- cov(volog, agglog)/var(agglog)
 # Or using function lm()
-model <- lm(volog ~ agglog)
-coef(model)[2]
+regmod <- lm(volog ~ agglog)
+coef(regmod)[2]
 # Plot the volatilities
 x11(width=6, height=4)
 par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
 plot(volog ~ agglog, lwd=6, col="red",
      xlab="Aggregation intervals (log)", ylab="Volatility (log)",
      main="Hurst Exponent for SPY From Volatilities")
-abline(model, lwd=3, col="blue")
+abline(regmod, lwd=3, col="blue")
 text(agglog[2], volog[NROW(volog)-1],
      paste0("Hurst = ", round(hurstexp, 4)))
 # Calculate cumulative SPY returns
@@ -1124,15 +1132,15 @@ rangelog <- log(rrange)
 agglog <- log(aggv)
 hurstexp <- cov(rangelog, agglog)/var(agglog)
 # Or using function lm()
-model <- lm(rangelog ~ agglog)
-coef(model)[2]
+regmod <- lm(rangelog ~ agglog)
+coef(regmod)[2]
 x11(width=6, height=4)
 par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
 plot(rangelog ~ agglog, lwd=6, col="red",
      xlab="aggregation intervals (log)",
      ylab="rescaled range (log)",
      main="Hurst Exponent for SPY From Rescaled Range")
-abline(model, lwd=3, col="blue")
+abline(regmod, lwd=3, col="blue")
 text(agglog[2], rangelog[NROW(rangelog)-1],
      paste0("Hurst = ", round(hurstexp, 4)))
 # Load S&P500 constituent OHLC stock prices
@@ -1169,23 +1177,10 @@ hist(hurstv, breaks=20, xlab="Hurst", ylab="Count",
 abline(v=0.5, lwd=3, col='red')
 text(x=0.5, y=50, lab="H = 0.5", pos=4)
 # Load S&P500 constituent OHLC stock prices
-load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
-class(sp500env$AAPL)
-head(sp500env$AAPL)
-# Calculate log stock prices after the year 2000
-pricev <- eapply(sp500env, function(ohlc) {
-  closep <- log(quantmod::Cl(ohlc)["2000/"])
-# Ignore short lived and penny stocks (less than $1)
-  if ((NROW(closep) > 4000) & (last(closep) > 0))
-    return(closep)
-})  # end eapply
-# Calculate the number of NULL prices
-sum(sapply(pricev, is.null))
-# Calculate the names of the stocks (remove NULL pricev)
-namev <- sapply(pricev, is.null)
-namev <- namev[!namev]
-namev <- names(namev)
-pricev <- pricev[namev]
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
+dim(pricestock)
+# Calculate log stock prices
+pricev <- log(pricestock)
 # Calculate the Hurst exponents of stocks
 aggv <- trunc(seq.int(from=3, to=10, length.out=5)^2)
 hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
@@ -1196,7 +1191,7 @@ dygraphs::dygraph(get(namev, pricev), main=namev)
 namev <- names(which.min(hurstv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
 # Plot a histogram of the Hurst exponents of stocks
-hist(hurstv, breaks=20, xlab="Hurst", ylab="Count",
+hist(hurstv, breaks=30, xlab="Hurst", ylab="Count",
      main="Hurst Exponents of Stocks")
 # Add vertical line for H = 0.5
 abline(v=0.5, lwd=3, col='red')
@@ -1212,16 +1207,16 @@ dygraphs::dygraph(get(namev, pricev), main=namev)
 namev <- names(which.min(volv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
 # Calculate the regression of the Hurst exponents versus volatilities
-model <- lm(hurstv ~ volv)
-summary(model)
+regmod <- lm(hurstv ~ volv)
+summary(regmod)
 # Plot scatterplot of the Hurst exponents versus volatilities
 plot(hurstv ~ volv, xlab="Volatility", ylab="Hurst",
      main="Hurst Exponents Versus Volatilities of Stocks")
 # Add regression line
-abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+abline(regmod, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
-text(x=mean(volv), y=max(hurstv),
+text(x=mean(volv, na.rm=TRUE), y=max(hurstv, na.rm=TRUE),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
 # Calculate the in-sample volatility of stocks
 volatis <- sapply(pricev, function(closep) {
@@ -1231,17 +1226,21 @@ volatis <- sapply(pricev, function(closep) {
 volatos <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep["2010/"])))
 })  # end sapply
+# Remove NA values
+combo <- na.omit(cbind(volatis, volatos))
+volatis <- combo[, 1]
+volatos <- combo[, 2]
 # Calculate the regression of the out-of-sample versus in-sample volatility
-model <- lm(volatos ~ volatis)
-summary(model)
+regmod <- lm(volatos ~ volatis)
+summary(regmod)
 # Plot scatterplot of the out-of-sample versus in-sample volatility
 plot(volatos ~ volatis, xlab="In-sample Volatility", ylab="Out-of-sample Volatility",
      main="Out-of-Sample Versus In-Sample Volatility of Stocks")
 # Add regression line
-abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+abline(regmod, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
-text(x=mean(volatis), y=max(volatos),
+text(x=0.8*max(volatis), y=0.8*max(volatos),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
 # Calculate the in-sample Hurst exponents of stocks
 hurstis <- sapply(pricev, function(closep) {
@@ -1251,17 +1250,21 @@ hurstis <- sapply(pricev, function(closep) {
 hurstos <- sapply(pricev, function(closep) {
   HighFreq::calc_hurst(closep["2010/"], aggv=aggv)
 })  # end sapply
+# Remove NA values
+combo <- na.omit(cbind(hurstis, hurstos))
+hurstis <- combo[, 1]
+hurstos <- combo[, 2]
 # Calculate the regression of the out-of-sample versus in-sample Hurst exponents
-model <- lm(hurstos ~ hurstis)
-summary(model)
+regmod <- lm(hurstos ~ hurstis)
+summary(regmod)
 # Plot scatterplot of the out-of-sample versus in-sample Hurst exponents
 plot(hurstos ~ hurstis, xlab="In-sample Hurst", ylab="Out-of-sample Hurst",
      main="Out-of-Sample Versus In-Sample Hurst Exponents of Stocks")
 # Add regression line
-abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+abline(regmod, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
-text(x=mean(hurstis), y=max(hurstos),
+text(x=0.6*max(hurstis), y=0.9*max(hurstos),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
 # Calculate the stock trading volumes after the year 2000
 volum <- eapply(sp500env, function(ohlc) {
@@ -1276,14 +1279,14 @@ sum(is.null(volum))
 # Calculate the Hurst exponents of stocks
 hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
 # Calculate the regression of the Hurst exponents versus trading volumes
-model <- lm(hurstv ~ volum)
-summary(model)
+regmod <- lm(hurstv ~ volum)
+summary(regmod)
 # Plot scatterplot of the Hurst exponents versus trading volumes
 plot(hurstv ~ volum, xlab="Trading Volume", ylab="Hurst",
      main="Hurst Exponents Versus Trading Volumes of Stocks")
 # Add regression line
-abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+abline(regmod, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=quantile(volum, 0.998), y=max(hurstv),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
@@ -1316,11 +1319,11 @@ plot(hurstv, xlab=NA, ylab=NA, xaxt="n",
 axis(side=1, at=(1:NROW(hurstv)), labels=names(hurstv))
 # Calculate the regression of the PCA Hurst exponents versus their order
 orderv <- 1:NROW(hurstv)
-model <- lm(hurstv ~ orderv)
-summary(model)
+regmod <- lm(hurstv ~ orderv)
+summary(regmod)
 # Add regression line
-abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+abline(regmod, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(orderv), y=max(hurstv),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
@@ -1345,11 +1348,11 @@ plot(hurstv, xlab=NA, ylab=NA, xaxt="n",
 # Add X-axis with PCA labels
 axis(side=1, at=(1:NROW(hurstv)), labels=names(hurstv))
 # Calculate the regression of the PCA Hurst exponents versus their order
-model <- lm(hurstv ~ orderv)
-summary(model)
+regmod <- lm(hurstv ~ orderv)
+summary(regmod)
 # Add regression line
-abline(model, col='red', lwd=3)
-tvalue <- summary(model)$coefficients[2, "t value"]
+abline(regmod, col='red', lwd=3)
+tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
 text(x=mean(orderv), y=max(hurstv),
      lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
@@ -1641,9 +1644,9 @@ all.equal(c(alpha=alphac, beta=betac), coeff[, 1],
 betac <- c(alpha=alphac, beta=betac)
 fitv <- (alphac + betac*pricelag)
 resids <- (retp - fitv)
-prices2 <- sum((pricelag - mean(pricelag))^2)
-betasd <- sqrt(sum(resids^2)/prices2/(nrows-2))
-alphasd <- sqrt(sum(resids^2)/(nrows-2)*(1:nrows + mean(pricelag)^2/prices2))
+price2 <- sum((pricelag - mean(pricelag))^2)
+betasd <- sqrt(sum(resids^2)/price2/(nrows-2))
+alphasd <- sqrt(sum(resids^2)/(nrows-2)*(1:nrows + mean(pricelag)^2/price2))
 cbind(direct=c(alphasd=alphasd, betasd=betasd), lm=coeff[, 2])
 all.equal(c(alphasd=alphasd, betasd=betasd), coeff[, 2],
     check.attributes=FALSE)

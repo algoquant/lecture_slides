@@ -99,9 +99,9 @@ knit_theme$set(thm)
       \vskip1ex
       The smoothing kernel $K(x)$ is a symmetric function which decreases with the distance $x$.
       \vskip1ex
-      The kernel density $d_r$ at a point $r$ is equal to the sum over the kernel function $K(x)$:
+      The kernel density $d(r)$ at a point $r$ is equal to the sum over the kernel function $K(x)$:
       \begin{displaymath}
-        d_r = \sum_{j=1}^n {K(r - r_j)}
+        d(r) = \sum_{j=1}^n {K(r - r_j)}
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
@@ -824,8 +824,8 @@ jarque.bera.test(runif(NROW(retp)))
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # KS test for normal distribution
-ks_test <- ks.test(rnorm(100), pnorm)
-ks_test$p.value
+kstest <- ks.test(rnorm(100), pnorm)
+kstest$p.value
 # KS test for uniform distribution
 ks.test(runif(100), pnorm)
 # KS test for two shifted normal distributions
@@ -964,13 +964,14 @@ chisq.test(x=countsn, p=countst, rescale.p=TRUE, simulate.p.value=TRUE)
       \vskip1ex
       The negative logarithm of the probability density is equal to:
       \begin{multline*}
-        -\log(f(t)) = -\log(\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)}) + \log(\sigma) + \\
+        -\log(f(t | \mu, \sigma)) = -\log(\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)}) + \log(\sigma) + \\
         \frac{\nu+1}{2} \, \log(1 + (\frac{t - \mu}{\sigma})^2/\nu)
       \end{multline*}
-      The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the model parameters $\theta$, given the observed values $\bar{x}$, under the model's probability distribution $f(x|\theta)$:
+      The \emph{likelihood} function $\mathcal{L}(\mu, \sigma | \textbf{t})$ is the product of the individual probability density functions $f(t_i | \mu, \sigma)$:
       \begin{displaymath}
-        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} f(x_i|\theta)
+        \mathcal{L}(\mu, \sigma | \textbf{t}) = \prod_{i=1}^{n} f(t_i | \mu, \sigma)
       \end{displaymath}
+      The \emph{likelihood} $\mathcal{L}(\mu, \sigma | \textbf{t})$ is a function of the model parameters $\mu$ and $\sigma$, given the vector of the observed values $\textbf{t}$, under the model's probability distribution $f(t | \mu, \sigma)$:
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
@@ -987,11 +988,11 @@ likefun <- function(par, dfree, datav) {
     log(par[2]) + (dfree+1)/2*log(1+((datav-par[1])/par[2])^2/dfree))
 }  # end likefun
       @
-      The \emph{likelihood} function measures how \emph{likely} are the parameters, given the observed values $\bar{x}$.
+      The \emph{likelihood} function measures how \emph{likely} are the model parameters $\mu, \sigma$, given the observed values $\textbf{t}$.
       \vskip1ex
-      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the parameters are those that maximize the \emph{likelihood} function:
+      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the parameters $\theta = (\mu, \sigma)$ are those that maximize the \emph{likelihood} function:
       \begin{displaymath}
-        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
+        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta | \textbf{t})}
       \end{displaymath}
       In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself.
   \end{columns}
@@ -1113,6 +1114,12 @@ legend("topright", inset=0.05, bty="n", y.intersp=0.4,
         <<echo=TRUE,eval=FALSE>>=
 # Calculate sample from non-standard t-distribution with df=3
 datat <- locv + scalev*rt(NROW(retp), df=3)
+# KS test for VTI returns vs t-distribution data
+ks.test(retp, datat)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/t_dist_qq.png}
+        <<echo=TRUE,eval=FALSE>>=
 # Q-Q plot of VTI Returns vs non-standard t-distribution
 qqplot(datat, retp, xlab="t-Dist Quantiles", ylab="VTI Quantiles",
        main="Q-Q plot of VTI Returns vs Student's t-distribution")
@@ -1124,18 +1131,6 @@ qtdata <- quantile(datat, probs)
 slope <- diff(qrets)/diff(qtdata)
 intercept <- qrets[1]-slope*qtdata[1]
 abline(intercept, slope, lwd=2, col="red")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/t_dist_qq.png}
-        <<echo=TRUE,eval=FALSE>>=
-# KS test for VTI returns vs t-distribution data
-ks.test(retp, datat)
-# Define cumulative distribution of non-standard t-distribution
-ptdistr <- function(x, dfree, locv=0, scalev=1) {
-  pt((x-locv)/scalev, df=dfree)
-}  # end ptdistr
-# KS test for VTI returns vs cumulative t-distribution
-ks.test(sample(retp, replace=TRUE), ptdistr, dfree=3, locv=locv, scalev=scalev)
       @
   \end{columns}
 \end{block}
@@ -1649,13 +1644,15 @@ closep <- log(quantmod::Cl(rutils::etfenv$VTI))
 drawdns <- (closep - cummax(closep))
 # Extract the date index from the time series closep
 datev <- zoo::index(closep)
-# Calculate the maximum drawdown date and depth
-indexmin <- which.min(drawdns)
-datemin <- datev[indexmin]
-maxdd <- drawdns[datemin]
+# Calculate the drawdown trough date
+indexm <- which.min(drawdns)
+datem <- datev[indexm]
 # Calculate the drawdown start and end dates
-startd <- max(datev[(datev < datemin) & (drawdns == 0)])
-endd <- min(datev[(datev > datemin) & (drawdns == 0)])
+startd <- max(datev[(datev < datem) & (drawdns == 0)])
+startd <- datev[which(startd==datev)+1] # Shift ahead by one day
+endd <- min(datev[(datev > datem) & (drawdns == 0)])
+# Calculate the drawdown depth
+maxdd <- drawdns[datem]
 # dygraph plot of VTI drawdowns
 datav <- cbind(closep, drawdns)
 colv <- c("VTI", "Drawdowns")
@@ -1667,7 +1664,7 @@ dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
   dySeries(name=colv[1], axis="y", col="blue") %>%
   dySeries(name=colv[2], axis="y2", col="red") %>%
   dyEvent(startd, "start drawdown", col="blue") %>%
-  dyEvent(datemin, "max drawdown", col="red") %>%
+  dyEvent(datem, "max drawdown", col="red") %>%
   dyEvent(endd, "end drawdown", col="green")
       @
     \column{0.5\textwidth}
@@ -1683,7 +1680,7 @@ xval <- match(startd, datev)
 yval <- max(closep)
 abline(v=xval, col="blue")
 text(x=xval, y=0.95*yval, "start drawdown", col="blue", cex=0.9)
-xval <- match(datemin, datev)
+xval <- match(datem, datev)
 abline(v=xval, col="red")
 text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
 xval <- match(endd, datev)
@@ -3348,8 +3345,8 @@ pnls <- retp*posv
 # Plot dygraph of in-sample VTI strategy
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Price Tops and Bottoms Strategy In-sample") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
   dyAxis("y2", label="Strategy", independentTicks=TRUE) %>%
@@ -4157,12 +4154,10 @@ dygraphs::dygraph(datav[, 1:2], main=captiont) %>%
   \begin{columns}[T]
     \column{0.5\textwidth}
       Variance calculated over non-overlapping intervals has very statistically significant autocorrelations.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+      <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
-# Calculate trailing VTI variance using package roll
+# Calculate VTI rolling variance
 lookb <- 21
 varv <- HighFreq::roll_var(retp, lookb=lookb)
 colnames(varv) <- "Variance"

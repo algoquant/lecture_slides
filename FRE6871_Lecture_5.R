@@ -426,9 +426,9 @@ legend(x="topleft", inset=0.1, bty="n", y.intersp=0.4,
  legend=c("cumulative defaults", "fitted values"),
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
 # Fit multifactor logistic regression model
-colnamev <- colnames(Default)
-formulav <- as.formula(paste(colnamev[1],
-  paste(colnamev[-1], collapse="+"), sep=" ~ "))
+colv <- colnames(Default)
+formulav <- as.formula(paste(colv[1],
+  paste(colv[-1], collapse="+"), sep=" ~ "))
 formulav
 logmod <- glm(formulav, data=Default, family=binomial(logit))
 summary(logmod)
@@ -491,17 +491,6 @@ sum(testset$default & (fcast < threshv))
 confmat <- confmat / rowSums(confmat)
 c(typeI=confmat[2, 1], typeII=confmat[1, 2])
 detach(Default)
-# Below is an unsuccessful attempt to draw confusion matrix using xtable
-confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
-dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
-                             actual=c("FALSE", "TRUE"))
-print(xtable::xtable(confusion_matrix,
-caption="Confusion Matrix"),
-caption.placement="top",
-comment=FALSE, size="scriptsize",
-include.rownames=TRUE,
-include.colnames=TRUE)
-# end unsuccessful attempt to draw confusion table using xtable
 # Confusion matrix as function of threshold
 confun <- function(actualv, fcast, threshv) {
     confmat <- table(actualv, (fcast < threshv))

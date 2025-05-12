@@ -38,7 +38,7 @@ testfun <- function(arg1, arg2) {
   arg1 + 2*arg2
 }  # end testfun
 testfun(arg1=3, arg2=2)  # Bind by name
-testfun(first=3, second=2)  # Partial name binding
+testfun(arg1=3, arg=2)  # Partial name binding
 testfun(3, 2)  # Bind by position
 testfun(arg2=2, 3)  # mixed binding
 testfun(3, 2, 1)  # Too many arguments
@@ -52,13 +52,13 @@ testfun <- function(arg1, ratio=1) {
 testfun(3)  # Default value used for second argument
 testfun(3, 2)  # Default value over-ridden
 # Default values can be a vector of strings
-testfun <- function(inputv=c("first_val", "second_val")) {
+testfun <- function(inputv=c("firstdef", "secondef")) {
   inputv <- match.arg(inputv)  # Match to arg list
   inputv
 }  # end testfun
-testfun("second_val")
+testfun("secondef")
 testfun("se")  # Partial name binding
-testfun("some_val")  # Invalid string
+testfun("somedef")  # Invalid string
 # VTI percentage returns
 retp <- rutils::diffit(log(Cl(rutils::etfenv$VTI)))
 # calc_skew() calculates skew of time series of returns
@@ -157,8 +157,8 @@ sum_dots <- function(inputv, ...) {
 sum_dots(1, 2, 3, 4)
 fibonacci <- function(nrows) {
   if (nrows > 2) {
-    fib_seq <- fibonacci(nrows-1)  # Recursion
-    c(fib_seq, sum(tail(fib_seq, 2)))  # Return this
+    fibv <- fibonacci(nrows-1)  # Recursion
+    c(fibv, sum(tail(fibv, 2)))  # Return this
   } else {
     c(0, 1)  # Initialize and return
   }
@@ -272,19 +272,19 @@ vecv[2]
 2 %+% 3
 2 %+% 3 %+% 4
 "hello" %+% 2 %+% 3 %+% "bye"
-obj_string <- "hello"
-class(obj_string)
+stringv <- "hello"
+class(stringv)
 # Assign to value returned by "class" function
-class(obj_string) <- "string"
-class(obj_string)
+class(stringv) <- "string"
+class(stringv)
 # Define function last()
 last <- function(vecv) {
   vecv[NROW(vecv)]
 }  # end last
 last(1:10)
 # Define replacement function last()
-'last<-' <- function(vecv, value) {
-  vecv[NROW(vecv)] <- value
+'last<-' <- function(vecv, endv) {
+  vecv[NROW(vecv)] <- endv
   vecv
 }  # end last
 x <- 1:5
@@ -310,7 +310,7 @@ cubefun <- makefun(3)  # Define cube function
 cubefun(2)
 cube_rootfun <- makefun(1/3)  # Define cube root function
 cube_rootfun(8)
-make_counter <- function() {
+makecounter <- function() {
 # Counter function with mutable state
   counter <- 0  # Initialize counter
   cat('counter = ', counter)
@@ -318,15 +318,15 @@ make_counter <- function() {
     counter <<- counter + 1  # Advance counter
     cat('counter = ', counter)
   }  # end advance function
-}  # end make_counter
-advance_counter <- make_counter()  # Create new counter
-advance_counter()  # Advance counter
-advance_counter()  # Advance counter
-advance_counter_two <- make_counter()  # Create another counter
-advance_counter_two()  # Advance counter two
-advance_counter()  # Advance counter one
-advance_counter_two()  # Advance counter two
-advance_counter()  # Advance counter one
+}  # end makecounter
+counterfun <- makecounter()  # Create new counter
+counterfun()  # Advance counter
+counterfun()  # Advance counter
+counterfun2 <- makecounter()  # Create another counter
+counterfun2()  # Advance counter two
+counterfun()  # Advance counter one
+counterfun2()  # Advance counter two
+counterfun()  # Advance counter one
 # Returns the pseudo-random generating function random_generator
 # the formal argument 'seed' persists in the evaluation environment of seed_random
 seed_random <- function(seed) {  # Seed must be an integer
@@ -419,6 +419,11 @@ testfun(1, 2, 3, 4, 5)
 testfun(1, 2, 3, param2=4, param1=5)
 # Simple anonymous function
 (function(x) (x + 3)) (10)
+# Functional accepts function name and dots '...' argument
+testfun <- function(funn, ...) {
+  funn <- match.fun(funn)
+  funn(...)  # Execute function call
+}  # end testfun
 # Anonymous function passed to testfun
 testfun(funn=(function(x) (x + 3)), 5)
 # Anonymous function is default value
@@ -431,8 +436,7 @@ testfun(2, 3, 4, 5)
 # funn bound by name
 testfun(funn=sum, 2, 3, 4, 5)
 # Pass anonymous function to funn
-testfun(funn=function(x, y, z) {x*y*z},
-    2, 3, 4)
+testfun(funn=function(x, y, z) {x*y*z}, 2, 3, 4)
 str(sum)  # Sum() accepts multiple arguments
 # Sum() can't accept list of arguments
 sum(list(1, 2, 3))
@@ -586,9 +590,9 @@ attributes(char1)  # Now has explicit "character" class
 # Add two "character" objects
 char1 + char2
 # Define object of class "string"
-obj_string <- "how are you today?"
-class(obj_string) <- "string"
-obj_string
+stringv <- "how are you today?"
+class(stringv) <- "string"
+stringv
 # overload "print" method for string objects
 print.string <- function(str_ing) {
   print(
@@ -596,8 +600,8 @@ print.string <- function(str_ing) {
   collapse=" + "))
 }  # end print.string
 # methods("print")  # view new methods for "print" function
-print(obj_string)
-obj_string
+print(stringv)
+stringv
 # overwrite "+" operator
 "+" = function(a, b) {
   if (is.character(a) && is.character(b)) {
@@ -671,9 +675,9 @@ as.string.numeric <- function(str_ing, ...)
 is.string <- function(str_ing)
   inherits(x=str_ing, what="string")
 # Define "string" object
-obj_string <- as.string("how are you today?")
-obj_string
-is.string(obj_string)
+stringv <- as.string("how are you today?")
+stringv
+is.string(stringv)
 is.string("hello")
 as.string(123)
 is.string(as.string(123))

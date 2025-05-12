@@ -176,15 +176,15 @@ betar <- sapply(1:NROW(endd), FUN=function(tday) {
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
 # Calculate trailing betas using RcppArmadillo
-controlv <- HighFreq::param_reg()
+controll <- HighFreq::param_reg()
 reg_stats <- HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI,
-  startp=(startp-1), endp=(endd-1), controlv=controlv)
+  startp=(startp-1), endp=(endd-1), controll=controll)
 betac <- reg_stats[, 2]
 all.equal(betac, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controlv=controlv),
+  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controll=controll),
   Rcode=sapply(1:NROW(endd), FUN=function(tday) {
     datav <- retp[startp[tday]:endd[tday], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
@@ -218,15 +218,15 @@ betar <- sapply(1:NROW(endd), FUN=function(tday) {
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   })  # end sapply
 # Calculate trailing betas using RcppArmadillo
-controlv <- HighFreq::param_reg()
+controll <- HighFreq::param_reg()
 reg_stats <- HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI,
-  startp=(startp-1), endp=(endd-1), controlv=controlv)
+  startp=(startp-1), endp=(endd-1), controll=controll)
 betac <- reg_stats[, 2]
 all.equal(betac, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controlv=controlv),
+  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controll=controll),
   Rcode=sapply(1:NROW(endd), FUN=function(tday) {
     datav <- retp[startp[tday]:endd[tday], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))

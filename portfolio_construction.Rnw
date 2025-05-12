@@ -310,7 +310,7 @@ portf_maxSR <- add.objective(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate daily stock returns
+# Calculate daily ETF returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
@@ -844,11 +844,11 @@ wealthv <- cbind(retp %*% weightms, retp %*% weightmv)
 wealthv <- xts::xts(wealthv, zoo::index(retp))
 colnames(wealthv) <- c("MaxSharpe", "MinVar")
 # Calculate the Sharpe and Sortino ratios
-sqrt(252)*sapply(wealthv, 
-  function(x) c(Sharpe=(mean(x)-raterf)/sd(x), Sortino=(mean(x)-raterf)/sd(x[x<0])))
+sqrt(252)*sapply(wealthv, function(x) 
+  (mean(x)-raterf)/c(Sharpe=sd(x), Sortino=sd(x[x<0])))
 # Plot the log wealth
-endd <- rutils::calc_endpoints(retp, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd], 
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Maximum Sharpe and Minimum Variance Portfolios") %>%
   dyOptions(colors=c("blue", "green"), strokeWidth=2) %>%
   dyLegend(show="always", width=500)
@@ -1339,6 +1339,866 @@ legend("top", legend=colnames(retsoptim),
 
 
 %%%%%%%%%%%%%%%
+\subsection{\protect\emph{Sharpe} Ratio Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable, in the specified interval.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate daily ETF percentage returns
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+nrows <- NROW(retp)
+# Create initial vector of portfolio weights
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+# Objective equal to minus Sharpe ratio
+objfun <- function(weightv, retp) {
+  retportf <- retp %*% weightv
+  stdev <- sd(retportf)
+  if (stdev == 0)
+    return(0)
+  else
+    return(-mean(retportf)/stdev)
+}  # end objfun
+# Objective for equal weight portfolio
+objfun(weightv, retp=retp)
+optiml <- unlist(optimize(f=function(weightv)
+    objfun(c(1, 1, weightv), retp=retp),
+  interval=c(-10, 10)))
+# Vectorize objective function with respect to third weight
+objvec <- function(weightv) sapply(weightv,
+  function(weightv) objfun(c(1, 1, weightv), retp=retp))
+# Or
+objvec <- Vectorize(FUN=function(weightv)
+    objfun(c(1, 1, weightv), retp=retp),
+  vectorize.args="weightv")  # end Vectorize
+objvec(1)
+objvec(1:3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_obj_one_dim.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot objective function with respect to third weight
+curve(expr=objvec, type="l", xlim=c(-4.0, 1.0),
+      xlab=paste("weight of", names(weightv[3])),
+      ylab="", lwd=2)
+title(main="Sharpe Ratio", line=(-1))  # Add title
+points(x=optiml[1], y=optiml[2], col="green", lwd=6)
+text(x=optiml[1], y=optiml[2],
+     labels="maximum value", pos=4, cex=0.8)
+
+### Below is simplified plotting of objective function
+# Create vector of DBC weights
+weightv <- seq(from=-4, to=1, by=0.1)
+objv <- sapply(weightv, function(weightv) 
+  objfun(c(1, 1, weightv), retp))
+plot(x=weightv, y=objv, t="l",
+      xlab="weight of DBC", ylab="", lwd=2)
+title(main="Sharpe Ratio", line=(-1))  # Add title
+points(x=optiml[1], y=optiml[2], col="green", lwd=6)
+text(x=optiml[1], y=optiml[2],
+     labels="maximum value", pos=4, cex=0.8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Perspective Plot of Portfolio Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values.
+      \vskip1ex
+      The function \texttt{outer()} calculates the values of a function over a grid spanned by two variables, and returns a matrix of function values.
+      \vskip1ex
+      The package \emph{rgl} allows creating \emph{interactive} 3d scatterplots and surface plots including perspective plots, based on the \emph{OpenGL} framework.
+      <<portf_persp,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# Vectorize function with respect to two weights
+objvec <- Vectorize(
+  FUN=function(w1, w2, w3) objfun(c(w1, w2, w3), retp),
+  vectorize.args=c("w2", "w3"))  # end Vectorize
+# Calculate objective on 2-d (w2 x w3) parameter grid
+w2 <- seq(-3, 7, length=50)
+w3 <- seq(-5, 5, length=50)
+gridm <- outer(w2, w3, FUN=objvec, w1=1)
+rownames(gridm) <- round(w2, 2)
+colnames(gridm) <- round(w3, 2)
+# Perspective plot of objective function
+persp(w2, w3, -gridm,
+      theta=45, phi=30, shade=0.5,
+      col=rainbow(50), border="green",
+      main="objective function")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_persp.png}
+    \vspace{-3em}
+      <<echo=TRUE,eval=FALSE,fig.width=10,fig.height=10>>=
+# Interactive perspective plot of objective function
+library(rgl)
+rgl::persp3d(z=-gridm, zlab="objective",
+        col="green", main="objective function")
+rgl::persp3d(
+  x=function(w2, w3) {objvec(w1=1, w2, w3)},
+  xlim=c(-3, 7), ylim=c(-5, 5),
+  col="green", axes=FALSE)
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Multi-dimensional Portfolio Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Vector of initial portfolio weights equal to 1
+weightv <- rep(1, nstocks)
+names(weightv) <- symbolv
+# Objective function equal to standard deviation of returns
+objfun <- function(weightv) {
+  retportf <- retp %*% weightv
+  sd(retportf)/sum(weightv)
+}  # end objfun
+# objfun() for equal weight portfolio
+objfun(weightv)
+objfun(2*weightv)
+# Perform portfolio optimization
+optiml <- optim(par=weightv,
+                fn=objfun,
+                method="L-BFGS-B",
+                upper=rep(10, nstocks),
+                lower=rep(-10, nstocks))
+# Rescale the optimal weights
+weightv <- optiml$par/sum(optiml$par)
+# Minimum variance portfolio returns
+retsoptim <- xts(x=retp %*% weightv,
+                  order.by=zoo::index(retp))
+chart_Series(x=exp(cumsum(retsoptim)), name="minvar portfolio")
+# Add green point for minimum variance portfolio
+optim_sd <- 100*sd(retsoptim)
+optim_ret <- 100*mean(retsoptim)
+points(x=optim_sd, y=optim_ret, col="green", lwd=6)
+text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
+
+
+# Objective function equal to minus Sharpe ratio
+raterf <- 0.03
+objfun <- function(weightv) {
+  retp <- 100*rutils::etfenv$returns[, names(weightv)] %*% weightv / sum(weightv)
+  -mean(retp-raterf)/sd(retp)
+}  # end objfun
+# Perform portfolio optimization
+optiml <- optim(par=weightv,
+                   fn=objfun,
+                   method="L-BFGS-B",
+                   upper=rep(10, nstocks),
+                   lower=rep(-10, nstocks))
+# Maximum Sharpe ratio portfolio returns
+weightv <- optiml$par/sum(optiml$par)
+retsoptim <- xts(x=retp %*% weightv,
+                  order.by=zoo::index(retp))
+chart_Series(x=exp(cumsum(retsoptim)), name="maxSR portfolio")
+optim_sd <- 100*sd(retsoptim)
+optim_ret <- 100*mean(retsoptim)
+points(x=optim_sd, y=optim_ret,
+       col="blue", lwd=3)
+text(x=optim_sd, y=optim_ret,
+     labels="maxSR", pos=2, cex=0.8)
+sharpem <- (optim_ret-raterf)/optim_sd
+# Plot individual assets
+retm <- 100*sapply(retp, mean)
+stdevs <- 100*sapply(retp, sd)
+points(stdevs, retm, col="green", lwd=3)
+text(stdevs, retm, labels=names(retm), pos=2, cex=0.8)
+# Add point at risk-free rate and draw Capital Market Line
+points(x=0, y=raterf)
+text(0, raterf, labels="risk-free", pos=4, cex=0.8)
+abline(a=raterf, b=sharpem, col="blue")
+rangev <- par("usr")
+text(optim_sd/3, (optim_ret+raterf)/2.5,
+     labels="Capital Market Line", cex=0.8, , pos=3,
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+                   (rangev[4]-rangev[3])*
+                   heightp/widthp)/(0.25*pi))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_random.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multi-dimensional Portfolio Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization.
+      \vskip1ex
+      The argument \texttt{par} are the initial parameter values.
+      \vskip1ex
+      The argument \texttt{fn} is the objective function to be minimized.
+      \vskip1ex
+      The argument of the objective function which is to be optimized, must be a vector argument.
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method.
+      \vskip1ex
+      The parameter \texttt{control=list(factr=1e5)} determines the precision of the \texttt{L-BFGS-B} method.  
+      A smaller \texttt{factr} value produces results with a higher precision, but it requires more iterations and a longer optimization. 
+      A larger \texttt{factr} value achieves a faster solution but less precise results.
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create initial vector of portfolio weights
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+# Optimization to find weights with maximum Sharpe ratio
+optiml <- optim(par=weightv,
+                fn=objfun,
+                retp=retp,
+                method="L-BFGS-B",
+                control=list(factr=1e5),
+                upper=c(10, 10, 10),
+                lower=c(-10, -10, -10))
+# Optimal parameters
+weightv <- optiml$par
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+# Optimal Sharpe ratio
+-objfun(weightv, retp)
+# Calculate the weights from the inverse covariance matrix
+weightv <- drop(solve(cov(retp)) %*% sapply(retp, mean))
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimized Portfolio Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The optimized portfolio has both long and short positions, and has a larger \emph{Sharpe} ratio than the individual assets.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# barplot of optimal portfolio weights
+barplot(weightv, col=c("red", "green", "blue"),
+        main="Optimized portfolio weights")
+# Calculate the cumulative wealth of the optimized portfolio
+wealthv <- cbind(retp %*% weightv, retp)
+colnames(wealthv)[1] <- "combined"
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x)
+  (mean(x)-raterf)/c(Sharpe=sd(x), Sortino=sd(x[x<0])))
+# Plot the log wealth
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+colv <- colnames(wealthv)
+colr <- c("red", "blue", "green", "grey")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
+  main="Optimized Portfolio Returns") %>%
+  dyOptions(colors=colr, strokeWidth=1) %>%
+  dySeries(name=colv[1], col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/optim_weights.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/optim_portf.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Mean-Variance Portfolio Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The mean-variance objective function is designed to maximize portfolio returns and minimize their variance:
+      \begin{displaymath}
+        O(x) = \mathbf{w}^T \mathbb{C} \, \mathbf{w} - q \, \mathbf{w}^T \mathbf{r}
+      \end{displaymath}
+      Where $\mathbb{C}$ is the covariance matrix of returns, $\mathbf{r}$ is the vector of returns, $\mathbf{w}$ is the vector of portfolio weights, and $q$ is the risk tolerance factor.
+      \vskip1ex
+      The mean-variance optimal portfolio is defined as
+      \begin{displaymath}
+        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
+        \mathbf{w}^T \mathbb{C} \, \mathbf{w}
+      \end{displaymath}
+      Where the sum of portfolio weights $\mathbf{w}$ is constrained to equal \texttt{1}: $\mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$.
+      \vskip1ex
+      Legacy stuff below:\\
+      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      Or in vector notation:
+      \begin{displaymath}
+        z = \alpha + \beta x + \varepsilon
+      \end{displaymath}
+      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain \texttt{n} observations.
+      \vskip1ex
+      The response variable $z$ is a vector of length \texttt{n}, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix.
+      \vskip1ex
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$.
+      \vskip1ex
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$.
+    \column{0.5\textwidth}
+      The OLS estimate for $\alpha$ is given by:
+      \begin{align*}
+        \alpha = z^T \mathbbm{1} - \beta x^T \mathbbm{1}
+      \end{align*}
+      If the variables are centered, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
+        & x^T z - \beta x^T x = 0\\
+        & \beta = (x^T x)^{-1} x^T z
+      \end{flalign*}
+      The matrix $x^T x$ is the covariance matrix of the matrix $x$.
+      \vskip1ex
+      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent.
+      \vskip1ex
+      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudo-inverse} of the matrix $x$.
+      \vskip1ex
+      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{DEoptim} for Global Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      \vskip1ex
+      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
+      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
+      \vskip1ex
+      The first generation of solutions is selected randomly.
+      \vskip1ex
+      Each new generation is obtained by combining solutions from the previous generation.
+      \vskip1ex
+      The best solutions are selected for creating the next generation.
+      \vskip1ex
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
+      \vskip1ex
+      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima.
+    \column{0.5\textwidth}
+        <<echo=TRUE,eval=FALSE>>=
+# Rastrigin function with vector argument for optimization
+rastrigin <- function(vecv, param=25){
+  sum(vecv^2 - param*cos(vecv))
+}  # end rastrigin
+vecv <- c(pi/6, pi/6)
+rastrigin(vecv=vecv)
+library(DEoptim)
+# Optimize rastrigin using DEoptim
+optiml <- DEoptim::DEoptim(rastrigin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# Optimal parameters and value
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using Package \protect\emph{Deoptim}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
+      \vskip1ex
+      With the parameter \texttt{control=list(parallelType=1)}, \texttt{DEoptim::DEoptim()} performs the optimization using parallel computing.
+      \vskip1ex
+      With the parameter \texttt{control=list(itermax=100)}, \texttt{DEoptim::DEoptim()} performs at most \texttt{100} iterations.
+      \vskip1ex
+      To achieve a good precision, \texttt{itermax} should be set to a much larger value, such as \texttt{10000}.
+\texttt{100} iterations.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Perform optimization using DEoptim
+optiml <- DEoptim::DEoptim(fn=objfun,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp,
+  control=list(trace=FALSE, itermax=100, parallelType=1))
+weightv <- optiml$optim$bestmem
+names(weightv) <- colnames(retp)
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization With \protect\emph{Shrinkage}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The technique of \emph{shrinkage} (\emph{regularization}) is designed to reduce the number of parameters in a model, for example in portfolio optimization.
+      \vskip1ex
+      The \emph{shrinkage} technique adds a penalty term to the objective function.
+      \vskip1ex
+      The penalty term in \emph{ridge} regularization is the sum of squares of the weights: $\sum_{i=1}^n w^2_i$.
+      The \emph{ridge} penalty shrinks (reduces) the weights together, without shrinking some of them to zero. 
+      \vskip1ex
+      The penalty term in \emph{Lasso} regularization is the sum of the absolute values of the weights: $\sum_{i=1}^n|w_i|$.  
+      The \emph{Lasso} penalty shrinks the less important weights to zero, similar to dimension reduction.
+      \vskip1ex
+      The \emph{elastic net} regularization is a combination of \emph{ridge} regularization and \emph{Lasso} regularization:
+      \begin{displaymath}
+        w_{max} = \operatorname*{arg\,max}_{w} [ \frac{\mathbf{w}^T \mu}{\sigma} - \lambda ( (1-\alpha) \sum_{i=1}^n w^2_i + \alpha \sum_{i=1}^n|w_i| ) ]
+      \end{displaymath}
+      The $\lambda$ parameter controls the amount of shrinkage, and $\alpha$ controls the balance between the \emph{ridge} and \emph{Lasso} penalties.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Objective with shrinkage penalty
+objfun <- function(weightv, retp, lambdaf, alphaf) {
+  retportf <- retp %*% weightv
+  stdev <- sd(retportf)
+  if (stdev == 0)
+    return(0)
+  else {
+    penaltyv <- lambdaf*((1-alphaf)*sum(weightv^2) +
+        alphaf*sum(abs(weightv)))
+    return(-mean(retportf)/stdev + penaltyv)
+  }
+}  # end objfun
+# Objective for equal weight portfolio
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+lambdaf <- 0.5 ; alphaf <- 0.5
+objfun(weightv, retp=retp, lambdaf=lambdaf, alphaf=alphaf)
+# Perform optimization using DEoptim
+optiml <- DEoptim::DEoptim(fn=objfun,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp,
+  lambdaf=lambdaf,
+  alphaf=alphaf,
+  control=list(trace=FALSE, itermax=100, parallelType=1))
+weightv <- optiml$optim$bestmem
+names(weightv) <- colnames(retp)
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stock Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The portfolio weights obtained from inverting the covariance matrix are the same as the weights obtained from portfolio optimization.
+      <<echo=TRUE,eval=FALSE>>=
+# Load stock returns
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+datev <- zoo::index(na.omit(retstock$GOOGL))
+retp <- retstock[datev] # Subset the returns to GOOGL
+# Remove the stocks with any NA values
+numna <- sapply(retp, function(x) sum(is.na(x)))
+retp <- retp[, numna==0]
+# Select 100 random stocks
+retp <- retp[, sample(NCOL(retp), 100)]
+symbolv <- colnames(retp)
+datev <- zoo::index(retp)
+retis <- retp["/2014"] # In-sample returns
+raterf <- 0.03/252
+retx <- (retis - raterf) # Excess returns
+# Calculate the maximum Sharpe weights in-sample interval
+colmeanv <- colMeans(retx, na.rm=TRUE)
+covmat <- cov(retx, use="pairwise.complete.obs")
+invreg <- MASS::ginv(covmat)
+wmaxs <- drop(invreg %*% colmeanv)
+names(wmaxs) <- symbolv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      % \includegraphics[width=0.45\paperwidth]{figure/portf_maxsharpe_outsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the weights using optimization without shrinkage
+lambdaf <- 0.0 ; alphaf <- 1.0
+optiml <- optim(par=wmaxs,
+                fn=objfun,
+                retp=retx,
+                lambdaf=lambdaf,
+                alphaf=alphaf,
+                method="L-BFGS-B",
+                control=list(factr=1e5),
+                upper=c(10, 10, 10),
+                lower=c(-10, -10, -10))
+weighto <- optiml$par
+names(weighto) <- symbolv
+all.equal(weighto, wmaxs)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Portfolio Weights With Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{portfolio optimization} strategy for stocks is \emph{overfit} in the \emph{in-sample} interval.
+      \vskip1ex
+      Therefore the strategy performance is poor in the \emph{out-of-sample} interval.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the portfolio weights with shrinkage
+lambdav <- seq(1.905e-7, 1.90525e-7, length=5)
+lambdav <- seq(0, 1e-6, length=7)
+ncores <- detectCores() - 1
+weightm <- mclapply(lambdav, function(lambdaf) {
+  optiml <- optim(par=wmaxs, fn=objfun,
+                  retp=retx,
+                  lambdaf=lambdaf, alphaf=0,
+                  method="L-BFGS-B",
+                  control=list(factr=1e5),
+                  upper=c(10, 10, 10),
+                  lower=c(-10, -10, -10))
+  optiml$par
+}) # end mclapply
+weightm <- do.call(cbind, weightm)
+colnames(weightm) <- paste0("lambda=", lambdav)
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(weightm))
+plot(sort(weightm[, 1]), xlab=NA, ylab="weight", col=colorv[1], lwd=2)
+for (i in 2:NCOL(weightm)) {
+  points(sort(weightm[, i]), col=colorv[i], lwd=2)
+} # end for
+apply(weightm, 2, function(x) sum(abs(x)))
+
+
+lambdav <- seq(0, 1e-6, length=7)
+ncores <- detectCores() - 1
+weightm <- mclapply(lambdav, function(lambdaf) {
+  optiml <- DEoptim::DEoptim(fn=objfun,
+                             upper=rep(10, NCOL(retp)),
+                             lower=rep(-10, NCOL(retp)),
+                             retp=retp,
+                             lambdaf=lambdaf,
+                             alphaf=0,
+                             control=list(trace=FALSE, itermax=100))
+  optiml$optim$bestmem
+}) # end mclapply
+weightm <- do.call(cbind, weightm)
+colnames(weightm) <- paste0("lambda=", lambdav)
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(weightm))
+plot(sort(weightm[, 1]), xlab=NA, ylab="weight", col=colorv[1], lwd=2)
+for (i in 2:NCOL(weightm)) {
+  points(sort(weightm[, i]), col=colorv[i], lwd=2)
+} # end for
+apply(weightm, 2, function(x) sum(abs(x)))
+
+
+
+
+
+foo <- apply(weightm, 2, function(x) x/sqrt(sum(x^2)))
+plot(sort(foo[, 1]), xlab=NA, ylab="weight", col=colorv[1], lwd=2)
+for (i in 2:NCOL(foo)) {
+  points(sort(foo[, i]), col=colorv[i], lwd=2)
+} # end for
+apply(foo, 2, function(x) sum(abs(x)))
+
+
+pnls <- HighFreq::mult_mat(weighto, retp)
+pnls <- rowMeans(pnls, na.rm=TRUE)
+pnls <- xts::xts(pnls, datev)
+pnls <- pnls*sd(retew["/2014"])/sd(pnls["/2014"])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_maxsharpe_outsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+wealthv <- cbind(pnlmaxs, pnls)
+colnames(wealthv) <- c("MaxSharpe", "Shrink")
+# Calculate the in-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["/2014"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["2015/"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of cumulative portfolio returns
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
+  main="Out-of-Sample Maximum Sharpe Stock Portfolio") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyEvent(end(retis[, 1]), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stock Portfolio Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{portfolio optimization} strategy for stocks is \emph{overfit} in the \emph{in-sample} interval.
+      \vskip1ex
+      Therefore the strategy performance is poor in the \emph{out-of-sample} interval.
+      <<echo=TRUE,eval=FALSE>>=
+# Load stock returns
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+datev <- zoo::index(na.omit(retstock$GOOGL))
+retp <- retstock[datev] # Subset the returns to GOOGL
+# Remove the stocks with any NA values
+numna <- sapply(retp, function(x) sum(is.na(x)))
+retp <- retp[, numna==0]
+# Select 100 random stocks
+retp <- retp[, sample(NCOL(retp), 100)]
+symbolv <- colnames(retp)
+datev <- zoo::index(retp)
+retis <- retp["/2014"] # In-sample returns
+raterf <- 0.03/252
+retx <- (retis - raterf) # Excess returns
+# Maximum Sharpe weights in-sample interval
+colmeanv <- colMeans(retx, na.rm=TRUE)
+covmat <- cov(retx, use="pairwise.complete.obs")
+invreg <- MASS::ginv(covmat)
+wmaxs <- drop(invreg %*% colmeanv)
+names(wmaxs) <- symbolv
+# Calculate the maximum Sharpe portfolio returns
+pnlmaxs <- HighFreq::mult_mat(wmaxs, retp)
+pnlmaxs <- rowMeans(pnlmaxs, na.rm=TRUE)
+pnlmaxs <- xts::xts(pnlmaxs, datev)
+retew <- xts::xts(rowMeans(retp, na.rm=TRUE), datev)
+pnlmaxs <- pnlmaxs*sd(retew["/2014"])/sd(pnlmaxs["/2014"])
+# Calculate the shrinkage portfolio returns
+lambdaf <- 1.0 ; alphaf <- 1.0
+optiml <- optim(par=wmaxs,
+                fn=objfun,
+                retp=retx,
+                lambdaf=lambdaf,
+                alphaf=alphaf,
+                method="L-BFGS-B",
+                control=list(factr=1e5),
+                upper=c(10, 10, 10),
+                lower=c(-10, -10, -10))
+weighto <- optiml$par
+names(weighto) <- symbolv
+pnls <- HighFreq::mult_mat(weighto, retp)
+pnls <- rowMeans(pnls, na.rm=TRUE)
+pnls <- xts::xts(pnls, datev)
+pnls <- pnls*sd(retew["/2014"])/sd(pnls["/2014"])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_maxsharpe_outsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+wealthv <- cbind(pnlmaxs, pnls)
+colnames(wealthv) <- c("MaxSharpe", "Shrink")
+# Calculate the in-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["/2014"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["2015/"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of cumulative portfolio returns
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
+  main="Out-of-Sample Maximum Sharpe Stock Portfolio") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyEvent(end(retis[, 1]), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Portfolios Under Zero Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma^2_1 & 0 & \cdots & 0 \\
+          0 & \sigma^2_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^2_n
+        \end{pmatrix}
+      \end{displaymath}
+      Where $\sigma^2_i$ is the variance of returns of asset \texttt{i}.
+      \vskip1ex
+      The inverse of $\mathbb{C}$ is then simply:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \begin{pmatrix}
+          \sigma^{-2}_1 & 0 & \cdots & 0 \\
+          0 & \sigma^{-2}_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^{-2}_n
+        \end{pmatrix}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The \emph{minimum variance} portfolio weights are proportional to the inverse of the individual variances:
+      \begin{displaymath}
+        w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
+      \end{displaymath}
+      The \emph{maximum Sharpe} portfolio weights are proportional to the ratio of the excess returns divided by the individual variances:
+      \begin{displaymath}
+        w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
+      \end{displaymath}
+      The portfolio weights are proportional to the \emph{Kelly ratios} - the excess returns divided by the variances:
+      \begin{displaymath}
+        w_i \propto \frac{\mu_i}{\sigma^2_i}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Portfolio Optimization Using Principal Components}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      First apply Principal Component Analysis and then perform portfolio optimization using the principal components.
+      \vskip1ex
+      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma^2_1 & 0 & \cdots & 0 \\
+          0 & \sigma^2_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^2_n
+        \end{pmatrix}
+      \end{displaymath}
+      Where $\sigma^2_i$ is the variance of returns of asset \texttt{i}.
+      \vskip1ex
+      The inverse of $\mathbb{C}$ is then simply:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \begin{pmatrix}
+          \sigma^{-2}_1 & 0 & \cdots & 0 \\
+          0 & \sigma^{-2}_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^{-2}_n
+        \end{pmatrix}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The \emph{minimum variance} portfolio weights are proportional to the inverse of the individual variances:
+      \begin{displaymath}
+        w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
+      \end{displaymath}
+      The \emph{maximum Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
+      \begin{displaymath}
+        w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Portfolio Optimization Packages in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The following \texttt{R} packages provide functions for portfolio optimization:
+      \begin{itemize}
+        \item package \emph{PortfolioAnalytics}: relies on packages \emph{xts}, \emph{ROI}, and \emph{DEoptim},
+        \item package \emph{parma}: relies on packages \emph{xts}, \emph{Rglpk}, and \emph{quadprog},
+        \item package \emph{fPortfolio} from the \emph{Rmetrics} suite: relies on packages \emph{tseries}, \emph{Rglpk}, and \emph{quadprog},
+      \end{itemize}
+      These portfolio optimization packages call generic optimization functions written in compiled \texttt{C++}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Portfolio optimization
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Maximum Return Portfolio Using Linear Programming}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1515,375 +2375,6 @@ as.numeric(optiml$solution[1:ncols])
 
 \end{frame}
 
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Sharpe} Ratio Objective Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable.
-      \vskip1ex
-      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval.
-      \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
-# Calculate daily percentage returns
-symbolv <- c("VTI", "IEF", "DBC")
-nstocks <- NROW(symbolv)
-retp <- na.omit(rutils::etfenv$returns[, symbolv])
-# Create initial vector of portfolio weights
-weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
-# Objective equal to minus Sharpe ratio
-objfun <- function(weightv, retp) {
-  retp <- retp %*% weightv
-  if (sd(retp) == 0)
-    return(0)
-  else
-    -return(mean(retp)/sd(retp))
-}  # end objfun
-# Objective for equal weight portfolio
-objfun(weightv, retp=retp)
-optiml <- unlist(optimize(f=function(weightv)
-    objfun(c(1, 1, weightv), retp=retp),
-  interval=c(-4, 1)))
-# Vectorize objective function with respect to third weight
-objvec <- function(weightv) sapply(weightv,
-  function(weightv) objfun(c(1, 1, weightv), retp=retp))
-# Or
-objvec <- Vectorize(FUN=function(weightv)
-    objfun(c(1, 1, weightv), retp=retp),
-  vectorize.args="weightv")  # end Vectorize
-objvec(1)
-objvec(1:3)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_obj_one_dim.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot objective function with respect to third weight
-curve(expr=objvec, type="l", xlim=c(-4.0, 1.0),
-      xlab=paste("weight of", names(weightv[3])),
-      ylab="", lwd=2)
-title(main="Objective Function", line=(-1))  # Add title
-points(x=optiml[1], y=optiml[2], col="green", lwd=6)
-text(x=optiml[1], y=optiml[2],
-     labels="minimum objective", pos=4, cex=0.8)
-
-### below is simplified code for plotting objective function
-# Create vector of DBC weights
-weightv <- seq(from=-4, to=1, by=0.1)
-objv <- sapply(weightv, function(weightv) 
-  objfun(c(1, 1, weightv)))
-plot(x=weightv, y=objv, t="l",
-      xlab="weight of DBC", ylab="", lwd=2)
-title(main="Objective Function", line=(-1))  # Add title
-points(x=optiml[1], y=optiml[2], col="green", lwd=6)
-text(x=optiml[1], y=optiml[2],
-     labels="minimum objective", pos=4, cex=0.8)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Perspective Plot of Portfolio Objective Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values.
-      \vskip1ex
-      The function \texttt{outer()} calculates the values of a function over a grid spanned by two variables, and returns a matrix of function values.
-      \vskip1ex
-      The package \emph{rgl} allows creating \emph{interactive} 3d scatterplots and surface plots including perspective plots, based on the \emph{OpenGL} framework.
-      <<portf_persp,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-# Vectorize function with respect to all weights
-objvec <- Vectorize(
-  FUN=function(w1, w2, w3) objfun(c(w1, w2, w3), retp),
-  vectorize.args=c("w2", "w3"))  # end Vectorize
-# Calculate objective on 2-d (w2 x w3) parameter grid
-w2 <- seq(-3, 7, length=50)
-w3 <- seq(-5, 5, length=50)
-gridm <- outer(w2, w3, FUN=objvec, w1=1)
-rownames(gridm) <- round(w2, 2)
-colnames(gridm) <- round(w3, 2)
-# Perspective plot of objective function
-persp(w2, w3, -gridm,
-      theta=45, phi=30, shade=0.5,
-      col=rainbow(50), border="green",
-      main="objective function")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/portf_persp.png}
-    \vspace{-3em}
-      <<echo=TRUE,eval=FALSE,fig.width=10,fig.height=10>>=
-# Interactive perspective plot of objective function
-library(rgl)
-rgl::persp3d(z=-gridm, zlab="objective",
-        col="green", main="objective function")
-rgl::persp3d(
-  x=function(w2, w3) {-objvec(w1=1, w2, w3)},
-  xlim=c(-3, 7), ylim=c(-5, 5),
-  col="green", axes=FALSE)
-# Render the 3d surface plot of function
-rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Multi-dimensional Portfolio Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Vector of initial portfolio weights equal to 1
-weightv <- rep(1, nstocks)
-names(weightv) <- symbolv
-# Objective function equal to standard deviation of returns
-objfun <- function(weightv) {
-  retp <- retp %*% weightv
-  sd(retp)/sum(weightv)
-}  # end objfun
-# objfun() for equal weight portfolio
-objfun(weightv)
-objfun(2*weightv)
-# Perform portfolio optimization
-optiml <- optim(par=weightv,
-                fn=objfun,
-                method="L-BFGS-B",
-                upper=rep(10, nstocks),
-                lower=rep(-10, nstocks))
-# Rescale the optimal weights
-weightv <- optiml$par/sum(optiml$par)
-# Minimum variance portfolio returns
-retsoptim <- xts(x=retp %*% weightv,
-                  order.by=zoo::index(retp))
-chart_Series(x=exp(cumsum(retsoptim)), name="minvar portfolio")
-# Add green point for minimum variance portfolio
-optim_sd <- 100*sd(retsoptim)
-optim_ret <- 100*mean(retsoptim)
-points(x=optim_sd, y=optim_ret, col="green", lwd=6)
-text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
-
-
-# Objective function equal to minus Sharpe ratio
-raterf <- 0.03
-objfun <- function(weightv) {
-  retp <- 100*rutils::etfenv$returns[, names(weightv)] %*% weightv / sum(weightv)
-  -mean(retp-raterf)/sd(retp)
-}  # end objfun
-# Perform portfolio optimization
-optiml <- optim(par=weightv,
-                   fn=objfun,
-                   method="L-BFGS-B",
-                   upper=rep(10, nstocks),
-                   lower=rep(-10, nstocks))
-# Maximum Sharpe ratio portfolio returns
-weightv <- optiml$par/sum(optiml$par)
-retsoptim <- xts(x=retp %*% weightv,
-                  order.by=zoo::index(retp))
-chart_Series(x=exp(cumsum(retsoptim)), name="maxSR portfolio")
-optim_sd <- 100*sd(retsoptim)
-optim_ret <- 100*mean(retsoptim)
-points(x=optim_sd, y=optim_ret,
-       col="blue", lwd=3)
-text(x=optim_sd, y=optim_ret,
-     labels="maxSR", pos=2, cex=0.8)
-sharpem <- (optim_ret-raterf)/optim_sd
-# Plot individual assets
-retm <- 100*sapply(retp, mean)
-stdevs <- 100*sapply(retp, sd)
-points(stdevs, retm, col="green", lwd=3)
-text(stdevs, retm, labels=names(retm), pos=2, cex=0.8)
-# Add point at risk-free rate and draw Capital Market Line
-points(x=0, y=raterf)
-text(0, raterf, labels="risk-free", pos=4, cex=0.8)
-abline(a=raterf, b=sharpem, col="blue")
-rangev <- par("usr")
-text(optim_sd/3, (optim_ret+raterf)/2.5,
-     labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
-                   (rangev[4]-rangev[3])*
-                   heightp/widthp)/(0.25*pi))
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eff_front_random.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multi-dimensional Portfolio Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization.
-      \vskip1ex
-      The argument \texttt{par} are the initial parameter values.
-      \vskip1ex
-      The argument \texttt{fn} is the objective function to be minimized.
-      \vskip1ex
-      The argument of the objective function which is to be optimized, must be a vector argument.
-      \vskip1ex
-      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
-      \vskip1ex
-      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
-      \vskip1ex
-      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method.
-      \vskip1ex
-      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create initial vector of portfolio weights
-weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
-# Optimization to find weights with maximum Sharpe ratio
-optiml <- optim(par=weightv,
-                   fn=objfun,
-                   retp=retp,
-                   method="L-BFGS-B",
-                   upper=c(1.1, 10, 10),
-                   lower=c(0.9, -10, -10))
-# Optimal parameters
-optiml$par
-optiml$par <- optiml$par/sum(optiml$par)
-# Optimal Sharpe ratio
--objfun(optiml$par)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimized Portfolio Performance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The optimized portfolio has both long and short positions, and outperforms its individual component assets.
-      \vskip1ex
-      <<optim_portf_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Plot in two vertical panels
-layout(matrix(c(1,2), 2),
-       widths=c(1,1), heights=c(1,3))
-# barplot of optimal portfolio weights
-barplot(optiml$par, col=c("red", "green", "blue"),
-        main="Optimized portfolio weights")
-# Calculate cumulative returns of VTI, IEF, DBC
-retc <- lapply(retp,
-  function(retp) exp(cumsum(retp)))
-retc <- rutils::do_call(cbind, retc)
-# Calculate optimal portfolio returns with VTI, IEF, DBC
-retsoptim <- cbind(
-  exp(cumsum(retp %*% optiml$par)),
-  retc)
-colnames(retsoptim)[1] <- "retsoptim"
-# Plot optimal returns with VTI, IEF, DBC
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "red", "green", "blue")
-chart_Series(retsoptim, theme=plot_theme,
-             name="Optimized portfolio performance")
-legend("top", legend=colnames(retsoptim), cex=1.0,
-   inset=0.1, bg="white", lty=1, lwd=6,
-   col=plot_theme$col$line.col, bty="n")
-# Or plot non-compounded (simple) cumulative returns
-PerformanceAnalytics::chart.CumReturns(
-  cbind(retp %*% optiml$par, retp),
-  lwd=2, ylab="", legend.loc="topleft", main="")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/optim_portf.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Mean-Variance Portfolio Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The mean-variance objective function is designed to maximize portfolio returns and minimize their variance:
-      \begin{displaymath}
-        O(x) = \mathbf{w}^T \mathbb{C} \, \mathbf{w} - q \, \mathbf{w}^T \mathbf{r}
-      \end{displaymath}
-      Where $\mathbb{C}$ is the covariance matrix of returns, $\mathbf{r}$ is the vector of returns, $\mathbf{w}$ is the vector of portfolio weights, and $q$ is the risk tolerance factor.
-      \vskip1ex
-      The mean-variance optimal portfolio is defined as
-      \begin{displaymath}
-        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
-        \mathbf{w}^T \mathbb{C} \, \mathbf{w}
-      \end{displaymath}
-      Where the sum of portfolio weights $\mathbf{w}$ is constrained to equal \texttt{1}: $\mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$.
-      \vskip1ex
-      Legacy stuff below:\\
-      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
-      \begin{displaymath}
-        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
-      \end{displaymath}
-      Or in vector notation:
-      \begin{displaymath}
-        z = \alpha + \beta x + \varepsilon
-      \end{displaymath}
-      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain \texttt{n} observations.
-      \vskip1ex
-      The response variable $z$ is a vector of length \texttt{n}, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix.
-      \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$.
-      \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$.
-    \column{0.5\textwidth}
-      The OLS estimate for $\alpha$ is given by:
-      \begin{align*}
-        \alpha = z^T \mathbbm{1} - \beta x^T \mathbbm{1}
-      \end{align*}
-      If the variables are centered, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
-      \begin{flalign*}
-        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
-        & x^T z - \beta x^T x = 0\\
-        & \beta = (x^T x)^{-1} x^T z
-      \end{flalign*}
-      The matrix $x^T x$ is the covariance matrix of the matrix $x$.
-      \vskip1ex
-      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent.
-      \vskip1ex
-      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudo-inverse} of the matrix $x$.
-      \vskip1ex
-      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
 %%%%%%%%%%%%%%%
 \subsection{Package \protect\emph{quadprog} for Quadratic Programming}
 \begin{frame}[fragile,t]{\subsecname}
@@ -1973,7 +2464,7 @@ unlist(optimize(f=objfun, interval=c(-1, 2)))
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# Calculate daily percentage returns
+# Calculate daily ETF percentage returns
 symbolv <- c("VTI", "IEF", "DBC")
 nstocks <- NROW(symbolv)
 retp <- na.omit(rutils::etfenv$returns[, symbolv])
@@ -1998,310 +2489,6 @@ optiml <- quadprog::solve.QP(Dmat=2*covmat,
                     Amat=a_mat,
                     bvec=b_vec,
                     meq=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{DEoptim} for Global Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
-      \vskip1ex
-      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
-      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
-      \vskip1ex
-      The first generation of solutions is selected randomly.
-      \vskip1ex
-      Each new generation is obtained by combining solutions from the previous generation.
-      \vskip1ex
-      The best solutions are selected for creating the next generation.
-      \vskip1ex
-      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
-      \vskip1ex
-      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima.
-    \column{0.5\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vecv, param=25){
-  sum(vecv^2 - param*cos(vecv))
-}  # end rastrigin
-vecv <- c(pi/6, pi/6)
-rastrigin(vecv=vecv)
-library(DEoptim)
-# Optimize rastrigin using DEoptim
-optiml <-  DEoptim(rastrigin,
-  upper=c(6, 6), lower=c(-6, -6),
-  DEoptim.control(trace=FALSE, itermax=50))
-# Optimal parameters and value
-optiml$optim$bestmem
-rastrigin(optiml$optim$bestmem)
-summary(optiml)
-plot(optiml)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization Using Package \protect\emph{Deoptim}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate daily percentage returns
-symbolv <- c("VTI", "IEF", "DBC")
-nstocks <- NROW(symbolv)
-retp <- na.omit(rutils::etfenv$returns[, symbolv])
-# Objective equal to minus Sharpe ratio
-objfun <- function(weightv, retp) {
-  retp <- retp %*% weightv
-  if (sd(retp) == 0)
-    return(0)
-  else
-    -return(mean(retp)/sd(retp))
-}  # end objfun
-# Perform optimization using DEoptim
-optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retp)),
-  lower=rep(-10, NCOL(retp)),
-  retp=retp,
-  control=list(trace=FALSE, itermax=100, parallelType=1))
-weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization Using \protect\emph{Shrinkage}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The technique of \emph{shrinkage} (\emph{regularization}) is designed to reduce the number of parameters in a model, for example in portfolio optimization.
-      \vskip1ex
-      The \emph{shrinkage} technique adds a penalty term to the objective function.
-      \vskip1ex
-      The \emph{elastic net} regularization is a combination of \emph{ridge} regularization and \emph{Lasso} regularization:
-      \begin{displaymath}
-        w_{max} = \operatorname*{arg\,max}_{w} [ \frac{\mathbf{w}^T \mu}{\sigma} - \lambda ( (1-\alpha) \sum_{i=1}^n w^2_i + \alpha \sum_{i=1}^n|w_i| ) ]
-      \end{displaymath}
-      The portfolio weights $\mathbf{w}$ are shrunk to zero as the parameters $\lambda$ and $\alpha$ increase.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Objective with shrinkage penalty
-objfun <- function(weightv, retp, lambdaf, alphaf) {
-  retp <- retp %*% weightv
-  if (sd(retp) == 0)
-    return(0)
-  else {
-    penaltyv <- lambdaf*((1-alphaf)*sum(weightv^2) +
-        alphaf*sum(abs(weightv)))
-    -return(mean(retp)/sd(retp) + penaltyv)
-  }
-}  # end objfun
-# Objective for equal weight portfolio
-weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
-lambdaf <- 0.5 ; alphaf <- 0.5
-objfun(weightv, retp=retp, lambdaf=lambdaf, alphaf=alphaf)
-# Perform optimization using DEoptim
-optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retp)),
-  lower=rep(-10, NCOL(retp)),
-  retp=retp,
-  lambdaf=lambdaf,
-  alphaf=alphaf,
-  control=list(trace=FALSE, itermax=100, parallelType=1))
-weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Portfolio Optimization Using \protect\emph{Dimension Reduction}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The technique of \emph{shrinkage} (\emph{regularization}) is designed to reduce the number of parameters in a model, for example in portfolio optimization.
-      \vskip1ex
-      The \emph{shrinkage} technique adds a penalty term to the objective function.
-      \vskip1ex
-      The \emph{elastic net} regularization is a combination of \emph{ridge} regularization and \emph{Lasso} regularization:
-      \begin{displaymath}
-        w_{max} = \operatorname*{arg\,max}_{w} [ \frac{\mathbf{w}^T \mu}{\sigma} - \lambda ( (1-\alpha) \sum_{i=1}^n w^2_i + \alpha \sum_{i=1}^n|w_i| ) ]
-      \end{displaymath}
-      The portfolio weights $\mathbf{w}$ are shrunk to zero as the parameters $\lambda$ and $\alpha$ increase.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Objective with shrinkage penalty
-objfun <- function(weightv, retp, lambdaf, alpha) {
-  retp <- retp %*% weightv
-  if (sd(retp) == 0)
-    return(0)
-  else {
-    penaltyv <- lambdaf*((1-alpha)*sum(weightv^2) +
-        alpha*sum(abs(weightv)))
-    -return(mean(retp)/sd(retp) + penaltyv)
-  }
-}  # end objfun
-# Objective for equal weight portfolio
-weightv <- rep(1, NROW(symbolv))
-names(weightv) <- symbolv
-lambdaf <- 0.5 ; alpha <- 0.5
-objfun(weightv, retp=retp, lambdaf=lambdaf, alpha=alpha)
-# Perform optimization using DEoptim
-optiml <- DEoptim::DEoptim(fn=objfun,
-  upper=rep(10, NCOL(retp)),
-  lower=rep(-10, NCOL(retp)),
-  retp=retp,
-  lambdaf=lambdaf,
-  alpha=alpha,
-  control=list(trace=FALSE, itermax=100, parallelType=1))
-weightv <- optiml$optim$bestmem/sum(abs(optiml$optim$bestmem))
-names(weightv) <- colnames(retp)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimal Portfolios Under Zero Correlation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
-      \begin{displaymath}
-        \mathbb{C} = \begin{pmatrix}
-          \sigma^2_1 & 0 & \cdots & 0 \\
-          0 & \sigma^2_2 & \cdots & 0 \\
-          \vdots  & \vdots  & \ddots & \vdots \\
-          0 & 0 & \cdots & \sigma^2_n
-        \end{pmatrix}
-      \end{displaymath}
-      Where $\sigma^2_i$ is the variance of returns of asset \texttt{i}.
-      \vskip1ex
-      The inverse of $\mathbb{C}$ is then simply:
-      \begin{displaymath}
-        \mathbb{C}^{-1} = \begin{pmatrix}
-          \sigma^{-2}_1 & 0 & \cdots & 0 \\
-          0 & \sigma^{-2}_2 & \cdots & 0 \\
-          \vdots  & \vdots  & \ddots & \vdots \\
-          0 & 0 & \cdots & \sigma^{-2}_n
-        \end{pmatrix}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      The \emph{minimum variance} portfolio weights are proportional to the inverse of the individual variances:
-      \begin{displaymath}
-        w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
-      \end{displaymath}
-      The \emph{maximum Sharpe} portfolio weights are proportional to the ratio of the excess returns divided by the individual variances:
-      \begin{displaymath}
-        w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
-      \end{displaymath}
-      The portfolio weights are proportional to the \emph{Kelly ratios} - the excess returns divided by the variances:
-      \begin{displaymath}
-        w_i \propto \frac{\mu_i}{\sigma^2_i}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Portfolio Optimization Using Principal Components}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      First apply Principal Component Analysis and then perform portfolio optimization using the principal components.
-      \vskip1ex
-      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
-      \begin{displaymath}
-        \mathbb{C} = \begin{pmatrix}
-          \sigma^2_1 & 0 & \cdots & 0 \\
-          0 & \sigma^2_2 & \cdots & 0 \\
-          \vdots  & \vdots  & \ddots & \vdots \\
-          0 & 0 & \cdots & \sigma^2_n
-        \end{pmatrix}
-      \end{displaymath}
-      Where $\sigma^2_i$ is the variance of returns of asset \texttt{i}.
-      \vskip1ex
-      The inverse of $\mathbb{C}$ is then simply:
-      \begin{displaymath}
-        \mathbb{C}^{-1} = \begin{pmatrix}
-          \sigma^{-2}_1 & 0 & \cdots & 0 \\
-          0 & \sigma^{-2}_2 & \cdots & 0 \\
-          \vdots  & \vdots  & \ddots & \vdots \\
-          0 & 0 & \cdots & \sigma^{-2}_n
-        \end{pmatrix}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      The \emph{minimum variance} portfolio weights are proportional to the inverse of the individual variances:
-      \begin{displaymath}
-        w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
-      \end{displaymath}
-      The \emph{maximum Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
-      \begin{displaymath}
-        w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Portfolio Optimization Packages in \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The following \texttt{R} packages provide functions for portfolio optimization:
-      \begin{itemize}
-        \item package \emph{PortfolioAnalytics}: relies on packages \emph{xts}, \emph{ROI}, and \emph{DEoptim},
-        \item package \emph{parma}: relies on packages \emph{xts}, \emph{Rglpk}, and \emph{quadprog},
-        \item package \emph{fPortfolio} from the \emph{Rmetrics} suite: relies on packages \emph{tseries}, \emph{Rglpk}, and \emph{quadprog},
-      \end{itemize}
-      These portfolio optimization packages call generic optimization functions written in compiled \texttt{C++}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Portfolio optimization
       @
   \end{columns}
 \end{block}
@@ -3752,11 +3939,11 @@ attachp <- 0.15; detachp <- 0.2
 # Expected tranche loss is sum of two terms
 tranchel <-
   # Loss between attachp and detachp
-  integrate(function(x, attachp) (x-attachp)*lossdistr(x,
-      threshv=threshv, rho=rho, lgd=lgd),
-      low=attachp, up=detachp, attachp=attachp)$value/(detachp-attachp) +
+  integrate(function(x) (x-attachp)*
+    lossdistr(x, threshv=threshv, rho=rho, lgd=lgd),
+    low=attachp, up=detachp)$value/(detachp-attachp) +
   # Loss in excess of detachp
-        (1-cumlossdistr(x=detachp, threshv=threshv, rho=rho, lgd=lgd))
+  (1-cumlossdistr(x=detachp, threshv=threshv, rho=rho, lgd=lgd))
 # Plot probability distribution of losses
 curve(expr=lossdistr(x, threshv=threshv, rho=rho),
       cex.main=1.8, cex.lab=1.8, cex.axis=1.5, 

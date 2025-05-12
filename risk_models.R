@@ -249,8 +249,8 @@ jarque.bera.test(retp)
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(retp)))
 # KS test for normal distribution
-ks_test <- ks.test(rnorm(100), pnorm)
-ks_test$p.value
+kstest <- ks.test(rnorm(100), pnorm)
+kstest$p.value
 # KS test for uniform distribution
 ks.test(runif(100), pnorm)
 # KS test for two shifted normal distributions
@@ -368,6 +368,8 @@ legend("topright", inset=0.05, bty="n", y.intersp=0.4,
   lwd=6, lty=1, col=c("blue", "red", "green"))
 # Calculate sample from non-standard t-distribution with df=3
 datat <- locv + scalev*rt(NROW(retp), df=3)
+# KS test for VTI returns vs t-distribution data
+ks.test(retp, datat)
 # Q-Q plot of VTI Returns vs non-standard t-distribution
 qqplot(datat, retp, xlab="t-Dist Quantiles", ylab="VTI Quantiles",
        main="Q-Q plot of VTI Returns vs Student's t-distribution")
@@ -379,14 +381,6 @@ qtdata <- quantile(datat, probs)
 slope <- diff(qrets)/diff(qtdata)
 intercept <- qrets[1]-slope*qtdata[1]
 abline(intercept, slope, lwd=2, col="red")
-# KS test for VTI returns vs t-distribution data
-ks.test(retp, datat)
-# Define cumulative distribution of non-standard t-distribution
-ptdistr <- function(x, dfree, locv=0, scalev=1) {
-  pt((x-locv)/scalev, df=dfree)
-}  # end ptdistr
-# KS test for VTI returns vs cumulative t-distribution
-ks.test(sample(retp, replace=TRUE), ptdistr, dfree=3, locv=locv, scalev=scalev)
 # Plot log density of VTI returns
 plot(density(retp, adjust=4), xlab="VTI Returns", ylab="Density",
      main="Fat Left Tail of VTI Returns (density in log scale)",
@@ -586,13 +580,15 @@ closep <- log(quantmod::Cl(rutils::etfenv$VTI))
 drawdns <- (closep - cummax(closep))
 # Extract the date index from the time series closep
 datev <- zoo::index(closep)
-# Calculate the maximum drawdown date and depth
-indexmin <- which.min(drawdns)
-datemin <- datev[indexmin]
-maxdd <- drawdns[datemin]
+# Calculate the drawdown trough date
+indexm <- which.min(drawdns)
+datem <- datev[indexm]
 # Calculate the drawdown start and end dates
-startd <- max(datev[(datev < datemin) & (drawdns == 0)])
-endd <- min(datev[(datev > datemin) & (drawdns == 0)])
+startd <- max(datev[(datev < datem) & (drawdns == 0)])
+startd <- datev[which(startd==datev)+1] # Shift ahead by one day
+endd <- min(datev[(datev > datem) & (drawdns == 0)])
+# Calculate the drawdown depth
+maxdd <- drawdns[datem]
 # dygraph plot of VTI drawdowns
 datav <- cbind(closep, drawdns)
 colv <- c("VTI", "Drawdowns")
@@ -604,7 +600,7 @@ dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
   dySeries(name=colv[1], axis="y", col="blue") %>%
   dySeries(name=colv[2], axis="y2", col="red") %>%
   dyEvent(startd, "start drawdown", col="blue") %>%
-  dyEvent(datemin, "max drawdown", col="red") %>%
+  dyEvent(datem, "max drawdown", col="red") %>%
   dyEvent(endd, "end drawdown", col="green")
 # Plot VTI drawdowns using package quantmod
 plot_theme <- chart_theme()
@@ -615,7 +611,7 @@ xval <- match(startd, datev)
 yval <- max(closep)
 abline(v=xval, col="blue")
 text(x=xval, y=0.95*yval, "start drawdown", col="blue", cex=0.9)
-xval <- match(datemin, datev)
+xval <- match(datem, datev)
 abline(v=xval, col="red")
 text(x=xval, y=0.9*yval, "max drawdown", col="red", cex=0.9)
 xval <- match(endd, datev)
@@ -839,41 +835,38 @@ cvar <- sapply(retp, function(x) {
   mean(x[x < quantile(x, confl)])
 })
 -sapply(retp, mean)/cvar
-# Calculate VTI daily percentage returns
-retp <- na.omit(rutils::etfenv$returns$VTI)
+# Calculate VTI daily log returns
+pricev <- log(drop(coredata(na.omit(rutils::etfenv$prices$VTI))))
+retp <- rutils::diffit(pricev)
 nrows <- NROW(retp)
-# Bootstrap aggregated monthly VTI returns
-holdp <- 22
-reta <- sqrt(holdp)*sapply(1:nrows, function(x) {
-    mean(retp[sample.int(nrows, size=holdp, replace=TRUE)])
-})  # end sapply
-# Calculate mean, standard deviation, skewness, and kurtosis
-datav <- cbind(retp, reta)
-colnames(datav) <- c("VTI", "Agg")
-sapply(datav, function(x) {
+# Calculate VTI monthly log returns
+holdp <- 22 # Holding period in days
+pricem <- pricev[rutils::calc_endpoints(pricev, holdp)]
+retm <- rutils::diffit(pricem)
+retm <- retm[-1] # Drop the first zero return
+# Calculate the mean, standard deviation, skewness, and kurtosis
+datav <- list(retp, retm)
+names(datav) <- c("Daily", "Monthly")
+do.call(cbind, lapply(datav, function(x) {
   # Standardize the returns
   meanv <- mean(x); stdev <- sd(x); x <- (x - meanv)/stdev
   c(mean=meanv, stdev=stdev, skew=mean(x^3), kurt=mean(x^4))
-})  # end sapply
+}))  # end lapply
 # Calculate the Sharpe and Dowd ratios
-confl <- 0.02
-ratiom <- sapply(datav, function(x) {
-  stdev <- sd(x)
-  varisk <- unname(quantile(x, probs=confl))
+do.call(cbind, lapply(datav, function(x) {
+  meanv <- mean(x); stdev <- sd(x)
+  varisk <- unname(quantile(x, probs=0.02))
   cvar <- mean(x[x < varisk])
-  mean(x)/c(Sharpe=stdev, Dowd=-varisk, DowdC=-cvar)
-})  # end sapply
-# Annualize the daily risk
-ratiom[, 1] <- sqrt(22)*ratiom[, 1]
-ratiom
-# Plot the densities of returns
-plot(density(retp), t="l", lwd=3, col="blue",
-     xlab="returns", ylab="density", xlim=c(-0.04, 0.04),
-     main="Distribution of Aggregated Stock Returns")
-lines(density(reta), t="l", col="red", lwd=3)
-curve(expr=dnorm(x, mean=mean(reta), sd=sd(reta)), col="green", lwd=3, add=TRUE)
-legend("topright", legend=c("VTI Daily", "Aggregated", "Normal"), y.intersp=0.4,
- inset=-0.1, bg="white", lty=1, lwd=6, col=c("blue", "red", "green"), bty="n")
+  # Annualize the ratios
+  sqrt(252*NROW(x)/nrows)*mean(x)/c(Sharpe=stdev, Dowd=-varisk, DowdC=-cvar)
+}))  # end lapply
+# Plot the density of monthly returns
+plot(density(retm), t="l", lwd=3, col="blue",
+     xlab="returns", ylab="density", xlim=c(-4*mad(retm), 4*mad(retm)),
+     main="Distribution of Monthly VTI Returns")
+curve(expr=dnorm(x, mean=mean(retm), sd=sd(retm)), col="green", lwd=3, add=TRUE)
+legend("topright", legend=c("Monthly", "Normal"), y.intersp=0.4, cex=1.1,
+ inset=0.0, bg="white", lty=1, lwd=6, col=c("blue", "green"), bty="n")
 # Number of flights from each airport
 dtable[, .N, by=origin]
 # Same, but add names to output
@@ -953,6 +946,7 @@ summary(microbenchmark(
   ), times=10)[, c(1, 4, 5)]
 # Extract log VTI prices
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
+retp <- rutils::diffit(closep)
 nrows <- NROW(closep)
 # Calculate EMA prices using HighFreq::run_mean()
 pricema <- HighFreq::run_mean(closep, lambda=0.9)
@@ -984,7 +978,7 @@ theme(  # Modify plot theme
     )  # end theme
 # end ggplot2
 # Calculate VTI log returns
-retp <- rutils::diffit(closef)
+retf <- rutils::diffit(closef)
 # Open plot window
 x11(width=6, height=7)
 # Set plot parameters
@@ -993,41 +987,27 @@ par(oma=c(1, 1, 0, 1), mar=c(1, 1, 1, 1), mgp=c(0, 0.5, 0),
 # Set two plot panels
 par(mfrow=c(2,1))
 # Plot ACF of VTI returns
-rutils::plot_acf(retp[, 1], lag=10, xlab="")
+rutils::plot_acf(retf[, 1], lag=10, xlab="")
 title(main="ACF of VTI Returns", line=-1)
 # Plot ACF of smoothed VTI returns
-rutils::plot_acf(retp[, 2], lag=10, xlab="")
+rutils::plot_acf(retf[, 2], lag=10, xlab="")
 title(main="ACF of Smoothed VTI Returns", line=-1)
-# Get close prices and calculate close-to-close returns
-# closep <- quantmod::Cl(rutils::etfenv$VTI)
-closep <- quantmod::Cl(HighFreq::SPY)
-colnames(closep) <- rutils::get_name(colnames(closep))
-retspy <- TTR::ROC(closep)
-retspy[1] <- 0
+# Calculate the EMA gains and losses
+lambdaf <- 0.9
+gainm <- HighFreq::run_mean(ifelse(retp > 0, retp, 0), lambdaf)
+lossm <- HighFreq::run_mean(ifelse(retp < 0, -retp, 0), lambdaf)
 # Calculate the RSI indicator
-r_si <- TTR::RSI(closep, 2)
-# Calculate the long (up) and short (dn) signals
-sig_up <- ifelse(r_si < 10, 1, 0)
-sig_dn <- ifelse(r_si > 90, -1, 0)
-# Lag signals by one period
-sig_up <- rutils::lagit(sig_up, 1)
-sig_dn <- rutils::lagit(sig_dn, 1)
-# Replace NA signals with zero position
-sig_up[is.na(sig_up)] <- 0
-sig_dn[is.na(sig_dn)] <- 0
-# Combine up and down signals into one
-sig_nals <- sig_up + sig_dn
-# Calculate cumulative returns
-eq_up <- exp(cumsum(sig_up*retspy))
-eq_dn <- exp(cumsum(-1*sig_dn*retspy))
-eq_all <- exp(cumsum(sig_nals*retspy))
-# Plot daily cumulative returns in panels
-endd <- endpoints(retspy, on="days")
-plot.zoo(cbind(eq_all, eq_up, eq_dn)[endd], lwd=c(2, 2, 2),
-  ylab=c("Total","Long","Short"), col=c("red","green","blue"),
-  main=paste("RSI(2) strategy for", colnames(closep), "from",
-       format(start(retspy), "%B %Y"), "to",
-       format(end(retspy), "%B %Y")))
+rsii <- 100 * gainm/(gainm + lossm)
+# Plot dygraph of the RSI indicator
+datav <- cbind(closep, rsii)
+colnames(datav)[2] <- "RSI"
+colv <- colnames(datav)
+dygraphs::dygraph(datav["2020"], main="RSI Indicator for VTI") %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=colv[2], axis="y2", strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=300)
 # Extract log VTI prices
 ohlc <- rutils::etfenv$VTI
 datev <- zoo::index(ohlc)
@@ -1128,7 +1108,7 @@ colnames(pricev) <- c("VWAP trailing", "VWAP recursive")
 dygraphs::dygraph(pricev["2008/2009"], main="VWAP Prices") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
-# Calculate two EMA prices
+# Calculate fast and slow EMA prices
 lambdaf <- 0.8 # Fast EMA
 emaf <- HighFreq::run_mean(closep, lambda=lambdaf)
 lambdas <- 0.9 # Slow EMAs
@@ -1145,6 +1125,39 @@ dygraphs::dygraph(pricev["2008/2009"], main=paste(symboln, "EMA Returns")) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", strokeWidth=2, col="blue") %>%
   dySeries(name=colv[2], axis="y2", strokeWidth=2, col="red") %>%
+  dyLegend(show="always", width=300)
+# Calculate fast and slow EMA prices
+lambdaf <- 1 - 2/(1+12) # 12-day fast EMA
+lambdas <- 1 - 2/(1+26) # 26-day slow EMA
+emaf <- HighFreq::run_mean(closep, lambda=lambdaf)
+emas <- HighFreq::run_mean(closep, lambda=lambdas)
+# Plot dygraph of the fast and slow EMA prices
+pricev <- cbind(log(ohlc[, 1:4]), emaf, emas)["2020-01/2020-05"]
+colnames(pricev)[5:6] <- c("EMA fast", "EMA slow")
+colv <- colnames(pricev)
+dygraphs::dygraph(pricev, main="MACD EMA Prices") %>%
+  dygraphs::dyCandlestick() %>%
+  dySeries(name=colv[5], strokeWidth=2, col="red") %>%
+  dySeries(name=colv[6], strokeWidth=2, col="purple") %>%
+  dyLegend(show="always", width=300)
+# Calculate the MACD series
+macds <- emaf - emas
+# Calculate the signal series
+lambdasig <- 1 - 2/(1+9) # 9-day fast EMA
+macdsig <- HighFreq::run_mean(macds, lambda=lambdasig)
+# Calculate the divergence series
+macddiv <- macds - macdsig
+# Plot dygraph of the signal and divergence series
+pricev <- cbind(macds, macdsig, macddiv)
+pricev <- xts::xts(pricev, datev)
+colnames(pricev) <- c("MACD", "Sig", "Div")
+colv <- colnames(pricev)
+dygraphs::dygraph(pricev["2020-01/2020-05"], main="MACD Signal and Divergence") %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", strokeWidth=2, col="red") %>%
+  dySeries(name=colv[2], axis="y", strokeWidth=2, col="purple") %>%
+  dyBarSeries(name=colv[3], axis="y2", col="blue") %>%
   dyLegend(show="always", width=300)
 # Calculate the fractional weights
 lookb <- 21
@@ -1245,8 +1258,8 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI Volatility Z-Scores") %>%
 # Calculate the recursive trailing VTI volatility
 lambdaf <- 0.8 # Fast lambda
 lambdas <- 0.81 # Slow lambda
-volatf <- sqrt(HighFreq::run_var(retp, lambda=lambdaf))[, 2]
-volats <- sqrt(HighFreq::run_var(retp, lambda=lambdas))[, 2]
+volatf <- sqrt(HighFreq::run_var(retp, lambda=lambdaf)[, 2])
+volats <- sqrt(HighFreq::run_var(retp, lambda=lambdas)[, 2])
 # Calculate the recursive trailing z-scores of VTI volatility
 volatd <- volatf - volats
 volatsd <- sqrt(HighFreq::run_var(rutils::diffit(volatd), lambda=lambdaf)[, 2])
@@ -1307,8 +1320,8 @@ pnls <- retp*posv
 # Plot dygraph of in-sample VTI strategy
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
-endd <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endd],
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Price Tops and Bottoms Strategy In-sample") %>%
   dyAxis("y", label="VTI", independentTicks=TRUE) %>%
   dyAxis("y2", label="Strategy", independentTicks=TRUE) %>%
@@ -1322,7 +1335,7 @@ pricez <- (closep - rutils::lagit(closep, lookb, pad_zeros=FALSE))
 pricez <- ifelse(volv > 0, pricez/volv, 0)
 # Plot dygraph of the trailing z-scores of VTI prices
 pricev <- cbind(closep, pricez)
-colnames(pricev) <- c("VTI", "Z-Scores")
+colnames(pricev) <- c("VTI", "Z-Score")
 colv <- colnames(pricev)
 dygraphs::dygraph(pricev["2009"],
   main="VTI Trailing Price Z-Scores") %>%
@@ -1349,9 +1362,9 @@ dygraphs::dygraph(pricev["2009"], main="VTI Online Trailing Price Z-Scores") %>%
 datev <- matrix(zoo::index(closep))
 lookb <- 21
 # Create a default list of regression parameters
-controlv <- HighFreq::param_reg()
+controll <- HighFreq::param_reg()
 regs <- HighFreq::roll_reg(respv=closep, predm=datev,
-   lookb=lookb, controlv=controlv)
+   lookb=lookb, controll=controll)
 regs[1:lookb, ] <- 0
 # Plot dygraph of z-scores of VTI prices
 datav <- cbind(closep, regs[, NCOL(regs)])
@@ -1366,8 +1379,8 @@ dygraphs::dygraph(datav["2009"], main="VTI Regression Z-Scores") %>%
 # Calculate recursive trailing price regression versus time
 lambdaf <- 0.9
 # Create a list of regression parameters
-controlv <- HighFreq::param_reg(residscale="standardize")
-regs <- HighFreq::run_reg(closep, matrix(datev), lambda=lambdaf, controlv=controlv)
+controll <- HighFreq::param_reg(residscale="standardize")
+regs <- HighFreq::run_reg(closep, matrix(datev), lambda=lambdaf, controll=controll)
 colnames(regs) <- c("alpha", "beta", "zscores")
 tail(regs)
 # Plot dygraph of regression betas
@@ -1588,11 +1601,9 @@ dygraphs::dygraph(datav[, 1:2], main=captiont) %>%
   dySeries(name=colv[1], axis="y", strokeWidth=1, col="blue") %>%
   dySeries(name=colv[2], axis="y2", strokeWidth=1, col="red") %>%
   dyLegend(show="always", width=300)
-x11(width=6, height=5)
-par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
-# Calculate trailing VTI variance using package roll
+# Calculate VTI rolling variance
 lookb <- 21
 varv <- HighFreq::roll_var(retp, lookb=lookb)
 colnames(varv) <- "Variance"

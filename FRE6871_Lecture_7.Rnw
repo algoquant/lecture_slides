@@ -73,7 +73,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{October 21, 2025}
+\date{May 5, 2025}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -2226,7 +2226,7 @@ unlist(eapply(globalenv(), is.xts))
 write.zoo(pricev,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
 # Copy prices into etfenv
-etfenv$prices <- pricev
+etfenv$pricev <- pricev
 # Or
 assign("pricev", pricev, envir=etfenv)
 # Save to .RData file
@@ -2512,7 +2512,7 @@ namev <- rutils::get_name(colnames(sp500env$LOW), field=2)
 # namev <- do.call(rbind, strsplit(colnames(sp500env$LOW),
 #                                   split="[.]"))[, 2]
 # Rename "LOW" colnames to "LOWES"
-colnames(sp500env$LOW) <- paste("LOVES", namev, sep=".")
+colnames(sp500env$LOW) <- paste("LOWES", namev, sep=".")
 sp500env$LOWES <- sp500env$LOW
 rm(LOW, envir=sp500env)
 # Rename BF-B colnames to "BFB"
@@ -2573,8 +2573,7 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 #   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns of the S&P500 constituent stocks
 # retp <- xts::diff.xts(log(pricev))
-retp <- xts::diff.xts(pricev)/
-  rutils::lagit(pricev, pad_zeros=FALSE)
+retp <- xts::diff.xts(pricev)/rutils::lagit(pricev, pad_zeros=FALSE)
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 samplev <- sample(NCOL(retp), s=100, replace=FALSE)
 prices100 <- pricev[, samplev]
@@ -2618,8 +2617,8 @@ datav <- cbind(indeks[zoo::index(etfenv$VTI)], etfenv$VTI[, 4])
 colv <- c("index", "VTI")
 colnames(datav) <- colv
 # Plot index with VTI
-endd <- rutils::calc_endpoints(datav, interval="weeks")
-dygraphs::dygraph(log(datav)[endd],
+endw <- rutils::calc_endpoints(datav, interval="weeks")
+dygraphs::dygraph(log(datav)[endw],
   main="S&P 500 Price-weighted Index and VTI") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
@@ -2664,19 +2663,19 @@ for (symboln in ls(sp500env)) {
   zoo::write.zoo(sp500env$symbol, file=paste0(dirn, symboln, ".csv"))
 }  # end for
 # Or using lapply()
-filens <- lapply(ls(sp500env), function(symboln) {
+filev <- lapply(ls(sp500env), function(symboln) {
   xtsv <- get(symboln, envir=sp500env)
   zoo::write.zoo(xtsv, file=paste0(dirn, symboln, ".csv"))
   symboln
 })  # end lapply
-unlist(filens)
+unlist(filev)
 # Or using eapply() and data.table::fwrite()
-filens <- eapply(sp500env , function(xtsv) {
+filev <- eapply(sp500env , function(xtsv) {
   filen <- rutils::get_name(colnames(xtsv)[1])
   data.table::fwrite(data.table::as.data.table(xtsv), file=paste0(dirn, filen, ".csv"))
   filen
 })  # end eapply
-unlist(filens)
+unlist(filev)
 @
   \end{columns}
 \end{block}
@@ -2710,17 +2709,17 @@ dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
 load(file=paste0(dirn, "sp500.RData"))
 # Get all the .csv file names in the directory
 dirn <- "/Users/jerzy/Develop/lecture_slides/data/SP500/"
-filens <- Sys.glob(paste0(dirn, "*.csv"))
+filev <- Sys.glob(paste0(dirn, "*.csv"))
 # Create new environment for data
 sp500env <- new.env()
-for (filen in filens) {
+for (filen in filev) {
   xtsv <- xts::as.xts(zoo::read.csv.zoo(filen))
   symboln <- rutils::get_name(colnames(xtsv)[1])
   # symboln <- strsplit(colnames(xtsv), split="[.]")[[1]][1]
   assign(symboln, xtsv, envir=sp500env)
 }  # end for
 # Or using fread()
-for (filen in filens) {
+for (filen in filev) {
   xtsv <- data.table::fread(filen)
   data.table::setDF(xtsv)
   xtsv <- xts::xts(xtsv[, -1], as.Date(xtsv[, 1]))
@@ -2904,8 +2903,7 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 # colnames(pricev) <- do.call(rbind,
 #   strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate percentage returns
-retp <- xts::diff.xts(pricev)/
-  rutils::lagit(pricev, pad_zeros=FALSE)
+retp <- xts::diff.xts(pricev)/rutils::lagit(pricev, pad_zeros=FALSE)
 # Select a random sample of 100 prices and returns
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 samplev <- sample(NCOL(retp), s=100, replace=FALSE)
@@ -3073,14 +3071,14 @@ save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # Extract Close prices
-prices <- eapply(etfenv, quantmod::Cl)
-prices <- do.call(cbind, prices)
+pricev <- eapply(etfenv, quantmod::Cl)
+pricev <- do.call(cbind, pricev)
 # Drop ".Close" from colnames
-colnames(prices) <- do.call(rbind, strsplit(colnames(prices), split="[.]"))[, 1]
+colnames(pricev) <- do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
 # Calculate the log returns
-retp <- xts::diff.xts(log(prices))
+retp <- xts::diff.xts(log(pricev))
 # Copy prices and returns into etfenv
-etfenv$prices <- prices
+etfenv$pricev <- pricev
 etfenv$retp <- retp
 # Copy symbolv into etfenv
 etfenv$symbolv <- symbolv
@@ -3354,7 +3352,7 @@ chart_Series(pricev["2016/", 1], name="AAPL Hurst")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delievery months, start date, etc.
+      Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delivery months, start date, etc.
       \vskip1ex
       \href{https://www.quandl.com/}{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
       \hskip1em\url{https://www.quandl.com/blog/useful-listv}
@@ -3505,27 +3503,27 @@ dygraphs::dygraph(pricev["2008-06/2009-06", -5],
 # Read CBOE futures expiration dates
 datev <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/futures_expiration_dates_codes.csv",
   row.names=1)
+# Create directory for data
 dirn <- "/Users/jerzy/Develop/data/vix_data"
 dir.create(dirn)
-symbolv <- rownames(datev)
-filens <- file.path(dirn, paste0(symbolv, ".csv"))
-log_file <- file.path(dirn, "log_file.txt")
-cboe_url <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
-urls <- paste0(cboe_url, datev[, 1])
+namev <- rownames(datev)
+filev <- file.path(dirn, paste0(namev, ".csv"))
+filelog <- file.path(dirn, "log_file.txt")
+urlcboe <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
+urlv <- paste0(urlcboe, datev[, 1])
 # Download files in loop
-for (it in seq_along(urls)) {
+for (it in seq_along(urlv)) {
     tryCatch(  # Warning and error handler
-        download.file(urls[it],
-                destfile=filens[it], quiet=TRUE),
+        download.file(urlv[it], destfile=filev[it], quiet=TRUE),
       # Warning handler captures warning condition
       warning=function(msg) {
-        cat(paste0("Warning handler: ", msg, "\n"), file=log_file, append=TRUE)
+        cat(paste0("Warning handler: ", msg, "\n"), file=filelog, append=TRUE)
       },  # end warning handler
       # Error handler captures error condition
       error=function(msg) {
         cat(paste0("Error handler: ", msg, "\n"), append=TRUE)
       },  # end error handler
-      finally=cat(paste0("Processing file name = ", filens[it], "\n"), append=TRUE)
+      finally=cat(paste0("Processing file name = ", filev[it], "\n"), append=TRUE)
     )  # end tryCatch
 }  # end for
       @
@@ -3571,6 +3569,7 @@ save(vixenv,
 \end{block}
 
 \end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -3704,7 +3703,7 @@ taq <- taq[, .(price=PRICE, volume=SIZE)]
     \column{0.5\textwidth}
       The trading volumes represent the number of shares traded at a given price.  
       \vskip1ex
-      The histogram of the trading volumes shows that the highest frequencies of trades are for \texttt{100} shares and for round lots (trades that are multiples of \texttt{100} shares.)
+      The histogram of the trading volumes shows that the highest frequencies of trades are for \emph{round lots} - trades that are multiples of \texttt{100} shares.
       \vskip1ex
       There are also significant frequencies for \emph{odd lots}, with small volumes of less than \texttt{100} shares.
     \column{0.5\textwidth}
@@ -3827,7 +3826,7 @@ dygraphs::dygraph(xlk$price[xlk$volume >= 100, ],
     \column{0.5\textwidth}
       The trading volumes represent the number of shares traded at a given price.  
       \vskip1ex
-      The histogram of the trading volumes shows that the highest frequencies are for \texttt{100} shares and for round lots (trades that are multiples of \texttt{100} shares.)
+      The histogram of the trading volumes shows that the highest frequencies of trades are for \emph{round lots} - trades that are multiples of \texttt{100} shares.
       \vskip1ex
       There are also significant frequencies for \emph{odd lots}, with small volumes of less than \texttt{100} shares.
       \vskip1ex
@@ -3870,64 +3869,63 @@ quantmod::chart_Series(x=xlk$price,
 
 
 %%%%%%%%%%%%%%%
-\section{Scrubbing Bad Market Data}
+\section{Combining \texttt{R} with \texttt{Excel}}
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Hampel Filter For Filtering Price Spikes}
+\subsection{Reading Data From \texttt{Excel} Files}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Price spikes in high frequency data can be identified using a \emph{Hampel filter}.
+      The package
+      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
       \vskip1ex
-      The \emph{z-scores} are equal to the prices minus the median of the prices, divided by the median absolute deviation (\emph{MAD}) of prices:
-      \begin{displaymath}
-        z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
-      \end{displaymath}
-      If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the centered Hampel filter to remove bad prices
-lookb <- 71 # Look-back interval
-halfb <- lookb %/% 2 # Half-back interval
-pricev <- xlk$price
-# Calculate the trailing median and MAD
-medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
-colnames(medianv) <- c("median")
-madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=lookb)
-# Center the median and the MAD
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-# Calculate the Z-scores
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
-      @
+      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
+      \vskip1ex
+      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
+      \vskip1ex
+      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
+      \vskip1ex
+      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
+      \vskip1ex
+      \emph{tibble} objects are also used by the package
+      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
+      \vskip1ex
+      DataCamp offers a
+      \href{https://www.datacamp.com/community/tutorials/r-tutorial-read-excel-into-r}{Tutorial on Importing Excel Files into R}.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_scrubbed.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Define discrimination threshold value
-threshv <- 6*madz
-# Identify good prices with small z-scores
-isgood <- (abs(zscores) < threshv)
-# Calculate the number of bad prices
-sum(!isgood)
-# Overwrite bad prices and calculate time series of scrubbed prices
-priceg <- pricev
-priceg[!isgood] <- NA
-priceg <- zoo::na.locf(priceg)
-# Plot dygraph of the scrubbed prices
-dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-# Plot using chart_Series()
-x11(width=6, height=5)
-quantmod::chart_Series(x=priceg,
-  name="Clean XLK Intraday Prices for 2020-03-16")
+        <<echo=TRUE,eval=FALSE>>=
+# Install and load package readxl
+install.packages("readxl")
+library(readxl)
+dirn <- "/Users/jerzy/Develop/lecture_slides/data"
+filev <- file.path(dirn, "multi_tabs.xlsx")
+# Read a time series from first sheet of xlsx file
+tibblev <- readxl::read_xlsx(filev)
+class(tibblev)
+# Coerce POSIXct dates into Date class
+class(tibblev$Dates)
+tibblev$Dates <- as.Date(tibblev$Dates)
+# Some columns are character strings
+sapply(tibblev, class)
+sapply(tibblev, is.character)
+# Coerce columns with strings to numeric
+listv <- lapply(tibblev, function(x) {
+  if (is.character(x))
+    as.numeric(x)
+  else
+    x
+})  # end lapply
+# Coerce list into xts time series
+xtsv <- xts::xts(do.call(cbind, listv)[, -1], listv[[1]])
+class(xtsv); dim(xtsv)
+# Replace NA values with the most recent non-NA values
+sum(is.na(xtsv))
+xtsv <- zoo::na.locf(xtsv, na.rm=FALSE)
+xtsv <- zoo::na.locf(xtsv, fromLast=TRUE)
       @
   \end{columns}
 \end{block}
@@ -3936,55 +3934,58 @@ quantmod::chart_Series(x=priceg,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Classifying Data Outliers Using the Hampel Filter}
+\subsection{Reading Multiple Sheets From \texttt{Excel} Files}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Hampel filter is a \emph{classifier} which classifies the prices as either good or bad data points.
+      The function \texttt{readxl::excel\_sheets()} returns a vector of character strings with the names of all the sheets in an \texttt{Excel} spreadsheet.
       \vskip1ex
-      In order to measure the performance of the Hampel filter, we add price spikes to the clean prices, to see how accurately they're classified. 
+      The package
+      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
       \vskip1ex
-      Let the \emph{null hypothesis} be that the given price is a good data point.
+      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
       \vskip1ex
-      A positive result corresponds to rejecting the \emph{null hypothesis}, while a negative result corresponds to accepting the \emph{null hypothesis}.
+      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
       \vskip1ex
-      The classifications are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
+      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
       \vskip1ex
-      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), when good data is classified as bad.
+      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
       \vskip1ex
-      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), when bad data is classified as good.
+      \emph{tibble} objects are also used by the package
+      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add 200 random price spikes to the clean prices
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nspikes <- 200
-nrows <- NROW(priceg)
-ispike <- logical(nrows)
-ispike[sample(x=nrows, size=nspikes)] <- TRUE
-priceb <- priceg
-priceb[ispike] <- priceb[ispike]*
-  sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
-# Plot the bad prices and their medians
-medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
-pricem <- cbind(priceb, medianv)
-colnames(pricem) <- c("prices with spikes", "median")
-dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
-  dyOptions(colors=c("red", "blue"))
-# Calculate the z-scores
-madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
-zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
-# Identify good prices with small z-scores
-threshv <- 3*madz
-isgood <- (abs(zscores) < threshv)
-# Calculate the number of bad prices
-sum(!isgood)
+        <<echo=TRUE,eval=FALSE>>=
+# Read names of all the sheets in an Excel spreadsheet
+namev <- readxl::excel_sheets(filev)
+# Read all the sheets from an Excel spreadsheet
+sheetv <- lapply(namev, read_xlsx, path=filev)
+names(sheetv) <- namev
+# sheetv is a list of tibbles
+sapply(sheetv, class)
+# Create function to coerce tibble to xts
+to_xts <- function(tibblev) {
+  tibblev$Dates <- as.Date(tibblev$Dates)
+  # Coerce columns with strings to numeric
+  listv <- lapply(tibblev, function(x) {
+    if (is.character(x))
+      as.numeric(x)
+    else
+      x
+  })  # end lapply
+  # Coerce list into xts series
+  xts::xts(do.call(cbind, listv)[, -1], listv$Dates)
+}  # end to_xts
+# Coerce list of tibbles to list of xts
+class(sheetv)
+sheetv <- lapply(sheetv, to_xts)
+sapply(sheetv, class)
+# Replace NA values with the most recent non-NA values
+sapply(sheetv, function(xtsv) sum(is.na(xtsv)))
+sheetv <- lapply(sheetv, zoo::na.locf, na.rm=FALSE)
+sheetv <- lapply(sheetv, zoo::na.locf, fromLast=TRUE)
       @
   \end{columns}
 \end{block}
@@ -3993,425 +3994,41 @@ sum(!isgood)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Confusion Matrix of a Binary Classification Model}
+\subsection{Performing Calculations in \texttt{Excel} Using \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
+      \texttt{Excel} can run \texttt{R} using either \texttt{VBA} scripts, or through a \emph{COM} interface (available on \emph{Windows} only).
       \vskip1ex
-      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
+      \texttt{R} can perform calculations and export its output to \texttt{Excel} files, or it can modify \texttt{Excel} files (requires packages using \texttt{Java} or \texttt{Perl} code).
       \vskip1ex
-      \newcommand\MyBox[2]{
-        \fbox{\lower0.75cm
-          \vbox to 1.2cm{\vfil
-            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
-            \vfil}
-        }
-      }
-      \renewcommand\arraystretch{0.3}
-      \setlength\tabcolsep{0pt}
-      {\tiny
-      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
-      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
-      & \multicolumn{2}{c}{\bfseries Forecast} & \\
-      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
-      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
-      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
-      \end{tabular}}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the confusion matrix
-table(actual=!ispike, forecast=isgood)
-sum(!isgood)
-# FALSE positive (type I error)
-sum(!ispike & !isgood)
-# FALSE negative (type II error)
-sum(ispike & isgood)
-      @
-    \column{0.5\textwidth}
-      Let the \emph{null hypothesis} be that the given price is a good data point.
-      \vskip1ex
-      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
-      \vskip1ex
-      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
-      \vskip1ex
-      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
-      \vskip1ex
-      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
-      \vskip1ex
-      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
-      \vskip1ex
-      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Receiver Operating Characteristic (ROC) Curve}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
-      \vskip1ex
-      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
-      <<echo=TRUE,eval=FALSE>>=
-# Confusion matrix as function of threshold
-confun <- function(actualv, zscores, threshv) {
-    confmat <- table(actualv, (abs(zscores) < threshv))
-    confmat <- confmat / rowSums(confmat)
-    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-}  # end confun
-confun(!ispike, zscores, threshv=threshv)
-# Define vector of discrimination thresholds
-threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
-# Calculate the error rates
-errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-# Calculate the area under the ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot ROC curve for Hampel classifier
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Hampel Classifier",
-     type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Filtering Bad Data From Daily Stock Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Daily stock prices can also contain bad data points consisting of mostly single, isolated spikes in prices.
-      \vskip1ex
-      The number of false positives may be too high, so the Hampel filter parameters (the look-back interval and the threshold) need adjustment.
-      \vskip1ex
-      For example, the \emph{VXX} has only one bad price (on \texttt{2010-11-08}), but the Hampel filter identifies many more than that (which are false positives).
-      <<echo=TRUE,eval=FALSE>>=
-# Load log VXX prices
-load("/Users/jerzy/Develop/lecture_slides/data/pricevxx.RData")
-nrows <- NROW(pricev)
-# Calculate the centered Hampel filter for VXX
-lookb <- 7 # Look-back interval
-halfb <- lookb %/% 2 # Half-back interval
-medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
-# Define discrimination threshold value
-threshv <- 9*madz
-# Calculate the good prices
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-# Dates of the bad prices
-zoo::index(pricev[!isgood])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_falsepos.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the false positives
-falsep <- !isgood
-falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
-# Plot dygraph of the prices with bad prices
-datam <- cbind(pricev, zscores)
-colnames(datam)[2] <- "ZScores"
-colv <- colnames(datam)
-dygraphs::dygraph(datam, main="VXX Prices With Z-Scores and False Positives") %>%
-  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
-  dySeries(name=colv[1], axis="y", strokeWidth=1, col="blue") %>%
-  dySeries(name=colv[2], axis="y2", strokeWidth=1, col="red") %>%
-  dyEvent(zoo::index(pricev[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
-  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Scrubbing Bad Stock Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bad stock prices can be scrubbed (replaced) with the previous good price.  
-      \vskip1ex
-      But it's incorrect to replace bad prices with the average of the previous good price and the next good price, since that would cause data snooping.
-      <<echo=TRUE,eval=FALSE>>=
-# Replace bad stock prices with the previous good prices
-priceg <- pricev
-priceg[!isgood] <- NA
-priceg <- zoo::na.locf(priceg)
-# Calculate the Z-scores
-medianv <- HighFreq::roll_mean(priceg, lookb=lookb, method="nonparametric")
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceg, lookb=lookb, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
-madz <- mad(zscores[abs(zscores) > 0])
-# Calculate the number of bad prices
-threshv <- 9*madz
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-zoo::index(priceg[!isgood])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_stock_scrubbed.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the false positives
-falsep <- !isgood
-falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
-# Plot dygraph of the prices with bad prices
-dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
-  dyEvent(zoo::index(priceg[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{ROC Curve for Daily Hampel Classifier}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In order to measure the performance of the Hampel filter, we add price spikes to the clean prices, to see how accurately they're classified. 
-      \vskip1ex
-      The performance of the Hampel noise classification model depends on the length of the look-back time interval.
-      \vskip1ex
-      The optimal \emph{look-back interval} and \emph{threshold value} can be determined using \emph{cross-validation}. 
-      <<echo=TRUE,eval=FALSE>>=
-# Add 200 random price spikes to the clean prices
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nspikes <- 200
-ispike <- logical(nrows)
-ispike[sample(x=nrows, size=nspikes)] <- TRUE
-priceb <- priceg
-priceb[ispike] <- priceb[ispike]*
-  sample(c(0.99, 1.01), size=nspikes, replace=TRUE)
-# Calculate the Z-scores
-medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
-madz <- mad(zscores[abs(zscores) > 0])
-# Define vector of discrimination thresholds
-threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
-# Calculate the error rates
-errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hampel_roc_daily.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the area under the ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
-# Plot ROC curve for Hampel classifier
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Daily Hampel Classifier",
-     type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Modeling of Intraday Stock Prices}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Aggregating \protect\emph{TAQ} Data to \protect\emph{OHLC}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{data table} columns can be \emph{aggregated} over categories (factors) defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names specified by the dot \texttt{.()} operator.
-      \vskip1ex
-      The function \texttt{round.POSIXt()} rounds date-time objects to seconds, minutes, hours, days, months or years.
-      \vskip1ex
-      The function \texttt{as.POSIXct()} coerces objects to class \texttt{POSIXct}.
-      <<echo=TRUE,eval=FALSE>>=
-# Round time index to seconds
-tickg[, zoo::index := as.POSIXct(round.POSIXt(index, "secs"))]
-# Aggregate to OHLC by seconds
-ohlc <- tickg[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
-# Round time index to minutes
-tickg[, zoo::index := as.POSIXct(round.POSIXt(index, "mins"))]
-# Aggregate to OHLC by minutes
-ohlc <- tickg[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_ohlc.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce OHLC prices to xts
-ohlc <- xts::xts(ohlc[, -"index"], ohlc$index)
-# Plot dygraph of the OHLC prices
-dygraphs::dygraph(ohlc[, -5], main="XLK Trade Ticks for 2020-03-16 (OHLC)") %>%
-  dyCandlestick()
-# Plot the OHLC prices
-x11(width=6, height=5)
-quantmod::chart_Series(x=ohlc, TA="add_Vo()",
-  name="XLK Trade Ticks for 2020-03-16 (OHLC)")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Open-High-Low-Close (\protect\emph{OHLC}) Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Open-High-Low-Close} (\emph{OHLC}) data contains intraday trade prices and trade volumes.
-      \vskip1ex
-      \emph{OHLC} data is evenly spaced in time, with each row containing the \emph{Open, High, Low, Close} prices, and the trade \emph{Volume}, recorded over the past time interval (called a \emph{bar} of data).
-      \vskip1ex
-      The \emph{Open} and \emph{Close} prices are the first and last trade prices recorded in the time bar.
-      \vskip1ex
-      The \emph{High} and \emph{Low} prices are the highest and lowest trade prices recorded in the time bar.
-      \vskip1ex
-      The \emph{Volume} is the total trading volume recorded in the time bar.
-      \vskip1ex
-      The \emph{OHLC} data format provides a way of efficiently compressing \emph{TAQ} data, while preserving information about price levels, volatility (range), and trading volumes.
-      \vskip1ex
-      In addition, evenly spaced \emph{OHLC} data allows for easier analysis of multiple time series, since the prices for different assets are given at the same moments in time.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,size="tiny",tidy=FALSE,eval=TRUE>>=
-# Load package HighFreq
-library(HighFreq)
-head(HighFreq::SPY)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting High Frequency \protect\emph{OHLC} Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Aggregating high frequency \emph{TAQ} data into \emph{OHLC} format with lower periodicity allows for data compression while maintaining some information about volatility.
-      <<earl_ohlc_chart,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-# Load package HighFreq
-library(HighFreq)
-# Define symbol
-symboln <- "SPY"
-# Load OHLC data
-dirout <- "/Users/jerzy/Develop/data/hfreq/scrub/"
-symboln <- load(file.path(dirout, paste0(symboln, ".RData")))
-interval <-"2013-11-11 09:30:00/2013-11-11 10:30:00"
-chart_Series(SPY[interval], name=symboln)
-      @
-      The package \emph{HighFreq} contains both \emph{TAQ} data and \emph{Open-High-Low-Close} (\emph{OHLC}) data.
-      \vskip1ex
-      If you are not able to install package \emph{HighFreq} then download the file \texttt{hf\_data.RData} from the NYU share drive and load it.
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/earl_ohlc_chart-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{HighFreq} for Managing High Frequency Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{HighFreq} contains functions for managing high frequency time series data, such as:
+      Calculations in \texttt{R} and \texttt{Excel} can be combined in several different ways:
       \begin{itemize}
-        \item converting \emph{TAQ} data to \emph{OHLC} format,
-        \item chaining and joining time series,
-        \item scrubbing bad data,
-        \item managing time zones and alligning time indices,
-        \item aggregating data to lower frequency (periodicity),
-        \item calculating rolling aggregations (VWAP, Hurst exponent, etc.),
-        \item calculating seasonality aggregations,
-        \item estimating volatility, skewness, and higher moments,
+        \item Data from \texttt{Excel} can be exchanged with \texttt{R} via \texttt{.csv} files (simplest and best method),
+        \item \texttt{Excel} can execute \texttt{R} commands using \texttt{VBA} scripts, and then import the \texttt{R} output from \texttt{.csv} files,
+        \item An \texttt{Excel} add-in can execute \texttt{R} commands as \texttt{Excel} functions (relies on \emph{COM} protocol, so works only for \emph{Windows}): add-ins
+        \emph{\href{http://bert-toolkit.com/}{BERT}},
+        \emph{\href{http://sunsite.univie.ac.at/rcom/}{RExcel}},
+        \item \texttt{R} can modify \texttt{Excel} files and run \texttt{Excel} functions (requires packages using \texttt{Java} or \texttt{Perl} code): packages
+        \emph{\href{https://cran.r-project.org/web/packages/xlsx/index.html}{xlsx}},
+        \emph{\href{https://cran.r-project.org/web/packages/XLConnect/index.html}{XLConnect}},
+        \emph{\href{https://cran.r-project.org/web/packages/excel.link/index.html}{excel.link}},
       \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install package HighFreq from github
-devtools::install_github(repo="algoquant/HighFreq")
-# Load package HighFreq
-library(HighFreq)
-# Get documentation for package HighFreq
-# Get short description
-packageDescription(HighFreq)
-# Load help page
-help(package=HighFreq)
-# List all datasets in HighFreq
-data(package=HighFreq)
-# List all objects in HighFreq
-ls("package:HighFreq")
-# Remove HighFreq from search path
-detach("package:HighFreq")
+        <<echo=TRUE,eval=FALSE>>=
+### Perform calculations in R,
+### And export to CSV files
+setwd("/Users/jerzy/Develop/lecture_slides/data")
+# Read data frame, with row names from first column
+readf <- read.csv(file="florist.csv", row.names=1)
+# Subset data frame
+readf <- readf[readf[, "type"]=="daisy", ]
+all.equal(readf, dframe)
+# Write data frame to CSV file, with row names
+write.csv(readf, file="daisies.csv")
       @
   \end{columns}
 \end{block}
@@ -4420,208 +4037,31 @@ detach("package:HighFreq")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Datasets in Package \protect\emph{HighFreq}}
+\subsection{Running \texttt{R} Code from \texttt{Excel}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{HighFreq} contains several high frequency time series, in \emph{xts} format, stored in a file called \texttt{hf\_data.RData}:
+      There are several ways of performing calculations in \texttt{R} and exporting the outputs to \texttt{Excel}:
       \begin{itemize}
-        \item a time series called \texttt{SPY\_TAQ}, containing a single day of \emph{TAQ} data for the \emph{SPY} ETF.
-        \item three time series called \texttt{SPY}, \texttt{TLT}, and \texttt{VXX}, containing intraday \texttt{1}-minute \emph{OHLC} price bars for the \emph{SPY}, \emph{TLT}, and \emph{VXX} ETFs.
+        \item Export data from \texttt{Excel} via \texttt{.csv} files to \texttt{R}, perform the calculations in \texttt{R}, and import the outputs back to \texttt{Excel} via \texttt{.csv} files (simplest and best method),
+        \item Run \texttt{R} from \texttt{Excel} using \texttt{VBA} scripts, and exchange data via \texttt{.csv} files,
+        \item Run \texttt{R} from \texttt{Excel} using an \texttt{Excel} add-in, and execute \texttt{R} commands as \texttt{Excel} functions (relies on the \emph{COM} protocol, so works only for \emph{Windows}),
       \end{itemize}
-      Even after the \emph{HighFreq} package is loaded, its datasets aren't loaded into the workspace, so they aren't listed in the workspace.
-      \vskip1ex
-      That's because the datasets in package \emph{HighFreq} are set up for \emph{lazy loading}, which means they can be called as if they were loaded, even though they're not loaded into the workspace.
-      \vskip1ex
-      The datasets in package \emph{HighFreq} can be loaded into the workspace using the function \texttt{data()}.
-      \vskip1ex
-      The data is set up for \emph{lazy loading}, so it doesn't require calling \texttt{data(hf\_data)} to load it into the workspace before calling it.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Load package HighFreq
-library(HighFreq)
-# You can see SPY when listing objects in HighFreq
-ls("package:HighFreq")
-# You can see SPY when listing datasets in HighFreq
-data(package=HighFreq)
-# But the SPY dataset isn't listed in the workspace
-ls()
-# HighFreq datasets are lazy loaded and available when needed
-head(HighFreq::SPY)
-# Load all the datasets in package HighFreq
-data(hf_data)
-# HighFreq datasets are now loaded and in the workspace
-head(HighFreq::SPY)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Distribution of High Frequency Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      High frequency returns exhibit \emph{large negative skewness} and \emph{very large kurtosis} (leptokurtosis), or fat tails.
-      \vskip1ex
-      Student's \emph{t-distribution} has fat tails, so it fits high frequency returns much better than the normal distribution.
-      \vskip1ex
-      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution into a sample of data, by performing \emph{maximum likelihood} optimization.
-      \vskip1ex
-      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
-# Calculate SPY percentage returns
-ohlc <- HighFreq::SPY
-nrows <- NROW(ohlc)
-closep <- log(quantmod::Cl(ohlc))
-retp <- rutils::diffit(closep)
-colnames(retp) <- "SPY"
-# Standardize raw returns to make later comparisons
-retp <- (retp - mean(retp))/sd(retp)
-# Calculate moments and perform normality test
-sapply(c(var=2, skew=3, kurt=4), function(x) sum(retp^x)/nrows)
-tseries::jarque.bera.test(retp)
-# Fit SPY returns using MASS::fitdistr()
-optiml <- MASS::fitdistr(retp, densfun="t", df=2)
-loc <- optiml$estimate[1]
-scalev <- optiml$estimate[2]
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_dist.png}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-# Plot histogram of SPY returns
-histp <- hist(retp, col="lightgrey", mgp=c(2, 1, 0),
-  xlab="returns (standardized)", ylab="frequency", xlim=c(-3, 3),
-  breaks=1e3, freq=FALSE, main="Distribution of High Frequency SPY Returns")
-# lines(density(retp, bw=0.2), lwd=3, col="blue")
-# Plot t-distribution function
-curve(expr=dt((x-loc)/scalev, df=2)/scalev,
-      type="l", lwd=3, col="red", add=TRUE)
-# Plot the Normal probability distribution
-curve(expr=dnorm(x, mean=mean(retp),
-  sd=sd(retp)), add=TRUE, lwd=3, col="blue")
-# Add legend
-legend("topright", inset=0.05, bty="n",
-  leg=c("t-distr", "normal"), y.intersp=0.1,
-  lwd=6, lty=1, col=c("red", "blue"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Distribution of Aggregated High Frequency Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The distribution of returns depends on the sampling frequency.
-      \vskip1ex
-      High frequency returns aggregated to a lower periodicity become less negatively skewed and less fat tailed, and closer to the normal distribution.
-      \vskip1ex
-      The function \texttt{xts::to.period()} converts a time series to a lower periodicity (for example from hourly to daily periodicity).
-      <<echo=TRUE,eval=FALSE>>=
-# Hourly SPY percentage returns
-closep <- log(Cl(xts::to.period(x=ohlc, period="hours")))
-retsh <- rutils::diffit(closep)
-retsh <- (retsh - mean(retsh))/sd(retsh)
-# Daily SPY percentage returns
-closep <- log(Cl(xts::to.period(x=ohlc, period="days")))
-retd <- rutils::diffit(closep)
-retd <- (retd - mean(retd))/sd(retd)
-# Calculate moments
-sapply(list(minutely=retp, hourly=retsh, daily=retd),
-       function(rets) {sapply(c(var=2, skew=3, kurt=4),
-                function(x) mean(rets^x))
-})  # end sapply
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_dist_agg.png}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-# Plot densities of SPY returns
-plot(density(retp, bw=0.4), xlim=c(-3, 3),
-     lwd=3, mgp=c(2, 1, 0), col="blue",
-     xlab="returns (standardized)", ylab="frequency",
-     main="Density of High Frequency SPY Returns")
-lines(density(retsh, bw=0.4), lwd=3, col="green")
-lines(density(retd, bw=0.4), lwd=3, col="red")
-# Add legend
-legend("topright", inset=0.05, bty="n",
-  leg=c("minutely", "hourly", "daily"), y.intersp=0.1,
-  lwd=6, lty=1, col=c("blue", "green", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating Rolling Volatility of High Frequency Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The volatility of high frequency returns can be inflated by large overnight returns.
-      \vskip1ex
-      The large overnight returns can be scaled down by dividing them by the overnight time interval.
         <<echo=TRUE,eval=FALSE>>=
-# Calculate rolling volatility of SPY returns
-ret2013 <- retp["2013-11-11/2013-11-15"]
-# Calculate rolling volatility
-lookb <- 11 # Look-back interval
-endd <- seq_along(ret2013)
-startp <- c(rep_len(1, lookb),
-  endd[1:(NROW(endd)-lookb)])
-endd[endd < lookb] <- lookb
-vol_rolling <- sapply(seq_along(endd),
-  function(it) sd(ret2013[startp[it]:endd[it]]))
-vol_rolling <- xts::xts(vol_rolling, zoo::index(ret2013))
-# Extract time intervals of SPY returns
-indeks <- c(60, diff(xts::.index(ret2013)))
-head(indeks)
-table(indeks)
-# Scale SPY returns by time intervals
-ret2013 <- 60*ret2013/indeks
-# Calculate scaled rolling volatility
-vol_scaled <- sapply(seq_along(endd),
-  function(it) sd(ret2013[startp[it]:endd[it]]))
-vol_rolling <- cbind(vol_rolling, vol_scaled)
-vol_rolling <- na.omit(vol_rolling)
-sum(is.na(vol_rolling))
-sapply(vol_rolling, range)
-      @
-    \column{0.5\textwidth}
-      % \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_vol_rolling.png}
-        <<echo=TRUE,eval=FALSE>>=
-# Plot rolling volatility
-x11(width=6, height=5)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue", "red")
-chart_Series(vol_rolling, theme=plot_theme,
-             name="Rolling Volatility with Overnight Spikes")
-legend("topright", legend=colnames(vol_rolling),
-  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.1,
-  col=plot_theme$col$line.col, bty="n")
+### Perform calculations in R,
+### And export to CSV files
+setwd("/Users/jerzy/Develop/lecture_slides/data")
+# Read data frame, with row names from first column
+readf <- read.csv(file="florist.csv", row.names=1)
+# Subset data frame
+readf <- readf[readf[, "type"]=="daisy", ]
+all.equal(readf, dframe)
+# Write data frame to CSV file, with row names
+write.csv(readf, file="daisies.csv")
       @
   \end{columns}
 \end{block}
@@ -4630,39 +4070,45 @@ legend("topright", legend=colnames(vol_rolling),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Daily Volume and Volatility of High Frequency Returns}
+\subsection{Running \texttt{R} Code Using \protect\texttt{VBA} Scripts}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Trading volumes typically rise together with market price volatility.
+      An \texttt{R} session can be launched from \texttt{Excel} using a \texttt{VBA} script (macro).
       \vskip1ex
-      The function \texttt{apply.daily()} from package \texttt{xts} applies functions to time series over daily periods.
+      The \texttt{VBA} function \texttt{shell()} executes a program by running an executable \emph{exe} file (with extension \emph{exe}).
       \vskip1ex
-      The function \texttt{calc\_var\_ohlc()} from package \texttt{HighFreq} calculates the variance of an \emph{OHLC} time series using range estimators.
-      <<echo=TRUE,eval=FALSE>>=
-# Volatility of SPY
-sqrt(HighFreq::calcvar_ohlc(ohlc))
-# Daily SPY volatility and volume
-volatd <- sqrt(xts::apply.daily(ohlc, FUN=calcvar_ohlc))
-colnames(volatd) <- ("SPY_volatility")
-volumv <- quantmod::Vo(ohlc)
-volumd <- xts::apply.daily(volumv, FUN=sum)
-colnames(volumd) <- ("SPY_volume")
-# Plot SPY volatility and volume
-datav <- cbind(volatd, volumd)["2008/2009"]
-colv <- colnames(datav)
-dygraphs::dygraph(datav,
-  main="SPY Daily Volatility and Trading Volume") %>%
-  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
-  dySeries(name=colv[1], axis="y", col="red", strokeWidth=3) %>%
-  dySeries(name=colv[2], axis="y2", col="blue", strokeWidth=3)
-      @
+      A \texttt{VBA} script can also run an \texttt{R} \emph{batch} process.
+      \vskip1ex
+      The \texttt{R} \emph{batch} process can write to \texttt{.csv} files, which can then be imported into \texttt{Excel}.
     \column{0.5\textwidth}
-      % \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_daily_volat_volume.png}
+      \renewcommand{\ttdefault}{pcr}
+      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
+' VBA macro to run R process
+Sub run_r()
+ Call shell("R", vbNormalFocus)
+End Sub
+      \end{lstlisting}
+      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
+' VBA macro to run interactive R process
+Sub run_rinteractive()
+ Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
+ Dim script_file As String: script_file = "plot_interactive.R"
+ Dim filen As String: filen = "C:\Develop\R\scripts\log.txt"
+ Call shell("R --vanilla < " & script_dir & script_file & ">" & filen, vbNormalFocus)
+End Sub
+      \end{lstlisting}
+      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
+' VBA macro to run batch R process
+Sub run_rbatch()
+ Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
+ Dim script_file As String: script_file = "plot_to_file.R"
+ Dim filen As String: filen = "C:\Develop\R\scripts\log.txt"
+ Call shell("R --vanilla < " & script_dir & script_file & ">" & filen, vbNormalFocus)
+End Sub
+      \end{lstlisting}
   \end{columns}
 \end{block}
 
@@ -4670,38 +4116,36 @@ dygraphs::dygraph(datav,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Beta of Volume vs Volatility of High Frequency Returns}
+\subsection{\protect\emph{BERT} Excel Add-in for Running \texttt{R} Code}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      As a general empirical rule, the \emph{trading volume} $\upsilon$ in a given time period is roughly proportional to the \emph{volatility} of the returns $\sigma$: $\upsilon \propto \sigma$.
+      \emph{BERT} is an \texttt{Excel} add-in which allows executing \texttt{R} commands as \texttt{Excel} functions:\\
+      \hskip1em\url{http://bert-toolkit.com/}\\
+      \hskip1em\url{http://bert-toolkit.com/bert-quick-start}\\
+      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit/wiki}\\
+      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit}
       \vskip1ex
-      The regression of the \emph{log trading volume} versus the \emph{log volatility} fails the \emph{Durbin-Watson test} for the autocorrelation of residuals.
+      \emph{BERT} launches its own \texttt{R} process from \texttt{Excel}.
       \vskip1ex
-      But the regression of the \emph{differences} passes the \emph{Durbin-Watson test}.
-      <<echo=TRUE,eval=FALSE>>=
-# Regress log of daily volume vs volatility
-datav <- log(cbind(volumd, volatd))
-colv <- colnames(datav)
-dframe <- as.data.frame(datav)
-formulav <- as.formula(paste(colv, collapse="~"))
-regmod <- lm(formulav, data=dframe)
-# Durbin-Watson test for autocorrelation of residuals
-lmtest::dwtest(regmod)
-# Regress diff log of daily volume vs volatility
-dframe <- as.data.frame(rutils::diffit(datav))
-regmod <- lm(formulav, data=dframe)
-lmtest::dwtest(regmod)
-summary(regmod)
-plot(formulav, data=dframe, main="SPY Daily Trading Volume vs Volatility (log scale)")
-abline(regmod, lwd=3, col="red")
-mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
-      @
+      \emph{BERT} can create its own menu in the \texttt{Excel} add-ins tab:\\
+      After installing \emph{BERT}, click on upper-left \emph{Office Button}, click \texttt{Excel} options, on the bottom of the window choose (Manage: \emph{COM} Add-ins) Go, add the \emph{COM} add-in BERTRibbon2x86.dll.
+      \vskip1ex
+      \emph{BERT} relies on the \emph{COM} protocol, so it works only for \emph{Windows}.
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_daily_volume_volat_reg.png}
+      \renewcommand{\ttdefault}{pcr}
+      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
+' calculate sum of Excel cells using R
+R.Add(B1:D1)
+
+' remove NAs over Excel cell range using R function
+R.na_omit(F2:H4)
+
+' calculate eigenValues of Excel matrix using R function
+R.EigenValues(A1:H8)
+      \end{lstlisting}
   \end{columns}
 \end{block}
 
@@ -4709,291 +4153,66 @@ mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Beta of Hourly Trading Volume vs Volatility}
+\subsection{Package \protect\emph{googlesheets} for Interacting with \protect\emph{Google Sheets}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Hourly aggregations of high frequency data also support the rule that the \emph{trading volume} is roughly proportional to the \emph{volatility} of the returns: $\upsilon \propto \sigma$.
-      <<echo=TRUE,eval=FALSE>>=
-# 60 minutes of data in lookb interval
-lookb <- 60 # Look-back interval
-vol2013 <- volumv["2013"]
-ret2013 <- retp["2013"]
-# Define end points with beginning stub
-nrows <- NROW(ret2013)
-nagg <- nrows %/% lookb
-endd <- nrows-lookb*nagg + (0:nagg)*lookb
-startp <- c(1, endd[1:(NROW(endd)-1)])
-# Calculate SPY volatility and volume
-datav <- sapply(seq_along(endd), function(it) {
-  endp <- startp[it]:endd[it]
-  c(volume=sum(vol2013[endp]),
-    volatility=sd(ret2013[endp]))
-})  # end sapply
-datav <- t(datav)
-datav <- rutils::diffit(log(datav))
-dframe <- as.data.frame(datav)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_hourly_volume_volat_reg.png}
-      <<echo=TRUE,eval=FALSE>>=
-formulav <- as.formula(paste(colnames(datav), collapse="~"))
-regmod <- lm(formulav, data=dframe)
-lmtest::dwtest(regmod)
-summary(regmod)
-plot(formulav, data=dframe,
-     main="SPY Hourly Trading Volume vs Volatility (log scale)")
-abline(regmod, lwd=3, col="red")
-mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{High Frequency Returns in Trading Time}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{trading time} (volume clock) is the time measured by the level of \emph{trading volume}, with the \emph{volume clock} running faster in periods of higher \emph{trading volume}.
+      The package
+      \href{https://cran.r-project.org/web/packages/googlesheets/index.html}{\emph{googlesheets}}
+      allows interacting with \emph{Google Sheets} using \texttt{R} commands.
       \vskip1ex
-      The time-dependent volatility of high frequency returns (\emph{heteroskedasticity}) produces their \emph{leptokurtosis} (large kurtosis, or fat tails).
+      If you already have a \emph{Google} account, then your personal \emph{Google Sheets} can be found at:\\
+      \hskip1em\url{https://docs.google.com/spreadsheets/}
       \vskip1ex
-      The returns can be divided by the \emph{square root of the trading volumes} to obtain scaled returns over equal trading volumes.
+      The function \texttt{gs\_ls()} listv the files in \emph{Google Sheets}.
       \vskip1ex
-      But the returns should not be divided by very small volumes below a certain threshold.
+      The function \texttt{gs\_title()} registers a \emph{Google} sheet, and returns a \texttt{googlesheet} object.
       \vskip1ex
-      The scaled returns have a smaller \emph{skewness} and \emph{kurtosis}, and they also have even higher autocorrelations than unscaled returns.
-      <<echo=TRUE,eval=FALSE>>=
-# Scale returns using volume (volume clock)
-retsc <- ifelse(volumv > 1e4, retp/sqrt(volumv), 0)
-retsc <- retsc/sd(retsc)
-# Calculate moments of scaled returns
-nrows <- NROW(retp)
-sapply(list(retp=retp, retsc=retsc),
-  function(rets) {sapply(c(skew=3, kurt=4),
-           function(x) sum((rets/sd(rets))^x)/nrows)
-})  # end sapply
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_scaled.png}
-      <<echo=TRUE,eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
-# Plot densities of SPY returns
-plot(density(retp), xlim=c(-3, 3),
-     lwd=3, mgp=c(2, 1, 0), col="blue",
-     xlab="returns (standardized)", ylab="frequency",
-     main="Density of Volume-scaled High Frequency SPY Returns")
-lines(density(retsc, bw=0.4), lwd=3, col="red")
-curve(expr=dnorm, add=TRUE, lwd=3, col="green")
-# Add legend
-legend("topright", inset=0.05, bty="n", y.intersp=0.1,
-  leg=c("minutely", "scaled", "normal"),
-  lwd=6, lty=1, col=c("blue", "red", "green"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelations of High Frequency Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Ljung-Box} test, tests if the autocorrelations of a time series are \emph{statistically significant}.
+      A \texttt{googlesheet} object contains information (metadata) about a \emph{Google} sheet, such as its name and key, but not the sheet data itself.
       \vskip1ex
-      The \emph{null hypothesis} of the \emph{Ljung-Box} test is that the autocorrelations are equal to zero.
+      The function \texttt{gs\_browse()} opens a \emph{Google} sheet in an internet browser.
       \vskip1ex
-      The \emph{Ljung-Box} statistic is small for time series that have \emph{statistically insignificant} autocorrelations.
+      You can find online a document about
+      \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/basic-usage.html}{using \emph{googlesheets}}.
       \vskip1ex
-      The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
-      \vskip1ex
-      For \emph{minutely SPY} returns, the \emph{Ljung-Box} statistic is large and its \emph{p}-value is very small, so we can conclude that \emph{minutely SPY} returns have statistically significant autocorrelations.
-      \vskip1ex
-      For \emph{scaled minutely SPY} returns, the \emph{Ljung-Box} statistic is even larger, so its autocorrelations are even more statistically significant.
-      \vskip1ex
-      \emph{SPY} returns aggregated to longer time intervals are less autocorrelated.
+      You can find online a document about
+      \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/managing-auth-tokens.html}{managing authentication tokens}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Ljung-Box test for minutely SPY returns
-Box.test(retp, lag=10, type="Ljung")
-# Ljung-Box test for daily SPY returns
-Box.test(retd, lag=10, type="Ljung")
-# Ljung-Box test statistics for scaled SPY returns
-sapply(list(retp=retp, retsc=retsc),
-  function(rets) {
-    Box.test(rets, lag=10, type="Ljung")$statistic
-})  # end sapply
-# Ljung-Box test statistics for aggregated SPY returns
-sapply(list(minutely=retp, hourly=retsh, daily=retd),
-  function(rets) {
-    Box.test(rets, lag=10, type="Ljung")$statistic
-})  # end sapply
+# Install latest version of googlesheets
+devtools::install_github("jennybc/googlesheets")
+# Load package googlesheets
+library(googlesheets)
+library(dplyr)
+# Authenticate authorize R to view and manage your files
+gs_auth(new_user=TRUE)
+# List the files in Google Sheets
+googlesheets::gs_ls()
+# Register a sheet
+googsheet <- gs_title("my_data")
+# view sheet summary
+googsheet
+# List tab names in sheet
+tabv <- gs_ws_ls(googsheet)
+# Set curl options
+library(httr)
+httr::set_config(config(ssl_verifypeer=0L))
+# Read data from sheet
+gs_read(googsheet)
+# Read data from single tab of sheet
+gs_read(googsheet, ws=tabv[1])
+gs_read_csv(googsheet, ws=tabv[1])
+# Or using dplyr pipes
+googsheet %>% gs_read(ws=tabv[1])
+# Download data from sheet into file
+gs_download(googsheet, ws=tabv[1],
+            to="/Users/jerzy/Develop/lecture_slides/data/googsheet.csv")
+# Open sheet in internet browser
+gs_browse(googsheet)
       @
-      The level of the autocorrelations depends on the sampling frequency, with higher frequency returns having more significant negative autocorrelations.
-      \vskip1ex
-      As the returns are aggregated to a lower periodicity, they become less autocorrelated, with daily returns having almost insignificant autocorrelations.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Partial Autocorrelations of High Frequency Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      High frequency minutely \emph{SPY} returns have statistically significant negative autocorrelations.
-      \vskip1ex
-      \emph{SPY} returns \emph{scaled} by the trading volumes have even more significant negative autocorrelations.
-      <<echo=TRUE,eval=FALSE>>=
-# Set plot parameters
-x11(width=6, height=8)
-par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
-layout(matrix(c(1, 2), ncol=1), widths=c(6, 6), heights=c(4, 4))
-# Plot the partial autocorrelations of minutely SPY returns
-pacfl <- pacf(as.numeric(retp), lag=10,
-     xlab="lag", ylab="partial autocorrelation", main="")
-title("Partial Autocorrelations of Minutely SPY Returns", line=1)
-# Plot the partial autocorrelations of scaled SPY returns
-pacfs <- pacf(as.numeric(retsc), lag=10,
-     xlab="lag", ylab="partial autocorrelation", main="")
-title("Partial Autocorrelations of Scaled SPY Returns", line=1)
-# Calculate the sums of partial autocorrelations
-sum(pacfl$acf)
-sum(pacfs$acf)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_pacf.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Market Liquidity, Trading Volume and Volatility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Market illiquidity is defined as the market price impact resulting from supply-demand imbalance.
-      \vskip1ex
-      Market liquidity $\mathcal{L}$ is proportional to the square root of the \emph{trading volume} $\upsilon$ divided by the price volatility $\sigma$:
-      \begin{displaymath}
-        \mathcal{L} \sim \frac{\sqrt{\upsilon}}{\sigma}
-      \end{displaymath}
-      Market illiquidity spiked during the May 6, 2010 \emph{flash crash}.
-      \vskip1ex
-      Research suggests that market crashes are caused by declining market liquidity:\\
-      \href{http://papers.ssrn.com/sol3/papers.cfm?abstract_id=2583743}{\emph{Donier et al., Why Do Markets Crash?}}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate market illiquidity
-liquidv <- sqrt(volumd)/volatd
-# Plot market illiquidity
-x11(width=6, height=7) ; par(mfrow=c(2, 1))
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
-chart_Series(liquidv["2010"], theme=plot_theme,
-  name="SPY Liquidity in 2010", plot=FALSE)
-plot_theme$col$line.col <- c("red")
-chart_Series(volatd["2010"],
-  theme=plot_theme, name="SPY Volatility in 2010")
-@
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_liquidity.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Intraday Seasonality of Volume and Volatility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The volatility and trading volumes are typically higher at the beginning and end of the trading sessions.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate intraday time index with hours and minutes
-datev <- format(zoo::index(retp), "%H:%M")
-# Aggregate the mean volume
-volumagg <- tapply(X=volumv, INDEX=datev, FUN=mean)
-volumagg <- drop(volumagg)
-# Aggregate the mean volatility
-volagg <- tapply(X=retp^2, INDEX=datev, FUN=mean)
-volagg <- sqrt(drop(volagg))
-# Coerce to xts
-datev <- as.POSIXct(paste(Sys.Date(), names(volumagg)))
-volumagg <- xts::xts(volumagg, datev)
-volagg <- xts::xts(volagg, datev)
-# Plot seasonality of volume and volatility
-x11(width=6, height=7) ; par(mfrow=c(2, 1))
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
-chart_Series(volumagg[c(-1, -NROW(volumagg))], theme=plot_theme,
-  name="Intraday Seasonality of SPY Volume", plot=FALSE)
-plot_theme$col$line.col <- c("red")
-chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
-  name="Intraday Seasonality of SPY Volatility")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_intraday_volume_volat.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Intraday Seasonality of Liquidity and Volatility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Market liquidity is typically the highest at the end of the trading session, and the lowest at the beginning.
-      \vskip1ex
-      The end of day spike in trading volumes and liquidity is driven by computer-driven investors liquidating their positions.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate market liquidity
-liquidv <- sqrt(volumagg)/volagg
-# Plot intraday seasonality of market liquidity
-x11(width=6, height=7) ; par(mfrow=c(2, 1))
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
-chart_Series(liquidv[c(-1, -NROW(liquidv))], theme=plot_theme,
-  name="Intraday Seasonality of SPY Liquidity", plot=FALSE)
-plot_theme$col$line.col <- c("red")
-chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
-  name="Intraday Seasonality of SPY Volatility")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_intraday_liquid_volat.png}
   \end{columns}
 \end{block}
 

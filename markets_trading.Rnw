@@ -95,9 +95,9 @@ knit_theme$set(thm)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The constant maturity Treasury rates are yields of hypothetical fixed-maturity bonds, interpolated from the market yields of actual Treasury bonds.
+      The constant maturity Treasury yields are the yields of hypothetical fixed-maturity bonds, interpolated from the market yields of actual Treasury bonds.
       \vskip1ex
-      The \emph{FRED} database contains current and historical constant maturity Treasury rates, \\
+      The \emph{FRED} database provides historical constant maturity Treasury yields: \\
       \hskip1em\url{https://fred.stlouisfed.org/series/DGS5}
       \vskip1ex
       \texttt{quantmod::getSymbols()} creates objects in the specified \emph{environment} from the input strings (names).
@@ -115,6 +115,7 @@ sapply(ratesenv, function(x) sum(is.na(x)))
 sapply(ls(ratesenv), function(namev) {
   assign(x=namev, value=na.omit(get(namev, ratesenv)), 
          envir=ratesenv)
+  return(NULL)
 }) # end sapply
 sapply(ratesenv, function(x) sum(is.na(x)))
 # Get class of all objects in ratesenv
@@ -192,7 +193,7 @@ matplot(ycurves, main="Yield Curves in 2020 and 2023", xaxt="n", lwd=3, lty=1,
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
+legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
        bty="n", col=colorv, lty=1, lwd=6, inset=0.05, cex=1.0)
       @
   \end{columns}
@@ -233,7 +234,7 @@ plot.zoo(ycurves, main="Yield Curve Since 2006", lwd=3, xaxt="n",
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
+legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
        bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
       @
     \column{0.5\textwidth}
@@ -246,7 +247,7 @@ matplot(ycurves, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
-legend("topleft", legend=colnames(ycurves), y.intersp=0.1,
+legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
        bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
       @
   \end{columns}
@@ -673,7 +674,7 @@ par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 for (symbol in symbolv) {
   plot.zoo(cbind(retc[, symbol], solved[, symbol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
-  legend(x="topleft", bty="n", y.intersp=0.1,
+  legend(x="topleft", bty="n", y.intersp=0.5,
          legend=paste0(symboln, c("", " solved")),
          title=NULL, inset=0.0, cex=1.0, lwd=6,
          lty=1, col=c("black", "blue"))
@@ -945,7 +946,7 @@ colorv <- c("blue", "green")
 plot(volumm, col=colorv, lwd=3, major.ticks="days",
      format.labels="%b-%d", observation.based=TRUE,
      main="Volumes of ESU8 and ESM8 futures")
-legend("topleft", legend=colnames(volumm), col=colorv, y.intersp=0.1,
+legend("topleft", legend=colnames(volumm), col=colorv, y.intersp=0.5,
        title=NULL, bty="n", lty=1, lwd=6, inset=0.1, cex=0.7)
       @
   \end{columns}
@@ -1173,7 +1174,7 @@ plot(futcurves[, 1], type="l", lty=1, col="blue", lwd=3,
 axis(1, at=(1:NROW(futcurves)), labels=rownames(futcurves))
 lines(futcurves[, 2], lty=1, lwd=3, col="red")
 legend(x="topright", legend=colnames(futcurves),
-       inset=0.05, cex=1.0, bty="n", y.intersp=0.1,
+       inset=0.05, cex=1.0, bty="n", y.intersp=0.5,
        col=c("blue", "red"), lwd=6, lty=1)
       @
     \column{0.5\textwidth}
@@ -2608,68 +2609,51 @@ quantmod::chart_Series(x=xlk$price,
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Identifying Isolated Price Spikes In Intraday Data}
+\subsection{Scrubbing Isolated Spikes In Stock Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Isolated price spikes in high frequency data can be identified using a \emph{three-point filter} (tri-filter).
-      histogram of returns
+      Isolated price spikes can be identified using a \emph{three-point filter} (tri-filter).
       \vskip1ex
-      The tri-filter compares two price ratios of three neighboring prices: 
-      
-      p0, p1, p2
-      is a median filter that replaces the central value with the median of the three values.
-      Create three-point classifier for bad prices.
-Identify bad prices in-sample using 
-
-      \emph{z-scores} are equal to the prices minus the median of the prices, divided by the median absolute deviation (\emph{MAD}) of prices:
+      The \emph{z-scores} are equal to the prices minus the mean of the neighboring prices, divided by their differences:
       \begin{displaymath}
-        z_i = \frac{p_i - \operatorname{median}(\mathbf{p})}{\operatorname{MAD}}
+        z_i = \frac{p_i - 0.5 (p_{i-1} + p_{i+1}))}{p_{i-1} - p_{i+1}}
       \end{displaymath}
-      If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
+      If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced with the previous price.
+      \vskip1ex
+      The \emph{tri-filter} can only remove isolated price spikes, but not consecutive price spikes.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the centered Hampel filter to remove bad prices
-lookb <- 71 # Look-back interval
-halfb <- lookb %/% 2 # Half-back interval
+# Load and plot intraday stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/xlk_tick_trades_20200316.RData")
 pricev <- xlk$price
-# Calculate the trailing median and MAD
-medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
-colnames(medianv) <- c("median")
-madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=lookb)
-# Center the median and the MAD
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-# Calculate the Z-scores
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
+dygraphs::dygraph(pricev, main="XLK Intraday Prices for 2020-03-16") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Calculate the lagged and advanced prices
+pricelag <- rutils::lagit(pricev)
+pricelag[1] <- pricelag[2]
+pricadv <- rutils::lagit(pricev, lagg=-1)
+pricadv[NROW(pricadv)] <- pricadv[NROW(pricadv)-1]
+# Calculate the z-scores
+diffl <- ifelse(abs(pricelag-pricadv) < 0.01, 0.01, abs(pricelag-pricadv))
+zscores <- (pricev - 0.5*(pricelag+pricadv))/diffl
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_scrubbed.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_ticks_raw.png}
       <<echo=TRUE,eval=FALSE>>=
-# Define discrimination threshold value
-threshv <- 6*madz
-# Identify good prices with small z-scores
-isgood <- (abs(zscores) < threshv)
-# Calculate the number of bad prices
-sum(!isgood)
-# Scrub bad prices by replacing them with previous good prices
-priceg <- pricev
-priceg[!isgood] <- NA
-priceg <- zoo::na.locf(priceg)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
+# Scrub the price spikes
+threshv <- 5*madz # Discrimination threshold
+indeks <- which(abs(zscores > threshv))
+pricev[indeks] <- as.numeric(pricev[indeks-1])
 # Plot dygraph of the scrubbed prices
-dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
+dygraphs::dygraph(pricev, main="Scrubbed XLK Intraday Prices") %>%
   dyOptions(colors="blue", strokeWidth=1)
-# Plot using chart_Series()
-x11(width=6, height=5)
-quantmod::chart_Series(x=priceg,
-  name="Clean XLK Intraday Prices for 2020-03-16")
       @
   \end{columns}
 \end{block}
@@ -2709,7 +2693,7 @@ zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
 # Z-scores have very fat tails
 range(zscores); mad(zscores)
 madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=50000, xlim=c(-2*madz, 2*madz))
+hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3463,7 +3447,7 @@ curve(expr=dnorm(x, mean=mean(retp),
   sd=sd(retp)), add=TRUE, lwd=3, col="blue")
 # Add legend
 legend("topright", inset=0.05, bty="n",
-  leg=c("t-distr", "normal"), y.intersp=0.1,
+  leg=c("t-distr", "normal"), y.intersp=0.5,
   lwd=6, lty=1, col=c("red", "blue"))
       @
   \end{columns}
@@ -3514,7 +3498,7 @@ lines(density(retsh, bw=0.4), lwd=3, col="green")
 lines(density(retd, bw=0.4), lwd=3, col="red")
 # Add legend
 legend("topright", inset=0.05, bty="n",
-  leg=c("minutely", "hourly", "daily"), y.intersp=0.1,
+  leg=c("minutely", "hourly", "daily"), y.intersp=0.5,
   lwd=6, lty=1, col=c("blue", "green", "red"))
       @
   \end{columns}
@@ -3570,7 +3554,7 @@ plot_theme$col$line.col <- c("blue", "red")
 chart_Series(vol_rolling, theme=plot_theme,
              name="Rolling Volatility with Overnight Spikes")
 legend("topright", legend=colnames(vol_rolling),
-  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.1,
+  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -3746,7 +3730,7 @@ plot(density(retp), xlim=c(-3, 3),
 lines(density(retsc, bw=0.4), lwd=3, col="red")
 curve(expr=dnorm, add=TRUE, lwd=3, col="green")
 # Add legend
-legend("topright", inset=0.05, bty="n", y.intersp=0.1,
+legend("topright", inset=0.05, bty="n", y.intersp=0.5,
   leg=c("minutely", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
       @

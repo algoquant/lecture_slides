@@ -1,3 +1,216 @@
+# Load and plot intraday stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/xlk_tick_trades_20200316.RData")
+pricev <- xlk$price
+dygraphs::dygraph(pricev, main="XLK Intraday Prices for 2020-03-16") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Calculate the lagged and advanced prices
+pricelag <- rutils::lagit(pricev)
+pricelag[1] <- pricelag[2]
+pricadv <- rutils::lagit(pricev, lagg=-1)
+pricadv[NROW(pricadv)] <- pricadv[NROW(pricadv)-1]
+# Calculate the z-scores
+diffl <- ifelse(abs(pricelag-pricadv) < 0.01, 0.01, abs(pricelag-pricadv))
+zscores <- (pricev - 0.5*(pricelag+pricadv))/diffl
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
+# Scrub the price spikes
+threshv <- 5*madz # Discrimination threshold
+indeks <- which(abs(zscores) > threshv)
+pricev[indeks] <- as.numeric(pricev[indeks-1])
+# Plot dygraph of the scrubbed prices
+dygraphs::dygraph(pricev, main="Scrubbed XLK Intraday Prices") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Calculate the centered Hampel filter to remove bad prices
+lookb <- 71 # Look-back interval
+halfb <- lookb %/% 2 # Half-back interval
+pricev <- xlk$price
+# Calculate the trailing median and MAD
+medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
+colnames(medianv) <- c("median")
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+# madv <- TTR::runMAD(pricev, n=lookb)
+# Center the median and the MAD
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+# Calculate the Z-scores
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
+# Define discrimination threshold value
+threshv <- 6*madz
+# Identify good prices with small z-scores
+isgood <- (abs(zscores) < threshv)
+# Calculate the number of bad prices
+sum(!isgood)
+# Overwrite bad prices and calculate time series of scrubbed prices
+priceg <- pricev
+priceg[!isgood] <- NA
+priceg <- zoo::na.locf(priceg)
+# Plot dygraph of the scrubbed prices
+dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot using chart_Series()
+x11(width=6, height=5)
+quantmod::chart_Series(x=priceg,
+  name="Clean XLK Intraday Prices for 2020-03-16")
+# Add 200 random price spikes to the clean prices
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nspikes <- 200
+nrows <- NROW(priceg)
+ispike <- logical(nrows)
+ispike[sample(x=nrows, size=nspikes)] <- TRUE
+priceb <- priceg
+priceb[ispike] <- priceb[ispike]*
+  sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
+# Plot the bad prices and their medians
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
+pricem <- cbind(priceb, medianv)
+colnames(pricem) <- c("prices with spikes", "median")
+dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
+  dyOptions(colors=c("red", "blue"))
+# Calculate the z-scores
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+# Z-scores have very fat tails
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
+# Identify good prices with small z-scores
+threshv <- 3*madz
+isgood <- (abs(zscores) < threshv)
+# Calculate the number of bad prices
+sum(!isgood)
+# Calculate the confusion matrix
+table(actual=!ispike, forecast=isgood)
+sum(!isgood)
+# FALSE positive (type I error)
+sum(!ispike & !isgood)
+# FALSE negative (type II error)
+sum(ispike & isgood)
+# Confusion matrix as function of threshold
+confun <- function(actualv, zscores, threshv) {
+    confmat <- table(actualv, (abs(zscores) < threshv))
+    confmat <- confmat / rowSums(confmat)
+    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
+}  # end confun
+confun(!ispike, zscores, threshv=threshv)
+# Define vector of discrimination thresholds
+threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
+# Calculate the error rates
+errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+# Calculate the area under the ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+# Plot ROC curve for Hampel classifier
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Load log VXX prices
+load("/Users/jerzy/Develop/lecture_slides/data/pricevxx.RData")
+nrows <- NROW(pricev)
+# Calculate the centered Hampel filter for VXX
+lookb <- 7 # Look-back interval
+halfb <- lookb %/% 2 # Half-back interval
+medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
+range(zscores); mad(zscores)
+madz <- mad(zscores[abs(zscores) > 0])
+hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
+# Define discrimination threshold value
+threshv <- 9*madz
+# Calculate the good prices
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+# Dates of the bad prices
+zoo::index(pricev[!isgood])
+# Calculate the false positives
+falsep <- !isgood
+falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
+# Plot dygraph of the prices with bad prices
+datam <- cbind(pricev, zscores)
+colnames(datam)[2] <- "ZScores"
+colv <- colnames(datam)
+dygraphs::dygraph(datam, main="VXX Prices With Z-Scores and False Positives") %>%
+  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
+  dySeries(name=colv[1], axis="y", strokeWidth=1, col="blue") %>%
+  dySeries(name=colv[2], axis="y2", strokeWidth=1, col="red") %>%
+  dyEvent(zoo::index(pricev[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
+  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green")
+# Replace bad stock prices with the previous good prices
+priceg <- pricev
+priceg[!isgood] <- NA
+priceg <- zoo::na.locf(priceg)
+# Calculate the Z-scores
+medianv <- HighFreq::roll_mean(priceg, lookb=lookb, method="nonparametric")
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceg, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
+# Calculate the number of bad prices
+threshv <- 9*madz
+isgood <- (abs(zscores) < threshv)
+sum(!isgood)
+zoo::index(priceg[!isgood])
+# Calculate the false positives
+falsep <- !isgood
+falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
+# Plot dygraph of the prices with bad prices
+dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
+  dyEvent(zoo::index(priceg[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Add 200 random price spikes to the clean prices
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nspikes <- 200
+ispike <- logical(nrows)
+ispike[sample(x=nrows, size=nspikes)] <- TRUE
+priceb <- priceg
+priceb[ispike] <- priceb[ispike]*
+  sample(c(0.99, 1.01), size=nspikes, replace=TRUE)
+# Calculate the Z-scores
+medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
+medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
+madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
+madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
+zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
+madz <- mad(zscores[abs(zscores) > 0])
+# Define vector of discrimination thresholds
+threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
+# Calculate the error rates
+errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
+errorr <- t(errorr)
+rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+# Calculate the area under the ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
+# Plot ROC curve for Hampel classifier
+plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Daily Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
 # Create list of vectors
 listv <- lapply(1:3, function(x) sample(6))
 # Bind list elements into matrix - doesn't work
@@ -50,21 +263,21 @@ virgin <- iris[iris$Species=="virginica", ]
 dim(setosa)
 head(setosa, 2)
 # Split iris into list based on Species
-splitiris <- split(iris, iris$Species)
-str(splitiris, max.confl=1)
-names(splitiris)
-dim(splitiris$setosa)
-head(splitiris$setosa, 2)
-all.equal(setosa, splitiris$setosa)
+irisplit <- split(iris, iris$Species)
+str(irisplit, max.confl=1)
+names(irisplit)
+dim(irisplit$setosa)
+head(irisplit$setosa, 2)
+all.equal(setosa, irisplit$setosa)
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
 # Split mtcars data frame based on number of cylinders
-split_cars <- split(mtcars, mtcars$cyl)
-str(split_cars, max.confl=1)
-names(split_cars)
+carsplit <- split(mtcars, mtcars$cyl)
+str(carsplit, max.confl=1)
+names(carsplit)
 # Aggregate the mean mpg over split mtcars data frame
-sapply(split_cars, function(x) mean(x$mpg))
+sapply(carsplit, function(x) mean(x$mpg))
 # Or: split mpg column and aggregate the mean
 sapply(split(mtcars$mpg, mtcars$cyl), mean)
 # Same but using with()
@@ -85,18 +298,18 @@ tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 with(mtcars, tapply(X=mpg, INDEX=cyl, FUN=mean))
 # Function sapply() instead of tapply()
 with(mtcars, sapply(sort(unique(cyl)), function(x) {
- structure(mean(mpg[x==cyl]), names=x)
-     }))  # end with
+  structure(mean(mpg[x==cyl]), names=x)
+}))  # end with
 # Function by() instead of tapply()
 with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
 # Get several mpg stats for each cylinder group
-cardata <- sapply(split_cars, function(x) {
+cardata <- sapply(carsplit, function(x) {
   c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
 }  # end anonymous function
 )  # end sapply
 cardata  # sapply() produces a matrix
 # Now same using lapply
-cardata <- lapply(split_cars, function(x) {
+cardata <- lapply(carsplit, function(x) {
   c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
 }  # end anonymous function
 )  # end sapply

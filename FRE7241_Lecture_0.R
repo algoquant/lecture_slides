@@ -2,10 +2,8 @@
 help(getwd)
 # Equivalent to "help(getwd)"
 ?getwd
-
 # Open the hypertext documentation
 help.start()
-
 # Calculate cumulative sum of a vector
 vecv <- runif(1e5)
 # Use compiled function
@@ -28,29 +26,20 @@ cumsumv2[i] <- (vecv[i] + cumsumv2[i-1])
     for (i in 2:NROW(vecv))
 cumsumv3[i] <- (vecv[i] + cumsumv3[i-1])
   }, times=10))[, c(1, 4, 5)]
-
 # "<-" and "=" are valid assignment operators
 myvar <- 3
-
 # Typing a symbol or expression evaluates it
 myvar
-
 # Text in quotes is interpreted as a string
 myvar <- "Hello World!"
-
 # Typing a symbol or expression evaluates it
 myvar
-
 myvar  # Text after hash is treated as comment
-
 getwd()  # Get cwd
 setwd("/Users/jerzy/Develop/R")  # Set cwd
 getwd()  # Get cwd
-
 Sys.time()  # Get date and time
-
 Sys.Date()  # Get date only
-
 rm(list=ls())
 setwd("/Users/jerzy/Develop/lecture_slides/data")
 var1 <- 3  # Define new object
@@ -72,22 +61,17 @@ ls()  # List objects
 loadobj <- load(file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
 loadobj
 ls()  # List objects
-
   q()  # quit R session
-
 history(5)  # Display last 5 commands
 savehistory(file="myfile")  # Default is ".Rhistory"
 loadhistory(file="myfile")  # Default is ".Rhistory"
-
 sessionInfo()  # Get R version and other session info
-
 # ?options  # Long list of global options
 # Interpret strings as characters, not factors
 getOption("stringsAsFactors")  # Display option
 options("stringsAsFactors")  # Display option
 options(stringsAsFactors=FALSE)  # Set option
 # Number of digits printed for numeric values
-options(digits=3)
 # Control exponential scientific notation of print method
 # Positive "scipen" values bias towards fixed notation
 # Negative "scipen" values bias towards scientific notation
@@ -107,7 +91,6 @@ options(warn=2)
 optionv <- options()
 # Restore all options from variable
 options(optionv)
-
 rm(list=ls())
 # Get base environment
 baseenv()
@@ -137,7 +120,6 @@ ls(environment())
 envv$new_var1
 # Environments are subset like listv
 envv[["new_var1"]]
-
 search()  # Get search path for R objects
 my_list <- list(flowers=c("rose", "daisy", "tulip"),
         trees=c("pine", "oak", "maple"))
@@ -147,7 +129,6 @@ trees
 search()  # Get search path for R objects
 detach(my_list)
 head(trees)  # "trees" is in datasets base package
-
 library(rutils)  # Load package rutils
 # Define ETF symbols
 symbolv <- c("VTI", "VEU", "IEF", "VNQ")
@@ -181,7 +162,6 @@ pricev <- do.call(cbind,
 # Same, but works only for OHLC series - produces error
 pricev <- do.call(cbind,
   eapply(rutils::etfenv, quantmod::Cl)[symbolv])
-
 # Drop ".Close" from column names
 colnames(pricev)
 do.call(rbind, strsplit(colnames(pricev), split="[.]"))[, 1]
@@ -195,24 +175,20 @@ unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(pricev,
   file="/Users/jerzy/Develop/lecture_slides/data/etf_series.csv", sep=",")
-
 getOption("repos")  # get default package source
 .libPaths()  # get package save directory
-
 install.packages("AER")  # install "AER" from CRAN
 # install "PerformanceAnalytics" from R-Forge
 install.packages(
   pkgs="PerformanceAnalytics",  # name
   lib="C:/Users/Jerzy/Downloads",  # directory
   repos="http://R-Forge.R-project.org")  # source
-
 # install devtools from CRAN
 install.packages("devtools")
 # load devtools
 library(devtools)
 # install package "babynamev" from GitHub
 install_github(repo="hadley/babynamev")
-
 # install package "PortfolioAnalytics" from source
 install.packages("PortfolioAnalytics",
   type="source",
@@ -226,7 +202,6 @@ download.packages(pkgs = "PortfolioAnalytics",
 install.packages(
   "C:/Users/Jerzy/Downloads/PortfolioAnalytics_0.9.3598.tar.gz",
   repos=NULL, type="source")
-
 getOption("defaultPackages")
 # matrix of installed package information
 packinfo <- installed.packages()
@@ -237,7 +212,6 @@ sort(unname(packinfo[, "Package"]))
 packinfo[sample(x=1:100, 5), c("Package", "Version")]
 # get info for package "xts"
 t(packinfo["xts", ])
-
 # list directories in "PortfolioAnalytics" sub-directory
 gsub(
   "C:/Users/Jerzy/Documents/R/win-library/3.1",
@@ -246,7 +220,6 @@ gsub(
     file.path(
       .libPaths()[1],
       "PortfolioAnalytics")))
-
 # load package, produce error if can't be loaded
 library(MASS)
 # load package, return TRUE if loaded successfully
@@ -259,15 +232,12 @@ suppressMessages(library(MASS))
 detach(MASS)
 # install package if it can't be loaded successfully
 if (!require("xts")) install.packages("xts")
-
 # calculate VTI volume-weighted average price
 vwapv <- TTR::VWAP(
   price=quantmod::Cl(rutils::etfenv$VTI),
   volume=quantmod::Vo(rutils::etfenv$VTI), n=10)
-
 library()  # list all packages installed on the system
 search()  # list all loaded packages on search path
-
 # get documentation for package "Ecdat"
 packageDescription("Ecdat")  # get short description
 help(package="Ecdat")  # load help page
@@ -276,27 +246,21 @@ data(package="Ecdat")  # list all datasets in "Ecdat"
 ls("package:Ecdat")  # list all objects in "Ecdat"
 browseVignettes("Ecdat")  # view package vignette
 detach("package:Ecdat")  # remove Ecdat from search path
-
 library(Ecdat)  # load econometric data sets
 class(Garch)  # Garch is a data frame from "Ecdat"
 dim(Garch)  # daily currency prices
 head(Garch[, -2])  # col 'dm' is Deutsch Mark
 detach("package:Ecdat")  # remove Ecdat from search path
-
 rm(list=ls())
 search()  # get search path for R objects
 library(MASS)  # load package "MASS"
 head(ls("package:MASS"))  # list some objects in "MASS"
 detach("package:MASS")  # remove "MASS" from search path
-
 loadedNamespaces()  # get names of loaded namespaces
-
 search()  # get search path for R objects
-
 # get session info,
 # including packages not attached to the search path
 sessionInfo()
-
 plot.xts  # package xts isn't loaded and attached
 head(xts::plot.xts, 3)
 methods("cbind")  # get all methods for function "cbind"
@@ -305,9 +269,7 @@ stats:::cbind.ts  # view the non-visible function
 getAnywhere("cbind.ts")
 library(MASS)  # load package 'MASS'
 select  # code of primitive function from package 'MASS'
-
 getAnywhere("cbind.ts")
-
 library(microbenchmark)
 vecv <- runif(1e6)
 # sqrt() and "^0.5" are the same
@@ -318,7 +280,6 @@ microbenchmark(
   power = vecv^0.5,
   sqrt = sqrt(vecv),
   times=10)
-
 # Calculate matrix of random data with 5,000 rows
 matv <- matrix(rnorm(10000), ncol=2)
 # Allocate memory for row sums
@@ -337,7 +298,6 @@ summary(microbenchmark(
     rowsumv[i] <- sum(matv[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 vecv <- rnorm(5000)
 summary(microbenchmark(
 # Allocate full memory for cumulative sum
@@ -361,7 +321,6 @@ summary(microbenchmark(
       cumsumv <- c(cumsumv, vecv[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
-
 vec1 <- rnorm(1000000)
 vec2 <- rnorm(1000000)
 vecbig <- numeric(1000000)
@@ -386,7 +345,6 @@ summary(microbenchmark(
 # Cumulative sum using "cumsum"
   vectorized = cumsum(vecbig),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Calculate matrix of random data with 5,000 rows
 matv <- matrix(rnorm(10000), ncol=2)
 # Calculate row sums two different ways
@@ -395,7 +353,6 @@ summary(microbenchmark(
   rowsumv = rowSums(matv),
   applyloop = apply(matv, 1, sum),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(microbenchmark)
 str(pmax)
 # Calculate row maximums two different ways
@@ -406,7 +363,6 @@ lapply(seq_along(matv[1, ]),
   applyloop=unlist(lapply(seq_along(matv[, 1]),
   function(indeks) max(matv[indeks, ]))),
   times=10))[, c(1, 4, 5)]
-
 install.packages("matrixStats")  # Install package matrixStats
 library(matrixStats)  # Load package matrixStats
 # Calculate row min values three different ways
@@ -421,7 +377,6 @@ summary(microbenchmark(
     do.call(pmin.int,
       as.data.frame.matrix(matv)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 install.packages("Rfast")  # Install package Rfast
 library(Rfast)  # Load package Rfast
 # Benchmark speed of calculating ranks
@@ -439,7 +394,6 @@ summary(microbenchmark(
   matrixStats = matrixStats::colMedians(matv),
   Rfast = Rfast::colMedians(matv),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 summary(microbenchmark(  # Assign values to vector three different ways
 # Fast vectorized assignment loop performed in C using brackets "[]"
   brackets = {vecv <- numeric(10)
@@ -458,7 +412,6 @@ summary(microbenchmark(  # Assign values to vector two different ways
     for (indeks in 4:7)
       vecv[indeks] <- rnorm(1)},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Define function vectorized automatically
 my_fun <- function(input, param) {
   param*input
@@ -474,7 +427,6 @@ means <- structure(-1:1, names=paste0("mean=", -1:1))
 rnorm(1, sd=stdevs)
 # "mean" argument of rnorm() isn't vectorized
 rnorm(1, mean=means)
-
 # Loop over stdevs produces vector output
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 sapply(stdevs, function(stdev) rnorm(n=2, sd=stdev))
@@ -487,7 +439,6 @@ sapply(means, function(meanv) rnorm(n=2, mean=meanv))
 # Same
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 sapply(means, rnorm, n=2)
-
 # rnorm() vectorized with respect to "stdev"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (NROW(sd)==1)
@@ -505,7 +456,6 @@ set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 vec_rnorm(n=2, sd=stdevs)
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 vec_rnorm(n=2, mean=means)
-
 str(sum)
 # na.rm is bound by name
 mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
@@ -514,7 +464,6 @@ str(rnorm)
 mapply(rnorm, n=5, mean=means, sd=stdevs)
 mapply(function(input, e_xp) input^e_xp,
  1:5, seq(from=1, by=0.2, length.out=5))
-
 # rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (NROW(mean)==1 && NROW(sd)==1)
@@ -526,7 +475,6 @@ vec_rnorm <- function(n, mean=0, sd=1) {
 vec_rnorm(n=2, sd=stdevs)
 # Call vec_rnorm() on vector of "mean"
 vec_rnorm(n=2, mean=means)
-
 # Create two numeric vectors
 vec1 <- sin(0.25*pi*1:20)
 vec2 <- cos(0.25*pi*1:20)
@@ -543,7 +491,6 @@ par(oma=c(0, 1, 1, 1), mar=c(0, 2, 2, 1),
 zoo::plot.zoo(vec3, lwd=2, ylim=c(-1, 1),
   xlab="", col=c("green", "blue", "red"),
   main="ifelse() Calculates The Max of Two Data Sets")
-
 # Calculate cumulative sum of a vector
 vecv <- runif(1e5)
 # Use compiled function
@@ -566,7 +513,6 @@ cumsumv2[i] <- (vecv[i] + cumsumv2[i-1])
     for (i in 2:NROW(vecv))
 cumsumv3[i] <- (vecv[i] + cumsumv3[i-1])
   }, times=10))[, c(1, 4, 5)]
-
 library(parallel)  # Load package parallel
 # Get short description
 packageDescription("parallel")
@@ -574,7 +520,6 @@ packageDescription("parallel")
 help(package="parallel")
 # List all objects in "parallel"
 ls("package:parallel")
-
 # Define function that pauses execution
 paws <- function(x, sleep_time=0.01) {
   Sys.sleep(sleep_time)
@@ -597,7 +542,6 @@ summary(microbenchmark(
   parallel = mclapply(1:10, paws, mc.cores=ncores),
   times=10)
 )[, c(1, 4, 5)]
-
 # Compare speed of lapply with parallel computing
 runv <- 3:10
 timev <- sapply(runv, function(nruns) {
@@ -612,7 +556,6 @@ colnames(timev) <- c("standard", "parallel")
 rownames(timev) <- runv
 # Stop R processes over cluster under Windows
 stopCluster(compclust)
-
 x11(width=6, height=5)
 plot(x=rownames(timev),
      y=timev[, "standard"],
@@ -625,7 +568,6 @@ y=timev[, "parallel"], lwd=2, col="green")
 legend(x="topleft", legend=colnames(timev),
  inset=0.1, cex=1.0, bty="n", bg="white",
  y.intersp=0.3, lwd=2, lty=1, col=c("blue", "green"))
-
 library(parallel)  # Load package parallel
 # Calculate number of available cores
 ncores <- detectCores() - 1
@@ -650,7 +592,6 @@ summary(microbenchmark(
 )[, c(1, 4, 5)]
 # Stop R processes over cluster under Windows
 stopCluster(compclust)
-
 library(parallel)  # Load package parallel
 # Calculate number of available cores
 ncores <- detectCores() - 1
@@ -678,7 +619,6 @@ parSapply(compclust, c("VTI", "IEF", "DBC"), function(symbol) {
 })  # end parSapply
 # Stop R processes over cluster under Windows
 stopCluster(compclust)
-
 library(parallel)  # Load package parallel
 # Calculate number of available cores
 ncores <- detectCores() - 1
@@ -694,7 +634,6 @@ sum(unlist(datav))
 stopCluster(compclust)
 # Perform parallel loop under Mac-OSX or Linux
 datav <- mclapply(1:10, rnorm, mc.cores=ncores, n=100)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
@@ -722,7 +661,6 @@ summary(microbenchmark(
   monte_carlo = datav[cutoff],
   quantv = quantile(datav, probs=confl),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
 # Sample from Standard Normal Distribution
 nsimu <- 1000; datav <- rnorm(nsimu)
 # Sample mean and standard deviation
@@ -742,7 +680,6 @@ sd(datav)/sqrt(nsimu)
 sd(bootd[, "mean"])
 # Standard error of median from bootstrap
 sd(bootd[, "median"])
-
 # Plot the densities of the bootstrap data
 x11(width=6, height=5)
 plot(density(bootd[, "mean"]), lwd=3, xlab="Estimator Value",
@@ -752,7 +689,6 @@ abline(v=mean(bootd[, "mean"]), lwd=2, col="red")
 legend("topright", inset=0.05, cex=0.8, title=NULL,
  leg=c("mean", "median"), bty="n", y.intersp=0.4,
  lwd=6, bg="white", col=c("green", "blue"))
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 nsimu <- 1000
@@ -775,7 +711,6 @@ summary(microbenchmark(
     matrixStats::colMedians(samplev)
     },
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
@@ -800,7 +735,6 @@ apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
 # Standard error from formula
 sd(datav)/sqrt(nsimu)
 stopCluster(compclust)  # Stop R processes over cluster under Windows
-
 nsimu <- 1000
 datav <- rnorm(nsimu)
 sd(datav); mad(datav)
@@ -835,7 +769,6 @@ stopCluster(compclust)  # Stop R processes over cluster
 bootd <- rutils::do_call(rbind, bootd)
 # Means and standard errors from bootstrap
 apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
-
 # Calculate time series of VTI returns
 library(rutils)
 retp <- rutils::etfenv$returns$VTI
@@ -850,7 +783,6 @@ summary(microbenchmark(
   sample.int = sample.int(1e3),
   sample = sample(1e3),
   times=10))[, c(1, 4, 5)]
-
 # Sample from time series of VTI returns
 library(rutils)
 retp <- rutils::etfenv$returns$VTI
@@ -881,7 +813,6 @@ stderrors <- apply(bootd, MARGIN=2,
 stderrors
 # Relative standard errors
 stderrors[2, ]/stderrors[1, ]
-
 # Initialize random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Define predictor and response variables
@@ -903,7 +834,6 @@ bootd <- sapply(1:nboot, function(x) {
   desm <- desm[samplev, ]
   cov(desm[, 1], desm[, 2])/var(desm[, 2])
 })  # end sapply
-
 x11(width=6, height=5)
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 # Mean and standard error of beta regression coefficient
@@ -915,7 +845,6 @@ plot(density(bootd), lwd=2, xlab="Regression slopes",
 abline(v=mean(bootd), lwd=2, col="red")
 text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
-
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
@@ -932,7 +861,6 @@ bootd <- mclapply(1:1000, function(x) {
   cov(desm[, 1], desm[, 2])/var(desm[, 2])
 }, mc.cores=ncores)  # end mclapply
 stopCluster(compclust)  # Stop R processes over cluster under Windows
-
 # Collapse the bootstrap list into a vector
 class(bootd)
 bootd <- unlist(bootd)
@@ -946,7 +874,6 @@ plot(density(bootd),
 abline(v=mean(bootd), lwd=2, col="red")
 text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 barl <- 20  # Barrier level
@@ -969,7 +896,6 @@ plot(pathv, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barl, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 barl <- 20  # Barrier level
@@ -989,7 +915,6 @@ plot(pathv, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=barl, lwd=3, col="red")
 title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
-
 # Define Brownian motion parameters
 sigmav <- 1.0  # Volatility
 drift <- 0.0  # Drift
@@ -1010,7 +935,6 @@ sum(payouts[payouts > 0])/npaths
 barl <- 50
 crossi <- (colSums(pathm > barl) > 0)
 sum(crossi)/npaths
-
 # Plot in window
 x11(width=6, height=5)
 par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
@@ -1022,7 +946,6 @@ zoo::plot.zoo(pathm[, indeks], main="Paths of Brownian Motion",
   xlab="time steps", ylab=NA, plot.type="single")
 abline(h=strikep, col="red", lwd=3)
 text(x=(nsteps-60), y=strikep, labels="strike price", pos=3, cex=1)
-
 # Calculate percentage returns from VTI prices
 library(rutils)
 pricev <- quantmod::Cl(rutils::etfenv$VTI)
@@ -1039,7 +962,6 @@ samplev <- retp[sample.int(nrows, replace=TRUE)]
 samplev <- prici*exp(cumsum(samplev))
 # Calculate if prices crossed barrier
 sum(samplev > barl) > 0
-
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
@@ -1066,7 +988,6 @@ bootd <- mclapply(1:nboot, function(x) {
 bootd <- rutils::do_call(c, bootd)
 # Calculate frequency of crossing barrier
 sum(bootd)/nboot
-
 # Calculate percentage returns from VTI prices
 library(rutils)
 ohlc <- rutils::etfenv$VTI
@@ -1086,7 +1007,6 @@ ohlcboot <- cbind(ohlcboot, priceboot)
 barl <- 1.5*max(pricev)
 # Calculate if High bootstrapped prices crossed barrier level
 sum(ohlcboot[, 2] > barl) > 0
-
 library(parallel)  # Load package parallel
 ncores <- detectCores() - 1  # Number of cores
 compclust <- makeCluster(ncores)  # Initialize compute cluster under Windows
@@ -1117,7 +1037,6 @@ stopCluster(compclust)  # Stop R processes over cluster under Windows
 bootd <- rutils::do_call(rbind, bootd)
 # Calculate frequency of crossing barrier
 sum(bootd)/nboot
-
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 # Sample from Standard Normal Distribution
@@ -1138,7 +1057,6 @@ bootd <- sapply(1:nboot, function(x) {
 # Standard error of quantile from bootstrap
 sd(bootd)
 sqrt(2)*sd(bootd)
-
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot a Normal probability distribution
@@ -1153,7 +1071,6 @@ abline(v=1, lwd=3, col="red", lty="dashed")
 arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
  code=2, angle=20, length=grid::unit(0.2, "cm"))
 text(x=0.3, 0.1, labels=bquote(lambda), pos=3, cex=2)
-
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection") # Reset random number generator
 # Sample from Standard Normal Distribution
 nsimu <- 1000
@@ -1183,7 +1100,6 @@ bootd <- sapply(1:nboot, function(x) {
   c(naivemc=naivemc, impsample=isample)
 }) # end sapply
 apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
-
 # Quantile from Naive Monte Carlo
 confl <- 0.02
 qnorm(confl)  # Exact value
@@ -1209,7 +1125,6 @@ bootd <- sapply(1:nboot, function(x) {
   c(naivemc=naivemc, impsample=isample)
 }) # end sapply
 apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
-
 # VaR and CVaR from Naive Monte Carlo
 varisk <- datav[cutoff]
 sum((datav <= varisk)*datav)/sum((datav <= varisk))
@@ -1232,7 +1147,6 @@ bootd <- sapply(1:nboot, function(x) {
   c(naivemc=naivemc, impsample=isample)
 }) # end sapply
 apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
-
 # Calculate matrix of random data
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection") # Reset random number generator
 nsimu <- 1000; nboot <- 100
@@ -1250,7 +1164,6 @@ calc_vars <- function(lambdaf, confl=0.05) {
 }  # end calc_vars
 # Bootstrap vector of VaR for a single tilt parameter
 bootd <- calc_vars(-1.5)
-
 # Define vector of tilt parameters
 lambdav <- seq(-3.0, -1.2, by=0.2)
 # Calculate vector of VaR for vector of tilt parameters
@@ -1265,9 +1178,6 @@ plot(x=lambdav, y=stdevs,
      main="Standard Errors of Simulated VaR",
      xlab="tilt parameter", ylab="standard error",
      type="l", col="blue", lwd=2)
-
-
-
 # Binomial sample
 nsimu <- 1000
 probv <- 0.1
@@ -1287,7 +1197,6 @@ bootd <- sapply(1:nboot, function(x) {
     impsample=weightv*sum(rbinom(n=nsimu, size=1, probt))/nsimu)
 }) # end sapply
 apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
-
 # Define Brownian motion parameters
 sigmav <- 1.0  # Volatility
 drift <- 0.0  # Drift
