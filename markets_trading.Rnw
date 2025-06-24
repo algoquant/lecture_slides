@@ -856,46 +856,47 @@ print(xtable::xtable(futures), comment=FALSE, size="scriptsize", include.rowname
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{S\&P500} Futures Data}
+\subsection{\protect\emph{S\&P500} Futures Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The \emph{S\&P500} E-mini futures prices in February and March \texttt{2025} followed a typical market pattern: the trading volumes rose as the prices were dropping.
+      \vskip1ex
       The function \texttt{data.table::fread()} reads \texttt{.csv} files over five times faster than the function \texttt{read.csv()}!
+      \vskip1ex
+      The function \texttt{as.Date()} parses \texttt{character} strings and coerces \texttt{numeric} objects into \texttt{Date} objects.
       \vskip1ex
       The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
       <<echo=TRUE,eval=FALSE>>=
-# Load data for S&P Emini futures June 2019 contract
-dirn <- "/Users/jerzy/Develop/data/ib_data"
-filen <- file.path(dirn, "ESohlc.csv")
-# Read a data table from CSV file
-pricev <- data.table::fread(filen)
-class(pricev)
-# Coerce first column from string to date-time
-unlist(sapply(pricev, class))
-tail(pricev)
-prices$Index <- as.POSIXct(prices$Index,
-  tz="America/New_York", origin="1970-01-01")
-# Coerce prices into xts series
-pricev <- data.table::as.xts.data.table(pricev)
-class(pricev)
-tail(pricev)
-colnames(pricev)[1:5] <- c("Open", "High", "Low", "Close", "Volume")
-tail(pricev)
+# Load ESH5 March 2025 E-mini futures prices
+filen <- "/Users/jerzy/Develop/data/futures/ESH5.csv"
+ESH5 <- data.table::fread(filen)
+# Coerce ESH5 into xts series
+ESH5$Date <- as.Date(ESH5$Date, format="%m/%d/%y")
+ESH5 <- data.table::as.xts.data.table(ESH5)
+colnames(ESH5) <- c("Open", "High", "Low", "Close", "Volume")
+tail(ESH5)
+# Candlestick plot of the ESH5 prices
+themev <- chart_theme()
+themev$col$up.col <- "green"
+quantmod::chart_Series(x=ESH5["2025-01/"], TA="add_Vo()",
+  theme=themev, name="March 2025 E-mini Futures Prices")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/sp500_futures.png}
+      \includegraphics[width=0.45\paperwidth]{figure/sp500_ESH5_futures.png}
+      % \includegraphics[width=0.45\paperwidth]{figure/sp500_ESH5_futures_volumes.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot OHLC data in x11 window
-x11(width=5, height=4)  # Open x11 for plotting
-par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
-chart_Series(x=pricev, TA="add_Vo()",
-  name="S&P500 futures")
-# Plot dygraph
-dygraphs::dygraph(pricev[, 1:4], main="OHLC prices") %>%
-  dyCandlestick()
+# Plot dygraph candlestick of ESH5 prices
+dygraphs::dygraph(ESH5["2025-01/", 1:4], 
+  main="March 2025 E-mini Futures Prices") %>%
+  dyCandlestick() %>% dyLegend(show="onmouseover")
+# Plot dygraph barplot of ESH5 volumes
+dygraphs::dygraph(ESH5["2025-01/", 5], 
+  main="March 2025 E-mini Futures Volumes") %>%
+  dyBarChart() %>% dyOptions(colors="blue", strokeWidth=3)
       @
   \end{columns}
 \end{block}
@@ -910,44 +911,32 @@ dygraphs::dygraph(pricev[, 1:4], main="OHLC prices") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The trading volumes of a futures contract drop significantly shortly before its expiration, and the successive contract volumes increase.
+      The trading volumes of a futures contract quickly drop shortly before its expiration, and at the same time, the volumes of the successive contract increase.
       \vskip1ex
       The contract with the highest trading volume is usually considered the most liquid contract.
+      \vskip1ex
+      \emph{ESZ4} is the \texttt{December 2024} E-mini futures contract, and \emph{ESH5} is the \texttt{March 2025} E-mini futures contract.
       <<echo=TRUE,eval=FALSE>>=
-# Load ESU8 data
-dirn <- "/Users/jerzy/Develop/data/ib_data"
-filen <- file.path(dirn, "ESU8.csv")
-ESU8 <- data.table::fread(filen)
-# Coerce ESU8 into xts series
-ESU8$V1 <- as.Date(as.POSIXct.numeric(ESU8$V1,
-    tz="America/New_York", origin="1970-01-01"))
-ESU8 <- data.table::as.xts.data.table(ESU8)
-colnames(ESU8)[1:5] <- c("Open", "High", "Low", "Close", "Volume")
-# Load ESM8 data
-filen <- file.path(dirn, "ESM8.csv")
-ESM8 <- data.table::fread(filen)
-# Coerce ESM8 into xts series
-ESM8$V1 <- as.Date(as.POSIXct.numeric(ESM8$V1,
-    tz="America/New_York", origin="1970-01-01"))
-ESM8 <- data.table::as.xts.data.table(ESM8)
-colnames(ESM8)[1:5] <- c("Open", "High", "Low", "Close", "Volume")
+# Load ESZ4 December 2024 E-mini futures prices
+filen <- "/Users/jerzy/Develop/data/futures/ESZ4.csv"
+ESZ4 <- data.table::fread(filen)
+ESZ4$Date <- as.Date(ESZ4$Date, format="%m/%d/%y")
+ESZ4 <- data.table::as.xts.data.table(ESZ4)
+colnames(ESZ4) <- c("Open", "High", "Low", "Close", "Volume")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/sp500_futures_volumes.png}
-      <<echo=(-(1:1)),eval=FALSE>>=
-x11(width=6, height=5)  # Open x11 for plotting
-# Plot last month of ESU8 and ESM8 volume data
-endd <- end(ESM8)
+      <<echo=TRUE,eval=FALSE>>=
+# Plot last month of ESZ4 and ESH5 volume data
+endd <- end(ESZ4)
 startd <- (endd - 30)
-volumm <- cbind(Vo(ESU8), Vo(ESM8))[paste0(startd, "/", endd)]
-colnames(volumm) <- c("ESU8", "ESM8")
-colorv <- c("blue", "green")
-plot(volumm, col=colorv, lwd=3, major.ticks="days",
-     format.labels="%b-%d", observation.based=TRUE,
-     main="Volumes of ESU8 and ESM8 futures")
-legend("topleft", legend=colnames(volumm), col=colorv, y.intersp=0.5,
-       title=NULL, bty="n", lty=1, lwd=6, inset=0.1, cex=0.7)
+volumm <- cbind(Vo(ESZ4), Vo(ESH5))[paste0(startd, "/", endd)]
+colnames(volumm) <- c("ESZ4", "ESH5")
+dygraphs::dygraph(volumm, 
+  main="Volumes of ESZ4 and ESH5 futures") %>%
+  dyOptions(colors=c("blue", "green"), strokeWidth=3) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -966,39 +955,41 @@ legend("topleft", legend=colnames(volumm), col=colorv, y.intersp=0.5,
       \vskip1ex
       A continuous futures contract is a time series of prices obtained by chaining together prices from consecutive futures contracts.
       \vskip1ex
-      The price of the continuous contract is equal to the most liquid contract times a scaling factor.
+      When the next contract becomes more liquid, then the continuous futures price is rolled over to that contract.
       \vskip1ex
-      When the next contract becomes more liquid, then the continuous contract price is rolled over to that contract.
+      The price of the continuous futures is equal to the most liquid contract times a scaling factor.
       \vskip1ex
-      Futures contracts with different maturities (expiration datev) trade at different prices because of the futures curve, which causes price jumps between consecutive futures contracts.
+      Futures contracts with different maturities (expiration dates) trade at different prices because of the futures curve, which causes price jumps between consecutive futures contracts.
       \vskip1ex
       The old contract price is multiplied by a scaling factor after that contract is rolled, to remove price jumps.
       \vskip1ex
-      So the continuous contract prices are not equal to the past futures prices.
-      \vskip1ex
-      Interactive Brokers provides information about Continuous Contract Futures market data:\\
-      \hskip1em\href{https://www.interactivebrokers.com/en/software/tws/usersguidebook/technicalanalytics/continuous.htm}{Continuous Contract Futures Data}
+      So the continuous futures prices are not equal to the past futures prices.
+      <<echo=TRUE,eval=FALSE>>=
+# Find date when ESH5 volume exceeds ESZ4
+xeed <- (volumm[, "ESH5"] > volumm[, "ESZ4"])
+indeks <- match(TRUE, xeed)
+# indeks <- min(which(xeed))
+indeks <- zoo::index(volumm[indeks])
+# Scale the ESZ4 prices
+ratiop <- as.numeric(Cl(ESH5[indeks]))/as.numeric(Cl(ESZ4[indeks]))
+ESZ4[, 1:4] <- ratiop*ESZ4[, 1:4]
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/sp500_futures_chained.png}
       <<echo=TRUE,eval=FALSE>>=
-# Find date when ESU8 volume exceeds ESM8
-exceeds <- (volumm[, "ESU8"] > volumm[, "ESM8"])
-indeks <- match(TRUE, exceeds)
-# indeks <- min(which(exceeds))
-# Scale the ESM8 prices
-indeks <- zoo::index(exceeds[indeks])
-ratio <- as.numeric(Cl(ESU8[indeks])/Cl(ESM8[indeks]))
-ESM8[, 1:4] <- ratio*ESM8[, 1:4]
-# Calculate continuous contract prices
-chaind <- rbind(ESM8[zoo::index(ESM8) < indeks],
-                  ESU8[zoo::index(ESU8) >= indeks])
-# Or
-# chaind <- rbind(ESM8[paste0("/", indeks-1)],
-#                   ESU8[paste0(indeks, "/")])
-# Plot continuous contract prices
-chart_Series(x=chaind["2018"], TA="add_Vo()",
-  name="S&P500 chained futures")
+# Calculate the continuous futures prices
+pricev <- rbind(ESZ4[paste0("/", indeks-1)],
+                  ESH5[paste0(indeks, "/")])
+# Candlestick plot of the continuous E-mini futures prices
+themev <- chart_theme()
+themev$col$up.col <- "green"
+quantmod::chart_Series(x=pricev["2024-09/"], TA="add_Vo()",
+  theme=themev, name="Continuous E-mini Futures Prices")
+# dygraph the continuous E-mini futures prices
+dygraphs::dygraph(quantmod::Cl(pricev["2024-09/"]), 
+  main="Continuous E-mini Futures Prices") %>%
+  dyOptions(colors="blue", strokeWidth=2)
       @
   \end{columns}
 \end{block}
@@ -1261,12 +1252,12 @@ x11(width=5, height=3)  # Open x11 for plotting
 # Load VIX futures data from binary file
 load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
 # Plot VIX and SVXY data in x11 window
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- "blue"
+themev <- chart_theme()
+themev$col$line.col <- "blue"
 chart_Series(x=Cl(vixenv$vix_index["2007/"]),
-             theme=plot_theme, name="VIX Index")
+             theme=themev, name="VIX Index")
 chart_Series(x=Cl(rutils::etfenv$VTI["2007/"]),
-             theme=plot_theme, name="VTI ETF")
+             theme=themev, name="VTI ETF")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1297,9 +1288,9 @@ chart_Series(x=Cl(rutils::etfenv$VTI["2007/"]),
 }{XIV ETF Termination Event}
       <<echo=TRUE,eval=FALSE>>=
 chart_Series(x=Cl(vixenv$vix_index["2017/2018"]),
-             theme=plot_theme, name="VIX Index")
+             theme=themev, name="VIX Index")
 chart_Series(x=Cl(rutils::etfenv$SVXY["2017/2018"]),
-             theme=plot_theme, name="SVXY ETF")
+             theme=themev, name="SVXY ETF")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1733,7 +1724,7 @@ duplicatv <- rows_cusips[rows_cusips$gvkey %in% as.numeric(names(duplicatv)), ]
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      As of July 2020, the \emph{S\&P500} stock index constituents data was removed from 
+      As of July \texttt{2020}, the \emph{S\&P500} stock index constituents data was removed from 
       \href{http://www.compustat.com}{\emph{Compustat}}, so it's no longer available on 
 \href{https://wrds-www.wharton.upenn.edu}{\emph{WRDS}}.
       \vskip1ex
@@ -1874,7 +1865,7 @@ plot(quantmod::Cl(ohlc), main="TAP Stock")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define formatting function for OHLC prices
-format_ohlc <- function(ohlc, pricenv) {
+formohlc <- function(ohlc, pricenv) {
   # Select ticker from sp500table
   symboln <- sp500table$co_tic[match(ohlc$gvkey[1], sp500table$gvkey)]
   # Split adjustment and total return factors
@@ -1898,7 +1889,7 @@ format_ohlc <- function(ohlc, pricenv) {
   ohlc <- na.omit(ohlc)
   assign(x=symboln, value=ohlc, envir=pricenv)
   symbol
-}  # end format_ohlc
+}  # end formohlc
       @
   \end{columns}
 \end{block}
@@ -1937,7 +1928,7 @@ pricesp500 <- pricesp500[sp500_prices$tic %in% ticksp500, ]
 sp500env <- new.env()
 # Perform OHLC aggregations by cusip column
 pricesp500 <- split(pricesp500, sp500_prices$cusip)
-process_ed <- lapply(pricesp500, format_ohlc, pricenv=sp500env)
+process_ed <- lapply(pricesp500, formohlc, pricenv=sp500env)
       @
   \end{columns}
 \end{block}
@@ -2072,17 +2063,17 @@ pricev <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
          startd="2013-01-01", type="xts")
 # https://www.quandl.com/api/v3/datasets/WIKI/AAPL/metadata.json
 
-# scrape fundamental data from Google using quantmod - doesn't work
-funda_mentals <- getFinancials("HPQ", src="google", auto.assign=FALSE)
-# view quarterly fundamentals
-viewFinancials(funda_mentals,  period="Q")
-viewFinancials(funda_mentals)
+# Scrape fundamental data from Google using quantmod - doesn't work
+fundata <- getFinancials("HPQ", src="google", auto.assign=FALSE)
+# View quarterly fundamentals
+viewFinancials(fundata,  period="Q")
+viewFinancials(fundata)
 
-# scrape fundamental data from Yahoo using quantmod
+# Scrape fundamental data from Yahoo using quantmod
 # table of Yahoo data fields
 # http://www.financialwisdomforum.org/gummy-stuff/Yahoo-data.htm
 
-met_rics <- yahooQF(c("Price/Sales",
+metricd <- yahooQF(c("Price/Sales",
                       "P/E Ratio",
                       "Price/EPS Estimate Next Year",
                       "PEG Ratio",
@@ -2092,11 +2083,11 @@ met_rics <- yahooQF(c("Price/Sales",
 
 symbolv <- c("AAPL", "IBM", "MSFT")
 # Not all the metrics are returned by Yahoo.
-funda_mentals <- getQuote(paste(symbolv, sep="", collapse=";"), src="yahoo", what=met_rics)
-viewFinancials(funda_mentals,  period="Q")
+fundata <- getQuote(paste(symbolv, sep="", collapse=";"), src="yahoo", what=metricd)
+viewFinancials(fundata,  period="Q")
 
-funda_mentals <- getFinancials("HPQ", src="yahoo", auto.assign=FALSE)
-viewFinancials(funda_mentals)
+fundata <- getFinancials("HPQ", src="yahoo", auto.assign=FALSE)
+viewFinancials(fundata)
       @
   \end{columns}
 \end{block}
@@ -2145,11 +2136,11 @@ viewFinancials(funda_mentals)
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Specify class for column "TICKER" so that "F" doesn't become FALSE
-col_class <- "character"
-names(col_class) <- "TICKER"
+colv <- "character"
+names(colv) <- "TICKER"
 # Read .csv file with Ford OHLC prices
 ohlc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/F_CRSP.csv",
-  colClasses=col_class)
+  colClasses=colv)
 symboln <- ohlc[1, "TICKER"]
 # Adjustment factor
 factadj <- drop(ohlc[, "CFACPR"])
@@ -2217,10 +2208,10 @@ plot(quantmod::Cl(ohlc), main="Ford Stock")
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/wrds_crsp_compustat.png}
       <<echo=FALSE,eval=FALSE,results='asis'>>=
-crsp_compustat <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/crsp_compustat_indices.csv")
-colnames(crsp_compustat) <- crsp_compustat[1, ]
-crsp_compustat <- crsp_compustat[-1, ]
-print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE)
+crspcomp <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/crspcomp_indices.csv")
+colnames(crspcomp) <- crspcomp[1, ]
+crspcomp <- crspcomp[-1, ]
+print(xtable(crspcomp), comment=FALSE, size="tiny", include.rownames=FALSE)
       @
   \end{columns}
 \end{block}
@@ -2293,12 +2284,12 @@ plot(quantmod::Cl(ohlc), main="TAP Stock")
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Download Fama-French factors from KFRENCH database
-factors <- Quandl(code="KFRENCH/FACTORS_D",
+ffactors <- Quandl(code="KFRENCH/FACTORS_D",
         startd="2001-01-01", type="xts")
-dim(factors)
-head(factors)
-tail(factors)
-chart_Series(cumsum(factors["2001/", 1]/100),
+dim(ffactors)
+head(ffactors)
+tail(ffactors)
+chart_Series(cumsum(ffactors["2001/", 1]/100),
         name="Fama-French factors")
       @
   \end{columns}
@@ -3549,13 +3540,13 @@ sapply(vol_rolling, range)
         <<echo=TRUE,eval=FALSE>>=
 # Plot rolling volatility
 x11(width=6, height=5)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue", "red")
-chart_Series(vol_rolling, theme=plot_theme,
+themev <- chart_theme()
+themev$col$line.col <- c("blue", "red")
+chart_Series(vol_rolling, theme=themev,
              name="Rolling Volatility with Overnight Spikes")
 legend("topright", legend=colnames(vol_rolling),
   inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
-  col=plot_theme$col$line.col, bty="n")
+  col=themev$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -3845,13 +3836,13 @@ sum(pacfs$acf)
 liquidv <- sqrt(volumd)/volatd
 # Plot market illiquidity
 x11(width=6, height=7) ; par(mfrow=c(2, 1))
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
-chart_Series(liquidv["2010"], theme=plot_theme,
+themev <- chart_theme()
+themev$col$line.col <- c("blue")
+chart_Series(liquidv["2010"], theme=themev,
   name="SPY Liquidity in 2010", plot=FALSE)
-plot_theme$col$line.col <- c("red")
+themev$col$line.col <- c("red")
 chart_Series(volatd["2010"],
-  theme=plot_theme, name="SPY Volatility in 2010")
+  theme=themev, name="SPY Volatility in 2010")
 @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3885,12 +3876,12 @@ volumagg <- xts::xts(volumagg, datev)
 volagg <- xts::xts(volagg, datev)
 # Plot seasonality of volume and volatility
 x11(width=6, height=7) ; par(mfrow=c(2, 1))
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
-chart_Series(volumagg[c(-1, -NROW(volumagg))], theme=plot_theme,
+themev <- chart_theme()
+themev$col$line.col <- c("blue")
+chart_Series(volumagg[c(-1, -NROW(volumagg))], theme=themev,
   name="Intraday Seasonality of SPY Volume", plot=FALSE)
-plot_theme$col$line.col <- c("red")
-chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
+themev$col$line.col <- c("red")
+chart_Series(volagg[c(-1, -NROW(volagg))], theme=themev,
   name="Intraday Seasonality of SPY Volatility")
       @
     \column{0.5\textwidth}
@@ -3917,12 +3908,12 @@ chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
 liquidv <- sqrt(volumagg)/volagg
 # Plot intraday seasonality of market liquidity
 x11(width=6, height=7) ; par(mfrow=c(2, 1))
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
-chart_Series(liquidv[c(-1, -NROW(liquidv))], theme=plot_theme,
+themev <- chart_theme()
+themev$col$line.col <- c("blue")
+chart_Series(liquidv[c(-1, -NROW(liquidv))], theme=themev,
   name="Intraday Seasonality of SPY Liquidity", plot=FALSE)
-plot_theme$col$line.col <- c("red")
-chart_Series(volagg[c(-1, -NROW(volagg))], theme=plot_theme,
+themev$col$line.col <- c("red")
+chart_Series(volagg[c(-1, -NROW(volagg))], theme=themev,
   name="Intraday Seasonality of SPY Volatility")
       @
     \column{0.5\textwidth}
@@ -3974,11 +3965,11 @@ interval <- "2013"
 season_hurst <- season_ality(hurst_ohlc(ohlc=SPY[interval, 1:4]))
 season_hurst <- season_hurst[-(nrow(season_hurst))]
 colnames(season_hurst) <- paste0(colname(get(symboln)), ".season_hurst")
-plot_theme <- chart_theme()
-plot_theme$format.labels <- "%H:%M"
+themev <- chart_theme()
+themev$format.labels <- "%H:%M"
 chobj <- chart_Series(x=season_hurst,
   name=paste(colnames(season_hurst),
-  "intraday seasonality"), theme=plot_theme,
+  "intraday seasonality"), theme=themev,
   plot=FALSE)
 ylim <- chobj$get_ylim()
 ylim[[2]] <- structure(c(ylim[[2]][1],
@@ -4759,13 +4750,13 @@ dygraphs::dygraph(pricev[, 1:4], main="S&P500 ESM8 futures") %>%
       \vskip1ex
       A continuous futures contract is a synthetic time series of prices, created by splicing together prices from several futures contracts with different expiration dates.
       \vskip1ex
-      At any point in time, the price of the continuous contract is equal to the most liquid contract times a normalization factor.
+      At any point in time, the price of the continuous futures is equal to the most liquid contract times a normalization factor.
       \vskip1ex
-      When the next consecutive contract becomes more liquid, then the continuous contract price is rolled over to that contract.
+      When the next consecutive contract becomes more liquid, then the continuous futures price is rolled over to that contract.
       \vskip1ex
       The continuous price is multiplied by a normalization factor when the contract is rolled, to remove jumps caused by the shape of the futures curve.
       \vskip1ex
-      So the continuous contract prices are not equal to the past futures prices.
+      So the continuous futures prices are not equal to the past futures prices.
       \vskip1ex
       Futures contracts trade at different prices (because of the futures convenience yield).
       \vskip1ex

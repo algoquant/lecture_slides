@@ -518,7 +518,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \begin{displaymath}
         \mathbf{r} = \mathbb{\varphi} \, \mathbb{P} + \varepsilon
       \end{displaymath}
-      Where $\mathbb{\varphi} = \{\varphi_0, \varphi_1, \varphi_2, \ldots \varphi_n$\} is the vector of autoregressive coefficients.
+      Where $\mathbb{\varphi} = \{\varphi_0, \varphi_1, \varphi_2, \ldots \varphi_n$\} is the vector of AR coefficients.
       \vskip1ex
       The \emph{autoregressive} model is equivalent to \emph{multivariate} linear regression, with the \emph{response} equal to the returns $\mathbf{r}$, and the columns of the \emph{predictor matrix} $\mathbb{P}$ equal to the lags of the returns.
     \column{0.5\textwidth}
@@ -549,7 +549,7 @@ colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The fitted autoregressive coefficients $\mathbb{\varphi}$ are equal to the \emph{response} $\mathbf{r}$ multiplied by the inverse of the \emph{predictor matrix} $\mathbb{P}$:
+      The fitted AR coefficients $\mathbb{\varphi}$ are equal to the \emph{response} $\mathbf{r}$ multiplied by the inverse of the \emph{predictor matrix} $\mathbb{P}$:
       \begin{displaymath}
         \mathbb{\varphi} = \mathbb{P}^{-1} \, \mathbf{r}
       \end{displaymath}
@@ -563,7 +563,7 @@ colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
       \vskip1ex
       The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the fitted autoregressive coefficients
+# Calculate the fitted AR coefficients
 predinv <- MASS::ginv(predm)
 coeff <- drop(predinv %*% respv)
 # Calculate the in-sample forecasts of VTI (fitted values)
@@ -594,13 +594,13 @@ barplot(coeff, xlab="", ylab="coeff", col="grey",
       The first step in strategy development is optimizing it in-sample, even though in practice it can't be implemented.  
       Because a strategy can't perform well out-of-sample if it doesn't perform well in-sample.
       \vskip1ex
-      The autoregressive strategy invests dollar amounts of \emph{VTI} stock proportional to the in-sample forecasts. 
+      The AR strategy invests dollar amounts of \emph{VTI} stock proportional to the in-sample forecasts. 
       \vskip1ex
-      The in-sample autoregressive strategy performs well during periods of high volatility, but not as well in low volatility periods.
+      The in-sample AR strategy performs well during periods of high volatility, but not as well in low volatility periods.
       \vskip1ex
       The dollar allocations of \emph{VTI} stock are too large in periods of high volatility, which causes over-leverage and higher risk.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- retp*fcasts
 # costv <- 0.5*bidask*abs(rutils::diffit(posv))
 # pnls <- (pnls - costv)
@@ -616,7 +616,7 @@ wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy In-Sample") %>%
@@ -638,11 +638,11 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
     \column{0.5\textwidth}
       The forecast residuals are equal to the differences between the return forecasts minus the actual returns: $\varepsilon = f_t - r_t$
       \vskip1ex
-      The variance of the autoregressive coefficients $\sigma^2_\varphi$ is equal to the variance of the forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
+      The variance of the AR coefficients $\sigma^2_\varphi$ is equal to the variance of the forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
       \begin{displaymath}
         \sigma^2_\varphi = \sigma^2_\varepsilon (\mathbb{P}^T \mathbb{P})^{-1}
       \end{displaymath}
-      The t-values of the autoregressive coefficients are equal to the coefficient values divided by their volatilities:
+      The t-values of the AR coefficients are equal to the coefficient values divided by their volatilities:
       \begin{displaymath}
         \varphi_{tval} = \frac{\varphi}{\sigma_\varphi}
       \end{displaymath}
@@ -689,8 +689,16 @@ barplot(coefft, xlab="", ylab="t-value", col="grey",
       \vskip1ex
       In reality stock volatility is highly time dependent, so the volatility of the residuals is also time dependent.
       \vskip1ex
+      In addition, the residuals are autocorrelated, just like the returns are.
+      The residuals have almost zero PACF up to the order of the AR model (as expected), but significant nonzero higher order PACF.  
+      \vskip1ex
+      So the actual standard errors of the AR coefficients are larger than the theoretical standard errors, and the t-values of the AR coefficients are likely smaller than the theoretical values.
+      \vskip1ex
       The function \texttt{HighFreq::run\_var()} calculates the trailing variance of a time series using exponential weights.
       <<echo=TRUE,eval=FALSE>>=
+# Calculate the PACF of the residuals
+pacl <- pacf(resids, lag.max=20, plot=TRUE, 
+  main="PACF of Residuals")
 # Calculate the trailing volatility of the residuals
 residv <- sqrt(HighFreq::run_var(resids, lambda=0.9)[, 2])
       @
@@ -716,13 +724,13 @@ dygraphs::dygraph(datav[endw], main="Volatility of Residuals") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{AR Strategy With Forecasts Scaled By Volatility}
+\subsection{Autoregressive Strategy With Forecasts Scaled By Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The in-sample autoregressive strategy performs well during periods of high volatility, but not as well in low volatility periods.
+      The in-sample AR strategy performs well during periods of high volatility, but not as well in low volatility periods.
       \vskip1ex
       The dollar allocations of \emph{VTI} stock are too large in periods of high volatility, which causes over-leverage and higher risk.
       \vskip1ex
@@ -738,7 +746,7 @@ dygraphs::dygraph(datav[endw], main="Volatility of Residuals") %>%
 # Scale the forecasts by their volatility
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
 fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- retp*fcasts
 # costv <- 0.5*bidask*abs(rutils::diffit(posv))
 # pnls <- (pnls - costv)
@@ -754,7 +762,7 @@ wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy In-Sample") %>%
@@ -768,7 +776,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Autoregressive Coefficients in Periods of Low and High Volatility}
+\subsection{AR coefficients in Periods of Low and High Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -776,7 +784,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
     \column{0.5\textwidth}
       The autoregressive model assumes stationary returns and residuals, with similar volatility over time.  In reality stock volatility is highly time dependent.
       \vskip1ex
-      The autoregressive coefficients in periods of high volatility are very different from those under low volatility.
+      The AR coefficients in periods of high volatility are very different from those under low volatility.
       \vskip1ex
       In periods of high volatility, there are larger negative autocorrelations than in low volatility.
       <<echo=TRUE,eval=FALSE>>=
@@ -814,13 +822,13 @@ barplot(coeffl, main="Low Volatility AR Coefficients",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performance of Low and High Volatility Autoregressive Coefficients}
+\subsection{Performance of Low and High Volatility AR coefficients}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autoregressive coefficients obtained from periods of high volatility are overfitted and only perform well in periods of high volatility.  Similarly the low volatility coefficients.
+      The AR coefficients obtained from periods of high volatility are overfitted and only perform well in periods of high volatility.  Similarly the low volatility coefficients.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the pnls for the high volatility AR coefficients
 predm <- lapply(1:orderp, rutils::lagit, input=retp)
@@ -834,7 +842,7 @@ wealthv <- cbind(retp, pnlh)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy High Volatility Coefficients") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -848,7 +856,7 @@ wealthv <- cbind(retp, pnll)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy Low Volatility Coefficients") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -877,9 +885,9 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vskip1ex
       Doesn't work because the square forecast errors are similar.
       \vskip1ex
-      The autoregressive strategy invests dollar amounts of \emph{VTI} stock proportional to the in-sample forecasts. 
+      The AR strategy invests dollar amounts of \emph{VTI} stock proportional to the in-sample forecasts. 
       \vskip1ex
-      The in-sample autoregressive strategy performs well during periods of high volatility, but not in low volatility periods.
+      The in-sample AR strategy performs well during periods of high volatility, but not in low volatility periods.
       \vskip1ex
       The dollar allocations of \emph{VTI} stock are too large in periods of high volatility, which causes over-leverage and higher risk.
       \vskip1ex
@@ -935,7 +943,7 @@ wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy In-Sample") %>%
@@ -1004,7 +1012,7 @@ legend("topleft", title="scale parameters\n",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of the autoregressive strategy can be improved by fitting its coefficients using the \emph{winsorized returns}, to reduce the effect of time-dependent volatility.
+      The performance of the AR strategy can be improved by fitting its coefficients using the \emph{winsorized returns}, to reduce the effect of time-dependent volatility.
       \vskip1ex
       The performance can also be improved by \emph{winsorizing} the forecasts, by reducing the leverage due to very large forecasts.
       <<echo=TRUE,eval=FALSE>>=
@@ -1026,7 +1034,7 @@ fcasts <- predm %*% coeff
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_winsor.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- retp*fcasts
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
@@ -1035,7 +1043,7 @@ wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Winsorized Autoregressive Strategy In-Sample") %>%
@@ -1055,7 +1063,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of the autoregressive strategy can be improved by fitting its coefficients using returns divided by their trailing volatility.
+      The performance of the AR strategy can be improved by fitting its coefficients using returns divided by their trailing volatility.
       \vskip1ex
       Dividing the returns by their trailing volatility reduces the effect of time-dependent volatility.
       \vskip1ex
@@ -1079,7 +1087,7 @@ fcasts <- predm %*% coeff
       \includegraphics[width=0.45\paperwidth]{figure/ar_volat_scaled.png}
       % \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_perf_capped.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- retp*fcasts
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
@@ -1088,7 +1096,7 @@ wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy With Returns Scaled By Volatility") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -1107,7 +1115,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of the autoregressive strategy can be improved by fitting its coefficients using returns divided by the trading volumes (returns in \emph{trading time}).
+      The performance of the AR strategy can be improved by fitting its coefficients using returns divided by the trading volumes (returns in \emph{trading time}).
       \vskip1ex
       Dividing the returns by the trading volumes reduces the effect of time-dependent volatility.
       <<echo=TRUE,eval=FALSE>>=
@@ -1137,7 +1145,7 @@ fcasts <- predm %*% coeff
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_tradingtime.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- retp*fcasts
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
@@ -1148,7 +1156,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv["2010/"], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy With Returns in Trading Time") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
@@ -1214,7 +1222,7 @@ dygraphs::dygraph(datav, main="VTI Returns And Forecasts") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimization of the Autoregressive Coefficients}
+\subsection{Optimization of the AR coefficients}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1360,9 +1368,9 @@ plot(x=2:NCOL(predm), y=mse[, 1],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autoregressive strategy invests dollar amounts of \emph{VTI} proportional to the AR forecasts.
+      The AR strategy invests dollar amounts of \emph{VTI} proportional to the AR forecasts.
       \vskip1ex
-      The out-of-sample, risk-adjusted performance of the autoregressive strategy is better for a smaller order parameter \emph{n} of the \emph{AR(n)} model.
+      The out-of-sample, risk-adjusted performance of the AR strategy is better for a smaller order parameter \emph{n} of the \emph{AR(n)} model.
       \vskip1ex
       The optimal order parameter is \texttt{n = 2}, with a positive intercept coefficient $\varphi_0$ (since the average \emph{VTI} returns were positive), and a negative coefficient $\varphi_1$ (because of strong negative autocorrelations in periods of high volatility).
       \vskip1ex
@@ -1404,15 +1412,15 @@ dygraphs::dygraph(cumsum(pnls)[endw],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autoregressive coefficients $\mathbb{\varphi}$ are equal to the in-sample \emph{response} $\mathbf{r}$ times the inverse of the in-sample \emph{predictor matrix} $\mathbb{P}$:
+      The AR coefficients $\mathbb{\varphi}$ are equal to the in-sample \emph{response} $\mathbf{r}$ times the inverse of the in-sample \emph{predictor matrix} $\mathbb{P}$:
       \begin{displaymath}
         \mathbb{\varphi} = \mathbb{P}^{-1} \, \mathbf{r}
       \end{displaymath}
-      The variance of the autoregressive coefficients $\sigma^2_\varphi$ is equal to the variance of the in-sample forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
+      The variance of the AR coefficients $\sigma^2_\varphi$ is equal to the variance of the in-sample forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
       \begin{displaymath}
         \sigma^2_\varphi = \sigma^2_\varepsilon (\mathbb{P}^T \mathbb{P})^{-1}
       \end{displaymath}
-      The t-values of the autoregressive coefficients are equal to the coefficient values divided by their volatilities:
+      The t-values of the AR coefficients are equal to the coefficient values divided by their volatilities:
       \begin{displaymath}
         \varphi_{tval} = \frac{\varphi}{\sigma_\varphi}
       \end{displaymath}
@@ -1473,7 +1481,7 @@ fcast/sqrt(varf)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autoregressive coefficients can be calibrated dynamically over a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
+      The AR coefficients can be calibrated dynamically over a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
       \vskip1ex
       \emph{Backtesting} is the simulation of a model on historical data to test its forecasting accuracy.
       \vskip1ex
@@ -1536,9 +1544,9 @@ fcasts <- parallel::mclapply(1:nrows, function(tday) {
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the rolling autoregressive strategy, the autoregressive coefficients are calibrated on past data from a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
+      In the rolling AR strategy, the AR coefficients are calibrated on past data from a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
       \vskip1ex
-      The rolling autoregressive strategy performance depends on the length of the look-back interval.
+      The rolling AR strategy performance depends on the length of the look-back interval.
       <<echo=TRUE,eval=FALSE>>=
 # Coerce fcasts to a time series
 fcasts <- do.call(rbind, fcasts)
@@ -1558,7 +1566,7 @@ sqrt(252)*sapply(wealthv, function(x)
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_rolling.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Rolling Autoregressive Strategy") %>%
@@ -1640,7 +1648,7 @@ c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
       \vskip1ex
       The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{lookb}).
       \vskip1ex
-      The accuracy of the forecasting model increases with longer look-back intervals (\texttt{lookb}), because more data improves the estimates of the autoregressive coefficients.
+      The accuracy of the forecasting model increases with longer look-back intervals (\texttt{lookb}), because more data improves the estimates of the AR coefficients.
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # Load package parallel
 # Calculate the number of available cores
@@ -1736,7 +1744,7 @@ plot(x=orderv, y=mse[, 1],
     \column{0.5\textwidth}
       The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
       \vskip1ex
-      The autoregressive strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
+      The AR strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
       \vskip1ex
       Using the return forecasts as portfolio weights produces very large weights in periods of high volatility, and creates excessive risk.
       \vskip1ex
@@ -1834,7 +1842,7 @@ plot(x=orderv, y=mse[, 1],
     \column{0.5\textwidth}
       The model with an \emph{expanding} look-back interval has better performance compared to the \emph{fixed} look-back interval.
       \vskip1ex
-      The autoregressive strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
+      The AR strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the autoregressive forecasts with expanding look-back
 fcasts <- sim_fcasts(lookb=lookb, ordern=ordern, fixedlb=FALSE)
@@ -1875,7 +1883,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
     \column{0.5\textwidth}
       Stock returns aggregated over several days have much smaller autocorrelations.
       \vskip1ex
-      But aggregating stock returns can reduce their noise and improve the performance of autoregressive strategies.
+      But aggregating stock returns can reduce their noise and improve the performance of AR strategies.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VTI returns over non-overlapping 2-day intervals
 pricev <- na.omit(rutils::etfenv$prices$VTI)
@@ -1900,13 +1908,13 @@ rutils::plot_acf(reta, lag=10, main="ACF of Aggregated 2-day VTI returns")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autoregressive strategy with aggregated stock returns calculates the \emph{AR} coefficients and the forecasts using stock returns aggregated over several days.
+      The AR strategy with aggregated stock returns calculates the \emph{AR} coefficients and the forecasts using stock returns aggregated over several days.
       \vskip1ex
       The strategy holds the stock position for several days, and rebalances the position at the end of the aggregation interval.
       \vskip1ex
       In this example, the returns are calculated over 2-day intervals, and the stock is held for 2 days.  Effectively, there are two strategies, rebalancing every other day.
       \vskip1ex
-      The aggregated autoregressive strategy has good performance both in periods of high volatility and in low volatility.
+      The aggregated AR strategy has good performance both in periods of high volatility and in low volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Define the response and predictor matrices
 reta <- rutils::diffit(log(pricev), lag=2)/2
@@ -1930,7 +1938,7 @@ fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_agg.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- reta*fcasts
 pnls <- pnls*sd(reta[reta<0])/sd(pnls[pnls<0])
 # Calculate the Sharpe and Sortino ratios
@@ -1941,7 +1949,7 @@ sqrt(252)*sapply(wealthv, function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv["2010/"], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy With Aggregated Stock Returns") %>%
@@ -2188,7 +2196,7 @@ main="Overnight Trend For Daytime VTI Returns") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multifactor autoregressive strategies can have a large number of predictors, and are often called \emph{kitchen sink} strategies.
+      Multifactor AR strategies can have a large number of predictors, and are often called \emph{kitchen sink} strategies.
       \vskip1ex
       Multifactor strategies are overfit to the in-sample data because they have a large number of parameters.
       \vskip1ex
@@ -2210,7 +2218,7 @@ predm <- lapply(1:orderp, rutils::lagit, input=respv)
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, nrows), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
-# Calculate the in-sample fitted autoregressive coefficients
+# Calculate the in-sample fitted AR coefficients
 predinv <- MASS::ginv(predm[insample, ])
 coeff <- drop(predinv %*% respv[insample, ])
 names(coeff) <- colnames(predm)
@@ -2221,17 +2229,17 @@ fcasts <- predm %*% coeff
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_multifact.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- retp*fcasts
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "ARMultiFact")
+colnames(wealthv) <- c("VTI", "ARMulti")
 sqrt(252)*sapply(wealthv[insample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategies
+# Plot dygraph of the AR strategies
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(wealthv))
 dygraphs::dygraph(cumsum(wealthv)[endw], 
@@ -2270,7 +2278,7 @@ names(coefft) <- colnames(predm)
 # Plot the t-values of the AR coefficients
 barplot(coefft, xlab="", ylab="t-value", col="grey", 
   main="Coefficient t-values of AR Forecasting Model")
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 fcasts <- predm %*% coefft
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
 fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
@@ -2283,12 +2291,12 @@ pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "ARMultiFact")
+colnames(wealthv) <- c("VTI", "ARMulti")
 sqrt(252)*sapply(wealthv[insample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategies
+# Plot dygraph of the AR strategies
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Multifactor Autoregressive Strategy Using t-Values") %>%
@@ -2433,7 +2441,7 @@ fcasts <- apply(fcasts, 2, function(x) {
   fcastv[1:10] <- 1 # Warmup
   x/fcastv
 }) # end apply
-# Simulate the autoregressive strategies
+# Simulate the AR strategies
 retn <- coredata(retp)
 pnls <- apply(fcasts, 2, function(x) (x*retn))
 pnls <- xts(pnls, datev)
@@ -2451,7 +2459,7 @@ sqrt(252)*sapply(wealthv[insample, ], function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategies
+# Plot dygraph of the AR strategies
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(wealthv))
 dygraphs::dygraph(cumsum(wealthv)[endw], 
@@ -2467,7 +2475,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Autoregressive Coefficients With Ridge Shrinkage}
+\subsection{AR coefficients With Ridge Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2527,7 +2535,7 @@ legend("topright", c("shrink", "t-value"),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The out-of-sample performance of the multifactor autoregressive strategy can be improved by applying \emph{shrinkage} to the \emph{AR} coefficients.
+      The out-of-sample performance of the multifactor AR strategy can be improved by applying \emph{shrinkage} to the \emph{AR} coefficients.
       \vskip1ex
       The value of the \emph{shrinkage factor} $\lambda$ can be chosen to maximize the out-of-sample performance.
       \vskip1ex
@@ -2537,7 +2545,7 @@ legend("topright", c("shrink", "t-value"),
 fcasts <- predm %*% coeff
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
 fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- retp*fcasts
 pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
@@ -2547,12 +2555,12 @@ pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "ARMultiFact")
+colnames(wealthv) <- c("VTI", "ARMulti")
 sqrt(252)*sapply(wealthv[insample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategies
+# Plot dygraph of the AR strategies
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(wealthv))
 dygraphs::dygraph(cumsum(wealthv)[endw], 
@@ -2588,7 +2596,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \begin{displaymath}
         \mathbf{r} = \mathbb{\varphi} \, \mathbb{P} + \varepsilon
       \end{displaymath}
-      Where $\mathbb{\varphi} = \{\varphi_0, \varphi_1, \varphi_2, \ldots \varphi_n$\} is the vector of autoregressive coefficients.
+      Where $\mathbb{\varphi} = \{\varphi_0, \varphi_1, \varphi_2, \ldots \varphi_n$\} is the vector of AR coefficients.
       \vskip1ex
       The \emph{autoregressive} model is equivalent to \emph{multivariate} linear regression, with the \emph{response} equal to the returns $\mathbf{r}$, and the columns of the \emph{predictor matrix} $\mathbb{P}$ equal to the lags of the returns.
     \column{0.5\textwidth}
@@ -2632,7 +2640,7 @@ summary(regmod)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multifactor autoregressive strategies can have a large number of predictors, and are often called \emph{kitchen sink} strategies.
+      Multifactor AR strategies can have a large number of predictors, and are often called \emph{kitchen sink} strategies.
       \vskip1ex
       Multifactor strategies are overfit to the in-sample data because they have a large number of parameters.
       \vskip1ex
@@ -2643,7 +2651,7 @@ summary(regmod)
 insample <- 1:(nrows %/% 2)
 outsample <- (nrows %/% 2 + 1):nrows
 cutoff <- nrows %/% 2
-# Calculate the in-sample fitted autoregressive coefficients
+# Calculate the in-sample fitted AR coefficients
 predinv <- MASS::ginv(predm[insample, ])
 coeff <- drop(predinv %*% respv[insample, ])
 names(coeff) <- colnames(predm)
@@ -2659,7 +2667,7 @@ fcasts <- predm %*% coeff
       % \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_coeff.png}
       \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_pnl.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- respv*fcasts
 pnls <- pnls*sd(respv[respv<0])/sd(pnls[pnls<0])
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
@@ -2669,7 +2677,7 @@ sqrt(252)*sapply(wealthv[insample, ], function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategies
+# Plot dygraph of the AR strategies
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(wealthv))
 dygraphs::dygraph(cumsum(wealthv)[endw], 
@@ -2691,7 +2699,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Dimension reduction improves the out-of-sample, risk-adjusted performance of the multifactor autoregressive strategy.  
+      Dimension reduction improves the out-of-sample, risk-adjusted performance of the multifactor AR strategy.  
       \vskip1ex
       The best performance is achieved with the intermediate value of the order parameter equal to \emph{dimax = 5}.
       <<echo=TRUE,eval=FALSE>>=
@@ -2717,7 +2725,7 @@ fcasts <- apply(fcasts, 2, function(x) {
   fcastv[1:10] <- 1 # Warmup
   x/fcastv
 }) # end apply
-# Simulate the autoregressive strategies
+# Simulate the AR strategies
 retn <- coredata(respv)
 pnls <- apply(fcasts, 2, function(x) (x*retn))
 pnls <- xts(pnls, datev)
@@ -2735,7 +2743,7 @@ sqrt(252)*sapply(wealthv[insample, ], function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategies
+# Plot dygraph of the AR strategies
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(wealthv))
 dygraphs::dygraph(cumsum(wealthv)[endw], 
@@ -2807,7 +2815,7 @@ barplot(coeff, xlab="", ylab="coeff", col="grey",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The out-of-sample performance of the multifactor autoregressive strategy can be improved by applying \emph{shrinkage} to the \emph{AR} coefficients.
+      The out-of-sample performance of the multifactor AR strategy can be improved by applying \emph{shrinkage} to the \emph{AR} coefficients.
       \vskip1ex
       The value of the \emph{shrinkage factor} $\lambda$ can be chosen to maximize the out-of-sample performance.
       <<echo=TRUE,eval=FALSE>>=
@@ -2815,7 +2823,7 @@ barplot(coeff, xlab="", ylab="coeff", col="grey",
 fcasts <- predm %*% coeff
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
 fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- respv*fcasts
 pnls <- pnls*sd(respv[respv<0])/sd(pnls[pnls<0])
       @
@@ -2830,7 +2838,7 @@ sqrt(252)*sapply(wealthv[insample, ], function(x)
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategies
+# Plot dygraph of the AR strategies
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(wealthv))
 dygraphs::dygraph(cumsum(wealthv)[endw], 
@@ -2872,7 +2880,7 @@ predm <- lapply(1:orderp, rutils::lagit, input=retp["/2019", c("VXX", "SVXY")])
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, NROW(predm)), predm)
 colnames(predm) <- c("phi0", paste0(c("VXX", "SVXY"), rep(1:orderp, each=2)))
-# Calculate the fitted autoregressive coefficients
+# Calculate the fitted AR coefficients
 predinv <- MASS::ginv(predm)
 coeff <- predinv %*% respv
 # Calculate the in-sample forecasts of VTI (fitted values)
@@ -2898,7 +2906,7 @@ round(sapply(predm[, -1], function(x) cor(resids, x)), 6)
     \column{0.5\textwidth}
       Explain why the sum of the \emph{AR} coefficients is negative, even though the stock returns are positive on average.
       \vskip1ex
-      The fitted autoregressive coefficients $\mathbb{\varphi}$ are equal to the \emph{response} $\mathbf{r}$ multiplied by the inverse of the \emph{predictor matrix} $\mathbb{P}$:
+      The fitted AR coefficients $\mathbb{\varphi}$ are equal to the \emph{response} $\mathbf{r}$ multiplied by the inverse of the \emph{predictor matrix} $\mathbb{P}$:
       \begin{displaymath}
         \mathbb{\varphi} = \mathbb{P}^{-1} \, \mathbf{r}
       \end{displaymath}
@@ -2912,7 +2920,7 @@ round(sapply(predm[, -1], function(x) cor(resids, x)), 6)
       \vskip1ex
       The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the fitted autoregressive coefficients
+# Calculate the fitted AR coefficients
 predinv <- MASS::ginv(predm)
 coeff <- predinv %*% respv
 sum(coeff[1:orderp])
@@ -2935,7 +2943,7 @@ barplot(coeff ~ coeffn, xlab="", ylab="coeff", col="grey",
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: The t-values of the Autoregressive Coefficients}
+\subsection{draft: The t-values of the AR coefficients}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2943,11 +2951,11 @@ barplot(coeff ~ coeffn, xlab="", ylab="coeff", col="grey",
     \column{0.5\textwidth}
       The forecast residuals are equal to the differences between the return forecasts minus the actual returns: $\varepsilon = f_t - r_t$
       \vskip1ex
-      The variance of the autoregressive coefficients $\sigma^2_\varphi$ is equal to the variance of the forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
+      The variance of the AR coefficients $\sigma^2_\varphi$ is equal to the variance of the forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
       \begin{displaymath}
         \sigma^2_\varphi = \sigma^2_\varepsilon (\mathbb{P}^T \mathbb{P})^{-1}
       \end{displaymath}
-      The t-values of the autoregressive coefficients are equal to the coefficient values divided by their volatilities:
+      The t-values of the AR coefficients are equal to the coefficient values divided by their volatilities:
       \begin{displaymath}
         \varphi_{tval} = \frac{\varphi}{\sigma_\varphi}
       \end{displaymath}
@@ -3031,9 +3039,9 @@ dygraphs::dygraph(datav[endw], main="Volatility of Residuals") %>%
       \vskip1ex
       The first step in strategy development is optimizing it in-sample, even though in practice it can't be implemented.  Because a strategy can't perform well out-of-sample if it doesn't perform well in-sample.
       \vskip1ex
-      The autoregressive strategy invests dollar amounts of \emph{VTI} stock proportional to the in-sample forecasts. 
+      The AR strategy invests dollar amounts of \emph{VTI} stock proportional to the in-sample forecasts. 
       \vskip1ex
-      The in-sample autoregressive strategy performs well during periods of high volatility, but not as well in low volatility periods.
+      The in-sample AR strategy performs well during periods of high volatility, but not as well in low volatility periods.
       \vskip1ex
       The dollar allocations of \emph{VTI} stock are too large in periods of high volatility, which causes over-leverage and higher risk.
       \vskip1ex
@@ -3054,7 +3062,7 @@ wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy In-Sample") %>%
@@ -3076,9 +3084,9 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
     \column{0.5\textwidth}
       The out-of-sample performance of the kitchen sink strategy is much worse than its in-sample performance, because the strategy is overfit to the in-sample data.
       \vskip1ex
-      The autoregressive strategy invests dollar amounts of \emph{VTI} proportional to the AR forecasts.
+      The AR strategy invests dollar amounts of \emph{VTI} proportional to the AR forecasts.
       \vskip1ex
-      The out-of-sample, risk-adjusted performance of the autoregressive strategy is better for a smaller order parameter \emph{n} of the \emph{AR(n)} model.
+      The out-of-sample, risk-adjusted performance of the AR strategy is better for a smaller order parameter \emph{n} of the \emph{AR(n)} model.
       \vskip1ex
       The optimal order parameter is \texttt{n = 2}, with a positive intercept coefficient $\varphi_0$ (since the average \emph{VTI} returns were positive), and a negative coefficient $\varphi_1$ (because of strong negative autocorrelations in periods of high volatility).
       \vskip1ex
@@ -3135,9 +3143,9 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
     \column{0.5\textwidth}
       The out-of-sample performance of the kitchen sink strategy is much worse than its in-sample performance, because the strategy is overfit to the in-sample data.
       \vskip1ex
-      The autoregressive strategy invests dollar amounts of \emph{VTI} proportional to the AR forecasts.
+      The AR strategy invests dollar amounts of \emph{VTI} proportional to the AR forecasts.
       \vskip1ex
-      The out-of-sample, risk-adjusted performance of the autoregressive strategy is better for a smaller order parameter \emph{n} of the \emph{AR(n)} model.
+      The out-of-sample, risk-adjusted performance of the AR strategy is better for a smaller order parameter \emph{n} of the \emph{AR(n)} model.
       \vskip1ex
       The optimal order parameter is \texttt{n = 2}, with a positive intercept coefficient $\varphi_0$ (since the average \emph{VTI} returns were positive), and a negative coefficient $\varphi_1$ (because of strong negative autocorrelations in periods of high volatility).
       \vskip1ex
@@ -3197,15 +3205,15 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autoregressive coefficients $\mathbb{\varphi}$ are equal to the in-sample \emph{response} $\mathbf{r}$ times the inverse of the in-sample \emph{predictor matrix} $\mathbb{P}$:
+      The AR coefficients $\mathbb{\varphi}$ are equal to the in-sample \emph{response} $\mathbf{r}$ times the inverse of the in-sample \emph{predictor matrix} $\mathbb{P}$:
       \begin{displaymath}
         \mathbb{\varphi} = \mathbb{P}^{-1} \, \mathbf{r}
       \end{displaymath}
-      The variance of the autoregressive coefficients $\sigma^2_\varphi$ is equal to the variance of the in-sample forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
+      The variance of the AR coefficients $\sigma^2_\varphi$ is equal to the variance of the in-sample forecast residuals $\sigma^2_\varepsilon$ divided by the squared \emph{predictor matrix} $\mathbb{P}$:
       \begin{displaymath}
         \sigma^2_\varphi = \sigma^2_\varepsilon (\mathbb{P}^T \mathbb{P})^{-1}
       \end{displaymath}
-      The t-values of the autoregressive coefficients are equal to the coefficient values divided by their volatilities:
+      The t-values of the AR coefficients are equal to the coefficient values divided by their volatilities:
       \begin{displaymath}
         \varphi_{tval} = \frac{\varphi}{\sigma_\varphi}
       \end{displaymath}
@@ -3266,7 +3274,7 @@ fcast/sqrt(varf)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The autoregressive coefficients can be calibrated dynamically over a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
+      The AR coefficients can be calibrated dynamically over a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
       \vskip1ex
       \emph{Backtesting} is the simulation of a model on historical data to test its forecasting accuracy.
       \vskip1ex
@@ -3329,9 +3337,9 @@ fcasts <- sapply(1:nrows, function(tday) {
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the rolling autoregressive strategy, the autoregressive coefficients are calibrated on past data from a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
+      In the rolling AR strategy, the AR coefficients are calibrated on past data from a \emph{rolling} look-back interval, and applied to calculating the \emph{out-of-sample} forecasts.
       \vskip1ex
-      The rolling autoregressive strategy performance depends on the length of the look-back interval.
+      The rolling AR strategy performance depends on the length of the look-back interval.
       <<echo=TRUE,eval=FALSE>>=
 # Coerce fcasts to a time series
 fcasts <- t(fcasts)
@@ -3351,7 +3359,7 @@ c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_rolling.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw],
   main="Rolling Autoregressive Strategy") %>%
@@ -3434,7 +3442,7 @@ c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
       \vskip1ex
       The accuracy of the forecasting model depends on the order \emph{n} of the \emph{AR(n)} model and on the length of the look-back interval (\texttt{lookb}).
       \vskip1ex
-      The accuracy of the forecasting model increases with longer look-back intervals (\texttt{lookb}), because more data improves the estimates of the autoregressive coefficients.
+      The accuracy of the forecasting model increases with longer look-back intervals (\texttt{lookb}), because more data improves the estimates of the AR coefficients.
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # Load package parallel
 # Calculate the number of available cores
@@ -3530,7 +3538,7 @@ plot(x=orderv, y=mse[, 1],
     \column{0.5\textwidth}
       The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
       \vskip1ex
-      The autoregressive strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
+      The AR strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
       \vskip1ex
       Using the return forecasts as portfolio weights produces very large weights in periods of high volatility, and creates excessive risk.
       \vskip1ex
@@ -3628,7 +3636,7 @@ plot(x=orderv, y=mse[, 1],
     \column{0.5\textwidth}
       The model with an \emph{expanding} look-back interval has better performance compared to the \emph{fixed} look-back interval.
       \vskip1ex
-      The autoregressive strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
+      The AR strategy returns are large in periods of high volatility, but much smaller in periods of low volatility. This because the forecasts are bigger in periods of high volatility, and also because the forecasts are more accurate, because the autocorrelations of stock returns are much higher in periods of high volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the autoregressive forecasts with expanding look-back
 fcasts <- sim_fcasts(lookb=lookb, ordern=ordern, fixedlb=FALSE)
@@ -3687,7 +3695,7 @@ predm <- lapply(1:orderp, rutils::lagit, input=retp["/2019", c("VXX", "SVXY")])
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, NROW(predm)), predm)
 colnames(predm) <- c("phi0", paste0(c("VXX", "SVXY"), rep(1:orderp, each=2)))
-# Calculate the fitted autoregressive coefficients
+# Calculate the fitted AR coefficients
 predinv <- MASS::ginv(predm)
 coeff <- predinv %*% respv
 # Calculate the in-sample forecasts of VTI (fitted values)
@@ -3715,7 +3723,7 @@ round(sapply(predm[, -1], function(x) cor(resids, x)), 6)
       The coefficients are calibrated with returns before \texttt{2020}, but the model still makes profit during the \texttt{2020} stock crash.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the autoregressive strategy PnLs
+# Calculate the AR strategy PnLs
 pnls <- respv*fcasts
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv)/sd(pnls)
@@ -3729,7 +3737,7 @@ wealthv <- cbind(respv, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-# Plot dygraph of the autoregressive strategy
+# Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Autoregressive Strategy In-Sample") %>%

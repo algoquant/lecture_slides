@@ -1594,13 +1594,23 @@ apply(bootd, MARGIN=2, function(x)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Some investors argue that positive returns don't represent risk, only those returns less than the target rate of return $r_t$.
+      Some investors argue that positive returns don't represent risk, only those returns that are less than the target rate of return $r_t$.
       \vskip1ex
-      The \emph{Downside Deviation} (semi-deviation) $\sigma_{d}$ is equal to the standard deviation of returns less than the target rate of return $r_t$:
+      The downside deviation (\emph{DD}, or semi-deviation) $\sigma_{d}$ is equal to the standard deviation of the returns minus the target rate of return $r_t$.
+      \vskip1ex
+      There are two methods of calculating the \emph{DD}.
+      \vskip1ex
+      The first method is to sum over the full time series, while setting the positive values to zero:
       \begin{displaymath}
-        \sigma_{d} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} ([r_i-r_t]_{-})^2}
+        \sigma^2_{d} = \frac{1}{n} \sum_{i=1}^{n} \min(r_i-r_t, 0)^2
       \end{displaymath}
-      The function \texttt{DownsideDeviation()} from package \emph{PerformanceAnalytics} calculates the downside deviation, for either the full time series (\texttt{method="full"}) or only for the subseries less than the target rate of return $r_t$ (\texttt{method="subset"}).
+      But this can underestimate the volatility when the excess returns are positive, because it ignores the positive values.
+      \vskip1ex
+      The second method is to sum only over the negative values:
+      \begin{displaymath}
+        \sigma^2_{d} = \frac{1}{k} \sum_{(r_i - r_t) < 0}^{n} (r_i - r_t)^2
+      \end{displaymath}
+      But this can overestimate the volatility of streaming (live) returns, when the excess returns are positive, because it ignores the positive values.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1622,6 +1632,7 @@ nrows <- NROW(retsub)
 all.equal(sqrt(sum(retsub^2)/nrows),
   drop(DownsideDeviation(retp, MAR=targetr, method="subset")))
       @
+      The function \texttt{DownsideDeviation()} from package \emph{PerformanceAnalytics} calculates the downside deviation, for either the full time series (\texttt{method="full"}) or only for the subseries less than the target rate of return $r_t$ (\texttt{method="subset"}).
   \end{columns}
 \end{block}
 
@@ -1672,10 +1683,10 @@ dygraphs::dygraph(datav, main="VTI Drawdowns") %>%
       \includegraphics[width=0.45\paperwidth]{figure/drawdown_plot.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot VTI drawdowns using package quantmod
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue")
+themev <- chart_theme()
+themev$col$line.col <- c("blue")
 x11(width=6, height=5)
-quantmod::chart_Series(x=closep, name="VTI Drawdowns", theme=plot_theme)
+quantmod::chart_Series(x=closep, name="VTI Drawdowns", theme=themev)
 xval <- match(startd, datev)
 yval <- max(closep)
 abline(v=xval, col="blue")
@@ -2386,7 +2397,7 @@ summary(microbenchmark(
       \begin{displaymath}
         r_t = \varphi_1 r_{t-1} + \varphi_2 r_{t-2} + \ldots + \varphi_p r_{t-p} + \xi_t
       \end{displaymath}
-      Where $r_t$ is the filtered output vector, $\varphi_i$ are the filter coefficients, and $\xi_t$ are standard normal \emph{innovations}.
+      Where $r_t$ is the filtered output vector, $\varphi_i$ are the filter coefficients, and $\xi_t$ are standard normal innovations.
       \vskip1ex
       The \emph{recursive} filter describes an \emph{AR(p)} process, which is a special case of an \emph{ARIMA} process.
       \vskip1ex
@@ -2637,14 +2648,14 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI EMA Prices") %>%
   dyLegend(show="always", width=300)
 # Standard plot of  EMA prices with custom line colors
 x11(width=6, height=5)
-plot_theme <- chart_theme()
+themev <- chart_theme()
 colorv <- c("blue", "red")
-plot_theme$col$line.col <- colors
-quantmod::chart_Series(pricev["2008/2009"], theme=plot_theme,
+themev$col$line.col <- colors
+quantmod::chart_Series(pricev["2008/2009"], theme=themev,
              lwd=2, name="VTI EMA Prices")
 legend("topleft", legend=colnames(pricev), y.intersp=0.4,
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
-       col=plot_theme$col$line.col, bty="n")
+       col=themev$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -2700,14 +2711,14 @@ dygraphs::dygraph(pricev["2008/2009"], main="Recursive VTI EMA Prices") %>%
   dyLegend(show="always", width=300)
 # Standard plot of  EMA prices with custom line colors
 x11(width=6, height=5)
-plot_theme <- chart_theme()
+themev <- chart_theme()
 colorv <- c("blue", "red")
-plot_theme$col$line.col <- colors
-quantmod::chart_Series(pricev["2008/2009"], theme=plot_theme,
+themev$col$line.col <- colors
+quantmod::chart_Series(pricev["2008/2009"], theme=themev,
              lwd=2, name="VTI EMA Prices")
 legend("topleft", legend=colnames(pricev),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
-       col=plot_theme$col$line.col, bty="n")
+       col=themev$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -2753,13 +2764,13 @@ dygraphs::dygraph(pricev["2008/2009"], main="VTI VWAP Prices") %>%
   dyLegend(show="always", width=300)
 # Plot VWAP prices with custom line colors
 x11(width=6, height=5)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- colors
-quantmod::chart_Series(pricev["2008/2009"], theme=plot_theme,
+themev <- chart_theme()
+themev$col$line.col <- colors
+quantmod::chart_Series(pricev["2008/2009"], theme=themev,
              lwd=2, name="VTI VWAP Prices")
 legend("bottomright", legend=colnames(pricev),
        inset=0.1, bg="white", lty=1, lwd=6, cex=0.8,
-       col=plot_theme$col$line.col, bty="n")
+       col=themev$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -4195,7 +4206,7 @@ pacf(varv, lag=10, main="PACF of Variance", ylab=NA)
       \begin{flalign*}
         \sigma^2_t &= \omega + \beta \sigma^2_{t-1} + \xi^2_t
       \end{flalign*}
-      Where $\sigma^2_t$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance $(r_t - \bar{r}_t)^2$ and the past variance $\sigma^2_{t-1}$, and $\xi_t$ are standard normal \emph{innovations}.
+      Where $\sigma^2_t$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance $(r_t - \bar{r}_t)^2$ and the past variance $\sigma^2_{t-1}$, and $\xi_t$ are standard normal innovations.
       \vskip1ex
       The return process $r_t$ follows a normal distribution with a time-dependent variance $\sigma^2_t$.
       \vskip1ex
@@ -4251,7 +4262,7 @@ all.equal(garchsim, cbind(retp, varv), check.attributes=FALSE)
       \end{flalign*}
       The time-dependent variance $\sigma^2_t$, is equal to the weighted average of the \emph{realized} variance $r_t^2$ and the past variance $\sigma^2_{t-1}$.
       \vskip1ex
-      The source of uncertainty are the returns $r_t$, which are proportional to the standard normal \emph{innovations} $\xi_t$.
+      The source of uncertainty are the returns $r_t$, which are proportional to the standard normal innovations $\xi_t$.
       \vskip1ex
       The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance.
       \vskip1ex
@@ -4260,6 +4271,10 @@ all.equal(garchsim, cbind(retp, varv), check.attributes=FALSE)
         \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
       \end{displaymath}
       So the sum of $\alpha$ plus $\beta$ should be less than $1$, otherwise the volatility is explosive.
+      \vskip1ex
+      NYU Professor 
+      \href{https://www.stern.nyu.edu/faculty/bio/robert-engle}{Robert Engle}
+      was awarded the Nobel Prize in Economics for developing the \emph{GARCH} volatility model.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -4284,7 +4299,7 @@ garchsim <- HighFreq::sim_garch(omega=omega, alpha=alphac,
   beta=betac, innov=matrix(innov))
 all.equal(garchsim, cbind(retp, varv), check.attributes=FALSE)
       @
-      The \emph{GARCH} process must be simulated using an explicit loop, so it's better to perform it in \texttt{C++} instead of \texttt{R}.
+      The \emph{GARCH} process is path dependent, so it must be simulated using an explicit loop, and it's better to perform it in \texttt{C++} instead of \texttt{R}.
   \end{columns}
 \end{block}
 
@@ -4975,19 +4990,19 @@ var_yang_zhang <- HighFreq::run_variance(ohlc=ohlc)
 stdev <- 24*60*60*sqrt(252*cbind(varcl, var_yang_zhang))
 colnames(stdev) <- c("close stdev", "Yang-Zhang")
 # Plot the time series of volatility
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "red")
+themev <- chart_theme()
+themev$col$line.col <- c("black", "red")
 quantmod::chart_Series(stdev["2011-07/2011-12"],
-  theme=plot_theme, name="Standard Deviations: Close and YZ")
+  theme=themev, name="Standard Deviations: Close and YZ")
 legend("top", legend=colnames(stdev), y.intersp=0.4,
        bg="white", lty=1, lwd=6, inset=0.1, cex=0.8,
-       col=plot_theme$col$line.col, bty="n")
+       col=themev$col$line.col, bty="n")
 # Plot volatility around 2010 flash crash
 quantmod::chart_Series(stdev["2010-04/2010-06"],
-  theme=plot_theme, name="Volatility Around 2010 Flash Crash")
+  theme=themev, name="Volatility Around 2010 Flash Crash")
 legend("top", legend=colnames(stdev), y.intersp=0.4,
        bg="white", lty=1, lwd=6, inset=0.1, cex=0.8,
-       col=plot_theme$col$line.col, bty="n")
+       col=themev$col$line.col, bty="n")
 # Plot density of volatility distributions
 plot(density(stdev[, 1]), xlab="", ylab="",
   main="Density of Volatility Distributions",
@@ -4995,7 +5010,7 @@ plot(density(stdev[, 1]), xlab="", ylab="",
 lines(density(stdev[, 2]), col='red', lwd=2)
 legend("top", legend=c("Close-to-Close", "Yang-Zhang"),
        bg="white", lty=1, lwd=6, inset=0.1, cex=0.8, y.intersp=0.4,
-       col=plot_theme$col$line.col, bty="n")
+       col=themev$col$line.col, bty="n")
 # ? range volatility estimator has lower standard error ?
 c(sd(varcl)/mean(varcl), sd(var_yang_zhang)/mean(var_yang_zhang))
 foo <- stdev[varcl < range(varcl)[2]/3, ]
@@ -5747,12 +5762,12 @@ colnames(kelly_paths) <- c("kelly", "hyper-kelly", "sub-kelly")
       \includegraphics[width=0.45\paperwidth]{figure/kelly_wealth.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot wealth paths
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "orange", "blue")
-quantmod::chart_Series(kelly_paths, theme=plot_theme, name="Wealth Paths")
+themev <- chart_theme()
+themev$col$line.col <- c("black", "orange", "blue")
+quantmod::chart_Series(kelly_paths, theme=themev, name="Wealth Paths")
 legend("topleft", legend=colnames(kelly_paths),
        inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
-       col=plot_theme$col$line.col, bty="n")
+       col=themev$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -6053,13 +6068,13 @@ colnames(kelly_paths) <- c("kelly", "hyper-kelly", "sub-kelly")
       \includegraphics[width=0.45\paperwidth]{figure/kelly_wealth.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot wealth paths
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "orange", "blue")
-quantmod::chart_Series(kelly_paths, theme=plot_theme,
+themev <- chart_theme()
+themev$col$line.col <- c("black", "orange", "blue")
+quantmod::chart_Series(kelly_paths, theme=themev,
              name="Wealth Paths")
 legend("topleft", legend=colnames(kelly_paths),
        inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
-       col=plot_theme$col$line.col, bty="n")
+       col=themev$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
