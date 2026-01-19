@@ -1,1383 +1,1405 @@
-# Display documentation on function "getwd"
-help(getwd)
-# Equivalent to "help(getwd)"
-?getwd
-# Open the hypertext documentation
-help.start()
-# Calculate cumulative sum of a vector
+library(microbenchmark)
+vecv <- runif(1e6)
+#sqrt() and "^0.5" are the same
+all.equal(sqrt(vecv), vecv^0.5)
+#sqrt() is much faster than "^0.5"
+system.time(vecv^0.5)
+microbenchmark(
+  power = vecv^0.5,
+  sqrt = sqrt(vecv),
+  times=10)
+
+#sum() is a compiled primitive function
+sum
+#mean() is a generic function
+mean
+vecv <- runif(1e6)
+#sum() is much faster than mean()
+all.equal(mean(vecv), sum(vecv)/NROW(vecv))
+library(microbenchmark)
+summary(microbenchmark(
+  mean = mean(vecv),
+  sum = sum(vecv)/NROW(vecv),
+  times=10))[, c(1, 4, 5)]
+#any() is a compiled primitive function
+any
+#any() is much faster than %in% wrapper for match()
+all.equal(1 %in% vecv, any(vecv == 1))
+summary(microbenchmark(
+  inop = {1 %in% vecv},
+  anyfun = any(vecv == 1),
+  times=10))[, c(1, 4, 5)]
+
+library(microbenchmark)
+matv <- matrix(1:9, ncol=3, #Create matrix
+  dimnames=list(paste0("row", 1:3),
+          paste0("col", 1:3)))
+#Create specialized function
+matrix_to_dframe <- function(matv) {
+  ncols <- ncol(matv)
+  dframe <- vector("list", ncols)  #empty vector
+  for (indeks in 1:ncols)  #Populate vector
+    dframe <- matv[, indeks]
+  attr(dframe, "row.names") <-  #Add attributes
+    .set_row_names(NROW(matv))
+  attr(dframe, "class") <- "data.frame"
+  dframe  #Return data frame
+}  #end matrix_to_dframe
+#Compare speed of three methods
+summary(microbenchmark(
+  matrix_to_dframe(matv),
+  as.data.frame.matrix(matv),
+  as.data.frame(matv),
+  times=10))[, c(1, 4, 5)]
+
+#Calculate matrix of random data with 5,000 rows
+matv <- matrix(rnorm(10000), ncol=2)
+#Allocate memory for row sums
+rowsumv <- numeric(NROW(matv))
+summary(microbenchmark(
+  rowsums = rowSums(matv),  #end rowsumv
+  applyloop = apply(matv, 1, sum),  #end apply
+  lapply = lapply(1:NROW(matv), function(indeks)
+    sum(matv[indeks, ])),  #end lapply
+  vapply = vapply(1:NROW(matv), function(indeks)
+    sum(matv[indeks, ]),
+    FUN.VALUE = c(sum=0)),  #end vapply
+  sapply = sapply(1:NROW(matv), function(indeks)
+    sum(matv[indeks, ])),  #end sapply
+  forloop = for (i in 1:NROW(matv)) {
+    rowsumv[i] <- sum(matv[i,])
+  },  #end for
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+
+vecv <- rnorm(5000)
+summary(microbenchmark(
+#Compiled C++ function
+  cpp = cumsum(vecv),  #end for
+#Allocate full memory for cumulative sum
+  forloop = {cumsumv <- numeric(NROW(vecv))
+    cumsumv[1] <- vecv[1]
+    for (i in 2:NROW(vecv)) {
+      cumsumv[i] <- cumsumv[i-1] + vecv[i]
+    }},  #end for
+#Allocate zero memory for cumulative sum
+  growvec = {cumsumv <- numeric(0)
+    cumsumv[1] <- vecv[1]
+    for (i in 2:NROW(vecv)) {
+#Add new element to "cumsumv" ("grow" it)
+      cumsumv[i] <- cumsumv[i-1] + vecv[i]
+    }},  #end for
+#Allocate zero memory for cumulative sum
+  combine = {cumsumv <- numeric(0)
+    cumsumv[1] <- vecv[1]
+    for (i in 2:NROW(vecv)) {
+#Add new element to "cumsumv" ("grow" it)
+      cumsumv <- c(cumsumv, vecv[i])
+    }},  #end for
+  times=10))[, c(1, 4, 5)]
+
+#Disable JIT
+jit_level <- compiler::enableJIT(0)
+#Create inefficient function
+meanfun <- function(x) {
+  datav <- 0; nrows <- NROW(x)
+  for(it in 1:nrows)
+    datav <- datav + x[it]/nrows
+  datav
+}  #end meanfun
+#Byte-compile function and inspect it
+meanbyte <- compiler::cmpfun(meanfun)
+meanbyte
+#Test function
+vecv <- runif(1e3)
+all.equal(mean(vecv), meanbyte(vecv), meanfun(vecv))
+#microbenchmark byte-compile function
+summary(microbenchmark(
+  mean(vecv),
+  meanbyte(vecv),
+  meanfun(vecv),
+  times=10))[, c(1, 4, 5)]
+#Create another inefficient function
+sapply2 <- function(x, FUN, ...) {
+  datav <- vector(length=NROW(x))
+  for (it in seq_along(x))
+    datav[it] <- FUN(x[it], ...)
+  datav
+}  #end sapply2
+sapply2_comp <- compiler::cmpfun(sapply2)
+all.equal(sqrt(vecv),
+  sapply2(vecv, sqrt),
+  sapply2_comp(vecv, sqrt))
+summary(microbenchmark(
+  sqrt(vecv),
+  sapply2_comp(vecv, sqrt),
+  sapply2(vecv, sqrt),
+  times=10))[, c(1, 4, 5)]
+#enable JIT
+compiler::enableJIT(jit_level)
+
+#Define functions for profiling
+profun <- function() {fastfun(); slowfun()}
+fastfun <- function() Sys.sleep(0.1)
+slowfun <- function() Sys.sleep(0.2)
+#Turn on profiling
+Rprof(filename="/Users/jerzy/Develop/data_def/profile.out")
+#Run code for profiling
+replicate(n=10, profun())
+#Turn off profiling
+Rprof(NULL)
+#Compile summary of profiling from file
+summaryRprof("/Users/jerzy/Develop/data_def/profile.out")
+
+#Calculate cumulative sum of a vector
 vecv <- runif(1e5)
-# Use compiled function
+#Use compiled function
 cumsumv <- cumsum(vecv)
-# Use for loop
+#Use for loop
 cumsumv2 <- vecv
 for (i in 2:NROW(vecv))
   cumsumv2[i] <- (vecv[i] + cumsumv2[i-1])
-# Compare the outputs of the two methods
+#Compare the two methods
 all.equal(cumsumv, cumsumv2)
-# Microbenchmark the two methods
+#Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
-  cumsum=cumsum(vecv), # Vectorized
-  loop_alloc={cumsumv2 <- vecv # Allocate memory to cumsumv3
+  cumsum=cumsum(vecv),
+  loop_alloc={
+    cumsumv2 <- vecv
     for (i in 2:NROW(vecv))
 cumsumv2[i] <- (vecv[i] + cumsumv2[i-1])
   },
-  loop_nalloc={cumsumv3 <- vecv[1] # Doesn't allocate memory to cumsumv3
+  loop_nalloc={
+    #Doesn't allocate memory to cumsumv3
+    cumsumv3 <- vecv[1]
     for (i in 2:NROW(vecv))
+#This command adds an extra element to cumsumv3
 cumsumv3[i] <- (vecv[i] + cumsumv3[i-1])
-  }, times=10))[, c(1, 4, 5)]
-# "<-" and "=" are valid assignment operators
-myvar <- 3
-# typing a symbol or expression evaluates it
-myvar
-# text in quotes is interpreted as a string
-myvar <- "Hello World!"
-# typing a symbol or expression evaluates it
-myvar
-myvar  # text after hash is treated as comment
-getwd()  # get cwd
-setwd("/Users/jerzy/Develop/R")  # Set cwd
-getwd()  # get cwd
-Sys.time()  # get date and time
-Sys.Date()  # get date only
-rm(list=ls())
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-var1 <- 3  # Define new object
-ls()  # List all objects in workspace
-# List objects starting with "v"
-ls(pattern=glob2rx("v*"))
-# Delete all objects in workspace starting with "v"
-rm(list=ls(pattern=glob2rx("v*")))
-save.image()  # Save workspace to file .RData in cwd
-rm(var1)  # Remove object
-ls()  # List objects
-load(".RData")
-ls()  # List objects
-var2 <- 5  # Define another object
-save(var1, var2,  # Save selected objects
-     file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
-rm(list=ls())  # Delete all objects in workspace
-ls()  # List objects
-loadv <- load(file="/Users/jerzy/Develop/lecture_slides/data/my_data.RData")
-loadv
-ls()  # List objects
-  q()  # quit R session
-history(5)  # Display last 5 commands
-savehistory(file="myfile")  # Default is ".Rhistory"
-loadhistory(file="myfile")  # Default is ".Rhistory"
-sessionInfo()  # get R version and other session info
-Sys.getenv()[5:7]  # List some environment variables
-Sys.getenv("HOME")  # get R user HOME directory
-Sys.setenv(Home="/Users/jerzy/Develop/data")  # Set HOME directory
-Sys.getenv("HOME")  # get user HOME directory
-Sys.getenv("R_HOME")  # get R_HOME directory
-R.home()  # get R_HOME directory
-R.home("etc")  # get "etc" sub-directory of R_HOME
-# ?options  # Long list of global options
-# Interpret strings as characters, not factors
-getOption("stringsAsFactors")  # Display option
-options("stringsAsFactors")  # Display option
-options(stringsAsFactors=FALSE)  # Set option
-# number of digits printed for numeric values
-# control exponential scientific notation of print method
-# positive "scipen" values bias towards fixed notation
-# negative "scipen" values bias towards scientific notation
-options(scipen=100)
-# maximum number of items printed to console
-options(max.print=30)
-# Warning levels options
-# negative - warnings are ignored
-options(warn=-1)
-# zero - warnings are stored and printed after top-confl function has completed
-options(warn=0)
-# One - warnings are printed as they occur
-options(warn=1)
-# two or larger - warnings are turned into errors
-options(warn=2)
-# Save all options in variable
-optionv <- options()
-# Restore all options from variable
-options(optionv)
-# R startup (site) directory
-paste(R.home(), "etc", sep="/")
-file.path(R.home(), "etc")  # better way
-# perform tilde-expansions and convert to readable format
-normalizePath(file.path(R.home(), "etc"), winslash="/")
-normalizePath(R.home("etc"), winslash="/")
-normalizePath("~", winslash="/")  # Windows user HOME directory
-Sys.getenv("HOME")  # R user HOME directory
-setwd("/Users/jerzy/Develop/R")
-getwd()  # current working directory
-# R startup (site) directory
-normalizePath(file.path(R.home(), "etc"), winslash="/")
-# R executable directory
-normalizePath(file.path(R.home(), "bin/x64"), winslash="/")
-# R documentation directory
-normalizePath(file.path(R.home(), "doc/manual"), winslash="/")
-sample(dir(), 5)  # get 5 file names - dir() lists all files
-sample(dir(pattern="csv"), 5)  # List files containing "csv"
-sample(list.files(R.home()), 5)  # All files in R_HOME directory
-sample(list.files(R.home("etc")), 5)  # All files in "etc" sub-directory of R_HOME directory
-sample(list.dirs(), 5)  # Directories in cwd
-list.dirs(R.home("etc"))  # Directories in "etc" sub-directory
-sample(Sys.glob("*.csv"), 5)
-Sys.glob(R.home("etc"))
-getwd()  # get cwd
-setwd("/Users/jerzy/Develop/R")
-# help(Startup)  # Description of R session startup mechanism
-# files in R startup directory directory
-dir(normalizePath(file.path(R.home(), "etc"), winslash="/"))
-# *.R* files in cwd directory
-getwd()
-dir(getwd(), all.files=TRUE, pattern="\\.R")
-dir(getwd(), all.files=TRUE, pattern=glob2rx("*.R*"))
-# Single numbers are vectors of length 1
-1
-# Character strings are vectors of length 1
-"a"
-# Strings without quotes are variable names
-a  # Variable "a" doesn't exist
-# List elements can have different mode
-list(aa=c("a", "b"), bb=1:5)
-data.frame(aa=c("a", "b"), bb=1:2)
-is.atomic(data.frame(aa=c("a", "b"), bb=1:2))
-is.recursive(data.frame(aa=c("a", "b"), bb=1:2))
-myvar <- "hello"
-c(typeof(myvar), mode(myvar), class(myvar))
-myvar <- 1:5
-c(typeof(myvar), mode(myvar), class(myvar))
-myvar <- runif(5)
-c(typeof(myvar), mode(myvar), class(myvar))
-myvar <- matrix(1:10, 2, 5)
-c(typeof(myvar), mode(myvar), class(myvar))
-myvar <- matrix(runif(10), 2, 5)
-c(typeof(myvar), mode(myvar), class(myvar))
-myvar <- list(aa=c("a", "b"), bb=1:5)
-c(typeof(myvar), mode(myvar), class(myvar))
-myvar <- data.frame(aa=c("a", "b"), bb=1:2)
-c(typeof(myvar), mode(myvar), class(myvar))
-# A simple vector has no attributes
-attributes(5:10)
-myvar <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-# Named vector has "names" attribute
-attributes(myvar)
-myvar <- 1:10
-is.vector(myvar)  # Is the object a vector?
-attributes(myvar) <- list(my_attr="my_attr")
-myvar
-is.vector(myvar)  # Is the object a vector?
-myvar <- 0
-attributes(myvar) <- list(class="Date")
-myvar  # "Date" object
-structure(0, class="Date")  # "Date" object
-myvar <- matrix(runif(10), 2, 5)
-class(myvar)  # Has implicit class
-# But no explicit "class" attribute
-attributes(myvar)
-c(typeof(myvar), mode(myvar), class(myvar))
-# Assign explicit "class" attribute
-class(myvar) <- "my_class"
-class(myvar)  # Has explicit "class"
-# Has explicit "class" attribute
-attributes(myvar)
-is.matrix(myvar)  # Is the object a matrix?
-is.vector(myvar)  # Is the object a vector?
-attributes(unclass(myvar))
-# Integer implicit class derived from type
-myvar <- vector(mode="integer", length=10)
-c(typeof(myvar), mode(myvar), class(myvar))
-# Numeric implicit class derived from mode
-myvar <- vector(mode="numeric", length=10)
-c(typeof(myvar), mode(myvar), class(myvar))
-# Adding dim attribute changes implicit class to matrix
-dim(myvar) <- c(5, 2)
-c(typeof(myvar), mode(myvar), class(myvar))
-# Data frames have implicit dim attribute
-myvar <- data.frame(aa=c("a", "b"), bb=1:2)
-c(typeof(myvar), mode(myvar), class(myvar))
-attributes(myvar)
-dim(myvar)
-myvar <- 1:5
-c(typeof(myvar), mode(myvar), class(myvar))
-mode(myvar) <- "character"  # Coerce to "character"
-myvar
-c(typeof(myvar), mode(myvar), class(myvar))
-# Explicitly coerce to "character"
-myvar <- as.character(1:5)
-c(typeof(myvar), mode(myvar), class(myvar))
-matv <- matrix(1:10, 2, 5)  # Create matrix
-# Explicitly coerce to "character"
-matv <- as.character(matv)
-c(typeof(matv), mode(matv), class(matv))
-# Coercion converted matrix to vector
-c(is.matrix(matv), is.vector(matv))
-as.logical(0:3)  # Explicit coercion to "logical"
-as.numeric(c(FALSE, TRUE, TRUE, TRUE))
-c(1:3, "a")  # Implicit coercion to "character"
-# Explicit coercion to "numeric"
-as.numeric(c(1:3, "a"))
-"Hello World!"  # Type some text
-# hello is a variable name, because it's not in quotes
-hello  # R interprets "hello" as a variable name
-is.vector(1)  # Single number is a vector
-is.vector("a")  # String is a vector
-4:8  # Create a vector
-# Create vector using c() combine function
-c(1, 2, 3, 4, 5)
-# Create vector using c() combine function
-c("a", "b", "c")
-# Create vector using c() combine function
-c(1, "b", "c")
-stringv <- "Some string"
-stringv
-stringv[1]
-stringv[2]
-NROW(stringv)  # length of vector
-nchar(stringv)  # length of string
-# Concatenate and echo to console
-cat("Hello", "World!")
-cat("Enter\ttab")
-cat("Enter\nnewline")
-cat("Enter\\backslash")
-stringv1 <- "Hello"  # Define a character string
-stringv2 <- "World!"  # Define a character string
-paste(stringv1, stringv2, sep=" ")  # Concatenate and return value
-cat(stringv1, stringv2)  # Concatenate and echo to console
-paste("a", 1:4, sep="-")  # Convert, recycle and concatenate
-paste(c("a1", "a2", "a3"), collapse="+")  # Collapse vector to string
-paste(list("a1", "a2", "a3"), collapse="+")
-paste("Today is", Sys.time())  # Coerce and concatenate strings
-paste("Today is", format(Sys.time(), "%B-%d-%Y"))
-strsplit("Hello World", split="r")  # Split string
-strsplit("Hello.World", split="[.]")  # Split string
-strsplit("Hello.World", split=".", fixed=TRUE)  # Split string
-substring("Hello World", 3, 6)  # Extract characters from 3 to 6
-gsub("is", "XX", "is this gratis?")  # Replace "is" with "XX"
-grep("b", c("abc", "xyz", "cba d", "bbb"))  # Get indexes
-grep("b", c("abc", "xyz", "cba d", "bbb"), value=TRUE)  # Get values
-glob2rx("abc.*")  # Convert globs into regex
-glob2rx("*.doc")
-is.vector(1)  # Single number is a vector
-is.vector("a")  # String is a vector
-vecv <- c(8, 6, 5, 7)  # Create vector
-vecv
-vecv[2]  # Extract second element
-# Extract all elements, except the second element
-vecv[-2]
-# Create Boolean vector
-c(FALSE, TRUE, TRUE)
-# Extract second and third elements
-vecv[c(FALSE, TRUE, TRUE)]
-letters[5:10]  # Vector of letters
-c("a", letters[5:10])  # Combine two vectors of letters
-0:10  # Vector of integers from 0 to 10
-vector()  # Create empty vector
-vector(mode="numeric", length=10)  # Numeric vector of zeros
-seq(10)  # Sequence from 1 to 10
-seq(along=(-5:5))  # Instead of 1:NROW(obj)
-seq_along(c("a", "b", "c"))  # Instead of 1:NROW(obj)
-seq(from=0, to=1, len=11)  # Decimals from 0 to 1.0
-seq(from=0, to=1, by=0.1)  # Decimals from 0 to 1.0
-seq(-2,2, len=11)  # 10 numbers from -2 to 2
-rep(100, times=5)  # Replicate a number
-character(5)  # Create empty character vector
-numeric(5)  # Create empty numeric vector
-numeric(0)  # Create zero-length vector
-2*4:8  # Multiply a vector
-2*(4:8)  # Multiply a vector
-4:8/2  # Divide a vector
-(0:10)/10  # Divide vector - decimals from 0 to 1.0
-vecv <- c(8, 6, 5, 7)  # Create vector
-vecv
-# Boolean vector TRUE if element is equal to second one
-vecv == vecv[2]
-# Boolean vector TRUE for elements greater than six
-vecv > 6
-2*vecv  # Multiply all elements by 2
-vecv^2  # Square all elements
-c(11, 5:10)  # Combine two vectors
-c(vecv, 2.0)  # Append number to vector
-vecv <- # Create named vector
-  c(pi_const=pi, euler=exp(1), gamma=-digamma(1))
-vecv
-names(vecv)  # Get names of elements
-vecv["euler"]  # Get element named "euler"
-names(vecv) <- c("pie","eulery","gammy")  # Rename elements
-vecv
-unname(vecv)  # Remove names attribute
-letters[5:10]  # Vector of letters
-c("a", letters[5:10])  # Combine two vectors of letters
-# Create named vector
-structure(sample(1:5), names=paste0("el", 1:5))
-vecv  # Named vector
-# Extract second element
-vecv[2]
-# Extract all elements, except the second element
-vecv[-2]
-# Extract zero elements - returns zero-length vector
-vecv[0]
-# Extract second and third elements
-vecv[c(FALSE, TRUE, TRUE)]
-# Extract elements using their names
-vecv["eulery"]
-# Extract elements using their names
-vecv[c("pie", "gammy")]
-# Subset whole vector
-vecv[] <- 0
-vecv <- runif(5)
-vecv
-vecv > 0.5  # Boolean vector
-# Boolean vector of elements equal to the second one
-vecv == vecv[2]
-# Extract all elements equal to the second one
-vecv[vecv == vecv[2]]
-vecv < 1  # Boolean vector of elements less than one
-# Extract all elements greater than one
-vecv[vecv > 1]
-vecv[vecv > 0.5]  # Filter elements > 0.5
-which(vecv > 0.5)  # Index of elements > 0.5
-# Create factor vector
-factv <- factor(c("b", "c", "d", "a", "c", "b"))
-factv
-factv[3]
-# Get factor attributes
-attributes(factv)
-# Get allowed values
-levels(factv)
-# Get encoding vector
-as.numeric(factv)
-is.vector(factv)
-# Coerce vector to factor
-as.factor(1:5)
-# Coerce factor to character vector
-as.vector(as.factor(1:5))
-# Print factor vector
-factv
-# Get unique elements of factv
-unique(factv)
-# Get levels attribute of factv
-levels(factv)
-# Calculate the factor elements from its levels
-levels(factv)[as.numeric(factv)]
-# Get contingency (frequency) table
-table(factv)
-# Display the formal arguments of findInterval
-args(findInterval)
-# Get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# No exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# Indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# Return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7), all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7), rightmost.closed=TRUE)
-# Named numeric vector of breakpoints
-breakv <- c(freezing=0, very_cold=30, cold=50, pleasant=60, warm=80, hot=90)
-breakv
-tempv <- runif(10, min=10, max=100)
-feels_like <- names(breakv[findInterval(x=tempv, vec=breakv)])
-names(tempv) <- feels_like
-tempv
-library(microbenchmark)
-datav <- sample(0:6) + 0.1
-datav
-cut(x=datav, breaks=c(2, 4, 6, 8))
-rbind(datav, cut(x=datav, breaks=c(2, 4, 6, 8)))
-# cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2, right=FALSE)
-findInterval(x=1:8, vec=c(3, 5, 7))
-# findInterval() is a compiled function, so it's faster than cut()
-vecv <- rnorm(1000)
-summary(microbenchmark(
-  find_interval=findInterval(x=vecv, vec=c(3, 5, 7)),
-  cut=cut(x=vecv, breaks=c(3, 5, 7)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Calculate VTI percentage returns
-retp <- na.omit(rutils::etfenv$returns$VTI)
-# Plot histogram
-x11(width=6, height=5)
-par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-madv <- mad(retp)
-histp <- hist(retp, breaks=100,
-  main="", xlim=c(-5*madv, 5*madv),
-  xlab="", ylab="", freq=FALSE)
-# Draw kernel density of histogram
-lines(density(retp), col="red", lwd=2)
-# Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(retp), sd=sd(retp)),
-add=TRUE, type="l", lwd=2, col="blue")
-title(main="VTI Return Distribution", line=0)
-# Add legend
-legend("topright", inset=0.05, cex=0.8, title=NULL,
-  leg=c("VTI", "Normal"), bty="n",
-  lwd=6, bg="white", col=c("red", "blue"))
-# Total area under histogram
-sum(diff(histp$breaks) * histp$density)
-matv <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
-matv  # By default matrices are constructed column-wise
-# Create a matrix row-wise
-matrix(5:10, nrow=2, byrow=TRUE)
-matv[2, 3]  # Extract third element from second row
-matv[2, ]  # Extract second row
-matv[, 3]  # Extract third column
-matv[, c(1,3)]  # Extract first and third column
-matv[, -2]  # Remove second column
-# Subset whole matrix
-matv[] <- 0
-# Get the number of rows or columns
-nrow(vecv); ncol(vecv)
-NROW(vecv); NCOL(vecv)
-nrow(matv); ncol(matv)
-NROW(matv); NCOL(matv)
-attributes(matv)  # Get matrix attributes
-dim(matv)  # Get dimension attribute
-class(matv)  # Get class attribute
-rownames(matv) <- c("row1", "row2")  # Rownames attribute
-colnames(matv) <- c("col1", "col2", "col3")  # Colnames attribute
-matv
-matv["row2", "col3"]  # Third element from second row
-names(matv)  # Get the names attribute
-dimnames(matv)  # Get dimnames attribute
-attributes(matv)  # Get matrix attributes
-matv  # matrix with column names
-matv[1, ]  # Subset rows by index
-matv[, "col1"]  # Subset columns by name
-matv[, c(TRUE, FALSE, TRUE)]  # Subset columns Boolean vector
-matv[1, ]  # Subsetting can produce a vector!
-class(matv); class(matv[1, ])
-is.matrix(matv[1, ]); is.vector(matv[1, ])
-matv[1, , drop=FALSE]  # Drop=FALSE preserves matrix
-class(matv[1, , drop=FALSE])
-is.matrix(matv[1, , drop=FALSE]); is.vector(matv[1, , drop=FALSE])
-rm(list=ls())
-TRUE | FALSE
-TRUE | NA
-vec1 <- c(2, 4, 6)
-vec1 < 5  # Element-wise comparison
-(vec1 < 5) & (vec1 > 3)
-vec1[(vec1 < 5) & (vec1 > 3)]
-vec2 <- c(-10, 0, 10)
-vec1 < vec2
-c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
-c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
-rm(list=ls())
-FALSE && TRUE
-FALSE || TRUE
-echo_true <- function() {cat("echo_true\t"); TRUE}
-echo_false <- function() {cat("echo_false\t"); FALSE}
-echo_true() | echo_false()
-echo_true() || echo_false()  # echo_false() isn't evaluated at all!
-vecv <- c(2, 4, 6)
-# Works (does nothing) using '&&'
-if (is.matrix(vecv) && (vecv[2, 3] > 0)) {
-  vecv[2, 3] <- 1
-}
-# No short-circuit so fails (produces an error)
-if (is.matrix(vecv) & (vecv[2, 3] > 0)) {
-  vecv[2, 3] <- 1
-}
-?Arithmetic
-4.7 * 0.5  # Multiplication
-4.7 / 0.5  # Division
-# Exponentiation
-2**3
-2^3
-numv <- 2
-numv==2
-identical(numv, 2)
-identical(numv, NULL)
-# This doesn't work:
-# numv==NULL
-is.null(numv)
-vecv <- c(2, 4, 6)
-vecv==2
-identical(vecv, 2)
-# numv is equal to "1.0" within machine precision
-numv <- 1.0 + 2*sqrt(.Machine$double.eps)
-all.equal(numv, 1.0)
-# Info machine precision of computer R is running on
-# ?.Machine
-# Machine precision
-.Machine$double.eps
-vecv <- sample(1e3, 1e3)
-matv <- matrix(vecv, ncol=4)
-which(vecv == 5)
-match(5, vecv)
-# Equivalent but slower than above
-(1:NROW(vecv))[vecv == 5]
-which(vecv < 5)
-# Find indices of TRUE elements of Boolean matrix
-which((matv == 5)|(matv == 6), arr.ind=TRUE)
-# Equivalent but slower than above
-arrayInd(which((matv == 5)|(matv == 6)),
-   dim(matv), dimnames(matv))
-# Find index of largest element
-which.max(vecv)
-which(vecv == max(vecv))
-# Find index of smallest element
-which.min(vecv)
-# Benchmark match() versus which()
-all.equal(match(5, vecv), min(which(vecv == 5)))
-library(microbenchmark)
-summary(microbenchmark(
-  match=match(5, vecv),
-  which=min(which(vecv == 5)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Does 5 belong in vecv?
-5 %in% vecv
-match(5, vecv, nomatch=0) > 0
-# Does (-5) belong in vecv?
-(-5) %in% vecv
-c(5, -5) %in% vecv
-match(-5, vecv)
-# Equivalent to "5 %in% vecv"
-any(vecv == 5)
-# Equivalent to "(-5) %in% vecv"
-any(vecv == (-5))
-# Any negative values in vecv?
-any(vecv < 0)
-# Example of use in if() statement
-if (any(vecv < 2))
-  cat("vector contains small values\n")
-# Partial matching of strings
-pmatch("med", c("mean", "median", "mode"))
-# Display the formal arguments of findInterval
-args(findInterval)
-# Get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# No exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# Indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# Return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7), all.inside=TRUE)
-# Make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7), rightmost.closed=TRUE)
-numv1 <- 3  # "<-" and "=" are valid assignment operators
-numv1
-numv1 = 3
-numv1
-2<-3  # "<" operator confused with "<-"
-2 < -3  # Add space or brackets to avoid confusion
-# "=" assignment within argument list
-median(x=1:10)
-x  # x doesn't exist outside the function
-# "<-" assignment within argument list
-median(x <- 1:10)
-x  # x exists outside the function
-myvar <- 1  # Create new object
-assign(x="myvar", value=2)  # Assign value to existing object
-myvar
-rm(myvar)  # Remove myvar
-assign(x="myvar", value=3)  # Create new object from name
-myvar
-# Create new object in new environment
-envv <- new.env()  # Create new environment
-assign("myvar", 3, envir=envv)  # Assign value to name
-ls(envv)  # List objects in "envv"
-envv$myvar
-rm(list=ls())  # Delete all objects in workspace
-symboln <- "myvar"  # Define symbol containing string "myvar"
-assign(symboln, 1)  # Assign value to "myvar"
-ls()
-myvar
-assign("symboln", "new_var")
-assign(symboln, 1)  # Assign value to "new_var"
-ls()
-symboln <- 10
-assign(symboln, 1)  # Can't assign to non-string
-rm(list=ls())  # Delete all objects in workspace
-# Create individual vectors from column names of EuStockMarkets
-for (colname in colnames(EuStockMarkets)) {
-# Assign column values to column names
-  assign(colname, EuStockMarkets[, colname])
-}  # end for
-ls()
-head(DAX)
-head(EuStockMarkets[, "DAX"])
-identical(DAX, EuStockMarkets[, "DAX"])
-# Create new environment
-envv <- new.env()
-# Pass string as name to create new object
-assign("myvar1", 2, envir=envv)
-# Create new object using $ string referencing
-envv$myvar2 <- 1
-# List objects in new environment
-ls(envv)
-# Reference an object by name
-envv$myvar1
-# Reference an object by string name using get
-get("myvar1", envir=envv)
-# Retrieve and assign value to object
-assign("myvar1",
-       2*get("myvar1", envir=envv),
-       envir=envv)
-get("myvar1", envir=envv)
-# Return all objects in an environment
-mget(ls(envv), envir=envv)
-# Delete environment
-rm(envv)
-rm(list=ls())  # Delete all objects in workspace
-# Convert string to symbol
-as.symbol("some_string")
-# The "name" class is synonymous with a symbol
-class(as.symbol("some_string"))
-# Symbols are created during assignments
-symboln <- 2
-# Evaluate symbol (same as typing it)
-eval(symboln)
-# Convert string into a symbol and evaluate it
-eval(as.symbol("symboln"))
-# Convert string into unevaluated expression
-expv <- parse(text="newv <- symboln")
-expv
-class(expv)
-ls()
-eval(expv)  # Evaluate expression
-ls()  # Expression evaluation created new object
-newv
-# Create the expression "1+1"
-quote(1+1)
-# Evaluate the expression "1+1"
-eval(quote(1+1))
-# Create an expression containing several commands
-expv <- quote({x <- 1; y <- 2; x+y})
-expv
-# Evaluate all the commands in the expression
-eval(expv)
-ls()
-# Return an expression without evaluating it
-newv <- 2*symboln
-expv <- quote(symboln + newv)
-expv
-eval(expv)  # Evaluate expression
-# Substitute objects in an expression
-expv <- substitute(symboln + newv,
-       env=list(symbol=1, newv=2))
-expv
-eval(expv)  # Evaluate expression
-# Get_input() substitutes its formal argument with the actual argument
-get_input <- function(inputv) {
-  substitute(inputv)
-}  # end get_input
-myvar <- 2
-get_input(myvar)
-eval(get_input(myvar))
-# Define symbol
-myvar <- 10
-# Convert symbol value into string
-deparse(myvar)
-# Convert symbol into string without evaluating it
-deparse(quote(myvar))
-# Substitute object with value from named list
-symboln <- 2
-deparse(substitute(symboln + myvar, env=list(myvar=2)))
-# Create string with name of input argument
-get_name <- function(inputv) {
-  names(inputv) <- deparse(substitute(inputv))
-  inputv
-}  # end get_name
-get_name(myvar)
-rm(list=ls())
-# Expressions enclosed in parenthesis are less ambiguous
--2:5
-(-2):5
--(2:5)
-# Expressions enclosed in parenthesis are less ambiguous
--2*3+5
--2*(3+5)
-# Expressions can be separated by semicolons or by lines
-{1+2; 2*3; 1:5}
-# or
-{1+2
-2*3
-1:5}
-matv <- matrix(nr=3, nc=4)
-matv <- 0
-# Subset whole matrix
-matv[] <- 0
-# Parenthesis and braces require a little additional processing time
-library(microbenchmark)
-summary(microbenchmark(
-  basep=sqrt(rnorm(10000)^2),
-  parven=sqrt(((((rnorm(10000)^2))))),
-  bra_ce=sqrt({{{{rnorm(10000)^2}}}}),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-rm(list=ls())
-numv1 <- 1
-if (numv1) {  # Numeric zero is FALSE, all other numbers are TRUE
-  numv2 <- 4
-} else if (numv1 == 0) {  # 'else if' together on same line
-  numv2 <- 0
-} else {  # 'else' together with curly braces
-  numv2 <- -4
-}  # end if
-numv2
-switch("a", a="aaahh", b="bee", c="see", d=2,
-       "else this")
-switch("c", a="aaahh", b="bee", c="see", d=2,
-       "else this")
-switch(3, a="aaahh", b="bee", c="see", d=2,
-       "else this")
-switch("cc", a="aaahh", b="bee", c="see", d=2,
-       "else this")
-# Measure of central tendency
-calc_center <- function(inputv, method=c("mean", "mean_narm", "median")) {
-# validate "method" argument
-  method <- match.arg(method)
-  switch(method,
- mean=mean(inputv),
- mean_narm=mean(inputv, na.rm=TRUE),
- median=median(inputv))
-}  # end calc_center
-myvar <- rnorm(100, mean=2)
-calc_center(myvar, "mean")
-calc_center(myvar, "mean_narm")
-calc_center(myvar, "median")
-for (indeks in vecv) {expvs}
-rm(list=ls())
-colorl <- list("red", "white", "blue")
-# Loop over list
-for (some_color in colorl) {
-  print(some_color)
-}  # end for
-# Loop over vector
-for (indeks in 1:3) {
-  print(colorl[[indeks]])
-}  # end for
-# While loops require initialization
-indeks <- 1
-# While loop
-while (indeks < 4) {
-  print(colorl[[indeks]])
-  indeks <- indeks + 1
-}  # end while
-vecv <- integer(7)
-# Loop over a vector and overwrite it
-for (i in seq_along(vecv)) {
-  cat("Changing element:", i, "\n")
-  vecv[i] <- i^2
-}  # end for
-# Modifying vecv inside sapply() has no effect
-vecv <- integer(7)
-vecv
-sapply(seq_along(vecv),
- function(i) {
-   vecv[i] <- i^2
- })  # end sapply
-vecv
-# Super-assignment operator "<<-" allows modifying vecv
-sapply(seq_along(vecv),
- function(i) {
-   vecv[i] <<- i^2 # "<<-" !!!
- })  # end sapply
-vecv
-# sapply() loop returns vector of values
-vecv <- sapply(seq_along(vecv), function(i) (i^2))
-rm(list=ls())
-# fib_seq <- numeric()  # zero length numeric vector
-# Pre-allocate vector instead of "growing" it
-fib_seq <- numeric(10)
-fib_seq[1] <- 0  # Initialize
-fib_seq[2] <- 1  # Initialize
-for (i in 3:10) {  # Perform recurrence loop
-  fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
-}  # end for
-fib_seq
-# Allocate character vector
-character()
-character(5)
-is.character(character(5))
-# Allocate integer vector
-integer()
-integer(5)
-is.integer(integer(5))
-is.numeric(integer(5))
-# Allocate numeric vector
-numeric()
-numeric(5)
-is.integer(numeric(5))
-is.numeric(numeric(5))
-# Allocate Boolean vector
-vector()
-vector(length=5)
-# Allocate numeric vector
-vector(length=5, mode="numeric")
-is.null(vector())
-# Allocate Boolean matrix
-matrix()
-is.null(matrix())
-# Allocate integer matrix
-matrix(NA_integer_, nrow=3, ncol=2)
-is.integer(matrix(NA_integer_, nrow=3, ncol=2))
-# Allocate numeric matrix
-matrix(NA_real_, nrow=3, ncol=2)
-is.numeric(matrix(NA_real_, nrow=3, ncol=2))
-vecv <- sample(1:9)
-vecv
-vecv < 5  # Element-wise comparison
-vecv == 5  # Element-wise comparison
-matv <- matrix(vecv, ncol=3)
-matv
-matv < 5  # Element-wise comparison
-matv == 5  # Element-wise comparison
-matv <- 1:6  # Create a vector
-class(matv)  # Get its class
-# Is it vector or matrix?
-c(is.vector(matv), is.matrix(matv))
-structure(matv, dim=c(2, 3))  # Matrix object
-# Adding dimension attribute coerces into matrix
-dim(matv) <- c(2, 3)
-class(matv)  # Get its class
-# Is it vector or matrix?
-c(is.vector(matv), is.matrix(matv))
-# Assign dimnames attribute
-dimnames(matv) <- list(rows=c("row1", "row2"),
-            columns=c("col1", "col2", "col3"))
-matv
-matv <- matrix(1:10, 2, 5)  # Create matrix
-matv
-# as.numeric strips dim attribute from matrix
-as.numeric(matv)
-# Explicitly coerce to "character"
-matv <- as.character(matv)
-c(typeof(matv), mode(matv), class(matv))
-# Coercion converted matrix to vector
-c(is.matrix(matv), is.vector(matv))
-vec1 <- 1:3  # Define vector
-vec2 <- 6:4  # Define vector
-# Bind vectors into columns
-cbind(vec1, vec2)
-# Bind vectors into rows
-rbind(vec1, vec2)
-# Extend to four elements
-vec2 <- c(vec2, 7)
-# Recycling rule applied
-cbind(vec1, vec2)
-# Another example of recycling rule
-1:6 + c(10, 20)
-# Replicate a single element
-rep("a", 5)
-# Replicate the whole vector several times
-rep(c("a", "b"), 5)
-rep(c("a", "b"), times=5)
-# Replicate the first element, then the second, etc.
-rep(c("a", "b"), each=5)
-# Replicate to specified length
-rep(c("a", "b"), length.out=5)
-# Define vector and matrix
-vec1 <- c(2, 4, 3)
-matv <- matrix(sample(1:12), ncol=3)
-# Multiply columns of matrix by vector
-vec1*matv
-# Or
-matv*vec1
-# Multiply rows of matrix by vector
-t(vec1*t(matv))
-# Multiply rows of matrix by vector - transpose is very slow
-matrixp <- lapply(1:NCOL(matv), function(x) vec1[x]*matv[, x])
-do.call(cbind, matrixp)
-library(microbenchmark)
-summary(microbenchmark(
-  trans=t(vec1*t(matv)),
-  lapp={
-    matrixp <- lapply(1:NCOL(matv), function(x) vec1[x]*matv[, x])
-    do.call(cbind, matrixp)
   },
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-vec1
-vec2 <- 6:4  # Define vector
-# Multiply two vectors element-by-element
-vec1 * vec2
-# Calculate inner product
-vec1 %*% vec2
-# Calculate inner product and drop dimensions
-drop(vec1 %*% vec2)
-# Multiply columns of matrix by vector
-matv %*% vec1  # Single column matrix
-drop(matv %*% vec1)  # vector
-rowSums(t(vec1 * t(matv)))
-# using rowSums() and t() is 10 times slower than %*%
+  times=10))[, c(1, 4, 5)]
+
+vecv <- rnorm(5000)
+summary(microbenchmark(
+#Allocate full memory for cumulative sum
+  forloop = {cumsumv <- numeric(NROW(vecv))
+    cumsumv[1] <- vecv[1]
+    for (i in 2:NROW(vecv)) {
+      cumsumv[i] <- cumsumv[i-1] + vecv[i]
+    }},  #end for
+#Allocate zero memory for cumulative sum
+  growvec = {cumsumv <- numeric(0)
+    cumsumv[1] <- vecv[1]
+    for (i in 2:NROW(vecv)) {
+#Add new element to "cumsumv" ("grow" it)
+      cumsumv[i] <- cumsumv[i-1] + vecv[i]
+    }},  #end for
+#Allocate zero memory for cumulative sum
+  combine = {cumsumv <- numeric(0)
+    cumsumv[1] <- vecv[1]
+    for (i in 2:NROW(vecv)) {
+#Add new element to "cumsumv" ("grow" it)
+      cumsumv <- c(cumsumv, vecv[i])
+    }},  #end for
+  times=10))[, c(1, 4, 5)]
+
+vec1 <- rnorm(1000000)
+vec2 <- rnorm(1000000)
+vecbig <- numeric(1000000)
+#Sum two vectors in two different ways
+summary(microbenchmark(
+  #Sum vectors using "for" loop
+  rloop = (for (i in 1:NROW(vec1)) {
+    vecbig[i] <- vec1[i] + vec2[i]
+  }),
+  #Sum vectors using vectorized "+"
+  vectorized = (vec1 + vec2),
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+#Allocate memory for cumulative sum
+cumsumv <- numeric(NROW(vecbig))
+cumsumv[1] <- vecbig[1]
+#Calculate cumulative sum in two different ways
+summary(microbenchmark(
+#Cumulative sum using "for" loop
+  rloop = (for (i in 2:NROW(vecbig)) {
+    cumsumv[i] <- cumsumv[i-1] + vecbig[i]
+  }),
+#Cumulative sum using "cumsum"
+  vectorized = cumsum(vecbig),
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+
+#Calculate matrix of random data with 5,000 rows
+matv <- matrix(rnorm(10000), ncol=2)
+#Calculate row sums two different ways
+all.equal(rowSums(matv), apply(matv, 1, sum))
+summary(microbenchmark(
+  rowsumv = rowSums(matv),
+  applyloop = apply(matv, 1, sum),
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+
+library(microbenchmark)
+str(pmax)
+#Calculate row maximums two different ways
+summary(microbenchmark(
+  pmax=do.call(pmax.int, lapply(1:NCOL(matv),
+  function(indeks) matv[, indeks])),
+  lapply=unlist(lapply(1:NROW(matv),
+  function(indeks) max(matv[indeks, ]))),
+  times=10))[, c(1, 4, 5)]
+
+install.packages("matrixStats")  #Install package matrixStats
+library(matrixStats)  #Load package matrixStats
+#Calculate row mininmum values two different ways
+all.equal(matrixStats::rowMins(matv), do.call(pmin.int, lapply(1:NCOL(matv),
+    function(indeks) matv[, indeks])))
+#Calculate row mininmum values three different ways
+summary(microbenchmark(
+  rowmins = matrixStats::rowMins(matv),
+  pmin = do.call(pmin.int, lapply(1:NCOL(matv),
+    function(indeks) matv[, indeks])),
+  as_dframe = do.call(pmin.int, as.data.frame.matrix(matv)),
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+
+install.packages("Rfast")  #Install package Rfast
+library(Rfast)  #Load package Rfast
+#Benchmark speed of calculating ranks
+vecv <- 1e3
+all.equal(rank(vecv), Rfast::Rank(vecv))
 library(microbenchmark)
 summary(microbenchmark(
-  inner=drop(matv %*% vec1),
-  transp=rowSums(t(vec1 * t(matv))),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-library(microbenchmark)
-# Multiply matrix by vector fails because dimensions aren't conformable
-vec1 %*% matv
-# Works after transpose
-drop(vec1 %*% t(matv))
-# Calculate inner product
-crossprod(vec1, vec2)
-# Create matrix and vector
-matv <- matrix(1:3000, ncol=3)
-tmatv <- t(matv)
-vecv <- 1:3
-# crossprod() is slightly faster than "%*%" operator
+  rcode = rank(vecv),
+  Rfast = Rfast::Rank(vecv),
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+#Benchmark speed of calculating column medians
+matv <- matrix(1e4, nc=10)
+all.equal(matrixStats::colMedians(matv), Rfast::colMedians(matv))
 summary(microbenchmark(
-  cross_prod=crossprod(tmatv, vecv),
-  inner_prod=matv %*% vecv,
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Define named vectors
-vec1 <- sample(1:4)
-names(vec1) <- paste0("row", 1:4, "=", vec1)
-vec1
-vec2 <- sample(1:3)
-names(vec2) <- paste0("col", 1:3, "=", vec2)
-vec2
-# Calculate outer product of two vectors
-matv <- outer(vec1, vec2)
-matv
-# Calculate vectorized function spanned over two vectors
-matv <- outer(vec1, vec2,
-           FUN=function(x1, x2) x2*sin(x1))
-matv
-# Define a function with two arguments
-testfun <- function(arg1, arg2) {  # Body
-  arg1 + arg2  # Returns last evaluated statement
-}  # end testfun
-testfun(1, 2)  # Apply the function
-args(testfun)  # Display argument
-# Define function that uses variable from enclosure environment
-testfun <- function(arg1, arg2) {
-  arg1 + arg2 + globv
-}  # end testfun
-testfun(3, 2)  # error - globv doesn't exist yet!
-globv <- 10  # Create globv
-testfun(3, 2)  # Now works
-# Define function that returns NULL for non-numeric argument
-testfun <- function(inputv) {
-  if (!is.numeric(inputv)) {
-    warning(paste("argument", inputv, "isn't numeric"))
-    return(NULL)
-  }
-  2*inputv
-}  # end testfun
-testfun(2)
-testfun("hello")
-# Define a function that returns invisibly
-retinv <- function(inputv) {
-  invisible(inputv)
-}  # end retinv
-retinv(2)
-globv <- retinv(2)
-globv
-rm(list=ls())  # Delete all objects in workspace
-# Load objects from file
-loaded <- load(file="/Users/jerzy/Develop/data/my_data.RData")
-loaded  # Vector of loaded objects
-ls()  # List objects
-testfun <- function(first, second) {
-# Last statement of function is return value
-  first + 2*second
-}  # end testfun
-testfun(first=3, second=2)  # Bind by name
-testfun(f=3, s=2)  # Partial name binding
-testfun(3, 2)  # Bind by position
-testfun(second=2, 3)  # mixed binding
-testfun(3, 2, 1)  # Too many arguments
-testfun(2)  # Not enough arguments
-# Function "paste" has two arguments with default values
-str(paste)
-# Default values of arguments can be specified in argument list
-testfun <- function(arg1, ratio=1) {
-  ratio*arg1
-}  # end testfun
-testfun(3)  # Default value used for second argument
-testfun(3, 2)  # Default value over-ridden
-# Default values can be a vector of strings
-testfun <- function(inputv=c("first_val", "second_val")) {
-  inputv <- match.arg(inputv)  # Match to arg list
-  inputv
-}  # end testfun
-testfun("second_val")
-testfun("se")  # Partial name binding
-testfun("some_val")  # Invalid string
-# VTI percentage returns
-retp <- rutils::diffit(log(Cl(rutils::etfenv$VTI)))
-# calc_skew() calculates skew of time series of returns
-# Default is normal time series
-calc_skew <- function(retp=rnorm(1000)) {
-  # Number of observations
-  nrows <- NROW(retp)
-  # Standardize returns
-  retp <- (retp - mean(retp))/sd(retp)
-  # Calculate skew - last statement automatically returned
-  nrows*sum(retp^3)/((nrows-1)*(nrows-2))
-}  # end calc_skew
-# Calculate the skew of VTI returns
-# Pass the arguments by name
-calc_skew(retp=retp)
-# Pass the arguments by position
-calc_skew(retp)
-# Use default value of arguments
-calc_skew()
-str(plot)  # Dots for additional plot parameters
-bind_dots <- function(inputv, ...) {
-  paste0("inputv=", inputv, ", dots=", paste(..., sep=", "))
-}  # end bind_dots
-bind_dots(1, 2, 3)  # "inputv" bound by position
-bind_dots(2, inputv=1, 3)  # "inputv" bound by name
-bind_dots(1, 2, 3, argv=10)  # Named argument bound to dots
-bind_dots <- function(arg1, arg2, ...) {
-  arg1 + 2*arg2 + sum(...)
-}  # end bind_dots
-bind_dots(3, 2)  # Bind arguments by position
-bind_dots(3, 2, 5, 8)  # Extra arguments bound to dots
-str(sum)  # Dots before other arguments
-sum(1, 2, 3)  # Dots bind before other arguments
-sum(1, 2, NA, 3, na.rm=TRUE)
-bind_dots <- function(..., inputv) {
-  paste0("inputv=", inputv, ", dots=", paste(..., sep=", "))
-}  # end bind_dots
-# Arguments after dots must be bound by full name
-bind_dots(1, 2, 3, inputv=10)
-bind_dots(1, 2, 3, inputv=10, argv=4)  # Dots bound
-bind_dots(1, 2, 3)  # "inputv" not bound
-bind_dots <- function(..., inputv=10) {
-  paste0("inputv=", inputv, ", dots=", paste(..., sep=", "))
-}  # end bind_dots
-bind_dots(1, 2, 3)  # "inputv" not bound, but has default
-# Wrapper for mean() with default na.rm=TRUE
-meanfun <- function(x, na.rm=TRUE, ...) {
-  mean(x=x, na.rm=na.rm, ...)
-}  # end meanfun
-vecv <- sample(c(1:10, NA, rep(0.1, t=5)))
-mean(vecv)
-mean(vecv, na.rm=TRUE)
-meanfun(vecv)
-meanfun(vecv, trim=0.4)  # Pass extra argument
-# Wrapper for saving data into default directory
-save_data <- function(...,
-              file=stop("error: no file name"),
-              my_dir="/Users/jerzy/Develop/data") {
-# Create file path
-  file <- file.path(my_dir, file)
-  save(..., file=file)
-}  # end save_data
-vecv <- 1:10
-save_data(vecv, file="scratch.RData")
-save_data(vecv, file="scratch.RData", my_dir="/Users/jerzy/Develop")
-# Wrapper for testing negative arguments
-stop_if_neg <- function(inputv) {
-  if (!is.numeric(inputv) || inputv < 0)
-    stop("argument not numeric or negative")
-}  # end stop_if_neg
-# Wrapper for sqrt()
-my_sqrt <- function(inputv) {
-  stop_if_neg(inputv)
-  sqrt(inputv)
-}  # end my_sqrt
-my_sqrt(2)
-my_sqrt(-2)
-my_sqrt(NA)
-# Recursive function sums its argument list
-sum_dots <- function(inputv, ...) {
-  if (missing(...)) {  # Check if dots are empty
-    return(inputv)  # just one argument left
-  } else {
-    inputv + sum_dots(...)  # Sum remaining arguments
-  }  # end if
-}  # end sum_dots
-sum_dots(1, 2, 3, 4)
-# Recursive function sums its argument list
-sum_dots <- function(inputv, ...) {
-  if (NROW(list(...)) == 0) {  # Check if dots are empty
-    return(inputv)  # just one argument left
-  } else {
-    inputv + sum_dots(...)  # Sum remaining arguments
-  }  # end if
-}  # end sum_dots
-sum_dots(1, 2, 3, 4)
-fibonacci <- function(nrows) {
-  if (nrows > 2) {
-    fib_seq <- fibonacci(nrows-1)  # Recursion
-    c(fib_seq, sum(tail(fib_seq, 2)))  # Return this
-  } else {
-    c(0, 1)  # Initialize and return
-  }
-}  # end fibonacci
-fibonacci(10)
-tail(fibonacci(9), 2)
-# Show the function code
-plot.default
-# Display function
-getAnywhere(plot.default)
-# Sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-# Show all methods of mean()
-methods(generic.function=mean)
-# Show code for mean.default()
-mean.default
-# Get all methods for generic function "plot"
-methods("plot")
-getAnywhere(plot)  # Display function
-rm(list=ls())
-lazyfun <- function(arg1, arg2) {  # Define function lazyfun
-  2*arg1  # just multiply first argument
-}  # end lazyfun
-lazyfun(3, 2)  # Bind arguments by position
-lazyfun(3)  # Second argument was never evaluated!
-lazyfun <- function(arg1, arg2) {  # Define function lazyfun
-  cat(arg1, '\n')  # Write to output
-  cat(arg2)  # Write to output
-}  # end lazyfun
-lazyfun(3, 2)  # Bind arguments by position
-lazyfun(3)  # First argument written to output
-rm(list=ls())
-globv <- 1  # Define a global variable
-ls(environment())  # Get all variables in environment
-func_env <- function() {  # Explore function environments
-  locvar <- 1  # Define a local variable
-  cat('objects in evaluation environment:\t',
-      ls(environment()), '\n')
-  cat('objects in enclosing environment:\t',
-      ls(parent.env(environment())), '\n')
-  cat('this is the enclosing environment:')
-  parent.env(environment())  # Return enclosing environment
-}  # end func_env
-func_env()
-environment(func_env)
-environment(print)  # Package namespace is the enclosure
-rm(list=ls())
-globv <- 1  # Define a global variable
-probe_scope <- function() {  # Explore function scope
-  locvar <- 2*globv  # Define a local variable
-  new_globvar <<- 11  # Define a global variable
-  cat('objects in evaluation environment:\t',
-      ls(environment()), '\n')
-  cat('this is a local locvar:\t', locvar, '\n')
-  cat('objects in enclosing environment:\n',
-      ls(parent.env(environment())), '\n')
-  cat('this is globv:\t', globv, '\n')
-  globv <- 10  # Define local globv
-  cat('this is the local globv:\t', globv, '\n')
-}  # end probe_scope
-probe_scope()
-globv  # Global variable is unaffected
-new_globvar  # new_globvar is preserved
-locvar  # Local variable is gone!
-a <- 1  # Define a variable
-# New variable "b" points to value of "a"
-b <- a  # Define a new variable
-# When "b" is modified, R makes a copy of it
-b <- b+1
-# Function doubles its argument and returns it
-double_it <- function(inputv) {
-  inputv <- 2*inputv
-  cat("input argument was doubled to:", inputv, "\n")
-  inputv
-}
-double_it(a)
-a  # variable "a" is unchanged
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-rm(list=ls())  # Delete all objects in workspace
-ls()  # List objects
-# Load objects from file (side effect)
-load(file="my_data.RData")
-ls()  # List objects
-globv <- 1  # Define a global variable
-# Explore function scope and side effects
-side_effect <- function() {
-  cat("global globv =", globv, "\n")
-# Define local "globv" variable
-  globv <- 10
-  cat("local globv =", globv, "\n")
-  # Re-define the global "globv"
-  globv <<- 2
-  cat("local globv =", globv, "\n")
-}  # end side_effect
-side_effect()
-# Global variable was modified as side effect
-globv
-# Standard infix operator call syntax
-2 + 3
-# Infix operator applied using prefix syntax
-"+"(2, 3)
-# Standard bracket operator
-vecv <- c(4, 3, 5, 6)
-vecv[2]
-# Bracket operator applied using prefix syntax
-"["(vecv, 2)
-# Define infix operator that returns string
-'%+%' <- function(a, b) paste(a, b, sep=" + ")
-2 %+% 3
-2 %+% 3 %+% 4
-"hello" %+% 2 %+% 3 %+% "bye"
-obj_string <- "hello"
-class(obj_string)
-# Assign to value returned by "class" function
-class(obj_string) <- "string"
-class(obj_string)
-# Define function last()
-last <- function(vecv) {
-  vecv[NROW(vecv)]
-}  # end last
-last(1:10)
-# Define replacement function last()
-'last<-' <- function(vecv, value) {
-  vecv[NROW(vecv)] <- value
-  vecv
-}  # end last
-x <- 1:5
-last(x) <- 11
-x
-# Functional accepts function name and additional argument
-testfun <- function(funn, inputv) {
-# Produce function name from argument
-  funn <- match.fun(funn)
-# Execute function call
-  funn(inputv)
-}  # end testfun
-testfun(sqrt, 4)
-# String also works because match.fun() converts it to a function
-testfun("sqrt", 4)
-str(sum)  # Sum() accepts multiple arguments
-# Functional can't accept indefinite number of arguments
-testfun(sum, 1, 2, 3)
-# Functional accepts function name and dots '...' argument
-testfun <- function(funn, ...) {
-  funn <- match.fun(funn)
-  funn(...)  # Execute function call
-}  # end testfun
-testfun(sum, 1, 2, 3)
-testfun(sum, 1, 2, NA, 4, 5)
-testfun(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
-# Function with three arguments and dots '...' arguments
-testfun <- function(inputv, param1, param2, ...) {
-  c(inputv=inputv, param1=param1, param2=param2, dots=c(...))
-}  # end testfun
-testfun(1, 2, 3, 4, 5)
-testfun(1, 2, 3, param2=4, param1=5)
-# Simple anonymous function
-(function(x) (x + 3)) (10)
-# Anonymous function passed to testfun
-testfun(funn=(function(x) (x + 3)), 5)
-# Anonymous function is default value
-testfun <- function(..., funn=function(x, y, z) {x+y+z}) {
-    funn <- match.fun(funn)
-    funn(...)  # Execute function call
-}  # end testfun
-testfun(2, 3, 4)  # Use default funn
-testfun(2, 3, 4, 5)
-# funn bound by name
-testfun(funn=sum, 2, 3, 4, 5)
-# Pass anonymous function to funn
-testfun(funn=function(x, y, z) {x*y*z}, 2, 3, 4)
-str(sum)  # Sum() accepts multiple arguments
-# Sum() can't accept list of arguments
-sum(list(1, 2, 3))
-str(do.call)  # "what" argument is a function
-# Do.call passes list elements into "sum" individually
-do.call(sum, list(1, 2, 3))
-do.call(sum, list(1, 2, NA, 3))
-do.call(sum, list(1, 2, NA, 3, na.rm=TRUE))
-# Functional accepts list with function name and arguments
-testfun <- function(list_arg) {
-# Produce function name from argument
-  funn <- match.fun(list_arg[[1]])
-# Execute function call uing do.call()
-  do.call(funn, list_arg[-1])
-}  # end testfun
-arg_list <- list("sum", 1, 2, 3)
-testfun(arg_list)
-# do_call() performs same operation as do.call()
-all.equal(
-  do.call(sum, list(1, 2, NA, 3, na.rm=TRUE)),
-  rutils::do_call(sum, list(1, 2, NA, 3), na.rm=TRUE))
-rm(list=ls())
-str(apply)  # Get list of arguments
-# Create a matrix
-matv <- matrix(6:1, nrow=2, ncol=3)
-matv
-# Sum the rows and columns
-rowsumv <- apply(matv, 1, sum)
-colsumv <- apply(matv, 2, sum)
-matv <- cbind(c(sum(rowsumv), rowsumv),
-          rbind(colsumv, matv))
-dimnames(matv) <- list(c("colsumv", "row1", "row2"),
-                 c("rowsumv", "col1", "col2", "col3"))
-matv
-str(apply)  # Get list of arguments
-matv <- matrix(sample(12), nrow=3, ncol=4)  # Create a matrix
-matv
-apply(matv, 2, sort)  # Sort matrix columns
-apply(matv, 2, sort, decreasing=TRUE)  # Sort decreasing order
-matv[2, 2] <- NA  # Introduce NA value
-matv
-# Calculate median of columns
-apply(matv, 2, median)
-# Calculate median of columns with na.rm=TRUE
-apply(matv, 2, median, na.rm=TRUE)
-# VTI percentage returns
-retp <- rutils::diffit(log(Cl(rutils::etfenv$VTI)))
-library(moments)  # Load package moments
-str(moment)  # Get list of arguments
-# Apply moment function
-moment(x=retp, order=3)
-# 4x1 matrix of moment orders
-orderv <- as.matrix(1:4)
-# Anonymous function allows looping over function parameters
-apply(X=orderv, MARGIN=1, FUN=function(orderp) {
-  moment(x=retp, order=orderp)
-}  # end anonymous function
-)  # end apply
-# Another way of passing parameters into moment() function
-apply(X=orderv, MARGIN=1, FUN=moment, x=retp)
-# Function with three arguments
-testfun <- function(arg1, arg2, arg3) {
-  c(arg1=arg1, arg2=arg2, arg3=arg3)
-}  # end testfun
-testfun(1, 2, 3)
-datav <- as.matrix(1:4)
-# Pass datav to arg1
-apply(X=datav, MAR=1, FUN=testfun, arg2=2, arg3=3)
-# Pass datav to arg2
-apply(X=datav, MAR=1, FUN=testfun, arg1=1, arg3=3)
-# Pass datav to arg3
-apply(X=datav, MAR=1, FUN=testfun, arg1=1, arg2=2)
-# Vector of means of numeric columns
-sapply(iris[, -5], mean)
-# List of means of numeric columns
-lapply(iris[, -5], mean)
-# Lapply using anonymous function
-unlist(lapply(iris,
-      function(column) {
-        if (is.numeric(column)) mean(column)
-      }  # end anonymous function
-      )  # end lapply
-       )  # end unlist
-unlist(sapply(iris, function(column) {
-  if (is.numeric(column)) mean(column)}))
-sapply(6:10, sqrt)  # Sapply on vector
-sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
-# Calculate means of iris data frame columns
-sapply(iris, mean)  # Returns NA for Species
-# Create a matrix
-matv <- matrix(sample(100), ncol=4)
-# Calculate column means using apply
-apply(matv, 2, mean)
-# Calculate column means using sapply, with anonymous function
-sapply(1:NCOL(matv), function(colnum) {  # Anonymous function
- mean(matv[, colnum])
-  }  # end anonymous function
-)  # end sapply
-# Vectors form columns of matrix returned by sapply
-sapply(2:4, function(num) c(el1=num, el2=2*num))
-# Vectors of different lengths returned as list
-sapply(2:4, function(num) 1:num)
-# vapply is similar to sapply
-vapply(2:4, function(num) c(el1=num, el2=2*num),
-       FUN.VALUE=c(row1=0, row2=0))
-# vapply produces an error if it can't simplify
-vapply(2:4, function(num) 1:num,
-       FUN.VALUE=c(row1=0, row2=0))
+  matrixStats = matrixStats::colMedians(matv),
+  Rfast = Rfast::colMedians(matv),
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+
+summary(microbenchmark(  #Assign values to vector three different ways
+#Fast vectorized assignment loop performed in C using brackets "[]"
+  brackets = {vecv <- numeric(10); vecv[] <- 2},
+#Slow because loop is performed in R
+  forloop = {vecv <- numeric(10)
+    for (indeks in seq_along(vecv))
+      vecv[indeks] <- 2},
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+summary(microbenchmark(  #Assign values to vector two different ways
+#Fast vectorized assignment loop performed in C using brackets "[]"
+  brackets = {vecv <- numeric(10); vecv[4:7] <- rnorm(4)},
+#Slow because loop is performed in R
+  forloop = {vecv <- numeric(10)
+    for (indeks in 4:7)
+      vecv[indeks] <- rnorm(1)},
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+
+#Define function vectorized automatically
+myfun <- function(input, param) {
+  param*input
+}  #end myfun
+#"input" is vectorized
+myfun(input=1:3, param=2)
+#"param" is vectorized
+myfun(input=10, param=2:4)
+#Define vectors of parameters of rnorm()
+stdevs <- structure(1:3, names=paste0("sd=", 1:3))
+means <- structure(-1:1, names=paste0("mean=", -1:1))
+#"sd" argument of rnorm() isn't vectorized
+rnorm(1, sd=stdevs)
+#"mean" argument of rnorm() isn't vectorized
+rnorm(1, mean=means)
+
+#Loop over stdevs produces vector output
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+sapply(stdevs, function(stdev) rnorm(n=2, sd=stdev))
+#Same
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+sapply(stdevs, rnorm, n=2, mean=0)
+#Loop over means
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+sapply(means, function(meanv) rnorm(n=2, mean=meanv))
+#Same
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+sapply(means, rnorm, n=2)
+
+#rnorm() vectorized with respect to "stdev"
+vec_rnorm <- function(n, mean=0, sd=1) {
+  if (NROW(sd)==1)
+    rnorm(n=n, mean=mean, sd=sd)
+  else
+    sapply(sd, rnorm, n=n, mean=mean)
+}  #end vec_rnorm
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+vec_rnorm(n=2, sd=stdevs)
+#rnorm() vectorized with respect to "mean" and "sd"
+vec_rnorm <- Vectorize(FUN=rnorm,
+        vectorize.args=c("mean", "sd")
+)  #end Vectorize
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+vec_rnorm(n=2, sd=stdevs)
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+vec_rnorm(n=2, mean=means)
+
+str(sum)
+#na.rm is bound by name
+mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
+str(rnorm)
+#mapply vectorizes both arguments "mean" and "sd"
+mapply(rnorm, n=5, mean=means, sd=stdevs)
+mapply(function(input, expv) input^expv,
+ 1:5, seq(from=1, by=0.2, length.out=5))
+
+#rnorm() vectorized with respect to "mean" and "sd"
+vec_rnorm <- function(n, mean=0, sd=1) {
+  if (NROW(mean)==1 && NROW(sd)==1)
+    rnorm(n=n, mean=mean, sd=sd)
+  else
+    mapply(rnorm, n=n, mean=mean, sd=sd)
+}  #end vec_rnorm
+#Call vec_rnorm() on vector of "sd"
+vec_rnorm(n=2, sd=stdevs)
+#Call vec_rnorm() on vector of "mean"
+vec_rnorm(n=2, mean=means)
+
+#Create two numeric vectors
+vec1 <- sin(0.25*pi*1:20)
+vec2 <- cos(0.25*pi*1:20)
+#Create third vector using 'ifelse'
+vec3 <- ifelse(vec1 > vec2, vec1, vec2)
+#cbind all three together
+vec3 <- cbind(vec1, vec2, vec3)
+colnames(vec3)[3] <- "Max"
+#Set plotting parameters
+x11(width=6, height=7)
+par(oma=c(0, 1, 1, 1), mar=c(0, 2, 2, 1),
+    mgp=c(2, 1, 0), cex.lab=0.5, cex.axis=1.0, cex.main=1.8, cex.sub=0.5)
+#Plot matrix
+zoo::plot.zoo(vec3, lwd=2, ylim=c(-1, 1),
+  xlab="", col=c("green", "blue", "red"),
+  main="ifelse() Calculates The Max of Two Data Sets")
+
+#Calculate cumulative sum of a vector
+vecv <- runif(1e5)
+#Use compiled function
+cumsumv <- cumsum(vecv)
+#Use for loop
+cumsumv2 <- vecv
+for (i in 2:NROW(cumsumv2))
+  cumsumv2[i] <- (cumsumv2[i] + cumsumv2[i-1])
+#Compare the two methods
+all.equal(cumsumv, cumsumv2)
+#Microbenchmark the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  cumsum=cumsum(vecv),
+  loop_alloc={
+    cumsumv2 <- vecv
+    for (i in 2:NROW(cumsumv2))
+cumsumv2[i] <- (cumsumv2[i] + cumsumv2[i-1])
+  },
+  loop_nalloc={
+    #Doesn't allocate memory to cumsumv3
+    cumsumv3 <- vecv[1]
+    for (i in 2:NROW(vecv))
+#This command adds an extra element to cumsumv3
+cumsumv3[i] <- (vecv[i] + cumsumv3[i-1])
+  },
+  times=10))[, c(1, 4, 5)]
+
+library(parallel)  #Load package parallel
+#Get short description
+packageDescription("parallel")
+#Load help page
+help(package="parallel")
+#List all objects in "parallel"
+ls("package:parallel")
+
+#Define function that pauses execution
+paws <- function(x, sleep_time=0.01) {
+  Sys.sleep(sleep_time)
+  x
+}  #end paws
+library(parallel)  #Load package parallel
+#Calculate number of available cores
+ncores <- detectCores() - 1
+#Initialize compute cluster under Windows
+compclust <- makeCluster(ncores)
+#Perform parallel loop under Windows
+outv <- parLapply(compclust, 1:10, paws)
+#Perform parallel loop under Mac-OSX or Linux
+outv <- mclapply(1:10, paws, mc.cores=ncores)
+library(microbenchmark)  #Load package microbenchmark
+#Compare speed of lapply versus parallel computing
+summary(microbenchmark(
+  standard = lapply(1:10, paws),
+  #parallel = parLapply(compclust, 1:10, paws),
+  parallel = mclapply(1:10, paws, mc.cores=ncores),
+  times=10)
+)[, c(1, 4, 5)]
+
+#Compare speed of lapply with parallel computing
+runv <- 3:10
+timev <- sapply(runv, function(nruns) {
+    summary(microbenchmark(
+standard = lapply(1:nruns, paws),
+#parallel = parLapply(compclust, 1:nruns, paws),
+parallel = mclapply(1:nruns, paws, mc.cores=ncores),
+times=10))[, 4]
+    })  #end sapply
+timev <- t(timev)
+colnames(timev) <- c("standard", "parallel")
+rownames(timev) <- runv
+#Stop R processes over cluster under Windows
+stopCluster(compclust)
+
+x11(width=6, height=5)
+plot(x=rownames(timev),
+     y=timev[, "standard"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="Number of iterations in loop", ylab="",
+     ylim=c(0, max(timev[, "standard"])))
+lines(x=rownames(timev),
+y=timev[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(timev),
+ inset=0.1, cex=1.0, bty="n", bg="white",
+ y.intersp=0.3, lwd=2, lty=1, col=c("blue", "green"))
+
+library(parallel)  #Load package parallel
+#Calculate number of available cores
+ncores <- detectCores() - 1
+#Initialize compute cluster under Windows
+compclust <- makeCluster(ncores)
+#Calculate matrix of random data
+matv <- matrix(rnorm(1e5), ncol=100)
+#Define aggregation function over column of matrix
+aggfun <- function(column) {
+  datav <- 0
+  for (indeks in 1:NROW(column))
+    datav <- datav + column[indeks]
+  datav
+}  #end aggfun
+#Perform parallel aggregations over columns of matrix
+aggs <- parCapply(compclust, matv, aggfun)
+#Compare speed of apply with parallel computing
+summary(microbenchmark(
+  apply=apply(matv, MARGIN=2, aggfun),
+  parapply=parCapply(compclust, matv, aggfun),
+  times=10)
+)[, c(1, 4, 5)]
+#Stop R processes over cluster under Windows
+stopCluster(compclust)
+
+library(parallel)  #Load package parallel
+#Calculate number of available cores
+ncores <- detectCores() - 1
+#Initialize compute cluster under Windows
+compclust <- makeCluster(ncores)
+basep <- 2
+#Fails because child processes don't know basep:
+parLapply(compclust, 2:4, function(exponent) basep^exponent)
+#basep passed to child via dots ... argument:
+parLapply(compclust, 2:4, function(exponent, basep) basep^exponent,
+    basep=basep)
+#basep passed to child via clusterExport:
+clusterExport(compclust, "basep")
+parLapply(compclust, 2:4, function(exponent) basep^exponent)
+#Fails because child processes don't know zoo::index():
+parSapply(compclust, c("VTI", "IEF", "DBC"), function(symbol)
+  NROW(zoo::index(get(symbol, envir=rutils::etfenv))))
+#zoo function referenced using "::" in child process:
+parSapply(compclust, c("VTI", "IEF", "DBC"), function(symbol)
+  NROW(zoo::index(get(symbol, envir=rutils::etfenv))))
+#Package zoo loaded in child process:
+parSapply(compclust, c("VTI", "IEF", "DBC"), function(symbol) {
+  stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
+  NROW(zoo::index(get(symbol, envir=rutils::etfenv)))
+})  #end parSapply
+#Stop R processes over cluster under Windows
+stopCluster(compclust)
+
+library(parallel)  #Load package parallel
+#Calculate number of available cores
+ncores <- detectCores() - 1
+#Initialize compute cluster under Windows
+compclust <- makeCluster(ncores)
+#Set seed for cluster under Windows
+#Doesn't work: set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+clusterSetRNGStream(compclust, 1121)
+#Perform parallel loop under Windows
+datav <- parLapply(compclust, 1:10, rnorm, n=100)
+sum(unlist(datav))
+#Stop R processes over cluster under Windows
+stopCluster(compclust)
+#Perform parallel loop under Mac-OSX or Linux
+datav <- mclapply(1:10, rnorm, mc.cores=ncores, n=100)
+
+#Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+#Sample from Standard Normal Distribution
+nsimu <- 1000
+datav <- rnorm(nsimu)
+#Sample mean - MC estimate
+mean(datav)
+#Sample standard deviation - MC estimate
+sd(datav)
+#Monte Carlo estimate of cumulative probability
+pnorm(-2)
+sum(datav < (-2))/nsimu
+#Monte Carlo estimate of quantile
+confl <- 0.02
+qnorm(confl)  #Exact value
+cutoff <- confl*nsimu
+datav <- sort(datav)
+datav[cutoff]  #Naive Monte Carlo value
+quantile(datav, probs=confl)
+#Analyze the source code of quantile()
+stats:::quantile.default
+#Microbenchmark quantile
+library(microbenchmark)
+summary(microbenchmark(
+  monte_carlo = datav[cutoff],
+  quantv = quantile(datav, probs=confl),
+  times=100))[, c(1, 4, 5)]  #end microbenchmark summary
+
+#Sample from Standard Normal Distribution
+nsimu <- 1000; datav <- rnorm(nsimu)
+#Sample mean and standard deviation
+mean(datav); sd(datav)
+#Bootstrap of sample mean and median
+nboot <- 10000
+bootd <- sapply(1:nboot, function(x) {
+  #Sample from Standard Normal Distribution
+  samplev <- rnorm(nsimu)
+  c(mean=mean(samplev), median=median(samplev))
+})  #end sapply
+bootd[, 1:3]
+bootd <- t(bootd)
+#Standard error from formula
+sd(datav)/sqrt(nsimu)
+#Standard error of mean from bootstrap
+sd(bootd[, "mean"])
+#Standard error of median from bootstrap
+sd(bootd[, "median"])
+
+#Plot the densities of the bootstrap data
+x11(width=6, height=5)
+plot(density(bootd[, "mean"]), lwd=3, xlab="Estimator Value",
+     main="Distribution of Bootstrapped Mean and Median", col="green")
+lines(density(bootd[, "median"]), lwd=3, col="blue")
+abline(v=mean(bootd[, "mean"]), lwd=2, col="red")
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+ leg=c("mean", "median"), bty="n", y.intersp=0.4,
+ lwd=6, bg="white", col=c("green", "blue"))
+
+#Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+nsimu <- 1000
+#Bootstrap of sample mean and median
+nboot <- 100
+bootd <- sapply(1:nboot, function(x) median(rnorm(nsimu)))
+#Perform vectorized bootstrap
+#Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+#Calculate matrix of random data
+samplev <- matrix(rnorm(nboot*nsimu), ncol=nboot)
+bootv <- matrixStats::colMedians(samplev)
+all.equal(bootd, bootv)
+#Compare speed of loops with vectorized R code
+library(microbenchmark)
+summary(microbenchmark(
+  loop = sapply(1:nboot, function(x) median(rnorm(nsimu))),
+  cpp = {
+    samplev <- matrix(rnorm(nboot*nsimu), ncol=nboot)
+    matrixStats::colMedians(samplev)
+    },
+  times=10))[, c(1, 4, 5)]  #end microbenchmark summary
+
+library(parallel)  #Load package parallel
+ncores <- detectCores() - 1  #Number of cores
+compclust <- makeCluster(ncores)  #Initialize compute cluster under Windows
+#Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+#Sample from Standard Normal Distribution
+nsimu <- 1000
+#Bootstrap mean and median under Windows
+nboot <- 10000
+bootd <- parLapply(compclust, 1:nboot, function(x, datav, nsimu) {
+  samplev <- rnorm(nsimu)
+  c(mean=mean(samplev), median=median(samplev))
+}, datav=datav, nsimu=nsimu)  #end parLapply
+#Bootstrap mean and median under Mac-OSX or Linux
+bootd <- mclapply(1:nboot, function(x) {
+  samplev <- rnorm(nsimu)
+  c(mean=mean(samplev), median=median(samplev))
+}, mc.cores=ncores)  #end mclapply
+bootd <- rutils::do_call(rbind, bootd)
+#Means and standard errors from bootstrap
+apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
+#Standard error from formula
+sd(datav)/sqrt(nsimu)
+stopCluster(compclust)  #Stop R processes over cluster under Windows
+
+nsimu <- 1000
+datav <- rnorm(nsimu)
+sd(datav); mad(datav)
+median(abs(datav - median(datav)))
+median(abs(datav - median(datav)))/qnorm(0.75)
+#Bootstrap of sd and mad estimators
+nboot <- 10000
+bootd <- sapply(1:nboot, function(x) {
+  samplev <- rnorm(nsimu)
+  c(sd=sd(samplev), mad=mad(samplev))
+})  #end sapply
+bootd <- t(bootd)
+#Analyze bootstrapped variance
+head(bootd)
+sum(is.na(bootd))
+#Means and standard errors from bootstrap
+apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
+#Parallel bootstrap under Windows
+library(parallel)  #Load package parallel
+ncores <- detectCores() - 1  #Number of cores
+compclust <- makeCluster(ncores)  #Initialize compute cluster
+bootd <- parLapply(compclust, 1:nboot, function(x, datav) {
+  samplev <- rnorm(nsimu)
+  c(sd=sd(samplev), mad=mad(samplev))
+}, datav=datav)  #end parLapply
+#Parallel bootstrap under Mac-OSX or Linux
+bootd <- mclapply(1:nboot, function(x) {
+  samplev <- rnorm(nsimu)
+  c(sd=sd(samplev), mad=mad(samplev))
+}, mc.cores=ncores)  #end mclapply
+stopCluster(compclust)  #Stop R processes over cluster
+bootd <- rutils::do_call(rbind, bootd)
+#Means and standard errors from bootstrap
+apply(bootd, MARGIN=2, function(x) c(mean=mean(x), stderror=sd(x)))
+
+#Initialize random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+#Define predictor and response variables
+nsimu <- 100
+predm <- rnorm(nsimu, mean=2)
+noisev <- rnorm(nsimu)
+respv <- (-3 + 2*predm + noisev)
+desm <- cbind(respv, predm)
+#Calculate alpha and beta regression coefficients
+betac <- cov(desm[, 1], desm[, 2])/var(desm[, 2])
+alphac <- mean(desm[, 1]) - betac*mean(desm[, 2])
+x11(width=6, height=5)
+plot(respv ~ predm, data=desm)
+abline(a=alphac, b=betac, lwd=3, col="blue")
+#Bootstrap of beta regression coefficient
+nboot <- 100
+bootd <- sapply(1:nboot, function(x) {
+  samplev <- sample.int(nsimu, replace=TRUE)
+  desm <- desm[samplev, ]
+  cov(desm[, 1], desm[, 2])/var(desm[, 2])
+})  #end sapply
+
+x11(width=6, height=5)
+par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+#Mean and standard error of beta regression coefficient
+c(mean=mean(bootd), stderror=sd(bootd))
+#Plot density of bootstrapped beta coefficients
+plot(density(bootd), lwd=2, xlab="Regression slopes",
+     main="Bootstrapped Regression Slopes")
+#Add line for expected value
+abline(v=mean(bootd), lwd=2, col="red")
+text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
+     lwd=2, srt=90, pos=3)
+
+library(parallel)  #Load package parallel
+ncores <- detectCores() - 1  #Number of cores
+compclust <- makeCluster(ncores)  #Initialize compute cluster under Windows
+#Bootstrap of regression under Windows
+bootd <- parLapply(compclust, 1:1000, function(x, desm) {
+  samplev <- sample.int(nsimu, replace=TRUE)
+  desm <- desm[samplev, ]
+  cov(desm[, 1], desm[, 2])/var(desm[, 2])
+}, desm=desm)  #end parLapply
+#Bootstrap of regression under Mac-OSX or Linux
+bootd <- mclapply(1:1000, function(x) {
+  samplev <- sample.int(nsimu, replace=TRUE)
+  desm <- desm[samplev, ]
+  cov(desm[, 1], desm[, 2])/var(desm[, 2])
+}, mc.cores=ncores)  #end mclapply
+stopCluster(compclust)  #Stop R processes over cluster under Windows
+
+#Collapse the bootstrap list into a vector
+class(bootd)
+bootd <- unlist(bootd)
+#Mean and standard error of beta regression coefficient
+c(mean=mean(bootd), stderror=sd(bootd))
+#Plot density of bootstrapped beta coefficients
+plot(density(bootd),
+     lwd=2, xlab="Regression slopes",
+     main="Bootstrapped Regression Slopes")
+#Add line for expected value
+abline(v=mean(bootd), lwd=2, col="red")
+text(x=mean(bootd)-0.01, y=1.0, labels="expected value",
+     lwd=2, srt=90, pos=3)
+
+#Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+barl <- 20  #Barrier level
+nsteps <- 1000  #Number of simulation steps
+pathv <- numeric(nsteps)  #Allocate path vector
+pathv[1] <- rnorm(1)  #Initialize path
+it <- 2  #Initialize simulation index
+while ((it <= nsteps) && (pathv[it - 1] < barl)) {
+#Simulate next step
+  pathv[it] <- pathv[it - 1] + rnorm(1)
+  it <- it + 1  #Advance index
+}  #end while
+#Fill remaining path after it crosses barl
+if (it <= nsteps)
+  pathv[it:nsteps] <- pathv[it - 1]
+#Plot the Brownian motion
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pathv, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=barl, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
+
+#Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+barl <- 20  #Barrier level
+nsteps <- 1000  #Number of simulation steps
+#Simulate path of Brownian motion
+pathv <- cumsum(rnorm(nsteps))
+#Find index when path crosses barl
+crossp <- which(pathv > barl)
+#Fill remaining path after it crosses barl
+if (NROW(crossp) > 0) {
+  pathv[(crossp[1]+1):nsteps] <- pathv[crossp[1]]
+}  #end if
+#Plot the Brownian motion
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pathv, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=barl, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
+
+#Define Brownian motion parameters
+sigmav <- 1.0  #Volatility
+drift <- 0.0  #Drift
+nsteps <- 1000  #Number of simulation steps
+npaths <- 100  #Number of simulation paths
+#Simulate multiple paths of Brownian motion
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+pathm <- rnorm(npaths*nsteps, mean=drift, sd=sigmav)
+pathm <- matrix(pathm, nc=npaths)
+pathm <- matrixStats::colCumsums(pathm)
+#Final distribution of paths
+mean(pathm[nsteps, ]) ; sd(pathm[nsteps, ])
+#Calculate option payout at maturity
+strikep <- 50  #Strike price
+payouts <- (pathm[nsteps, ] - strikep)
+sum(payouts[payouts > 0])/npaths
+#Calculate probability of crossing the barrier at any point
+barl <- 50
+crossi <- (colSums(pathm > barl) > 0)
+sum(crossi)/npaths
+
+#Plot in window
+x11(width=6, height=5)
+par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
+#Select and plot full range of paths
+ordern <- order(pathm[nsteps, ])
+pathm[nsteps, ordern]
+indeks <- ordern[seq(1, 100, 9)]
+zoo::plot.zoo(pathm[, indeks], main="Paths of Brownian Motion",
+  xlab="time steps", ylab=NA, plot.type="single")
+abline(h=strikep, col="red", lwd=3)
+text(x=(nsteps-60), y=strikep, labels="strike price", pos=3, cex=1)
+
+#Calculate time series of VTI returns
+library(rutils)
+retp <- rutils::etfenv$returns$VTI
+retp <- na.omit(retp)
+nrows <- NROW(retp)
+#Sample from VTI returns
+samplev <- retp[sample.int(nrows, replace=TRUE)]
+c(sd=sd(samplev), mad=mad(samplev))
+#sample.int() is a little faster than sample()
+library(microbenchmark)
+summary(microbenchmark(
+  sample.int = sample.int(1e3),
+  sample = sample(1e3),
+  times=10))[, c(1, 4, 5)]
+
+#Bootstrap sd and MAD under Windows
+library(parallel)  #Load package parallel
+ncores <- detectCores() - 1  #Number of cores
+compclust <- makeCluster(ncores)  #Initialize compute cluster under Windows
+clusterSetRNGStream(compclust, 1121)  #Reset random number generator in all cores
+nboot <- 10000
+bootd <- parLapply(compclust, 1:nboot, function(x, retp, nsimu) {
+  samplev <- retp[sample.int(nsimu, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
+}, retp=retp, nsimu=nrows)  #end parLapply
+#Bootstrap sd and MAD under Mac-OSX or Linux
+bootd <- mclapply(1:nboot, function(x) {
+  samplev <- retp[sample.int(nrows, replace=TRUE)]
+  c(sd=sd(samplev), mad=mad(samplev))
+}, mc.cores=ncores)  #end mclapply
+stopCluster(compclust)  #Stop R processes over cluster under Windows
+bootd <- rutils::do_call(rbind, bootd)
+#Standard error of standard deviation assuming normal distribution of returns
+sd(retp)/sqrt(nrows)
+#Means and standard errors from bootstrap
+stderr <- apply(bootd, MARGIN=2,
+  function(x) c(mean=mean(x), stderror=sd(x)))
+stderr
+#Relative standard errors
+stderr[2, ]/stderr[1, ]
+
+#Calculate log returns from VTI prices
+library(rutils)
+pricev <- quantmod::Cl(rutils::etfenv$VTI)
+pricev <- log(as.numeric(pricev))
+nrows <- NROW(pricev)
+prici <- pricev[1]
+retp <- rutils::diffit(pricev)
+class(retp); head(retp)
+sum(is.na(retp))
+#Define barrier level with respect to prices
+barl <- 2*max(pricev)
+#Calculate single bootstrap sample
+samplev <- retp[sample.int(nrows, replace=TRUE)]
+#Calculate prices from percentage returns
+samplev <- prici*exp(cumsum(samplev))
+#Calculate if prices crossed barrier
+sum(samplev > barl) > 0
+
+library(parallel)  #Load package parallel
+ncores <- detectCores() - 1  #Number of cores
+compclust <- makeCluster(ncores)  #Initialize compute cluster under Windows
+#Perform parallel bootstrap under Windows
+clusterSetRNGStream(compclust, 1121)  #Reset random number generator in all cores
+clusterExport(compclust, c("prici", "barl"))
+nboot <- 10000
+bootd <- parLapply(compclust, 1:nboot, function(x, retp, nrows) {
+  samplev <- retp[sample.int(nrows, replace=TRUE)]
+  #Calculate prices from percentage returns
+  samplev <- prici*cumsum(samplev)
+  #Calculate if prices crossed barrier
+  sum(samplev > barl) > 0
+}, retp=retp, nrows=nrows)  #end parLapply
+stopCluster(compclust)  #Stop R processes over cluster under Windows
+#Perform parallel bootstrap under Mac-OSX or Linux
+bootd <- mclapply(1:nboot, function(x) {
+  samplev <- retp[sample.int(nrows, replace=TRUE)]
+  #Calculate prices from percentage returns
+  samplev <- prici*cumsum(samplev)
+  #Calculate if prices crossed barrier
+  sum(samplev > barl) > 0
+}, mc.cores=ncores)  #end mclapply
+bootd <- rutils::do_call(c, bootd)
+#Calculate frequency of crossing barrier
+sum(bootd)/nboot
+
+#Define barrier level with respect to the prices
+barl <- 0.1*max(pricev)
+#Define time horizon of 1 year in days
+holdp <- 252
+#Sample the start dates for the bootstrap
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+startd <- sample.int(nrows-holdp, nboot, replace=TRUE)
+#Bootstrap the cumulative returns
+samplev <- sapply(startd, function(x) {
+  pricev[x+holdp-1] - pricev[x]
+})  #end sapply
+#Faster way to calculate the cumulative returns
+samplev <- pricev[startd+holdp-1] - pricev[startd]
+#Calculate how many cumulative returns exceed the barrier
+sum(samplev > barl) > 0
+#Plot the density of cumulative returns
+densv <- density(samplev)
+plot(densv, xlab="return", main="Return density")
+abline(v=barl, col="red", lwd=2)
+text(x=barl, y=0.7*max(densv$y), pos=2, "barrier")
+
+#Bootstrap the whole paths of cumulative returns
+samplev <- sapply(startd, function(x) {
+  pricev[x:(x+holdp-1)] - pricev[x]
+})  #end sapply
+dim(samplev)
+samplev[1:5, 1:5]
+#Calculate which of the paths crossed the barrier at any point
+crossd <- apply(samplev, 2, function(x) {sum(x > barl) > 0})
+sum(crossd)
+which(crossd)
+plot(samplev[, which(crossd)[1]], t="l")
+
+#Calculate percentage returns from VTI prices
+library(rutils)
+ohlc <- rutils::etfenv$VTI
+pricev <- as.numeric(ohlc[, 4])
+prici <- pricev[1]
+retp <- rutils::diffit(log(pricev))
+nrows <- NROW(retp)
+#Calculate difference of OHLC price columns
+pricediff <- ohlc[, 1:3] - pricev
+class(retp); head(retp)
+#Calculate bootstrap prices from percentage returns
+datav <- sample.int(nrows, replace=TRUE)
+priceboot <- prici*exp(cumsum(retp[datav]))
+ohlcboot <- pricediff + priceboot
+ohlcboot <- cbind(ohlcboot, priceboot)
+#Define barrier level with respect to prices
+barl <- 1.5*max(pricev)
+#Calculate if High bootstrapped prices crossed barrier level
+sum(ohlcboot[, 2] > barl) > 0
+
+library(parallel)  #Load package parallel
+ncores <- detectCores() - 1  #Number of cores
+compclust <- makeCluster(ncores)  #Initialize compute cluster under Windows
+#Perform parallel bootstrap under Windows
+clusterSetRNGStream(compclust, 1121)  #Reset random number generator in all cores
+clusterExport(compclust, c("prici", "barl", "pricediff"))
+nboot <- 10000
+bootd <- parLapply(compclust, 1:nboot, function(x, retp, nrows) {
+  #Calculate OHLC prices from percentage returns
+  datav <- sample.int(nrows, replace=TRUE)
+  priceboot <- prici*exp(cumsum(retp[datav]))
+  ohlcboot <- pricediff + priceboot
+  ohlcboot <- cbind(ohlcboot, priceboot)
+  #Calculate statistic
+  sum(ohlcboot[, 2] > barl) > 0
+}, retp=retp, nrows=nrows)  #end parLapply
+#Perform parallel bootstrap under Mac-OSX or Linux
+bootd <- mclapply(1:nboot, function(x) {
+  #Calculate OHLC prices from percentage returns
+  datav <- sample.int(nrows, replace=TRUE)
+  priceboot <- prici*exp(cumsum(retp[datav]))
+  ohlcboot <- pricediff + priceboot
+  ohlcboot <- cbind(ohlcboot, priceboot)
+  #Calculate statistic
+  sum(ohlcboot[, 2] > barl) > 0
+}, mc.cores=ncores)  #end mclapply
+stopCluster(compclust)  #Stop R processes over cluster under Windows
+bootd <- rutils::do_call(rbind, bootd)
+#Calculate frequency of crossing barrier
+sum(bootd)/nboot
+
+#Initialize the random number generator
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+#Sample from Standard Normal Distribution
+nsimu <- 1000
+datav <- rnorm(nsimu)
+#Estimate the 95% quantile
+nboot <- 10000
+bootd <- sapply(1:nboot, function(x) {
+  samplev <- datav[sample.int(nsimu, replace=TRUE)]
+  quantile(samplev, 0.95)
+})  #end sapply
+sd(bootd)
+#Estimate the 95% quantile using antithetic sampling
+bootd <- sapply(1:nboot, function(x) {
+  samplev <- datav[sample.int(nsimu, replace=TRUE)]
+  quantile(c(samplev, -samplev), 0.95)
+})  #end sapply
+#Standard error of quantile from bootstrap
+sd(bootd)
+sqrt(2)*sd(bootd)
+
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+#Plot a Normal probability distribution
+curve(expr=dnorm, xlim=c(-3, 4),
+main="Shifted Normal distribution function",
+xlab="", ylab="", lwd=3, col="blue")
+#Add shifted Normal probability distribution
+curve(expr=dnorm(x, mean=1), add=TRUE, lwd=3, col="red")
+#Add vertical dashed lines
+abline(v=0, lwd=3, col="blue", lty="dashed")
+abline(v=1, lwd=3, col="red", lty="dashed")
+arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
+ code=2, angle=20, length=grid::unit(0.2, "cm"))
+text(x=0.3, 0.1, labels=bquote(lambda), pos=3, cex=2)
+
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection") #Reset random number generator
+#Sample from Standard Normal Distribution
+nsimu <- 1000
+datav <- rnorm(nsimu)
+#Cumulative probability from formula
+quantv <- (-2)
+pnorm(quantv)
+integrate(dnorm, lower=-Inf, upper=quantv)
+#Cumulative probability from Naive Monte Carlo
+sum(datav < quantv)/nsimu
+#Generate importance sample
+lambdaf <- (-1.5)  #Tilt parameter
+datat <- datav + lambdaf  #Tilt the random numbers
+#Cumulative probability from importance sample - wrong!
+sum(datat < quantv)/nsimu
+#Cumulative probability from importance sample - correct
+weightv <- exp(-lambdaf*datat + lambdaf^2/2)
+sum((datat < quantv)*weightv)/nsimu
+#Bootstrap of standard errors of cumulative probability
+nboot <- 1000
+bootd <- sapply(1:nboot, function(x) {
+  datav <- rnorm(nsimu)
+  naivemc <- sum(datav < quantv)/nsimu
+  datav <- (datav + lambdaf)
+  weightv <- exp(-lambdaf*datav + lambdaf^2/2)
+  isample <- sum((datav < quantv)*weightv)/nsimu
+  c(naivemc=naivemc, impsample=isample)
+}) #end sapply
+apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
+
+#Quantile from Naive Monte Carlo
+confl <- 0.02
+qnorm(confl)  #Exact value
+datav <- sort(datav)  #Must be sorted for importance sampling
+cutoff <- nsimu*confl
+datav[cutoff]  #Naive Monte Carlo value
+#Importance sample weights
+datat <- datav + lambdaf  #Tilt the random numbers
+weightv <- exp(-lambdaf*datat + lambdaf^2/2)
+#Cumulative probabilities using importance sample
+cumprob <- cumsum(weightv)/nsimu
+#Quantile from importance sample
+datat[findInterval(confl, cumprob)]
+#Bootstrap of standard errors of quantile
+nboot <- 1000
+bootd <- sapply(1:nboot, function(x) {
+  datav <- sort(rnorm(nsimu))
+  naivemc <- datav[cutoff]
+  datat <- datav + lambdaf
+  weightv <- exp(-lambdaf*datat + lambdaf^2/2)
+  cumprob <- cumsum(weightv)/nsimu
+  isample <- datat[findInterval(confl, cumprob)]
+  c(naivemc=naivemc, impsample=isample)
+}) #end sapply
+apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
+
+#VaR and CVaR from Naive Monte Carlo
+varisk <- datav[cutoff]
+sum((datav <= varisk)*datav)/sum((datav <= varisk))
+#CVaR from importance sample
+varisk <- datat[findInterval(confl, cumprob)]
+sum((datat <= varisk)*datat*weightv)/sum((datat <= varisk)*weightv)
+#CVaR from integration
+integrate(function(x) x*dnorm(x), low=-Inf, up=varisk)$value/pnorm(varisk)
+#Bootstrap of standard errors of CVaR
+nboot <- 1000
+bootd <- sapply(1:nboot, function(x) {
+  datav <- sort(rnorm(nsimu))
+  varisk <- datav[cutoff]
+  naivemc <- sum((datav <= varisk)*datav)/sum((datav <= varisk))
+  datat <- datav + lambdaf
+  weightv <- exp(-lambdaf*datat + lambdaf^2/2)
+  cumprob <- cumsum(weightv)/nsimu
+  varisk <- datat[findInterval(confl, cumprob)]
+  isample <- sum((datat <= varisk)*datat*weightv)/sum((datat <= varisk)*weightv)
+  c(naivemc=naivemc, impsample=isample)
+}) #end sapply
+apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
+
+#Calculate matrix of random data
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection") #Reset random number generator
+nsimu <- 1000; nboot <- 100
+datav <- matrix(rnorm(nboot*nsimu), ncol=nboot)
+datav <- Rfast::colSort(datav)  #Sort the columns
+#Bootstrap function for VaR (quantile) for a single tilt parameter
+calc_vars <- function(lambdaf, confl=0.05) {
+  datat <- datav + lambdaf  #Tilt the random numbers
+  weightv <- exp(-lambdaf*datat + lambdaf^2/2)
+  #Calculate quantiles for columns
+  sapply(1:nboot, function(it) {
+    cumprob <- cumsum(weightv[, it])/nsimu
+    datat[findInterval(confl, cumprob), it]
+  })  #end sapply
+}  #end calc_vars
+#Bootstrap vector of VaR for a single tilt parameter
+bootd <- calc_vars(-1.5)
+
+#Define vector of tilt parameters
+lambdav <- seq(-3.0, -1.2, by=0.2)
+#Calculate vector of VaR for vector of tilt parameters
+varisk <- sapply(lambdav, calc_vars, confl=0.02)
+#Calculate standard deviations of VaR for tilt parameters
+stdevs <- apply(varisk, MARGIN=2, sd)
+#Calculate the optimal tilt parameter
+lambdav[which.min(stdevs)]
+#Plot the standard deviations
+x11(width=6, height=5)
+plot(x=lambdav, y=stdevs,
+     main="Standard Errors of Simulated VaR",
+     xlab="tilt parameter", ylab="standard error",
+     type="l", col="blue", lwd=2)
+
+#Binomial sample
+nsimu <- 1000
+probv <- 0.1
+datav <- rbinom(n=nsimu, size=1, probv)
+head(datav, 33)
+#Tilted binomial sample
+lambdaf <- 5
+probt <- lambdaf*probv/(1 + probv*(lambdaf - 1))
+weightv <- (1 + probv*(lambdaf - 1))/lambdaf
+datav <- rbinom(n=nsimu, size=1, probt)
+head(datav, 33)
+weightv*sum(datav)/nsimu
+#Bootstrap of standard errors
+nboot <- 1000
+bootd <- sapply(1:nboot, function(x) {
+  c(naivemc=sum(rbinom(n=nsimu, size=1, probv))/nsimu,
+    impsample=weightv*sum(rbinom(n=nsimu, size=1, probt))/nsimu)
+}) #end sapply
+apply(bootd, MARGIN=1, function(x) c(mean=mean(x), sd=sd(x)))
+
+#Define Brownian motion parameters
+sigmav <- 1.0  #Volatility
+drift <- 0.0  #Drift
+nsteps <- 100  #Number of simulation steps
+nsimu <- 1000  #Number of simulation paths
+#Calculate matrix of normal variables
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+datav <- rnorm(nsimu*nsteps, mean=drift, sd=sigmav)
+datav <- matrix(datav, nc=nsimu)
+#Simulate paths of Brownian motion
+pathm <- matrixStats::colCumsums(datav)
+#Tilt the datav
+lambdaf <- 0.1  #Tilt parameter
+datat <- datav + lambdaf  #Tilt the random numbers
+patht <- matrixStats::colCumsums(datat)
+zoo::plot.zoo(patht[, sample(nsimu, 20)], main="Paths of Brownian Motion", xlab="time steps", ylab=NA, plot.type="single")
+#Calculate path weights
+weightm <- exp(-lambdaf*datat + lambdaf^2/2)
+weightm <- matrixStats::colProds(weightm)
+#Or
+weightm <- exp(-lambdaf*colSums(datat) + nsteps*lambdaf^2/2)
+#Calculate option payout using naive MC
+strikep <- 10  #Strike price
+payouts <- (pathm[nsteps, ] - strikep)
+sum(payouts[payouts > 0])/nsimu
+#Calculate option payout using importance sampling
+payouts <- (patht[nsteps, ] - strikep)
+sum((weightm*payouts)[payouts > 0])/nsimu
+#Calculate crossing probability using naive MC
+barl <- 10
+crossi <- (colSums(pathm > barl) > 0)
+sum(crossi)/nsimu
+#Calculate crossing probability using importance sampling
+crossi <- colSums(patht > barl) > 0
+sum(weightm*crossi)/nsimu
+
+#Display the structure of optimize()
+str(optimize)
+#Objective function with multiple minima
+objfun <- function(input, param1=0.01) {
+  sin(0.25*pi*input) + param1*(input-1)^2
+}  #end objfun
+optiml <- optimize(f=objfun, interval=c(-4, 2))
+class(optiml)
+unlist(optiml)
+#Find minimum in different interval
+unlist(optimize(f=objfun, interval=c(0, 8)))
+#Find minimum with less accuracy
+accl <- 1e4*.Machine$double.eps^0.25
+unlist(optimize(f=objfun, interval=c(0, 8), tol=accl))
+#Microbenchmark optimize() with less accuracy
+library(microbenchmark)
+summary(microbenchmark(
+  more_accurate = optimize(f=objfun, interval=c(0, 8)),
+  less_accurate = optimize(f=objfun, interval=c(0, 8), tol=accl),
+  times=100))[, c(1, 4, 5)]  #end microbenchmark summary
+
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+#Plot the objective function
+curve(expr=objfun, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
+#Add title
+title(main="Objective Function", line=-1)
+
+#Rastrigin function
+rastrigin <- function(x, y, param=25) {
+  x^2 + y^2 - param*(cos(x) + cos(y))
+}  #end rastrigin
+#Rastrigin function is vectorized!
+rastrigin(c(-10, 5), c(-10, 5))
+#Set rgl options and load package rgl
+library(rgl)
+options(rgl.useNULL=TRUE)
+#Draw 3d surface plot of function
+rgl::persp3d(x=rastrigin, xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, param=15)
+#Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
+
+#Rastrigin function with vector argument for optimization
+rastrigin <- function(vecv, param=25) {
+  sum(vecv^2 - param*cos(vecv))
+}  #end rastrigin
+vecv <- c(pi, pi/4)
+rastrigin(vecv=vecv)
+#Draw 3d surface plot of Rastrigin function
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastrigin(vecv=c(x, y))),
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastrigin")
+#Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
+#Optimize with respect to vector argument
+optiml <- optim(par=vecv, fn=rastrigin,
+        method="L-BFGS-B",
+        upper=c(14*pi, 14*pi),
+        lower=c(pi/2, pi/2),
+        param=1)
+#Optimal parameters and value
+optiml$par
+optiml$value
+rastrigin(optiml$par, param=1)
+
+#Sample of normal variables
+datav <- rnorm(1000, mean=4, sd=2)
+#Objective function is log-likelihood
+objfun <- function(parv, datav) {
+  sum(2*log(parv[2]) + ((datav - parv[1])/parv[2])^2)
+}  #end objfun
+#Objective function on parameter grid
+parmean <- seq(1, 6, length=50)
+parsd <- seq(0.5, 3.0, length=50)
+objgrid <- sapply(parmean, function(m) {
+  sapply(parsd, function(sd) {
+    objfun(c(m, sd), datav)
+  })  #end sapply
+})  #end sapply
+#Perform grid search for minimum
+objmin <- which(objgrid == min(objgrid), arr.ind=TRUE)
+objmin
+parmean[objmin[1]]  #mean
+parsd[objmin[2]]  #sd
+objgrid[objmin]
+objgrid[(objmin[, 1] + -1:1), (objmin[, 2] + -1:1)]
+#Or create parameter grid using function outer()
+objfunv <- Vectorize(
+  FUN=function(mean, sd, datav) objfun(c(mean, sd), datav),
+  vectorize.args=c("mean", "sd")
+)  #end Vectorize
+objgrid <- outer(parmean, parsd, objfunv, datav=datav)
+
+#Perspective plot of log-likelihood function
+persp(z=-objgrid,
+      theta=45, phi=30, shade=0.5,
+      border="green", zlab="objective",
+      main="objective function")
+#Interactive perspective plot of log-likelihood function
+library(rgl)  #Load package rgl
+rgl::par3d(cex=2.0)  #Scale text by factor of 2
+rgl::persp3d(z=-objgrid, zlab="objective",
+col="green", main="objective function")
+#Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
+
+#Initial parameters
+initp <- c(mean=0, sd=1)
+#Perform optimization using optim()
+optiml <- optim(par=initp,
+  fn=objfun, #Log-likelihood function
+  datav=datav,
+  method="L-BFGS-B", #Quasi-Newton method
+  upper=c(10, 10), #Upper constraint
+  lower=c(-10, 0.1)) #Lower constraint
+#Optimal parameters
+optiml$par
+#Perform optimization using MASS::fitdistr()
+optiml <- MASS::fitdistr(datav, densfun="normal")
+optiml$estimate
+optiml$sd
+#Plot histogram
+histp <- hist(datav, plot=FALSE)
+plot(histp, freq=FALSE, main="histogram of sample")
+curve(expr=dnorm(x, mean=optiml$par["mean"], sd=optiml$par["sd"]),
+add=TRUE, type="l", lwd=2, col="red")
+legend("topright", leg="optimal parameters",
+   inset=0.0, cex=0.8, title=NULL, y.intersp=0.4,
+   bty="n", lwd=2, bg="white", col="red")
+
+#Sample from mixture of normal distributions
+datav <- c(rnorm(100, sd=1.0),
+      rnorm(100, mean=4, sd=1.0))
+#Objective function is log-likelihood
+objfun <- function(parv, datav) {
+  likev <- parv[1]/parv[3] *
+  dnorm((datav-parv[2])/parv[3]) +
+  (1-parv[1])/parv[5]*dnorm((datav-parv[4])/parv[5])
+  if (any(likev <= 0)) Inf else
+    -sum(log(likev))
+}  #end objfun
+#Vectorize objective function
+objfunv <- Vectorize(
+  FUN=function(mean, sd, w, m1, s1, datav)
+    objfun(c(w, m1, s1, mean, sd), datav),
+  vectorize.args=c("mean", "sd")
+)  #end Vectorize
+#Objective function on parameter grid
+parmean <- seq(3, 5, length=50)
+parsd <- seq(0.5, 1.5, length=50)
+objgrid <- outer(parmean, parsd,
+    objfunv, datav=datav,
+    w=0.5, m1=2.0, s1=2.0)
+rownames(objgrid) <- round(parmean, 2)
+colnames(objgrid) <- round(parsd, 2)
+objmin <- which(objgrid==
+  min(objgrid), arr.ind=TRUE)
+objmin
+objgrid[objmin]
+objgrid[(objmin[, 1] + -1:1),
+         (objmin[, 2] + -1:1)]
+
+#Perspective plot of objective function
+persp(parmean, parsd, -objgrid,
+theta=45, phi=30,
+shade=0.5,
+col=rainbow(50),
+border="green",
+main="objective function")
+
+#Initial parameters
+initp <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
+#Perform optimization
+optiml <- optim(par=initp,
+      fn=objfun,
+      datav=datav,
+      method="L-BFGS-B",
+      upper=c(1,10,10,10,10),
+      lower=c(0,-10,0.2,-10,0.2))
+optiml$par
+#Plot histogram
+histp <- hist(datav, plot=FALSE)
+plot(histp, freq=FALSE,
+     main="histogram of sample")
+fitfun <- function(x, parv) {
+  parv["weight"]*dnorm(x, mean=parv["m1"], sd=parv["s1"]) +
+  (1-parv["weight"])*dnorm(x, mean=parv["m2"], sd=parv["s2"])
+}  #end fitfun
+curve(expr=fitfun(x, parv=optiml$par), add=TRUE,
+type="l", lwd=2, col="red")
+legend("topright", leg="optimal parameters", inset=0.0,
+ cex=0.8, title=NULL, y.intersp=0.4, bty="n",
+ lwd=2, bg="white", col="red")
+
+#Rastrigin function with vector argument for optimization
+rastrigin <- function(vecv, param=25) {
+  sum(vecv^2 - param*cos(vecv))
+}  #end rastrigin
+vecv <- c(pi/6, pi/6)
+rastrigin(vecv=vecv)
+library(DEoptim)
+#Optimize rastrigin using DEoptim
+optiml <-  DEoptim(rastrigin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+#Optimal parameters and value
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)

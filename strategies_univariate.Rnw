@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Univariate Investment Strategies]{Univariate Investment Strategies}
-\subtitle{FRE7241, Spring 2025}
+\subtitle{FRE7241, Fall 2025}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -336,7 +336,7 @@ datev <- zoo::index(pricev)
 # Calculate the VTI and IEF percentage returns
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Wealth of fixed shares equal to $0.5 each at start (without rebalancing)
-weightv <- c(0.5, 0.5)  # dollar weights
+weightv <- c(0.5, 0.5)  ##  dollar weights
 wealthfs <- drop(cumprod(1 + retp) %*% weightv)
 # Or using the dollar returns
 prici <- as.numeric(pricev[1, ])
@@ -554,14 +554,14 @@ wealthv <- matrix(nrow=NROW(retp), ncol=2)
 colnames(wealthv) <- colnames(retp)
 wealthv[1, ] <- weightv
 for (it in 2:NROW(retp)) {
-  # Accrue wealth without rebalancing
+  ##  Accrue wealth without rebalancing
   wealthv[it, ] <- wealthv[it-1, ]*(1 + retp[it, ])
-  # Rebalance if wealth allocations differ from weights
+  ##  Rebalance if wealth allocations differ from weights
   if (sum(abs(wealthv[it, ] - sum(wealthv[it, ])*weightv))/sum(wealthv[it, ]) > threshv) {
-    # cat("Rebalance at:", it, "\n")
+    ##  cat("Rebalance at:", it, "\n")
     wealthv[it, ] <- sum(wealthv[it, ])*weightv
-  } # end if
-} # end for
+  } ##  end if
+} ##  end for
 wealthv <- rowSums(wealthv) - 1
 wealthv <- cbind(wealthpr, wealthv)
 wealthv <- xts::xts(wealthv, datev)
@@ -604,7 +604,7 @@ dygraphs::dygraph(wealthv, main="Wealth of Proportional Target Allocations") %>%
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Create name corresponding to "^GSPC" symbol
 setSymbolLookup(
   SP500=list(name="^GSPC", src="yahoo"))
@@ -651,12 +651,12 @@ cor(retp)
 sqrt(252)*sapply(retp, function(x) mean(x)/sd(x))
 # Calculate the standard deviation, skewness, and kurtosis
 sapply(retp, function(x) {
-  # Calculate the standard deviation
+  ##  Calculate the standard deviation
   stdev <- sd(x)
-  # Standardize the returns
+  ##  Standardize the returns
   x <- (x - mean(x))/stdev
   c(stdev=stdev, skew=mean(x^3), kurt=mean(x^4))
-})  # end sapply
+})  ##  end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -701,7 +701,7 @@ sharpev <- sqrt(252)*sapply(weightv, function(weight) {
   weightv <- c(weight, 1-weight)
   retp <- (retp[, 1:2] %*% weightv)
   mean(retp)/sd(retp)
-})  # end sapply
+})  ##  end sapply
 # Calculate the optimal VTI weight
 weightm <- weightv[which.max(sharpev)]
 # Calculate the optimal weight using optimization
@@ -709,7 +709,7 @@ calc_sharpe <- function(weightv) {
   weightv <- c(weightv, 1-weightv)
   retp <- (retp[, 1:2] %*% weightv)
   -mean(retp)/sd(retp)
-}  # end calc_sharpe
+}  ##  end calc_sharpe
 optv <- optimize(calc_sharpe, interval=c(0, 1))
 weightm <- optv$minimum
       @
@@ -745,7 +745,9 @@ text(x=weightm, y=0.7*max(sharpev), pos=4, cex=1.2,
       \vskip1ex
       The bootstrap data represents the possible cumulative returns of \emph{VTI} and \emph{IEF} over the given holding period, based on past history.
       \vskip1ex
-      For sampling from rows of data, it's better to convert the time series to a matrix.
+      For sampling from rows of data, it's better to convert the time series to a matrix, using the function \texttt{zoo::coredata()}.
+      \vskip1ex
+      The function \texttt{zoo::coredata()} extracts the data contained in \emph{zoo} object, and returns a vector or matrix.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -753,14 +755,14 @@ text(x=weightm, y=0.7*max(sharpev), pos=4, cex=1.2,
 pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
 pricev <- log(zoo::coredata(pricev))
 nrows <- NROW(pricev)
-holdp <- 10*252 # Holding period of 10 years in days
+holdp <- 10*252 ##  Holding period of 10 years in days
 # Sample the start dates for the bootstrap
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 startd <- sample.int(nrows-holdp, 1e3, replace=TRUE)
 # Bootstrap the VTI and IEF returns
 retm <- sapply(startd, function(x) {
   pricev[x+holdp-1, ] - pricev[x, ]
-})  # end sapply
+})  ##  end sapply
 dim(retm)
 # Faster way to calculate the cumulative returns
 retm <- pricev[startd+holdp-1, ] - pricev[startd, ]
@@ -833,15 +835,15 @@ holdv <- round(nrows*seq(0.1, 0.5, 0.1))
 retm <- sapply(holdv, function(holdp) {
   startd <- sample.int(nrows-holdp, 1e3, replace=TRUE)
   pricev[startd+holdp-1, "VTI"] - pricev[startd, "VTI"]
-})  # end sapply
+})  ##  end sapply
 dim(retm)
 colnames(retm) <- paste0(round(holdv/252), "years")
 # Calculate the skewness and kurtosis of the stock return distributions
 apply(retm, 2, function(x) {
-  # Standardize the returns
+  ##  Standardize the returns
   x <- (x - mean(x))/sd(x)
   c(skew=mean(x^3), kurt=mean(x^4))
-}) # end apply
+}) ##  end apply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -854,7 +856,7 @@ mean1 <- mean(ret1); mean2 <- mean(ret2)
 dens1 <- density(ret1); dens2 <- density(ret2)
 plot(dens1, col="blue", lwd=3, xlab="return",
      xlim=c(0, 2.5*max(dens2$x)), ylim=c(0, max(dens2$y)), 
-     main="Return Distributions for Long and Short Holding Periods")
+     main="Stock Return Distributions for Long and Short Holding Periods")
 lines(dens2, col="green", lwd=3)
 abline(v=mean1, col="blue", lwd=2, lty="dashed")
 text(x=mean1, y=0.5, labels="Long", pos=4, cex=0.8)
@@ -884,7 +886,7 @@ legend(x="topright", legend=c("Long", "Short"),
 # Define the risk-adjusted return measure
 riskretfun <- function(retm) {
   mean(retm)/sd(retm)
-}  # end riskretfun
+}  ##  end riskretfun
 # Calculate the stock risk-return ratios
 riskrets <- apply(retm, 2, riskretfun)
       @
@@ -918,13 +920,13 @@ plot(x=holdv, y=riskrets,
       This weight is higher than the \texttt{0.28} calculated before, because now the risk is measured as the standard deviation of the terminal wealth, not as the standard deviation of the daily returns.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the distributions of portfolio wealth for different weights of VTI
-holdp <- 10*252 # Holding period of 10 years in days
+holdp <- 10*252 ##  Holding period of 10 years in days
 weightv <- seq(0.05, 0.95, 0.05)
 wealthm <- sapply(weightv, function(weight) {
   sapply(startd, function(x) {
     (pricev[x+holdp-1, ] - pricev[x, ]) %*% c(weight, 1-weight)
-  })  # end sapply
-})  # end sapply
+  })  ##  end sapply
+})  ##  end sapply
 dim(wealthm)
 # Calculate the portfolio risk-return ratios
 riskrets <- apply(wealthm, 2, riskretfun)
@@ -1016,17 +1018,18 @@ legend("topleft", legend=colnames(wealthv),
     \column{0.5\textwidth}
       The \emph{Constant Proportion Portfolio Insurance} (CPPI) strategy rebalances its portfolio between stocks and zero-coupon bonds.
       \vskip1ex
-      The CPPI strategy has a fixed maturity date, and it's designed to pay back the initial principal investment at maturity.
+      The CPPI strategy has a fixed maturity date, and it's designed to gaurantee the payback of the initial principal investment at maturity, while also providing upside participation in any stock gains.
       \vskip1ex
-      When stock prices are declining, the CPPI strategy sells its stocks and buys bonds, to protect against the loss of principal at maturity.
+      When stock prices are rising, the CPPI strategy buys more stocks and sells its bonds.
       \vskip1ex
-      A zero-coupon bond pays no coupon, but it's bought at a discount to par ($\$100$), and pays par at maturity.  The investor receives capital appreciation instead of coupons.
+      When stock prices are declining, it sells its stocks and buys bonds, to protect against the loss of principal at maturity.
       \vskip1ex
-      The bond floor $F$ is set so that its value at maturity is equal to par - the initial principal investment.  
+      The bond floor $F$ is set so that the value of the zero-coupon bond at maturity is equal to par - the initial principal investment.  
       \vskip1ex
       The value of the CPPI portfolio $P$, is equal to the sum of the stock $SV$ and bond $B$ values: $P = SV + B$.
       \vskip1ex
-      The stock investment is levered by the \emph{CPPI multiplier} $C$ through borrowing.
+      The stock investment is levered by the \emph{CPPI multiplier} $C$ through borrowing from a margin account.
+      \vskip1ex
       The amount invested in stocks $SI$ is equal to the \emph{cushion} $(P - F)$ times the multiplier $C$: $SI = \max(C * (P - F), 0)$.
       The remaining amount of the portfolio is invested in zero-coupon bonds and is equal to: $B = \max(P - C * (P - F), 0)$.
     \column{0.5\textwidth}
@@ -1034,11 +1037,13 @@ legend("topleft", legend=colnames(wealthv),
       % The diagram was created in Pages and exported as a PDF file:
       % /Users/jerzy/Develop/lecture_slides/figure/CPPI.pages
       \includegraphics[width=0.35\paperwidth]{figure/portf_cppi_diagram.pdf}\\
-      Additional stock purchases can be funded by borrowing from a margin account.
-      \vskip1ex
       The stock investment $SI$ is the dollar amount of stocks owned by the CPPI strategy.
       The net value of the stocks $SV$ is equal to the stock investment $SI$ minus the borrowed amount $M$: $SV = SI - M$.
       If there's no borrowing, then the stock value is equal to the stock investment $SV = SI$.
+      \vskip1ex
+      Additional stock purchases are funded by borrowing from a margin account.
+      \vskip1ex
+      A zero-coupon bond pays no coupon, but it's bought at a discount to par ($\$100$), and pays par at maturity.  The investor receives capital appreciation instead of coupons.
   \end{columns}
 \end{block}
 
@@ -1129,16 +1134,16 @@ bondv[1] <- max(portfv[1] - stocki[1], 0)
 margv <- numeric(nrows)
 # Simulate the CPPI strategy
 for (t in 2:nrows) {
-  # Update the portfolio value
+  ##  Update the portfolio value
   stocki[t] <- (1 + retp[t])*stocki[t-1]
   stockv[t] <- stocki[t] - margv[t-1]
   portfv[t] <- stockv[t] + bondv[t-1]
-  # Update the CPPI leverage
+  ##  Update the CPPI leverage
   stockt <- max(coeff*(portfv[t] - bfloor), 0)
   bondv[t] <- max(portfv[t] - stockt, 0)
   margv[t] <- (bondv[t] - bondv[t-1]) + (stockt - stocki[t]) + margv[t-1]
   stocki[t] <- stockt
-}  # end for
+}  ##  end for
       @
   \end{columns}
 \end{block}
@@ -1234,7 +1239,6 @@ dygraphs::dygraph(log(wealthv[endw]), main="Wealth of CPPI and VTI") %>%
 pricev <- na.omit(rutils::etfenv$prices[, c("VTI", "IEF")])
 datev <- zoo::index(pricev)
 retd <- rutils::diffit(pricev)
-retd[1, ] <- retd[2, ]
 retp <- retd/rutils::lagit(pricev, lagg=1, pad_zeros=FALSE)
 # Calculate the risk parity weights
 weightv <- 1/sapply(retd, sd)
@@ -1696,22 +1700,22 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the VTI prices and returns
-pricev <- na.omit(rutils::etfenv$prices$VTI)
+# Calculate the log VTI prices and percentage returns
+pricev <- log(na.omit(rutils::etfenv$prices$VTI))
 nrows <- NROW(pricev)
 datev <- zoo::index(pricev)
-retp <- rutils::diffit(log(pricev))
+retp <- rutils::diffit(pricev)
 # Simulate stop-loss strategy
-stopl <- 0.05 # Stop-loss percentage
-pricem <- cummax(pricev) # Trailing maximum prices
+stopl <- 0.05 ##  Stop-loss percentage
+pricem <- cummax(pricev) ##  Trailing maximum prices
 # Calculate the drawdown
 dd <- (pricev - pricem)
-pnls <- retp # Initialize PnLs
+pnls <- retp ##  Initialize PnLs
 for (i in 1:(nrows-1)) {
 # Check for stop-loss
   if (dd[i] < -stopl*pricem[i])
-    pnls[i+1] <- 0 # Set PnLs = 0 if in stop-loss
-}  # end for
+    pnls[i+1] <- 0 ##  Set PnLs = 0 if in stop-loss
+}  ##  end for
 # Same but without using loops in R
 pnl2 <- retp
 insl <- rutils::lagit(dd < -stopl*pricem)
@@ -1760,10 +1764,9 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/stop_loss_performance.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph with shading
-# Create colors for background shading
-indic <- (rutils::diffit(insl) != 0) # Indices of stop-loss
-crossd <- c(datev[indic], datev[nrows]) # Dates of stop-loss
+# Plot the stop-loss strategy with shading
+indic <- (rutils::diffit(insl) != 0) ##  Indices of stop-loss
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of stop-loss
 shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
@@ -1773,7 +1776,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -1806,15 +1809,15 @@ pnlc <- sapply(stopv, function(stopl) {
   insl <- rutils::lagit(dd < -stopl*pricem)
   pnls <- ifelse(insl, 0, pnls)
   sum(pnls)
-})  # end sapply
+})  ##  end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/stop_loss_profile.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative pnls for stop-loss strategies
+# Plot cumulative PnLs of stop-loss strategies
 plot(x=stopv, y=pnlc, 
-   main="Cumulative PnLs for Stop-loss Strategies",
+   main="Cumulative PnLs of Stop-loss Strategies",
    xlab="stop-loss percent", ylab="cumulative pnl", 
    t="l", lwd=3, col="blue")
       @
@@ -1845,40 +1848,40 @@ plot(x=stopv, y=pnlc,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Define function for simulating a stop-start strategy
-sim_stopstart <- function(stopl) {
-  maxp <- pricev[1] # Trailing maximum price
-  minp <- pricev[1] # Trailing minimum price
-  insl <- FALSE # Is in stop-loss?
-  insg <- FALSE # Is in start-gain?
-  pnls <- retp # Initialize PnLs
+# Function for simulating the stop-start strategy
+stopstart <- function(stopl) {
+  maxp <- pricev[1] ##  Trailing maximum price
+  minp <- pricev[1] ##  Trailing minimum price
+  insl <- FALSE ##  Is in stop-loss?
+  insg <- FALSE ##  Is in start-gain?
+  pnls <- retp ##  Initialize PnLs
   for (i in 1:nrows) {
-    if (insl) { # In stop-loss
-      pnls[i] <- 0 # Set PnLs = 0 if in stop-loss
-      minp <- min(minp, pricev[i]) # Update minimum price to current price
-      if (pricev[i] > ((1 + stopl)*minp)) { # Check for start-gain
-        insg <- TRUE # Is in start-gain?
-        insl <- FALSE # Is in stop-loss?
-        maxp <- pricev[i] # Reset trailing maximum price
-      }  # end if
-    } else if (insg) { # In start-gain
-      maxp <- max(maxp, pricev[i]) # Update maximum price to current price
-      if (pricev[i] < ((1 - stopl)*maxp)) { # Check for stop-loss
-        insl <- TRUE # Is in stop-loss?
-        insg <- FALSE # Is in start-gain?
-        minp <- pricev[i] # Reset trailing minimum price
-      }  # end if
-    } else { # Warmup period
-      # Update the maximum and minimum prices
+    if (insl) { ##  In stop-loss
+      pnls[i] <- 0 ##  Set PnLs = 0 if in stop-loss
+      minp <- min(minp, pricev[i]) ##  Update minimum price to current price
+      if (pricev[i] > (1 + stopl)*minp) { ##  Check for start-gain
+        insg <- TRUE ##  Is in start-gain?
+        insl <- FALSE ##  Is in stop-loss?
+        maxp <- pricev[i] ##  Reset trailing maximum price
+      }  ##  end if
+    } else if (insg) { ##  In start-gain
+      maxp <- max(maxp, pricev[i]) ##  Update maximum price to current price
+      if (pricev[i] < (1 - stopl)*maxp) { ##  Check for stop-loss
+        insl <- TRUE ##  Is in stop-loss?
+        insg <- FALSE ##  Is in start-gain?
+        minp <- pricev[i] ##  Reset trailing minimum price
+      }  ##  end if
+    } else { ##  Warmup period
+      ##  Update the maximum and minimum prices
       maxp <- max(maxp, pricev[i])
       minp <- min(minp, pricev[i])
-      # Update the stop-loss and start-gain indicators
-      insl <- (pricev[i] < ((1 - stopl)*maxp)) # Is in stop-loss?
-      insg <- (pricev[i] > ((1 + stopl)*minp)) # Is in start-gain?
-    }  # end if
-  }  # end for
+      ##  Update the stop-loss and start-gain indicators
+      insl <- (pricev[i] < (1 - stopl)*maxp) ##  Is in stop-loss?
+      insg <- (pricev[i] > (1 + stopl)*minp) ##  Is in start-gain?
+    }  ##  end if
+  }  ##  end for
   return(pnls)
-} # end sim_stopstart
+} ##  end stopstart
 @
   \end{columns}
 \end{block}
@@ -1898,11 +1901,13 @@ sim_stopstart <- function(stopl) {
       The start-gain rule tends to quickly override the stop-loss rule, so that the strategy is long the stock after it recovers after a stop-loss.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the stop-start strategy
-pnls <- sim_stopstart(0.1)
+pnls <- stopstart(0.07)
 # Combine the data
 wealthv <- cbind(retp, pnls)
 colv <- c("VTI", "Strategy")
 colnames(wealthv) <- colv
+# Has low correlation to VTI
+cor(wealthv)[1, 2]
 # Calculate the Sharpe and Sortino ratios
 sqrt(252)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
@@ -1917,11 +1922,10 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/stop_start_performance.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph with shading
-# Create colors for background shading
-insl <- (pnls == 0) # Is in stop-loss?
-indic <- (rutils::diffit(insl) != 0) # Indices of crosses
-crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
+# Plot the stop-start strategy with shading
+insl <- (pnls == 0) ##  Is in stop-loss?
+indic <- (rutils::diffit(insl) != 0) ##  Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of crosses
 shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
@@ -1931,7 +1935,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -1951,20 +1955,27 @@ dyplot
       The stop-start strategy performs much better than the stop-loss strategy because it captures stock gains.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
-# Simulate multiple stop-loss strategies
+# Simulate multiple stop-loss strategies in a loop (slow)
 stopv <- 0.01*(1:30)
-pnlc <- sapply(stopv, function(stopl) {
-  sum(sim_stopstart(stopl))
-})  # end sapply
+# pnlc <- sapply(stopv, function(stopl) {
+#   sum(stopstart(stopl))
+# })  ##  end sapply
+# Simulate stop-loss strategies in a parallel loop (faster)
+library(parallel)
+ncores <- detectCores()-1
+pnlc <- unlist(mclapply(stopv, function(stopl) {
+  sum(stopstart(stopl))
+}, mc.cores=ncores))  ##  end mclapply
+# Find optimal stop-loss level
 stopl <- stopv[which.max(pnlc)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/stop_start_profile.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative pnls for stop-loss strategies
+# Plot cumulative PnLs of stop-loss strategies
 plot(x=stopv, y=pnlc, 
-   main="Cumulative PnLs for Stop-Start Strategies",
+   main="Cumulative PnLs of Stop-Start Strategies",
    xlab="stop-loss percent", ylab="cumulative pnl", 
    t="l", lwd=3, col="blue")
       @
@@ -1985,23 +1996,23 @@ plot(x=stopv, y=pnlc,
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the USO prices and returns
-pricev <- na.omit(rutils::etfenv$prices$USO)
+pricev <- log(na.omit(rutils::etfenv$prices$USO))
 nrows <- NROW(pricev)
 datev <- zoo::index(pricev)
-retp <- rutils::diffit(log(pricev))
+retp <- rutils::diffit(pricev)
 # Simulate multiple stop-start strategies
 stopv <- 0.01*(1:30)
-pnlc <- sapply(stopv, function(stopl) {
-  sum(sim_stopstart(stopl))
-})  # end sapply
+pnlc <- unlist(mclapply(stopv, function(stopl) {
+  sum(stopstart(stopl))
+}, mc.cores=ncores))  ##  end mclapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.4\paperwidth]{figure/stop_start_uso_profile.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot cumulative pnls for stop-start strategies
+# Plot cumulative PnLs of stop-start strategies
 plot(x=stopv, y=pnlc, 
-   main="Cumulative PnLs for USO Stop-Start Strategies",
+   main="Cumulative PnLs of USO Stop-Start Strategies",
    xlab="stop-loss percent", ylab="cumulative pnl", 
    t="l", lwd=3, col="blue")
       @
@@ -2024,7 +2035,7 @@ plot(x=stopv, y=pnlc,
       <<echo=TRUE,eval=FALSE>>=
 # Simulate optimal stop-start strategy for USO
 stopl <- stopv[which.max(pnlc)]
-pnls <- sim_stopstart(stopl)
+pnls <- stopstart(stopl)
 # Combine the data
 wealthv <- cbind(retp, pnls)
 colv <- c("USO", "Strategy")
@@ -2043,11 +2054,10 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/stop_start_uso_performance.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot dygraph with shading
-# Create colors for background shading
-insl <- (pnls == 0) # Is in stop-loss?
-indic <- (rutils::diffit(insl) != 0) # Indices of crosses
-crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
+# Plot the stop-start strategy with shading
+insl <- (pnls == 0) ##  Is in stop-loss?
+indic <- (rutils::diffit(insl) != 0) ##  Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of crosses
 shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
@@ -2057,7 +2067,249 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
+# Plot the dygraph object
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trend-Flip Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trend-flip strategy shorts the stock in a drawdown, instead of going flat like the stop-start strategy.
+      \vskip1ex
+      In order to determine the stop-loss and start-gain events, the trend-flip strategy follows the trailing maximum and trailing minimum prices.
+      \vskip1ex
+      A start-gain event is when the stock price rebounds from the previous minimum and exceeds the start-gain level, equal to the start-gain percentage times the previous minimum price.
+      \vskip1ex
+      After the start-gain level is crossed, the strategy buys back the stock which was sold under the stop-loss.
+      \vskip1ex
+      The trend-flip strategy trades a single \texttt{\$1} of stock, and is either long \texttt{\$1} of stock or it's short (\texttt{-\$1} of stock).
+      \vskip1ex
+      The trend-flip strategy is trend-following because it profits if price trends are persistent.  But it loses if prices are range-bound.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Function for simulating the trend-flip strategy
+trend_flip <- function(stopl = 0.1) {
+  pricev <- coredata(pricev)
+  nrows <- NROW(pricev)
+  pricec <- pricev[1]
+  pricemax <- pricec
+  pricemin <- pricec
+  drawp <- 0
+  gainp <- 0
+  posv <- integer(nrows)
+  pnlv <- numeric(nrows)
+  for (it in 2:(nrows - 1)) {
+    pricec <- pricev[it]
+    pnlv[it] <- posv[it] * (pricec - pricev[it - 1])
+    pricemax <- max(pricemax, pricec)
+    pricemin <- min(pricemin, pricec)
+    drawp <- min(pricec - pricemax, 0)
+    gainp <- max(pricec - pricemin, 0)
+    if ((drawp < -stopl) & (posv[it] >= 0)) {
+      posv[it + 1] <- (-1)
+      pricemin <- pricec
+    } else if ((gainp > stopl) & (posv[it] <= 0)) {
+      posv[it + 1] <- 1
+      pricemax <- pricec
+    } else { ##  Do nothing
+      posv[it + 1] <- posv[it]
+    }
+  }
+  return(cbind(pnlv, posv))
+} ##  end trend_flip
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trend-Flip Strategy Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trend-flip strategy spends less time in a stop-loss because prices tend to rebound sharply after a steep loss.
+      \vskip1ex
+      The start-gain rule tends to quickly override the stop-loss rule, so that the strategy is long the stock after it recovers after a stop-loss.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate the trend-flip strategy
+pnls <- trend_flip(0.09)
+# Combine the data
+wealthv <- cbind(retp, pnls[, "pnlv"])
+colv <- c("VTI", "Strategy")
+colnames(wealthv) <- colv
+# Has low correlation to VTI
+cor(wealthv)[1, 2]
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# dygraph plot the stop-loss strategy
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
+  main="VTI Trend-Flip Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/trend_flip_performance.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the trend-flip strategy with shading
+posv <- pnls[, "posv"]
+indic <- (rutils::diffit(posv) != 0) ##  Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of crosses
+shadev <- ifelse(posv[indic] == 1, "lightgreen", "antiquewhite")
+# Create dygraph object without plotting it
+dyplot <- dygraphs::dygraph(cumsum(wealthv), 
+  main="VTI Trend-Flip Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  ##  end for
+# Plot the dygraph object
+dyplot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Trend-Flip Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trend-flip strategy has a low correlation with the stock returns because it can be either long or short the stock.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate stop-loss strategies in a parallel loop
+stopv <- 0.01*(1:30)
+library(parallel)
+ncores <- detectCores()-1
+pnlc <- unlist(mclapply(stopv, function(stopl) {
+  sum(trend_flip(stopl)[, "pnlv"])
+}, mc.cores=ncores))  ##  end mclapply
+# Find optimal stop-loss level
+stopl <- stopv[which.max(pnlc)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/trend_flip_profile.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative PnLs of trend-flip strategies
+plot(x=stopv, y=pnlc, 
+   main="Cumulative PnLs of Trend-Flip Strategies",
+   xlab="stop-loss percent", ylab="cumulative pnl", 
+   t="l", lwd=3, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trend-Flip Strategy for Other ETFs}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trend-flip strategy can prevent losses for stocks with significant negative returns, like the \emph{USO} ETF (oil fund).
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the USO prices and returns
+pricev <- log(na.omit(rutils::etfenv$prices$USO))
+nrows <- NROW(pricev)
+datev <- zoo::index(pricev)
+retp <- rutils::diffit(pricev)
+# Simulate multiple trend-flip strategies
+stopv <- 0.01*(1:30)
+pnlc <- unlist(mclapply(stopv, function(stopl) {
+  sum(trend_flip(stopl)[, "pnlv"])
+}, mc.cores=ncores))  ##  end mclapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/trend_flip_uso_profile.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative PnLs of trend-flip strategies
+plot(x=stopv, y=pnlc, 
+   main="Cumulative PnLs of USO Trend-Flip Strategies",
+   xlab="stop-loss percent", ylab="cumulative pnl", 
+   t="l", lwd=3, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Trend-Flip Strategy For \protect\emph{USO}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trend-flip strategy for the \emph{USO} ETF has performed well because \emph{USO} has had very negative returns in the last \texttt{20} years.
+      \vskip1ex
+      Trend-flip strategies are able to preserve profits for the best performing stocks, and avoid losses for the worst performing stocks.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate optimal trend-flip strategy for USO
+stopl <- stopv[which.max(pnlc)]
+pnls <- trend_flip(stopl)
+# Combine the data
+wealthv <- cbind(retp, pnls[, "pnlv"])
+colv <- c("USO", "Strategy")
+colnames(wealthv) <- colv
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# dygraph plot the trend-flip strategy
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
+  main="USO Trend-Flip Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/trend_flip_uso_performance.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the trend-flip strategy with shading
+posv <- pnls[, "posv"]
+indic <- (rutils::diffit(posv) != 0) ##  Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of crosses
+shadev <- ifelse(posv[indic] == 1, "lightgreen", "antiquewhite")
+# Create dygraph object without plotting it
+dyplot <- dygraphs::dygraph(cumsum(wealthv), 
+  main="USO Trend-Flip Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+# Add shading to dygraph object
+for (i in 1:NROW(shadev)) {
+  dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -2079,7 +2331,7 @@ dyplot
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Exponentially Weighted Moving Average Price} (\emph{EMA}) is defined as the weighted average of prices over a rolling interval:
+      The \emph{Exponential Moving Average Price} (\emph{EMA}) is defined as the weighted average of prices over a rolling interval:
       \begin{displaymath}
         p^{EMA}_i = (1 - \lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
       \end{displaymath}
@@ -2144,9 +2396,9 @@ legend("topleft", legend=colnames(pricev), y.intersp=0.5,
       \vskip1ex
       The recursive \emph{EMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
       \vskip1ex
-      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the exponentially weighted moving average prices recursively.
+      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the exponential moving average prices recursively.
       \vskip1ex
-      The function \texttt{HighFreq::run\_mean()} calculates the exponentially weighted moving average prices recursively.
+      The function \texttt{HighFreq::run\_mean()} calculates the exponential moving average prices recursively.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the EMA prices recursively using C++ code
 emar <- .Call(stats:::C_rfilter, closep, lambdaf, c(as.numeric(closep[1])/(1-lambdaf), double(NROW(closep))))[-1]
@@ -2252,7 +2504,7 @@ shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
 # Standard plot of EMA prices with position shading
@@ -2282,7 +2534,7 @@ legend("topleft", legend=colnames(pricev),
       The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the daily profits and losses of crossover strategy
-retp <- rutils::diffit(closep)  # VTI returns
+retp <- rutils::diffit(closep)  ##  VTI returns
 pnls <- retp*posv
 colnames(pnls) <- "EMA"
 wealthv <- cbind(retp, pnls)
@@ -2301,7 +2553,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv), main="Performance of Crossover Stra
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% 
     dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -2538,32 +2790,32 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main="Crossover Strategy With Transacti
 sim_ema <- function(closep, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
   retp <- rutils::diffit(closep)
   nrows <- NROW(closep)
-  # Calculate the EMA prices
+  ##  Calculate the EMA prices
   pricema <- HighFreq::run_mean(closep, lambda=lambdaf)
-  # Calculate the indicator
+  ##  Calculate the indicator
   indic <- trend*sign(closep - pricema)
   if (lagg > 1) {
     indic <- HighFreq::roll_sum(indic, lagg)
     indic[1:lagg] <- 0
-  }  # end if
-  # Calculate the positions, either: -1, 0, or 1
+  }  ##  end if
+  ##  Calculate the positions, either: -1, 0, or 1
   posv <- rep(NA_integer_, nrows)
   posv[1] <- 0
   posv <- ifelse(indic == lagg, 1, posv)
   posv <- ifelse(indic == (-lagg), -1, posv)
   posv <- zoo::na.locf(posv, na.rm=FALSE)
   posv <- xts::xts(posv, order.by=zoo::index(closep))
-  # Lag the positions to trade on next day
+  ##  Lag the positions to trade on next day
   posv <- rutils::lagit(posv, lagg=1)
-  # Calculate the PnLs of strategy
+  ##  Calculate the PnLs of strategy
   pnls <- retp*posv
   costv <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costv)
-  # Calculate the strategy returns
+  ##  Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end sim_ema
+}  ##  end sim_ema
       @
   \end{columns}
 \end{block}
@@ -2587,9 +2839,9 @@ sim_ema <- function(closep, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
 lambdav <- seq(from=0.97, to=0.99, by=0.004)
 # Perform lapply() loop over lambdav
 pnltrend <- lapply(lambdav, function(lambdaf) {
-  # Simulate crossover strategy and calculate the returns
+  ##  Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
-})  # end lapply
+})  ##  end lapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
       @
@@ -2635,23 +2887,23 @@ legend("topleft", legend=colnames(pnltrend), inset=0.1,
       <<echo=TRUE,eval=FALSE>>=
 # Initialize compute cluster under Windows
 library(parallel)
-ncores <- detectCores() - 1  # Number of cores
+ncores <- detectCores() - 1  ##  Number of cores
 compclust <- makeCluster(detectCores()-1)
 clusterExport(compclust,
   varlist=c("ohlc", "lookb", "sim_ema"))
 # Perform parallel loop over lambdav under Windows
 pnltrend <- parLapply(compclust, lambdav, function(lambdaf) {
   library(quantmod)
-  # Simulate crossover strategy and calculate the returns
+  ##  Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
-})  # end parLapply
-stopCluster(compclust)  # Stop R processes over cluster under Windows
+})  ##  end parLapply
+stopCluster(compclust)  ##  Stop R processes over cluster under Windows
 # Perform parallel loop over lambdav under Mac-OSX or Linux
 pnltrend <- mclapply(lambdav, function(lambdaf) {
   library(quantmod)
-  # Simulate crossover strategy and calculate the returns
+  ##  Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
       @
@@ -2681,7 +2933,7 @@ colnames(pnltrend) <- paste0("lambda=", lambdav)
 # Calculate the annualized Sharpe ratios of strategy returns
 sharpetrend <- sqrt(252)*sapply(pnltrend, function(xtsv) {
   mean(xtsv)/sd(xtsv)
-})  # end sapply
+})  ##  end sapply
 # Plot Sharpe ratios
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 plot(x=lambdav, y=sharpetrend, t="l",
@@ -2762,9 +3014,9 @@ legend("top", legend=colnames(wealthv),
 lambdav <- seq(0.6, 0.7, 0.01)
 # Perform lapply() loop over lambdav
 pnlrevert <- lapply(lambdav, function(lambdaf) {
-  # Simulate crossover strategy and calculate the returns
+  ##  Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, trend=(-1))[, "pnls"]
-})  # end lapply
+})  ##  end lapply
 pnlrevert <- do.call(cbind, pnlrevert)
 colnames(pnlrevert) <- paste0("lambda=", lambdav)
 # Plot dygraph of mean reverting crossover strategies
@@ -2816,7 +3068,7 @@ legend("topleft", legend=colnames(pnlrevert),
 # Calculate the Sharpe ratios of strategy returns
 sharperevert <- sqrt(252)*sapply(pnlrevert, function(xtsv) {
   mean(xtsv)/sd(xtsv)
-})  # end sapply
+})  ##  end sapply
 plot(x=lambdav, y=sharperevert, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EMA Mean Reverting Strategies
@@ -2987,7 +3239,7 @@ datev <- zoo::index(ohlc)
 nrows <- NROW(ohlc)
 closep <- quantmod::Cl(ohlc)
 colnames(closep) <- "VTI"
-retp <- rutils::diffit(closep)  # VTI returns
+retp <- rutils::diffit(closep)  ##  VTI returns
 # Calculate the fast and slow EMAs
 lambdafa <- 0.89
 lambdasl <- 0.95
@@ -3018,7 +3270,7 @@ dyplot <- dygraphs::dygraph(pricev, main="VTI Dual EMA Prices") %>%
   dyLegend(show="always", width=300)
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 dyplot
       @
   \end{columns}
@@ -3058,7 +3310,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -3088,32 +3340,32 @@ sim_ema2 <- function(closep, lambdafa=0.1, lambdasl=0.01,
   if (lambdafa >= lambdasl) return(NA)
   retp <- rutils::diffit(closep)
   nrows <- NROW(closep)
-  # Calculate the EMA prices
+  ##  Calculate the EMA prices
   emaf <- HighFreq::run_mean(closep, lambda=lambdafa)
   emas <- HighFreq::run_mean(closep, lambda=lambdasl)
-  # Calculate the positions, either: -1, 0, or 1
+  ##  Calculate the positions, either: -1, 0, or 1
   indic <- sign(emaf - emas)
   if (lagg > 1) {
     indic <- HighFreq::roll_sum(indic, lagg)
     indic[1:lagg] <- 0
-  }  # end if
+  }  ##  end if
   posv <- rep(NA_integer_, nrows)
   posv[1] <- 0
   posv <- ifelse(indic == lagg, 1, posv)
   posv <- ifelse(indic == (-lagg), -1, posv)
   posv <- zoo::na.locf(posv, na.rm=FALSE)
   posv <- xts::xts(posv, order.by=zoo::index(closep))
-  # Lag the positions to trade on next day
+  ##  Lag the positions to trade on next day
   posv <- rutils::lagit(posv, lagg=1)
-  # Calculate the PnLs of strategy
+  ##  Calculate the PnLs of strategy
   pnls <- retp*posv
   costv <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costv)
-  # Calculate the strategy returns
+  ##  Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end sim_ema2
+}  ##  end sim_ema2
       @
   \end{columns}
 \end{block}
@@ -3144,7 +3396,7 @@ calc_sharpe <- function(closep, lambdafa, lambdasl, bidask, trend, lagg) {
   pnls <- sim_ema2(closep=closep, lambdafa=lambdafa, lambdasl=lambdasl, 
     bidask=bidask, trend=trend, lagg=lagg)[, "pnls"]
   sqrt(252)*mean(pnls)/sd(pnls)
-}  # end calc_sharpe
+}  ##  end calc_sharpe
 # Vectorize calc_sharpe with respect to lambdafa and lambdasl
 calc_sharpe <- Vectorize(FUN=calc_sharpe, 
   vectorize.args=c("lambdafa", "lambdasl"))
@@ -3157,8 +3409,8 @@ sharpem <- sapply(lambdasv, function(lambdasl) {
     if (lambdafa >= lambdasl) return(NA)
     calc_sharpe(closep=closep, lambdafa=lambdafa, 
             lambdasl=lambdasl, bidask=0.0, trend=1, lagg=1)
-  })  # end sapply
-})  # end sapply
+  })  ##  end sapply
+})  ##  end sapply
 colnames(sharpem) <- lambdasv
 rownames(sharpem) <- lambdafv
       @
@@ -3179,7 +3431,7 @@ rownames(sharpem) <- lambdafv
       \vskip1ex
       But this doesn't guarantee better out-of-sample performance.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the PnLs for the optimal crossover strategy
+# Calculate the PnLs of the optimal crossover strategy
 whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
 lambdafa <- lambdafv[whichv[1]]
 lambdasl <- lambdasv[whichv[2]]
@@ -3212,7 +3464,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv), main=paste("Optimal Dual Crossover 
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -3242,7 +3494,7 @@ sharpem <- outer(lambdafv, lambdasv,
                  bidask=0.0, trend=1, lagg=1)
 colnames(sharpem) <- lambdasv
 rownames(sharpem) <- lambdafv
-# Calculate the PnLs for the optimal strategy
+# Calculate the PnLs of the optimal strategy
 whichv <- which(sharpem == max(sharpem, na.rm=TRUE), arr.ind=TRUE)
 lambdafa <- lambdafv[whichv[1]]
 lambdasl <- lambdasv[whichv[2]]
@@ -3404,7 +3656,7 @@ posv <- xts::xts(posv, order.by=zoo::index(closep))
 # Lag the positions to trade in next period
 posv <- rutils::lagit(posv, lagg=1)
 # Calculate the PnLs of VWAP strategy
-retp <- rutils::diffit(closep)  # VTI returns
+retp <- rutils::diffit(closep)  ##  VTI returns
 pnls <- retp*posv
 colnames(pnls) <- "VWAP"
 wealthv <- cbind(retp, pnls)
@@ -3430,7 +3682,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -3539,32 +3791,32 @@ sim_vwap <- function(ohlc, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
   volumv <- quantmod::Vo(ohlc)
   retp <- rutils::diffit(closep)
   nrows <- NROW(ohlc)
-  # Calculate the VWAP prices
+  ##  Calculate the VWAP prices
   vwap <- HighFreq::run_mean(closep, lambda=lambdaf, weightv=volumv)
-  # Calculate the indicator
+  ##  Calculate the indicator
   indic <- trend*sign(closep - vwap)
   if (lagg > 1) {
     indic <- HighFreq::roll_sum(indic, lagg)
     indic[1:lagg] <- 0
-  }  # end if
-  # Calculate the positions, either: -1, 0, or 1
+  }  ##  end if
+  ##  Calculate the positions, either: -1, 0, or 1
   posv <- rep(NA_integer_, nrows)
   posv[1] <- 0
   posv <- ifelse(indic == lagg, 1, posv)
   posv <- ifelse(indic == (-lagg), -1, posv)
   posv <- zoo::na.locf(posv, na.rm=FALSE)
   posv <- xts::xts(posv, order.by=zoo::index(closep))
-  # Lag the positions to trade on next day
+  ##  Lag the positions to trade on next day
   posv <- rutils::lagit(posv, lagg=1)
-  # Calculate the PnLs of strategy
+  ##  Calculate the PnLs of strategy
   pnls <- retp*posv
   costv <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costv)
-  # Calculate the strategy returns
+  ##  Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end sim_vwap
+}  ##  end sim_vwap
       @
   \end{columns}
 \end{block}
@@ -3588,9 +3840,9 @@ sim_vwap <- function(ohlc, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
 lambdav <- seq(from=0.97, to=0.995, by=0.004)
 # Perform lapply() loop over lambdav
 pnls <- lapply(lambdav, function(lambdaf) {
-  # Simulate VWAP strategy and Calculate the returns
+  ##  Simulate VWAP strategy and Calculate the returns
   sim_vwap(ohlc=ohlc, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
-})  # end lapply
+})  ##  end lapply
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdav)
       @
@@ -3779,31 +4031,31 @@ volp <- HighFreq::run_var(pricev, lambda=lambdaf)
 pricema <- volp[, 1]
 volp <- sqrt(volp[, 2])
 # Prepare the simulation parameters
-pricen <- as.numeric(pricev) # Numeric price
-pricec <- pricen - pricema # Centered price
+pricen <- as.numeric(pricev) ##  Numeric price
+pricec <- pricen - pricema ##  Centered price
 threshv <- volp
 nrows <- NROW(pricev)
-posv <- integer(nrows) # Stock positions
-posv[1] <- 0 # Initial position
+posv <- integer(nrows) ##  Stock positions
+posv[1] <- 0 ##  Initial position
 # Calculate the positions from Bollinger bands
 for (it in 2:nrows) {
   if (pricec[it-1] > threshv[it-1]) {
-    # Enter short
+    ##  Enter short
     posv[it] <- (-1)
   } else if (pricec[it-1] < (-threshv[it-1])) {
-    # Enter long
+    ##  Enter long
     posv[it] <- 1
   } else if ((posv[it-1] < 0) && (pricec[it-1] < 0)) {
-    # Unwind short
+    ##  Unwind short
     posv[it] <- 0
   } else if ((posv[it-1] > 0) && (pricec[it-1] > 0)) {
-    # Unwind long
+    ##  Unwind long
     posv[it] <- 0
   } else {
-    # Do nothing
+    ##  Do nothing
     posv[it] <- posv[it-1]
-  }  # end if
-}  # end for
+  }  ##  end if
+}  ##  end for
 # Calculate the number of trades
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
 # Calculate the pnls
@@ -3867,20 +4119,20 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
       In the patient Bollinger Strategy the positions are held until the price reaches the opposite extreme, so that the strategy is always either long \texttt{\$1} dollar of stock or short \texttt{\$1} dollar of stock.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the patient Bollinger Strategy
-posv <- integer(nrows) # Stock positions
-posv[1] <- 0 # Initial position
+posv <- integer(nrows) ##  Stock positions
+posv[1] <- 0 ##  Initial position
 for (it in 2:nrows) {
   if (pricec[it-1] > threshv[it-1]) {
-    # Enter short
+    ##  Enter short
     posv[it] <- (-1)
   } else if (pricec[it-1] < (-threshv[it-1])) {
-    # Enter long
+    ##  Enter long
     posv[it] <- 1
   } else {
-    # Do nothing
+    ##  Do nothing
     posv[it] <- posv[it-1]
-  }  # end if
-}  # end for
+  }  ##  end if
+}  ##  end for
 # Calculate the PnLs
 pnl2 <- retp*posv
       @
@@ -4037,7 +4289,7 @@ ntrades <- sum(abs(rutils::diffit(posv)) > 0)
 retp <- rutils::diffit(pricev)
 pnls <- retp*posv
 # Subtract transaction costs from the pnls
-bidask <- 0.0001 # Bid-ask spread equal to 1 basis point
+bidask <- 0.0001 ##  Bid-ask spread equal to 1 basis point
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
       @
@@ -4485,7 +4737,7 @@ for (it in 1:3) {
   curve(expr=plogis(x, scale=lambdav[it]),
         xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
         col=colorv[it], add=(it>1))
-}  # end for
+}  ##  end for
 # Add title
 title(main="Logistic function", line=0.5)
 # Add legend
@@ -4666,13 +4918,13 @@ confun <- function(actual, fcasts, threshv) {
                    sum(!actual & forb), sum(actual & forb)), ncol=2)
   conf <- conf / rowSums(conf)
   c(typeI=conf[2, 1], typeII=conf[1, 2])
-}  # end confun
+}  ##  end confun
 confun(!topl, fcasts, threshv=threshv)
 # Define vector of discrimination thresholds
 threshv <- quantile(fcasts, seq(0.01, 0.99, by=0.01))
 # Calculate the error rates
 errorr <- sapply(threshv, confun,
-  actual=!topl, fcasts=fcasts)  # end sapply
+  actual=!topl, fcasts=fcasts)  ##  end sapply
 errorr <- t(errorr)
 rownames(errorr) <- threshv
 # Calculate the informedness
@@ -4728,7 +4980,7 @@ fcasts <- drop(cbind(rep(1, nrows), predm) %*% coeff)
 fcasts <- 1/(1 + exp(-fcasts))
 # Calculate the error rates
 errorr <- sapply(threshv, confun,
-  actual=!bottoml, fcasts=fcasts)  # end sapply
+  actual=!bottoml, fcasts=fcasts)  ##  end sapply
 errorr <- t(errorr)
 rownames(errorr) <- threshv
 # Calculate the informedness
@@ -4830,7 +5082,7 @@ fitv <- logmod$fitted.values
 coefftop <- logmod$coefficients
 # Calculate the error rates and best threshold value
 errorr <- sapply(threshv, confun,
-  actual=!topl[insample], fcasts=fitv)  # end sapply
+  actual=!topl[insample], fcasts=fitv)  ##  end sapply
 errorr <- t(errorr)
 informv <- 2 - rowSums(errorr)
 threshtop <- threshv[which.max(informv)]
@@ -4840,7 +5092,7 @@ fitv <- logmod$fitted.values
 coeffbot <- logmod$coefficients
 # Calculate the error rates and best threshold value
 errorr <- sapply(threshv, confun,
-  actual=!bottoml[insample], fcasts=fitv)  # end sapply
+  actual=!bottoml[insample], fcasts=fitv)  ##  end sapply
 errorr <- t(errorr)
 informv <- 2 - rowSums(errorr)
 threshbot <- threshv[which.max(informv)]
@@ -4951,7 +5203,7 @@ fcasts <- 1/(1 + exp(-fcasts))
 # Calculate the error rates
 threshv <- quantile(fcasts, seq(0.01, 0.99, by=0.01))
 errorr <- sapply(threshv, confun,
-  actual=!retspos, fcasts=fcasts)  # end sapply
+  actual=!retspos, fcasts=fcasts)  ##  end sapply
 errorr <- t(errorr)
 # Calculate the threshold corresponding to highest informedness
 informv <- 2 - rowSums(errorr)
@@ -4967,7 +5219,7 @@ fcasts <- predm %*% coeff
 fcasts <- 1/(1 + exp(-fcasts))
 # Calculate the error rates
 errorr <- sapply(threshv, confun,
-  actual=!retsneg, fcasts=fcasts)  # end sapply
+  actual=!retsneg, fcasts=fcasts)  ##  end sapply
 errorr <- t(errorr)
 # Calculate the threshold corresponding to highest informedness
 informv <- 2 - rowSums(errorr)
@@ -5046,7 +5298,7 @@ fitv <- logmod$fitted.values
 coefftop <- logmod$coefficients
 # Calculate the error rates and best threshold value
 errorr <- sapply(threshv, confun,
-  actual=!topl[insample], fcasts=fitv)  # end sapply
+  actual=!topl[insample], fcasts=fitv)  ##  end sapply
 errorr <- t(errorr)
 informv <- 2 - rowSums(errorr)
 threshtop <- threshv[which.max(informv)]
@@ -5056,7 +5308,7 @@ fitv <- logmod$fitted.values
 coeffbot <- logmod$coefficients
 # Calculate the error rates and best threshold value
 errorr <- sapply(threshv, confun,
-  actual=!bottoml[insample], fcasts=fitv)  # end sapply
+  actual=!bottoml[insample], fcasts=fitv)  ##  end sapply
 errorr <- t(errorr)
 informv <- 2 - rowSums(errorr)
 threshbot <- threshv[which.max(informv)]

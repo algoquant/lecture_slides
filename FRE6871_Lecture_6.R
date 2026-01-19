@@ -1,216 +1,421 @@
-# Load and plot intraday stock prices
-load("/Users/jerzy/Develop/lecture_slides/data/xlk_tick_trades_20200316.RData")
-pricev <- xlk$price
-dygraphs::dygraph(pricev, main="XLK Intraday Prices for 2020-03-16") %>%
+# Load package HighFreq
+library(HighFreq)
+# Or load the high frequency data file directly:
+# symbolv <- load("/Users/jerzy/Develop/R/HighFreq/data/hf_data.RData")
+head(HighFreq::SPY_TAQ)
+head(HighFreq::SPY)
+tail(HighFreq::SPY)
+
+library(HighFreq)
+# Read TAQ trade data from csv file
+taq <- data.table::fread(file="/Users/jerzy/Develop/lecture_slides/data/xlk_tick_trades_20200316.csv")
+# Inspect the TAQ data in data.table format
+taq
+class(taq)
+colnames(taq)
+sapply(taq, class)
+symboln <- taq$SYM_ROOT[1]
+# Create date-time index
+datev <- paste(taq$DATE, taq$TIME_M)
+# Coerce date-time index to POSIXlt
+datev <- strptime(datev, "%Y%m%d %H:%M:%OS")
+class(datev)
+# Display more significant digits
+# options("digits")
+options(digits=20, digits.secs=10)
+last(datev)
+unclass(last(datev))
+as.numeric(last(datev))
+# Coerce date-time index to POSIXct
+datev <- as.POSIXct(datev)
+class(datev)
+last(datev)
+unclass(last(datev))
+as.numeric(last(datev))
+# Calculate the number of seconds
+as.numeric(last(datev)) - as.numeric(first(datev))
+# Calculate the number of ticks per second
+NROW(taq)/(6.5*3600)
+# Select TAQ data columns
+taq <- taq[, .(price=PRICE, volume=SIZE)]
+
+# Coerce trade ticks to xts series
+xlk <- xts::xts(taq[, .(price, volume)], datev)
+colnames(xlk) <- c("price", "volume")
+save(xlk, file="/Users/jerzy/Develop/data/xlk_tick_trades_20200316.RData")
+# Plot histogram of the trading volumes
+hist(xlk$volume, main="Histogram of XLK Trading Volumes",
+     breaks=1e5, xlim=c(1, 400), xlab="number of shares")
+
+# Plot dygraph
+dygraphs::dygraph(xlk$price, main="XLK Intraday Prices for 2020-03-16") %>%
   dyOptions(colors="blue", strokeWidth=1)
-# Calculate the lagged and advanced prices
-pricelag <- rutils::lagit(pricev)
-pricelag[1] <- pricelag[2]
-pricadv <- rutils::lagit(pricev, lagg=-1)
-pricadv[NROW(pricadv)] <- pricadv[NROW(pricadv)-1]
-# Calculate the z-scores
-diffl <- ifelse(abs(pricelag-pricadv) < 0.01, 0.01, abs(pricelag-pricadv))
-zscores <- (pricev - 0.5*(pricelag+pricadv))/diffl
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
-# Scrub the price spikes
-threshv <- 5*madz # Discrimination threshold
-indeks <- which(abs(zscores) > threshv)
-pricev[indeks] <- as.numeric(pricev[indeks-1])
-# Plot dygraph of the scrubbed prices
-dygraphs::dygraph(pricev, main="Scrubbed XLK Intraday Prices") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-# Calculate the centered Hampel filter to remove bad prices
-lookb <- 71 # Look-back interval
-halfb <- lookb %/% 2 # Half-back interval
-pricev <- xlk$price
-# Calculate the trailing median and MAD
-medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
-colnames(medianv) <- c("median")
-madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
-# madv <- TTR::runMAD(pricev, n=lookb)
-# Center the median and the MAD
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-# Calculate the Z-scores
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
-# Define discrimination threshold value
-threshv <- 6*madz
-# Identify good prices with small z-scores
-isgood <- (abs(zscores) < threshv)
-# Calculate the number of bad prices
-sum(!isgood)
-# Overwrite bad prices and calculate time series of scrubbed prices
-priceg <- pricev
-priceg[!isgood] <- NA
-priceg <- zoo::na.locf(priceg)
-# Plot dygraph of the scrubbed prices
-dygraphs::dygraph(priceg, main="Scrubbed XLK Intraday Prices") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-# Plot using chart_Series()
+# Plot in x11 window
 x11(width=6, height=5)
-quantmod::chart_Series(x=priceg,
-  name="Clean XLK Intraday Prices for 2020-03-16")
-# Add 200 random price spikes to the clean prices
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nspikes <- 200
-nrows <- NROW(priceg)
-ispike <- logical(nrows)
-ispike[sample(x=nrows, size=nspikes)] <- TRUE
-priceb <- priceg
-priceb[ispike] <- priceb[ispike]*
-  sample(c(0.999, 1.001), size=nspikes, replace=TRUE)
-# Plot the bad prices and their medians
-medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
-pricem <- cbind(priceb, medianv)
-colnames(pricem) <- c("prices with spikes", "median")
-dygraphs::dygraph(pricem, main="XLK Prices With Spikes") %>%
-  dyOptions(colors=c("red", "blue"))
-# Calculate the z-scores
-madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
-zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
-# Z-scores have very fat tails
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=10000, xlim=c(-4*madz, 4*madz))
-# Identify good prices with small z-scores
-threshv <- 3*madz
-isgood <- (abs(zscores) < threshv)
-# Calculate the number of bad prices
-sum(!isgood)
-# Calculate the confusion matrix
-table(actual=!ispike, forecast=isgood)
-sum(!isgood)
-# FALSE positive (type I error)
-sum(!ispike & !isgood)
-# FALSE negative (type II error)
-sum(ispike & isgood)
-# Confusion matrix as function of threshold
-confun <- function(actualv, zscores, threshv) {
-    confmat <- table(actualv, (abs(zscores) < threshv))
-    confmat <- confmat / rowSums(confmat)
-    c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-}  # end confun
-confun(!ispike, zscores, threshv=threshv)
-# Define vector of discrimination thresholds
-threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
-# Calculate the error rates
-errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-# Calculate the area under the ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
-# Plot ROC curve for Hampel classifier
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Hampel Classifier",
-     type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
-# Load log VXX prices
-load("/Users/jerzy/Develop/lecture_slides/data/pricevxx.RData")
-nrows <- NROW(pricev)
-# Calculate the centered Hampel filter for VXX
-lookb <- 7 # Look-back interval
-halfb <- lookb %/% 2 # Half-back interval
-medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (pricev - medianv)/madv, 0)
-range(zscores); mad(zscores)
-madz <- mad(zscores[abs(zscores) > 0])
-hist(zscores, breaks=100, xlim=c(-3*madz, 3*madz))
-# Define discrimination threshold value
-threshv <- 9*madz
-# Calculate the good prices
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-# Dates of the bad prices
-zoo::index(pricev[!isgood])
-# Calculate the false positives
-falsep <- !isgood
-falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
-# Plot dygraph of the prices with bad prices
-datam <- cbind(pricev, zscores)
-colnames(datam)[2] <- "ZScores"
-colv <- colnames(datam)
-dygraphs::dygraph(datam, main="VXX Prices With Z-Scores and False Positives") %>%
+quantmod::chart_Series(x=xlk$price, name="XLK Intraday Prices for 2020-03-16")
+
+pricev <- read.zoo(file="/Users/jerzy/Develop/lecture_slides/data/bid_ask_bounce.csv",
+  header=TRUE, sep=",")
+pricev <- as.xts(pricev)
+dygraphs::dygraph(pricev$Close,
+  main="S&P500 Futures Prices Bid-Ask Bounce") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+
+# Plot dygraph of trade prices of at least 100 shares
+dygraphs::dygraph(xlk$price[xlk$volume >= 100, ],
+  main="XLK Prices for Trades of At Least 100 Shares") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+
+# Select the large trade lots of at least 100 shares
+dim(taq)
+tickb <- taq[taq$volume >= 100]
+dim(tickb)
+# Number of large lot ticks per second
+NROW(tickb)/(6.5*3600)
+# Plot histogram of the trading volumes
+hist(tickb$volume, main="Histogram of XLK Trading Volumes",
+     breaks=100000, xlim=c(1, 400), xlab="number of shares")
+# Save trade ticks with large lots
+data.table::fwrite(tickb, file="/Users/jerzy/Develop/data/xlk_tick_trades_20200316_biglots.csv")
+# Coerce trade prices to xts
+xlkb <- xts::xts(tickb[, .(price, volume)], tickb$index)
+colnames(xlkb) <- c("price", "volume")
+
+# Plot dygraph of the large lots
+dygraphs::dygraph(xlkb$price,
+  main="XLK Prices for Trades of At Least 100 Shares") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Plot the large lots
+x11(width=6, height=5)
+quantmod::chart_Series(x=xlk$price,
+  name="XLK Trade Ticks for 2020-03-16 (large lots only)")
+
+# Round time index to seconds
+tickg[, zoo::index := as.POSIXct(round.POSIXt(index, "secs"))]
+# Aggregate to OHLC by seconds
+ohlc <- tickg[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
+# Round time index to minutes
+tickg[, zoo::index := as.POSIXct(round.POSIXt(index, "mins"))]
+# Aggregate to OHLC by minutes
+ohlc <- tickg[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
+
+# Coerce OHLC prices to xts
+ohlc <- xts::xts(ohlc[, -"index"], ohlc$index)
+# Plot dygraph of the OHLC prices
+dygraphs::dygraph(ohlc[, -5], main="XLK Trade Ticks for 2020-03-16 (OHLC)") %>%
+  dyCandlestick()
+# Plot the OHLC prices
+x11(width=6, height=5)
+quantmod::chart_Series(x=ohlc, TA="add_Vo()",
+  name="XLK Trade Ticks for 2020-03-16 (OHLC)")
+
+Load package HighFreq
+library(HighFreq)
+head(HighFreq::SPY)
+
+# Load package HighFreq
+library(HighFreq)
+# Define symbol
+symboln <- "SPY"
+# Load OHLC data
+dirout <- "/Users/jerzy/Develop/data/minutes/"
+symboln <- load(file.path(dirout, paste0(symboln, ".RData")))
+interval <-"2013-11-11 09:30:00/2013-11-11 10:30:00"
+chart_Series(SPY[interval], name=symboln)
+
+# Install package HighFreq from github
+devtools::install_github(repo="algoquant/HighFreq")
+# Load package HighFreq
+library(HighFreq)
+# Get documentation for package HighFreq
+# Get short description
+packageDescription(HighFreq)
+# Load help page
+help(package=HighFreq)
+# List all datasets in HighFreq
+data(package=HighFreq)
+# List all objects in HighFreq
+ls("package:HighFreq")
+# Remove HighFreq from search path
+detach("package:HighFreq")
+
+# Load package HighFreq
+library(HighFreq)
+# You can see SPY when listing objects in HighFreq
+ls("package:HighFreq")
+# You can see SPY when listing datasets in HighFreq
+data(package=HighFreq)
+# But the SPY dataset isn't listed in the workspace
+ls()
+# HighFreq datasets are lazy loaded and available when needed
+head(HighFreq::SPY)
+# Load all the datasets in package HighFreq
+data(hf_data)
+# HighFreq datasets are now loaded and in the workspace
+head(HighFreq::SPY)
+
+library(rutils)  # Load package rutils
+# Calculate SPY percentage returns
+ohlc <- HighFreq::SPY
+nrows <- NROW(ohlc)
+closep <- log(quantmod::Cl(ohlc))
+retp <- rutils::diffit(closep)
+colnames(retp) <- "SPY"
+# Standardize raw returns to make later comparisons
+retp <- (retp - mean(retp))/sd(retp)
+# Calculate moments and perform normality test
+sapply(c(var=2, skew=3, kurt=4), function(x) sum(retp^x)/nrows)
+tseries::jarque.bera.test(retp)
+# Fit SPY returns using MASS::fitdistr()
+optiml <- MASS::fitdistr(retp, densfun="t", df=2)
+loc <- optiml$estimate[1]
+scalev <- optiml$estimate[2]
+
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot histogram of SPY returns
+histp <- hist(retp, col="lightgrey", mgp=c(2, 1, 0),
+  xlab="returns (standardized)", ylab="frequency", xlim=c(-3, 3),
+  breaks=1e3, freq=FALSE, main="Distribution of High Frequency SPY Returns")
+# lines(density(retp, bw=0.2), lwd=3, col="blue")
+# Plot t-distribution function
+curve(expr=dt((x-loc)/scalev, df=2)/scalev,
+type="l", lwd=3, col="red", add=TRUE)
+# Plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(retp),
+  sd=sd(retp)), add=TRUE, lwd=3, col="blue")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("t-distr", "normal"), y.intersp=0.5,
+  lwd=6, lty=1, col=c("red", "blue"))
+
+# Hourly SPY percentage returns
+closep <- log(Cl(xts::to.period(x=ohlc, period="hours")))
+retsh <- rutils::diffit(closep)
+retsh <- (retsh - mean(retsh))/sd(retsh)
+# Daily SPY percentage returns
+closep <- log(Cl(xts::to.period(x=ohlc, period="days")))
+retd <- rutils::diffit(closep)
+retd <- (retd - mean(retd))/sd(retd)
+# Calculate moments
+sapply(list(minutely=retp, hourly=retsh, daily=retd),
+ function(rets) {sapply(c(var=2, skew=3, kurt=4),
+          function(x) mean(rets^x))
+})  # end sapply
+
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot densities of SPY returns
+plot(density(retp, bw=0.4), xlim=c(-3, 3),
+     lwd=3, mgp=c(2, 1, 0), col="blue",
+     xlab="returns (standardized)", ylab="frequency",
+     main="Density of High Frequency SPY Returns")
+lines(density(retsh, bw=0.4), lwd=3, col="green")
+lines(density(retd, bw=0.4), lwd=3, col="red")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("minutely", "hourly", "daily"), y.intersp=0.5,
+  lwd=6, lty=1, col=c("blue", "green", "red"))
+
+# Calculate rolling volatility of SPY returns
+ret2013 <- retp["2013-11-11/2013-11-15"]
+# Calculate rolling volatility
+lookb <- 11 # Look-back interval
+endd <- seq_along(ret2013)
+startp <- c(rep_len(1, lookb),
+  endd[1:(NROW(endd)-lookb)])
+endd[endd < lookb] <- lookb
+vol_rolling <- sapply(seq_along(endd),
+  function(it) sd(ret2013[startp[it]:endd[it]]))
+vol_rolling <- xts::xts(vol_rolling, zoo::index(ret2013))
+# Extract time intervals of SPY returns
+indeks <- c(60, diff(xts::.index(ret2013)))
+head(indeks)
+table(indeks)
+# Scale SPY returns by time intervals
+ret2013 <- 60*ret2013/indeks
+# Calculate scaled rolling volatility
+vol_scaled <- sapply(seq_along(endd),
+  function(it) sd(ret2013[startp[it]:endd[it]]))
+vol_rolling <- cbind(vol_rolling, vol_scaled)
+vol_rolling <- na.omit(vol_rolling)
+sum(is.na(vol_rolling))
+sapply(vol_rolling, range)
+
+# Plot rolling volatility
+x11(width=6, height=5)
+themev <- chart_theme()
+themev$col$line.col <- c("blue", "red")
+chart_Series(vol_rolling, theme=themev,
+     name="Rolling Volatility with Overnight Spikes")
+legend("topright", legend=colnames(vol_rolling),
+  inset=0.1, bg="white", lty=1, lwd=6, y.intersp=0.5,
+  col=themev$col$line.col, bty="n")
+
+# Volatility of SPY
+sqrt(HighFreq::calc_var_ohlc(ohlc))
+# Daily SPY volatility and volume
+volatd <- sqrt(xts::apply.daily(ohlc, FUN=calc_var_ohlc))
+colnames(volatd) <- ("SPY_volatility")
+volumv <- quantmod::Vo(ohlc)
+volumd <- xts::apply.daily(volumv, FUN=sum)
+colnames(volumd) <- ("SPY_volume")
+# Plot SPY volatility and volume
+datav <- cbind(volatd, volumd)["2008/2009"]
+colv <- colnames(datav)
+dygraphs::dygraph(datav,
+  main="SPY Daily Volatility and Trading Volume") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
-  dySeries(name=colv[1], axis="y", strokeWidth=1, col="blue") %>%
-  dySeries(name=colv[2], axis="y2", strokeWidth=1, col="red") %>%
-  dyEvent(zoo::index(pricev[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
-  dyEvent(zoo::index(pricev["2010-11-08"]), label="true", strokePattern="solid", color="green")
-# Replace bad stock prices with the previous good prices
-priceg <- pricev
-priceg[!isgood] <- NA
-priceg <- zoo::na.locf(priceg)
-# Calculate the Z-scores
-medianv <- HighFreq::roll_mean(priceg, lookb=lookb, method="nonparametric")
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceg, lookb=lookb, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (priceg - medianv)/madv, 0)
-madz <- mad(zscores[abs(zscores) > 0])
-# Calculate the number of bad prices
-threshv <- 9*madz
-isgood <- (abs(zscores) < threshv)
-sum(!isgood)
-zoo::index(priceg[!isgood])
-# Calculate the false positives
-falsep <- !isgood
-falsep[which(zoo::index(pricev) == as.Date("2010-11-08"))] <- FALSE
-# Plot dygraph of the prices with bad prices
-dygraphs::dygraph(priceg, main="Scrubbed VXX Prices With False Positives") %>%
-  dyEvent(zoo::index(priceg[falsep]), label=rep("false", sum(falsep)), strokePattern="solid", color="red") %>%
-  dyOptions(colors="blue", strokeWidth=1)
-# Add 200 random price spikes to the clean prices
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-nspikes <- 200
-ispike <- logical(nrows)
-ispike[sample(x=nrows, size=nspikes)] <- TRUE
-priceb <- priceg
-priceb[ispike] <- priceb[ispike]*
-  sample(c(0.99, 1.01), size=nspikes, replace=TRUE)
-# Calculate the Z-scores
-medianv <- HighFreq::roll_mean(priceb, lookb=lookb, method="nonparametric")
-medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
-madv <- HighFreq::roll_var(priceb, lookb=lookb, method="nonparametric")
-madv <- rutils::lagit(madv, lagg=(-halfb), pad_zeros=FALSE)
-zscores <- ifelse(madv > 0, (priceb - medianv)/madv, 0)
-madz <- mad(zscores[abs(zscores) > 0])
-# Define vector of discrimination thresholds
-threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
-# Calculate the error rates
-errorr <- sapply(threshv, confun, actualv=!ispike, zscores=zscores)
-errorr <- t(errorr)
-rownames(errorr) <- threshv
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-# Calculate the area under the ROC curve (AUC)
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
-# Plot ROC curve for Hampel classifier
-plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
-     xlab="FALSE positive rate", ylab="TRUE positive rate",
-     xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Daily Hampel Classifier",
-     type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
+  dySeries(name=colv[1], axis="y", col="red", strokeWidth=3) %>%
+  dySeries(name=colv[2], axis="y2", col="blue", strokeWidth=3)
+
+# Regress log of daily volume vs volatility
+datav <- log(cbind(volumd, volatd))
+colv <- colnames(datav)
+dframe <- as.data.frame(datav)
+formulav <- as.formula(paste(colv, collapse="~"))
+regmod <- lm(formulav, data=dframe)
+# Durbin-Watson test for autocorrelation of residuals
+lmtest::dwtest(regmod)
+# Regress diff log of daily volume vs volatility
+dframe <- as.data.frame(rutils::diffit(datav))
+regmod <- lm(formulav, data=dframe)
+lmtest::dwtest(regmod)
+summary(regmod)
+plot(formulav, data=dframe, main="SPY Daily Trading Volume vs Volatility (log scale)")
+abline(regmod, lwd=3, col="red")
+mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
+
+# 60 minutes of data in lookb interval
+lookb <- 60 # Look-back interval
+vol2013 <- volumv["2013"]
+ret2013 <- retp["2013"]
+# Define end points with beginning stub
+nrows <- NROW(ret2013)
+nagg <- nrows %/% lookb
+endd <- nrows-lookb*nagg + (0:nagg)*lookb
+startp <- c(1, endd[1:(NROW(endd)-1)])
+# Calculate SPY volatility and volume
+datav <- sapply(seq_along(endd), function(it) {
+  endp <- startp[it]:endd[it]
+  c(volume=sum(vol2013[endp]),
+    volatility=sd(ret2013[endp]))
+})  # end sapply
+datav <- t(datav)
+datav <- rutils::diffit(log(datav))
+dframe <- as.data.frame(datav)
+
+formulav <- as.formula(paste(colnames(datav), collapse="~"))
+regmod <- lm(formulav, data=dframe)
+lmtest::dwtest(regmod)
+summary(regmod)
+plot(formulav, data=dframe,
+     main="SPY Hourly Trading Volume vs Volatility (log scale)")
+abline(regmod, lwd=3, col="red")
+mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
+
+# Scale returns using volume (volume clock)
+retsc <- ifelse(volumv > 1e4, retp/sqrt(volumv), 0)
+retsc <- retsc/sd(retsc)
+# Calculate moments of scaled returns
+nrows <- NROW(retp)
+sapply(list(retp=retp, retsc=retsc),
+  function(rets) {sapply(c(skew=3, kurt=4),
+     function(x) sum((rets/sd(rets))^x)/nrows)
+})  # end sapply
+
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot densities of SPY returns
+plot(density(retp), xlim=c(-3, 3),
+     lwd=3, mgp=c(2, 1, 0), col="blue",
+     xlab="returns (standardized)", ylab="frequency",
+     main="Density of Volume-scaled High Frequency SPY Returns")
+lines(density(retsc, bw=0.4), lwd=3, col="red")
+curve(expr=dnorm, add=TRUE, lwd=3, col="green")
+# Add legend
+legend("topright", inset=0.05, bty="n", y.intersp=0.5,
+  leg=c("minutely", "scaled", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+
+# Ljung-Box test for minutely SPY returns
+Box.test(retp, lag=10, type="Ljung")
+# Ljung-Box test for daily SPY returns
+Box.test(retd, lag=10, type="Ljung")
+# Ljung-Box test statistics for scaled SPY returns
+sapply(list(retp=retp, retsc=retsc),
+  function(rets) {
+    Box.test(rets, lag=10, type="Ljung")$statistic
+})  # end sapply
+# Ljung-Box test statistics for aggregated SPY returns
+sapply(list(minutely=retp, hourly=retsh, daily=retd),
+  function(rets) {
+    Box.test(rets, lag=10, type="Ljung")$statistic
+})  # end sapply
+
+# Set plot parameters
+x11(width=6, height=8)
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+layout(matrix(c(1, 2), ncol=1), widths=c(6, 6), heights=c(4, 4))
+# Plot the partial autocorrelations of minutely SPY returns
+pacfl <- pacf(as.numeric(retp), lag=10,
+     xlab="lag", ylab="partial autocorrelation", main="")
+title("Partial Autocorrelations of Minutely SPY Returns", line=1)
+# Plot the partial autocorrelations of scaled SPY returns
+pacfs <- pacf(as.numeric(retsc), lag=10,
+     xlab="lag", ylab="partial autocorrelation", main="")
+title("Partial Autocorrelations of Scaled SPY Returns", line=1)
+# Calculate the sums of partial autocorrelations
+sum(pacfl$acf)
+sum(pacfs$acf)
+
+# Calculate market illiquidity
+liquidv <- sqrt(volumd)/volatd
+# Plot market illiquidity
+x11(width=6, height=7) ; par(mfrow=c(2, 1))
+themev <- chart_theme()
+themev$col$line.col <- c("blue")
+chart_Series(liquidv["2010"], theme=themev,
+  name="SPY Liquidity in 2010", plot=FALSE)
+themev$col$line.col <- c("red")
+chart_Series(volatd["2010"],
+  theme=themev, name="SPY Volatility in 2010")
+
+# Calculate intraday time index with hours and minutes
+datev <- format(zoo::index(retp), "%H:%M")
+# Aggregate the mean volume
+volumagg <- tapply(X=volumv, INDEX=datev, FUN=mean)
+volumagg <- drop(volumagg)
+# Aggregate the mean volatility
+volagg <- tapply(X=retp^2, INDEX=datev, FUN=mean)
+volagg <- sqrt(drop(volagg))
+# Coerce to xts
+datev <- as.POSIXct(paste(Sys.Date(), names(volumagg)))
+volumagg <- xts::xts(volumagg, datev)
+volagg <- xts::xts(volagg, datev)
+# Plot seasonality of volume and volatility
+x11(width=6, height=7) ; par(mfrow=c(2, 1))
+themev <- chart_theme()
+themev$col$line.col <- c("blue")
+chart_Series(volumagg[c(-1, -NROW(volumagg))], theme=themev,
+  name="Intraday Seasonality of SPY Volume", plot=FALSE)
+themev$col$line.col <- c("red")
+chart_Series(volagg[c(-1, -NROW(volagg))], theme=themev,
+  name="Intraday Seasonality of SPY Volatility")
+
+# Calculate market liquidity
+liquidv <- sqrt(volumagg)/volagg
+# Plot intraday seasonality of market liquidity
+x11(width=6, height=7) ; par(mfrow=c(2, 1))
+themev <- chart_theme()
+themev$col$line.col <- c("blue")
+chart_Series(liquidv[c(-1, -NROW(liquidv))], theme=themev,
+  name="Intraday Seasonality of SPY Liquidity", plot=FALSE)
+themev$col$line.col <- c("red")
+chart_Series(volagg[c(-1, -NROW(volagg))], theme=themev,
+  name="Intraday Seasonality of SPY Volatility")
+
 # Create list of vectors
 listv <- lapply(1:3, function(x) sample(6))
 # Bind list elements into matrix - doesn't work
@@ -229,6 +434,7 @@ do.call(cbind, list(1:2, 3:5))
 do.call(cbind, list(1, NULL, 3, 4))
 # NA element isn't skipped
 do.call(cbind, list(1, NA, 3, 4))
+
 library(microbenchmark)
 listv <- lapply(1:5, rnorm, n=10)
 matv <- do.call(rbind, listv)
@@ -247,6 +453,7 @@ rbind(listv[[indeks]], listv[[indeks+1]])
   listv[[1]]
 }  # end do_call_rbind
 all.equal(matv, do_call_rbind(listv))
+
 library(microbenchmark)
 airquality[(airquality$Solar.R > 320 & !is.na(airquality$Solar.R)), ]
 subset(x=airquality, subset=(Solar.R > 320))
@@ -255,6 +462,7 @@ summary(microbenchmark(
     brackets=airquality[(airquality$Solar.R > 320 &
             !is.na(airquality$Solar.R)), ],
 times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 unique(iris$Species)  # Species has three distinct values
 # Split into separate data frames by hand
 setosa <- iris[iris$Species=="setosa", ]
@@ -269,6 +477,7 @@ names(irisplit)
 dim(irisplit$setosa)
 head(irisplit$setosa, 2)
 all.equal(setosa, irisplit$setosa)
+
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
@@ -292,6 +501,7 @@ aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
 aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate multiple columns using formula syntax
 aggregate(x=(cbind(mpg, hp) ~ cyl), data=mtcars, FUN=mean)
+
 # Mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
@@ -302,6 +512,7 @@ with(mtcars, sapply(sort(unique(cyl)), function(x) {
 }))  # end with
 # Function by() instead of tapply()
 with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
+
 # Get several mpg stats for each cylinder group
 cardata <- sapply(carsplit, function(x) {
   c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
@@ -316,6 +527,7 @@ cardata <- lapply(carsplit, function(x) {
 is.list(cardata)  # lapply produces a list
 # do.call flattens list into a matrix
 do.call(cbind, cardata)
+
 # Download CRSPpanel.txt from the NYU share drive
 # Read the file using read.table() with header and sep arguments
 paneld <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/CRSPpanel.txt",
@@ -341,6 +553,7 @@ aggregate(x=Sector, by=list(Industry), FUN=unique)
 sapply(unique(Industry), function(x) {
   Sector[match(x, Industry)]
 })  # end sapply
+
 # Split paneld based on Sector column
 panelds <- split(paneld, Sector)
 # Number of companies in each Sector
@@ -363,6 +576,7 @@ secind2 <- tapply(X=Industry, INDEX=Sector, FUN=unique)
 # Coerce secind2 into a jagged array
 secind2 <- drop(as.matrix(secind2))
 all.equal(secind2, secind)
+
 # Average ROE in each Industry
 sapply(split(ROE, Industry), mean)
 # Average, min, and max ROE in each Industry
@@ -382,170 +596,7 @@ t(sapply(panelds, FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
 aggregate(x=paneld[, c("ROE", "EPS.EXCLUDE.EI")],
   by=list(paneld$Industry), FUN=mean)
-# ?options  # Get info on global options
-getOption("warn")  # Global option for "warn"
-options("warn")  # Global option for "warn"
-getOption("error")  # Global option for "error"
-calc_sqrt <- function(inputv) {
-# Returns its argument
-  if (inputv < 0) {
-    warning("calc_sqrt: input is negative")
-    NULL  # Return NULL for negative argument
-  } else {
-    sqrt(inputv)
-  }  # end if
-}  # end calc_sqrt
-calc_sqrt(5)
-calc_sqrt(-1)
-options(warn=-1)
-calc_sqrt(-1)
-options(warn=0)
-calc_sqrt()
-options(warn=1)
-calc_sqrt()
-options(warn=3)
-calc_sqrt()
-# Function valido validates its arguments
-valido <- function(inputv=NULL) {
-# Check if argument is valid and return double
-  if (is.null(inputv)) {
-    return("valido: input is missing")
-  } else if (is.numeric(inputv)) {
-    2*inputv
-  } else cat("valido: input not numeric")
-}  # end valido
-valido(3)
-valido("a")
-valido()
-# valido validates arguments using missing()
-valido <- function(inputv) {
-# Check if argument is valid and return double
-  if (missing(inputv)) {
-    return("valido: input is missing")
-  } else if (is.numeric(inputv)) {
-    2*inputv
-  } else cat("valido: input is not numeric")
-}  # end valido
-valido(3)
-valido("a")
-valido()
-# valido() validates its arguments and assertions
-valido <- function(inputv) {
-# Check if argument is valid and return double
-  if (missing(inputv)) {
-    stop("valido: input is missing")
-  } else if (!is.numeric(inputv)) {
-    cat("input =", inputv, "\n")
-    stop("valido: input is not numeric")
-  } else 2*inputv
-}  # end valido
-valido(3)
-valido("a")
-valido()
-# Print the call stack
-traceback()
-valido <- function(inputv) {
-# Check argument using long form '&&' operator
-  stopifnot(!missing(inputv) && is.numeric(inputv))
-  2*inputv
-}  # end valido
-valido(3)
-valido()
-valido("a")
-valido <- function(inputv) {
-# Check argument using logical '&' operator
-  stopifnot(!missing(inputv) & is.numeric(inputv))
-  2*inputv
-}  # end valido
-valido()
-valido("a")
-# sumtwo() returns the sum of its two arguments
-sumtwo <- function(input1, input2) {  # Even more robust
-# Check if at least one argument is not missing
-  stopifnot(!missing(input1) && !missing(input2))
-# Check if arguments are valid and return sum
-  if (is.numeric(input1) && is.numeric(input2)) {
-    input1 + input2  # Both valid
-  } else if (is.numeric(input1)) {
-    cat("input2 is not numeric\n")
-    input1  # input1 is valid
-  } else if (is.numeric(input2)) {
-    cat("input1 is not numeric\n")
-    input2  # input2 is valid
-  } else {
-    stop("none of the arguments are numeric")
-  }
-}  # end sumtwo
-sumtwo(1, 2)
-sumtwo(5, 'a')
-sumtwo('a', 5)
-sumtwo('a', 'b')
-sumtwo()
-# Flag "valido" for debugging
-debug(valido)
-# Calling "valido" starts debugger
-valido(3)
-# unflag "valido" for debugging
-undebug(valido)
-valido <- function(inputv) {
-  browser()  # Pause and invoke debugger
-# Check argument using long form '&&' operator
-  stopifnot(!missing(inputv) && is.numeric(inputv))
-  2*inputv
-}  # end valido
-valido()  # Invokes debugger
-options("error")  # Show default NULL "error" option
-options(error=recover)  # Set "error" option to "recover"
-options(error=NULL)  # Set back to default "error" option
-str(tryCatch)  # Get arguments of tryCatch()
-tryCatch(  # Without error handler
-  {  # Evaluate expressions
-    numv <- 101  # Assign
-    stop("my error")  # Produce error
-  },
-  finally=print(paste0("numv = ", numv))
-)  # end tryCatch
-tryCatch(  # With error handler
-  {  # Evaluate expressions
-    numv <- 101  # Assign
-    stop("my error")  # Produce error
-  },
-  # Error handler captures error condition
-  error=function(msg) {
-    print(paste0("Error handler: ", msg))
-  },  # end error handler
-  # Warning handler captures warning condition
-  warning=function(msg) {
-    print(paste0("Warning handler: ", msg))
-  },  # end warning handler
-  finally=print(paste0("numv = ", numv))
-)  # end tryCatch
-# Apply loop without tryCatch
-apply(matrix(1:5), 1, function(numv) {  # Anonymous function
-    stopifnot(!(numv == 3))  # Check for error
-    # Broadcast message to console
-    cat("(cat) numv = ", numv, "\n")
-    # Return a value
-    paste0("(return) numv = ", numv)
-  }  # end anonymous function
-)  # end apply
-# Apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(numv) {  # Anonymous function
-    tryCatch(  # With error handler
-{  # Body
-  stopifnot(numv != 3)  # Check for error
-  # Broadcast message to console
-  cat("(cat) numv = ", numv, "\t")
-  # Return a value
-  paste0("(return) numv = ", numv)
-},
-# Error handler captures error condition
-error=function(msg)
-  paste0("handler: ", msg),
-finally=print(paste0("(finally) numv = ", numv))
-    )  # end tryCatch
-  }  # end anonymous function
-)  # end apply
+
 Sys.Date()  # Get today's date
 as.Date(1e3)  # Coerce numeric into date object
 datetime <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
@@ -566,6 +617,7 @@ attributes(datetime) <- list(class="Date")
 datetime  # "Date" object
 structure(0, class="Date")  # "Date" object
 structure(10000.25, class="Date")
+
 datetime <- Sys.time()  # Get today's date and time
 datetime
 class(datetime)  # POSIXct object
@@ -579,6 +631,7 @@ as.POSIXct("2014-07-14 13:30:10", tz="UTC")
 # Format argument allows parsing different date-time string formats
 as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
      tz="America/New_York")
+
 # Same moment of time corresponds to different clock times
 timeny <- as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
 timeldn <- as.POSIXct("2014-07-14 13:30:10", tz="UTC")
@@ -596,6 +649,7 @@ timev <- seq(
   by="10 min")
 head(timev, 3)
 tail(timev, 3)
+
 # POSIXct is stored as integer moment of time
 datetimen <- as.numeric(datetime)
 # Same moment of time corresponds to different clock times
@@ -606,6 +660,7 @@ as.POSIXct("2014-07-14 13:30:10", tz="America/New_York") -
   as.POSIXct("2014-07-14 13:30:10", tz="UTC")
 # Add 20 seconds to POSIXct
 datetime + 20
+
 datetime  # POSIXct date and time
 # Parse POSIXct to string representing the clock time
 format(datetime)
@@ -623,6 +678,7 @@ as.POSIXct(Sys.Date())
 as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
      origin="1970-01-01",
      tz="UTC")
+
 # Parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
 datetime <- as.POSIXlt("2014-07-14 18:30:10")
 datetime
@@ -636,6 +692,7 @@ trunc(datetime, units="hours")  # Truncate to closest hour
 trunc(datetime, units="days")  # Truncate to closest day
 methods(trunc)  # Trunc methods
 trunc.POSIXt
+
 # Set time-zone to UTC
 Sys.setenv(TZ="UTC")
 Sys.timezone()  # Get time-zone
@@ -656,6 +713,7 @@ as.POSIXct(format(datetime, tz="America/New_York"))
 # Difference between New_York time and UTC
 as.POSIXct(format(Sys.time(), tz="UTC")) -
   as.POSIXct(format(Sys.time(), tz="America/New_York"))
+
 library(lubridate)  # Load lubridate
 # Parse strings into date-times
 as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
@@ -663,14 +721,17 @@ datetime <- lubridate::mdy("07-14-2014", tz="America/New_York")
 datetime
 class(datetime)  # POSIXct object
 lubridate::dmy("14.07.2014", tz="America/New_York")
+
 # Parse numeric into date-times
 as.POSIXct(as.character(14072014), format="%d%m%Y",
                   tz="America/New_York")
 lubridate::dmy(14072014, tz="America/New_York")
+
 # Parse decimal to date-times
 lubridate::decimal_date(datetime)
 lubridate::date_decimal(2014.25, tz="America/New_York")
 date_decimal(decimal_date(datetime), tz="America/New_York")
+
 library(lubridate)  # Load lubridate
 datetime <- lubridate::ymd_hms(20140714142010,
                tz="America/New_York")
@@ -686,23 +747,27 @@ as.POSIXct(format(datetime, tz="America/New_York"),
 datetime - with_tz(datetime, "UTC")
 # Different moments of time
 datetime - force_tz(datetime, "UTC")
+
 library(lubridate)  # Load lubridate
 # Daylight Savings Time handling periods vs durations
 datetime <- as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
 datetime
 datetime + lubridate::ddays(1)  # Add duration
 datetime + lubridate::days(1)  # Add period
+
 leap_year(2012)  # Leap year
 datetime <- lubridate::dmy(01012012, tz="America/New_York")
 datetime
 datetime + lubridate::dyears(1)  # Add duration
 datetime + lubridate::years(1)  # Add period
+
 library(lubridate)  # Load lubridate
 datetime <- lubridate::ymd_hms(20140714142010, tz="America/New_York")
 datetime
 # Add periods to a date-time
 c(datetime + lubridate::seconds(1), datetime + lubridate::minutes(1),
   datetime + lubridate::days(1), datetime + period(months=1))
+
 # Create vectors of dates
 datetime <- lubridate::ymd(20140714, tz="America/New_York")
 datetime + 0:2 * period(months=1)  # Monthly dates
@@ -710,6 +775,7 @@ datetime + period(months=0:2)
 datetime + 0:2 * period(months=2)  # bi-monthly dates
 datetime + seq(0, 5, by=2) * period(months=1)
 seq(datetime, length=3, by="2 months")
+
 library(lubridate)  # Load lubridate
 # Adding monthly periods can create invalid dates
 datetime <- lubridate::ymd(20120131, tz="America/New_York")
@@ -718,35 +784,41 @@ datetime + period(months=1)
 datetime + period(months=2)
 # Create vector of end-of-month dates
 datetime %m-% months(13:1)
+
 library(zoo)  # Load zoo
 library(RQuantLib)  # Load RQuantLib
-# Create daily date series of class "Date"
+
+Create daily date series of class "Date"
 datev <- Sys.Date() + -5:2
 datev
-# Create Boolean vector of business days
-# Use RQuantLib calendar
+
+Create Boolean vector of business days
+Use RQuantLib calendar
 isbusday <- RQuantLib::isBusinessDay(
   calendar="UnitedStates/GovernmentBond", datev)
-# Create daily series of business days
+
+Create daily series of business days
 datev[isbusday]
+
 library(zoo)  # Load package zoo
 datetime <- Sys.Date()  # Create date series of class "Date"
 datev <- datetime + 0:365  # Daily series over one year
 head(datev, 4)  # Print first few dates
 format(head(datev, 4), "%m/%d/%Y")  # Print first few dates
-# Create daily date-time series of class "POSIXct"
+Create daily date-time series of class "POSIXct"
 datev <- seq(Sys.time(), by="days", length.out=365)
 head(datev, 4)  # Print first few dates
 format(head(datev, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
-# Create series of monthly dates of class "zoo"
+Create series of monthly dates of class "zoo"
 monthv <- yearmon(2010+0:36/12)
 head(monthv, 4)  # Print first few dates
-# Create series of quarterly dates of class "zoo"
+Create series of quarterly dates of class "zoo"
 qrtv <- yearqtr(2010+0:16/4)
 head(qrtv, 4)  # Print first few dates
-# Parse quarterly "zoo" dates to POSIXct
+Parse quarterly "zoo" dates to POSIXct
 Sys.setenv(TZ="UTC")
 as.POSIXct(head(qrtv, 4))
+
 library(lubridate)  # Load lubridate
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
@@ -763,6 +835,7 @@ as.Date(date_decimal(zoo::coredata(time(timeser))))
 # bi-monthly geometric Brownian motion starting mid-1990
 timeser <- ts(data=exp(cumsum(rnorm(96)/100)),
        frequency=6, start=1990.5)
+
 # Show some methods for class "ts"
 matrix(methods(class="ts")[3:8], ncol=2)
 # "tsp" attribute specifies the date-time index
@@ -773,18 +846,22 @@ tail(time(timeser), 11)
 diff(tail(time(timeser), 11))
 # Subset the time series
 window(timeser, start=1992, end=1992.25)
+
 # Create plot
 plot(timeser, type="l", col="red", lty="solid",
      xlab="", ylab="")
 title(main="Brownian Motion", line=1)  # Add title
+
 class(EuStockMarkets)  # Multiple ts object
 dim(EuStockMarkets)
 head(EuStockMarkets, 3)  # Get first three rows
 # EuStockMarkets index is equally spaced
 diff(tail(time(EuStockMarkets), 11))
+
 par(mar=c(1, 2, 1, 1), oma=c(0, 0, 0, 0))
 # Plot all the columns in separate panels
 plot(EuStockMarkets, main="EuStockMarkets", xlab="")
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot in single panel
 plot(EuStockMarkets, main="EuStockMarkets",
@@ -795,16 +872,18 @@ legend(x=1992, y=8000,
  legend=colnames(EuStockMarkets),
  col=c("black", "red", "blue", "green"),
  lwd=6, lty=1)
-# Initialize the random number generator
+
+Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
-# Create zoo time series of random returns
+Create zoo time series of random returns
 datev <- Sys.Date() + 0:11
 zoots <- zoo(rnorm(NROW(datev)), order.by=datev)
 zoots
 attributes(zoots)
 class(zoots)  # Class "zoo"
 tail(zoots, 3)  # Get last few elements
+
 library(zoo)  # Load package zoo
 zoo::coredata(zoots)  # Extract coredata
 zoo::index(zoots)  # Extract time index
@@ -816,6 +895,7 @@ zoo::coredata(zoots) <- rep(1, NROW(zoots))  # Replace coredata
 cumsum(zoots)  # Cumulative sum
 cummax(cumsum(zoots))
 cummin(cumsum(zoots))
+
 library(zoo)  # Load package zoo
 zoots <- zoo(matrix(cumsum(rnorm(10)), nc=1),
   order.by=seq(from=as.Date("2013-06-15"), by="day", len=10))
@@ -823,6 +903,7 @@ colnames(zoots) <- "zoots"
 tail(zoots)
 dim(zoots)
 attributes(zoots)
+
 library(zoo)  # Load package zoo
 zoo::coredata(zoots) <- (1:10)^2  # Replace coredata
 zoots
@@ -830,8 +911,9 @@ lag(zoots)  # One day lag
 lag(zoots, 2)  # Two day lag
 lag(zoots, k=-1)  # Proper one day lag
 diff(zoots)  # Diff with one day lag
-# Proper lag and original length
+Proper lag and original length
 lag(zoots, -2, na.pad=TRUE)
+
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
@@ -841,9 +923,11 @@ datev <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 datav <- exp(cumsum(rnorm(NROW(datev))/100))
 # Create zoo series of geometric Brownian motion
 zoots <- zoo(x=datav, order.by=datev)
+
 # Plot using method plot.zoo()
 plot.zoo(zoots, xlab="", ylab="")
 title(main="Brownian Motion", line=1)  # Add title
+
 library(zoo)  # Load package zoo
 # Subset zoo as matrix
 zoots[459:463, 1]
@@ -853,6 +937,7 @@ window(zoots,
  end=as.Date("2014-10-19"))
 # Subset zoo using Date object
 zoots[as.Date("2014-10-15")]
+
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(zoo)  # Load package zoo
@@ -873,6 +958,7 @@ plot(exp(cumsum(zoo3)/100), xlab="", ylab="")
 abline(v=end(zoo1), col="blue", lty="dashed")
 abline(v=start(zoo2), col="red", lty="dashed")
 title(main="Brownian Motions Stitched Together", line=1)  # Add title
+
 # Create daily date series of class "Date"
 index1 <- Sys.Date() + -3:1
 # Create zoo time series of random returns
@@ -883,6 +969,7 @@ zoo2 <- zoo(rnorm(NROW(index2)), order.by=index2)
 merge(zoo1, zoo2)  # union of dates
 # Intersection of dates
 merge(zoo1, zoo2, all=FALSE)
+
 # Create matrix containing NA values
 matv <- sample(18)
 matv[sample(NROW(matv), 4)] <- NA
@@ -907,6 +994,7 @@ retp <- rutils::etfenv$returns
 retp[1, is.na(retp[1, ])] <- 0
 retp <- zoo::na.locf(retp, na.rm=FALSE)
 sum(is.na(retp))
+
 # Replace NAs in xts time series
 pricev <- rutils::etfenv$prices[, 1]
 head(pricev)
@@ -920,6 +1008,7 @@ summary(microbenchmark(
   zoo=zoo::na.locf(pricev, fromLast=TRUE),
   xts=xts:::na.locf.xts(pricev, fromLast=TRUE),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 # methods(as.zoo)  # Many methods of coercing into zoo
@@ -929,13 +1018,13 @@ zoots <- as.zoo(EuStockMarkets)
 class(zoo::index(zoots))  # Index is numeric
 head(zoots, 3)
 # Approximately convert index into class "Date"
-zoo::index(zoots) <-
-  as.Date(365*(zoo::index(zoots)-1970))
+zoo::index(zoots) <- as.Date(365*(zoo::index(zoots)-1970))
 head(zoots, 3)
 # Convert index into class "POSIXct"
 zoots <- as.zoo(EuStockMarkets)
 zoo::index(zoots) <- date_decimal(zoo::index(zoots))
 head(zoots, 3)
+
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 # Initialize the random number generator
@@ -962,6 +1051,7 @@ timeser <- ts(data=datav, start=startd, frequency=tstep)
 window(timeser, start=start(timeser), end=start(timeser)+4/365)
 head(time(timeser))  # Display index dates
 head(as.Date(date_decimal(zoo::coredata(time(timeser)))))
+
 library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 # Create weekday Boolean vector
@@ -978,6 +1068,7 @@ datev <- seq(from=start(zoots), by="day", length.out=NROW(zoots))
 zoo::index(zoots) <- datev
 timeser <- as.ts(zoots)
 head(timeser, 7)
+
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(xts)  # Load package xts
@@ -993,6 +1084,7 @@ class(xtsv)  # Class "xts"
 attributes(xtsv)
 # Get the time zone of an xts object
 tzone(xtsv)
+
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 class(zoo_stx)
 # as.xts() coerces zoo series into xts series
@@ -1003,6 +1095,7 @@ head(pricexts[, 1:4], 4)
 # Plot using plot.xts method
 xts::plot.xts(pricexts[, "Close"], xlab="", ylab="", main="")
 title(main="Stock Prices")  # Add title
+
 library(xts)  # Load xts
 library(lubridate)  # Load lubridate
 # Coerce EuStockMarkets into class xts
@@ -1032,6 +1125,7 @@ chart_Series(x=xtsv, theme=plotheme,
 legend("topleft", legend=colnames(EuStockMarkets),
  inset=0.2, cex=0.7, , lty=rep(1, NCOL(xtsv)),
  lwd=3, col=colorv, bg="white")
+
 library(rutils)
 library(ggplot2)
 pricev <- rutils::etfenv$prices[, 1]
@@ -1049,6 +1143,7 @@ plotobj <- qplot(x=zoo::index(pricev),
   )  # end theme
 # Render ggplot object
 plotobj
+
 library(rutils)  # Load xts time series data
 library(reshape2)
 library(ggplot2)
@@ -1069,6 +1164,7 @@ ggplot(data=dframe,
     legend.position=c(0.2, 0.8),
     plot.title=element_text(vjust=-2.0)
   )  # end theme
+
 # Load rutils which contains etfenv dataset
 library(rutils)
 library(dygraphs)
@@ -1078,6 +1174,7 @@ pricev <- na.omit(pricev)
 dygraph(pricev, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
   dyRangeSelector()
+
 # Load rutils which contains etfenv dataset
 library(rutils)
 library(plotly)
@@ -1099,6 +1196,7 @@ plotobj <- plot_ly(data=dframe, x=~datev, y=~VTI, type="scatter", mode="lines", 
 plotobj <- add_trace(p=plotobj, x=~datev, y=~IEF, type="scatter", mode="lines", name="IEF")
 plotobj <- layout(p=plotobj, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 plotobj
+
 # Subset xts using a date range string
 pricev <- rutils::etfenv$prices
 pricesub <- pricev["2014-10-15/2015-01-10", 1:4]
@@ -1120,6 +1218,7 @@ summary(microbenchmark(
   bracket=pricev[10:20, ],
   subset=xts::.subset_xts(pricev, 10:20),
   times=10))[, c(1, 4, 5)]
+
 # Specify string representing a date
 datev <- "2014-10-15"
 # Subset prices in two different ways
@@ -1139,6 +1238,7 @@ summary(microbenchmark(
   boolean=(pricev[zoo::index(pricev) >= datev]),
   date=(pricev[paste0(datev, "/")]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 pricev <- HighFreq::SPY["2012-04"]
 # Subset recurring time interval using "T notation",
 pricev <- pricev["T10:30:00/T15:00:00"]
@@ -1146,6 +1246,7 @@ first(pricev["2012-04-16"])  # First element of day
 last(pricev["2012-04-16"])  # Last element of day
 # Suppress timezone warning messages
 options(xts_check_tz=FALSE)
+
 # Create time series with overlapping time indices
 vti1 <- rutils::etfenv$VTI["/2015"]
 vti2 <- rutils::etfenv$VTI["2014/"]
@@ -1165,6 +1266,7 @@ vti <- rbind(vti1, vti2)
 vti <- vti[!duplicated(datev), ]
 vtifl <- vti[!duplicated(datev, fromLast=TRUE), ]
 all.equal(vti, vtifl)
+
 pricev <- rutils::etfenv$prices[, c("VTI", "IEF")]
 pricev <- na.omit(pricev)
 str(pricev)  # Display structure of xts
@@ -1177,6 +1279,7 @@ c(is.matrix(pricezoo), is.matrix(pricezoo[, 1]))
 # xts always have a dim attribute
 rbind(base=dim(pricev), subs=dim(pricev[, 1]))
 c(is.matrix(pricev), is.matrix(pricev[, 1]))
+
 # Lag of zoo shortens it by one row
 rbind(base=dim(pricezoo), lag=dim(lag(pricezoo)))
 # Lag of xts doesn't shorten it
@@ -1184,12 +1287,14 @@ rbind(base=dim(pricev), lag=dim(lag(pricev)))
 # Lag of zoo is in opposite direction from xts
 head(lag(pricezoo, -1), 4)
 head(lag(pricev), 4)
+
 # library(rutils)  # Load package rutils
 # Indices of last observations in each hour
 endd <- xts::endpoints(pricev, on="hours")
 head(endd)
 # Extract the last observations in each hour
 head(pricev[endd, ])
+
 # Lower the periodicity to months
 pricem <- to.period(x=pricev, period="months", name="MSFT")
 # Convert colnames to standard OHLC format
@@ -1206,6 +1311,7 @@ colnames(pricey) <- sapply(
   function(namev) namev[-1]
   )  # end sapply
 head(pricey)
+
 load(file="/Users/jerzy/Develop/lecture_slides/data/zoo_data.RData")
 library(quantmod)  # Load package quantmod
 # as.xts() coerces zoo series into xts series
@@ -1219,6 +1325,7 @@ plotheme$col$up.col <- c("green")
 plotheme$col$dn.col <- c("red")
 chart_Series(x=pricexts["2016-05/2016-06", 1:4], theme=plotheme,
   name="Candlestick Plot of OHLC Stock Prices")
+
 library(dygraphs)
 # Create dygraphs object
 dyplot <- dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4])
@@ -1234,6 +1341,7 @@ dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4]) %>%
 dygraphs::dyCandlestick(dygraphs::dyOptions(
   dygraphs::dygraph(pricexts["2016-05/2016-06", 1:4]),
   colors="red", strokeWidth=3))
+
 # Create zoo time series
 datev <- seq(from=as.Date("2014-07-14"), by="day", length.out=10)
 timeser <- zoo(x=sample(10), order.by=datev)

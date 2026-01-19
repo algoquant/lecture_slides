@@ -68,7 +68,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Markets and Trading]{Markets and Trading}
-\subtitle{FRE6871 \& FRE7241, Spring 2025}
+\subtitle{FRE6871 \& FRE7241, Fall 2025}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -116,7 +116,7 @@ sapply(ls(ratesenv), function(namev) {
   assign(x=namev, value=na.omit(get(namev, ratesenv)), 
          envir=ratesenv)
   return(NULL)
-}) # end sapply
+}) ##  end sapply
 sapply(ratesenv, function(x) sum(is.na(x)))
 # Get class of all objects in ratesenv
 sapply(ratesenv, class)
@@ -182,10 +182,8 @@ colnames(ycurves) <- substr(colnames(ycurves), start=1, stop=4)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/yield_curve.png}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+      \includegraphics[width=0.45\paperwidth]{figure/yield_curve2.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Plot using matplot()
 colorv <- c("blue", "red")
 matplot(ycurves, main="Yield Curves in 2020 and 2023", xaxt="n", lwd=3, lty=1,
@@ -209,10 +207,8 @@ legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{yield curve} has changed shape dramatically depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+      The \emph{yield curve} changes shape dramatically depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens.
+      <<echo=TRUE,eval=FALSE>>=
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
@@ -249,6 +245,170 @@ axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
 # Add legend
 legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
        bty="n", col=colorv, lty=1, lwd=4, inset=0.05, cex=0.8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Nelson-Siegel Yield Curve Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Nelson-Siegel model of the \emph{yield curve} is given by:
+      \begin{displaymath}
+        y(\tau) = \beta_0 + \beta_1 (\frac{1 - e^{-\lambda \tau}} {\lambda \tau}) + \beta_2 (\frac{1 - e^{-\lambda \tau}} {\lambda \tau} - e^{-\lambda \tau})
+      \end{displaymath}
+      Where $y(\tau)$ is the yield at the maturity $\tau$ and $\lambda$ is the time decay factor. 
+      \vskip1ex
+      The first term $\beta_0$ represents the long-term level of interest rates, the second term $\beta_1$ represents the slope, and the third term $\beta_2$ represents the curvature of the yield curve.
+      \vskip1ex
+      For very short maturities ($\tau \to 0$), the yield is equal to $y(0) = \beta_0 + \beta_1 + \beta_2$.
+      \vskip1ex
+      For very long maturities ($\tau \to \infty$), the yield is equal to $y(\infty) = \beta_0$
+      <<echo=TRUE,eval=FALSE>>=
+# Define the Nelson-Siegel model
+slopet <- function(tau, lambda) (1 - exp(-lambda * tau)) / (lambda * tau)
+curvet <- function(tau, lambda) (1 - exp(-lambda * tau)) / (lambda * tau) - exp(-lambda * tau)
+yns <- function(tau, beta0, beta1, beta2, lambda) {
+  return(beta0 + beta1 * slopet(tau, lambda) + beta2 * curvet(tau, lambda))
+}  ##  end yns
+# Plot the Nelson-Siegel components
+tau <- seq(0.1, 30, by=0.2)
+lambda <- 0.2
+beta0 <- 1.0; beta1 <- -1.5; beta2 <- 3.0
+matplot(tau, cbind(beta0, beta1 * slopet(tau, lambda), beta2 * curvet(tau, lambda)),
+        type="l", lwd=3, lty=1, 
+        col=c("green", "blue", "red"),
+        main="Nelson-Siegel Yield Curve Components",
+        xlab="Maturity (years)", ylab="Yield (%)")
+legend("bottomright", bty="n", col=c("green", "blue", "red"),
+       legend=c("Level (beta0)", "Slope (beta1)", "Curvature (beta2)"),
+       lty=1, lwd=3, inset=0.05, cex=1.0)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/nelson_siegel_curve.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the Nelson-Siegel yield curve
+yieldv <- yns(tau, beta0, beta1, beta2, lambda)
+plot(tau, yieldv, type="l", lwd=3, col="blue",
+     main="Nelson-Siegel Yield Curve",
+     xlab="Maturity (years)", ylab="Yield (%)")
+# Plot the Nelson-Siegel yield curve for different values of lambda
+lambdav <- c(0.1, 0.5, 1.0, 2.0)
+yieldm <- sapply(lambdav, function(lambda) {
+  yns(tau, beta0, beta1, beta2, lambda)
+})  ##  end lapply
+matplot(tau, yieldm, type="l", lwd=3, lty=1, 
+        col=rainbow(length(lambdav)),
+        main="Nelson-Siegel Yield Curve for Different Lambda",
+        xlab="Maturity (years)", ylab="Yield (%)")
+legend("bottomright", legend=paste0("lambda=", lambdav),
+       bty="n", col=rainbow(length(lambdav)), 
+       lty=1, lwd=3, inset=0.05, cex=1.0)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{DEoptim} for Global Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      \vskip1ex
+      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations:\\
+      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
+      \vskip1ex
+      The first generation of solutions is selected randomly.
+      \vskip1ex
+      Each new generation is obtained by combining the best solutions from the previous generation.
+      \vskip1ex
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
+      \vskip1ex
+      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima.
+      \vskip1ex
+      A limitation of \emph{Differential Evolution} is that it doesn't estimate the standard errors of the parameters.
+    \column{0.5\textwidth}
+        <<echo=TRUE,eval=FALSE>>=
+# Rastrigin function with vector argument for optimization
+rastrigin <- function(vecv, param=25) {
+  sum(vecv^2 - param*cos(vecv))
+}  ##  end rastrigin
+vecv <- c(pi/6, pi/6)
+rastrigin(vecv=vecv)
+library(DEoptim)
+# Optimize rastrigin using DEoptim
+optiml <-  DEoptim(rastrigin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# Optimal parameters and value
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calibrating the Nelson-Siegel Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Nelson-Siegel model can be calibrated to the actual yields using \emph{global} optimization, to avoid local minima.
+      \vskip1ex
+      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      <<echo=TRUE,eval=FALSE>>=
+# Extract numeric maturities
+yieldv <- ycurves[, "2025"]
+tau <- as.numeric(sub("yr", "", names(yieldv)))
+# Define the Nelson-Siegel model objective function
+objfun <- function(params, tau, yieldv) {
+  beta0 <- params[1]; beta1 <- params[2]; beta2 <- params[3]; lambda <- params[4]
+  yieldf <- yns(tau, beta0, beta1, beta2, lambda)
+  return(sum((yieldv - yieldf)^2))
+}  ##  end objfun
+# Run DEoptim
+set.seed(1234)
+library(DEoptim)
+optiml <- DEoptim(fn = objfun,
+  tau=tau, yieldv=yieldv,
+  lower = c(-20, -20, -20, -20),
+  upper = c(20, 20, 20, 20),
+  control = DEoptim.control(trace=FALSE, storepopfrom = 1, itermax=500))
+# The optimal parameters
+optimp <- optiml$optim$bestmem
+beta0 <- optimp[1]; beta1 <- optimp[2]; beta2 <- optimp[3]; lambda <- optimp[4]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/nelson_siegel_fitted.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the Nelson-Siegel yield curve
+yieldv <- yns(tau, beta0, beta1, beta2, lambda)
+matplot(tau, cbind(yieldv, ycurves[, "2025"]), 
+  type="l", lty=1, lwd=3, col=c("red", "blue"),
+  main="Nelson-Siegel and Actual Yield Curve",
+  xlab="Maturity (years)", ylab="Yield (%)")
+legend("bottomright", legend=c("Nelson-Siegel", "Actual"),
+       bty="n", col=c("red", "blue"), 
+       lty=1, lwd=3, inset=0.05, cex=1.0)
       @
   \end{columns}
 \end{block}
@@ -338,7 +498,7 @@ names(weightv) <- symbolv
 objfun <- function(weightv, retp) {
   retp <- retp %*% weightv
   -1e7*var(retp) + 1e7*(1 - sum(weightv*weightv))^2
-}  # end objfun
+}  ##  end objfun
 # Objective function for equal weight portfolio
 objfun(weightv, retp)
 # Compare speed of vector multiplication methods
@@ -393,7 +553,7 @@ objfun <- function(weightv, retp) {
   retp <- retp %*% weightv
   -1e7*var(retp) + 1e7*(1 - sum(weightv^2))^2 +
     1e7*sum(weights1*weightv)^2
-}  # end objfun
+}  ##  end objfun
 # Find second principal component weights
 optiml <- optim(par=weightv,
                    fn=objfun,
@@ -475,7 +635,9 @@ barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+\fbox{\parbox{\columnwidth-1.5em}{
       \emph{Principal Component Analysis} (\emph{PCA}) is equivalent to the \emph{eigen decomposition} of either the correlation or the covariance matrix.
+}}
       \vskip1ex
       If the input time series \emph{are} scaled, then \emph{PCA} is equivalent to the eigen decomposition of the \emph{correlation matrix}.
       \vskip1ex
@@ -519,7 +681,9 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Principal Component Analysis} (\emph{PCA}) is a \emph{dimension reduction} technique, that explains the returns of a large number of correlated time series as linear combinations of a smaller number of principal component time series.
+\fbox{\parbox{\columnwidth-1.5em}{
+      \emph{Principal Component Analysis} (\emph{PCA}) can be used for \emph{dimension reduction}, to explain a large number of correlated time series as linear combinations of a smaller number of principal component time series.
+}}
       \vskip1ex
       The input time series are often scaled by their standard deviations, to improve the accuracy of \emph{PCA dimension reduction}, so that more information is retained by the first few \emph{principal component} time series.
       \vskip1ex
@@ -573,7 +737,7 @@ par(mar=c(3.5, 2, 2, 1), oma=c(0, 0, 0, 0))
 for (ordern in 1:NCOL(pcad$rotation)) {
   barplot(pcad$rotation[, ordern], las=3, xlab="", ylab="", main="")
   title(paste0("PC", ordern), line=-2.0, col.main="red")
-}  # end for
+}  ##  end for
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/pca_rates_loadings.png}
@@ -616,7 +780,7 @@ rangev <- range(retpcac)
 for (ordern in 1:NCOL(retpcac)) {
   plot.zoo(retpcac[, ordern], ylim=rangev, xlab="", ylab="")
   title(paste0("PC", ordern), line=-1, col.main="red")
-}  # end for
+}  ##  end for
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/pca_rates_series.png}
@@ -657,7 +821,7 @@ all.equal(coredata(retp), solved)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The original time series can be calculated \emph{approximately} from just the first few \emph{principal components}, which demonstrates that \emph{PCA} is a form of \emph{dimension reduction}.
+      The original time series can be calculated \emph{approximately} from just the first few \emph{principal components}, which demonstrates how \emph{PCA} can be used for \emph{dimension reduction}.
       \vskip1ex
       A popular rule of thumb is to use the \emph{principal components} with the largest variances, which sum up to \texttt{80\%} of the total variance of returns.
       \vskip1ex
@@ -678,10 +842,46 @@ for (symbol in symbolv) {
          legend=paste0(symboln, c("", " solved")),
          title=NULL, inset=0.0, cex=1.0, lwd=6,
          lty=1, col=c("black", "blue"))
-}  # end for
+}  ##  end for
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/pca_rates_series_solved.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conservation of Variance in PCA}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The matrix of \emph{principal component} returns $\mathbf{pc}$ is equal to the matrix $\mathbf{w}$ of the PCA weights (loadings) times the matrix of the return vectors $\mathbf{r}$:
+      \begin{displaymath}
+        \mathbf{pc} = \mathbf{w} \, \mathbf{r}
+      \end{displaymath}
+      Where the PCA weights $\mathbf{w}^T \mathbf{w} = \mathbbm{1}$ are orthonormal.
+      \vskip1ex
+      So the sum of the PCA variances is equal to:
+      \begin{displaymath}
+        \mathbf{pc}^T \mathbf{pc} = (\mathbf{w} \, \mathbf{r})^T \mathbf{w} \, \mathbf{r} = 
+        \mathbf{r}^T \, (\mathbf{w}^T \mathbf{w}) \, \mathbf{r} = \mathbf{r}^T \mathbf{r}
+      \end{displaymath}
+      So the total variance is conserved in PCA: the sum of the PCA variances is equal to the sum of the factor variances.
+      <<echo=TRUE,eval=FALSE>>=
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the PC time series
+pcad <- prcomp(retp, scale=FALSE)
+retpca <- retp %*% pcad$rotation
+# Compare the total variances
+all.equal(sum(apply(retpca, 2, var)), sum(apply(retp, 2, var)))
+      @
   \end{columns}
 \end{block}
 
@@ -707,8 +907,8 @@ for (symbol in symbolv) {
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # Load quantmod
-library(RQuantLib)  # Load RQuantLib
+library(quantmod)  ##  Load quantmod
+library(RQuantLib)  ##  Load RQuantLib
 # Specify curve parameters
 curvep <- list(tradeDate=as.Date("2018-01-17"),
                settleDate=as.Date("2018-01-19"),
@@ -1010,32 +1210,42 @@ dygraphs::dygraph(quantmod::Cl(pricev["2024-09/"]),
       \vskip1ex
       The \emph{VIX} index is not a directly tradable asset, but it can be traded using \emph{VIX} futures.
       \vskip1ex
-      The \emph{CBOE} provides daily historical data for the \emph{VIX} index.
+      The \emph{CBOE} (Chicago Board Options Exchange) calculates the \emph{VIX} index and provides free daily historical data for the
+      \href{https://www.cboe.com/tradable_products/vix/vix_historical_data}{VIX and other volatility indices}. 
+      \vskip1ex
+      The \emph{CBOE} also provides free daily historical 
+      \href{https://www.cboe.com/us/futures/market_statistics/historical_data/}{VIX futures prices}. 
+      \vskip1ex
+      The \emph{FRED} database also provides historical data for the
+      \href{https://fred.stlouisfed.org/series/VIXCLS}{VIX index}
+      and for other 
+      \href{https://fred.stlouisfed.org/categories/32425}{volatility indices}. 
       <<echo=TRUE,eval=FALSE>>=
 # Download VIX index data from CBOE
-vix_index <- data.table::fread("http://www.cboe.com/publish/scheduledtask/mktdata/datahouse/vixcurrent.csv", skip=1)
-class(vix_index)
-dim(vix_index)
-tail(vix_index)
-sapply(vix_index, class)
-vix_index <- xts(vix_index[, -1],
-  order.by=as.Date(vix_index$Date, format="%m/%d/%Y"))
-colnames(vix_index) <- c("Open", "High", "Low", "Close")
+vixindex <- data.table::fread("https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv", skip=1)
+class(vixindex)
+dim(vixindex)
+tail(vixindex)
+sapply(vixindex, class)
+vixindex <- xts(vixindex[, -1],
+  order.by=as.Date(vixindex$V1, format="%m/%d/%Y"))
+colnames(vixindex) <- c("Open", "High", "Low", "Close")
 # Save the VIX data to binary file
-load(file="/Users/jerzy/Develop/data/ib_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix/vix_data.RData")
+# vixenv <- new.env()
 ls(vixenv)
-vixenv$vix_index <- vix_index
-save(vixenv, file="/Users/jerzy/Develop/data/ib_data/vix_cboe.RData")
+vixenv$vixindex <- vixindex
+save(vixenv, file="/Users/jerzy/Develop/data/vix/vix_data.RData")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/vix_historical.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot VIX OHLC data in x11 window
-chart_Series(x=vix_index["2018"], name="VIX Index")
 # Plot dygraph
-dygraphs::dygraph(vix_index, main="VIX Index") %>%
+dygraphs::dygraph(vixindex["2019/"], main="VIX Index") %>%
   dyCandlestick()
+# Plot VIX OHLC data in x11 window
+chart_Series(x=vixindex["2018"], name="VIX Index")
       @
   \end{columns}
 \end{block}
@@ -1119,7 +1329,7 @@ datev[, 1] <- as.Date(datev[, 1])
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load VIX futures data from binary file
-load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_data.RData")
 # Get all VIX futures for 2018 except January
 symbolv <- ls(vixenv)
 symbolv <- symbolv[grep(glob2rx("*8"), symbolv)]
@@ -1131,7 +1341,7 @@ endd <- as.Date("2018-02-05")
 futcurves <- lapply(symbolv, function(symboln) {
   xtsv <- get(x=symboln, envir=vixenv)
   Cl(xtsv[c(startd, endd)])
-})  # end lapply
+})  ##  end lapply
 futcurves <- rutils::do_call(cbind, futcurves)
 colnames(futcurves) <- symbolv
 futcurves <- t(coredata(futcurves))
@@ -1190,7 +1400,7 @@ legend(x="topright", legend=colnames(futcurves),
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load VIX futures data from binary file
-load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_data.RData")
 # Read CBOE futures expiration dates
 datev <- read.csv(file="/Users/jerzy/Develop/data/vix_data/vix_futures.csv",
   row.names=1)
@@ -1248,13 +1458,13 @@ pricec <- (ratiop*priceb + (1-ratiop)*pricef)
       Standard and Poor's explains the calculation of the
       \href{https://www.spglobal.com/spdji/en/documents/methodologies/methodology-sp-vix-futures-indices.pdf}{Total Return on VIX Futures Indices}.
       <<echo=(-(1:3)),eval=FALSE>>=
-x11(width=5, height=3)  # Open x11 for plotting
+x11(width=5, height=3)  ##  Open x11 for plotting
 # Load VIX futures data from binary file
-load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_data.RData")
 # Plot VIX and SVXY data in x11 window
 themev <- chart_theme()
 themev$col$line.col <- "blue"
-chart_Series(x=Cl(vixenv$vix_index["2007/"]),
+chart_Series(x=Cl(vixenv$vixindex["2007/"]),
              theme=themev, name="VIX Index")
 chart_Series(x=Cl(rutils::etfenv$VTI["2007/"]),
              theme=themev, name="VTI ETF")
@@ -1287,7 +1497,7 @@ chart_Series(x=Cl(rutils::etfenv$VTI["2007/"]),
       \hskip1em\href{https://riskreversal.com/2018/02/06/volatility-etn-terminated-xiv/
 }{XIV ETF Termination Event}
       <<echo=TRUE,eval=FALSE>>=
-chart_Series(x=Cl(vixenv$vix_index["2017/2018"]),
+chart_Series(x=Cl(vixenv$vixindex["2017/2018"]),
              theme=themev, name="VIX Index")
 chart_Series(x=Cl(rutils::etfenv$SVXY["2017/2018"]),
              theme=themev, name="SVXY ETF")
@@ -1812,7 +2022,7 @@ head(sp500table)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Read .csv file with TAP OHLC prices
 ohlc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/TAP.csv")
 # ohlc contains cusips not in cusipsp500
@@ -1866,30 +2076,30 @@ plot(quantmod::Cl(ohlc), main="TAP Stock")
       <<echo=TRUE,eval=FALSE>>=
 # Define formatting function for OHLC prices
 formohlc <- function(ohlc, pricenv) {
-  # Select ticker from sp500table
+  ##  Select ticker from sp500table
   symboln <- sp500table$co_tic[match(ohlc$gvkey[1], sp500table$gvkey)]
-  # Split adjustment and total return factors
+  ##  Split adjustment and total return factors
   factadj <- drop(ohlc[, c("ajexdi")])
   factr <- drop(ohlc[, "trfd"])
   factr <- ifelse(is.na(factr), 1, factr)
-  # Extract dates index
+  ##  Extract dates index
   datev <- drop(ohlc[, "datadate"])
   datev <- lubridate::ymd(datev)
-  # Select only OHLCV data
+  ##  Select only OHLCV data
   ohlc <- ohlc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
   colnames(ohlc) <- paste(symboln, c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  # Coerce to xts series
+  ##  Coerce to xts series
   ohlc <- xts::xts(ohlc, datev)
-  # Fill NA prices
+  ##  Fill NA prices
   isna <- is.na(ohlc[, 1])
   ohlc[isna, 1] <- (ohlc[isna, 2] + ohlc[isna, 3])/2
-  # Adjust the prices
+  ##  Adjust the prices
   ohlc[, 1:4] <- factr*ohlc[, 1:4]/factadj/factr[NROW(factr)]
-  # Copy the OHLCV data to pricenv
+  ##  Copy the OHLCV data to pricenv
   ohlc <- na.omit(ohlc)
   assign(x=symboln, value=ohlc, envir=pricenv)
   symbol
-}  # end formohlc
+}  ##  end formohlc
       @
   \end{columns}
 \end{block}
@@ -2033,7 +2243,7 @@ plot(quantmod::Cl(sp500env$MSFT))
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(Quandl)  # Load package Quandl
+library(Quandl)  ##  Load package Quandl
 # Register Quandl API key
 Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
 
@@ -2134,7 +2344,7 @@ viewFinancials(fundata)
       \vskip1ex
       The time series data can be downloaded into a \texttt{.csv} file, and then read into \texttt{R}.
       <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Specify class for column "TICKER" so that "F" doesn't become FALSE
 colv <- "character"
 names(colv) <- "TICKER"
@@ -2231,7 +2441,7 @@ print(xtable(crspcomp), comment=FALSE, size="tiny", include.rownames=FALSE)
       \vskip1ex
       The time series data can be downloaded into a \texttt{.csv} file, and then read into \texttt{R}.
       <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Read .csv file with TAP OHLC prices
 ohlc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/TAP.csv")
 symboln <- ohlc[1, "tic"]
@@ -2282,7 +2492,7 @@ plot(quantmod::Cl(ohlc), main="TAP Stock")
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Download Fama-French factors from KFRENCH database
 ffactors <- Quandl(code="KFRENCH/FACTORS_D",
         startd="2001-01-01", type="xts")
@@ -2639,8 +2849,8 @@ range(zscores); mad(zscores)
 madz <- mad(zscores[abs(zscores) > 0])
 hist(zscores, breaks=5000, xlim=c(-2*madz, 2*madz))
 # Scrub the price spikes
-threshv <- 5*madz # Discrimination threshold
-indeks <- which(abs(zscores > threshv))
+threshv <- 5*madz ##  Discrimination threshold
+indeks <- which(abs(zscores) > threshv)
 pricev[indeks] <- as.numeric(pricev[indeks-1])
 # Plot dygraph of the scrubbed prices
 dygraphs::dygraph(pricev, main="Scrubbed XLK Intraday Prices") %>%
@@ -2668,8 +2878,8 @@ dygraphs::dygraph(pricev, main="Scrubbed XLK Intraday Prices") %>%
       If the absolute value of the \emph{z-score} exceeds the \emph{threshold value} then it's classified as \emph{bad data}, and it can be removed or replaced.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the centered Hampel filter to remove bad prices
-lookb <- 71 # Look-back interval
-halfb <- lookb %/% 2 # Half-back interval
+lookb <- 71 ##  Look-back interval
+halfb <- lookb %/% 2 ##  Half-back interval
 pricev <- xlk$price
 # Calculate the trailing median and MAD
 medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
@@ -2844,7 +3054,7 @@ confun <- function(actualv, zscores, threshv) {
     confmat <- table(actualv, (abs(zscores) < threshv))
     confmat <- confmat / rowSums(confmat)
     c(typeI=confmat[2, 1], typeII=confmat[1, 2])
-}  # end confun
+}  ##  end confun
 confun(!ispike, zscores, threshv=threshv)
 # Define vector of discrimination thresholds
 threshv <- madz*seq(from=0.1, to=3.0, by=0.05)/2
@@ -2895,8 +3105,8 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 load("/Users/jerzy/Develop/lecture_slides/data/pricevxx.RData")
 nrows <- NROW(pricev)
 # Calculate the centered Hampel filter for VXX
-lookb <- 7 # Look-back interval
-halfb <- lookb %/% 2 # Half-back interval
+lookb <- 7 ##  Look-back interval
+halfb <- lookb %/% 2 ##  Half-back interval
 medianv <- HighFreq::roll_mean(pricev, lookb=lookb, method="nonparametric")
 medianv <- rutils::lagit(medianv, lagg=(-halfb), pad_zeros=FALSE)
 madv <- HighFreq::roll_var(pricev, lookb=lookb, method="nonparametric")
@@ -3232,7 +3442,7 @@ library(HighFreq)
 # Define symbol
 symboln <- "SPY"
 # Load OHLC data
-dirout <- "/Users/jerzy/Develop/data/hfreq/scrub/"
+dirout <- "/Users/jerzy/Develop/data/minutes/"
 symboln <- load(file.path(dirout, paste0(symboln, ".RData")))
 interval <-"2013-11-11 09:30:00/2013-11-11 10:30:00"
 chart_Series(SPY[interval], name=symboln)
@@ -3402,7 +3612,7 @@ head(HighFreq::SPY)
       \vskip1ex
       The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
       <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Calculate SPY percentage returns
 ohlc <- HighFreq::SPY
 nrows <- NROW(ohlc)
@@ -3472,7 +3682,7 @@ retd <- (retd - mean(retd))/sd(retd)
 sapply(list(minutely=retp, hourly=retsh, daily=retd),
        function(rets) {sapply(c(var=2, skew=3, kurt=4),
                 function(x) mean(rets^x))
-})  # end sapply
+})  ##  end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3512,7 +3722,7 @@ legend("topright", inset=0.05, bty="n",
 # Calculate rolling volatility of SPY returns
 ret2013 <- retp["2013-11-11/2013-11-15"]
 # Calculate rolling volatility
-lookb <- 11 # Look-back interval
+lookb <- 11 ##  Look-back interval
 endd <- seq_along(ret2013)
 startp <- c(rep_len(1, lookb),
   endd[1:(NROW(endd)-lookb)])
@@ -3634,7 +3844,7 @@ mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Beta of Hourly Trading Volume vs Volatility}
+\subsection{Hourly Trading Volume vs Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3643,7 +3853,7 @@ mtext(paste("beta =", round(coef(regmod)[2], 3)), cex=1.2, lwd=3, side=2, las=2,
       Hourly aggregations of high frequency data also support the rule that the \emph{trading volume} is roughly proportional to the \emph{volatility} of the returns: $\upsilon \propto \sigma$.
       <<echo=TRUE,eval=FALSE>>=
 # 60 minutes of data in lookb interval
-lookb <- 60 # Look-back interval
+lookb <- 60 ##  Look-back interval
 vol2013 <- volumv["2013"]
 ret2013 <- retp["2013"]
 # Define end points with beginning stub
@@ -3656,7 +3866,7 @@ datav <- sapply(seq_along(endd), function(it) {
   endp <- startp[it]:endd[it]
   c(volume=sum(vol2013[endp]),
     volatility=sd(ret2013[endp]))
-})  # end sapply
+})  ##  end sapply
 datav <- t(datav)
 datav <- rutils::diffit(log(datav))
 dframe <- as.data.frame(datav)
@@ -3705,7 +3915,7 @@ nrows <- NROW(retp)
 sapply(list(retp=retp, retsc=retsc),
   function(rets) {sapply(c(skew=3, kurt=4),
            function(x) sum((rets/sd(rets))^x)/nrows)
-})  # end sapply
+})  ##  end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3762,12 +3972,12 @@ Box.test(retd, lag=10, type="Ljung")
 sapply(list(retp=retp, retsc=retsc),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
-})  # end sapply
+})  ##  end sapply
 # Ljung-Box test statistics for aggregated SPY returns
 sapply(list(minutely=retp, hourly=retsh, daily=retd),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
-})  # end sapply
+})  ##  end sapply
       @
       The level of the autocorrelations depends on the sampling frequency, with higher frequency returns having more significant negative autocorrelations.
       \vskip1ex
@@ -3934,8 +4144,8 @@ chart_Series(volagg[c(-1, -NROW(volagg))], theme=themev,
     \column{0.5\textwidth}
       The Hurst exponent typically moves higher with higher market price volatility, and is above 0.5 with high volatility.
       <<daily_volat_hurst,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-par(mfrow=c(2,1))  # set plot panels
-library(rutils)  # Load package rutils
+par(mfrow=c(2,1))  ##  set plot panels
+library(rutils)  ##  Load package rutils
 chart_Series(roll_sum(volatd, 10)[-(1:10)]/10, name=paste(symboln, "variance"))
 chart_Series(roll_sum(hurstd, 10)[-(1:10)]/10, name=paste(symboln, "Hurst"))
 abline(h=0.5, col="blue", lwd=2)
@@ -3958,8 +4168,8 @@ abline(h=0.5, col="blue", lwd=2)
     \column{0.5\textwidth}
       The Hurst exponent typically moves higher with higher market price volatility, and is above 0.5 with high volatility.
       <<daily_season_hurst_volat,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-par(mfrow=c(2,1))  # set plot panels
-library(rutils)  # Load package rutils
+par(mfrow=c(2,1))  ##  set plot panels
+library(rutils)  ##  Load package rutils
 # Intraday seasonality of Hurst exponent
 interval <- "2013"
 season_hurst <- season_ality(hurst_ohlc(ohlc=SPY[interval, 1:4]))
@@ -4003,8 +4213,8 @@ season_var <- season_ality(vol_ohlc(ohlc=SPY))
       \end{multline*}
       The function \texttt{roll\_agg\_ohlc()} aggregates rolling, volume weighted moment estimators.
       <<earl_highfreq_runskew,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-par(mfrow=c(2,1))  # set plot panels
-library(rutils)  # Load package rutils
+par(mfrow=c(2,1))  ##  set plot panels
+library(rutils)  ##  Load package rutils
 # Rolling variance
 varv <- roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
 # Rolling skew
@@ -4036,8 +4246,8 @@ chart_Series(skewn[interval],
     \column{0.5\textwidth}
       The function \texttt{agg\_ohlc()} calculates a statistical estimator over an \emph{OHLC} time series.
       <<earl_dailyskew,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-par(mfrow=c(2,1))  # set plot panels
-library(rutils)  # Load package rutils
+par(mfrow=c(2,1))  ##  set plot panels
+library(rutils)  ##  Load package rutils
 # Daily variance and skew
 volatd <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
                         agg_fun="vol_ohlc")
@@ -4124,7 +4334,7 @@ pnl <- cumsum(posit*retp[, 1])
 # Calculate frequency of trades
 50*sum(abs(sign(skewn)-sign(skewl)))/nrow(skewn)
 # Calculate transaction costs
-bidask <- 0.001  # 10 bps for liquid ETFs
+bidask <- 0.001  ##  10 bps for liquid ETFs
 bidask*sum(abs(sign(skewn)-sign(skewl)))
 @
     \column{0.5\textwidth}
@@ -4236,7 +4446,7 @@ pnl <- cumsum(sign(lag_vwap)*retp[, 1])
 # Calculate frequency of trades
 50*sum(abs(sign(vwapd)-sign(lag_vwap)))/nrow(vwapd)
 # Calculate transaction costs
-bidask <- 0.001  # 10 bps for liquid ETFs
+bidask <- 0.001  ##  10 bps for liquid ETFs
 bidask*sum(abs(sign(vwapd)-sign(lag_vwap)))
 @
     \column{0.5\textwidth}
@@ -4277,7 +4487,7 @@ chart_Series(
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hf_daily_volat_volume.png}\\
       <<hurstd,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Daily Hurst exponents
 hurstd <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc, agg_fun="hurst_ohlc")
 colnames(hurstd) <- paste(colname(get(symboln)), ".Hurst")
@@ -4610,7 +4820,7 @@ symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file for data download
-dirn <- "/Users/jerzy/Develop/data/ib_data"
+dirn <- "/Users/jerzy/Develop/data/vix"
 dir.create(dirn)
 filen <- file.path(dirn, paste0(symboln, "201906.csv"))
 filec <- file(filen, open="w")
@@ -4652,7 +4862,7 @@ symbolv <- c("AAPL", "F", "MSFT")
 contractv <- lapply(symbolv, IBrokers::twsEquity, primary="SMART")
 names(contractv) <- symbolv
 # Open file connections for data download
-dirn <- "/Users/jerzy/Develop/data/ib_data"
+dirn <- "/Users/jerzy/Develop/data/vix"
 filev <- file.path(dirn, paste0(symbolv, format(Sys.time(), format="_%m_%d_%Y_%H_%M"), ".csv"))
 fileconn <- lapply(filev, function(filen) file(filen, open="w"))
 # Connect to Interactive Brokers TWS
@@ -4663,14 +4873,14 @@ for (it in 1:NROW(symbolv)) {
   filec <- fileconn[[it]]
   contractobj <- contractv[[it]]
   cat("Downloading data for: ", symboln, "\n")
-  # Write header to file
+  ##  Write header to file
   cat(paste(paste(symboln, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "XTRA", "Count"), sep="."), collapse=","), "\n", file=filec)
   IBrokers::reqHistoricalData(conn=connib,
                                Contract=contractobj,
                                barSize="1 min", duration="2 D",
                                file=filec)
-  Sys.sleep(10) # 10s pause to avoid IB pacing violation
-}  # end for
+  Sys.sleep(10) ##  10s pause to avoid IB pacing violation
+}  ##  end for
 # Close data files
 for (filec in fileconn) close(filec)
 # Close the Interactive Brokers API connection
@@ -4778,7 +4988,7 @@ contractobj <- IBrokers::twsFuture(symbol=symboln,
   include_expired="1",
   exch="GLOBEX", expiry="201806")
 # Open file connection for data download
-dirn <- "/Users/jerzy/Develop/data/ib_data"
+dirn <- "/Users/jerzy/Develop/data/vix"
 dir.create(dirn)
 filen <- file.path(dirn, paste0(symboln, ".csv"))
 filec <- file(filen, open="w")
@@ -4826,7 +5036,7 @@ symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file connection for data download
-dirn <- "/Users/jerzy/Develop/data/ib_data"
+dirn <- "/Users/jerzy/Develop/data/vix"
 # Dir.create(dirn)
 filen <- file.path(dirn, paste0(symboln, "_taq_live.csv"))
 filec <- file(filen, open="w")
@@ -4868,7 +5078,7 @@ symboln <- "ES"
 contractobj <- IBrokers::twsFuture(symbol=symboln,
   exch="GLOBEX", expiry="201906")
 # Open file connection for data download
-dirn <- "/Users/jerzy/Develop/data/ib_data"
+dirn <- "/Users/jerzy/Develop/data/vix"
 # Dir.create(dirn)
 filen <- file.path(dirn, paste0(symboln, "_ohlc_live.csv"))
 filec <- file(filen, open="w")
@@ -4924,7 +5134,7 @@ library(IBrokers)
 contractv <- list(ES=IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201906"),
                    ZN=IBrokers::twsFuture(symbol="ZN", exch="ECBOT", expiry="201906"))
 # Open the file connection for storing the bar data
-dirn <- "/Users/jerzy/Develop/data/ib_data"
+dirn <- "/Users/jerzy/Develop/data/vix"
 filev <- file.path(dirn, paste0(c("ES", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
 fileconn <- lapply(filev, function(filen) file(filen, open="w"))
 # Connect to Interactive Brokers TWS
@@ -5112,7 +5322,7 @@ IBrokers::twsDisconnect(connib)
       <<echo=TRUE,eval=FALSE>>=
 eWrapper_realtimebars <- function(n = 1) {
   eW <- eWrapper_new(NULL)
-  # eW <- IBrokers::eWrapper(NULL)
+  ##  eW <- IBrokers::eWrapper(NULL)
   eW$assign.Data("data", rep(list(structure(.xts(matrix(rep(NA_real_, 7), ncol = 7), 0), .Dimnames = list(NULL, c("Open", "High", "Low", "Close", "Volume", "WAP", "Count")))), n))
   eW$realtimeBars <- function(curMsg, msg, timestamp, file, ...) {
     id <- as.numeric(msg[2])
@@ -5120,39 +5330,39 @@ eWrapper_realtimebars <- function(n = 1) {
     data <- eW$get.Data("data")
     attr(data[[id]], "index") <- as.numeric(msg[3])
     nr.data <- NROW(data[[id]])
-    # Write to file
+    ##  Write to file
     cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
-    # Write to console
-    # eW$countn <- eW$countn + 1
+    ##  Write to console
+    ##  eW$countn <- eW$countn + 1
     eW$assign.Data("countn", eW$get.Data("countn") + 1)
     cat(paste0("countn=", eW$get.Data("countn"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
-    # cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
+    ##  cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
     ### Trade
-    # Cancel previous trade orders
+    ##  Cancel previous trade orders
     buy_id <- eW$get.Data("buy_id")
     sell_id <- eW$get.Data("sell_id")
     if (buy_id>0) IBrokers::cancelOrder(connib, buy_id)
     if (sell_id>0) IBrokers::cancelOrder(connib, sell_id)
-    # Execute buy limit order
+    ##  Execute buy limit order
     buy_id <- IBrokers::reqIds(connib)
     buy_order <- IBrokers::twsOrder(buy_id, orderType="LMT",
                                     lmtPrice=msg[6]-0.25, action="BUY", totalQuantity=1)
     IBrokers::placeOrder(connib, contractobj, buy_order)
-    # Execute sell limit order
+    ##  Execute sell limit order
     sell_id <- IBrokers::reqIds(connib)
     sell_order <- IBrokers::twsOrder(sell_id, orderType="LMT",
                                      lmtPrice=msg[5]+0.25, action="SELL", totalQuantity=1)
     IBrokers::placeOrder(connib, contractobj, sell_order)
-    # Copy new trade orders
+    ##  Copy new trade orders
     eW$assign.Data("buy_id", buy_id)
     eW$assign.Data("sell_id", sell_id)
     ### Trade finished
     data[[id]][nr.data, 1:7] <- as.numeric(msg[4:10])
     eW$assign.Data("data", data)
     c(curMsg, msg)
-  }  # end eW$realtimeBars
+  }  ##  end eW$realtimeBars
   return(eW)
-}  # end eWrapper_realtimebars
+}  ##  end eWrapper_realtimebars
       @
   \end{columns}
 \end{block}
@@ -5188,7 +5398,7 @@ eWrapper_realtimebars <- function(n = 1) {
       <<echo=TRUE,eval=FALSE>>=
 eWrapper_realtimebars <- function(n = 1) {
   eW <- eWrapper_new(NULL)
-  # eW <- IBrokers::eWrapper(NULL)
+  ##  eW <- IBrokers::eWrapper(NULL)
   eW$assign.Data("data", rep(list(structure(.xts(matrix(rep(NA_real_, 7), ncol = 7), 0), .Dimnames = list(NULL, c("Open", "High", "Low", "Close", "Volume", "WAP", "Count")))), n))
   eW$realtimeBars <- function(curMsg, msg, timestamp, file, ...) {
     id <- as.numeric(msg[2])
@@ -5196,39 +5406,39 @@ eWrapper_realtimebars <- function(n = 1) {
     data <- eW$get.Data("data")
     attr(data[[id]], "index") <- as.numeric(msg[3])
     nr.data <- NROW(data[[id]])
-    # Write to file
+    ##  Write to file
     cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
-    # Write to console
-    # eW$countn <- eW$countn + 1
+    ##  Write to console
+    ##  eW$countn <- eW$countn + 1
     eW$assign.Data("countn", eW$get.Data("countn")+1)
     cat(paste0("countn=", eW$get.Data("countn"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
-    # cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
+    ##  cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
     ### Trade
-    # Cancel previous trade orders
+    ##  Cancel previous trade orders
     buy_id <- eW$get.Data("buy_id")
     sell_id <- eW$get.Data("sell_id")
     if (buy_id>0) IBrokers::cancelOrder(connib, buy_id)
     if (sell_id>0) IBrokers::cancelOrder(connib, sell_id)
-    # Execute buy limit order
+    ##  Execute buy limit order
     buy_id <- IBrokers::reqIds(connib)
     buy_order <- IBrokers::twsOrder(buy_id, orderType="LMT",
                                     lmtPrice=msg[6]-0.25, action="BUY", totalQuantity=1)
     IBrokers::placeOrder(connib, contractobj, buy_order)
-    # Execute sell limit order
+    ##  Execute sell limit order
     sell_id <- IBrokers::reqIds(connib)
     sell_order <- IBrokers::twsOrder(sell_id, orderType="LMT",
                                      lmtPrice=msg[5]+0.25, action="SELL", totalQuantity=1)
     IBrokers::placeOrder(connib, contractobj, sell_order)
-    # Copy new trade orders
+    ##  Copy new trade orders
     eW$assign.Data("buy_id", buy_id)
     eW$assign.Data("sell_id", sell_id)
     ### Trade finished
     data[[id]][nr.data, 1:7] <- as.numeric(msg[4:10])
     eW$assign.Data("data", data)
     c(curMsg, msg)
-  }  # end eW$realtimeBars
+  }  ##  end eW$realtimeBars
   return(eW)
-}  # end eWrapper_realtimebars
+}  ##  end eWrapper_realtimebars
       @
   \end{columns}
 \end{block}
@@ -5278,7 +5488,7 @@ euro_contract <- IBrokers::twsFuture(symbol="EUR",
 IBrokers::reqContractDetails(conn=connib, Contract=euro_contract)
 
 # Define data directory
-dirn <- "/Users/jerzy/Develop/data/ib_data"
+dirn <- "/Users/jerzy/Develop/data/vix"
 # Dir.create(dirn)
 
 # Open file for error messages

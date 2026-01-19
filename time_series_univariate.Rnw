@@ -60,7 +60,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Univariate]{Time Series Univariate}
-\subtitle{FRE6871 \& FRE7241, Spring 2025}
+\subtitle{FRE6871 \& FRE7241, Fall 2025}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -301,21 +301,21 @@ startp <- c(0, endd[1:(NROW(endd)-1)]+1)
       <<TRUE,eval=FALSE>>=
 # Extract time series of VTI log prices
 closep <- log(na.omit(rutils::etfenv$prices$VTI))
-endd <- 0:NROW(closep)  # End points at each point
+endd <- 0:NROW(closep)  ##  End points at each point
 npts <- NROW(endd)
-lookb <- 22  # Number of data points per look-back interval
+lookb <- 22  ##  Number of data points per look-back interval
 # startp are multi-period lag of endd
 startp <- c(rep_len(0, lookb), endd[1:(npts - lookb)])
 # Define list of look-back intervals for aggregations over past
 lookbv <- lapply(2:npts, function(it) {
     startp[it]:endd[it]
-})  # end lapply
+})  ##  end lapply
 # Define aggregation function
 aggfun <- function(xtsv) c(max=max(xtsv), min=min(xtsv))
 # Perform aggregations over lookbv list
 aggs <- sapply(lookbv,
     function(lookb) aggfun(closep[lookb])
-)  # end sapply
+)  ##  end sapply
 # Coerce aggs into matrix and transpose it
 if (is.vector(aggs))
   aggs <- t(aggs)
@@ -352,11 +352,11 @@ aggs <- xts(aggs, order.by=zoo::index(closep[endd]))
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Perform aggregations over lookbv list
 aggs <- lapply(lookbv,
     function(lookb) aggfun(closep[lookb])
-)  # end lapply
+)  ##  end lapply
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
 # Convert into xts
@@ -403,7 +403,7 @@ legend("top", legend=colnames(aggs),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
+# library(rutils)  ##  Load package rutils
 # Define functional for trailing aggregations
 roll_agg <- function(xtsv, lookb, FUN, ...) {
 # Define end points at every period
@@ -414,14 +414,14 @@ roll_agg <- function(xtsv, lookb, FUN, ...) {
 # Perform aggregations over lookbv list
   aggs <- lapply(2:npts, function(it)
     FUN(xtsv[startp[it]:endd[it]], ...)
-  )  # end lapply
+  )  ##  end lapply
 # rbind list into single xts or matrix
   aggs <- rutils::do_call(rbind, aggs)
 # Coerce aggs into xts series
   if (!is.xts(aggs))
     aggs <- xts(aggs, order.by=zoo::index(xtsv))
   aggs
-}  # end roll_agg
+}  ##  end roll_agg
 # Define aggregation function
 aggfun <- function(xtsv)
   c(max=max(xtsv), min=min(xtsv))
@@ -449,7 +449,7 @@ dim(aggs)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
+# library(rutils)  ##  Load package rutils
 # Define aggregation function that returns a vector
 agg_vector <- function(xtsv)
   c(max=max(xtsv), min=min(xtsv))
@@ -494,14 +494,14 @@ summary(microbenchmark(
     \column{0.55\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
+# library(rutils)  ##  Load package rutils
 # Define aggregation function that returns a single value
 aggfun <- function(xtsv)  max(xtsv)
 # Perform aggregations over a trailing interval
 aggs <- xts:::rollapply.xts(closep, width=lookb,
                     FUN=aggfun, align="right")
 # Perform aggregations over a trailing interval
-library(PerformanceAnalytics)  # Load package PerformanceAnalytics
+library(PerformanceAnalytics)  ##  Load package PerformanceAnalytics
 aggs <- apply.rolling(closep, width=lookb, FUN=aggfun)
 # Benchmark the speed of the functionals
 library(microbenchmark)
@@ -535,7 +535,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
+# library(rutils)  ##  Load package rutils
 # Trailing sum using cumsum()
 roll_sum <- function(xtsv, lookb) {
   cumsumv <- cumsum(na.omit(xtsv))
@@ -543,12 +543,12 @@ roll_sum <- function(xtsv, lookb) {
   datav[1:lookb, ] <- cumsumv[1:lookb, ]
   colnames(datav) <- paste0(colnames(xtsv), "_stdev")
   datav
-}  # end roll_sum
+}  ##  end roll_sum
 aggs <- roll_sum(closep, lookb=lookb)
 # Perform trailing aggregations using lapply loop
 aggs <- lapply(2:npts, function(it)
     sum(closep[startp[it]:endd[it]])
-)  # end lapply
+)  ##  end lapply
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
 head(aggs)
@@ -656,17 +656,17 @@ summary(microbenchmark(
 roll_maxminr <- function(vecv, lookb) {
   nrows <- NROW(vecv)
   max_min <- matrix(numeric(2:nrows), nc=2)
-  # Loop over periods
+  ##  Loop over periods
   for (it in 1:nrows) {
     sub_vec <- vecv[max(1, it-lookb+1):it]
     max_min[it, 1] <- max(sub_vec)
     max_min[it, 2] <- min(sub_vec)
-  }  # end for
+  }  ##  end for
   return(max_min)
-}  # end roll_maxminr
+}  ##  end roll_maxminr
 max_minr <- roll_maxminr(closep, lookb)
 max_minr <- xts::xts(max_minr, zoo::index(closep))
-library(TTR)  # Load package TTR
+library(TTR)  ##  Load package TTR
 max_min <- cbind(TTR::runMax(x=closep, n=lookb),
                  TTR::runMin(x=closep, n=lookb))
 all.equal(max_min[-(1:lookb), ], max_minr[-(1:lookb), ], check.attributes=FALSE)
@@ -714,7 +714,7 @@ summary(microbenchmark(
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)
 # Calculate trailing VTI variance using package roll
-library(roll)  # Load roll
+library(roll)  ##  Load roll
 retp <- na.omit(rutils::etfenv$returns$VTI)
 lookb <- 22
 # Calculate trailing sum using roll::roll_sum
@@ -762,7 +762,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(RcppRoll)  # Load package RcppRoll
+library(RcppRoll)  ##  Load package RcppRoll
 # Calculate trailing sum using RcppRoll
 sumroll <- RcppRoll::roll_sum(retp, align="right", n=lookb)
 # Calculate trailing sum using rutils
@@ -825,14 +825,14 @@ legend("top", legend=colnames(pricema),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
-library(caTools)  # Load package "caTools"
+# library(rutils)  ##  Load package rutils
+library(caTools)  ##  Load package "caTools"
 # Get documentation for package "caTools"
-packageDescription("caTools")  # Get short description
-help(package="caTools")  # Load help page
-data(package="caTools")  # List all datasets in "caTools"
-ls("package:caTools")  # List all objects in "caTools"
-detach("package:caTools")  # Remove caTools from search path
+packageDescription("caTools")  ##  Get short description
+help(package="caTools")  ##  Load help page
+data(package="caTools")  ##  List all datasets in "caTools"
+ls("package:caTools")  ##  List all objects in "caTools"
+detach("package:caTools")  ##  Remove caTools from search path
 # Median filter
 lookb <- 2
 closep <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
@@ -945,7 +945,7 @@ legend(x="topright", title=NULL, legend=colnames(datav),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
+library(rutils)  ##  Load package rutils
 # Indices of last observations in each hour
 endd <- xts::endpoints(closep, on="hours")
 head(endd)
@@ -996,14 +996,14 @@ startp <- c(0, endd[1:(NROW(endd)-1)])
 # Define list of look-back intervals for aggregations over past
 lookbv <- lapply(2:NROW(endd), function(it) {
     startp[it]:endd[it]
-})  # end lapply
+})  ##  end lapply
 lookbv[[1]]
 lookbv[[2]]
 # Perform sapply() loop over lookbv list
 aggs <- sapply(lookbv, function(lookb) {
   xtsv <- closep[lookb]
   c(max=max(xtsv), min=min(xtsv))
-})  # end sapply
+})  ##  end sapply
 # Coerce aggs into matrix and transpose it
 if (is.vector(aggs))
   aggs <- t(aggs)
@@ -1041,12 +1041,12 @@ legend("top", legend=colnames(aggs),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
+# library(rutils)  ##  Load package rutils
 # Perform lapply() loop over lookbv list
 aggs <- lapply(lookbv, function(lookb) {
   xtsv <- closep[lookb]
   c(max=max(xtsv), min=min(xtsv))
-})  # end lapply
+})  ##  end lapply
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
 # Coerce aggs into xts series
@@ -1087,7 +1087,7 @@ legend("top", legend=colnames(aggs),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
+# library(rutils)  ##  Load package rutils
 # Define functional for trailing aggregations over endd
 roll_agg <- function(xtsv, endd, FUN, ...) {
   nrows <- NROW(endd)
@@ -1095,14 +1095,14 @@ roll_agg <- function(xtsv, endd, FUN, ...) {
   startp <- c(1, endd[1:(nrows-1)])
 # Perform aggregations over lookbv list
   aggs <- lapply(lookbv,
-    function(lookb) FUN(xtsv[lookb], ...))  # end lapply
+    function(lookb) FUN(xtsv[lookb], ...))  ##  end lapply
 # rbind list into single xts or matrix
   aggs <- rutils::do_call(rbind, aggs)
   if (!is.xts(aggs))
-    aggs <-  # Coerce aggs into xts series
+    aggs <-  ##  Coerce aggs into xts series
     xts(aggs, order.by=zoo::index(xtsv[endd]))
   aggs
-}  # end roll_agg
+}  ##  end roll_agg
 # Apply sum() over endd
 aggs <- roll_agg(closep, endd=endd, FUN=sum)
 aggs <- period.apply(closep, INDEX=endd, FUN=sum)
@@ -1139,7 +1139,7 @@ head(aggs)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(rutils)  # Load package rutils
+# library(rutils)  ##  Load package rutils
 # Load package HighFreq
 library(HighFreq)
 # Extract closing minutely prices
@@ -1187,7 +1187,7 @@ startp <- ifelse(startp < 0, 0, startp)
 aggs <- lapply(2:NROW(endd), function(it) {
       xtsv <- closep[startp[it]:endd[it]]
       c(max=max(xtsv), min=min(xtsv))
-})  # end lapply
+})  ##  end lapply
 # rbind list into single xts or matrix
 aggs <- rutils::do_call(rbind, aggs)
 # Coerce aggs into xts series
@@ -1249,7 +1249,7 @@ legend("top", legend=colnames(aggs),
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(zoo)  # Load package zoo
+library(zoo)  ##  Load package zoo
 # Create zoo time series of random returns
 datev <- Sys.Date() + 0:365
 zoo_series <- zoo(rnorm(NROW(datev)), order.by=datev)
@@ -1268,7 +1268,7 @@ zoo_agg <- zoo_agg[zoo::index(zoo_series), 2]
       \includegraphics[width=0.45\paperwidth]{figure/zoo_agg-1}
       \vspace{-7em}
       <<zoo_agg,echo=(-(1:1)),eval=FALSE,fig.show="hide">>=
-# library(rutils)  # Load package rutils
+# library(rutils)  ##  Load package rutils
 # Plot original and aggregated cumulative returns
 plot(cumsum(zoo_series), xlab="", ylab="")
 lines(cumsum(zoo_agg), lwd=2, col="red")
@@ -1497,7 +1497,7 @@ fun2 <- function(x) {
   valf <- 0
   for (n in 1:20) { valf <- valf + fun1(n, x) }
   return(valf)
-  } # end fun2
+  } ##  end fun2
 # Theoretical average value of the range
 fun2(2)
 # Average value of the range from integration (not quite close)
@@ -1563,10 +1563,10 @@ pnorm(1)
 sum(datav < 1)/nrows
 # Monte Carlo estimate of quantile
 confl <- 0.98
-qnorm(confl)  # Exact value
+qnorm(confl)  ##  Exact value
 cutoff <- confl*nrows
 datav <- sort(datav)
-datav[cutoff]  # Naive Monte Carlo value
+datav[cutoff]  ##  Naive Monte Carlo value
 quantile(datav, probs=confl)
 # Analyze the source code of quantile()
 stats:::quantile.default
@@ -1575,7 +1575,7 @@ library(microbenchmark)
 summary(microbenchmark(
   monte_carlo = datav[cutoff],
   quantv = quantile(datav, probs=confl),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+  times=100))[, c(1, 4, 5)]  ##  end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -1596,16 +1596,16 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-barl <- 20  # Barrier level
-nrows <- 1000  # Number of simulation steps
-pathv <- numeric(nrows)  # Allocate path vector
-pathv[1] <- rnorm(1)  # Initialize path
-it <- 2  # Initialize simulation index
+barl <- 20  ##  Barrier level
+nrows <- 1000  ##  Number of simulation steps
+pathv <- numeric(nrows)  ##  Allocate path vector
+pathv[1] <- rnorm(1)  ##  Initialize path
+it <- 2  ##  Initialize simulation index
 while ((it <= nrows) && (pathv[it - 1] < barl)) {
 # Simulate next step
   pathv[it] <- pathv[it - 1] + rnorm(1)
-  it <- it + 1  # Advance index
-}  # end while
+  it <- it + 1  ##  Advance index
+}  ##  end while
 # Fill remaining path after it crosses barl
 if (it <= nrows)
   pathv[it:nrows] <- pathv[it - 1]
@@ -1639,8 +1639,8 @@ title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
       <<echo=TRUE,eval=FALSE>>=
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-barl <- 20  # Barrier level
-nrows <- 1000  # Number of simulation steps
+barl <- 20  ##  Barrier level
+nrows <- 1000  ##  Number of simulation steps
 # Simulate path of Brownian motion
 pathv <- cumsum(rnorm(nrows))
 # Find index when path crosses barl
@@ -1648,7 +1648,7 @@ crossp <- which(pathv > barl)
 # Fill remaining path after it crosses barl
 if (NROW(crossp)>0) {
   pathv[(crossp[1]+1):nrows] <- pathv[crossp[1]]
-}  # end if
+}  ##  end if
 # Plot the Brownian motion
 x11(width=6, height=4)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
@@ -1774,7 +1774,7 @@ for (indeks in 1:NROW(sigmavs)) {
         type="l", lwd=2, xlim=c(0, 3),
         xlab="", ylab="", col=colorv[indeks],
         add=as.logical(indeks-1))
-}  # end for
+}  ##  end for
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1826,7 +1826,7 @@ sqrt(nrows)*sigmav
 calcskew <- function(t) {
   expv <- exp(t*sigma2)
   (expv + 2)*sqrt(expv - 1)
-}  # end calcskew
+}  ##  end calcskew
 curve(expr=calcskew, xlim=c(1, nrows), lwd=3,
       xlab="Number of days", ylab="Skewness", col="blue",
       main="Skewness of Log-normal Prices
@@ -2059,7 +2059,7 @@ text(x=mean(pricef), y=100, lab="mean", pos=4)
       Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate average of valid stock prices
-validp <- (pricev != 1)  # Valid stocks
+validp <- (pricev != 1)  ##  Valid stocks
 nstocks <- rowSums(validp)
 nstocks[1] <- NCOL(pricev)
 indeks <- rowSums(pricev*validp)/nstocks
@@ -2155,9 +2155,6 @@ plot(pricev, type="l", xlab="time", ylab="prices",
       \vskip1ex
       The function \texttt{stats::acf()} has the drawback that it plots the lag zero autocorrelation (which is trivially equal to $1$).
       <<echo=TRUE,eval=FALSE>>=
-# Open plot window under MS Windows
-x11(width=6, height=4)
-par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
 # Calculate VTI percentage returns
 retp <- na.omit(rutils::etfenv$returns$VTI)
 # Plot autocorrelations of VTI returns using stats::acf()
@@ -2209,14 +2206,14 @@ head(acfl$acf)
       <<echo=TRUE,eval=FALSE>>=
 plot_acf <- function(xtsv, lagg=10, plotobj=TRUE,
                      xlab="Lag", ylab="", main="", ...) {
-  # Calculate the ACF without a plot
+  ##  Calculate the ACF without a plot
   acfl <- acf(x=xtsv, lag.max=lagg, plot=FALSE, ...)
-  # Remove first element of ACF data
+  ##  Remove first element of ACF data
   acfl$acf <- array(data=acfl$acf[-1],
     dim=c((dim(acfl$acf)[1]-1), 1, 1))
   acfl$lag <- array(data=acfl$lag[-1],
     dim=c((dim(acfl$lag)[1]-1), 1, 1))
-  # Plot ACF
+  ##  Plot ACF
   if (plotobj) {
     ci <- qnorm((1+0.95)/2)/sqrt(NROW(xtsv))
     ylim <- c(min(-ci, range(acfl$acf[-1])),
@@ -2225,10 +2222,10 @@ plot_acf <- function(xtsv, lagg=10, plotobj=TRUE,
          ylim=ylim, main="", ci=0)
     title(main=main, line=0.5)
     abline(h=c(-ci, ci), col="blue", lty=2)
-  }  # end if
-  # Return the ACF data invisibly
+  }  ##  end if
+  ##  Return the ACF data invisibly
   invisible(acfl)
-}  # end plot_acf
+}  ##  end plot_acf
       @
   \end{columns}
 \end{block}
@@ -2272,24 +2269,24 @@ rutils::plot_acf(retp, lag=10, main="ACF of VTI returns")
       \vskip1ex
       \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
       <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-library(rutils)  # Load package rutils
-library(Ecdat)  # Load Ecdat
-colnames(Macrodat)  # United States Macroeconomic Time Series
+library(rutils)  ##  Load package rutils
+library(Ecdat)  ##  Load Ecdat
+colnames(Macrodat)  ##  United States Macroeconomic Time Series
 # Coerce to "zoo"
 macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
 colnames(macrodata) <- c("unemprate", "3mTbill")
 # ggplot2 in multiple panes
-autoplot(  # Generic ggplot2 for "zoo"
+autoplot(  ##  Generic ggplot2 for "zoo"
   object=macrodata, main="US Macro",
-  facets=Series ~ .) + # end autoplot
+  facets=Series ~ .) + ##  end autoplot
   xlab("") +
-theme(  # Modify plot theme
+theme(  ##  Modify plot theme
   legend.position=c(0.1, 0.5),
   plot.title=element_text(vjust=-2.0),
   plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
   plot.background=element_blank(),
   axis.text.y=element_blank()
-)  # end theme
+)  ##  end theme
       @
     \column{0.5\textwidth}
       \hspace*{-1em}
@@ -2364,7 +2361,7 @@ rutils::plot_acf(coredata(macrodiff[, "3mTbill"]),
 Box.test(retp, lag=10, type="Ljung")
 # Ljung-Box test for random returns
 Box.test(rnorm(NROW(retp)), lag=10, type="Ljung")
-library(Ecdat)  # Load Ecdat
+library(Ecdat)  ##  Load Ecdat
 macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
 colnames(macrodata) <- c("unemprate", "3mTbill")
 macrodiff <- na.omit(diff(macrodata))
@@ -2434,7 +2431,7 @@ stats:::cor.test.default
 # Ljung-Box test for VTI returns
 # 'lag' is the number of autocorrelation coefficients
 Box.test(retp, lag=10, type="Ljung")
-library(Ecdat)  # Load Ecdat
+library(Ecdat)  ##  Load Ecdat
 macrodata <- as.zoo(Macrodat[, c("lhur", "fygm3")])
 colnames(macrodata) <- c("unemprate", "3mTbill")
 macrodiff <- na.omit(diff(macrodata))
@@ -2495,41 +2492,93 @@ Box.test(retp^2, lag=10, type="Ljung")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Stock returns have significant negative autocorrelations in time intervals with high volatility, but much less in time intervals with low volatility.
+      Stock returns in high volatility time intervals have more negative autocorrelations than in low volatility time intervals.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the weekly end points
 endd <- rutils::calc_endpoints(retp, interval="weeks")
-npts <- NROW(endd)
-# Calculate the monthly VTI volatilities and their median volatility
+endd <- endd[-1]; npts <- NROW(endd)
+retp <- as.numeric(retp)
+# Calculate the weekly VTI volatilities and their median
 stdev <- sapply(2:npts, function(endp) {
   sd(retp[endd[endp-1]:endd[endp]])
-})  # end sapply
+})  ##  end sapply
 medianv <- median(stdev)
-# Calculate the stock returns of low volatility intervals
+# Calculate the stock returns of low volatility weeks
 retlow <- lapply(2:npts, function(endp) {
   if (stdev[endp-1] <= medianv)
-    retp[endd[endp-1]:endd[endp]]
-})  # end lapply
+    return(retp[endd[endp-1]:endd[endp]])
+})  ##  end lapply
 retlow <- rutils::do_call(c, retlow)
-# Calculate the stock returns of high volatility intervals
+plot(cumsum(retlow), main="Low Volatility Returns",
+     type="l", xlab="time", ylab="cumulative returns")
+Box.test(retlow, lag=10, type="Ljung")
+# Calculate the stock returns of high volatility weeks
 rethigh <- lapply(2:npts, function(endp) {
   if (stdev[endp-1] > medianv)
-    retp[endd[endp-1]:endd[endp]]
-})  # end lapply
+    return(retp[endd[endp-1]:endd[endp]])
+})  ##  end lapply
 rethigh <- rutils::do_call(c, rethigh)
-# Plot ACF of low volatility returns
-rutils::plot_acf(retlow, lag=10, 
- main="ACF of Low Volatility Returns")
-Box.test(retlow, lag=10, type="Ljung")
-# Plot ACF of high volatility returns
-rutils::plot_acf(rethigh, lag=10, 
- main="ACF of High Volatility Returns")
+plot(cumsum(rethigh), main="High Volatility Returns",
+     type="l", xlab="time", ylab="cumulative returns")
 Box.test(rethigh, lag=10, type="Ljung")
+# Plot ACF of low and high volatility returns
+par(mfrow=c(2,1)); par(mar=c(3, 2, 2, 1), oma=c(0, 0, 0, 0))
+rutils::plot_acf(retlow, lag=10, main="ACF of Low Volatility Returns")
+rutils::plot_acf(rethigh, lag=10, main="ACF of High Volatility Returns")
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
+      % \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/acf_hivol.png}
       <<echo=TRUE,eval=FALSE>>=
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exponential Moving Average Autocorrelation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The exponential moving average \emph{EMA} autocorrelation of lag $k$, of the returns $r_t$ is defined as:
+      \begin{displaymath}
+        \rho^k_t = \lambda \rho^k_{t-1} + (1 - \lambda) \frac{(r_t-\bar{r})(r_{t-k}-\bar{r})}{\sigma^2}
+      \end{displaymath}
+      Where $\bar{r}$ are the \emph{EMA} of the returns, $\sigma^2$ is the \emph{EMA} variance of the returns, and $\lambda$ is the \emph{EMA} decay factor. 
+      \vskip1ex
+      In periods of high volatility, the autocorrelations of returns are more negative than in periods of low volatility.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
+# Calculate the lagged products of returns
+lagk <- 2
+retl <- rutils::lagit(retp, 1)
+for (i in 2:lagk)
+  retl <- retl + rutils::lagit(retp, i)
+retl <- retp*retl/drop(var(retp))
+# Calculate the EMA autocorrelations
+lambda <- 0.9
+acfema <- HighFreq::run_mean(cbind(retp^2/drop(var(retp)), retl), lambda=lambda)
+# Perform regression of the the autocorrelations and the variance
+regmod <- lm(acfema[, 2] ~ acfema[, 1])
+summary(regmod)
+plot(acfema[, 2] ~ acfema[, 1])
+abline(regmod)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_ema.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the variance and the EMA autocorrelations
+acfema <- xts(acfema, order.by=zoo::index(retp))
+colnames(acfema) <- c("Variance", "ACF")
+dygraphs::dygraph(acfema["2020-01/2020-07"], main="EMA Variance and ACF of VTI Returns") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -2551,23 +2600,23 @@ Box.test(rethigh, lag=10, type="Ljung")
 # Load daily S&P500 stock returns
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returnstop.RData")
 # Calculate the stock volatilities and the sum of the ACF
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1
+library(parallel)  ##  Load package parallel
 statm <- mclapply(retstock, function(retp) {
   retp <- na.omit(retp)
-  # Calculate the sum of the ACF
+  ##  Calculate the sum of the ACF
   acfsum <- sum(pacf(retp, lag=10, plot=FALSE)$acf)
-  # Calculate the Ljung-Box statistic
+  ##  Calculate the Ljung-Box statistic
   lbstat <- unname(Box.test(retp, lag=10, type="Ljung")$statistic)
   c(stdev=sd(retp), acfsum=acfsum, lbstat=lbstat)
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=detectCores()-1)  ##  end mclapply
 statm <- do.call(rbind, statm)
 statm <- as.data.frame(statm)
 # Calculate the ACF sum for stock volatility quantiles
 confl <- seq(0.1, 0.9, 0.1)
 stdq <- quantile(statm[, "stdev"], confl)
 acfq <- quantile(statm[, "acfsum"], confl)
-plot(stdq, acfq, xlab="volatility", ylab="PACF Sum",
+plot(stdq, acfq, xlab="volatility", ylab="PACF Sum", 
+     type="b", col="blue", lwd=2, pch=16,
      main="PACF Sum vs Volatility")
 # Compare the ACF sum for stock volatility quantile with VTI
 acfq[1]
@@ -2577,16 +2626,17 @@ sum(pacf(na.omit(rutils::etfenv$returns$VTI), lag=10, plot=FALSE)$acf)
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/acf_scatter_stocks.png}
       <<echo=TRUE,eval=FALSE>>=
+# Remove stocks with very negative ACF sum because of bad data
+statm <- statm[statm$acfsum > -0.3, ]
 # Scatter plot of the sum of the ACF vs the standard deviation
 regmod <- lm(acfsum ~ stdev, data=statm)
-plot(acfsum ~ stdev, data=statm, xlab="SD", ylab="PACF Sum", 
-     xlim=c(0.5*min(stdq), 1.5*max(stdq)), ylim=c(1.5*min(acfq), 7*max(acfq)),
-     main="PACF Sum vs SD")
+plot(acfsum ~ stdev, data=statm, 
+     xlab="SD", ylab="PACF Sum", main="PACF Sum vs SD")
 abline(regmod, lwd=3, col="red")
 tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
-text(x=mean(stdq), y=6*max(acfq), 
-     lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
+text(x=3*mean(stdq), y=6*max(acfq), 
+     lab=paste("t-value =", tvalue), lwd=2, cex=1.0)
       @
   \end{columns}
 \end{block}
@@ -2609,15 +2659,13 @@ text(x=mean(stdq), y=6*max(acfq),
 lbstatq <- rev(quantile(statm[, "lbstat"], confl))
 lbstatq[1]
 Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
+# Plot the Ljung-Box test statistic for volatility quantiles
+plot(stdq, lbstatq, xlab="volatility", ylab="Ljung-Box Stat", 
+     main="Ljung-Box Statistic For Stock Volatility Quantiles")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/acf_lbtest_stocks.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot Ljung-Box test statistic for volatility quantiles
-plot(stdq, lbstatq, xlab="volatility", ylab="Ljung-Box Stat", 
-     main="Ljung-Box Statistic For Stock Volatility Quantiles")
-      @
   \end{columns}
 \end{block}
 
@@ -2700,7 +2748,7 @@ Box.test(retd, lag=10, type="Ljung")
 lbstat <- sapply(list(daily=retd, hourly=retsh, minutely=retp),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
-})  # end sapply
+})  ##  end sapply
 # Plot Ljung-Box test statistic for different aggregation intervals
 plot(lbstat, lwd=6, col="blue", xaxt="n", 
      xlab="Aggregation interval", ylab="Ljung-Box Stat", 
@@ -2790,9 +2838,9 @@ aggv <- seq.int(from=3, to=35, length.out=9)^2
 volv <- sapply(aggv, function(agg) {
   naggs <- nrows %/% agg
   endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
-  # endd <- rutils::calc_endpoints(closep, interval=agg)
+  ##  endd <- rutils::calc_endpoints(closep, interval=agg)
   sd(rutils::diffit(closep[endd]))
-})  # end sapply
+})  ##  end sapply
 # Calculate the Hurst from single data point
 volog <- log(volv)
 agglog <- log(aggv)
@@ -2858,7 +2906,7 @@ endd <- c(0, nrows - naggs*agg + (0:naggs)*agg)
 rrange <- sapply(2:NROW(endd), function(np) {
   indeks <- (endd[np-1]+1):endd[np]
   diff(range(closep[indeks]))/sd(retp[indeks])
-})  # end sapply
+})  ##  end sapply
 mean(rrange)
 # Calculate the Hurst from single data point
 log(mean(rrange))/log(agg)
@@ -2895,9 +2943,9 @@ rrange <- sapply(aggv, function(agg) {
   rrange <- sapply(2:NROW(endd), function(np) {
     indeks <- (endd[np-1]+1):endd[np]
     diff(range(closep[indeks]))/sd(retp[indeks])
-  })  # end sapply
+  })  ##  end sapply
   mean(na.omit(rrange))
-})  # end sapply
+})  ##  end sapply
 # Calculate the Hurst as regression slope using formula
 rangelog <- log(rrange)
 agglog <- log(aggv)
@@ -2948,7 +2996,7 @@ pricev <- eapply(sp500env, function(ohlc) {
 # Ignore short lived and penny stocks (less than $1)
   if ((NROW(closep) > 4000) & (last(closep) > 0))
     return(closep)
-})  # end eapply
+})  ##  end eapply
 # Calculate the number of NULL prices
 sum(sapply(pricev, is.null))
 # Calculate the names of the stocks (remove NULL pricev)
@@ -3040,7 +3088,7 @@ text(x=0.5, y=50, lab="H = 0.5", pos=4)
 # Calculate the volatility of stocks
 volv <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep)))
-})  # end sapply
+})  ##  end sapply
 # Dygraph of stock with highest volatility
 namev <- names(which.max(volv))
 dygraphs::dygraph(get(namev, pricev), main=namev)
@@ -3085,11 +3133,11 @@ text(x=mean(volv, na.rm=TRUE), y=max(hurstv, na.rm=TRUE),
 # Calculate the in-sample volatility of stocks
 volatis <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep["/2010"])))
-})  # end sapply
+})  ##  end sapply
 # Calculate the out-of-sample volatility of stocks
 volatos <- sapply(pricev, function(closep) {
     sqrt(HighFreq::calc_var(HighFreq::diffit(closep["2010/"])))
-})  # end sapply
+})  ##  end sapply
 # Remove NA values
 combo <- na.omit(cbind(volatis, volatos))
 volatis <- combo[, 1]
@@ -3134,11 +3182,11 @@ text(x=0.8*max(volatis), y=0.8*max(volatos),
 # Calculate the in-sample Hurst exponents of stocks
 hurstis <- sapply(pricev, function(closep) {
   HighFreq::calc_hurst(closep["/2010"], aggv=aggv)
-})  # end sapply
+})  ##  end sapply
 # Calculate the out-of-sample Hurst exponents of stocks
 hurstos <- sapply(pricev, function(closep) {
   HighFreq::calc_hurst(closep["2010/"], aggv=aggv)
-})  # end sapply
+})  ##  end sapply
 # Remove NA values
 combo <- na.omit(cbind(hurstis, hurstos))
 hurstis <- combo[, 1]
@@ -3178,10 +3226,13 @@ text(x=0.6*max(hurstis), y=0.9*max(hurstos),
       \vskip1ex
       The relationship is dominated by a few stocks with very large trading volumes, like \emph{AAPL}, which also tend to be more volatile and therefore have larger Hurst exponents.
       <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+ls(sp500env)
 # Calculate the stock trading volumes after the year 2000
 volum <- eapply(sp500env, function(ohlc) {
     sum(quantmod::Vo(ohlc)["2000/"])
-})  # end eapply
+})  ##  end eapply
 # Remove NULL values
 volum <- volum[names(pricev)]
 volum <- unlist(volum)
@@ -3343,10 +3394,10 @@ text(x=mean(orderv), y=max(hurstv),
       <<echo=TRUE,eval=FALSE>>=
 # Get ETF log prices
 symbolv <- rutils::etfenv$symbolv
-symbolv <- symbolv[!(symbolv %in% c("MTUM", "QUAL", "VLUE", "USMV", "AIEQ"))]
+symbolv <- symbolv[!(symbolv %in% c("SVXY", "VXX", "MTUM", "QUAL", "VLUE", "USMV", "AIEQ"))]
 pricev <- lapply(rutils::etfenv$prices[, symbolv], function(x) {
   log(na.omit(x))
-})  # end lapply
+})  ##  end lapply
 # Calculate the Hurst exponents of ETFs
 aggv <- trunc(seq.int(from=3, to=10, length.out=5)^2)
 hurstv <- sapply(pricev, HighFreq::calc_hurst, aggv=aggv)
@@ -3376,6 +3427,62 @@ text(x=0.5, y=50, lab="H = 0.5", pos=4)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Multi-dimensional Optimization Using \texttt{optim()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{optim()} performs \emph{multi-dimensional} optimization.
+      \vskip1ex
+      The argument \texttt{fn} is the objective function to be minimized.
+      \vskip1ex
+      The argument of \texttt{fn} that is to be optimized, must be a vector argument.
+      \vskip1ex
+      The argument \texttt{par} is the initial vector argument value.
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton \emph{gradient} optimization method.
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
+      \vskip1ex
+      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum.
+    \column{0.5\textwidth}
+        <<echo=TRUE,eval=FALSE>>=
+# Rastrigin function with vector argument for optimization
+rastrigin <- function(vecv, param=25) {
+  sum(vecv^2 - param*cos(vecv))
+}  ##  end rastrigin
+vecv <- c(pi, pi/4)
+rastrigin(vecv=vecv)
+# Draw 3d surface plot of Rastrigin function
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastrigin(vecv=c(x, y))),
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastrigin")
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
+# Optimize with respect to vector argument
+optiml <- optim(par=vecv, fn=rastrigin,
+                method="L-BFGS-B",
+                upper=c(14*pi, 14*pi),
+                lower=c(pi/2, pi/2),
+                param=1)
+# Optimal parameters and value
+optiml$par
+optiml$value
+rastrigin(optiml$par, param=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{ETF Portfolio With Largest Hurst Exponent}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -3388,14 +3495,14 @@ text(x=0.5, y=50, lab="H = 0.5", pos=4)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log ETF returns
 symbolv <- rutils::etfenv$symbolv
-symbolv <- symbolv[!(symbolv %in% c("MTUM", "QUAL", "VLUE", "USMV"))]
+symbolv <- symbolv[!(symbolv %in% c("SVXY", "VXX", "MTUM", "QUAL", "VLUE", "USMV", "AIEQ"))]
 retp <- rutils::etfenv$returns[, symbolv]
 retp[is.na(retp)] <- 0
 sum(is.na(retp))
 # Calculate the Hurst exponent of an ETF portfolio
 calc_phurst <- function(weightv, retp) {
   -HighFreq::calc_hurst(matrix(cumsum(retp %*% weightv)), aggv=aggv)
-}  # end calc_phurst
+}  ##  end calc_phurst
 # Calculate the portfolio weights with maximum Hurst
 nweights <- NCOL(retp)
 weightv <- rep(1/sqrt(nweights), nweights)
@@ -3480,8 +3587,8 @@ names(weightv) <- colnames(retp)
       The function \texttt{arima.sim()} simulates \emph{ARIMA} processes, with the \texttt{"model"} argument accepting a \texttt{list} of \emph{AR(n)} coefficients $\varphi_i$.
     <<echo=TRUE,eval=FALSE>>=
 # Simulate AR processes
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
-datev <- Sys.Date() + 0:728  # Two year daily series
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  ##  Reset random numbers
+datev <- Sys.Date() + 0:728  ##  Two year daily series
 # AR time series of returns
 arimav <- xts(x=arima.sim(n=NROW(datev), model=list(ar=0.2)), 
               order.by=datev)
@@ -3493,9 +3600,9 @@ colnames(arimav) <- c("AR returns", "AR prices")
       % \hspace*{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ar_process.png}
     <<echo=TRUE,eval=FALSE>>=
-library(ggplot2)  # Load ggplot2
-library(gridExtra)  # Load gridExtra
-autoplot(object=arimav, # ggplot AR process
+library(ggplot2)  ##  Load ggplot2
+library(gridExtra)  ##  Load gridExtra
+autoplot(object=arimav, ##  ggplot AR process
      facets="Series ~ .",
      main="Autoregressive process (phi=0.2)") +
   facet_grid("Series ~ .", scales="free_y") +
@@ -3521,12 +3628,12 @@ theme(legend.position=c(0.1, 0.5),
       \vskip1ex
       A positive coefficient $\varphi_1$ produces a diversion away from the mean, so that the time series $r_t$ wanders away from the mean for longer periods of time.
       <<echo=TRUE,eval=FALSE>>=
-coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
+coeff <- c(-0.9, 0.01, 0.9)  ##  AR coefficients
 # Create three AR time series
 arimav <- sapply(coeff, function(phi) {
-  set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
+  set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  ##  Reset random numbers
   arima.sim(n=NROW(datev), model=list(ar=phi))
-})  # end sapply
+})  ##  end sapply
 colnames(arimav) <- paste("autocorr", coeff)
 plot.zoo(arimav, main="AR(1) prices", xlab=NA)
 # Or plot using ggplot
@@ -3585,7 +3692,7 @@ arimav[2] <- coeff[1]*arimav[1] + innov[2]
 arimav[3] <- coeff[1]*arimav[2] + coeff[2]*arimav[1] + innov[3]
 for (it in 4:NROW(arimav)) {
   arimav[it] <- arimav[(it-1):(it-3)] %*% coeff + innov[it]
-}  # end for
+}  ##  end for
 # Simulate AR process using filter()
 arimaf <- filter(x=innov, filter=coeff, method="recursive")
 class(arimaf)
@@ -3812,8 +3919,8 @@ pacf(arimav, lag=10, xlab="", ylab="", main="PACF of AR(3) process")
       \includegraphics[width=0.45\paperwidth]{figure/stat_unit_root-1}
       \vspace{-2em}
       <<echo=(-(1:3)),eval=FALSE>>=
-library(rutils)  # Load rutils
-library(ggplot2)  # Load ggplot2
+library(rutils)  ##  Load rutils
+library(ggplot2)  ##  Load ggplot2
 # Initialize the random number generator
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 randw <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
@@ -4012,7 +4119,7 @@ pricev[1] <- prici
 for (i in 2:nrows) {
   retp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
   pricev[i] <- pricev[i-1] + retp[i]
-}  # end for
+}  ##  end for
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 pricecpp <- HighFreq::sim_ou(prici=prici, priceq=priceq, 
   theta=thetav, innov=matrix(sigmav*innov))
@@ -4025,7 +4132,7 @@ summary(microbenchmark(
     pricev[i] <- pricev[i-1] + retp[i]}},
   Rcpp=HighFreq::sim_ou(prici=prici, priceq=priceq, 
     theta=thetav, innov=matrix(sigmav*innov)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -4177,11 +4284,11 @@ round(coeff, 4)
 retp <- numeric(nrows)
 pricev <- numeric(nrows)
 pricev[1] <- exp(sigmav*innov[1])
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  ##  Reset random numbers
 for (i in 2:nrows) {
   retp[i] <- thetav*(priceq - pricev[i-1]) + sigmav*innov[i]
   pricev[i] <- pricev[i-1]*exp(retp[i])
-}  # end for
+}  ##  end for
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4251,7 +4358,7 @@ for (it in 4:nrows) {
   retp[it] <- thetav*(priceq - pricev[it-1]) + 
     retp[(it-1):(it-3)] %*% coeff + innov[it]
   pricev[it] <- pricev[it-1] + retp[it]
-}  # end for
+}  ##  end for
 # Simulate Dickey-Fuller process in Rcpp
 pricecpp <- HighFreq::sim_df(prici=prici, priceq=priceq, 
    theta=thetav, coeff=matrix(coeff), innov=matrix(innov))
@@ -4265,7 +4372,7 @@ summary(microbenchmark(
   pricev[it] <- pricev[it-1] + retp[it]
   }},
   Rcpp=HighFreq::sim_df(prici=prici, priceq=priceq, theta=thetav, coeff=matrix(coeff), innov=matrix(innov)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -4415,7 +4522,7 @@ adft <- sapply(coeffv, function(coeff) {
   arimav <- filter(x=retp, filter=coeff, method="recursive")
   adft <- suppressWarnings(tseries::adf.test(arimav))
   c(adfstat=unname(adft$statistic), pval=adft$p.value)
-})  # end sapply
+})  ##  end sapply
 dev.new(width=6, height=4, noRStudioGD=TRUE)
 # x11(width=6, height=4)
 plot(x=coeffv, y=adft["pval", ], main="ADF p-val Versus AR Coefficient",
@@ -4600,7 +4707,7 @@ coefft <- drop(coeff)/coefsd
 arfit <- arima(arimav, order=c(5, 0, 0), include.mean=FALSE)
 arfit$coef
 # Fit AR(5) model using auto.arima()
-library(forecast)  # Load forecast
+library(forecast)  ##  Load forecast
 arfit <- forecast::auto.arima(arimav, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
 retp <- drop(zoo::coredata(na.omit(rutils::etfenv$returns$VTI)))
@@ -4652,13 +4759,13 @@ coefft <- drop(coeff)/coefsd
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calibrate ARIMA model using auto.arima()
-# library(forecast)  # Load forecast
+# library(forecast)  ##  Load forecast
 forecast::auto.arima(arimav, max.p=3, max.q=0, max.d=0)
 # Calibrate ARIMA model using arima()
 arfit <- arima(arimav, order=c(3,0,0), include.mean=FALSE)
 arfit$coef
 # Calibrate ARIMA model using auto.arima()
-# library(forecast)  # Load forecast
+# library(forecast)  ##  Load forecast
 forecast::auto.arima(arimav, max.p=3, max.q=0, max.d=0)
 # Calibrate ARIMA model using regression
 arimav <- as.numeric(arimav)
@@ -4728,7 +4835,7 @@ ywmat <- sapply(1:nrows, function(lagg) {
     c(acf1[lagg:1], acf1[2:(nrows-lagg+1)])
   else
     acf1[lagg:1]
-})  # end sapply
+})  ##  end sapply
 # Generalized inverse of Yule-Walker matrix
 ywmatinv <- MASS::ginv(ywmat)
 # Solve Yule-Walker equations
@@ -4782,8 +4889,8 @@ for (it in 2:nrows) {
   pacfll[it, it] <- (acfl[it] - pacfll[it-1, 1:(it-1)] %*% acfl[(it-1):1])/(1 - pacfll[it-1, 1:(it-1)] %*% acfl[1:(it-1)])
   for (it2 in 1:(it-1)) {
     pacfll[it, it2] <- pacfll[it-1, it2] - pacfll[it, it] %*% pacfll[it-1, it-it2]
-  }  # end for
-}  # end for
+  }  ##  end for
+}  ##  end for
 pacfll <- diag(pacfll)
 # Compare with the PACF without loop
 all.equal(pacfl, pacfll[1:2])
@@ -4827,7 +4934,7 @@ fcast[2] <- coeff[1]*arimav[1]
 fcast[3] <- coeff[1]*arimav[2] + coeff[2]*arimav[1]
 for (it in 3:nrows) {
   fcast[it+1] <- arimav[it:(it-2)] %*% coeff
-}  # end for
+}  ##  end for
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/ar_forecast.png}
@@ -4886,7 +4993,7 @@ all.equal(fcast[-(1:ncoeff)], convf[-(1:(ncoeff-1))],
 # Define predictor matrix for forecasting
 predm <- sapply(0:(ncoeff-1), function(lagg) {
   rutils::lagit(arimav, lagg=lagg)
-})  # end sapply
+})  ##  end sapply
 # Forecast using predictor matrix
 convf <- c(0, drop(predm %*% coeff))
 # Compare with loop in R
@@ -5007,7 +5114,7 @@ fcast[2] <- coeff[1]*arimav[1]
 fcast[3] <- coeff[1]*arimav[2] + coeff[2]*arimav[1]
 for (it in 4:NROW(fcast)) {
   fcast[it] <- arimav[(it-1):(it-3)] %*% coeff
-}  # end for
+}  ##  end for
 # Forecast using filter()
 fcastf <- filter(x=arimav, sides=1,
   filter=coeff, method="convolution")
@@ -5028,12 +5135,12 @@ tail(cbind(innov, resids))
 # Compare many one-step-ahead forecasts
 fcast <- sapply(31:nrows, function(x) {
   cat("len = ", x, "\n")
-  # arimav <- filter(x=rnorm(nrows+1), filter=coeff, method="recursive")
+  ##  arimav <- filter(x=rnorm(nrows+1), filter=coeff, method="recursive")
   arfit <- arima(arimav[1:x], order=c(3,0,0), include.mean=FALSE)
   predm <- predict(arfit, n.ahead=1)
   fcast <- drop(arimav[x:(x-2)] %*% arfit$coef)
   c(actual=arimav[x+1], forecast=fcast, predict=as.numeric(predm$pred))
-})  # end sapply
+})  ##  end sapply
 foo <- t(foo)
 # hist(foo[, 1], breaks=30,
 #   main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
@@ -5051,7 +5158,7 @@ fcast[2] <- coeff[1]*arimav[1]
 fcast[3] <- coeff[1]*arimav[2] + coeff[2]*arimav[1]
 for (it in 4:NROW(fcast)) {
   fcast[it] <- arimav[(it-1):(it-3)] %*% coeff
-}  # end for
+}  ##  end for
 # Forecast using filter()
 fcastf <- filter(x=arimav, sides=1,
   filter=coeff, method="convolution")
@@ -5167,18 +5274,18 @@ predm <- cbind(rep(1, nrows), predm)
 # Perform rolling forecasting
 lookb <- 100
 fcast <- sapply((lookb+1):nrows, function(endd) {
-  # Define rolling look-back range
+  ##  Define rolling look-back range
   startp <- max(1, endd-lookb)
-  # Or expanding look-back range
-  # startp <- 1
+  ##  Or expanding look-back range
+  ##  startp <- 1
   rangev <- startp:(endd-1)
-  # Invert the predictor matrix
+  ##  Invert the predictor matrix
   predinv <- MASS::ginv(predm[rangev, ])
-  # Calculate fitted coefficients
+  ##  Calculate fitted coefficients
   coeff <- drop(predinv %*% respv[rangev])
-  # Calculate forecast
+  ##  Calculate forecast
   drop(predm[endd, ] %*% coeff)
-})  # end sapply
+})  ##  end sapply
 # Add warmup period
 fcast <- c(rep(0, lookb), fcast)
       @
@@ -5255,32 +5362,32 @@ dygraphs::dygraph(datav,
 sim_fcasts <- function(respv, nagg=5, ordern=5, 
                        lookb=100, rollp=TRUE) {
   nrows <- NROW(respv)
-  # Define predictor as a rolling sum
+  ##  Define predictor as a rolling sum
   predm <- rutils::roll_sum(respv, lookb=nagg)
-  # Define predictor matrix for forecasting
+  ##  Define predictor matrix for forecasting
   predm <- sapply(1+nagg*(0:ordern), rutils::lagit, input=predm)
   predm <- cbind(rep(1, nrows), predm)
-  # Perform rolling forecasting
+  ##  Perform rolling forecasting
   fcast <- sapply((lookb+1):nrows, function(endd) {
-    # Define rolling look-back range
+    ##  Define rolling look-back range
     if (rollp)
       startp <- max(1, endd-lookb)
     else
-    # Or expanding look-back range
+    ##  Or expanding look-back range
       startp <- 1
     rangev <- startp:(endd-1)
-    # Invert the predictor matrix
+    ##  Invert the predictor matrix
     predinv <- MASS::ginv(predm[rangev, ])
-    # Calculate fitted coefficients
+    ##  Calculate fitted coefficients
     coeff <- drop(predinv %*% respv[rangev])
-    # Calculate forecast
+    ##  Calculate forecast
     drop(predm[endd, ] %*% coeff)
-  })  # end sapply
-  # Add warmup period
+  })  ##  end sapply
+  ##  Add warmup period
   fcast <- c(rep(0, lookb), fcast)
-  # Aggregate the forecasts
+  ##  Aggregate the forecasts
   rutils::roll_sum(fcast, lookb=nagg)
-}  # end sim_fcasts
+}  ##  end sim_fcasts
 # Simulate the rolling autoregressive forecasts
 fcast <- sim_fcasts(respv=retp, ordern=5, lookb=100)
 c(mse=mean((retp - fcast)^2), cor=cor(retp, fcast))

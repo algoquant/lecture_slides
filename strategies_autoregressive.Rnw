@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Autoregressive Strategies]{Autoregressive Strategies}
-\subtitle{FRE7241, Spring 2025}
+\subtitle{FRE7241, Fall 2025}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -190,7 +190,7 @@ rutils::plot_acf(retp, lag=10, main="ACF of VTI returns")
 posv <- -rutils::lagit(sign(retp), lagg=1)
 pnls <- retp*posv
 # Subtract transaction costs from the pnls
-bidask <- 0.0001 # The bid-ask spread is equal to 1 basis point
+bidask <- 0.0001 ##  The bid-ask spread is equal to 1 basis point
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
 # Calculate the strategy beta and alpha
@@ -310,13 +310,13 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       Averaging the stock returns using the function \texttt{rowMeans()} with \texttt{na.rm=TRUE} is equivalent to rebalancing the portfolio so that stocks with \texttt{NA} returns have zero weight.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate contrarian strategy for all S&P500 stocks
-library(parallel)  # Load package parallel
+library(parallel)  ##  Load package parallel
 ncores <- detectCores() - 1
 pnll <- mclapply(retstock, function(retp) {
   retp <- na.omit(retp)
   posv <- -rutils::roll_sum(sign(retp), lookb=2)/2
   retp*rutils::lagit(posv)
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 pnls <- do.call(cbind, pnll)
 pnls <- rowMeans(pnls, na.rm=TRUE)
 # Calculate the average returns of all S&P500 stocks
@@ -361,7 +361,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 # Calculate the stock volatilities
 volv <- mclapply(retstock, function(retp) {
   sd(na.omit(retp))
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 volv <- do.call(c, volv)
 # Calculate the median volatility
 medianv <- median(volv)
@@ -417,7 +417,7 @@ retma <- HighFreq::run_mean(retp, lambda=0.1)
 posv <- -rutils::lagit(retma, lagg=1)
 pnls <- retp*posv
 # Subtract transaction costs from the pnls
-bidask <- 0.0001 # The bid-ask spread is equal to 1 basis point
+bidask <- 0.0001 ##  The bid-ask spread is equal to 1 basis point
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
 # Scale the PnL volatility to that of VTI
@@ -992,7 +992,7 @@ for (indeks in 1:3) {
         xlim=c(-4, 4), type="l", lwd=4,
         xlab="model weight", ylab="dollar amount", 
         col=colorv[indeks], add=(indeks>1))
-}  # end for
+}  ##  end for
 # Add title and legend
 title(main="Winsor function", line=0.5)
 legend("topleft", title="scale parameters\n",
@@ -1239,7 +1239,7 @@ dygraphs::dygraph(datav, main="VTI Returns And Forecasts") %>%
 objfun <- function(coeff) {
   fcasts <- predm %*% coeff
   sum((respv - fcasts)^2)
-}  # end objfun
+}  ##  end objfun
 # Perform optimization using the quasi-Newton method
 optiml <- optim(par=numeric(orderp+1),
                 fn=objfun,
@@ -1280,13 +1280,13 @@ barplot(coeffopt, xlab="", ylab="coeff", col="grey",
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the forecasts as a function of the AR order
 fcasts <- lapply(2:NCOL(predm), function(ordern) {
-  # Calculate the fitted AR coefficients
+  ##  Calculate the fitted AR coefficients
   predinv <- MASS::ginv(predm[, 1:ordern])
   coeff <- predinv %*% respv
   coeff <- coeff/sqrt(sum(coeff^2))
-  # Calculate the in-sample forecasts of VTI
+  ##  Calculate the in-sample forecasts of VTI
   drop(predm[, 1:ordern] %*% coeff)
-})  # end lapply
+})  ##  end lapply
 names(fcasts) <- paste0("n=", 2:NCOL(predm))
       @
     \column{0.5\textwidth}
@@ -1296,7 +1296,7 @@ names(fcasts) <- paste0("n=", 2:NCOL(predm))
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((respv - x)^2), cor=cor(respv, x))
-})  # end sapply
+})  ##  end sapply
 mse <- t(mse)
 rownames(mse) <- names(fcasts)
 # Plot forecasting MSE
@@ -1331,13 +1331,13 @@ insample <- 1:(nrows %/% 2)
 outsample <- (nrows %/% 2 + 1):nrows
 # Calculate the forecasts as a function of the AR order
 fcastl <- lapply(2:NCOL(predm), function(ordern) {
-  # Calculate the in-sample AR coefficients
+  ##  Calculate the in-sample AR coefficients
   predinv <- MASS::ginv(predm[insample, 1:ordern])
   coeff <- predinv %*% respv[insample]
   coeff <- coeff/sqrt(sum(coeff^2))
-  # Calculate the out-of-sample forecasts of VTI
+  ##  Calculate the out-of-sample forecasts of VTI
   predm[outsample, 1:ordern] %*% coeff
-})  # end lapply
+})  ##  end lapply
 names(fcastl) <- paste0("n=", 2:NCOL(predm))
       @
     \column{0.5\textwidth}
@@ -1347,7 +1347,7 @@ names(fcastl) <- paste0("n=", 2:NCOL(predm))
 # Calculate the mean squared errors
 mse <- sapply(fcastl, function(x) {
   c(mse=mean((respv[outsample] - x)^2), cor=cor(respv[outsample], x))
-})  # end sapply
+})  ##  end sapply
 mse <- t(mse)
 rownames(mse) <- names(fcastl)
 # Plot forecasting MSE
@@ -1380,7 +1380,7 @@ plot(x=2:NCOL(predm), y=mse[, 1],
 pnls <- lapply(fcastl, function(fcasts) {
   pnls <- fcasts*retp[outsample]
   pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
-})  # end lapply
+})  ##  end lapply
 pnls <- rutils::do_call(cbind, pnls)
 colnames(pnls) <- names(fcastl)
       @
@@ -1499,37 +1499,37 @@ fcast/sqrt(varf)
 lookb <- 500
 fcasts <- parallel::mclapply(1:nrows, function(tday) {
   if (tday > lookb) {
-    # Define the rolling look-back range
+    ##  Define the rolling look-back range
     startp <- max(1, tday-lookb)
-    # startp <- 1 # Expanding look-back range
-    rangev <- startp:(tday-1) # In-sample range
-    # Subset the response and predictors
+    ##  startp <- 1 ##  Expanding look-back range
+    rangev <- startp:(tday-1) ##  In-sample range
+    ##  Subset the response and predictors
     resps <- respv[rangev]
     preds <- predm[rangev]
-    # Calculate the fitted AR coefficients
+    ##  Calculate the fitted AR coefficients
     predinv <- MASS::ginv(preds)
     coeff <- predinv %*% resps
-    # Calculate the in-sample forecasts of VTI (fitted values)
+    ##  Calculate the in-sample forecasts of VTI (fitted values)
     fcasts <- preds %*% coeff
-    # Calculate the residuals (forecast errors)
+    ##  Calculate the residuals (forecast errors)
     resids <- (fcasts - resps)
-    # Calculate the variance of the residuals
+    ##  Calculate the variance of the residuals
     varv <- sum(resids^2)/(NROW(preds)-NROW(coeff))
-    # Calculate the covariance matrix of the AR coefficients
+    ##  Calculate the covariance matrix of the AR coefficients
     pred2 <- crossprod(preds)
     covmat <- varv*MASS::ginv(pred2)
     coefsd <- sqrt(diag(covmat))
-    coefft <- drop(coeff/coefsd) # t-values of the AR coefficients
-    # Calculate the out-of-sample forecast
+    coefft <- drop(coeff/coefsd) ##  t-values of the AR coefficients
+    ##  Calculate the out-of-sample forecast
     predn <- predm[tday, ]
     fcast <- drop(predn %*% coeff)
-    # Calculate the variance of the forecast
+    ##  Calculate the variance of the forecast
     varf <- drop(predn %*% covmat %*% t(predn))
     return(c(sd(resps), fcast=fcast, fstderr=sqrt(varf), coefft=coefft))
   } else {
     return(c(volv=0, fcast=0, fstderr=0, coefft=rep(0, NCOL(predm))))
-  } # end if
-})  # end sapply
+  } ##  end if
+})  ##  end sapply
       @
   \end{columns}
 \end{block}
@@ -1604,27 +1604,27 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
 sim_fcasts <- function(lookb=100, ordern=5, fixedlb=TRUE) {
-  # Perform rolling forecasting
+  ##  Perform rolling forecasting
   fcasts <- sapply((lookb+1):nrows, function(tday) {
-    # Rolling look-back range
+    ##  Rolling look-back range
     startp <- max(1, tday-lookb)
-    # Expanding look-back range
+    ##  Expanding look-back range
     if (!fixedlb) {startp <- 1}
     startp <- max(1, tday-lookb)
-    rangev <- startp:(tday-1) # In-sample range
-    # Subset the response and predictors
+    rangev <- startp:(tday-1) ##  In-sample range
+    ##  Subset the response and predictors
     resps <- respv[rangev]
     preds <- predm[rangev, 1:ordern]
-    # Invert the predictor matrix
+    ##  Invert the predictor matrix
     predinv <- MASS::ginv(preds)
-    # Calculate the fitted AR coefficients
+    ##  Calculate the fitted AR coefficients
     coeff <- predinv %*% resps
-    # Calculate the out-of-sample forecast
+    ##  Calculate the out-of-sample forecast
     drop(predm[tday, 1:ordern] %*% coeff)
-  })  # end sapply
-  # Add warmup period
+  })  ##  end sapply
+  ##  Add warmup period
   fcasts <- c(rep(0, lookb), fcasts)
-}  # end sim_fcasts
+}  ##  end sim_fcasts
 # Simulate the rolling autoregressive forecasts
 fcasts <- sim_fcasts(lookb=100, ordern=5)
 c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
@@ -1650,7 +1650,7 @@ c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
       \vskip1ex
       The accuracy of the forecasting model increases with longer look-back intervals (\texttt{lookb}), because more data improves the estimates of the AR coefficients.
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
+library(parallel)  ##  Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -1668,7 +1668,7 @@ fcasts <- mclapply(lookbv, sim_fcasts, ordern=6, mc.cores=ncores)
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
-})  # end sapply
+})  ##  end sapply
 mse <- t(mse)
 rownames(mse) <- lookbv
 # Select optimal lookb interval
@@ -1699,7 +1699,7 @@ plot(x=lookbv, y=mse[, 1],
       \vskip1ex
       The accuracy of the forecasting model decreases for larger AR order parameters, because of overfitting in-sample.
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
+library(parallel)  ##  Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -1707,7 +1707,7 @@ compclust <- makeCluster(ncores)
 # Perform parallel loop under Windows
 orderv <- 2:6
 fcasts <- parLapply(compclust, orderv, sim_fcasts, lookb=lookb)
-stopCluster(compclust)  # Stop R processes over cluster under Windows
+stopCluster(compclust)  ##  Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts, 
   lookb=lookb, mc.cores=ncores)
@@ -1719,7 +1719,7 @@ fcasts <- mclapply(orderv, sim_fcasts,
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
-})  # end sapply
+})  ##  end sapply
 mse <- t(mse)
 rownames(mse) <- orderv
 # Select optimal order parameter
@@ -1795,7 +1795,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vskip1ex
       The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
+library(parallel)  ##  Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -1804,7 +1804,7 @@ compclust <- makeCluster(ncores)
 orderv <- 2:6
 fcasts <- parLapply(compclust, orderv, sim_fcasts, 
   lookb=lookb, fixedlb=FALSE)
-stopCluster(compclust)  # Stop R processes over cluster under Windows
+stopCluster(compclust)  ##  Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts, 
   lookb=lookb, fixedlb=FALSE, mc.cores=ncores)
@@ -1817,7 +1817,7 @@ fcasts <- mclapply(orderv, sim_fcasts,
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
-})  # end sapply
+})  ##  end sapply
 mse <- t(mse)
 rownames(mse) <- orderv
 # Select optimal order parameter
@@ -1885,10 +1885,11 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vskip1ex
       But aggregating stock returns can reduce their noise and improve the performance of AR strategies.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate VTI returns over non-overlapping 2-day intervals
-pricev <- na.omit(rutils::etfenv$prices$VTI)
-reta <- rutils::diffit(log(pricev), lag=2)
-reta <- reta[2*(1:(NROW(pricev) %/% 2))]
+# Calculate VTI returns over non-overlapping 5-day intervals
+pricev <- log(na.omit(rutils::etfenv$prices$VTI))
+retp <- rutils::diffit(pricev)
+pricev <- pricev[2*(1:(NROW(pricev)/2))]
+reta <- rutils::diffit(pricev)
 # Calculate the autocorrelations of daily VTI returns
 rutils::plot_acf(reta, lag=10, main="ACF of Aggregated 2-day VTI returns")
       @
@@ -1917,9 +1918,8 @@ rutils::plot_acf(reta, lag=10, main="ACF of Aggregated 2-day VTI returns")
       The aggregated AR strategy has good performance both in periods of high volatility and in low volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Define the response and predictor matrices
-reta <- rutils::diffit(log(pricev), lag=2)/2
 orderp <- 5
-predm <- lapply(2*(1:orderp), rutils::lagit, input=reta)
+predm <- lapply(1:orderp, rutils::lagit, input=reta)
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, NROW(reta)), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
@@ -1945,9 +1945,9 @@ pnls <- pnls*sd(reta[reta<0])/sd(pnls[pnls<0])
 wealthv <- cbind(reta, pnls, (reta+pnls)/2)
 colnames(wealthv) <- c("VTI", "AR_Strategy", "Combined")
 cor(wealthv)
-sqrt(252)*sapply(wealthv, function(x) 
+sqrt(252/2)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-sqrt(252)*sapply(wealthv["2010/"], function(x) 
+sqrt(252/2)*sapply(wealthv["2010/"], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
@@ -2061,7 +2061,7 @@ pnls <- retd*posv
       \includegraphics[width=0.45\paperwidth]{figure/strat_ar_ema_daytime.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the pnls and the transaction costs
-bidask <- 0.0001 # The bid-ask spread is equal to 1 basis point
+bidask <- 0.0001 ##  The bid-ask spread is equal to 1 basis point
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
 # Calculate the Sharpe and Sortino ratios
@@ -2213,7 +2213,7 @@ outsample <- (nrows %/% 2 + 1):nrows
 cutoff <- nrows %/% 2
 # Define the response and predictor matrices
 respv <- retp
-orderp <- 8 # 9 predictors!!!
+orderp <- 8 ##  9 predictors!!!
 predm <- lapply(1:orderp, rutils::lagit, input=respv)
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, nrows), predm)
@@ -2393,7 +2393,7 @@ all.equal(invsvd, invreg)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate reduced inverse from SVD
-dimax <- 3 # Number of dimensions to keep
+dimax <- 3 ##  Number of dimensions to keep
 invred <- svdec$v[, 1:dimax] %*%
   (t(svdec$u[, 1:dimax]) / svdec$d[1:dimax])
 # Inverse property fails for invred
@@ -2428,7 +2428,7 @@ coeffm <- sapply(dimv, function(dimax) {
   predinv <- svdec$v[, 1:dimax] %*%
     (t(svdec$u[, 1:dimax]) / svdec$d[1:dimax])
   predinv %*% respv[insample]
-})  # end lapply
+})  ##  end lapply
 colnames(coeffm) <- paste0("dim=", dimv)
 colorv <- colorRampPalette(c("red", "blue"))(NCOL(coeffm))
 matplot(y=coeffm, type="l", lty="solid", lwd=1, col=colorv,
@@ -2438,9 +2438,9 @@ matplot(y=coeffm, type="l", lty="solid", lwd=1, col=colorv,
 fcasts <- predm %*% coeffm
 fcasts <- apply(fcasts, 2, function(x) {
   fcastv <- sqrt(HighFreq::run_var(matrix(x), lambda=0.8)[, 2])
-  fcastv[1:10] <- 1 # Warmup
+  fcastv[1:10] <- 1 ##  Warmup
   x/fcastv
-}) # end apply
+}) ##  end apply
 # Simulate the AR strategies
 retn <- coredata(retp)
 pnls <- apply(fcasts, 2, function(x) (x*retn))
@@ -2475,7 +2475,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 
 
 %%%%%%%%%%%%%%%
-\subsection{AR coefficients With Ridge Shrinkage}
+\subsection{AR Coefficients With Ridge Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2495,7 +2495,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 objfun <- function(coeff, lambdaf) {
   fcasts <- predm[insample, ] %*% coeff
   sum((respv[insample, ] - fcasts)^2) + lambdaf*sum(coeff^2)
-}  # end objfun
+}  ##  end objfun
 # Perform optimization using the quasi-Newton method
 optiml <- optim(par=numeric(orderp+1),
                 fn=objfun, lambdaf=50.0, 
@@ -2529,12 +2529,14 @@ legend("topright", c("shrink", "t-value"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Multifactor AR Strategy With Ridge Shrinkage}
+\subsection{draft: Multifactor AR Strategy With Ridge Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      There's no ridge shrinkage, just scaling the forecasts by their EMA volatility.
+      \vskip1ex
       The out-of-sample performance of the multifactor AR strategy can be improved by applying \emph{shrinkage} to the \emph{AR} coefficients.
       \vskip1ex
       The value of the \emph{shrinkage factor} $\lambda$ can be chosen to maximize the out-of-sample performance.
@@ -2569,6 +2571,37 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
   dyEvent(datev[cutoff], label="cutoff", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=300)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Bias-Variance Tradeoff}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The tradeoff between \emph{unbiased} estimators but with \emph{higher variance}, and efficient estimators with \emph{lower variance} but with some \emph{bias} is called the \emph{bias-variance tradeoff}.
+      \vskip1ex
+      Let $\hat\theta$ be an estimator of the parameter $\theta$, with expected value $\mathbb{E}[\hat\theta] = \bar\theta$ (which may not necessarily be equal to $\theta$).
+      \vskip1ex
+      The \emph{accuracy} of the estimator $\hat\theta$ can be measured by its \emph{mean squared error} (MSE), equal to the expected value of the squared difference $(\hat\theta - \theta)^2$:
+      \begin{align*}
+        \operatorname{MSE} = \mathbb{E}[(\hat\theta - \theta)^2] = \mathbb{E}[(\hat\theta - \bar\theta + \bar\theta - \theta)^2] = \\
+        \mathbb{E}[(\hat\theta - \bar\theta)^2 + 2 (\hat\theta - \bar\theta) (\bar\theta - \theta) + (\bar\theta - \theta)^2] = \\
+        \mathbb{E}[(\hat\theta - \bar\theta)^2] + (\bar\theta - \theta)^2 = \operatorname{var}(\bar\theta) + \operatorname{bias}(\bar\theta)^2
+      \end{align*}
+      Since $\mathbb{E}[(\hat\theta - \bar\theta) (\bar\theta - \theta)] = (\bar\theta - \theta) \mathbb{E}[(\hat\theta - \bar\theta)] = 0$
+      \vskip1ex
+      The above formula shows that the $MSE$ is equal to the sum of the estimator \emph{variance} plus the square of the estimator \emph{bias}.
+      \vskip1ex
+      The bias and variance of the ridge regression coefficients can be calculated using bootstrap simulation
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/bias_variance_tradeoff.png}
   \end{columns}
 \end{block}
 
@@ -2712,7 +2745,7 @@ coeffm <- sapply(dimv, function(dimax) {
   predinv <- svdec$v[, 1:dimax] %*%
     (t(svdec$u[, 1:dimax]) / svdec$d[1:dimax])
   predinv %*% respv[insample]
-})  # end lapply
+})  ##  end lapply
 colnames(coeffm) <- paste0("dim=", dimv)
 colorv <- colorRampPalette(c("red", "blue"))(NCOL(coeffm))
 matplot(y=coeffm, type="l", lty="solid", lwd=1, col=colorv,
@@ -2722,9 +2755,9 @@ matplot(y=coeffm, type="l", lty="solid", lwd=1, col=colorv,
 fcasts <- predm %*% coeffm
 fcasts <- apply(fcasts, 2, function(x) {
   fcastv <- sqrt(HighFreq::run_var(matrix(x), lambda=0.8)[, 2])
-  fcastv[1:10] <- 1 # Warmup
+  fcastv[1:10] <- 1 ##  Warmup
   x/fcastv
-}) # end apply
+}) ##  end apply
 # Simulate the AR strategies
 retn <- coredata(respv)
 pnls <- apply(fcasts, 2, function(x) (x*retn))
@@ -2781,7 +2814,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 objfun <- function(coeff, respv, predm, lambdaf) {
   fcasts <- predm %*% coeff
   sum((respv - fcasts)^2) + lambdaf*sum(coeff^2)
-}  # end objfun
+}  ##  end objfun
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3292,37 +3325,37 @@ fcast/sqrt(varf)
 lookb <- 100
 fcasts <- sapply(1:nrows, function(tday) {
   if (tday > lookb) {
-    # Define the rolling look-back range
+    ##  Define the rolling look-back range
     startp <- max(1, tday-lookb)
-    # startp <- 1 # Expanding look-back range
-    rangev <- startp:(tday-1) # In-sample range
-    # Subset the response and predictors
+    ##  startp <- 1 ##  Expanding look-back range
+    rangev <- startp:(tday-1) ##  In-sample range
+    ##  Subset the response and predictors
     resps <- respv[rangev]
     preds <- predm[rangev]
-    # Calculate the fitted AR coefficients
+    ##  Calculate the fitted AR coefficients
     predinv <- MASS::ginv(preds)
     coeff <- predinv %*% resps
-    # Calculate the in-sample forecasts of VTI (fitted values)
+    ##  Calculate the in-sample forecasts of VTI (fitted values)
     fcasts <- preds %*% coeff
-    # Calculate the residuals (forecast errors)
+    ##  Calculate the residuals (forecast errors)
     resids <- (fcasts - resps)
-    # Calculate the variance of the residuals
+    ##  Calculate the variance of the residuals
     varv <- sum(resids^2)/(NROW(preds)-NROW(coeff))
-    # Calculate the covariance matrix of the AR coefficients
+    ##  Calculate the covariance matrix of the AR coefficients
     pred2 <- crossprod(preds)
     covmat <- varv*MASS::ginv(pred2)
     coefsd <- sqrt(diag(covmat))
-    coefft <- drop(coeff/coefsd) # t-values of the AR coefficients
-    # Calculate the out-of-sample forecast
+    coefft <- drop(coeff/coefsd) ##  t-values of the AR coefficients
+    ##  Calculate the out-of-sample forecast
     predn <- predm[tday, ]
     fcast <- drop(predn %*% coeff)
-    # Calculate the variance of the forecast
+    ##  Calculate the variance of the forecast
     varf <- drop(predn %*% covmat %*% t(predn))
     return(c(sd(resps), fcast=fcast, fstderr=sqrt(varf), coefft=coefft))
   } else {
     return(c(volv=0, fcast=0, fstderr=0, coefft=rep(0, NCOL(predm))))
-  } # end if
-})  # end sapply
+  } ##  end if
+})  ##  end sapply
       @
   \end{columns}
 \end{block}
@@ -3398,27 +3431,27 @@ dyLegend(show="always", width=300)
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
 sim_fcasts <- function(lookb=100, ordern=5, fixedlb=TRUE) {
-  # Perform rolling forecasting
+  ##  Perform rolling forecasting
   fcasts <- sapply((lookb+1):nrows, function(tday) {
-    # Rolling look-back range
+    ##  Rolling look-back range
     startp <- max(1, tday-lookb)
-    # Expanding look-back range
+    ##  Expanding look-back range
     if (!fixedlb) {startp <- 1}
     startp <- max(1, tday-lookb)
-    rangev <- startp:(tday-1) # In-sample range
-    # Subset the response and predictors
+    rangev <- startp:(tday-1) ##  In-sample range
+    ##  Subset the response and predictors
     resps <- respv[rangev]
     preds <- predm[rangev, 1:ordern]
-    # Invert the predictor matrix
+    ##  Invert the predictor matrix
     predinv <- MASS::ginv(preds)
-    # Calculate the fitted AR coefficients
+    ##  Calculate the fitted AR coefficients
     coeff <- predinv %*% resps
-    # Calculate the out-of-sample forecast
+    ##  Calculate the out-of-sample forecast
     drop(predm[tday, 1:ordern] %*% coeff)
-  })  # end sapply
-  # Add warmup period
+  })  ##  end sapply
+  ##  Add warmup period
   fcasts <- c(rep(0, lookb), fcasts)
-}  # end sim_fcasts
+}  ##  end sim_fcasts
 # Simulate the rolling autoregressive forecasts
 fcasts <- sim_fcasts(lookb=100, ordern=5)
 c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
@@ -3444,7 +3477,7 @@ c(mse=mean((fcasts - retp)^2), cor=cor(retp, fcasts))
       \vskip1ex
       The accuracy of the forecasting model increases with longer look-back intervals (\texttt{lookb}), because more data improves the estimates of the AR coefficients.
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
+library(parallel)  ##  Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -3462,7 +3495,7 @@ fcasts <- mclapply(lookbv, sim_fcasts, ordern=6, mc.cores=ncores)
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
-})  # end sapply
+})  ##  end sapply
 mse <- t(mse)
 rownames(mse) <- lookbv
 # Select optimal lookb interval
@@ -3493,7 +3526,7 @@ plot(x=lookbv, y=mse[, 1],
       \vskip1ex
       The accuracy of the forecasting model decreases for larger AR order parameters, because of overfitting in-sample.
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
+library(parallel)  ##  Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -3501,7 +3534,7 @@ compclust <- makeCluster(ncores)
 # Perform parallel loop under Windows
 orderv <- 2:6
 fcasts <- parLapply(compclust, orderv, sim_fcasts, lookb=lookb)
-stopCluster(compclust)  # Stop R processes over cluster under Windows
+stopCluster(compclust)  ##  Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts, 
   lookb=lookb, mc.cores=ncores)
@@ -3513,7 +3546,7 @@ fcasts <- mclapply(orderv, sim_fcasts,
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
-})  # end sapply
+})  ##  end sapply
 mse <- t(mse)
 rownames(mse) <- orderv
 # Select optimal order parameter
@@ -3589,7 +3622,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vskip1ex
       The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
+library(parallel)  ##  Load package parallel
 # Calculate the number of available cores
 ncores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -3598,7 +3631,7 @@ compclust <- makeCluster(ncores)
 orderv <- 2:6
 fcasts <- parLapply(compclust, orderv, sim_fcasts, 
   lookb=lookb, fixedlb=FALSE)
-stopCluster(compclust)  # Stop R processes over cluster under Windows
+stopCluster(compclust)  ##  Stop R processes over cluster under Windows
 # Perform parallel bootstrap under Mac-OSX or Linux
 fcasts <- mclapply(orderv, sim_fcasts, 
   lookb=lookb, fixedlb=FALSE, mc.cores=ncores)
@@ -3611,7 +3644,7 @@ fcasts <- mclapply(orderv, sim_fcasts,
 # Calculate the mean squared errors
 mse <- sapply(fcasts, function(x) {
   c(mse=mean((retp - x)^2), cor=cor(retp, x))
-})  # end sapply
+})  ##  end sapply
 mse <- t(mse)
 rownames(mse) <- orderv
 # Select optimal order parameter
@@ -3836,10 +3869,15 @@ coeff <- drop(invreg %*% respv)
 # Calculate forecasts and PnLs in-sample
 fcasts <- (predm %*% coeff)
 fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+# fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
 pnls <- fcasts*respv
-# Calculate in-sample factors
-factv <- (predm*coeff)
+# Calculate the in-sample factors
+factv <- lapply(1:NCOL(predm), function(x) predm[, x]*coeff[x])
+factv <- do.call(cbind, factv)
+# Or:
+# foo <- HighFreq::mult_mat(coeff, predm)
+# all.equal(foo, coredata(factv), check.attributes=FALSE)
+# Calculate the factor volatilities
 apply(factv, 2, sd)
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv)/sd(pnls)
@@ -3877,13 +3915,13 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       For out-of-sample forecasts, the training set and the test set are separate.  The model is calibrated on the training set, and forecasts are calculated using the test set. 
       <<echo=TRUE,eval=FALSE>>=
 # Calculate inverse of predictor in-sample
-invreg <- MASS::ginv(predm["/2019"])
+invreg <- MASS::ginv(predm["/2018"])
 # Calculate coefficients in-sample
-coeff <- drop(invreg %*% respv["/2019"])
+coeff <- drop(invreg %*% respv["/2018"])
 # Calculate forecasts and PnLs
 fcasts <- (predm %*% coeff)
-fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+# fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+# fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
 pnls <- fcasts*respv
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv)/sd(pnls)
@@ -3896,10 +3934,11 @@ pnls <- pnls*sd(respv)/sd(pnls)
 wealthv <- cbind(retp, pnls)
 colnames(wealthv) <- c("VTI", "Strategy")
 colv <- colnames(wealthv)
-endw <- rutils::calc_endpoints(wealthv["2019/"], interval="weeks")
-dygraphs::dygraph(cumsum(wealthv["2019/"])[endw], 
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
   main="Yield Curve Strategy Out-of-Sample") %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyEvent(end(predm["/2018"]), label="cutoff", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -3922,21 +3961,23 @@ dygraphs::dygraph(cumsum(wealthv["2019/"])[endw],
 endd <- rutils::calc_endpoints(respv, interval="years")
 # endd <- index(closep)[endd]
 # Perform loop over yearly dates
+library(parallel)  ##  Load package parallel
+ncores <- detectCores() - 1
 lookb <- 500
-fcasts <- lapply(seq_along(endd)[-1], function(tday) {
-  # Define in-sample and out-of-sample intervals
+fcasts <- mclapply(seq_along(endd)[-1], function(tday) {
+  ##  Define in-sample and out-of-sample intervals
   insample <- (max(1, endd[tday-1]-lookb):endd[tday-1])
-  # insample <- (1:endd[tday-1]) # Expanding look-back
+  ##  insample <- (1:endd[tday-1]) ##  Expanding look-back
   outsample <- (endd[tday-1]+1):endd[tday]
-  # Calculate coefficients in-sample
+  ##  Calculate coefficients in-sample
   invreg <- MASS::ginv(predm[insample, ])
   coeff <- drop(invreg %*% respv[insample, ])
-  # Calculate forecasts out-of-sample
+  ##  Calculate forecasts out-of-sample
   fcasts <- (predm[outsample, ] %*% coeff)
-})  # end lapply
+}, mc.cores=ncores)  ##  end mclapply
 fcasts <- do.call(rbind, fcasts)
-fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+# fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+# fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
 pnls <- fcasts*respv
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv)/sd(pnls)
@@ -3977,20 +4018,20 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       <<echo=TRUE,eval=FALSE>>=
 # Define monthly dates
 endd <- rutils::calc_endpoints(respv, interval="month")
-fcasts <- lapply(seq_along(endd)[-1], function(tday) {
-  # Define in-sample and out-of-sample intervals
+fcasts <- mclapply(seq_along(endd)[-1], function(tday) {
+  ##  Define in-sample and out-of-sample intervals
   insample <- (max(1, endd[tday-1]-lookb):endd[tday-1])
-  # insample <- (1:endd[tday-1]) # Expanding look-back
+  ##  insample <- (1:endd[tday-1]) ##  Expanding look-back
   outsample <- (endd[tday-1]+1):endd[tday]
-  # Calculate coefficients in-sample
+  ##  Calculate coefficients in-sample
   invreg <- MASS::ginv(predm[insample, ])
   coeff <- drop(invreg %*% respv[insample, ])
-  # Calculate forecasts out-of-sample
+  ##  Calculate forecasts out-of-sample
   fcasts <- (predm[outsample, ] %*% coeff)
-})  # end lapply
+}, mc.cores=ncores)  ##  end mclapply
 fcasts <- do.call(rbind, fcasts)
-fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+# fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+# fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
 pnls <- fcasts*respv
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv)/sd(pnls)
@@ -4024,23 +4065,25 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
     \column{0.5\textwidth}
       In the rolling weekly yield curve strategy, the model is recalibrated at the end of every week using a training set of the past \texttt{lookb} days.
       The coefficients are applied to perform out-of-sample forecasts in the following week.
+      \vskip1ex
+      The rolling weekly strategy performs worse than the monthly strategy, because the coefficients have a larger variance and estimation error.
       <<echo=TRUE,eval=FALSE>>=
 # Define weekly dates
 endd <- rutils::calc_endpoints(respv, interval="weeks")
-fcasts <- lapply(seq_along(endd)[-1], function(tday) {
-  # Define in-sample and out-of-sample intervals
+fcasts <- mclapply(seq_along(endd)[-1], function(tday) {
+  ##  Define in-sample and out-of-sample intervals
   insample <- (max(1, endd[tday-1]-lookb):endd[tday-1])
-  # insample <- (1:endd[tday-1]) # Expanding look-back
+  ##  insample <- (1:endd[tday-1]) ##  Expanding look-back
   outsample <- (endd[tday-1]+1):endd[tday]
-  # Calculate coefficients in-sample
+  ##  Calculate coefficients in-sample
   invreg <- MASS::ginv(predm[insample, ])
   coeff <- drop(invreg %*% respv[insample, ])
-  # Calculate forecasts out-of-sample
+  ##  Calculate forecasts out-of-sample
   fcasts <- (predm[outsample, ] %*% coeff)
-})  # end lapply
+}, mc.cores=ncores)  ##  end mclapply
 fcasts <- do.call(rbind, fcasts)
-fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+# fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+# fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
 pnls <- fcasts*respv
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv)/sd(pnls)
@@ -4076,20 +4119,22 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vskip1ex
       Regularization of the inverse predictor matrix improves the in-sample performance of the yield curve strategy.
       \vskip1ex
+      The best performing in-sample YC strategy are with the intermediate order parameters \emph{dimax = 5, 6}.
+      \vskip1ex
       Although it's not realistic to achieve the in-sample performance, it's useful because it provides insights into how the model can be improved.
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Calculate in-sample pnls for different dimax values
 dimv <- 2:7
-pnls <- lapply(dimv, function(dimax) {
+pnls <- mclapply(dimv, function(dimax) {
   invred <- HighFreq::calc_invsvd(predm, dimax=dimax)
   coeff <- drop(invred %*% respv)
   fcasts <- (predm %*% coeff)
-  fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-  fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+  # fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+  # fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
   pnls <- fcasts*respv
   pnls/sd(pnls)
-})
+}, mc.cores=ncores)  ##  end mclapply
 pnls <- sd(respv)*do.call(cbind, pnls)
 colnames(pnls) <- paste0("dim=", dimv)
       @
@@ -4100,7 +4145,8 @@ colnames(pnls) <- paste0("dim=", dimv)
 # Plot dygraph of in-sample pnls
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
 endw <- rutils::calc_endpoints(pnls, interval="weeks")
-dygraphs::dygraph(cumsum(pnls)[endw], main="In-Sample YC Strategies With Dimension Reduction") %>%
+dygraphs::dygraph(cumsum(pnls)[endw], 
+  main="In-Sample YC Strategies With Dimension Reduction") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
@@ -4120,19 +4166,23 @@ dygraphs::dygraph(cumsum(pnls)[endw], main="In-Sample YC Strategies With Dimensi
       For out-of-sample forecasts, the training set and the test set are separate.  The model is calibrated on the training set, and forecasts are calculated using the test set. 
       \vskip1ex
       The best performing out-of-sample YC strategy is with the smallest order parameter (strongest dimension reduction) \emph{dimax = 2}.
+      
       <<echo=TRUE,eval=FALSE>>=
 # Calculate in-sample pnls for different dimax values
-pnls <- lapply(dimv, function(dimax) {
-  invred <- HighFreq::calc_invsvd(predm["/2019"], dimax=dimax)
-  coeff <- drop(invred %*% respv["/2019"])
+pnls <- mclapply(dimv, function(dimax) {
+  invred <- HighFreq::calc_invsvd(predm["/2018"], dimax=dimax)
+  coeff <- drop(invred %*% respv["/2018"])
   fcasts <- (predm %*% coeff)
-  fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-  fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+  # fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+  # fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
   pnls <- fcasts*respv
   pnls/sd(pnls)
-})
+}, mc.cores=ncores)  ##  end mclapply
 pnls <- sd(respv)*do.call(cbind, pnls)
 colnames(pnls) <- paste0("dim=", dimv)
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(pnls["2018/"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4140,9 +4190,11 @@ colnames(pnls) <- paste0("dim=", dimv)
       <<echo=TRUE,eval=FALSE>>=
 # Plot dygraph of out-of-sample pnls
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(pnls))
-endw <- rutils::calc_endpoints(pnls["2019/"], interval="weeks")
-dygraphs::dygraph(cumsum(pnls["2019/"])[endw], main="Out-of-Sample YC Strategies With Dimension Reduction") %>%
+endw <- rutils::calc_endpoints(pnls, interval="weeks")
+dygraphs::dygraph(cumsum(pnls)[endw], 
+  main="Out-of-Sample YC Strategies With Dimension Reduction") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
+  dyEvent(end(predm["/2018"]), label="cutoff", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=300)
       @
   \end{columns}
@@ -4158,7 +4210,7 @@ dygraphs::dygraph(cumsum(pnls["2019/"])[endw], main="Out-of-Sample YC Strategies
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The rolling monthly strategy with dimension reduction performs better than the standard strategy because dimension reduction allows using shorter \texttt{lookb} intervals since it suppresses the response noise.
+      The rolling monthly strategy with dimension reduction \emph{dimax = 2} performs better than the standard strategy.
       \vskip1ex
       In the rolling monthly yield curve strategy, the model is recalibrated at the end of every month using a training set of the past \texttt{lookb} days.
       The coefficients are applied to perform out-of-sample forecasts in the following month.
@@ -4169,22 +4221,20 @@ enddd <- seq_along(endd)[endd > lookb]
 # Perform loop over monthly dates
 lookb <- 500
 dimax <- 2
-library(parallel)  # Load package parallel
-ncores <- detectCores() - 1
 fcasts <- mclapply(enddd, function(tday) {
-  # Define in-sample and out-of-sample intervals
+  ##  Define in-sample and out-of-sample intervals
   insample <- (max(1, endd[tday-1]-lookb):endd[tday-1])
   outsample <- (endd[tday-1]+1):endd[tday]
-  # Calculate coefficients in-sample
+  ##  Calculate coefficients in-sample
   invreg <- HighFreq::calc_invsvd(predm[insample, ], dimax=dimax)
   coeff <- drop(invreg %*% respv[insample, ])
-  # Calculate forecasts out-of-sample
+  ##  Calculate forecasts out-of-sample
   fcasts <- (predm[outsample, ] %*% coeff)
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 fcasts <- do.call(rbind, fcasts)
 fcasts <- rbind(matrix(rep(0, nrows-NROW(fcasts)), nc=1), fcasts)
-fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+# fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+# fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
 pnls <- fcasts*respv
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv)/sd(pnls)
@@ -4225,19 +4275,19 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 endd <- rutils::calc_endpoints(closep, interval="weeks")
 enddd <- seq_along(endd)[endd > lookb]
 fcasts <- mclapply(enddd, function(tday) {
-  # Define in-sample and out-of-sample intervals
+  ##  Define in-sample and out-of-sample intervals
   insample <- (max(1, endd[tday-1]-lookb):endd[tday-1])
   outsample <- (endd[tday-1]+1):endd[tday]
-  # Calculate coefficients in-sample
+  ##  Calculate coefficients in-sample
   invreg <- HighFreq::calc_invsvd(predm[insample, ], dimax=dimax)
   coeff <- drop(invreg %*% respv[insample, ])
-  # Calculate forecasts out-of-sample
+  ##  Calculate forecasts out-of-sample
   fcasts <- (predm[outsample, ] %*% coeff)
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 fcasts <- do.call(rbind, fcasts)
 fcasts <- rbind(matrix(rep(0, nrows-NROW(fcasts)), nc=1), fcasts)
-fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+# fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+# fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
 pnls <- fcasts*respv
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv)/sd(pnls)
@@ -4317,9 +4367,9 @@ dygraphs::dygraph(cumsum(datav),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      For in-sample forecasts, the training set and the test set are the same.  The model is calibrated on the data that is used for forecasting. 
+      The best performing PCA yield curve strategy uses only the first two principal components of the yield curve as predictors of stock returns.
       \vskip1ex
-      Yield Curve Strategy
+      For in-sample forecasts, the training set and the test set are the same.  The model is calibrated on the data that is used for forecasting. 
       \vskip1ex
       Although it's not realistic to achieve the in-sample performance, it's useful because it provides insights into how the model works.
       \vskip1ex
@@ -4327,15 +4377,15 @@ dygraphs::dygraph(cumsum(datav),
       \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Define predictor without intercept term
-predm <- rutils::lagit(pcar[, 1:3])
+predm <- rutils::lagit(pcar[, 1:2])
 # Calculate inverse of predictor
 invreg <- MASS::ginv(predm)
 # Calculate coefficients from response and inverse of predictor
 coeff <- drop(invreg %*% respv)
 # Calculate forecasts and PnLs in-sample
 fcasts <- (predm %*% coeff)
-fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
-fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
+# fcastv <- sqrt(HighFreq::run_var(fcasts, lambda=0.4)[, 2])
+# fcasts <- ifelse(fcastv > mad(fcastv)/20, fcasts/fcastv, 0)
 pnls <- fcasts*respv
 # Scale the PnL volatility to that of VTI
 pnls <- pnls*sd(respv[respv<0])/sd(pnls[pnls<0])
@@ -4512,15 +4562,15 @@ endd <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="month
 lookb <- 6
 dimax <- 3
 pnls <- lapply((lookb+1):(NROW(endd)-1), function(tday) {
-  # Define in-sample and out-of-sample intervals
+  ##  Define in-sample and out-of-sample intervals
   insample <- (datev > endd[tday-lookb]) & (datev < endd[tday])
   outsample <- (datev > endd[tday]) & (datev < endd[tday+1])
-  # Calculate forecasts and PnLs out-of-sample
+  ##  Calculate forecasts and PnLs out-of-sample
   invred <- HighFreq::calc_invsd(predm[insample, ], dimax=dimax)
   coeff <- drop(invred %*% respv[insample, ])
   fcasts <- (predm[outsample, ] %*% coeff)
   sign(fcasts)*respv[outsample, ]
-})  # end lapply
+})  ##  end lapply
 pnls <- do.call(rbind, pnls)
       @
     \column{0.5\textwidth}
@@ -4562,15 +4612,15 @@ endd <- seq.Date(from=as.Date("2001-05-01"), to=as.Date("2021-04-01"), by="weeks
 lookb <- 8
 dimax <- 4
 pnls <- lapply((lookb+1):(NROW(endd)-1), function(tday) {
-  # Define in-sample and out-of-sample intervals
+  ##  Define in-sample and out-of-sample intervals
   insample <- (datev > endd[tday-lookb]) & (datev < endd[tday])
   outsample <- (datev > endd[tday]) & (datev < endd[tday+1])
-  # Calculate forecasts and PnLs out-of-sample
+  ##  Calculate forecasts and PnLs out-of-sample
   invred <- HighFreq::calc_invsd(predm[insample, ], dimax=dimax)
   coeff <- drop(invred %*% respv[insample, ])
   fcasts <- (predm[outsample, ] %*% coeff)
   sign(fcasts)*respv[outsample, ]
-})  # end lapply
+})  ##  end lapply
 pnls <- do.call(rbind, pnls)
       @
     \column{0.5\textwidth}
@@ -4618,7 +4668,7 @@ tvalues <- sapply(naggs, function(nagg) {
   regmod <- lm(respv ~ predm - 1)
   regsum <- summary(regmod)
   max(abs(regsum$coefficients[, 3][-1]))
-})  # end sapply
+})  ##  end sapply
 naggs[which.max(tvalues)]
 plot(naggs, tvalues, t="l", col="blue", lwd=2)
 # Calculate aggregated predictor

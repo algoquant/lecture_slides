@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Optimized Portfolios Out-of-Sample]{Optimized Portfolios Out-of-Sample}
-% \subtitle{FRE7241, Spring 2025}
+% \subtitle{FRE7241, Fall 2025}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -111,16 +111,16 @@ knit_theme$set(thm)
 # Load stock returns
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
 datev <- zoo::index(na.omit(retstock$GOOGL))
-retp <- retstock[datev] # Subset the returns to GOOGL
+retp <- retstock[datev] ##  Subset the returns to GOOGL
 # Remove the stocks with any NA values
 numna <- sapply(retp, function(x) sum(is.na(x)))
 retp <- retp[, numna==0]
 nstocks <- NCOL(retp)
 datev <- zoo::index(retp)
 symbolv <- colnames(retp)
-retis <- retp["/2014"] # In-sample returns
+retis <- retp["/2014"] ##  In-sample returns
 raterf <- 0.03/252
-retx <- (retis - raterf) # Excess returns
+retx <- (retis - raterf) ##  Excess returns
 # Calculate the covariance ignoring NA values
 covmat <- cov(retp, use="pairwise.complete.obs")
 sum(is.na(covmat))
@@ -329,7 +329,7 @@ objfun <- function(retp) {
     stdev <- sd(retp)
     if (stdev > 0) mean(retp)/stdev else 0
   } else 0
-}  # end objfun
+}  ##  end objfun
 # Objective function equal to the Kelly ratio
 objfun <- function(retp) {
   retp <- na.omit(retp)
@@ -337,7 +337,7 @@ objfun <- function(retp) {
     varv <- var(retp)
     if (varv > 0) mean(retp)/varv else 0
   } else 0
-}  # end objfun
+}  ##  end objfun
       @
       In portfolio optimization, assuming zero correlations, the \emph{maximum Sharpe} portfolio weights are proportional to the \emph{Kelly ratios}:
       \begin{displaymath}
@@ -466,13 +466,13 @@ dimv <- seq(from=5, to=11)
 pnls <- mclapply(dimv, function(dimax) {
   invred <- eigenvec[, 1:dimax] %*%
     (t(eigenvec[, 1:dimax]) / eigenval[1:dimax])
-  # Calculate portfolio weights and PnLs
+  ##  Calculate portfolio weights and PnLs
   weightv <- invred %*% colmeanv
   pnls <- HighFreq::mult_mat(weightv, retp)
   pnls <- rowMeans(pnls, na.rm=TRUE)
   pnls <- xts::xts(pnls, datev)
   pnls*sd(retew["/2014"])/sd(pnls["/2014"])
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("dim=", dimv)
 profilev <- sapply(pnls["2015/"], sum)
@@ -573,7 +573,7 @@ pnls <- mclapply(alphav, function(alphac) {
   pnls <- rowMeans(pnls, na.rm=TRUE)
   pnls <- xts::xts(pnls, datev)
   pnls*sd(retew["/2014"])/sd(pnls["/2014"])
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("alpha=", alphav)
 profilev <- sapply(pnls["2015/"], sum)
@@ -620,29 +620,29 @@ endd <- endd[endd > (nstocks+1)]
 npts <- NROW(endd) ; lookb <- 12
 startp <- c(rep_len(0, lookb), endd[1:(npts-lookb)])
 # !!! Perform parallel loop over end points - takes very long!!!
-library(parallel)  # Load package parallel
+library(parallel)  ##  Load package parallel
 ncores <- detectCores() - 1
 pnls <- mclapply(1:(npts-1), function(tday) {
-    # Subset the excess returns
+    ##  Subset the excess returns
     retis <- retp[startp[tday]:endd[tday], ]
     retis[is.na(retis)] <- 0
     invreg <- MASS::ginv(cov(retis, use="pairwise.complete.obs"))
-    # Calculate the maximum Sharpe ratio portfolio weights
+    ##  Calculate the maximum Sharpe ratio portfolio weights
     retm <- colMeans(retis, na.rm=TRUE)
     weightv <- invreg %*% retm
-    # Zero weights if sparse data
+    ##  Zero weights if sparse data
     zerov <- sapply(retis, function(x) (sum(x == 0) > 5))
     weightv[zerov] <- 0
-    # Calculate in-sample portfolio returns
+    ##  Calculate in-sample portfolio returns
     pnlis <- (retis %*% weightv)
-    # Scale the weights to the in-sample volatility
+    ##  Scale the weights to the in-sample volatility
     weightv <- weightv*sd(retm)/sd(pnlis)
-    # Calculate the out-of-sample portfolio returns
+    ##  Calculate the out-of-sample portfolio returns
     retos <- retp[(endd[tday]+1):endd[tday+1], ]
     pnls <- HighFreq::mult_mat(weightv, retos)
     pnls <- rowMeans(pnls, na.rm=TRUE)
     xts::xts(pnls, zoo::index(retos))
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 pnls <- rutils::do_call(rbind, pnls)
 pnls <- rbind(retew[paste0("/", start(pnls)-1)], pnls*sd(retew)/sd(pnls))
       @
@@ -710,7 +710,7 @@ summary(microbenchmark(
       (t(eigend$vectors[, 1:dimax]) / eigend$values[1:dimax])
   },
   rcpp=calc_inv(covmat, dimax),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
 @
   \column{0.5\textwidth}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
@@ -1046,7 +1046,7 @@ pnls <- mclapply(dimv, function(dimax) {
     dimax=dimax, alpha=alphac)
   HighFreq::roll_portf(retx=retx, retp=retp,
     startp=startp, endd=endd, controll=controll)
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 profilev <- sapply(pnls, sum)
 dimax <- dimv[which.max(profilev)]
       @
@@ -1086,7 +1086,7 @@ pnls <- mclapply(alphav, function(alphac) {
             dimax=dimax, alpha=alphac)
   HighFreq::roll_portf(retx=retx, retp=retp,
             startp=startp, endd=endd, controll=controll)
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 profilev <- sapply(pnls, sum)
 alphac <- alphav[which.max(profilev)]
       @
@@ -1132,7 +1132,7 @@ pnls <- mclapply(lookbv, function(lookb) {
   startp <- (startp - 1) ; startp[startp < 0] <- 0
   HighFreq::roll_portf(retx=retx, retp=retp,
     startp=startp, endd=endd, controll=controll)
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 profilev <- sapply(pnls, sum)
 lookb <- lookbv[which.max(profilev)]
       @
