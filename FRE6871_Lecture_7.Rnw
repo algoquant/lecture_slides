@@ -28,6 +28,7 @@ knit_theme$set(thm)
 % mathtools package for math symbols
 % \usepackage{mathtools}
 \usepackage{bbm}
+\usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsfonts}
@@ -67,13 +68,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#7]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#7, Fall 2025}
+\subtitle{Lecture\#7, Spring 2026}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{December 8, 2025}
+\date{March 9, 2026}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -85,6 +86,7 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
 
 
 %%%%%%%%%%%%%%%
@@ -276,9 +278,9 @@ ousim <- sim_our(nrows, priceq=priceq, volat=sigmav, theta=thetav)
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
-NumericVector sim_oucpp(double priceq, 
-                        double volat, 
-                        double thetav, 
+NumericVector sim_oucpp(double priceq,
+                        double volat,
+                        double thetav,
                         NumericVector innov) {
   int nrows = innov.size();
   NumericVector pricev(nrows);
@@ -708,7 +710,7 @@ using namespace arma;
 
 //' @export
 // [[Rcpp::export]]
-arma::mat calc_inv(const arma::mat& matv, 
+arma::mat calc_inv(const arma::mat& matv,
                    arma::uword dimax = 0, // Max number of PCA for dimension reduction
                    double eigen_thresh = 0.01) { // Threshold for discarding small singular values
 
@@ -719,7 +721,7 @@ arma::mat calc_inv(const arma::mat& matv,
   arma::svd(svdu, svdval, svdv, tseries);
   // Calculate the number of non-small singular values
   arma::uword svdnum = arma::sum(svdval > eigen_thresh*arma::sum(svdval));
-  
+
   // If no regularization then set dimax to (svdnum - 1)
   if (dimax == 0) {
     // Set dimax
@@ -728,15 +730,15 @@ arma::mat calc_inv(const arma::mat& matv,
     // Adjust dimax
     dimax = stdev::min(dimax - 1, svdnum - 1);
   }  // end if
-  
+
   // Remove all small singular values
   svdval = svdval.subvec(0, dimax);
   svdu = svdu.cols(0, dimax);
   svdv = svdv.cols(0, dimax);
-  
+
   // Calculate the reduced inverse from the SVD decomposition
   return svdv*arma::diagmat(1/svdval)*svdu.t();
-  
+
 }  // end calc_inv
     \end{lstlisting}
     % \column{0.5\textwidth}
@@ -758,7 +760,7 @@ arma::mat calc_inv(const arma::mat& matv,
 // Fast portfolio optimization using matrix algebra and \emph{RcppArmadillo}
 arma::vec calc_weights(const arma::mat& returns, // Asset returns
                        Rcpp::List controll) { // List of portfolio optimization parameters
-  
+
   // Apply different calculation methods for weights
   switch(calc_method(method)) {
   case methodenum::maxsharpe: {
@@ -838,17 +840,17 @@ arma::vec calc_weights(const arma::mat& returns, // Asset returns
     return arma::ones(ncols);
   }  // end default
   }  // end switch
-  
+
   if (rankw == TRUE) {
     // Convert the weights to their ranks
     weights = arma::conv_to<vec>::from(calc_ranks_stl(weights));
   }  // end if
-  
+
   if (centerw == TRUE) {
     // Center the weights so their sum is equal to zero
     weights = (weightv - arma::mean(weights));
   }  // end if
-  
+
   // Apply different scaling methods for weights
   switch(calc_method(scalew)) {
   case methodenum::voltarget: {
@@ -876,9 +878,9 @@ arma::vec calc_weights(const arma::mat& returns, // Asset returns
     break;
   }  // end default
   }  // end switch
-  
+
   return weights;
-  
+
 }  // end calc_weights
     \end{lstlisting}
     % \column{0.5\textwidth}
@@ -906,7 +908,7 @@ arma::mat roll_portf(const arma::mat& excess, // Asset excess returns
                     double lambdaf = 0.0, // Decay factor for averaging the portfolio weights
                     double coeff = 1.0, // Multiplier of strategy returns
                     double bidask = 0.0) { // The bid-ask spread
-  
+
   double lambda1 = 1-lambdaf;
   arma::uword nweights = returns.n_cols;
   arma::vec weights(nweights, fill::zeros);
@@ -927,10 +929,10 @@ arma::mat roll_portf(const arma::mat& excess, // Asset excess returns
     // Copy the weights
     weights_past = weights;
   }  // end for
-  
+
   // Return the strategy pnls
   return pnls;
-  
+
 }  // end roll_portf
     \end{lstlisting}
     % \column{0.5\textwidth}
@@ -988,7 +990,7 @@ exit
 """
 Script for loading OHLC data from a CSV file and plotting a candlestick plot.
 """
-# Import packages 
+# Import packages
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -1009,17 +1011,17 @@ pricema = closep.ewm(span=lookback, adjust=False).mean()
 plotfig = go.Figure()
 # Add trace for candlesticks
 plotfig = plotfig.add_trace(go.Candlestick(x=datev,
-  open=ohlc.Open, high=ohlc.High, low=ohlc.Low, close=ohlc.Close, 
+  open=ohlc.Open, high=ohlc.High, low=ohlc.Low, close=ohlc.Close,
   name=symbol+" Log OHLC Prices", showlegend=False))
 # Add trace for moving average
-plotfig = plotfig.add_trace(go.Scatter(x=datev, y=pricema, 
+plotfig = plotfig.add_trace(go.Scatter(x=datev, y=pricema,
   name="Moving Average", line=dict(color="blue")))
 # Customize plot
-plotfig = plotfig.update_layout(title=symbol + " Log OHLC Prices", 
-  title_font_size=24, title_font_color="blue", yaxis_title="Price", 
+plotfig = plotfig.update_layout(title=symbol + " Log OHLC Prices",
+  title_font_size=24, title_font_color="blue", yaxis_title="Price",
   font_color="black", font_size=18, xaxis_rangeslider_visible=False)
 # Customize legend
-plotfig = plotfig.update_layout(legend=dict(x=0.2, y=0.9, traceorder="normal", 
+plotfig = plotfig.update_layout(legend=dict(x=0.2, y=0.9, traceorder="normal",
   itemsizing="constant", font=dict(family="sans-serif", size=18, color="blue")))
 # Render the plot
 plotfig.show()
@@ -1031,64 +1033,38 @@ plotfig.show()
 
 
 %%%%%%%%%%%%%%%
-\section{Combining \texttt{R} with \texttt{Excel}}
+\section{Portfolio Efficient Frontier}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading Data From \texttt{Excel} Files}
+\subsection{Vector and Matrix Calculus}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
-  \begin{columns}[T]
+    \begin{columns}[T]
     \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
+      Let $\mathbf{v}$ and $\mathbf{w}$ be vectors, with $\mathbf{v} = \left\{ v_i \right\}_{i=1}^{i=n}$, and let $\mathbbm{1}$ be the unit vector, with $\mathbbm{1} = \left\{ 1 \right\}_{i=1}^{i=n}$.
       \vskip1ex
-      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
+      Then the inner product of $\mathbf{v}$ and $\mathbf{w}$ can be written as $\mathbf{v}^T \mathbf{w} = \mathbf{w}^T \mathbf{v} = {\sum_{i=1}^n {v_i w_i}}$.
       \vskip1ex
-      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
+      We can then express the sum of the elements of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbbm{1} = \mathbbm{1}^T \mathbf{v} = {\sum_{i=1}^n v_i}$.
       \vskip1ex
-      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
+      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v^2_i}$.
       \vskip1ex
-      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
+      Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$.
       \vskip1ex
-      \emph{tibble} objects are also used by the package
-      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
-      \vskip1ex
-      DataCamp offers a
-      \href{https://www.datacamp.com/community/tutorials/r-tutorial-read-excel-into-r}{Tutorial on Importing Excel Files into R}.
+      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as:
+      \begin{displaymath}
+        \mathbf{v}^T \mathbb{A} \, \mathbf{w} = \mathbf{w}^T \mathbb{A}^T \mathbf{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
+      \end{displaymath}
     \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Install and load package readxl
-install.packages("readxl")
-library(readxl)
-dirn <- "/Users/jerzy/Develop/lecture_slides/data"
-filev <- file.path(dirn, "multi_tabs.xlsx")
-# Read a time series from first sheet of xlsx file
-tibblev <- readxl::read_xlsx(filev)
-class(tibblev)
-# Coerce POSIXct dates into Date class
-class(tibblev$Dates)
-tibblev$Dates <- as.Date(tibblev$Dates)
-# Some columns are character strings
-sapply(tibblev, class)
-sapply(tibblev, is.character)
-# Coerce columns with strings to numeric
-listv <- lapply(tibblev, function(x) {
-  if (is.character(x))
-    as.numeric(x)
-  else
-    x
-})  ##  end lapply
-# Coerce list into xts time series
-xtsv <- xts::xts(do.call(cbind, listv)[, -1], listv[[1]])
-class(xtsv); dim(xtsv)
-# Replace NA values with the most recent non-NA values
-sum(is.na(xtsv))
-xtsv <- zoo::na.locf(xtsv, na.rm=FALSE)
-xtsv <- zoo::na.locf(xtsv, fromLast=TRUE)
-      @
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        \frac{d (\mathbf{v}^T \mathbbm{1})}{d \mathbf{v}} = d_v[\mathbf{v}^T \mathbbm{1}] = d_v[\mathbbm{1}^T \mathbf{v}] = \mathbbm{1}^T\\
+        d_v[\mathbf{v}^T \mathbf{w}] = d_v[\mathbf{w}^T \mathbf{v}] = \mathbf{w}^T\\
+        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{w}] = \mathbf{w}^T \mathbb{A}^T\\
+        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{v}] = \mathbf{v}^T \mathbb{A} + \mathbf{v}^T \mathbb{A}^T
+      \end{align*}
   \end{columns}
 \end{block}
 
@@ -1096,59 +1072,45 @@ xtsv <- zoo::na.locf(xtsv, fromLast=TRUE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading Multiple Sheets From \texttt{Excel} Files}
+\subsection{The \protect\emph{Minimum Variance} Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{readxl::excel\_sheets()} returns a vector of character strings with the names of all the sheets in an \texttt{Excel} spreadsheet.
+      The portfolio variance is equal to: $\mathbf{w}^T \mathbb{C} \, \mathbf{w}$, where $\mathbb{C}$ is the covariance matrix of returns.
       \vskip1ex
-      The package
-      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
+      If the portfolio weights $\mathbf{w}$ are subject to \emph{linear} constraints: $\mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$, then the weights that minimize the portfolio variance can be found by minimizing the \emph{Lagrangian}:
+      \begin{displaymath}
+        \mathcal{L} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} - \lambda \, (\mathbf{w}^T \mathbbm{1} - 1)
+      \end{displaymath}
+      Where $\lambda$ is a \emph{Lagrange multiplier}.
       \vskip1ex
-      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
-      \vskip1ex
-      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
-      \vskip1ex
-      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
-      \vskip1ex
-      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
-      \vskip1ex
-      \emph{tibble} objects are also used by the package
-      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        d_w[\mathbf{w}^T \mathbbm{1}] = d_w[\mathbbm{1}^T \mathbf{w}] = \mathbbm{1}^T\\
+        d_w[\mathbf{w}^T \mathbf{r}] = d_w[\mathbf{r}^T \mathbf{w}] = \mathbf{r}^T\\
+        d_w[\mathbf{w}^T \mathbb{C} \, \mathbf{w}] = \mathbf{w}^T \mathbb{C} + \mathbf{w}^T \mathbb{C}^T
+      \end{align*}
+      Where $\mathbbm{1}$ is the unit vector, and $\mathbf{w}^T \mathbbm{1} = \mathbbm{1}^T \mathbf{w} = \sum_{i=1}^n {x_i}$
     \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Read names of all the sheets in an Excel spreadsheet
-namev <- readxl::excel_sheets(filev)
-# Read all the sheets from an Excel spreadsheet
-sheetv <- lapply(namev, read_xlsx, path=filev)
-names(sheetv) <- namev
-# sheetv is a list of tibbles
-sapply(sheetv, class)
-# Create function to coerce tibble to xts
-to_xts <- function(tibblev) {
-  tibblev$Dates <- as.Date(tibblev$Dates)
-  ##  Coerce columns with strings to numeric
-  listv <- lapply(tibblev, function(x) {
-    if (is.character(x))
-      as.numeric(x)
-    else
-      x
-  })  ##  end lapply
-  ##  Coerce list into xts series
-  xts::xts(do.call(cbind, listv)[, -1], listv$Dates)
-}  ##  end to_xts
-# Coerce list of tibbles to list of xts
-class(sheetv)
-sheetv <- lapply(sheetv, to_xts)
-sapply(sheetv, class)
-# Replace NA values with the most recent non-NA values
-sapply(sheetv, function(xtsv) sum(is.na(xtsv)))
-sheetv <- lapply(sheetv, zoo::na.locf, na.rm=FALSE)
-sheetv <- lapply(sheetv, zoo::na.locf, fromLast=TRUE)
-      @
+      The derivative of the \emph{Lagrangian} $\mathcal{L}$ with respect to $\mathbf{w}$ is given by:
+      \begin{displaymath}
+        d_w \mathcal{L} = 2 \mathbf{w}^T \mathbb{C} - \lambda \mathbbm{1}^T
+      \end{displaymath}
+      By setting the derivative to zero we find $\mathbf{w}$ equal to:
+      \begin{displaymath}
+        \mathbf{w} = \frac{1}{2} \lambda \, \mathbb{C}^{-1} \mathbbm{1}
+      \end{displaymath}
+      By multiplying the above from the left by $\mathbbm{1}^T$, and using $\mathbf{w}^T \mathbbm{1} = 1$, we find $\lambda$ to be equal to:
+      \begin{displaymath}
+        \lambda = \frac{2}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      And finally the portfolio weights are then equal to:
+      \begin{displaymath}
+        \mathbf{w} = \frac{\mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      If the portfolio weights are subject to \emph{quadratic} constraints: $\mathbf{w}^T \mathbf{w} = 1$ then the minimum variance weights are equal to the highest order \emph{principal component} (with the smallest eigenvalue) of the covariance matrix $\mathbb{C}$.
   \end{columns}
 \end{block}
 
@@ -1156,224 +1118,54 @@ sheetv <- lapply(sheetv, zoo::na.locf, fromLast=TRUE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performing Calculations in \texttt{Excel} Using \texttt{R}}
+\subsection{Returns and Variance of the \protect\emph{Minimum Variance} Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{Excel} can run \texttt{R} using either \texttt{VBA} scripts, or through a \emph{COM} interface (available on \emph{Windows} only).
+      The stock weights of the \emph{minimum variance} portfolio under the constraint $\mathbf{w}^T \mathbbm{1} = 1$ can be calculated using the inverse of the covariance matrix:
+      \begin{displaymath}
+        \mathbf{w} = \frac{\mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      The daily returns of the \emph{minimum variance} portfolio are equal to:
+      \begin{displaymath}
+        \mathbf{r}_{mv} = \frac{\mathbf{r}^T \mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}} = \frac{\mathbf{r}^T \mathbb{C}^{-1} \mathbbm{1}}{c_{11}}
+      \end{displaymath}
+      Where $\mathbf{r}$ are the daily stock returns, and $c_{11} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$.
       \vskip1ex
-      \texttt{R} can perform calculations and export its output to \texttt{Excel} files, or it can modify \texttt{Excel} files (requires packages using \texttt{Java} or \texttt{Perl} code).
+      The variance of the \emph{minimum variance} portfolio is equal to:
+      \begin{displaymath}
+        \sigma^2_{mv} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} = \frac{\mathbbm{1}^T \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mathbbm{1}}{(\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1})^2} = \frac{1}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}} = \frac{1}{c_{11}}
+      \end{displaymath}
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
       \vskip1ex
-      Calculations in \texttt{R} and \texttt{Excel} can be combined in several different ways:
-      \begin{itemize}
-        \item Data from \texttt{Excel} can be exchanged with \texttt{R} via \texttt{.csv} files (simplest and best method),
-        \item \texttt{Excel} can execute \texttt{R} commands using \texttt{VBA} scripts, and then import the \texttt{R} output from \texttt{.csv} files,
-        \item An \texttt{Excel} add-in can execute \texttt{R} commands as \texttt{Excel} functions (relies on \emph{COM} protocol, so works only for \emph{Windows}): add-ins
-        \emph{\href{http://bert-toolkit.com/}{BERT}},
-        \emph{\href{http://sunsite.univie.ac.at/rcom/}{RExcel}},
-        \item \texttt{R} can modify \texttt{Excel} files and run \texttt{Excel} functions (requires packages using \texttt{Java} or \texttt{Perl} code): packages
-        \emph{\href{https://cran.r-project.org/web/packages/xlsx/index.html}{xlsx}},
-        \emph{\href{https://cran.r-project.org/web/packages/XLConnect/index.html}{XLConnect}},
-        \emph{\href{https://cran.r-project.org/web/packages/excel.link/index.html}{excel.link}},
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-### Perform calculations in R,
-### And export to CSV files
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-# Read data frame, with row names from first column
-readf <- read.csv(file="florist.csv", row.names=1)
-# Subset data frame
-readf <- readf[readf[, "type"]=="daisy", ]
-all.equal(readf, dframe)
-# Write data frame to CSV file, with row names
-write.csv(readf, file="daisies.csv")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Code from \texttt{Excel}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      There are several ways of performing calculations in \texttt{R} and exporting the outputs to \texttt{Excel}:
-      \begin{itemize}
-        \item Export data from \texttt{Excel} via \texttt{.csv} files to \texttt{R}, perform the calculations in \texttt{R}, and import the outputs back to \texttt{Excel} via \texttt{.csv} files (simplest and best method),
-        \item Run \texttt{R} from \texttt{Excel} using \texttt{VBA} scripts, and exchange data via \texttt{.csv} files,
-        \item Run \texttt{R} from \texttt{Excel} using an \texttt{Excel} add-in, and execute \texttt{R} commands as \texttt{Excel} functions (relies on the \emph{COM} protocol, so works only for \emph{Windows}),
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-### Perform calculations in R,
-### And export to CSV files
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-# Read data frame, with row names from first column
-readf <- read.csv(file="florist.csv", row.names=1)
-# Subset data frame
-readf <- readf[readf[, "type"]=="daisy", ]
-all.equal(readf, dframe)
-# Write data frame to CSV file, with row names
-write.csv(readf, file="daisies.csv")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Code Using \protect\texttt{VBA} Scripts}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An \texttt{R} session can be launched from \texttt{Excel} using a \texttt{VBA} script (macro).
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices.
       \vskip1ex
-      The \texttt{VBA} function \texttt{shell()} executes a program by running an executable \emph{exe} file (with extension \emph{exe}).
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix.
       \vskip1ex
-      A \texttt{VBA} script can also run an \texttt{R} \emph{batch} process.
-      \vskip1ex
-      The \texttt{R} \emph{batch} process can write to \texttt{.csv} files, which can then be imported into \texttt{Excel}.
-    \column{0.5\textwidth}
-      \renewcommand{\ttdefault}{pcr}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run R process
-Sub run_r()
- Call shell("R", vbNormalFocus)
-End Sub
-      \end{lstlisting}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run interactive R process
-Sub run_rinteractive()
- Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
- Dim script_file As String: script_file = "plot_interactive.R"
- Dim filen As String: filen = "C:\Develop\R\scripts\log.txt"
- Call shell("R --vanilla < " & script_dir & script_file & ">" & filen, vbNormalFocus)
-End Sub
-      \end{lstlisting}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run batch R process
-Sub run_rbatch()
- Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
- Dim script_file As String: script_file = "plot_to_file.R"
- Dim filen As String: filen = "C:\Develop\R\scripts\log.txt"
- Call shell("R --vanilla < " & script_dir & script_file & ">" & filen, vbNormalFocus)
-End Sub
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{BERT} Excel Add-in for Running \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{BERT} is an \texttt{Excel} add-in which allows executing \texttt{R} commands as \texttt{Excel} functions:\\
-      \hskip1em\url{http://bert-toolkit.com/}\\
-      \hskip1em\url{http://bert-toolkit.com/bert-quick-start}\\
-      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit/wiki}\\
-      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit}
-      \vskip1ex
-      \emph{BERT} launches its own \texttt{R} process from \texttt{Excel}.
-      \vskip1ex
-      \emph{BERT} can create its own menu in the \texttt{Excel} add-ins tab:\\
-      After installing \emph{BERT}, click on upper-left \emph{Office Button}, click \texttt{Excel} options, on the bottom of the window choose (Manage: \emph{COM} Add-ins) Go, add the \emph{COM} add-in BERTRibbon2x86.dll.
-      \vskip1ex
-      \emph{BERT} relies on the \emph{COM} protocol, so it works only for \emph{Windows}.
-    \column{0.5\textwidth}
-      \renewcommand{\ttdefault}{pcr}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' calculate sum of Excel cells using R
-R.Add(B1:D1)
-
-' remove NAs over Excel cell range using R function
-R.na_omit(F2:H4)
-
-' calculate eigenValues of Excel matrix using R function
-R.EigenValues(A1:H8)
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{googlesheets} for Interacting with \protect\emph{Google Sheets}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/googlesheets/index.html}{\emph{googlesheets}}
-      allows interacting with \emph{Google Sheets} using \texttt{R} commands.
-      \vskip1ex
-      If you already have a \emph{Google} account, then your personal \emph{Google Sheets} can be found at:\\
-      \hskip1em\url{https://docs.google.com/spreadsheets/}
-      \vskip1ex
-      The function \texttt{gs\_ls()} listv the files in \emph{Google Sheets}.
-      \vskip1ex
-      The function \texttt{gs\_title()} registers a \emph{Google} sheet, and returns a \texttt{googlesheet} object.
-      \vskip1ex
-      A \texttt{googlesheet} object contains information (metadata) about a \emph{Google} sheet, such as its name and key, but not the sheet data itself.
-      \vskip1ex
-      The function \texttt{gs\_browse()} opens a \emph{Google} sheet in an internet browser.
-      \vskip1ex
-      You can find online a document about
-      \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/basic-usage.html}{using \emph{googlesheets}}.
-      \vskip1ex
-      You can find online a document about
-      \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/managing-auth-tokens.html}{managing authentication tokens}.
+      The function \texttt{drop()} removes any extra dimensions of length \emph{one}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Install latest version of googlesheets
-devtools::install_github("jennybc/googlesheets")
-# Load package googlesheets
-library(googlesheets)
-library(dplyr)
-# Authenticate authorize R to view and manage your files
-gs_auth(new_user=TRUE)
-# List the files in Google Sheets
-googlesheets::gs_ls()
-# Register a sheet
-googsheet <- gs_title("my_data")
-# view sheet summary
-googsheet
-# List tab names in sheet
-tabv <- gs_ws_ls(googsheet)
-# Set curl options
-library(httr)
-httr::set_config(config(ssl_verifypeer=0L))
-# Read data from sheet
-gs_read(googsheet)
-# Read data from single tab of sheet
-gs_read(googsheet, ws=tabv[1])
-gs_read_csv(googsheet, ws=tabv[1])
-# Or using dplyr pipes
-googsheet %>% gs_read(ws=tabv[1])
-# Download data from sheet into file
-gs_download(googsheet, ws=tabv[1],
-            to="/Users/jerzy/Develop/lecture_slides/data/googsheet.csv")
-# Open sheet in internet browser
-gs_browse(googsheet)
+# Calculate daily ETF returns
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+# Calculate covariance matrix of returns and its inverse
+covmat <- cov(retp)
+covinv <- solve(a=covmat)
+unitv <- rep(1, nstocks)
+# Calculate the minimum variance weights
+c11 <- drop(t(unitv) %*% covinv %*% unitv)
+weightmv <- drop(covinv %*% unitv/c11)
+# Calculate the daily minvar portfolio returns in two ways
+retmv <- (retp %*% weightmv)
+all.equal(retmv, (retp %*% covinv %*% unitv)/c11)
+# Calculate the minimum variance in three ways
+all.equal(var(retmv), 
+  t(weightmv) %*% covmat %*% weightmv, 
+  1/(t(unitv) %*% covinv %*% unitv))
       @
   \end{columns}
 \end{block}
@@ -1381,58 +1173,157 @@ gs_browse(googsheet)
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Debugging and Exception Handling}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exception Conditions: Errors and Warnings}
+\subsection{The \protect\emph{Mean-Variance Efficient Portfolios}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions.
+      A portfolio which has the smallest variance, given a target return, is a \emph{mean-variance efficient portfolio}.
       \vskip1ex
-      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler.
+      The efficient portfolio weights have two constraints: the sum of portfolio weights $\mathbf{w}$ is equal to \texttt{1}: $\mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$, and the mean portfolio return is equal to the target return $r_t$: $\mathbf{w}^T \mathbf{\bar{r}} = {\sum_{i=1}^n w_i \bar{r}_i} = r_t$.
       \vskip1ex
-      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler.
+      Where $\mathbf{\bar{r}}$ are the mean stock returns. 
       \vskip1ex
-      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
-      \begin{itemize}
-        \item \emph{negative} then warnings are ignored,
-        \item \emph{zero} then warnings are stored and printed after the top-confl function has completed,
-        \item \emph{one} - warnings are printed as they occur,
-        \item \emph{two} or larger - warnings are turned into errors,
-      \end{itemize}
-      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings.
+      The stock weights that minimize the portfolio variance under these constraints can be found by minimizing the \emph{Lagrangian}:
+      \begin{displaymath}
+        \mathcal{L} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} - \lambda_1 (\mathbf{w}^T \mathbbm{1} - 1) - \lambda_2 (\mathbf{w}^T \mathbf{r} - r_t)
+      \end{displaymath}
+      Where $\lambda_1$ and $\lambda_2$ are the \emph{Lagrange multipliers}.
+      \vskip1ex
+      The derivative of the \emph{Lagrangian} $\mathcal{L}$ with respect to $\mathbf{w}$ is given by:
+      \begin{displaymath}
+        d_w \mathcal{L} = 2 \mathbf{w}^T \mathbb{C} - \lambda_1 \mathbbm{1}^T - \lambda_2 \mathbf{\bar{r}}^T
+      \end{displaymath}
+      By setting the derivative to zero we obtain the efficient portfolio weights $\mathbf{w}$:
+      \begin{displaymath}
+        \mathbf{w} = \frac{1}{2} (\lambda_1 \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \mathbb{C}^{-1} \mathbf{\bar{r}})
+      \end{displaymath}
+    \column{0.5\textwidth}
+      By multiplying the above from the left first by $\mathbbm{1}^T$, and then by $\mathbf{\bar{r}}^T$, we obtain a system of two equations for $\lambda_1$ and $\lambda_2$:
+      \begin{align*}
+        2 \mathbbm{1}^T \mathbf{w} = \lambda_1 \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}} = 2\\
+        2 \mathbf{\bar{r}}^T \mathbf{w} = \lambda_1 \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbf{\bar{r}} = 2 r_t
+      \end{align*}
+      The above can be written in matrix notation as:
+      \begin{displaymath}
+        \begin{bmatrix}
+          \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} & \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}} \\
+          \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1} & \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbf{\bar{r}}
+        \end{bmatrix}
+        \begin{bmatrix}
+          \lambda_1 \\
+          \lambda_2
+        \end{bmatrix} =
+        \begin{bmatrix}
+          2 \\
+          2 r_t
+        \end{bmatrix}
+      \end{displaymath}
+      Or:
+      \begin{displaymath}
+        \begin{bmatrix}
+          c_{11} & c_{r1} \\
+          c_{r1} & c_{rr}
+        \end{bmatrix}
+        \begin{bmatrix}
+          \lambda_1 \\
+          \lambda_2
+        \end{bmatrix} =
+        \mathbb{F} \lambda =
+        2 \begin{bmatrix}
+          1 \\
+          r_t
+        \end{bmatrix} =
+        2 u
+      \end{displaymath}
+      With $c_{11} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$, $c_{r1} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}}$, $c_{rr} = \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbf{\bar{r}}$,
+      $\lambda = \begin{bmatrix}
+          \lambda_1 \\
+          \lambda_2
+        \end{bmatrix}$,
+      $u = \begin{bmatrix}
+          1 \\
+          r_t
+        \end{bmatrix}$,
+        and
+      $\mathbb{F} = u^T \mathbb{C}^{-1} u = \begin{bmatrix}
+          c_{11} & c_{r1} \\
+          c_{r1} & c_{rr}
+        \end{bmatrix}$.
+      \vskip1ex
+      The \emph{Lagrange multipliers} can be solved as:
+      \begin{displaymath}
+        \lambda = 2 \mathbb{F}^{-1} u
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Efficient Portfolio} Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The efficient portfolio weights $\mathbf{w}$ can now be solved as:
+      \begin{align*}
+        \mathbf{w} = \frac{1}{2} (\lambda_1 \mathbb{C}^{-1} \mathbbm{1} + \lambda_2 \mathbb{C}^{-1} \mathbf{\bar{r}}) = \\
+        \frac{1}{2}
+        {\begin{bmatrix}
+          \mathbb{C}^{-1} \mathbbm{1} \\
+          \mathbb{C}^{-1} \mathbf{\bar{r}}
+        \end{bmatrix}}^T
+        \lambda =
+        {\begin{bmatrix}
+          \mathbb{C}^{-1} \mathbbm{1} \\
+          \mathbb{C}^{-1} \mathbf{\bar{r}}
+        \end{bmatrix}}^T
+        \mathbb{F}^{-1} \, u = \\
+        \frac{1}{\det{\mathbb{F}}}
+        {\begin{bmatrix}
+          \mathbb{C}^{-1} \mathbbm{1} \\
+          \mathbb{C}^{-1} \mathbf{\bar{r}}
+        \end{bmatrix}}^T
+        \begin{bmatrix}
+          c_{rr} & -c_{r1} \\
+          -c_{r1} & c_{11}
+        \end{bmatrix}
+        \begin{bmatrix}
+          1 \\
+          r_t
+        \end{bmatrix} = \\
+        \frac{(c_{rr} - c_{r1} r_t)  \, \mathbb{C}^{-1} \mathbbm{1} + (c_{11} r_t - c_{r1})  \, \mathbb{C}^{-1} \mathbf{\bar{r}}}{\det{\mathbb{F}}}
+      \end{align*}
+      With $c_{11} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$, $c_{r1} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}}$, $c_{rr} = \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbf{\bar{r}}$. \\
+      And $\det{\mathbb{F}} = c_{11} c_{rr}-c^2_{r1}$ is the determinant of the matrix $\mathbb{F}$.
+      \vskip1ex
+      The above formula shows that the efficient portfolio weights are a linear function of the target return.
+      \vskip1ex
+      Therefore a convex sum of two efficient portfolio weights: $w = \alpha w_1 + (1-\alpha) w_2$, are also the weights of an \emph{efficient portfolio}, with target return equal to: $r_t = \alpha r_1 + (1-\alpha) r_2$
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# ?options  ##  Get info on global options
-getOption("warn")  ##  Global option for "warn"
-options("warn")  ##  Global option for "warn"
-getOption("error")  ##  Global option for "error"
-calc_sqrt <- function(inputv) {
-# Returns its argument
-  if (inputv < 0) {
-    warning("calc_sqrt: input is negative")
-    NULL  ##  Return NULL for negative argument
-  } else {
-    sqrt(inputv)
-  }  ##  end if
-}  ##  end calc_sqrt
-calc_sqrt(5)
-calc_sqrt(-1)
-options(warn=-1)
-calc_sqrt(-1)
-options(warn=0)
-calc_sqrt()
-options(warn=1)
-calc_sqrt()
-options(warn=3)
-calc_sqrt()
+# Calculate vector of mean returns
+retm <- colMeans(retp)
+# Specify the target return
+retarg <- 1.5*mean(retp)
+# Products of inverse with mean returns and unit vector
+c11 <- drop(t(unitv) %*% covinv %*% unitv)
+cr1 <- drop(t(unitv) %*% covinv %*% retm)
+crr <- drop(t(retm) %*% covinv %*% retm)
+fmat <- matrix(c(c11, cr1, cr1, crr), nc=2)
+# Solve for the Lagrange multipliers
+lagm <- solve(a=fmat, b=c(2, 2*retarg))
+# Calculate the efficient portfolio weights
+weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
+# Calculate constraints
+all.equal(1, sum(weightv))
+all.equal(retarg, sum(retm*weightv))
       @
   \end{columns}
 \end{block}
@@ -1441,52 +1332,55 @@ calc_sqrt()
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Function Arguments}
+\subsection{Variance of the \protect\emph{Efficient Portfolios}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type}.
+      The \emph{efficient portfolio} variance is equal to:
+      \begin{align*}
+        \sigma^2 = \mathbf{w}^T \mathbb{C} \, \mathbf{w} = \frac{1}{4} \lambda^T \mathbb{F} \lambda = u^T \mathbb{F}^{-1} \, u =\\
+        \frac{1}{\det{\mathbb{F}}}
+        {\begin{bmatrix}
+          1 \\
+          r_t
+        \end{bmatrix}}^T
+        \begin{bmatrix}
+          c_{rr} & -c_{r1} \\
+          -c_{r1} & c_{11}
+        \end{bmatrix}
+        \begin{bmatrix}
+          1 \\
+          r_t
+        \end{bmatrix} =\\
+        \frac{c_{11} r^2_t - 2 c_{r1} r_t + c_{rr}}{\det{\mathbb{F}}}
+      \end{align*}
+      The above formula shows that the variance of the \emph{efficient portfolios} is a \emph{parabola} with respect to the target return $r_t$.
       \vskip1ex
-      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call.
+      The vertex of the \emph{parabola} is the minimum variance portfolio: $r_{mv} = c_{r1}/c_{11} = \mathbbm{1}^T \mathbb{C}^{-1} \mathbf{\bar{r}} / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$ and $\sigma^2_{mv} = 1/c_{11} = 1 / \mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1}$.
       \vskip1ex
-      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise.
+      The \emph{efficient portfolio} variance can be expressed in terms of the difference $\Delta_r = r_t - r_{mv}$ as:
+      \begin{displaymath}
+        \sigma^2 = \frac{\Delta^2_r + \det{\mathbb{F}}}{c_{11} \det{\mathbb{F}}}
+      \end{displaymath}
+      So that if $\Delta_r = 0$ then $\sigma^2 = 1/c_{11}$.
       \vskip1ex
-      Missing arguments can be detected by:\\
-      - assigning a \texttt{NULL} default value to formal arguments and then calling  \texttt{is.null()} on them,\\
-      - calling the function \texttt{missing()} on the arguments.
-      \vskip1ex
-      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
-      \vskip1ex
-      The function \texttt{return()} returns its argument and terminates futher function execution.
+      Where $\det{\mathbb{F}} = c_{11} c_{rr}-c^2_{r1}$ is the determinant of the matrix $\mathbb{F}$.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Function valido validates its arguments
-valido <- function(inputv=NULL) {
-# Check if argument is valid and return double
-  if (is.null(inputv)) {
-    return("valido: input is missing")
-  } else if (is.numeric(inputv)) {
-    2*inputv
-  } else cat("valido: input not numeric")
-}  ##  end valido
-valido(3)
-valido("a")
-valido()
-# valido validates arguments using missing()
-valido <- function(inputv) {
-# Check if argument is valid and return double
-  if (missing(inputv)) {
-    return("valido: input is missing")
-  } else if (is.numeric(inputv)) {
-    2*inputv
-  } else cat("valido: input is not numeric")
-}  ##  end valido
-valido(3)
-valido("a")
-valido()
+# Calculate the efficient portfolio returns
+reteff <- drop(retp %*% weightv)
+reteffm <- mean(reteff)
+all.equal(reteffm, retarg)
+# Calculate the efficient portfolio variance in three ways
+uu <- c(1, retarg)
+finv <- solve(fmat)
+detf <- (c11*crr-cr1^2)  ##  det(fmat)
+all.equal(var(reteff), 
+  drop(t(uu) %*% finv %*% uu),
+  (c11*reteffm^2-2*cr1*reteffm+crr)/detf)
       @
   \end{columns}
 \end{block}
@@ -1495,1830 +1389,42 @@ valido()
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Assertions Inside Functions}
+\subsection{The \protect\emph{Efficient Frontier}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution.
+      The \emph{efficient frontier} is the set of \emph{efficient portfolios}, that have the lowest risk (standard deviation) for the given level of return.
       \vskip1ex
-      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code.
-      \vskip1ex
-      Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced.
-      \vskip1ex
-      The function \texttt{traceback()} prints the call stack, showing the function that produced the \emph{error} condition.
-      \vskip1ex
-      \texttt{cat()} statements inside the function body provide information about the state of its variables.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-            <<echo=TRUE,eval=FALSE>>=
-# valido() validates its arguments and assertions
-valido <- function(inputv) {
-# Check if argument is valid and return double
-  if (missing(inputv)) {
-    stop("valido: input is missing")
-  } else if (!is.numeric(inputv)) {
-    cat("input =", inputv, "\n")
-    stop("valido: input is not numeric")
-  } else 2*inputv
-}  ##  end valido
-valido(3)
-valido("a")
-valido()
-      @
-      \vspace{-2em}
+      The \emph{efficient frontier} is the plot of the target returns $r_t$ and the standard deviations of the \emph{efficient portfolios}, which is a \emph{hyperbola}.
       <<echo=TRUE,eval=FALSE>>=
-# Print the call stack
-traceback()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Validating Assertions Using \texttt{stopifnot()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()}.
-      \vskip1ex
-      If the argument to function \texttt{stopifnot()} is \texttt{FALSE}, then it produces an \emph{error} condition, and halts function execution.
-      \vskip1ex
-      \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if ()} statements.
-      \vskip1ex
-      \texttt{stopifnot()} is often used to check the validity of function arguments.
-      \vskip1ex
-      \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-valido <- function(inputv) {
-# Check argument using long form '&&' operator
-  stopifnot(!missing(inputv) && is.numeric(inputv))
-  2*inputv
-}  ##  end valido
-valido(3)
-valido()
-valido("a")
-valido <- function(inputv) {
-# Check argument using logical '&' operator
-  stopifnot(!missing(inputv) & is.numeric(inputv))
-  2*inputv
-}  ##  end valido
-valido()
-valido("a")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Validating Function Arguments and Assertions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE}.
-      \vskip1ex
-      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions.
-      \vskip1ex
-      \texttt{cat()} statements can provide information about the state of variables inside a function.
-      \vskip1ex
-      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# sumtwo() returns the sum of its two arguments
-sumtwo <- function(input1, input2) {  ##  Even more robust
-# Check if at least one argument is not missing
-  stopifnot(!missing(input1) && !missing(input2))
-# Check if arguments are valid and return sum
-  if (is.numeric(input1) && is.numeric(input2)) {
-    input1 + input2  ##  Both valid
-  } else if (is.numeric(input1)) {
-    cat("input2 is not numeric\n")
-    input1  ##  input1 is valid
-  } else if (is.numeric(input2)) {
-    cat("input1 is not numeric\n")
-    input2  ##  input2 is valid
-  } else {
-    stop("none of the arguments are numeric")
-  }
-}  ##  end sumtwo
-sumtwo(1, 2)
-sumtwo(5, 'a')
-sumtwo('a', 5)
-sumtwo('a', 'b')
-sumtwo()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Debugger Facility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{debug()} flags a function for future debugging, but doesn't invoke the debugger.
-      \vskip1ex
-      After a function is flagged for debugging with the call \texttt{"debug(myfun)"}, then the function call \texttt{"myfun()"} automatically invokes the debugger (browser).
-      \vskip1ex
-      When the debugger is first invoked, it prints the function code to the console, and produces a \emph{browser} prompt: \texttt{"Browse[2]>"}.
-      \vskip1ex
-      Once inside the debugger, the user can execute the function code one command at a time by pressing the \emph{Enter} key.
-      \vskip1ex
-      The user can examine the function arguments and variables with standard \texttt{R} commands, and can also change the values of objects or create new ones.
-      \vskip1ex
-      The command \texttt{"c"} executes the remainder of the function code without pausing.
-      \vskip1ex
-      The command \texttt{"Q"} exits the debugger (browser).
-      \vskip1ex
-      The call \texttt{"undebug(myfun)"} at the \texttt{R} prompt unflags the function for debugging.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Flag "valido" for debugging
-debug(valido)
-# Calling "valido" starts debugger
-valido(3)
-# unflag "valido" for debugging
-undebug(valido)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Debugging Using \texttt{browser()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      As an alternative to flagging a function for debugging, the user can insert the function \texttt{browser()} into the function body.
-      \vskip1ex
-      \texttt{browser()} pauses the execution of a function and invokes the debugger (browser) at the point where \texttt{browser()} was called.
-      \vskip1ex
-      Once inside the debugger, the user can execute all the same browser commands as when using \texttt{debug()}.
-      \vskip1ex
-      \texttt{browser()} is usually inserted just before the command that is suspected of producing an \emph{error} condition.
-      \vskip1ex
-      Another alternative to flagging a function for debugging, or inserting \texttt{browser()} calls, is setting the \texttt{"error"} option equal to \texttt{"recover"}.
-      \vskip1ex
-      Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-valido <- function(inputv) {
-  browser()  ##  Pause and invoke debugger
-# Check argument using long form '&&' operator
-  stopifnot(!missing(inputv) && is.numeric(inputv))
-  2*inputv
-}  ##  end valido
-valido()  ##  Invokes debugger
-options("error")  ##  Show default NULL "error" option
-options(error=recover)  ##  Set "error" option to "recover"
-options(error=NULL)  ##  Set back to default "error" option
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Using the Debugger in \protect\emph{RStudio}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
-      \begin{itemize}
-        \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
-        \item stepping into functions,
-        \item environment pane with environment stack, instead of calling \texttt{ls()},
-        \item traceback pane, instead of calling \texttt{traceback()},
-      \end{itemize}
-      \emph{RStudio} provides an online debugging tutorial:
-      \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{image/rstudio_debug.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Handling Exception Conditions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
-      \vskip1ex
-      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument.
-      \vskip1ex
-      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression.
-      \vskip1ex
-      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition}.
-      \vskip1ex
-      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console.
-      \vskip1ex
-      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-str(tryCatch)  ##  Get arguments of tryCatch()
-tryCatch(  ##  Without error handler
-  {  ##  Evaluate expressions
-    numv <- 101  ##  Assign
-    stop("my error")  ##  Produce error
-  },
-  finally=print(paste0("numv = ", numv))
-)  ##  end tryCatch
-
-tryCatch(  ##  With error handler
-  {  ##  Evaluate expressions
-    numv <- 101  ##  Assign
-    stop("my error")  ##  Produce error
-  },
-  ##  Error handler captures error condition
-  error=function(msg) {
-    print(paste0("Error handler: ", msg))
-  },  ##  end error handler
-  ##  Warning handler captures warning condition
-  warning=function(msg) {
-    print(paste0("Warning handler: ", msg))
-  },  ##  end warning handler
-  finally=print(paste0("numv = ", numv))
-)  ##  end tryCatch
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Error Conditions in Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If an \emph{error} occurs in an \texttt{apply()} loop, then the loop exits without returning any result.
-      \vskip1ex
-      \texttt{apply()} collects the values returned by the function supplied to its \texttt{FUN} argument, and returns them only after the loop is finished.
-      \vskip1ex
-      If one of the function calls produces an error, then the loop is interrupted and \texttt{apply()} exits without returning any result.
-      \vskip1ex
-      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Apply loop without tryCatch
-apply(matrix(1:5), 1, function(numv) {  ##  Anonymous function
-    stopifnot(!(numv == 3))  ##  Check for error
-    ##  Broadcast message to console
-    cat("(cat) numv = ", numv, "\n")
-    ##  Return a value
-    paste0("(return) numv = ", numv)
-  }  ##  end anonymous function
-)  ##  end apply
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exception Handling in Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results.
-      \vskip1ex
-      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()}.
-      \vskip1ex
-      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()}.
-      \vskip1ex
-      \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-# Apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(numv) {  ##  Anonymous function
-    tryCatch(  ##  With error handler
-      {  ##  Body
-        stopifnot(numv != 3)  ##  Check for error
-        ##  Broadcast message to console
-        cat("(cat) numv = ", numv, "\t")
-        ##  Return a value
-        paste0("(return) numv = ", numv)
-      },
-      ##  Error handler captures error condition
-      error=function(msg)
-        paste0("handler: ", msg),
-      finally=print(paste0("(finally) numv = ", numv))
-    )  ##  end tryCatch
-  }  ##  end anonymous function
-)  ##  end apply
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{High Performance Data Management}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{data.table} for High Performance Data Management}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/data.table/}{\emph{data.table}}
-      is designed for high performance data management.
-      \vskip1ex
-      The package \emph{data.table} implements \emph{data table} objects, which are a special type of \emph{data frame}, and an extension of the \emph{data frame} class.
-      \vskip1ex
-      \emph{Data tables} are faster and more convenient to work with than \emph{data frames}.
-      \vskip1ex
-      \emph{data.table} functions are optimized for high performance (speed), because they are written in \texttt{C++} and they perform operations by reference (in place), without copying data in memory.
-      \vskip1ex
-      Some of the attractive features of package \emph{data.table} are:
-      \begin{itemize}
-        \item Syntax is analogous to SQL,
-        \item Very fast writing and reading from files,
-        \item Very fast sorting and merging operations,
-        \item Subsetting using multiple logical clauses,
-        \item Columns of type \texttt{character} are never converted to factors,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install package data.table
-install.packages("data.table")
-# Load package data.table
-library(data.table)
-# Get documentation for package data.table
-# Get short description
-packageDescription("data.table")
-# Load help page
-help(package="data.table")
-# List all datasets in "data.table"
-data(package="data.table")
-# List all objects in "data.table"
-ls("package:data.table")
-# Remove data.table from search path
-detach("package:data.table")
-      @
-      The package \emph{data.table} has extensive documentation:\\
-      \hskip1em\url{https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html}\\
-      \hskip1em\url{https://github.com/Rdatatable/data.table/wiki}
-      \vskip1ex
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
-      \vskip1ex
-      \emph{Data table} objects resemble databases, with columns of different types of data, and rows of records containing individual observations.
-      \vskip1ex
-      The function \texttt{data.table::data.table()} creates a \emph{data table} object.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes), and their rows can be referenced without a following comma.
-      \vskip1ex
-      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.nrows")} is less than \texttt{100}).
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-      \vskip1ex
-      \emph{Data table} computations are usually much faster than equivalent \texttt{R} computations, but not always.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create a data table
-library(data.table)
-dtable <- data.table::data.table(
-  col1=sample(7), col2=sample(7), col3=sample(7))
-# Print dtable
-class(dtable); dtable
-# Column referenced without quotes
-dtable[, col2]
-# Row referenced without a following comma
-dtable[2]
-# Print option "datatable.print.nrows"
-getOption("datatable.print.nrows")
-options(datatable.print.nrows=10)
-getOption("datatable.print.nrows")
-# Number of rows in dtable
-NROW(dtable)
-# Or
-dtable[, NROW(col1)]
-# Or
-dtable[, .N]
-# microbenchmark speed of data.table syntax
-library(microbenchmark)
-summary(microbenchmark(
-  dt=dtable[, .N],
-  rcode=NROW(dtable),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{data.table}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
-      \vskip1ex
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
-      \vskip1ex
-      The function \texttt{data.table::fread()} is over \texttt{6} times faster than \texttt{read.csv()}!
-      \vskip1ex
-      The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()}!
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read a data table from CSV file
-dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
-filen <- file.path(dirn, "weather_delays14.csv")
-dtable <- data.table::fread(filen)
-class(dtable); dim(dtable)
-dtable
-# fread() reads the same data as read.csv()
-all.equal(read.csv(filen),
-          setDF(data.table::fread(filen)))
-# fread() is much faster than read.csv()
-library(microbenchmark)
-summary(microbenchmark(
-  rcode=read.csv(filen),
-  fread=setDF(data.table::fread(filen)),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-# Write data table to file in different ways
-data.table::fwrite(dtable, file="dtable.csv")
-write.csv(dtable, file="dtable2.csv")
-cat(unlist(dtable), file="dtable3.csv")
-# microbenchmark speed of data.table::fwrite()
-summary(microbenchmark(
-  fwrite=data.table::fwrite(dtable, file="dtable.csv"),
-  write_csv=write.csv(dtable, file="dtable2.csv"),
-  cat=cat(unlist(dtable), file="dtable3.csv"),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}.
-      \vskip1ex
-      \emph{Data table} rows can be subset without a following comma.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables), after a comma.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names.
-      \vskip1ex
-      The brackets \texttt{"[]"} operator is a \emph{data.table} function, and all the commands inside the brackets \texttt{"[]"} are executed using code from the package \emph{data.table}.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select first five rows of dtable
-dtable[1:5]
-# Select rows with JFK flights
-jfkf <- dtable[origin=="JFK"]
-# Select rows JFK flights in June
-jfkf <- dtable[origin=="JFK" & month==6]
-# Select rows without JFK flights
-jfkf <- dtable[!(origin=="JFK")]
-# Select flights with carrier_delay
-dtable[carrier_delay > 0]
-# Select column of dtable and return a vector
-head(dtable[, origin])
-# Select column of dtable and return a dtable, not vector
-head(dtable[, list(origin)])
-head(dtable[, .(origin)])
-# Select two columns of dtable
-dtable[, list(origin, month)]
-dtable[, .(origin, month)]
-columnv <- c("origin", "month")
-dtable[, ..columnv]
-dtable[, month, origin]
-# Select two columns and rename them
-dtable[, .(orig=origin, mon=month)]
-# Select all columns except origin
-head(dtable[, !"origin"])
-head(dtable[, -"origin"])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Computations on \protect\emph{Data Table} Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the second argument in the brackets \texttt{"[]"} operator is a function of the columns, then the brackets return the result of the function's computations on those columns.
-      \vskip1ex
-      The second argument in the brackets \texttt{"[]"} can also be a list of functions, in which case the brackets return a vector of computations.
-      \vskip1ex
-      The brackets \texttt{"[]"} can evaluate most standard \texttt{R} functions, but they are executed using \emph{data.table} code, which is usually much faster than the equivalent \texttt{R} functions.
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select flights with positive carrier_delay
-dtable[carrier_delay > 0]
-# Number of flights with carrier_delay
-dtable[, sum(carrier_delay > 0)]
-# Or standard R commands
-sum(dtable[, carrier_delay > 0])
-# microbenchmark speed of data.table syntax
-summary(microbenchmark(
-  dt=dtable[, sum(carrier_delay > 0)],
-  rcode=sum(dtable[, carrier_delay > 0]),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-# Average carrier_delay
-dtable[, mean(carrier_delay)]
-# Average carrier_delay and aircraft_delay
-dtable[, .(carrier=mean(carrier_delay),
-           aircraft=mean(aircraft_delay))]
-# Average aircraft_delay from JFK
-dtable[origin=="JFK", mean(aircraft_delay)]
-# Number of flights from JFK
-dtable[origin=="JFK", NROW(aircraft_delay)]
-# Or
-dtable[origin=="JFK", .N]
-# In R
-sum(dtable[, origin]=="JFK")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Grouping \protect\emph{Data Table} Computations by Factor Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{data table} brackets \texttt{"[]"} operator can accept three arguments: \texttt{[i, j, by]}
-      \begin{itemize}
-        \item \texttt{i}: the row index to select,
-        \item \texttt{j}: a list of columns or functions on columns,
-        \item \texttt{by}: the columns of factors to aggregate over.
-      \end{itemize}
-      The \emph{data table} columns can be \emph{aggregated} over categories (factors) defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      The \texttt{"keyby"} argument is similar to \texttt{"by"}, but it sorts the output according to the categories used to group by.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Number of flights from each airport
-dtable[, .N, by=origin]
-# Same, but add names to output
-dtable[, .(flights=.N), by=.(airport=origin)]
-# Number of AA flights from each airport
-dtable[carrier=="AA", .(flights=.N), by=.(airport=origin)]
-# Number of flights from each airport and airline
-dtable[, .(flights=.N), by=.(airport=origin, airline=carrier)]
-# Average aircraft_delay
-dtable[, mean(aircraft_delay)]
-# Average aircraft_delay from JFK
-dtable[origin=="JFK", mean(aircraft_delay)]
-# Average aircraft_delay from each airport
-dtable[, .(delay=mean(aircraft_delay)), by=.(airport=origin)]
-# Average and max delays from each airport and month
-dtable[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
-           by=.(airport=origin, month=month)]
-# Average and max delays from each airport and month
-dtable[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
-           keyby=.(airport=origin, month=month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sorting \protect\emph{Data Table} Rows by Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
-      \vskip1ex
-      The function \texttt{order()} calculates the permutation index, to sort a given vector into ascending order.
-      \vskip1ex
-      The function \texttt{setorder()} sorts the rows of a \emph{data table} by reference (in place), without copying data in memory.
-      \vskip1ex
-      \texttt{setorder()} is over \texttt{10} times faster than \texttt{order()}, because it doesn't copy data in memory.
-      \vskip1ex
-      Several brackets \texttt{"[]"} operators can be chained together to perform several consecutive computations.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Sort ascending by origin, then descending by dest
-dtables <- dtable[order(origin, -dest)]
-dtables
-# Doesn't work outside dtable
-order(origin, -dest)
-# Sort dtable by reference
-setorder(dtable, origin, -dest)
-all.equal(dtable, dtables)
-# setorder() is much faster than order()
-summary(microbenchmark(
-  order=dtable[order(origin, -dest)],
-  setorder=setorder(dtable, origin, -dest),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-# Average aircraft_delay by month
-dtables[, .(mean_delay=mean(aircraft_delay)),
-            by=.(month=month)]
-# Chained brackets to sort output by month
-dtables[, .(mean_delay=mean(aircraft_delay)),
-        by=.(month=month)][order(month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting, Computing, and Grouping \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The special symbol \texttt{.SD} selects a subset of a \emph{data table}.
-      \vskip1ex
-      The symbol \texttt{.SDcols} specifies the columns to select by the symbol \texttt{.SD}.
-      \vskip1ex
-      Inside the brackets \texttt{"[]"} operator, the \texttt{.SD} symbol can be treated as a virtual \emph{data table}, and standard \texttt{R} functions can be applied to it.
-      \vskip1ex
-      The \texttt{"by"} argument can be used to group the outputs produced by the functions applied to the \texttt{.SD} symbol.
-      \vskip1ex
-      If the symbol \texttt{.SDcols} is not defined, then the symbol \texttt{.SD} returns the remaining columns not passed to the \texttt{"by"} operator.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select weather_delay and aircraft_delay in two different ways
-dtable[1:7, .SD,
-           .SDcols=c("weather_delay", "aircraft_delay")]
-dtable[1:7, .(weather_delay, aircraft_delay)]
-# Calculate mean of weather_delay and aircraft_delay
-dtable[, sapply(.SD, mean),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-sapply(dtable[, .SD,
-           .SDcols=c("weather_delay", "aircraft_delay")], mean)
-# Return origin and dest, then all other columns
-dtable[1:7, .SD, by=.(origin, dest)]
-# Return origin and dest, then weather_delay and aircraft_delay columns
-dtable[1:7, .SD, by=.(origin, dest),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Return first two rows from each month
-dtable[, head(.SD, 2), by=.(month)]
-dtable[, head(.SD, 2), by=.(month),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Calculate mean of weather_delay and aircraft_delay, grouped by origin
-dtable[, lapply(.SD, mean),
-           by=.(origin),
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Or simply
-dtable[, .(weather_delay=mean(weather_delay),
-               aircraft_delay=mean(aircraft_delay)),
-           by=.(origin)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modifying \protect\emph{Data Table} Objects by Reference}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The special assignment operator \texttt{":="} allows modifying \emph{data table} columns by reference (in place), without copying data in memory.
-      \vskip1ex
-      The computations on columns by reference can be \emph{grouped} over categories defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      The computations are recycled to fit the size of each group.
-      \vskip1ex
-      The selected parts of columns can also be modified by reference, by combining the \texttt{i} and \texttt{j} arguments.
-      \vskip1ex
-      The special symbols \texttt{.SD} and \texttt{.SDcols} can be used to perform computations on several columns.
-      \vskip1ex
-      Modifying by reference is several times faster than standard \texttt{R} assignment.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add tot_delay column
-dtable[, tot_delay := (carrier_delay + aircraft_delay)]
-head(dtable, 4)
-# Delete tot_delay column
-dtable[, tot_delay := NULL]
-# Add max_delay column grouped by origin and dest
-dtable[, max_delay := max(aircraft_delay), by=.(origin, dest)]
-dtable[, max_delay := NULL]
-# Add date and tot_delay columns
-dtable[, c("date", "tot_delay") :=
-             list(paste(month, day, year, sep="/"),
-                  (carrier_delay + aircraft_delay))]
-# Modify select rows of tot_delay column
-dtable[month == 12, tot_delay := carrier_delay]
-dtable[, c("date", "tot_delay") := NULL]
-# Add several columns
-dtable[, c("max_carrier", "max_aircraft") := lapply(.SD, max),
-       by=.(origin, dest),
-       .SDcols=c("carrier_delay", "aircraft_delay")]
-# Remove columns
-dtable[, c("max_carrier", "max_aircraft") := NULL]
-# Modifying by reference is much faster than standard R
-summary(microbenchmark(
-  dt=dtable[, tot_delay := (carrier_delay + aircraft_delay)],
-  rcode=(dtable[, "tot_delay"] <- dtable[, "carrier_delay"] + dtable[, "aircraft_delay"]),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding \protect\emph{keys} to \protect\emph{Data Tables} for Fast Binary Search}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows.
-      \vskip1ex
-      The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
-      \vskip1ex
-      \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
-      \vskip1ex
-      Subsetting rows using a \emph{key} can be several times faster than standard \texttt{R}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add a key based on the "origin" column
-setkey(dtable, origin)
-haskey(dtable)
-key(dtable)
-# Select rows with LGA using the key
-dtable["LGA"]
-all.equal(dtable["LGA"], dtable[origin == "LGA"])
-# Select rows with LGA and JFK using the key
-dtable[c("LGA", "JFK")]
-# Add a key based on the "origin" and "dest" columns
-setkey(dtable, origin, dest)
-key(dtable)
-# Select rows with origin from JFK and MIA
-dtable[c("JFK", "MIA")]
-# Select rows with origin from JFK and dest to MIA
-dtable[.("JFK", "MIA")]
-all.equal(dtable[.("JFK", "MIA")],
-          dtable[origin == "JFK" & dest == "MIA"])
-# Selecting rows using a key is much faster than standard R
-summary(microbenchmark(
-  with_key=dtable[.("JFK", "MIA")],
-  standard_r=dtable[origin == "JFK" & dest == "MIA"],
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \protect\emph{Data Table} Objects Into \protect\emph{Data Frames}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{data.table::setDT()} and \texttt{data.table::setDF()} coerce \emph{data frames} to \emph{data tables}, and vice versa.
-      \vskip1ex
-      The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference (in place), without returning any values or copying data to a new memory location, which makes them very fast.
-      \vskip1ex
-      \emph{Data table} objects can also be coerced into \emph{data frames} using the function \texttt{as.data.frame()}, but it's much slower because it makes copies of data.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create data frame and coerce it to data table
-dtable <- data.frame(col1=sample(7), col2=sample(7), col3=sample(7))
-class(dtable); dtable
-data.table::setDT(dtable)
-class(dtable); dtable
-# Coerce dtable into data frame
-data.table::setDF(dtable)
-class(dtable); dtable
-# Or
-dtable <- data.table:::as.data.frame.data.table(dtable)
-# SetDF() is much faster than as.data.frame()
-summary(microbenchmark(
-  asdataframe=data.table:::as.data.frame.data.table(dtable),
-  setDF=data.table::setDF(dtable),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \texttt{xts} Time Series Into \protect\emph{Data Tables}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
-      \vskip1ex
-      But then the time index of the \texttt{xts} series is coerced into strings, not dates.
-      \vskip1ex
-      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce xts to a data frame
-pricev <- rutils::etfenv$VTI
-class(pricev); head(pricev)
-pricev <- as.data.frame(pricev)
-class(pricev); head(pricev)
-# Coerce data frame to a data table
-data.table::setDT(pricev, keep.rownames=TRUE)
-class(pricev); head(pricev)
-# Dates are coerced to strings
-sapply(pricev, class)
-# Coerce xts directly to a data table
-dtable <- as.data.table(rutils::etfenv$VTI,
-  keep.rownames=TRUE)
-class(dtable); head(dtable)
-# Dates are not coerced to strings
-sapply(dtable, class)
-all.equal(pricev, dtable, check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{fst} for High Performance Data Management}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      provides functions for very fast writing and reading of \emph{data frames} from \emph{compressed binary files}.
-      \vskip1ex
-      The package \emph{fst} writes to \emph{compressed binary files} in the
-\texttt{fst} fast-storage format.
-      \vskip1ex
-      The package \emph{fst} uses the \texttt{LZ4} and \texttt{ZSTD} compression algorithms, and utilizes multithreaded (parallel) processing on multiple CPU cores.
-      \vskip1ex
-      The package \emph{fst} has extensive documentation:\\
-      \hskip1em\url{http://www.fstpackage.org/}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install package fst
-install.packages("fst")
-# Load package fst
-library(fst)
-# Get documentation for package fst
-# Get short description
-packageDescription("fst")
-# Load help page
-help(package="fst")
-# List all datasets in "fst"
-data(package="fst")
-# List all objects in "fst"
-ls("package:fst")
-# Remove fst from search path
-detach("package:fst")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{fst}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      allows very fast writing and reading of \emph{data frames} from \emph{compressed binary files} in the \texttt{fst} fast-storage format.
-      \vskip1ex
-      The function \texttt{fst::write\_fst()} writes to \texttt{.fst} files over \texttt{10} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()} write to \texttt{.csv} files!
-      \vskip1ex
-      The function \texttt{fst::fread()} reads from \texttt{.fst} files over \texttt{10} times faster than the function \texttt{read.csv()} from \texttt{.csv} files!
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read a data frame from CSV file
-dirn <- "/Users/jerzy/Develop/lecture_slides/data/"
-filen <- file.path(dirn, "weather_delays14.csv")
-data.table::setDF(dframe)
-class(dframe); dim(dframe)
-# Write data frame to .fst file in different ways
-fst::write_fst(dframe, path="dframe.fst")
-write.csv(dframe, file="dframe2.csv")
-# microbenchmark speed of fst::write_fst()
-library(microbenchmark)
-summary(microbenchmark(
-  fst=fst::write_fst(dframe, path="dframe.csv"),
-  write_csv=write.csv(dframe, file="dframe2.csv"),
-  cat=cat(unlist(dframe), file="dframe3.csv"),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-# fst::read_fst() reads the same data as read.csv()
-all.equal(read.csv(filen),
-          fst::read_fst("dframe.fst"))
-# fst::read_fst() is 10 times faster than read.csv()
-summary(microbenchmark(
-  fst=fst::read_fst("dframe.fst"),
-  read_csv=read.csv(filen),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Random Access to Large Data Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}}
-      allows \emph{random access} to very large \emph{data frames} stored in compressed data files in the \texttt{.fst} format.
-      \vskip1ex
-      Data frames can be accessed \emph{randomly} by loading only the selected rows and columns into memory, without fully loading the whole data frame.
-      \vskip1ex
-      function \texttt{fst::fst()} reads an \texttt{.fst} file and returns an \emph{fst\_table} reference object (pointer) to the data, without loading the whole data into memory.
-      \vskip1ex
-      The \emph{fst\_table} reference provides access to the data similar to a regular \emph{data frame}, but it requires only a small amount of memory because the data isn't loaded into memory.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce TAQ xts to a data frame
-library(HighFreq)
-taq <- HighFreq::SPY_TAQ
-taq <- as.data.frame(taq)
-class(taq)
-# Coerce data frame to a data table
-data.table::setDT(taq, keep.rownames=TRUE)
-class(taq); head(taq)
-# Get memory size of data table
-format(object.size(taq), units="MB")
-# Save data table to .fst file
-fst::write_fst(taq, path="/Users/jerzy/Develop/data/taq.fst")
-# Create reference to .fst file similar to a data frame
-refst <- fst::fst("/Users/jerzy/Develop/data/taq.fst")
-class(refst)
-# Memory size of reference to .fst is very small
-format(object.size(refst), units="MB")
-# Get sizes of all objects in workspace
-sort(sapply(mget(ls()), object.size))
-# Reference to .fst can be treated similar to a data table
-dim(taq); dim(refst)
-fst:::print.fst_table(refst)
-# Subset reference to .fst just like a data table
-refst[1e4:(1e4+5), ]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Writing and Reading Data from Files}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing Text Strings}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{cat()} concatenates strings and writes them to standard output or to files.
-      \vskip1ex
-      \texttt{cat()} parses its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value.
-      \vskip1ex
-      The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it.
-      \vskip1ex
-      Typing the name of an object in \texttt{R} implicitly calls \texttt{print()} on that object.
-      \vskip1ex
-      The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-cat("Enter\ttab")  ##  Cat() parses backslash escape sequences
-print("Enter\ttab")
-
-textv <- print("hello")
-textv  ##  Print() returns its argument
-
-# Create string
-textv <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
-cat(textv, file="mytext.txt")  ##  Write to text file
-
-cat("Title: My Text",  ##  Write several lines to text file
-    "Some numbers: 1,2,3,...",
-    "Rprofile files contain code executed at R startup,",
-    file="mytext.txt", sep="\n")
-
-save(textv, file="mytext.RData")  ##  Write to binary file
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Displaying Numeric Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{print()} displays numeric data objects, with the number of digits given by the global option \texttt{"digits"}.
-      \vskip1ex
-      The function \texttt{sprintf()} returns strings formatted from text strings and numeric data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-print(pi)
-print(pi, digits=10)
-getOption("digits")
-foo <- 12
-bar <- "weeks"
-sprintf("There are %i %s in the year", foo, bar)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Text from Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{scan()} reads text or data from a file and returns it as a vector or a list.
-      \vskip1ex
-      The function \texttt{readLines()} reads lines of text from a connection (file or console), and returns them as a vector of \texttt{character} strings.
-      \vskip1ex
-      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string.
-      \vskip1ex
-      The function \texttt{file.show()} reads text or data from a file and displays in editor.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read text from file
-scan(file="mytext.txt", what=character(), sep="\n")
-
-# Read lines from file
-readLines(con="mytext.txt")
-
-# Read text from console
-inputv <- readline("Enter a number: ")
-class(inputv)
-# Coerce to numeric
-inputv <- as.numeric(inputv)
-
-# Read text from file and display in editor:
-# file.show("mytext.txt")
-# file.show("mytext.txt", pager="")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} from \protect\emph{Text} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.table()} and \texttt{read.table()} write and read \emph{data frames} from text files.
-      \vskip1ex
-      \texttt{write.table()} coerces objects to \emph{data frames} before it writes them.
-      \vskip1ex
-      \texttt{read.table()} returns a \emph{data frame}, without coercing non-numeric values to \texttt{factors} (so no need for the option \texttt{stringsAsFactors=FALSE}).
-      \vskip1ex
-      \texttt{write.table()} and \texttt{read.table()} can be used to write and read matrices from text files, but they have to be coerced back to matrices.
-      \vskip1ex
-      \texttt{write.table()} and \texttt{read.table()} are inefficient for very large data sets.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-dframe <- data.frame(type=c("rose", "daisy", "tulip"),
-  color=c("red", "white", "yellow"),
-  price=c(1.5, 0.5, 1.0),
-  row.names=c("flower1", "flower2", "flower3"))  ##  end data.frame
-matv <- matrix(sample(1:12), ncol=3,
-  dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(matv) <- paste("row", 1:NROW(matv), sep="")
-# Write data frame to text file, and then read it back
-write.table(dframe, file="florist.txt")
-readf <- read.table(file="florist.txt")
-readf  ##  A data frame
-all.equal(readf, dframe)
-
-# Write matrix to text file, and then read it back
-write.table(matv, file="matrix.txt")
-readmat <- read.table(file="matrix.txt")
-readmat  ##  write.table() coerced matrix to data frame
-class(readmat)
-all.equal(readmat, matv)
-# Coerce from data frame back to matrix
-readmat <- as.matrix(readmat)
-class(readmat)
-all.equal(readmat, matv)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Copying \protect\emph{Data Frames} Between the \protect\emph{clipboard} and \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data frames} stored in the \emph{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()}.
-      \vskip1ex
-      \emph{Data frames} in \texttt{R} can be copied into the \emph{clipboard} using the function \texttt{write.table()}.
-      \vskip1ex
-      This allows convenient copying of \emph{data frames} between \texttt{R} and \texttt{Excel}.
-      \vskip1ex
-      \emph{Data frames} can also be manipulated directly in the \texttt{R} spreadsheet-style data editor.
-      \vskip1ex
-      Copying and pasting between the \emph{clipboard} and \texttt{R} works well on Windows, but not on MacOS.  There are some workarounds for MacOS:\\
-      \href{https://stackoverflow.com/questions/10959521/how-to-write-to-clipboard-on-ubuntu-linux-in-r}{\emph{Copy\_paste\_between\_R\_and\_clipboard}}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Create a data frame
-dframe <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-
-# Launch spreadsheet-style data editor
-dframe <- edit(dframe)
-
-# Copy the data frame to clipboard
-write.table(x=dframe, file="clipboard", sep="\t")
-
-# Wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write_clip <- function(data, namev=FALSE, col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t",
-              row.names=namev, col.names=col.names, ...)
-}  ##  end write_clip
-
-write_clip(data=dframe)
-
-# Wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t", header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  ##  end read_clip
-
-dframe <- read.table("clipboard", header=TRUE)
-dframe <- read_clip()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
-      \vskip1ex
-      The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
-      \vskip1ex
-      These functions are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
-      \vskip1ex
-      \texttt{read.csv()} doesn't coerce non-numeric values to \texttt{factors}, so no need for the option \texttt{stringsAsFactors=FALSE}.
-      \vskip1ex
-      \texttt{read.csv()} reads row names as an extra column, unless the \texttt{row.names=1} argument is used.
-      \vskip1ex
-      The argument \texttt{"row.names"} accepts either the number or the name of the column containing the row names.
-      \vskip1ex
-      The \texttt{*.csv()} functions are very inefficient for large data sets.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write data frame to CSV file, and then read it back
-write.csv(dframe, file="florist.csv")
-readf <- read.csv(file="florist.csv")
-readf  ##  the row names are read in as extra column
-# Restore row names
-rownames(readf) <- readf[, 1]
-readf <- readf[, -1]  ##  Remove extra column
-readf
-all.equal(readf, dframe)
-# Read data frame, with row names from first column
-readf <- read.csv(file="florist.csv", row.names=1)
-readf
-all.equal(readf, dframe)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} From \texttt{.csv} Files (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read \emph{data frames} from \texttt{.csv} format files \emph{without using row names}.
-      \vskip1ex
-      Row names can be omitted from the output file by calling \texttt{write.csv()} with the argument \texttt{row.names=FALSE}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write data frame to CSV file, without row names
-write.csv(dframe, row.names=FALSE, file="florist.csv")
-readf <- read.csv(file="florist.csv")
-readf  ##  A data frame without row names
-all.equal(readf, dframe)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Data From Very Large \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Data from very large \texttt{.csv} files can be read in small chunks instead of all at once.
-      \vskip1ex
-      The function \texttt{file()} opens a connection to a file or an internet website \texttt{URL}.
-      \vskip1ex
-      The function \texttt{read.csv()} with the argument \texttt{"nrows"} reads only the specified number of rows from a connection and returns a \emph{data frame}.  The connection pointer is reset to the next row.
-      \vskip1ex
-      The function \texttt{read.csv()} with the argument \texttt{"nrows"} allows reading data sequentially from very large files that wouldn't fit into memory.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Open a read connection to a file
-filecon = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
-# Read the first 10 rows
-data10 <- read.csv(filecon, nrows=10)
-# Read another 10 rows
-data20 <- read.csv(filecon, nrows=10, header=FALSE)
-colnames(data20) <- colnames(data10)
-# Close the connection to the file
-close(filecon)
-# Open a read connection to a file
-filecon = file("/Users/jerzy/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
-# Read the first 1000 rows
-data10 <- read.csv(filecon, nrows=1e3)
-colv <- colnames(data10)
-# Write to a file
-countv <- 1
-write.csv(data10, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
-# Read remaining rows in a loop 10 rows at a time
-# Can produce error without getting to end of file
-while (isOpen(filecon)) {
-  datav <- read.csv(filecon, nrows=1e3)
-  colnames(datav) <- colv
-  write.csv(datav, paste0("/Users/jerzy/Develop/data/temp/etf_prices_", countv, ".csv"))
-  countv <- countv + 1
-}  ##  end while
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Matrices From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read matrices from \texttt{.csv} format files.
-      \vskip1ex
-      If row names can be omitted in the output file, then \texttt{write.csv()} can be called with argument \texttt{row.names=FALSE}.
-      \vskip1ex
-      If the input file doesn't contain row names, then \texttt{read.csv()} can be called without the \texttt{"row.names"} argument.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write matrix to csv file, and then read it back
-write.csv(matv, file="matrix.csv")
-readmat <- read.csv(file="matrix.csv", row.names=1)
-readmat  ##  Read.csv() reads matrix as data frame
-class(readmat)
-readmat <- as.matrix(readmat)  ##  Coerce to matrix
-all.equal(readmat, matv)
-write.csv(matv, row.names=FALSE,
-          file="matrix_ex_rows.csv")
-readmat <- read.csv(file="matrix_ex_rows.csv")
-readmat <- as.matrix(readmat)
-readmat  ##  A matrix without row names
-all.equal(readmat, matv)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Matrices (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      There are several ways of writing and reading matrices from \texttt{.csv} files, with tradeoffs between simplicity, data size, and speed.
-      \vskip1ex
-      The function \texttt{write.matrix()} writes a matrix to a text file, without its row names.
-      \vskip1ex
-      \texttt{write.matrix()} is part of package \emph{MASS}.
-      \vskip1ex
-      The advantage of function \texttt{scan()} is its speed, but it doesn't handle row names easily.
-      \vskip1ex
-      Removing row names simplifies the writing and reading of matrices.
-      \vskip1ex
-      The function \texttt{readLines} reads whole lines and returns them as single strings.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-library(MASS)  ##  Load package "MASS"
-# Write to CSV file by row - it's very SLOW!!!
-MASS::write.matrix(matv, file="matrix.csv", sep=",")
-# Read using scan() and skip first line with colnames
-readmat <- scan(file="matrix.csv", sep=",", skip=1,
-  what=numeric())
-# Read colnames
-colv <- readLines(con="matrix.csv", n=1)
-colv  ##  this is a string!
-# Convert to char vector
-colv <- strsplit(colv, split=",")[[1]]
-readmat  ##  readmat is a vector, not matrix!
-# Coerce by row to matrix
-readmat <- matrix(readmat, ncol=NROW(colv), byrow=TRUE)
-# Restore colnames
-colnames(readmat) <- colv
-readmat
-# Scan() is a little faster than read.csv()
-library(microbenchmark)
-summary(microbenchmark(
-  read_csv=read.csv("matrix.csv"),
-  scan=scan(file="matrix.csv", sep=",",
-    skip=1, what=numeric()),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Matrices Containing Bad Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Very often data that is read from external sources contains elements with bad data.
-      \vskip1ex
-      An example of bad data are \texttt{character} strings within sets of \texttt{numeric} data.
-      \vskip1ex
-      Columns of numeric data that contain strings are coerced to \texttt{character} or \texttt{factor}, when they're read by \texttt{read.csv()}.
-      \vskip1ex
-      The function \texttt{as.numeric()} coerces complex data objects into \texttt{numeric} vectors, and removes all their \emph{attributes}.
-      \vskip1ex
-      \texttt{as.numeric()} coerces strings that don't represent numbers into \texttt{NA} values.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read data from a csv file, including row names
-matv <- read.csv(file="data/matrix_bad.csv", row.names=1)
-matv
-class(matv)
-# Columns with bad data are character or factor
-sapply(matv, class)
-# Coerce character column to numeric
-matv$col2 <- as.numeric(matv$col2)
-# Or
-# Copy row names
-namev <- rownames(matv)
-# sapply loop over columns and coerce to numeric
-matv <- sapply(matv, as.numeric)
-# Restore row names
-rownames(matv) <- namev
-# Replace NAs with zero
-matv[is.na(matv)] <- 0
-# matrix without NAs
-matv
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series From \protect\emph{Text} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{zoo} contains functions \texttt{write.zoo()} and \texttt{read.zoo()} for writing and reading \emph{zoo} time series from \texttt{.txt} and \texttt{.csv} files.
-      \vskip1ex
-      The functions \texttt{write.zoo()} and \texttt{read.zoo()} are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
-      \vskip1ex
-      The function \texttt{write.zoo()} writes the \emph{zoo} series index as a character string in quotations \texttt{""}, to make it easier to read (parse) by \texttt{read.zoo()}.
-      \vskip1ex
-      Users may also directly use \texttt{write.table()} and \texttt{read.table()}, instead of \texttt{write.zoo()} and \texttt{read.zoo()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-setwd("/Users/jerzy/Develop/lecture_slides/data")
-rm(list=ls())
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-library(zoo)  ##  Load package zoo
-# Create zoo with Date index
-datev <- seq(from=as.Date("2013-06-15"), by="day",
-              length.out=100)
-pricev <- zoo(rnorm(NROW(datev)), order.by=datev)
-head(pricev, 3)
-# Write zoo series to text file, and then read it back
-write.zoo(pricev, file="pricev.txt")
-pricezoo <- read.zoo("pricev.txt")  ##  Read it back
-all.equal(pricezoo, pricev)
-# Perform the same using write.table() and read.table()
-# First coerce pricev into data frame
-dframe <- as.data.frame(pricev)
-dframe <- cbind(datev, dframe)
-# Write pricev to text file using write.table
-write.table(dframe, file="pricev.txt",
-            row.names=FALSE, col.names=FALSE)
-# Read data frame from file
-pricezoo <- read.table(file="pricev.txt")
-sapply(pricezoo, class)  ##  A data frame
-# Coerce data frame into pricev
-pricezoo <- zoo::zoo(
-  drop(as.matrix(pricezoo[, -1])),
-  order.by=as.Date(pricezoo[, 1]))
-all.equal(pricezoo, pricev)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      By default the functions \texttt{zoo::write.zoo()} and \texttt{zoo::read.zoo()} write data in \emph{space}-delimited text format, but they can also write to \emph{comma}-delimited \texttt{.csv} files by passing the parameter \texttt{sep=","}.
-      \vskip1ex
-      Single column \emph{zoo} time series usually don't have a dimension attribute, and they don't have a column name, unlike multi-column \emph{zoo} time series, and this can cause hard to detect bugs.
-      \vskip1ex
-      It's best to always pass the argument \texttt{"col.names=TRUE"} to the function \texttt{write.zoo()}, to make sure it writes a column name for a single column \emph{zoo} time series.
-      \vskip1ex
-      Reading a \texttt{.csv} file containing a single column of data using the function \texttt{read.zoo()} produces a \emph{zoo} time series with a \texttt{NULL} dimension, unless the argument \texttt{"drop=FALSE"} is passed to \texttt{read.zoo()}.
-      \vskip1ex
-      Users may also directly use \texttt{write.table()} and \texttt{read.table()}, instead of \texttt{write.zoo()} and \texttt{read.zoo()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(zoo)  ##  Load package zoo
-# Write zoo series to CSV file, and then read it back
-write.zoo(pricev, file="zooseries.csv", sep=",", col.names=TRUE)
-pricezoo <- read.zoo(file="zooseries.csv",
-  header=TRUE, sep=",", drop=FALSE)
-all.equal(pricev, drop(pricezoo))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series With \protect\emph{Date-time} Index}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{write.zoo()} writes \emph{zoo} time series into \texttt{.csv} files, but it doesn't format the time at midnight properly.
-      \vskip1ex
-      The function \texttt{write.table()} writes \emph{zoo} time series into \texttt{.csv} files, and it formats the time at midnight properly.
-      \vskip1ex
-      If the index of a \emph{zoo} time series is a \emph{date-time}, then \texttt{write.zoo()} writes the date and time fields as character strings separated by a \emph{space} between them, inside quotations \texttt{""}.
-      \vskip1ex
-      The functions \texttt{read.csv.zoo()} and \texttt{read.zoo()} read \emph{zoo} time series from \texttt{.csv} files.
-      \vskip1ex
-      Very often \texttt{.csv} files contain custom \emph{date-time} formats, which need to be passed as parameters into \texttt{read.zoo()} for proper formatting.
-      \vskip1ex
-      The \texttt{"FUN"} argument of \texttt{read.zoo()} accepts a function for coercing the date and time columns of the input data into a \emph{date-time} object suitable for the \emph{zoo} index.
-      \vskip1ex
-      The function \texttt{as.POSIXct()} coerces \texttt{character} strings into \texttt{POSIXct} \emph{date-time} objects.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-# Initialize the random number generator
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-# Create zoo with POSIXct date-time index
-datev <- seq(from=as.POSIXct("2014-07-14"),
-              by="hour", length.out=100)
-zooseries <- zoo(rnorm(NROW(datev)), order.by=datev)
-head(zooseries, 3)
-# Write zoo series to CSV file using write.zoo()
-write.zoo(zooseries, file="zooseries.csv", sep=",", col.names=TRUE)
-# Read from CSV file using read.csv.zoo() - doesn't work
-zooread <- read.csv.zoo(file="zooseries.csv", header=FALSE,
-  format="%Y-%m-%d %H:%M:%S", tz="America/New_York")
-# Read from CSV file using read.zoo() - error
-zooread <- read.zoo(file="zooseries.csv", header=FALSE, 
-  sep=",", FUN=as.POSIXct, format="%Y-%m-%d %H:%M:%S")
-# Write zoo series to CSV file using write.table()
-write.table(zooseries, file="zooseries.csv", sep=",", 
-            row.names=TRUE, col.names=FALSE)
-# Read from CSV file using read.zoo() with format argument
-zooread <- read.zoo(file="zooseries.csv", header=FALSE, 
-  sep=",", FUN=as.POSIXct, format="%Y-%m-%d %H:%M:%S")
-all.equal(zooseries, zooread) ##  Works
-# Coerce zoo series into data frame with custom date format
-dframe <- as.data.frame(zooseries)
-rownames(dframe) <- format(index(zooseries), format="%m-%d-%Y %H:%M:%S")
-# Write zoo series to csv file using write.table
-write.table(dframe, file="zooseries.csv", sep=",", 
-            row.names=TRUE, col.names=FALSE)
-# Read from CSV file using read.zoo()
-zooread <- read.zoo(file="zooseries.csv", header=FALSE, sep=",", 
-  FUN=as.POSIXct, format="%m-%d-%Y %H:%M:%S")
-all.equal(zooseries, zooread) ##  Works
-# Or using read.csv.zoo()
-zooread <- read.csv.zoo(file="zooseries.csv", header=FALSE,
-  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-head(zooread, 3)
-all.equal(zooseries, zooread, check.attributes=FALSE) ##  Works
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Time Series With \texttt{Numeric} \protect\emph{Date-time} Index}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the index of a time series is \texttt{numeric} (representing the \emph{moment of time}, either as the number of days or seconds), then it must be coerced to a proper \emph{date-time} class.
-      \vskip1ex
-      A convenient way of reading time series with a numeric index is by using \texttt{read.table()}, and then coercing the \emph{data frame} into a time series.
-      \vskip1ex
-      The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read time series from CSV file, with numeric date-time
-datazoo <- read.table(file="/Users/jerzy/Develop/lecture_slides/data/es_ohlc.csv",
-  header=TRUE, sep=",")
-# A data frame
-class(datazoo)
-sapply(datazoo, class)
-# Coerce data frame into xts series
-datazoo <- xts::xts(as.matrix(datazoo[, -1]),
-  order.by=as.POSIXct.numeric(datazoo[, 1], tz="America/New_York",
-                              origin="1970-01-01"))
-# An xts series
-class(datazoo)
-head(datazoo, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Passing Arguments to the \texttt{save()} Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{save()} writes objects to a binary file.
-      \vskip1ex
-      Object names can be passed into \texttt{save()} either through the \texttt{"..."} argument, or the \texttt{"list"} argument.
-      \vskip1ex
-      Objects passed through the \texttt{"..."} argument are not evaluated, so they must be either object names or character strings.
-      \vskip1ex
-      Object names aren't surrounded by quotes \texttt{""}, while character strings that represent object names are surrounded by quotes \texttt{""}.
-      \vskip1ex
-      Objects passed through the \texttt{"list"} argument are evaluated, so they may be variables containing character strings.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())  ##  Delete all objects in workspace
-var1 <- 1; var2 <- 2
-ls()  ##  List all objects
-ls()[1]  ##  List first object
-args(save)  ##  List arguments of save function
-# Save "var1" to a binary file using string argument
-save("var1", file="my_data.RData")
-# Save "var1" to a binary file using object name
-save(var1, file="my_data.RData")
-# Save multiple objects
-save(var1, var2, file="my_data.RData")
-# Save first object in list by passing to "..." argument
-# ls()[1] is not evaluated
-save(ls()[1], file="my_data.RData")
-# Save first object in list by passing to "list" argument
-save(list=ls()[1], file="my_data.RData")
-# Save whole list by passing it to the "list" argument
-save(list=ls(), file="my_data.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Lists of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace.
-      \vskip1ex
-      The vector of names can be used to manipulate the objects in loops, or to pass them to functions.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-rm(list=ls())  ##  Delete all objects in workspace
-# Load objects from file
-loadobj <- load(file="my_data.RData")
-loadobj  ##  vector of loaded objects
-ls()  ##  List objects
-# Assign new values to objects in  global environment
-sapply(loadobj, function(symboln) {
-  assign(symboln, runif(1), envir=globalenv())
+# Calculate the daily and mean minvar portfolio returns
+c11 <- drop(t(unitv) %*% covinv %*% unitv)
+weightv <- drop(covinv %*% unitv/c11)
+retmv <- (retp %*% weightv)
+retmvm <- sum(weightv*retm)
+# Calculate the minimum variance
+varmv <- 1/c11
+stdevmv <- sqrt(varmv)
+# Calculate efficient frontier from target returns
+retargv <- retmvm*(1+seq(from=(-1), to=1, by=0.1))
+stdevs <- sapply(retargv, function(rett) {
+  uu <- c(1, rett)
+  sqrt(drop(t(uu) %*% finv %*% uu))
 })  ##  end sapply
-ls()  ##  List objects
-# Assign new values to objects using for loop
-for (symboln in loadobj) {
-  assign(symboln, runif(1))
-}  ##  end for
-ls()  ##  List objects
-# Save vector of objects
-save(list=loadobj, file="my_data.RData")
-# Remove only loaded objects
-rm(list=loadobj)
-# Remove the object "loadobj"
-rm(loadobj)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the efficient frontier
+plot(x=stdevs, y=retargv, t="l", col="blue", lwd=2,
+     main="Efficient Frontier and Minimum Variance Portfolio",
+     xlab="standard deviation", ylab="return")
+points(x=stdevmv, y=retmvm, col="green", lwd=6)
+text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
+     pos=4, cex=0.8)
       @
   \end{columns}
 \end{block}
@@ -3327,50 +1433,1656 @@ rm(loadobj)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Saving Output of \texttt{R} to a File}
+\subsection{The \protect\emph{Tangent Line} and the \protect\emph{Risk-free} Rate}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{sink()} diverts \texttt{R} \emph{text} output (excluding graphics) to a file, or ends the diversion.
+      The \emph{tangent} line connects the risk-free point $(\sigma=0, r=r_f)$ with a single tangent point on the \emph{efficient frontier}. 
       \vskip1ex
-      Remember to call \texttt{sink()} to end the diversion!
+      A \emph{tangent} line can be drawn at every point on the \protect\emph{efficient frontier}.
       \vskip1ex
-      The function \texttt{pdf()} diverts graphics output to a \emph{pdf} file (text output isn't diverted), in vector graphics format.
+      The slope $\beta$ of the \emph{tangent} line can be calculated by differentiating the efficient portfolio variance $\sigma^2$ by the target return $r_t$:
+      \begin{align*}
+        \frac{d \sigma^2}{d r_t} = 2 \sigma \frac{d \sigma}{d r_t} = \frac{2 c_{11} r_t - 2 c_{r1}}{\det{\mathbb{F}}} \\
+        \frac{d \sigma}{d r_t} = \frac{c_{11} r_t - c_{r1}}{\sigma \, \det{\mathbb{F}}} \\
+        \beta = \frac{\sigma \, \det{\mathbb{F}}}{c_{11} r_t - c_{r1}}
+      \end{align*}
+      The \emph{tangent} line connects the \emph{tangent} point on the \protect\emph{efficient frontier} with a \emph{risk-free} rate $r_f$.
+    \column{0.5\textwidth}
+      The \emph{risk-free} rate $r_f$ can be calculated as the intercept of the tangent line:
+      \begin{align*}
+        r_f = r_t - \sigma \, \beta = r_t - \frac{\sigma^2 \, \det{\mathbb{F}}}{c_{11} r_t - c_{r1}} = \\
+        r_t - \frac{c_{11} r^2_t - 2 c_{r1} r_t + c_{rr}}{\det{\mathbb{F}}} \frac{\det{\mathbb{F}}}{c_{11} r_t - c_{r1}} = \\
+        r_t - \frac{c_{11} r^2_t - 2 c_{r1} r_t + c_{rr}}{c_{11} r_t - c_{r1}} = \frac{c_{r1} r_t - c_{rr}}{c_{11} r_t - c_{r1}}
+      \end{align*}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate standard deviation of efficient portfolio
+uu <- c(1, retarg)
+stdeveff <- sqrt(drop(t(uu) %*% finv %*% uu))
+# Calculate the slope of the tangent line
+detf <- (c11*crr-cr1^2)  ##  det(fmat)
+sharper <- (stdeveff*detf)/(c11*retarg-cr1)
+# Calculate the risk-free rate as intercept of the tangent line
+raterf <- retarg - sharper*stdeveff
+# Calculate the risk-free rate from target return
+all.equal(raterf,
+  (retarg*cr1-crr)/(retarg*c11-cr1))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Capital Market Line}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Capital Market Line} (CML) is the tangent line connecting the risk-free point $(\sigma=0, r=r_f)$ with a single tangent point on the \emph{efficient frontier}. 
       \vskip1ex
-      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert graphics output to graphics files (text output isn't diverted).
+      The \emph{tangency portfolio} is the \emph{efficient portfolio} at the tangent point corresponding to the given \emph{risk-free} rate.  
       \vskip1ex
-      The function \texttt{dev.off()} ends the diversion.
+      Each value of the \emph{risk-free} rate $r_f$ corresponds to a unique \emph{tangency portfolio}.
+      \vskip1ex
+      For a given \emph{risk-free} rate $r_f$, the \emph{tangency portfolio} has the highest \emph{Sharpe ratio} among all the \emph{efficient portfolios}.
+      <<echo=TRUE,eval=FALSE>>=
+# Plot efficient frontier
+aspectr <- 1.0*max(stdevs)/diff(range(retargv)) ##  Aspect ratio
+plot(x=stdevs, y=retargv, t="l", col="blue", lwd=2, asp=aspectr,
+     xlim=c(0.4, 0.6)*max(stdevs), ylim=c(0.2, 0.9)*max(retargv), 
+     main="Efficient Frontier and Capital Market Line",
+     xlab="standard deviation", ylab="return")
+# Plot the minimum variance portfolio
+points(x=stdevmv, y=retmvm, col="green", lwd=6)
+text(x=stdevmv, y=retmvm, labels="minimum \nvariance",
+     pos=4, cex=0.8)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent2.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the tangent portfolio
+points(x=stdeveff, y=retarg, col="red", lwd=6)
+text(x=stdeveff, y=retarg, labels="tangency\nportfolio", pos=2, cex=0.8)
+# Plot the risk-free point
+points(x=0, y=raterf, col="red", lwd=6)
+text(x=0, y=raterf, labels="risk-free", pos=4, cex=0.8)
+# Plot the tangent line
+abline(a=raterf, b=sharper, lwd=2, col="green")
+text(x=0.6*stdev, y=0.8*retarg,
+     labels="Capital Market Line", pos=2, cex=0.8,
+     srt=180/pi*atan(aspectr*sharper))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Capital Market Line} Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The points on the \emph{Capital Market Line} represent portfolios consisting of the \emph{tangency portfolio} and the \emph{risk-free} asset (bond).
+      \vskip1ex
+      The \emph{Capital Market Line} represents delevered and levered portfolios, consisting of the \emph{tangency portfolio} combined with the \emph{risk-free} asset (bond).
+      \vskip1ex
+      The \emph{CML} portfolios have weights proportional to the tangency portfolio weights.
+      \vskip1ex
+      The \emph{CML} portfolios above the tangent point are levered with respect to the \emph{tangency portfolio} through borrowing at the \emph{risk-free} rate $r_f$.  Their weights are equal to the tangency portfolio weights multiplied by a factor greater than \texttt{1}.
+      \vskip1ex
+      The \emph{CML} portfolios below the tangent point are delevered with respect to the \emph{tangency portfolio} through investing at the \emph{risk-free} rate $r_f$.  Their weights are equal to the tangency portfolio weights multiplied by a factor less than \texttt{1}.
+      \vskip1ex
+      All the \emph{CML} portfolios have the same \emph{Sharpe ratio}. 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent2.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Maximum Sharpe} Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sharpe ratio} is equal to the ratio of excess returns divided by the portfolio standard deviation:
+      \begin{displaymath}
+        SR = \frac{\mathbf{w}^T \mu}{\sigma}
+      \end{displaymath}
+      Where $\mu = \mathbf{\bar{r}} - r_f$ is the vector of mean excess returns (in excess of the risk-free rate $r_f$), $\mathbf{w}$ is the vector of portfolio weights, and $\sigma = \sqrt{\mathbf{w}^T \mathbb{C} \, \mathbf{w}}$, where $\mathbb{C}$ is the covariance matrix of returns.
+      \vskip1ex
+      We can calculate the \emph{maximum Sharpe} portfolio weights by setting the derivative of the \emph{Sharpe ratio} with respect to the weights $\mathbf{w}$ to zero:
+      \begin{displaymath}
+        d_w {SR} = \frac{1}{\sigma} (\mu^T - \frac{(\mathbf{w}^T \mu) (\mathbf{w}^T \mathbb{C})}{\sigma^2}) = 0
+      \end{displaymath}
+      We then get:
+      \begin{displaymath}
+        (\mathbf{w}^T \mathbb{C} \, \mathbf{w}) \, \mu = (\mathbf{w}^T \mu) \, \mathbb{C} \mathbf{w}
+      \end{displaymath}
+      We can multiply the above equation by $\mathbb{C}^{-1}$ to get:
+      \begin{displaymath}
+        \mathbf{w} = \frac{\mathbf{w}^T \mathbb{C} \, \mathbf{w}}{\mathbf{w}^T \mu} \, \mathbb{C}^{-1} \mu
+      \end{displaymath}
+    \column{0.5\textwidth}
+      We can finally rescale the weights so that they satisfy the linear constraint $\mathbf{w}^T \mathbbm{1} = 1$:
+      \begin{displaymath}
+        \mathbf{w} = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+      These are the weights of the \emph{maximum Sharpe} portfolio, with the vector of mean excess returns equal to $\mu$, and the covariance matrix equal to $\mathbb{C}$.
+      \vskip1ex
+      The \emph{maximum Sharpe} portfolio is an \emph{efficient portfolio}, and so its mean return is equal to some target return $r_t$: $\mathbf{\bar{r}}^T \mathbf{w} = {\sum_{i=1}^n w_i r_i} = r_t$.
+      \vskip1ex
+      The mean return of the \emph{maximum Sharpe} portfolio is equal to:
+      \begin{align*}
+        r_t = \mathbf{\bar{r}}^T \mathbf{w} = \frac{\mathbf{\bar{r}}^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = 
+        \frac{\mathbf{\bar{r}}^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}{\mathbbm{1}^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)} =\\
+        \frac{\mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1} \, r_f - \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1} \, \mathbf{\bar{r}}}{\mathbbm{1}^T \mathbb{C}^{-1} \mathbbm{1} \, r_f - \mathbf{\bar{r}}^T \mathbb{C}^{-1} \mathbbm{1}} = 
+        \frac{c_{r1} \, r_f - c_{rr}}{c_{11} \, r_f - c_{r1}}
+      \end{align*}
+      The above formula calculates the target return $r_t$ from the risk-free rate $r_f$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Returns and Variance of the \protect\emph{Maximum Sharpe} Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{maximum Sharpe} portfolio weights depend on the value of the risk-free rate $r_f$:
+      \begin{displaymath}
+        \mathbf{w} = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = 
+        \frac{\mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}{\mathbbm{1}^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}
+      \end{displaymath}
+      The mean return of the \emph{maximum Sharpe} portfolio is equal to:
+      \begin{displaymath}
+        r_t = \mathbf{\bar{r}}^T \mathbf{w} = \frac{\mathbf{\bar{r}}^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = \frac{c_{r1} \, r_f - c_{rr}}{c_{11} \, r_f - c_{r1}}
+      \end{displaymath}
+      The variance of the \emph{maximum Sharpe} portfolio is equal to:
+      \begin{align*}
+        \sigma^2 = \mathbf{w}^T \mathbb{C} \, \mathbf{w} = 
+        \frac{\mu^T \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mu}{(\mathbbm{1}^T \mathbb{C}^{-1} \mu)^2} =
+        \frac{\mu^T \mathbb{C}^{-1} \mu}{(\mathbbm{1}^T \mathbb{C}^{-1} \mu)^2} = \\
+        \frac{(\mathbf{\bar{r}} - r_f)^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}{(\mathbbm{1}^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f))^2} = 
+        \frac{c_{11} r^2_t - 2 c_{r1} r_t + c_{rr}}{\det{\mathbb{F}}}
+      \end{align*}
+      The above formula expresses the \emph{maximum Sharpe} portfolio variance as a function of its mean return $r_t$.
+      \vskip1ex
+      The \emph{maximum Sharpe} ratio is equal to:
+      \begin{align*}
+        SR = \frac{\mathbf{w}^T \mu}{\sigma} = 
+        \frac{\mathbbm{\mu}^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} / 
+        \frac{\sqrt{\mu^T \mathbb{C}^{-1} \mu}}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = \\
+        \sqrt{\mu^T \mathbb{C}^{-1} \mu} = 
+        \sqrt{(\mathbf{\bar{r}} - r_f)^T \mathbb{C}^{-1} (\mathbf{\bar{r}} - r_f)}
+      \end{align*}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the mean excess returns
+raterf <- retarg - sharper*stdeveff
+retx <- (retm - raterf)
+# Calculate the efficient portfolio weights
+weightv <- 0.5*drop(covinv %*% cbind(unitv, retm) %*% lagm)
+# Calculate the maximum Sharpe weights
+weightms <- drop(covinv %*% retx)/sum(covinv %*% retx)
+all.equal(weightv, weightms)
+# Calculate the maximum Sharpe mean return in two ways
+all.equal(sum(retm*weightv), (cr1*raterf-crr)/(c11*raterf-cr1))
+# Calculate the maximum Sharpe daily returns
+retd <- (retp %*% weightms)
+# Calculate the maximum Sharpe variance in four ways
+detf <- (c11*crr-cr1^2)  ##  det(fmat)
+all.equal(var(retd), 
+  t(weightv) %*% covmat %*% weightv,
+  (t(retx) %*% covinv %*% retx)/sum(covinv %*% retx)^2, 
+  (c11*retarg^2-2*cr1*retarg+crr)/detf)
+# Calculate the maximum Sharpe ratio
+sqrt(252)*sum(weightv*retx)/
+  sqrt(drop(t(weightv) %*% covmat %*% weightv))
+# Calculate the stock Sharpe ratios
+sqrt(252)*sapply((retp - raterf), function(x) mean(x)/sd(x))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Maximum Sharpe} and \protect\emph{Minimum Variance} Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{maximum Sharpe} and \emph{Minimum Variance} portfolios are both \emph{efficient portfolios}, with the lowest risk (standard deviation) for the given level of return.
+      \vskip1ex
+      The \emph{maximum Sharpe} portfolio has both a higher Sharpe ratio and higher absolute returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate optimal portfolio returns
+wealthv <- cbind(retp %*% weightms, retp %*% weightmv)
+wealthv <- xts::xts(wealthv, zoo::index(retp))
+colnames(wealthv) <- c("MaxSharpe", "MinVar")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  (mean(x)-raterf)/c(Sharpe=sd(x), Sortino=sd(x[x<0])))
+# Plot the log wealth
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
+  main="Maximum Sharpe and Minimum Variance Portfolios") %>%
+  dyOptions(colors=c("blue", "green"), strokeWidth=2) %>%
+  dyLegend(show="always", width=500)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/maxsharpe_minvar.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Maximum Sharpe} Portfolio of Two Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Given the covariance matrix of two stocks:
+      \begin{displaymath}
+        \mathbb{C} = 
+        \begin{bmatrix}
+          \sigma^2_1 & \sigma_{12} \\
+          \sigma_{12} & \sigma^2_2
+        \end{bmatrix}
+      \end{displaymath}
+      The inverse of the covariance matrix is equal to:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \frac{1}{(\sigma^2_1 \sigma^2_2 - \sigma^2_{12})}
+        \begin{bmatrix}
+          \sigma^2_2 & - \sigma_{12} \\
+          -\sigma_{12} & \sigma^2_1
+        \end{bmatrix}
+      \end{displaymath}
+      Where $\sigma^2_1$ and $\sigma^2_2$ are the stock variances and $\sigma_{12}$ is their covariance.
+      \vskip1ex
+      The \emph{maximum Sharpe} portfolio weights are equal to:
+      \begin{displaymath}
+        \mathbf{w} = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^T \mathbb{C}^{-1} \mu} = 
+        \frac{1}{D} 
+          \begin{bmatrix}
+            \sigma^2_2 \mu_1 - \sigma_{12} \mu_2 \\
+            - \sigma_{12} \mu_1 + \sigma^2_1 \mu_2
+          \end{bmatrix}
+      \end{displaymath}
+      Where $\mu_1$ and $\mu_2$ are the mean excess returns of the two stocks, and
+      $D = \sigma^2_2 \mu_1 + \sigma^2_1 \mu_2 - \sigma_{12} (\mu_1 + \mu_2)$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the covariance, variances and the mean returns
+retp <- na.omit(rutils::etfenv$returns[, c("VTI", "TLT")])
+retew <- 0.4*retp[, 1] + 0.6*retp[, 2]
+covm <- cov(retp)
+covv <- covm[1, 2]
+var1 <- covm[1, 1]
+var2 <- covm[2, 2]
+ret1 <- mean(retp[, 1])
+ret2 <- mean(retp[, 2])
+# Calculate the inverse covariance matrix
+scalev <- (var1*var2 - covv^2)
+covinv <- matrix(c(var2, -covv, -covv, var1), nrow=2)/scalev
+round(covinv %*% covm, 4)
+# Calculate the maximum Sharpe portfolio weights
+wv <- (covinv %*% c(ret1, ret2))
+# Or
+(var2*ret1 - covv*ret2)/scalev
+(-covv*ret1 + var1*ret2)/scalev
+# Calculate the maximum Sharpe portfolio pnls
+pnls <- retp %*% wv
+pnls <- sd(retew)/sd(pnls)*pnls
+# Calculate the Sharpe ratios
+wealthv <- cbind(retew, pnls)
+colnames(wealthv) <- c("Balanced", "MaxSharpe")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of combined log wealth
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
+  main="Wealth of Fixed Share and Equal Wealth Portfolios") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Maximum Sharpe} Portfolios and the \protect\emph{Efficient Frontier}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{maximum Sharpe} portfolios are \emph{efficient portfolios}, so they form the \emph{efficient frontier}.
+      \vskip1ex
+      A \emph{market portfolio} is the portfolio of all the available assets, with weights proportional to their market capitalizations. 
+      \vskip1ex
+      The \emph{maximum Sharpe} portfolio is sometimes considered to be the \emph{market portfolio}, because it's the optimal portfolio for the given value of the risk-free rate $r_f$.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the maximum Sharpe portfolios for different risk-free rates
+detf <- (c11*crr-cr1^2)  ##  det(fmat)
+raterfv <- retmvm*seq(from=1.3, to=20, by=0.1)
+raterfv <- c(raterfv, retmvm*seq(from=(-20), to=0.7, by=0.1))
+effront <- sapply(raterfv, function(raterf) {
+  ##  Calculate the maximum Sharpe mean return
+  reteffm <- (cr1*raterf-crr)/(c11*raterf-cr1)
+  ##  Calculate the maximum Sharpe standard deviation
+  stdev <- sqrt((c11*reteffm^2-2*cr1*reteffm+crr)/detf)
+  c(return=reteffm, stdev=stdev)
+})  ##  end sapply
+effront <- effront[, order(effront["return", ])]
+# Plot the efficient frontier
+reteffv <- effront["return", ]
+stdevs <- effront["stdev", ]
+aspectr <- 0.6*max(stdevs)/diff(range(reteffv)) ##  Aspect ratio
+plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2, asp=aspectr,
+  main="Maximum Sharpe Portfolio and Efficient Frontier",
+  xlim=c(0.001, max(stdevs)), xlab="standard deviation", ylab="return")
+# Plot the minimum variance portfolio
+points(x=stdevmv, y=retmvm, col="green", lwd=6)
+text(x=stdevmv, y=retmvm, labels="minimum \nvariance", pos=4, cex=0.8)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_market.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the maximum Sharpe return and standard deviation
+raterf <- min(reteffv)
+retmax <- (cr1*raterf-crr)/(c11*raterf-cr1)
+stdevmax <- sqrt((c11*retmax^2-2*cr1*retmax+crr)/detf)
+# Plot the maximum Sharpe portfolio
+points(x=stdevmax, y=retmax, col="red", lwd=6)
+text(x=stdevmax, y=retmax, labels="Max Sharpe\nportfolio", pos=2, cex=0.8)
+# Plot the risk-free point
+points(x=0, y=raterf, col="red", lwd=6)
+text(x=0, y=raterf, labels="risk-free", pos=4, cex=0.8)
+# Plot the tangent line
+sharper <- (stdevmax*detf)/(c11*retmax-cr1)
+abline(a=raterf, b=sharper, lwd=2, col="green")
+text(x=0.6*stdevmax, y=0.8*retmax, labels="Capital Market Line", 
+     pos=2, cex=0.8, srt=180/pi*atan(aspectr*sharper))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Portfolios and Their Tangent Lines}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{efficient frontier} consists of all the \emph{maximum Sharpe} portfolios corresponding to different values of the risk-free rate.
+      \vskip1ex
+      The target return can be expressed as a function of the risk-free rate as:
+      \begin{align*}
+        r_t = \frac{c_{r1} \, r_f - c_{rr}}{c_{11} \, r_f - c_{r1}}
+      \end{align*}
+      If $r_f \rightarrow \pm \infty$ then $r_t \rightarrow r_{mv} = c_{r1}/c_{11}$.
+      \vskip1ex
+      But if the risk-free rate tends to the mean returns of the minimum variance portfolio: $r_f \rightarrow r_{mv} = c_{r1}/c_{11}$, then $r_t \rightarrow \pm \infty$, which means that there is no efficient portfolio corresponding to the risk-free rate equal to the mean returns of the minimum variance portfolio: $r_f = r_{mv} = c_{r1}/c_{11}$.
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the efficient frontier
+reteffv <- effront["return", ]
+stdevs <- effront["stdev", ]
+plot(x=stdevs, y=reteffv, t="l", col="blue", lwd=2,
+  xlim=c(0.0, max(stdevs)),
+  main="Efficient Frontier and Tangent Lines",
+  xlab="standard deviation", ylab="return")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_tangent.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate vector of mean returns
+reteffv <- min(reteffv) + diff(range(reteffv))*c(0.2, 0.4, 0.6, 0.8)
+# Plot the tangent lines
+for (reteffm in reteffv) {
+  ##  Calculate the maximum Sharpe standard deviation
+  stdev <- sqrt((c11*reteffm^2-2*cr1*reteffm+crr)/detf)
+  ##  Calculate the slope of the tangent line
+  sharper <- (stdev*detf)/(c11*reteffm-cr1)
+  ##  Calculate the risk-free rate as intercept of the tangent line
+  raterf <- reteffm - sharper*stdev
+  ##  Plot the tangent portfolio
+  points(x=stdev, y=reteffm, col="red", lwd=3)
+  ##  Plot the tangent line
+  abline(a=raterf, b=sharper, lwd=2, col="green")
+} ##  end for
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate random portfolios
+nportf <- 1000
+randportf <- sapply(1:nportf, function(it) {
+  weightv <- runif(nstocks-1, min=-0.25, max=1.0)
+  weightv <- c(weightv, 1-sum(weightv))
+  ##  Portfolio returns and standard deviation
+  c(return=sum(weightv*retm),
+    stdev=sqrt(drop(weightv %*% covmat %*% weightv)))
+})  ##  end sapply
+# Plot scatterplot of random portfolios
+stdev <- min(effront["stdev", ])
+plot(x=randportf["stdev", ], y=randportf["return", ],
+     main="Efficient Frontier and Random Portfolios",
+     xlim=c(0.5*stdev, 0.8*max(randportf["stdev", ])),
+     xlab="standard deviation", ylab="return")
+# Plot maximum Sharpe portfolios
+lines(x=effront["stdev", ], y=effront["return", ], lwd=2)
+points(x=effront["stdev", ], y=effront["return", ],
+       col="red", lwd=3)
+# Plot the minimum variance portfolio
+points(x=stdevmv, y=retmvm, col="green", lwd=6)
+text(stdevmv, retmvm, labels="minimum\nvariance", pos=2, cex=0.8)
+# Plot efficient portfolio
+points(x=stdevmax, y=retmax, col="green", lwd=6)
+text(x=stdevmax, y=retmax, labels="market\nportfolio", pos=2, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_random.png}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot individual assets
+points(x=sqrt(diag(covmat)), y=retm, col="blue", lwd=4)
+text(x=sqrt(diag(covmat)), y=retm, labels=names(retm),
+     lwd=4, col="blue", pos=1, cex=0.8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Frontier for Two-stock Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{efficient frontier} for a two-stock portfolio illustrates its dependence on the correlation and the risk-free rate.
+      <<echo=TRUE,eval=FALSE>>=
+# Define the parameters
+raterf <- 0.02 ##  Risk-free rate
+retp <- c(stock1=0.06, stock2=0.09) ##  Returns
+stdevs <- c(stock1=0.4, stock2=0.5) ##  Standard deviations
+corrp <- 0.6 ##  Correlation
+covmat <- matrix(c(1, corrp, corrp, 1), nc=2) ##  Covariance matrix
+covmat <- t(t(stdevs*covmat)*stdevs)
+weightv <- seq(from=(-1), to=2, length.out=71) ##  Weights
+weightv <- cbind(weightv, 1-weightv)
+retport <- weightv %*% retp ##  Portfolio returns
+portfsd <- sqrt(rowSums(weightv*(weightv %*% covmat))) ##  Portfolio volatility
+sharper <- (retport-raterf)/portfsd ##  Portfolio Sharpe ratios
+# Plot the efficient frontier
+widthp <- 6; heightp <- 5
+plot(portfsd, retport, t="l",
+ main=paste0("Efficient Frontier and CML for Two Stocks\ncorrelation = ", 100*corrp, "%"),
+ xlab="standard deviation", ylab="return",
+ lwd=2, col="orange", xlim=c(0, max(portfsd)), ylim=c(0.01, max(retport)))
+# Add the maximum Sharpe portfolio
+whichmax <- which.max(sharper)
+sharpem <- max(sharper) ##  Maximum Sharpe ratio
+retmax <- retport[whichmax]
+sdeff <- portfsd[whichmax]
+weightm <- round(weightv[whichmax], 2)
+points(sdeff, retmax, col="blue", lwd=3)
+text(x=sdeff, y=retmax, labels=paste(c("Max Sharpe\n",
+  structure(c(weightm, (1-weightm)), names=c("stock1", "stock2"))), collapse=" "),
+  pos=2, cex=0.8)
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_two_stocks.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot individual stocks
+points(stdevs, retp, col="green", lwd=3)
+text(stdevs, retp, labels=names(retp), pos=4, cex=0.8)
+# Add point at risk-free rate and draw Capital Market Line
+points(x=0, y=raterf, col="blue", lwd=3)
+text(0, raterf, labels="risk-free\nrate", pos=4, cex=0.8)
+abline(a=raterf, b=sharpem, lwd=2, col="blue")
+rangev <- par("usr")
+text(sdeff/2, (retmax+raterf)/2,
+     labels="Capital Market Line", cex=0.8, , pos=3,
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+                   (rangev[4]-rangev[3])*heightp/widthp)/(0.25*pi))
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Frontier of Stock and Bond Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Vector of symbol names
+symbolv <- c("VTI", "IEF")
+# Matrix of portfolio weights
+weightv <- seq(from=(-1), to=2, length.out=31)
+weightv <- cbind(weightv, 1-weightv)
+# Calculate portfolio returns and volatilities
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+retport <- retp %*% t(weightv)
+portfv <- cbind(252*colMeans(retport),
+  sqrt(252)*matrixStats::colSds(retport))
+colnames(portfv) <- c("returns", "stdev")
+raterf <- 0.06
+portfv <- cbind(portfv,
+  (portfv[, "returns"]-raterf)/portfv[, "stdev"])
+colnames(portfv)[3] <- "Sharpe"
+whichmax <- which.max(portfv[, "Sharpe"])
+sharpem <- portfv[whichmax, "Sharpe"]
+plot(x=portfv[, "stdev"], y=portfv[, "returns"],
+     main="Stock and Bond portfolios", t="l",
+     xlim=c(0, 0.7*max(portfv[, "stdev"])), ylim=c(0, max(portfv[, "returns"])),
+     xlab="standard deviation", ylab="return")
+# Add blue point for efficient portfolio
+points(x=portfv[whichmax, "stdev"], y=portfv[whichmax, "returns"], col="blue", lwd=6)
+text(x=portfv[whichmax, "stdev"], y=portfv[whichmax, "returns"],
+     labels=paste(c("efficient portfolio\n", 
+        structure(c(weightv[whichmax, 1], weightv[whichmax, 2]), names=symbolv)), collapse=" "),
+     pos=3, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eff_front_stocks_bonds.png}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot individual stocks
+retm <- 252*sapply(retport, mean)
+stdevs <- sqrt(252)*sapply(retport, sd)
+points(stdevs, retm, col="green", lwd=6)
+text(stdevs, retm, labels=names(retport), pos=2, cex=0.8)
+# Add point at risk-free rate and draw Capital Market Line
+points(x=0, y=raterf, col="blue", lwd=6)
+text(0, raterf, labels="risk-free", pos=4, cex=0.8)
+abline(a=raterf, b=sharpem, col="blue", lwd=2)
+rangev <- par("usr")
+text(max(portfv[, "stdev"])/3, 0.75*max(portfv[, "returns"]),
+     labels="Capital Market Line", cex=0.8, , pos=3,
+     srt=45*atan(sharpem*(rangev[2]-rangev[1])/
+                   (rangev[4]-rangev[3])*
+                   heightp/widthp)/(0.25*pi))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performance of Efficient Portfolio for Stocks and Bonds}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+# Plot portfolios in x11() window
+x11(widthp <- 6, heightp <- 5)
+# Calculate cumulative returns of VTI and IEF
+retsoptim <- lapply(retp, function(retp) exp(cumsum(retp)))
+retsoptim <- rutils::do_call(cbind, retsoptim)
+# Calculate the efficient portfolio returns
+retsoptim <- cbind(exp(cumsum(retp %*%
+    c(weightv[whichmax], 1-weightv[whichmax]))),
+  retsoptim)
+colnames(retsoptim)[1] <- "efficient"
+# Plot efficient portfolio with custom line colors
+themev <- chart_theme()
+themev$col$line.col <- c("orange", "blue", "green")
+chart_Series(retsoptim, theme=themev,
+   name="Efficient Portfolio for Stocks and Bonds")
+legend("top", legend=colnames(retsoptim),
+   cex=0.8, inset=0.1, bg="white", lty=1,
+   lwd=6, col=themev$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_stocks_bonds.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Portfolio Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Sharpe Ratio} Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable, in the specified interval.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate daily ETF percentage returns
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+nrows <- NROW(retp)
+# Create initial vector of portfolio weights
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+# Objective equal to minus Sharpe ratio
+objfun <- function(weightv, retp) {
+  retportf <- retp %*% weightv
+  stdev <- sd(retportf)
+  if (stdev == 0)
+    return(0)
+  else
+    return(-mean(retportf)/stdev)
+}  ##  end objfun
+# Objective for equal weight portfolio
+objfun(weightv, retp=retp)
+optiml <- unlist(optimize(f=function(weightv)
+    objfun(c(1, 1, weightv), retp=retp),
+  interval=c(-10, 10)))
+# Vectorize objective function with respect to third weight
+objvec <- function(weightv) sapply(weightv,
+  function(weightv) objfun(c(1, 1, weightv), retp=retp))
+# Or
+objvec <- Vectorize(FUN=function(weightv)
+    objfun(c(1, 1, weightv), retp=retp),
+  vectorize.args="weightv")  ##  end Vectorize
+objvec(1)
+objvec(1:3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_obj_one_dim.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot objective function with respect to third weight
+curve(expr=objvec, type="l", xlim=c(-4.0, 1.0),
+      xlab=paste("weight of", names(weightv[3])),
+      ylab="", lwd=2)
+title(main="Sharpe Ratio", line=(-1))  ##  Add title
+points(x=optiml[1], y=optiml[2], col="green", lwd=6)
+text(x=optiml[1], y=optiml[2],
+     labels="maximum value", pos=4, cex=0.8)
+
+### Below is simplified plotting of objective function
+# Create vector of DBC weights
+weightv <- seq(from=-4, to=1, by=0.1)
+objv <- sapply(weightv, function(weightv) 
+  objfun(c(1, 1, weightv), retp))
+plot(x=weightv, y=objv, t="l",
+      xlab="weight of DBC", ylab="", lwd=2)
+title(main="Sharpe Ratio", line=(-1))  ##  Add title
+points(x=optiml[1], y=optiml[2], col="green", lwd=6)
+text(x=optiml[1], y=optiml[2],
+     labels="maximum value", pos=4, cex=0.8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Perspective Plot of Portfolio Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values.
+      \vskip1ex
+      The function \texttt{outer()} calculates the values of a function over a grid spanned by two variables, and returns a matrix of function values.
+      \vskip1ex
+      The package \emph{rgl} allows creating \emph{interactive} 3d scatterplots and surface plots including perspective plots, based on the \emph{OpenGL} framework.
+      <<portf_persp,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# Vectorize function with respect to two weights
+objvec <- Vectorize(
+  FUN=function(w1, w2, w3) objfun(c(w1, w2, w3), retp),
+  vectorize.args=c("w2", "w3"))  ##  end Vectorize
+# Calculate objective on 2-d (w2 x w3) parameter grid
+w2 <- seq(-3, 7, length=50)
+w3 <- seq(-5, 5, length=50)
+gridm <- outer(w2, w3, FUN=objvec, w1=1)
+rownames(gridm) <- round(w2, 2)
+colnames(gridm) <- round(w3, 2)
+# Perspective plot of objective function
+persp(w2, w3, -gridm,
+      theta=45, phi=30, shade=0.5,
+      col=rainbow(50), border="green",
+      main="objective function")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_persp.png}
+    \vspace{-3em}
+      <<echo=TRUE,eval=FALSE,fig.width=10,fig.height=10>>=
+# Interactive perspective plot of objective function
+library(rgl)
+rgl::persp3d(z=-gridm, zlab="objective",
+        col="green", main="objective function")
+rgl::persp3d(
+  x=function(w2, w3) {objvec(w1=1, w2, w3)},
+  xlim=c(-3, 7), ylim=c(-5, 5),
+  col="green", axes=FALSE)
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=1000, height=1000)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using \texttt{optim()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization.
+      \vskip1ex
+      The argument \texttt{par} are the initial parameter values.
+      \vskip1ex
+      The argument \texttt{fn} is the objective function to be minimized.
+      \vskip1ex
+      The argument of the objective function which is to be optimized, must be a vector argument.
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method.
+      \vskip1ex
+      The parameter \texttt{control=list(factr=1e5)} determines the precision of the \texttt{L-BFGS-B} method.  
+      A smaller \texttt{factr} value produces results with a higher precision, but it requires more iterations and a longer optimization. 
+      A larger \texttt{factr} value achieves a faster solution but less precise results.
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create initial vector of portfolio weights
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+# Optimization to find weights with maximum Sharpe ratio
+optiml <- optim(par=weightv,
+                fn=objfun,
+                retp=retp,
+                method="L-BFGS-B",
+                control=list(factr=1e5),
+                upper=c(10, 10, 10),
+                lower=c(-10, -10, -10))
+# Optimal parameters
+weightv <- optiml$par
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+# Optimal Sharpe ratio
+-objfun(weightv, retp)
+# Calculate the weights from the inverse covariance matrix
+weightv <- drop(solve(cov(retp)) %*% sapply(retp, mean))
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimization Algorithms Using \texttt{optim()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+
+\begin{table}[h!]
+\centering
+\caption{Comparison of optimization methods for portfolio optimization}
+\tiny
+\begin{tabular}{@{}p{1.5cm}p{1.5cm}p{2.5cm}p{2.5cm}p{2.5cm}@{}}
+\toprule
+\textbf{Method} & \textbf{Type} & \textbf{Strengths} & \textbf{Weaknesses} & \textbf{Suitability for Portfolio Optimization} \\
+\midrule
+BFGS & Quasi-Newton & Fast convergence, uses gradient + Hessian approximation & Memory-heavy for large problems & Strong choice for medium-sized portfolios \\
+\hline
+L-BFGS-B & Limited-memory BFGS with box constraints & Handles bounds (e.g., weights $\geq$ 0), memory-efficient & Requires smooth objective & Best overall for portfolio optimization with constraints \\
+\hline
+CG (Conjugate Gradient) & Gradient-based & Efficient for large-scale problems & Slower convergence than BFGS & Good for very large portfolios \\
+\hline
+Nelder-Mead & Derivative-free simplex & Works without gradients, robust for small problems & Slow, scales poorly in high dimensions & Limited use; not ideal for large portfolios \\
+\hline
+Brent & 1D derivative-free & Very efficient in one dimension & Only works for single-variable problems & Not applicable to portfolios \\
+\hline
+SANN (Simulated Annealing) & Stochastic global search & Escapes local minima, works on non-smooth functions & Very slow, no guarantee of optimality & Useful for highly non-convex problems \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimized Portfolio Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The optimized portfolio has both long and short positions, and has a larger \emph{Sharpe ratio} than the individual assets.
+      \vskip1ex
+      <<echo=TRUE,eval=FALSE>>=
+# barplot of optimal portfolio weights
+barplot(weightv, col=c("red", "green", "blue"),
+        main="Optimized portfolio weights")
+# Calculate the cumulative wealth of the optimized portfolio
+wealthv <- cbind(retp %*% weightv, retp)
+colnames(wealthv)[1] <- "combined"
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv, function(x)
+  (mean(x)-raterf)/c(Sharpe=sd(x), Sortino=sd(x[x<0])))
+# Plot the log wealth
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+colv <- colnames(wealthv)
+colr <- c("red", "blue", "green", "grey")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
+  main="Optimized Portfolio Returns") %>%
+  dyOptions(colors=colr, strokeWidth=1) %>%
+  dySeries(name=colv[1], col="red", strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/optim_weights.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/optim_portf.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{DEoptim} for Global Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      \vskip1ex
+      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
+      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
+      \vskip1ex
+      The first generation of solutions is selected randomly.
+      \vskip1ex
+      Each new generation is obtained by combining solutions from the previous generation.
+      \vskip1ex
+      The best solutions are selected for creating the next generation.
+      \vskip1ex
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
+      \vskip1ex
+      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima.
+    \column{0.5\textwidth}
+        <<echo=TRUE,eval=FALSE>>=
+# Rastrigin function with vector argument for optimization
+rastrigin <- function(vecv, param=25){
+  sum(vecv^2 - param*cos(vecv))
+}  ##  end rastrigin
+vecv <- c(pi/6, pi/6)
+rastrigin(vecv=vecv)
+library(DEoptim)
+# Optimize rastrigin using DEoptim
+optiml <- DEoptim::DEoptim(rastrigin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# Optimal parameters and value
+optiml$optim$bestmem
+rastrigin(optiml$optim$bestmem)
+summary(optiml)
+plot(optiml)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using Package \protect\emph{Deoptim}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
+      \vskip1ex
+      With the parameter \texttt{control=list(parallelType=1)}, \texttt{DEoptim::DEoptim()} performs the optimization using parallel computing.
+      \vskip1ex
+      With the parameter \texttt{control=list(itermax=100)}, \texttt{DEoptim::DEoptim()} performs at most \texttt{100} iterations.
+      \vskip1ex
+      To achieve a good precision, \texttt{itermax} should be set to a much larger value, such as \texttt{10000}.
+\texttt{100} iterations.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-sink("sinkdata.txt")# Redirect text output to file
+# Perform optimization using DEoptim
+optiml <- DEoptim::DEoptim(fn=objfun,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp,
+  control=list(trace=FALSE, itermax=100, parallelType=1))
+weightv <- optiml$optim$bestmem
+names(weightv) <- colnames(retp)
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+      @
+  \end{columns}
+\end{block}
 
-cat("Redirect text output from R\n")
-print(runif(10))
-cat("\nEnd data\nbye\n")
+\end{frame}
 
-sink()  ##  turn redirect off
 
-pdf("Rgraph.pdf", width=7, height=4)  ##  Redirect graphics to pdf file
 
-cat("Redirect data from R into pdf file\n")
-myvar <- seq(-2*pi, 2*pi, len=100)
-plot(x=myvar, y=sin(myvar), main="Sine wave",
-   xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Efficient Portfolios} With \protect\emph{Ridge Regularization}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Portfolio optimization has a very large number of parameters, equal to the number of stocks in the portfolio.  This causes the \emph{overfitting} of the stock portfolio weights to the in-sample returns.
+      \vskip1ex
+      The technique of \emph{regularization} is designed to reduce the overfitting of the parameters in a model.
+      \vskip1ex
+      \emph{Ridge regularization} adds a penalty term to the objective function, proportional to the sum of squares of the weights: $\mathbf{w}^T \mathbf{w} = \sum_{i=1}^n w^2_i$.
+      \vskip1ex
+      The Lagrangian for the efficient portfolio weights with \emph{ridge regularization} is:
+      \begin{displaymath}
+        \mathcal{L} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} - \lambda_1 (\mathbf{w}^T \mathbbm{1} - 1) - \lambda_2 (\mathbf{w}^T \mathbf{r} - r_t) + \lambda \mathbf{w}^T \mathbf{w}
+      \end{displaymath}
+      Where the regularization intensity $\lambda$ determines the amount of regularization.
+      \vskip1ex
+      The Lagrangian can be rewritten using the ridge covariance matrix $\mathbb{C}_r = \mathbb{C} + \lambda \mathbbm{1}$:
+      \begin{displaymath}
+        \mathcal{L} = \mathbf{w}^T \mathbb{C}_r \, \mathbf{w} - \lambda_1 (\mathbf{w}^T \mathbbm{1} - 1) - \lambda_2 (\mathbf{w}^T \mathbf{r} - r_t)
+      \end{displaymath}
+      This is the efficient portfolio Lagrangian with the ridge covariance matrix $\mathbb{C}_r$.
+    \column{0.5\textwidth}
+      \emph{Ridge regularization} adds a constant to the variances of the returns and reduces their correlations.
+      \vskip1ex
+\fbox{\parbox{\columnwidth-1.5em}{
+      \emph{Ridge regularization} shrinks the covariance matrix towards the unit matrix, and shrinks the portfolio weights towards equal weights.
+}}
+  \end{columns}
+\end{block}
 
-dev.off()  ##  turn pdf output off
+\end{frame}
 
-png("r_plot.png")  ##  Redirect graphics output to png file
 
-cat("Redirect graphics from R into png file\n")
-plot(x=myvar, y=sin(myvar), main="Sine wave",
- xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization With \protect\emph{Ridge Regularization}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Maximizing the efficient portfolio Lagrangian is equivalent to maximizing the \emph{Sharpe ratio}:
+      \begin{displaymath}
+        SR = \frac{\mathbf{w}^T \mu}{\sigma}
+      \end{displaymath}
+      Where $\mu = \mathbf{r} - r_f$ is the vector of excess returns, and $\sigma = \sqrt{\mathbf{w}^T \mathbb{C}_r \, \mathbf{w}}$ is the standard deviation of portfolio with the ridge covariance matrix $\mathbb{C}_r = \mathbb{C} + \lambda \mathbbm{1}$.
+      \vskip1ex
+      The portfolio weights satisfying the linear constraint $\mathbf{w}^T \mathbbm{1} = 1$ are:
+      \begin{displaymath}
+        \mathbf{w} = \frac{\mathbb{C}_r^{-1} \mu}{\mathbbm{1}^T \mathbb{C}_r^{-1} \mu}
+      \end{displaymath}
+      These are the weights of the \emph{maximum Sharpe} portfolio, with the vector of mean excess returns equal to $\mu$, and the covariance matrix equal to $\mathbb{C}_r$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Objective equal to minus ridge Sharpe ratio
+objfun <- function(weightv, retp, covmat, lambdar=0, lambdap=1e3) {
+  retportf <- retp %*% weightv
+  covridge <- covmat + lambdar*diag(ncol(retx))
+  stdev <- sqrt(weightv %*% covridge %*% weightv)
+  if (stdev == 0)
+    return(0)
+  else
+    return(-mean(retportf)/stdev + lambdap*(sum(weightv)-1)^2)
+}  ##  end objfun
+# Calculate ridge covariance matrix of returns and its inverse
+covmat <- cov(retx)
+covridge <- covmat + lambdar*diag(ncol(retx))
+covinv <- solve(a=covridge)
+# Create initial vector of portfolio weights
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+# Calculate vector of excess returns
+raterf <- 0.03/252
+retx <- (retp - raterf)
+# Calculate the weights using optimization
+lambdar <- 300.0
+objfun(weightv, retp=retx, lambdar=lambdar)
+optiml <- optim(par=weightv,
+                fn=objfun,
+                retp=retx,
+                covmat=covmat, ##  Covariance matrix of returns
+                lambdar=lambdar, ##  Ridge regularization intensity
+                lambdap=1e3, ##  Penalty for sum of weights not equal to 1
+                method="L-BFGS-B",
+                upper=c(10, 10, 10),
+                lower=c(-10, -10, -10))
+weightv <- optiml$par
+names(weightv) <- symbolv
+# Calculate the maximum Sharpe weights
+retm <- colMeans(retx)
+weightms <- drop(covinv %*% retm)/sum(covinv %*% retm)
+all.equal(weightv, weightms)
+      @
+  \end{columns}
+\end{block}
 
-dev.off()  ##  turn png output off
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization With \protect\emph{Elastic Net Regularization}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The technique of \emph{regularization} is designed to reduce the number of parameters in a model, for example in portfolio optimization.
+      \vskip1ex
+      The \emph{regularization} techniques often add a penalty term to the objective function.
+      \vskip1ex
+      The penalty term in \emph{ridge} regularization is the sum of squares of the weights: $\sum_{i=1}^n w^2_i$.
+      The \emph{ridge} penalty shrinks (reduces) the weights together, without shrinking some of them to zero. 
+      \vskip1ex
+      The penalty term in \emph{LASSO} regularization is the sum of the absolute values of the weights: $\sum_{i=1}^n|w_i|$.  
+      The \emph{LASSO} penalty shrinks the less important weights to zero, similar to dimension reduction.
+      \vskip1ex
+      The \emph{elastic net} regularization is a combination of \emph{ridge} regularization and \emph{LASSO} regularization:
+      \begin{displaymath}
+        w_{max} = \operatorname*{arg\,max}_{w} [ \frac{\mathbf{w}^T \mu}{\sigma} - \lambda ( (1-\alpha) \sum_{i=1}^n w^2_i + \alpha \sum_{i=1}^n|w_i| ) ]
+      \end{displaymath}
+      The $\lambda$ parameter determines the amount of regularization, and $\alpha$ controls the balance between the \emph{ridge} and \emph{LASSO} penalties.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Objective with regularization penalty
+objfun <- function(weightv, retp, lambdaf, alphaf) {
+  retportf <- retp %*% weightv
+  stdev <- sd(retportf)
+  if (stdev == 0)
+    return(0)
+  else {
+    penaltyv <- lambdaf*((1-alphaf)*sum(weightv^2) +
+        alphaf*sum(abs(weightv)))
+    return(-mean(retportf)/stdev + penaltyv)
+  }  ##  end if
+}  ##  end objfun
+# Objective for equal weight portfolio
+weightv <- rep(1, NROW(symbolv))
+names(weightv) <- symbolv
+lambdaf <- 0.5 ; alphaf <- 0.5
+objfun(weightv, retp=retp, lambdaf=lambdaf, alphaf=alphaf)
+# Perform optimization using DEoptim
+optiml <- DEoptim::DEoptim(fn=objfun,
+  upper=rep(10, NCOL(retp)),
+  lower=rep(-10, NCOL(retp)),
+  retp=retp,
+  lambdaf=lambdaf,
+  alphaf=alphaf,
+  control=list(trace=FALSE, itermax=100, parallelType=1))
+weightv <- optiml$optim$bestmem
+names(weightv) <- colnames(retp)
+weightv <- weightv/sqrt(sum(weightv^2))
+weightv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stock Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The portfolio weights obtained from inverting the covariance matrix are the same as the weights obtained from portfolio optimization.
+      <<echo=TRUE,eval=FALSE>>=
+# Load stock returns
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+datev <- zoo::index(na.omit(retstock$GOOGL))
+retp <- retstock[datev] ##  Subset the returns to GOOGL
+# Remove the stocks with any NA values
+numna <- sapply(retp, function(x) sum(is.na(x)))
+retp <- retp[, numna==0]
+# Select 100 random stocks
+retp <- retp[, sample(NCOL(retp), 100)]
+symbolv <- colnames(retp)
+datev <- zoo::index(retp)
+retis <- retp["/2014"] ##  In-sample returns
+raterf <- 0.03/252
+retx <- (retis - raterf) ##  Excess returns
+# Calculate the maximum Sharpe weights in-sample interval
+colmeanv <- colMeans(retx, na.rm=TRUE)
+covmat <- cov(retx, use="pairwise.complete.obs")
+invreg <- MASS::ginv(covmat)
+weightv <- drop(invreg %*% colmeanv)
+names(weightv) <- symbolv
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      % \includegraphics[width=0.45\paperwidth]{figure/portf_maxsharpe_outsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the weights using optimization without regularization
+lambdaf <- 0.0 ; alphaf <- 1.0
+optiml <- optim(par=weightv,
+                fn=objfun,
+                retp=retx,
+                covmat=covmat, ##  Covariance matrix of returns
+                lambdaf=lambdaf,
+                alphaf=alphaf,
+                method="L-BFGS-B",
+                control=list(factr=1e5),
+                upper=c(10, 10, 10),
+                lower=c(-10, -10, -10))
+weighto <- optiml$par
+names(weighto) <- symbolv
+all.equal(weighto, weightv)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Stock Portfolio Out-of-Sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{portfolio optimization} strategy for stocks is \emph{overfit} in the \emph{in-sample} interval.
+      \vskip1ex
+      Therefore the strategy performance is poor in the \emph{out-of-sample} interval.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P 500 stock returns
+load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
+datev <- zoo::index(na.omit(retstock$GOOGL))
+retp <- retstock[datev] ##  Subset the returns to GOOGL
+# Remove the stocks with any NA values
+numna <- sapply(retp, function(x) sum(is.na(x)))
+retp <- retp[, numna==0]
+# Select 100 random stocks
+retp <- retp[, sample(NCOL(retp), 100)]
+symbolv <- colnames(retp)
+datev <- zoo::index(retp)
+retis <- retp["/2014"] ##  In-sample returns
+raterf <- 0.03/252
+retx <- (retis - raterf) ##  Excess returns
+# Maximum Sharpe weights in-sample interval
+colmeanv <- colMeans(retx, na.rm=TRUE)
+covmat <- cov(retx, use="pairwise.complete.obs")
+invreg <- MASS::ginv(covmat)
+weightv <- drop(invreg %*% colmeanv)
+names(weightv) <- symbolv
+# Calculate the maximum Sharpe portfolio returns
+pnlmaxs <- HighFreq::mult_mat(weightv, retp)
+pnlmaxs <- rowMeans(pnlmaxs, na.rm=TRUE)
+pnlmaxs <- xts::xts(pnlmaxs, datev)
+retew <- xts::xts(rowMeans(retp, na.rm=TRUE), datev)
+pnlmaxs <- pnlmaxs*sd(retew["/2014"])/sd(pnlmaxs["/2014"])
+# Calculate the regularization portfolio returns
+lambdaf <- 1.0 ; alphaf <- 1.0
+optiml <- optim(par=weightv,
+                fn=objfun,
+                retp=retx,
+                lambdaf=lambdaf,
+                alphaf=alphaf,
+                method="L-BFGS-B",
+                control=list(factr=1e5),
+                upper=c(10, 10, 10),
+                lower=c(-10, -10, -10))
+weighto <- optiml$par
+names(weighto) <- symbolv
+pnls <- HighFreq::mult_mat(weighto, retp)
+pnls <- rowMeans(pnls, na.rm=TRUE)
+pnls <- xts::xts(pnls, datev)
+pnls <- pnls*sd(retew["/2014"])/sd(pnls["/2014"])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_maxsharpe_outsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+wealthv <- cbind(pnlmaxs, pnls)
+colnames(wealthv) <- c("MaxSharpe", "Shrink")
+# Calculate the in-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["/2014"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Calculate the out-of-sample Sharpe and Sortino ratios
+sqrt(252)*sapply(wealthv["2015/"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of cumulative portfolio returns
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw],
+  main="Out-of-Sample Maximum Sharpe Stock Portfolio") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyEvent(end(retis[, 1]), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Portfolios Under Zero Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma^2_1 & 0 & \cdots & 0 \\
+          0 & \sigma^2_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^2_n
+        \end{pmatrix}
+      \end{displaymath}
+      Where $\sigma^2_i$ is the variance of returns of asset \texttt{i}.
+      \vskip1ex
+      The inverse of $\mathbb{C}$ is then simply:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \begin{pmatrix}
+          \sigma^{-2}_1 & 0 & \cdots & 0 \\
+          0 & \sigma^{-2}_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots \\
+          0 & 0 & \cdots & \sigma^{-2}_n
+        \end{pmatrix}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The \emph{minimum variance} portfolio weights are proportional to the inverse of the individual variances:
+      \begin{displaymath}
+        w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
+      \end{displaymath}
+      The \emph{maximum Sharpe} portfolio weights are proportional to the ratio of the excess returns divided by the individual variances:
+      \begin{displaymath}
+        w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
+      \end{displaymath}
+      The portfolio weights are proportional to the \emph{Kelly ratios} - the excess returns divided by the variances:
+      \begin{displaymath}
+        w_i \propto \frac{\mu_i}{\sigma^2_i}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Maximum Return Portfolio Using Linear Programming}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stock weights of the maximum return portfolio are obtained by maximizing the portfolio returns:
+      \begin{displaymath}
+        w_{max} = \operatorname*{arg\,max}_{w} [ \, \mathbf{\bar{r}}^T \mathbf{w} \, ] = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i r_i \, ]
+      \end{displaymath}
+      Where $\mathbf{r}$ is the vector of returns, and $\mathbf{w}$ is the vector of portfolio weights, with a linear constraint:
+      \begin{displaymath}
+        \mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1
+      \end{displaymath}
+      And a box constraint:
+      \begin{displaymath}
+        0 \leq w_i \leq 1
+      \end{displaymath}
+      The weights of the maximum return portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints.
+      \vskip1ex
+      The function \texttt{Rglpk\_solve\_LP()} from package \emph{Rglpk} solves linear programming problems by calling the \emph{GNU Linear Programming Kit} library.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)
+library(Rglpk)
+# Vector of symbol names
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+# Calculate the objective vector - the mean returns
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+objvec <- colMeans(retp)
+# Specify matrix of linear constraint coefficients
+coeffm <- matrix(c(rep(1, nstocks), 1, 1, 0),
+                 nc=nstocks, byrow=TRUE)
+# Specify the logical constraint operators
+logop <- c("==", "<=")
+# Specify the vector of constraints
+consv <- c(1, 0)
+# Specify box constraints (-1, 1) (default is c(0, Inf))
+boxc <- list(lower=list(ind=1:nstocks, val=rep(-1, nstocks)),
+             upper=list(ind=1:nstocks, val=rep(1, nstocks)))
+# Perform optimization
+optiml <- Rglpk::Rglpk_solve_LP(
+  obj=objvec,
+  mat=coeffm,
+  dir=logop,
+  rhs=consv,
+  bounds=boxc,
+  max=TRUE)
+all.equal(optiml$optimum, sum(objvec*optiml$solution))
+optiml$solution
+coeffm %*% optiml$solution
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk (\protect\emph{CVaR})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Conditional Value at Risk} (\emph{CVaR}) is equal to the average of the \emph{VaR} for confidence levels less than a given confidence level $\alpha$:
+      \begin{displaymath}
+        \mathrm{CVaR} = \frac{1}{\alpha} \int_{0}^\alpha \mathrm{VaR}(p) \, \mathrm{d}p
+      \end{displaymath}
+      The \emph{Conditional Value at Risk} is also called the Expected Shortfall (\emph{ES}), or the Expected Tail Loss (\emph{ETL}).
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data, and returns a list with a vector of loss values and a vector of corresponding densities.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
+confl <- 0.1
+varisk <- quantile(retp, confl)
+cvar <- mean(retp[retp < varisk])
+# Or
+sortv <- sort(as.numeric(retp))
+varind <- round(confl*NROW(retp))
+varisk <- sortv[varind]
+cvar <- mean(sortv[1:varind])
+# Plot histogram of VTI returns
+varmin <- (-0.05)
+histp <- hist(retp, col="lightgrey",
+  xlab="returns", breaks=100, xlim=c(varmin, 0.01),
+  ylab="frequency", freq=FALSE, main="VTI Returns Histogram")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_var.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot density of losses
+densv <- density(retp, adjust=1.5)
+lines(densv, lwd=3, col="blue")
+# Add line for VaR
+abline(v=varisk, col="red", lwd=3)
+ymax <- max(densv$y)
+text(x=varisk, y=2*ymax/3, labels="VaR", lwd=2, pos=2)
+# Add shading for CVaR
+rangev <- (densv$x < varisk) & (densv$x > varmin)
+polygon(
+  c(varmin, densv$x[rangev], varisk),
+  c(0, densv$y[rangev], 0),
+  col=rgb(1, 0, 0,0.5), border=NA)
+text(x=1.5*varisk, y=ymax/7, labels="CVaR", lwd=2, pos=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{CVaR} Portfolio Weights Using Linear Programming}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The stock weights of the minimum \emph{CVaR} portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints,
+      \begin{displaymath}
+        w_{min} = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i b_i \, ]
+      \end{displaymath}
+      Where $b_i$ is the negative objective vector, and $\mathbf{w}$ is the vector of portfolio weights, with a linear constraint:
+      \begin{displaymath}
+        \mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1
+      \end{displaymath}
+      And a box constraint:
+      \begin{displaymath}
+        0 \leq w_i \leq 1
+      \end{displaymath}
+      The function \texttt{Rglpk\_solve\_LP()} from package \emph{Rglpk} solves linear programming problems by calling the \emph{GNU Linear Programming Kit} library.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)  ##  Load rutils
+library(Rglpk)
+# Vector of symbol names and returns
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+retm <- colMeans(retp)
+confl <- 0.05
+rmin <- 0 ; wmin <- 0 ; wmax <- 1
+weightsum <- 1
+ncols <- NCOL(retp) ##  number of assets
+nrows <- NROW(retp) ##  number of rows
+# Create objective vector
+objvec <- c(numeric(ncols), rep(-1/(confl/nrows), nrows), -1)
+# Specify matrix of linear constraint coefficients
+coeffm <- rbind(cbind(rbind(1, retm),
+                      matrix(data=0, nrow=2, ncol=(nrows+1))),
+                cbind(coredata(retp), diag(nrows), 1))
+# Specify the logical constraint operators
+logop <- c("==", ">=", rep(">=", nrows))
+# Specify the vector of constraints
+consv <- c(weightvum, rmin, rep(0, nrows))
+# Specify box constraints (wmin, wmax) (default is c(0, Inf))
+boxc <- list(lower=list(ind=1:ncols, val=rep(wmin, ncols)),
+             upper=list(ind=1:ncols, val=rep(wmax, ncols)))
+# Perform optimization
+optiml <- Rglpk_solve_LP(obj=objvec, mat=coeffm, dir=logop, rhs=consv, types=rep("C", NROW(objvec)), max=T, bounds=boxc)
+all.equal(optiml$optimum, sum(objvec*optiml$solution))
+coeffm %*% optiml$solution
+as.numeric(optiml$solution[1:ncols])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{quadprog} for Quadratic Programming}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Quadratic programming (\emph{QP}) is the optimization of quadratic objective functions subject to linear constraints.
+      \vskip1ex
+      Let $O(x)$ be an objective function that is quadratic with respect to a vector variable $x$:
+      \begin{displaymath}
+        O(x) = \frac{1}{2} x^T \mathbb{Q} x - d^T x
+      \end{displaymath}
+      Where $\mathbb{Q}$ is a \emph{positive definite} matrix ($x^T \mathbb{Q} x > 0$), and $d$ is a vector.
+      \vskip1ex
+      An example of a \emph{positive definite} matrix is the covariance matrix of linearly independent variables.
+      \vskip1ex
+      Let the linear constraints on the variable $x$ be specified as:
+      \begin{displaymath}
+        \mathbb{A} x \geq b
+      \end{displaymath}
+      Where $\mathbb{A}$ is a matrix, and $b$ is a vector.
+      \vskip1ex
+      The function \texttt{solve.QP()} from package \emph{quadprog} performs optimization of quadratic objective functions subject to linear constraints.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:6)),eval=FALSE>>=
+raterf <- 0.03
+retp <- c(asset1=0.05, asset2=0.06)
+stdevs <- c(asset1=0.4, asset2=0.5)
+corrp <- 0.6
+covmat <- matrix(c(1, corrp, corrp, 1), nc=2)
+covmat <- t(t(stdevs*covmat)*stdevs)
+library(quadprog)
+# Minimum variance weights without constraints
+optiml <- solve.QP(Dmat=2*covmat,
+                    dvec=rep(0, 2),
+                    Amat=matrix(0, nr=2, nc=1),
+                    bvec=0)
+# Minimum variance weights sum equal to 1
+optiml <- solve.QP(Dmat=2*covmat,
+                    dvec=rep(0, 2),
+                    Amat=matrix(1, nr=2, nc=1),
+                    bvec=1)
+# Optimal value of objective function
+t(optiml$solution) %*% covmat %*% optiml$solution
+## Perform simple optimization for reference
+# Objective function for simple optimization
+objfun <- function(x) {
+  x <- c(x, 1-x)
+  t(x) %*% covmat %*% x
+}  ##  end objfun
+unlist(optimize(f=objfun, interval=c(-1, 2)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using Package \protect\emph{quadprog}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The objective function is designed to minimize portfolio variance and maximize its returns:
+      \begin{displaymath}
+        O(x) = \mathbf{w}^T \mathbb{C} \, \mathbf{w} - \mathbf{w}^T \mathbf{r}
+      \end{displaymath}
+      Where $\mathbb{C}$ is the covariance matrix of returns, $\mathbf{r}$ is the vector of returns, and $\mathbf{w}$ is the vector of  portfolio weights.
+      \vskip1ex
+      The portfolio weights $\mathbf{w}$ are constrained as:
+      \begin{align*}
+        \mathbf{w}^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1\\
+        0 \leq w_i \leq 1
+      \end{align*}
+      The function \texttt{solve.QP()} has the arguments:
+      \vskip1ex
+      \texttt{Dmat} and \texttt{dvec} are the matrix and vector defining the quadratic objective function.
+      \vskip1ex
+      \texttt{Amat} and \texttt{bvec} are the matrix and vector defining the constraints.
+      \vskip1ex
+      \texttt{meq} specifies the number of equality constraints
+      (the first \texttt{meq} constraints are equalities, and the rest are inequalities).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate daily ETF percentage returns
+symbolv <- c("VTI", "IEF", "DBC")
+nstocks <- NROW(symbolv)
+retp <- na.omit(rutils::etfenv$returns[, symbolv])
+# Calculate the covariance matrix
+covmat <- cov(retp)
+# Minimum variance weights, with sum equal to 1
+optiml <- quadprog::solve.QP(Dmat=2*covmat,
+                    dvec=numeric(3),
+                    Amat=matrix(1, nr=3, nc=1),
+                    bvec=1)
+# Minimum variance, maximum returns
+optiml <- quadprog::solve.QP(Dmat=2*covmat,
+                    dvec=apply(0.1*retp, 2, mean),
+                    Amat=matrix(1, nr=3, nc=1),
+                    bvec=1)
+# Minimum variance positive weights, sum equal to 1
+a_mat <- cbind(matrix(1, nr=3, nc=1),
+               diag(3), -diag(3))
+b_vec <- c(1, rep(0, 3), rep(-1, 3))
+optiml <- quadprog::solve.QP(Dmat=2*covmat,
+                    dvec=numeric(3),
+                    Amat=a_mat,
+                    bvec=b_vec,
+                    meq=1)
       @
   \end{columns}
 \end{block}

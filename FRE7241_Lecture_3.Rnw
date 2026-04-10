@@ -65,13 +65,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#3]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#3, Fall 2025}
+\subtitle{Lecture\#3, Spring 2026}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{November 11, 2025}
+\date{February 3, 2026}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -298,41 +298,93 @@ Box.test(retp^2, lag=10, type="Ljung")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Stock returns have significant negative autocorrelations in time intervals with high volatility, but much less in time intervals with low volatility.
+      Stock returns in high volatility time intervals have more negative autocorrelations than in low volatility time intervals.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the weekly end points
 endd <- rutils::calc_endpoints(retp, interval="weeks")
-npts <- NROW(endd)
-# Calculate the monthly VTI volatilities and their median volatility
+endd <- endd[-1]; npts <- NROW(endd)
+retp <- as.numeric(retp)
+# Calculate the weekly VTI volatilities and their median
 stdev <- sapply(2:npts, function(endp) {
   sd(retp[endd[endp-1]:endd[endp]])
 })  ##  end sapply
 medianv <- median(stdev)
-# Calculate the stock returns of low volatility intervals
+# Calculate the stock returns of low volatility weeks
 retlow <- lapply(2:npts, function(endp) {
   if (stdev[endp-1] <= medianv)
-    retp[endd[endp-1]:endd[endp]]
+    return(retp[endd[endp-1]:endd[endp]])
 })  ##  end lapply
 retlow <- rutils::do_call(c, retlow)
-# Calculate the stock returns of high volatility intervals
+plot(cumsum(retlow), main="Low Volatility Returns",
+     type="l", xlab="time", ylab="cumulative returns")
+Box.test(retlow, lag=10, type="Ljung")
+# Calculate the stock returns of high volatility weeks
 rethigh <- lapply(2:npts, function(endp) {
   if (stdev[endp-1] > medianv)
-    retp[endd[endp-1]:endd[endp]]
+    return(retp[endd[endp-1]:endd[endp]])
 })  ##  end lapply
 rethigh <- rutils::do_call(c, rethigh)
-# Plot ACF of low volatility returns
-rutils::plot_acf(retlow, lag=10, 
- main="ACF of Low Volatility Returns")
-Box.test(retlow, lag=10, type="Ljung")
-# Plot ACF of high volatility returns
-rutils::plot_acf(rethigh, lag=10, 
- main="ACF of High Volatility Returns")
+plot(cumsum(rethigh), main="High Volatility Returns",
+     type="l", xlab="time", ylab="cumulative returns")
 Box.test(rethigh, lag=10, type="Ljung")
+# Plot ACF of low and high volatility returns
+par(mfrow=c(2,1)); par(mar=c(3, 2, 2, 1), oma=c(0, 0, 0, 0))
+rutils::plot_acf(retlow, lag=10, main="ACF of Low Volatility Returns")
+rutils::plot_acf(rethigh, lag=10, main="ACF of High Volatility Returns")
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
+      % \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/acf_hivol.png}
       <<echo=TRUE,eval=FALSE>>=
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exponential Moving Average Autocorrelation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The exponential moving average \emph{EMA} autocorrelation of lag $k$, of the returns $r_t$ is defined as:
+      \begin{displaymath}
+        \rho^k_t = \lambda \rho^k_{t-1} + (1 - \lambda) \frac{(r_t-\bar{r})(r_{t-k}-\bar{r})}{\sigma^2}
+      \end{displaymath}
+      Where $\bar{r}$ are the \emph{EMA} of the returns, $\sigma^2$ is the \emph{EMA} variance of the returns, and $\lambda$ is the \emph{EMA} decay factor. 
+      \vskip1ex
+      In periods of high volatility, the autocorrelations of returns are more negative than in periods of low volatility.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI percentage returns
+retp <- na.omit(rutils::etfenv$returns$VTI)
+# Calculate the lagged products of returns
+lagk <- 2
+retl <- rutils::lagit(retp, 1)
+for (i in 2:lagk)
+  retl <- retl + rutils::lagit(retp, i)
+retl <- retp*retl/drop(var(retp))
+# Calculate the EMA autocorrelations
+lambda <- 0.9
+acfema <- HighFreq::run_mean(cbind(retp^2/drop(var(retp)), retl), lambda=lambda)
+# Perform regression of the the autocorrelations and the variance
+regmod <- lm(acfema[, 2] ~ acfema[, 1])
+summary(regmod)
+plot(acfema[, 2] ~ acfema[, 1])
+abline(regmod)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_ema.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the variance and the EMA autocorrelations
+acfema <- xts(acfema, order.by=zoo::index(retp))
+colnames(acfema) <- c("Variance", "ACF")
+dygraphs::dygraph(acfema["2020-01/2020-07"], main="EMA Variance and ACF of VTI Returns") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -355,7 +407,6 @@ Box.test(rethigh, lag=10, type="Ljung")
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returnstop.RData")
 # Calculate the stock volatilities and the sum of the ACF
 library(parallel)  ##  Load package parallel
-ncores <- detectCores() - 1
 statm <- mclapply(retstock, function(retp) {
   retp <- na.omit(retp)
   ##  Calculate the sum of the ACF
@@ -363,14 +414,15 @@ statm <- mclapply(retstock, function(retp) {
   ##  Calculate the Ljung-Box statistic
   lbstat <- unname(Box.test(retp, lag=10, type="Ljung")$statistic)
   c(stdev=sd(retp), acfsum=acfsum, lbstat=lbstat)
-}, mc.cores=ncores)  ##  end mclapply
+}, mc.cores=detectCores()-1)  ##  end mclapply
 statm <- do.call(rbind, statm)
 statm <- as.data.frame(statm)
 # Calculate the ACF sum for stock volatility quantiles
 confl <- seq(0.1, 0.9, 0.1)
 stdq <- quantile(statm[, "stdev"], confl)
 acfq <- quantile(statm[, "acfsum"], confl)
-plot(stdq, acfq, xlab="volatility", ylab="PACF Sum",
+plot(stdq, acfq, xlab="volatility", ylab="PACF Sum", 
+     type="b", col="blue", lwd=2, pch=16,
      main="PACF Sum vs Volatility")
 # Compare the ACF sum for stock volatility quantile with VTI
 acfq[1]
@@ -380,16 +432,17 @@ sum(pacf(na.omit(rutils::etfenv$returns$VTI), lag=10, plot=FALSE)$acf)
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/acf_scatter_stocks.png}
       <<echo=TRUE,eval=FALSE>>=
+# Remove stocks with very negative ACF sum because of bad data
+statm <- statm[statm$acfsum > -0.3, ]
 # Scatter plot of the sum of the ACF vs the standard deviation
 regmod <- lm(acfsum ~ stdev, data=statm)
-plot(acfsum ~ stdev, data=statm, xlab="SD", ylab="PACF Sum", 
-     xlim=c(0.5*min(stdq), 1.5*max(stdq)), ylim=c(1.5*min(acfq), 7*max(acfq)),
-     main="PACF Sum vs SD")
+plot(acfsum ~ stdev, data=statm, 
+     xlab="SD", ylab="PACF Sum", main="PACF Sum vs SD")
 abline(regmod, lwd=3, col="red")
 tvalue <- summary(regmod)$coefficients[2, "t value"]
 tvalue <- round(tvalue, 3)
-text(x=mean(stdq), y=6*max(acfq), 
-     lab=paste("t-value =", tvalue), lwd=2, cex=1.2)
+text(x=3*mean(stdq), y=6*max(acfq), 
+     lab=paste("t-value =", tvalue), lwd=2, cex=1.0)
       @
   \end{columns}
 \end{block}
@@ -412,15 +465,13 @@ text(x=mean(stdq), y=6*max(acfq),
 lbstatq <- rev(quantile(statm[, "lbstat"], confl))
 lbstatq[1]
 Box.test(na.omit(rutils::etfenv$returns$VTI), lag=10, type="Ljung")$statistic
+# Plot the Ljung-Box test statistic for volatility quantiles
+plot(stdq, lbstatq, xlab="volatility", ylab="Ljung-Box Stat", 
+     main="Ljung-Box Statistic For Stock Volatility Quantiles")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/acf_lbtest_stocks.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot Ljung-Box test statistic for volatility quantiles
-plot(stdq, lbstatq, xlab="volatility", ylab="Ljung-Box Stat", 
-     main="Ljung-Box Statistic For Stock Volatility Quantiles")
-      @
   \end{columns}
 \end{block}
 
@@ -925,6 +976,9 @@ text(x=0.6*max(hurstis), y=0.9*max(hurstos),
       \vskip1ex
       The relationship is dominated by a few stocks with very large trading volumes, like \emph{AAPL}, which also tend to be more volatile and therefore have larger Hurst exponents.
       <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 stock prices
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+ls(sp500env)
 # Calculate the stock trading volumes after the year 2000
 volum <- eapply(sp500env, function(ohlc) {
     sum(quantmod::Vo(ohlc)["2000/"])
@@ -1090,7 +1144,7 @@ text(x=mean(orderv), y=max(hurstv),
       <<echo=TRUE,eval=FALSE>>=
 # Get ETF log prices
 symbolv <- rutils::etfenv$symbolv
-symbolv <- symbolv[!(symbolv %in% c("MTUM", "QUAL", "VLUE", "USMV", "AIEQ"))]
+symbolv <- symbolv[!(symbolv %in% c("SVXY", "VXX", "MTUM", "QUAL", "VLUE", "USMV", "AIEQ"))]
 pricev <- lapply(rutils::etfenv$prices[, symbolv], function(x) {
   log(na.omit(x))
 })  ##  end lapply
@@ -1191,7 +1245,7 @@ rastrigin(optiml$par, param=1)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log ETF returns
 symbolv <- rutils::etfenv$symbolv
-symbolv <- symbolv[!(symbolv %in% c("MTUM", "QUAL", "VLUE", "USMV"))]
+symbolv <- symbolv[!(symbolv %in% c("SVXY", "VXX", "MTUM", "QUAL", "VLUE", "USMV", "AIEQ"))]
 retp <- rutils::etfenv$returns[, symbolv]
 retp[is.na(retp)] <- 0
 sum(is.na(retp))
@@ -2466,7 +2520,7 @@ plot(x=2:NCOL(predm), y=mse[, 1],
       \vskip1ex
       The optimal order parameter is \texttt{n = 2}, with a positive intercept coefficient $\varphi_0$ (since the average \emph{VTI} returns were positive), and a negative coefficient $\varphi_1$ (because of strong negative autocorrelations in periods of high volatility).
       \vskip1ex
-      Decreasing the order parameter of the autoregressive model is a form of \emph{shrinkage} because it reduces the number of predictive variables.
+      Decreasing the order parameter of the autoregressive model is a form of \emph{regularization} because it reduces the number of predictive variables.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the out-of-sample PnLs
 pnls <- lapply(fcastl, function(fcasts) {
@@ -2977,10 +3031,11 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vskip1ex
       But aggregating stock returns can reduce their noise and improve the performance of AR strategies.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate VTI returns over non-overlapping 2-day intervals
-pricev <- na.omit(rutils::etfenv$prices$VTI)
-reta <- rutils::diffit(log(pricev), lag=2)
-reta <- reta[2*(1:(NROW(pricev) %/% 2))]
+# Calculate VTI returns over non-overlapping 5-day intervals
+pricev <- log(na.omit(rutils::etfenv$prices$VTI))
+retp <- rutils::diffit(pricev)
+pricev <- pricev[2*(1:(NROW(pricev)/2))]
+reta <- rutils::diffit(pricev)
 # Calculate the autocorrelations of daily VTI returns
 rutils::plot_acf(reta, lag=10, main="ACF of Aggregated 2-day VTI returns")
       @
@@ -3009,9 +3064,8 @@ rutils::plot_acf(reta, lag=10, main="ACF of Aggregated 2-day VTI returns")
       The aggregated AR strategy has good performance both in periods of high volatility and in low volatility.
       <<echo=TRUE,eval=FALSE>>=
 # Define the response and predictor matrices
-reta <- rutils::diffit(log(pricev), lag=2)/2
 orderp <- 5
-predm <- lapply(2*(1:orderp), rutils::lagit, input=reta)
+predm <- lapply(1:orderp, rutils::lagit, input=reta)
 predm <- rutils::do_call(cbind, predm)
 predm <- cbind(rep(1, NROW(reta)), predm)
 colnames(predm) <- c("phi0", paste0("lag", 1:orderp))
@@ -3037,9 +3091,9 @@ pnls <- pnls*sd(reta[reta<0])/sd(pnls[pnls<0])
 wealthv <- cbind(reta, pnls, (reta+pnls)/2)
 colnames(wealthv) <- c("VTI", "AR_Strategy", "Combined")
 cor(wealthv)
-sqrt(252)*sapply(wealthv, function(x) 
+sqrt(252/2)*sapply(wealthv, function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
-sqrt(252)*sapply(wealthv["2010/"], function(x) 
+sqrt(252/2)*sapply(wealthv["2010/"], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 # Plot dygraph of the AR strategy
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
@@ -3509,7 +3563,7 @@ all.equal(invred, invrcpp, check.attributes=FALSE)
     \column{0.5\textwidth}
       Dimension reduction improves the out-of-sample performance of the multifactor AR strategy.  
       \vskip1ex
-      The best performance is obtained using the smallest order parameter (strongest dimension reduction) \emph{dimax = 2}.
+      The best performance is obtained using the strongest dimension reduction, with the smallest order parameter \emph{dimax = 2}.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample SVD
 svdec <- svd(predm[insample, ])
@@ -3522,7 +3576,7 @@ coeffm <- sapply(dimv, function(dimax) {
   predinv %*% respv[insample]
 })  ##  end lapply
 colnames(coeffm) <- paste0("dim=", dimv)
-colorv <- colorRampPalette(c("red", "blue"))(NCOL(coeffm))
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(coeffm))
 matplot(y=coeffm, type="l", lty="solid", lwd=1, col=colorv,
         xlab="predictor", ylab="coeff",
         main="AR Coefficients For Different Dimensions")
@@ -3567,7 +3621,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 
 
 %%%%%%%%%%%%%%%
-\subsection{AR Coefficients With Ridge Shrinkage}
+\subsection{AR Coefficients With Ridge Regularization}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3579,9 +3633,9 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \begin{displaymath}
         \operatorname{ObjFunc} = \sum_{i=1}^n (r_t - f_t)^2 + \lambda \sum_{i=1}^k \varphi_i^2
       \end{displaymath}
-      For larger values of the \emph{shrinkage factor} $\lambda$, the \emph{AR} coefficients are shrunk closer to zero, and they become proportional to the \emph{t-values} of the coefficients.
+      For larger values of the \emph{regularization factor} $\lambda$, the \emph{AR} coefficients are shrunk closer to zero, and they become proportional to the \emph{t-values} of the coefficients.
       \vskip1ex
-      The shrinkage and dimension reduction both shrink the coefficients closer to zero.
+      The regularization and dimension reduction both shrink the coefficients closer to zero.
       <<echo=TRUE,eval=FALSE>>=
 # Objective function for the in-sample AR coefficients
 objfun <- function(coeff, lambdaf) {
@@ -3594,25 +3648,25 @@ optiml <- optim(par=numeric(orderp+1),
                 method="L-BFGS-B",
                 upper=rep(10, orderp+1),
                 lower=rep(-10, orderp+1))
-# Extract the shrinkage coefficients
+# Extract the regularization coefficients
 coeff <- optiml$par
 names(coeff) <- colnames(predm)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_coeff_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_coeff_ridge.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the AR coefficients
 barplot(coeff, xlab="", ylab="coeff", col="grey",
-        main="AR Coefficients With Shrinkage")
-# Plot the shrinkage coefficients and the t-values of the coefficients
+        main="AR Coefficients With Regularization")
+# Plot the regularization coefficients and the t-values of the coefficients
 plot(coeff/sqrt(sum(coeff^2)), xlab="", ylab="coeff", 
-     col="blue", lwd=2, t="l",
-     main="AR Coefficients With Shrinkage")
+     col="blue", lwd=2, t="b",
+     main="AR Coefficients With Ridge Regularization")
 lines(coefft/sqrt(sum(coefft^2)), xlab="", ylab="coeff", 
-     col="red", lwd=2)
-legend("topright", c("shrink", "t-value"), 
-       inset=0.05, col=c("blue", "red"), lwd=6, bty="n")
+     col="red", t="b", lwd=2)
+legend("topright", c("ridge", "t-value"), cex=1.1,
+       inset=0.01, col=c("blue", "red"), lwd=6, bty="n")
       @
   \end{columns}
 \end{block}
@@ -3621,15 +3675,15 @@ legend("topright", c("shrink", "t-value"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Multifactor AR Strategy With Ridge Shrinkage}
+\subsection{Multifactor AR Strategy With Ridge Regularization}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The out-of-sample performance of the multifactor AR strategy can be improved by applying \emph{shrinkage} to the \emph{AR} coefficients.
+      The out-of-sample performance of the multifactor AR strategy can be improved by applying \emph{regularization} to the \emph{AR} coefficients.
       \vskip1ex
-      The value of the \emph{shrinkage factor} $\lambda$ can be chosen to maximize the out-of-sample performance.
+      The value of the \emph{regularization factor} $\lambda$ can be chosen to maximize the out-of-sample performance.
       \vskip1ex
       Scaling the \emph{AR} forecasts can improve the performance even more.
       <<echo=TRUE,eval=FALSE>>=
@@ -3643,11 +3697,11 @@ pnls <- pnls*sd(retp[retp<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_ridge.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
 wealthv <- cbind(retp, pnls)
-colnames(wealthv) <- c("VTI", "ARMulti")
+colnames(wealthv) <- c("VTI", "Ridge")
 sqrt(252)*sapply(wealthv[insample, ], function(x) 
   c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
 sqrt(252)*sapply(wealthv[outsample, ], function(x) 
@@ -3656,7 +3710,7 @@ sqrt(252)*sapply(wealthv[outsample, ], function(x)
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(wealthv))
 dygraphs::dygraph(cumsum(wealthv)[endw], 
-  main="Multifactor Autoregressive Strategy With Shrinkage") %>%
+  main="Multifactor Autoregressive Strategy With Ridge Regularization") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyEvent(datev[cutoff], label="cutoff", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=300)
@@ -3837,7 +3891,7 @@ coeffm <- sapply(dimv, function(dimax) {
   predinv %*% respv[insample]
 })  ##  end lapply
 colnames(coeffm) <- paste0("dim=", dimv)
-colorv <- colorRampPalette(c("red", "blue"))(NCOL(coeffm))
+colorv <- colorRampPalette(c("blue", "red"))(NCOL(coeffm))
 matplot(y=coeffm, type="l", lty="solid", lwd=1, col=colorv,
         xlab="predictor", ylab="coeff",
         main="AR Coefficients For Different Dimensions")
@@ -3882,7 +3936,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Kitchen Sink Coefficients With Ridge Shrinkage}
+\subsection{Kitchen Sink Coefficients With Ridge Regularization}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3894,11 +3948,11 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \begin{displaymath}
         \operatorname{ObjFunc} = \sum_{i=1}^n (r_t - f_t)^2 + \lambda \sum_{i=1}^k \varphi_i^2
       \end{displaymath}
-      As the objective function is minimized, the \emph{shrinkage} penalty shrinks the \emph{AR} coefficients closer to zero.
+      As the objective function is minimized, the \emph{regularization} penalty shrinks the \emph{AR} coefficients closer to zero.
       \vskip1ex
-      A larger \emph{shrinkage factor} $\lambda$ applies more \emph{shrinkage} to the \emph{AR} coefficients, to shrink them closer to zero.
+      A larger \emph{regularization factor} $\lambda$ applies more \emph{regularization} to the \emph{AR} coefficients, to shrink them closer to zero.
       \vskip1ex
-      The coefficient shrinkage also produces a dimension reduction effect, because the higher order coefficients are shrunk closer to zero.
+      The coefficient regularization also produces a dimension reduction effect, because the higher order coefficients are shrunk closer to zero.
       <<echo=TRUE,eval=FALSE>>=
 # Objective function for the in-sample AR coefficients
 objfun <- function(coeff, respv, predm, lambdaf) {
@@ -3908,7 +3962,7 @@ objfun <- function(coeff, respv, predm, lambdaf) {
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_coeff_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_coeff_ridge.png}
       <<echo=TRUE,eval=FALSE>>=
 # Perform optimization using the quasi-Newton method
 ncoeff <- NROW(coeff)
@@ -3923,7 +3977,7 @@ optiml <- optim(par=numeric(ncoeff),
 coeff <- optiml$par
 names(coeff) <- colnames(predm)
 barplot(coeff, xlab="", ylab="coeff", col="grey",
-        main="AR Coefficients With Shrinkage")
+        main="AR Coefficients With Regularization")
       @
   \end{columns}
 \end{block}
@@ -3932,15 +3986,15 @@ barplot(coeff, xlab="", ylab="coeff", col="grey",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Kitchen Sink Strategy With Shrinkage}
+\subsection{Kitchen Sink Strategy With Ridge Regularization}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The out-of-sample performance of the multifactor AR strategy can be improved by applying \emph{shrinkage} to the \emph{AR} coefficients.
+      The out-of-sample performance of the multifactor AR strategy can be improved by applying \emph{regularization} to the \emph{AR} coefficients.
       \vskip1ex
-      The value of the \emph{shrinkage factor} $\lambda$ can be chosen to maximize the out-of-sample performance.
+      The value of the \emph{regularization factor} $\lambda$ can be chosen to maximize the out-of-sample performance.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the forecasts of VTI (fitted values)
 fcasts <- predm %*% coeff
@@ -3952,7 +4006,7 @@ pnls <- pnls*sd(respv[respv<0])/sd(pnls[pnls<0])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_pnl_shrink.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_kitchensink_pnl_ridge.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the in-sample and out-of-sample Sharpe and Sortino ratios
 wealthv <- cbind(respv, pnls)
@@ -3965,7 +4019,7 @@ sqrt(252)*sapply(wealthv[outsample, ], function(x)
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 colorv <- colorRampPalette(c("blue", "red"))(NCOL(wealthv))
 dygraphs::dygraph(cumsum(wealthv)[endw], 
-  main="Multifactor Autoregressive Strategy With Shrinkage") %>%
+  main="Multifactor Autoregressive Strategy With Ridge Regularization") %>%
   dyOptions(colors=colorv, strokeWidth=2) %>%
   dyEvent(datev[cutoff], label="cutoff", strokePattern="solid", color="red") %>%
   dyLegend(show="always", width=300)

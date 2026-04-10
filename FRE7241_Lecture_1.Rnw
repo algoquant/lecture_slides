@@ -61,12 +61,12 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#1]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#1, Fall 2025}
+\subtitle{Lecture\#1, Spring 2026}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{October 28, 2025}
+\date{January 20, 2026}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -118,7 +118,7 @@ knit_theme$set(thm)
 \begin{block}{What is Algorithmic Portfolio Management?}
 \begin{itemize}
   \item \emph{Algorithmic portfolio management} applies rules (algorithms) to manage investment portfolios to achieve its investment objectives.
-  \item The portfolios are rebalanced less frequently (monthly, weekly, or daily.)
+  \item The portfolios are usually rebalanced less frequently (daily, weekly, or monthly.)
   \item The trades are usually executed automatically using computer programs.
   \item \emph{Systematic trading} also uses algorithms to trade automatically, but at a higher (intraday) frequency than portfolio management.
   \item \emph{Algorithmic trading} applies algorithms to lower the transaction costs of trade execution.    The algorithms often break large orders into smaller lots, and submit them incrementally.
@@ -141,13 +141,13 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Types of Systematic Strategies}
+\subsection{Types of Systematic (Algorithmic) Strategies}
 \begin{frame}[t]{\subsecname}
 \vspace{-1em}
-\begin{block}{Examples of Systematic Strategies}
+\begin{block}{Examples of Systematic (Algorithmic) Strategies}
 \begin{itemize}
   \item \emph{Trend following}: Buy stocks with rising prices and short stocks with falling prices.
-  \item \emph{Stock momentum}: Buy stocks with high past returns and short stocks with low returns.
+  \item \emph{Stock momentum}: Buy stocks with higher relative past returns and short stocks with lower returns.
   \item \emph{Portfolio momentum}: Buy portfolios with high past returns and short portfolios with low returns.
   \item \emph{Statistical arbitrage}: Buy cheap stocks and sell expensive stocks.
   \item \emph{Volatility arbitrage}: Sell high implied volatility and buy low realized volatility.
@@ -479,7 +479,8 @@ Good course by prof. Eric Zivot, with lots of \texttt{R} examples:
 symbolv <- c("SPY", "VTI", "QQQ", "VEU", "EEM", "XLY", "XLP", 
 "XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", 
 "IWB", "IWD", "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", 
-"VXX", "SVXY", "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", "AIEQ")
+"VXX", "SVXY", "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV", 
+"AIEQ", "DYNF")
 # Read etf database into data frame
 etflist <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etf_list.csv")
 rownames(etflist) <- etflist$Symbol
@@ -897,7 +898,7 @@ save(etfenv, file="/Users/jerzy/Develop/lecture_slides/data/etf_data.RData")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{as.environment()} coerces objects (listv) into an environment.
+      The function \texttt{as.environment()} coerces objects (lists) into an environment.
       \vskip1ex
       The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list.
       \vskip1ex
@@ -1120,11 +1121,11 @@ colnames(pricev) <- rutils::get_name(colnames(pricev))
 retp <- xts::diff.xts(pricev)/rutils::lagit(pricev, pad_zeros=FALSE)
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 samplev <- sample(NCOL(retp), s=100, replace=FALSE)
-prices100 <- pricev[, samplev]
-returns100 <- retp[, samplev]
-save(pricev, prices100,
+pricestock100 <- pricev[, samplev]
+retstock100 <- retp[, samplev]
+save(pricev, pricestock100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
-save(retp, returns100,
+save(retp, retstock100,
   file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
       @
     \column{0.5\textwidth}
@@ -1210,12 +1211,12 @@ retp <- xts::diff.xts(pricev)/rutils::lagit(pricev, pad_zeros=FALSE)
 # Select a random sample of 100 prices and returns
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 samplev <- sample(NCOL(retp), s=100, replace=FALSE)
-prices100 <- pricev[, samplev]
-returns100 <- retp[, samplev]
+pricestock100 <- pricev[, samplev]
+retstock100 <- retp[, samplev]
 # Save the data into binary files
-save(pricev, prices100,
+save(pricev, pricestock100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
-save(retp, returns100,
+save(retp, retstock100,
      file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
       @
   \end{columns}
@@ -1477,9 +1478,13 @@ apply(bootd, MARGIN=2, function(x)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+\fbox{\parbox{\columnwidth-1.5em}{
       For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
+}}
       \vskip1ex
+\fbox{\parbox{\columnwidth-1.5em}{
       But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}.
+}}
       \vskip1ex
       The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing.
       \vskip1ex
@@ -1599,7 +1604,9 @@ all.equal(sqrt(sum(retsub^2)/nrows),
     \column{0.5\textwidth}
       A \emph{drawdown} is the drop in prices from their historical peak, and is equal to the difference between the prices minus the cumulative maximum of the prices.
       \vskip1ex
+\fbox{\parbox{\columnwidth-1.5em}{
       \emph{Drawdown risk} determines the risk of liquidation due to stop loss limits.
+}}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate time series of VTI drawdowns
 closep <- log(quantmod::Cl(rutils::etfenv$VTI))
@@ -1701,7 +1708,9 @@ print(xtable(tablev), comment=FALSE, size="tiny", include.rownames=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The distribution of returns has a long left tail of negative returns representing the risk of loss.
+\fbox{\parbox{\columnwidth-1.5em}{
+      The distribution of stock returns has a long left tail of negative returns representing the risk of loss.
+}}
       \vskip1ex
       The \emph{Value at Risk} ($\mathrm{VaR}$) is equal to the quantile of returns corresponding to a given confidence level $\alpha$.
       \vskip1ex
@@ -1874,9 +1883,13 @@ knitr::kable(riskstats[, c("Sharpe", "Skewness", "Kurtosis")])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+\fbox{\parbox{\columnwidth-1.5em}{
       Investors typically prefer larger \emph{odd moments} of the return distribution (mean, skewness), and smaller \emph{even moments} (variance, kurtosis).
+}}
       \vskip1ex
+\fbox{\parbox{\columnwidth-1.5em}{
       But positive skewness is often associated with lower returns, which can be observed in the \emph{VIX} volatility ETFs, \emph{VXX} and \emph{SVXY}.
+}}
       \vskip1ex
       The \emph{VXX} ETF is long the \emph{VIX} index (effectively long an option), so it has positive skewness and small kurtosis, but negative returns (it's short market risk).
       \vskip1ex

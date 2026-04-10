@@ -61,13 +61,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#2]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#2, Fall 2025}
+\subtitle{Lecture\#2, Spring 2026}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{November 3, 2025}
+\date{February 2, 2026}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -79,7 +79,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
 
 
 %%%%%%%%%%%%%%%
@@ -1456,6 +1455,80 @@ legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{depr: Simulating Credit Portfolios Using Importance Sampling}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      It's not possible to apply importance sampling to the credit loss distribtution because the distribtution is not known.
+      \vskip1ex
+      Importance sampling can be used to improve the accuracy of VaR and CVaR calculations for credit portfolios. 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+##########################################
+# Summary: Calculate the VaR and CVaR of a credit 
+# portfolio using importance sampling.
+
+## Run the setup code below.
+
+# Define model parameters
+nbonds <- 10; nsimu <- 1000; lgd <- 0.4
+# Define correlation parameters
+rho <- 0.2; rhos <- sqrt(rho); rhosm <- sqrt(1-rho)
+# Calculate default probabilities and thresholds
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
+probv <- runif(nbonds, max=0.2)
+threshv <- qnorm(probv)
+# Simulate losses under the Vasicek model
+sysv <- rnorm(nsimu)
+assetm <- matrix(rnorm(nsimu*nbonds), ncol=nsimu)
+assetm <- t(rhos*sysv + t(rhosm*assetm))
+lossv <- lgd*colSums(assetm < threshv)/nbonds
+
+# Calculate VaR from confidence level
+confl <- 0.95
+varisk <- quantile(lossv, confl)
+
+cumprob <- (1:nsimu)/nsimu
+sort(lossv)[findInterval(confl, cumprob)]
+
+# Calculate the CVaR as the mean losses in excess of VaR
+cvar <- mean(lossv[lossv > varisk])
+
+
+# Apply importance sampling
+lambdaf <- (-0.1)
+assett <- assetm + lambdaf
+weightv <- exp(-lambdaf*assett + lambdaf^2/2)
+
+losst <- lgd*colSums(assett < threshv)/nbonds
+lossw <- matrixStats::colProds(weightv)
+
+# Calculate the CVaR using importance sampling - doesn't work
+sum((losst < varisk)*lossw)/nsimu
+# Or
+losst <- lgd*colSums((assett < threshv)*weightv)/nbonds
+mean(losst[losst > varisk])
+
+# Data must be sorted for importance sampling of VaR
+ordern <- order(losst)
+losst <- losst[ordern]
+lossw <- lossw[ordern]
+
+# Calculate the VaR using importance sampling - doesn't work
+cumprob <- cumsum(lossw)/nsimu
+losst[findInterval(confl, cumprob)]
+
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%
 \section{Linear Algebra}
@@ -1562,7 +1635,9 @@ barplot(eigend$values, xlab="", ylab="", las=3,
       \begin{displaymath}
         \mathbb{A} = \mathbb{O} \, \Sigma \, \mathbb{O}^T
       \end{displaymath}
+\fbox{\parbox{\columnwidth-1.5em}{
       The \emph{eigen decomposition} expresses a matrix as the product of a rotation, followed by a scaling, followed by the inverse rotation.
+}}
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1606,7 +1681,7 @@ all.equal(matv, matrixe)
       \vskip1ex
       But the covariance matrices of linearly dependent variables have some \emph{eigenvalues} equal to zero, in which case they are \emph{singular}, and only \emph{positive semi-definite}.
       \vskip1ex
-      All covariance matrices are \emph{positive semi-definite} and all \emph{positive semi-definite} matrices are the covariance matrix of some multivariate distribution.
+      Most covariance matrices are \emph{positive semi-definite} and all \emph{positive semi-definite} matrices are the covariance matrix of some multivariate distribution.
       \vskip1ex
       Matrices which have some \emph{eigenvalues} equal to zero are called \emph{singular} (degenerate) matrices.
       \vskip1ex
@@ -1639,7 +1714,9 @@ barplot(eigend$values, las=3, xlab="", ylab="",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Singular Value Decomposition} (\emph{SVD}) is a generalization of the \emph{eigen decomposition} of square matrices.
+\fbox{\parbox{\columnwidth-1.5em}{
+      The \emph{Singular Value Decomposition} (\emph{SVD}) is a generalization for rectangular matrices, of the \emph{eigen decomposition} of square matrices.
+}}
       \vskip1ex
       The \emph{SVD} of a rectangular matrix $\mathbb{A}$ is defined as the factorization:
       \begin{displaymath}
@@ -1785,7 +1862,7 @@ all.equal(invmat, inveigen)
     \column{0.5\textwidth}
       The generalized inverse of an (\texttt{m x n}) rectangular matrix $\mathbb{A}$ is defined as an (\texttt{n x m}) matrix $\mathbb{A}^{-1}$ that satisfies the equation:
       \begin{displaymath}
-        \mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}
+        \mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbb{A}
       \end{displaymath}
       The generalized inverse matrix $\mathbb{A}^{-1}$ can be expressed as a product of the inverse of its \emph{singular values} ($\Sigma$) and its left and right \emph{singular} matrices ($\mathbb{U}$ and $\mathbb{V}$):
       \begin{displaymath}
@@ -2031,7 +2108,9 @@ summary(microbenchmark(
       \end{displaymath}
       Where $\mathbb{L}$ is an upper triangular matrix with positive diagonal elements.
       \vskip1ex
-      The matrix $\mathbb{L}$ can be considered the square root of $\mathbb{A}$.
+\fbox{\parbox{\columnwidth-1.5em}{
+      The Cholesky matrix $\mathbb{L}$ can be considered the square root of the matrix $\mathbb{A}$.
+}}
       \vskip1ex
       The vast majority of random \emph{positive semi-definite} matrices are also \emph{positive definite}.
       \vskip1ex
@@ -2185,7 +2264,7 @@ plot(y=eigenval, x=ndata, t="l", xlab="", ylab="", lwd=3, col="blue",
       \vskip1ex
       If the number of time periods of returns is less than the number of assets (columns), then the covariance matrix of returns is \emph{singular}, and some of its \emph{eigenvalues} are zero, so it doesn't have an inverse.
       \vskip1ex
-      The \emph{regularized} inverse $\mathbb{C}_n^{-1}$ is calculated by removing the higher order eigenvalues that are almost zero, and keeping only the first $n$ \emph{eigenvalues}:
+      The \emph{regularized} inverse $\mathbb{C}_n^{-1}$ is calculated by removing the higher order eigenvalues that are very small, and keeping only the first $n$ \emph{eigenvalues}:
       \begin{displaymath}
         \mathbb{C}_n^{-1} = \mathbb{O}_n \, \Sigma_n^{-1} \, \mathbb{O}_n^T
       \end{displaymath}
@@ -2235,7 +2314,9 @@ all.equal(invmat, invreg)
       \vskip1ex
       Removing a larger number of eigenvalues further reduces the noise, but it increases the bias of the covariance matrix.
       \vskip1ex
-      This is an example of the \emph{bias-variance tradeoff}.
+\fbox{\parbox{\columnwidth-1.5em}{
+      This is an example of the \emph{bias-variance tradeoff} that is a central concept in machine learning.
+}}
       \vskip1ex
       Even though the \emph{regularized} inverse $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
       \vskip1ex
@@ -2318,8 +2399,6 @@ invmat <- solve(covshrink)
       If the initial inverse matrix $\mathbb{A}_1^{-1}$ is very close to the actual inverse $\mathbb{A}^{-1}$, then the \emph{Schulz formula} produces a very good approximation with just a few iterations.
       \vskip1ex
       The \emph{Schulz formula} is useful for updating the inverse when the matrix $\mathbb{A}$ changes only slightly.  For example, for updating the inverse of the covariance matrix as it changes slowly over time.
-      \vskip1ex
-      The super-assignment operator \texttt{"<<-"} modifies variables in the \emph{enclosing} environment in which the function was \emph{defined} (\emph{lexical} scoping).
       <<echo=TRUE,eval=FALSE>>=
 # Create a random matrix
 matv <- matrix(rnorm(100), nc=10)
@@ -2327,25 +2406,29 @@ matv <- matrix(rnorm(100), nc=10)
 invmat <- solve(a=matv)
 # Multiply inverse with matrix
 round(invmat %*% matv, 4)
-# Calculate the initial inverse
+# Add noise to the initial inverse
 invmatr <- invmat + matrix(rnorm(100, sd=0.1), nc=10)
 # Calculate the approximate recursive inverse of matv
 invmatr <- (2*invmatr - invmatr %*% matv %*% invmatr)
 # Calculate the sum of the off-diagonal elements
-sum((invmatr %*% matv)[upper.tri(matv)])
+uppert <- upper.tri(matv)
+sum((invmatr %*% matv)[uppert])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/eigen_recursive.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the recursive inverse of matv in a loop
+# Add noise to the initial inverse
 invmatr <- invmat + matrix(rnorm(100, sd=0.1), nc=10)
-iterv <- sapply(1:5, function(x) {
+sum((invmatr %*% matv)[uppert])
+# Calculate the recursive inverse of matv in a loop
+iterv <- numeric(5)
+for (x in 1:5) {
 # Calculate the recursive inverse of matv
-  invmatr <<- (2*invmatr - invmatr %*% matv %*% invmatr)
+  invmatr <- (2*invmatr - invmatr %*% matv %*% invmatr)
 # Calculate the sum of the off-diagonal elements
-  sum((invmatr %*% matv)[upper.tri(matv)])
-})  ##  end sapply
+  iterv[x] <- sum((invmatr %*% matv)[uppert])
+}  ##  end for
 # Plot the iterations
 plot(x=1:5, y=iterv, t="l", xlab="iterations", ylab="error",
      main="Iterations of Recursive Matrix Inverse")

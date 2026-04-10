@@ -20,17 +20,21 @@ knit_theme$set(thm)
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
-% \usepackage{mathtools}
-\usepackage[latin1]{inputenc}
+\usepackage{mathtools}
 % bbm package for unitary vector or matrix symbol
 \usepackage{bbm}
+\usepackage{bbold}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsfonts}
+\usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
 % \bibliographystyle{amsalpha} % doesn't work
 % \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
@@ -57,7 +61,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Multivariate]{Time Series Multivariate}
-\subtitle{FRE6871 \& FRE7241, Fall 2025}
+\subtitle{FRE6871 \& FRE7241, Spring 2026}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -85,14 +89,24 @@ knit_theme$set(thm)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The daily stock returns $r_i - r_f$ in excess of the risk-free rate $r_f$, can be decomposed into \emph{systematic} returns $\beta (r_m - r_f)$ (where $r_m - r_f$ are the excess market returns) plus \emph{idiosyncratic} returns $\alpha + \varepsilon_i$ (which are uncorrelated to the market returns):
+      The time series of stock returns $r_i - r_f$ in excess of the risk-free rate $r_f$, can be decomposed into \emph{systematic} returns $\beta (r_m - r_f)$ (where $r_m - r_f$ is the time series of the excess market returns) plus \emph{idiosyncratic} returns $\alpha + \varepsilon_i$ (which are uncorrelated to the market returns):
       \begin{displaymath}
         r_i - r_f = \alpha + \beta (r_m - r_f) + \varepsilon_i
       \end{displaymath}
       The \emph{alpha} $\alpha$ are the abnormal returns in excess of the risk premium, and $\varepsilon_i$ are the regression residuals with zero mean.
       \vskip1ex
-      The \emph{idiosyncratic} risk (equal to $\varepsilon_i$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification.
-      <<echo=TRUE,eval=TRUE>>=
+      The regression residuals $\varepsilon_i$ are uncorrelated to the market returns, and can be reduced through portfolio diversification.
+      \vskip1ex
+      The stock $\beta$ is equal to the ratio of the covariance of the stock returns with the market returns $\sigma_{i,m}$ divided by the variance of the market returns $\sigma^2_m$: 
+      \begin{displaymath}
+        \beta = \frac{\sigma_{i,m}}{\sigma^2_m} = \rho_{i,m} \frac{\sigma_i}{\sigma_m}
+      \end{displaymath}
+      Where $\rho_{i,m}$ is the correlation of the stock returns with the market returns, and $\sigma_i$ and $\sigma_m$ are the standard deviations of the stock and market returns, respectively.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/capm_reg.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
 # Perform regression using formula
 retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 raterf <- 0.03/252
@@ -103,12 +117,6 @@ regsum <- summary(regmod)
 coef(regsum)
 # Get alpha and beta
 coef(regsum)[, 1]
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/reg_rets.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
 # Plot scatterplot of returns with aspect ratio 1
 plot(XLP ~ VTI, data=rutils::etfenv$returns, main="Regression XLP ~ VTI",
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), pch=1, col="blue", asp=1)
@@ -123,16 +131,100 @@ abline(a=0, b=-1/coef(regsum)[2, 1], lwd=2, col="blue")
 
 
 %%%%%%%%%%%%%%%
+\subsection{Capital Asset Pricing Model (\protect\emph{CAPM})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CAPM} model states that the expected return of the stock $n$: $\mathbbm{E}[R_n]$ should be proportional to its beta $\beta_n$ times the expected excess return of the market $\mathbbm{E}[R_m] - r_f$:
+      \begin{displaymath}
+        \mathbbm{E}[R_n] = r_f + \beta_n (\mathbbm{E}[R_m] - r_f)
+      \end{displaymath}
+\fbox{\parbox{\columnwidth-1.5em}{
+      The \emph{CAPM} model states that stocks should only produce a \emph{systematic} return proportional to their \emph{beta} $\beta$ values.  
+      If a stock has a higher beta then it should also produce higher returns.
+}}
+      \vskip1ex
+      The \emph{CAPM} model is not the same as the regression model used to determine the \emph{alpha} $\alpha$ and \emph{beta} $\beta$ values of stock returns.
+      \vskip1ex
+      In reality, stocks also have a non-zero mean idiosyncratic return \emph{alpha} $\alpha_n$, in addition to the \emph{systematic} return proportional to their $\beta_n$:
+      \begin{displaymath}
+        \mathbbm{E}[R_n] = r_f + \alpha_n + \beta_n (\mathbbm{E}[R_m] - r_f)
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(PerformanceAnalytics)
+# Calculate XLP beta
+PerformanceAnalytics::CAPM.beta(Ra=retp$XLP, Rb=retp$VTI)
+# Or
+betac <- drop(cov(retp$XLP, retp$VTI)/var(retp$VTI))
+betac
+# Calculate XLP alpha
+PerformanceAnalytics::CAPM.alpha(Ra=retp$XLP, Rb=retp$VTI)
+# Or
+alphac <- mean(retp$XLP - betac*retp$VTI)
+# Calculate XLP bull beta
+PerformanceAnalytics::CAPM.beta.bull(Ra=retp$XLP, Rb=retp$VTI)
+# Calculate XLP bear beta
+PerformanceAnalytics::CAPM.beta.bear(Ra=retp$XLP, Rb=retp$VTI)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Capital Market Line} For a Single Stock}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CAPM} equation can be expressed in terms of the standard deviation $\sigma_n$ of the stock returns:
+      \begin{displaymath}
+        \mathbbm{E}[R_n] = r_f + \alpha_n + \rho_{n,m} \frac{\sigma_n}{\sigma_m} (\mathbbm{E}[R_m] - r_f)
+      \end{displaymath}
+\fbox{\parbox{\columnwidth-1.5em}{
+      This is the \emph{Capital Market Line} (CML), which states that the expected return of the portfolio of the stock and the risk-free asset is proportional to its standard deviation $\sigma_n$.
+}}
+      \vskip1ex
+      The risk-free asset has zero standard deviation and an expected return equal to the risk-free rate $r_f$.  So when it's added to the stock, the portfolio's return and standard deviation both decrease.
+      \vskip1ex
+      The sum of the portfolio weights is equal to \emph{one}:
+      \begin{displaymath}
+        w_s + w_{rf} = 1
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/capm_cml_stock.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the CML
+rets <- raterf + betac*mean(retp$VTI)
+stdev <- sd(retp$XLP)
+plot(x=c(0, stdev), y=c(raterf, rets), col="red", lwd=2, 
+     xlim=c(0, 1.2*stdev), ylim=c(0, 1.2*rets),
+     main="Capital Market Line",
+     xlab="standard deviation", ylab="return")
+text(x=0.0, y=raterf, labels="risk free", pos=4, cex=1.2)
+text(x=stdev, y=rets, labels="stock", pos=1, cex=1.2)
+abline(a=raterf, b=betac*mean(retp$VTI)/stdev, lwd=2, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{The Statistical Significance of \protect\emph{Alpha} and \protect\emph{Beta}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The stock $\beta$ is independent of the risk-free rate $r_f$:
-      \begin{displaymath}
-        \beta = \frac{\mathrm{Cov}(r_i, r_m)}{\mathrm{Var}(r_m)}
-      \end{displaymath}
       The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error.
       \vskip1ex
       The \emph{p}-value is the probability of obtaining values exceeding the \emph{t}-statistic, assuming the \emph{null hypothesis} is true.
@@ -146,7 +238,7 @@ abline(a=0, b=-1/coef(regsum)[2, 1], lwd=2, col="blue")
       In practice, the $\alpha$, $\beta$, and the risk-free rate $r_f$, depend on the time interval of the data, so they're time dependent.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # Get regression coefficients
 coef(regsum)
 # Calculate regression coefficients from scratch
@@ -183,76 +275,33 @@ lmtest::dwtest(regmod)
       \vskip1ex
       Some of the ETFs with significant \emph{alpha} $\alpha$ values are the bond ETFs \emph{IEF} and \emph{TLT} (which have performed very well), and the natural resource ETFs \emph{USO} and \emph{DBC} (which have performed very poorly).
       <<echo=TRUE,eval=TRUE>>=
-retp <- rutils::etfenv$returns
-symbolv <- colnames(retp)
+retm <- rutils::etfenv$returns
+symbolv <- colnames(retm)
 symbolv <- symbolv[symbolv != "VTI"]
 # Perform regressions and collect statistics
 betam <- sapply(symbolv, function(symbol) {
 # Specify regression formula
   formulav <- as.formula(paste(symbol, "~ VTI"))
 # Perform regression
-  regmod <- lm(formulav, data=retp)
+  regmod <- lm(formulav, data=retm)
 # Get regression summary
   regsum <- summary(regmod)
 # Collect regression statistics
   with(regsum, 
     c(beta=coefficients[2, 1], 
-      pbeta=coefficients[2, 4],
+      betap=coefficients[2, 4],
       alpha=coefficients[1, 1], 
-      palpha=coefficients[1, 4], 
-      pdw=lmtest::dwtest(regmod)$p.value))
+      alphap=coefficients[1, 4], 
+      dwp=lmtest::dwtest(regmod)$p.value))
 })  ##  end sapply
 betam <- t(betam)
-# Sort by palpha
-betam <- betam[order(betam[, "palpha"]), ]
+# Sort by alphap
+betam <- betam[order(betam[, "alphap"]), ]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 betam
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Capital Asset Pricing Model (\protect\emph{CAPM})}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{CAPM} model states that the expected return for stock $n$: $\mathbbm{E}[R_n]$ is proportional to its beta $\beta_n$ times the expected excess return of the market $\mathbbm{E}[R_m] - r_f$:
-      \begin{displaymath}
-        \mathbbm{E}[R_n] = r_f + \beta_n (\mathbbm{E}[R_m] - r_f)
-      \end{displaymath}
-      The \emph{CAPM} model states that if a stock has a higher beta then it's also expected to earn higher returns.
-      \vskip1ex
-      According to the \emph{CAPM} model, assets are on average expected to earn only a \emph{systematic} return proportional to their \emph{systematic} risk.
-      \vskip1ex
-      The \emph{CAPM} model is not a regression model.
-      \vskip1ex
-      The \emph{CAPM} model depends on the choice of the risk-free rate $r_f$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-library(PerformanceAnalytics)
-# Calculate XLP beta
-PerformanceAnalytics::CAPM.beta(Ra=retp$XLP, Rb=retp$VTI)
-# Or
-retxlp <- na.omit(retp[, c("XLP", "VTI")])
-betac <- drop(cov(retxlp$XLP, retxlp$VTI)/var(retxlp$VTI))
-betac
-# Calculate XLP alpha
-PerformanceAnalytics::CAPM.alpha(Ra=retp$XLP, Rb=retp$VTI)
-# Or
-mean(retp$XLP - betac*retp$VTI)
-# Calculate XLP bull beta
-PerformanceAnalytics::CAPM.beta.bull(Ra=retp$XLP, Rb=retp$VTI)
-# Calculate XLP bear beta
-PerformanceAnalytics::CAPM.beta.bear(Ra=retp$XLP, Rb=retp$VTI)
       @
   \end{columns}
 \end{block}
@@ -267,7 +316,9 @@ PerformanceAnalytics::CAPM.beta.bear(Ra=retp$XLP, Rb=retp$VTI)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+\fbox{\parbox{\columnwidth-1.5em}{
       The \emph{Security Market Line} (SML) represents the linear relationship between expected stock returns and their \emph{systematic} risk $\beta$.
+}}
       \vskip1ex
       The \emph{SML} depends on the choice of the risk-free rate $r_f$, with a steeper \emph{SML} line for lower risk-free rates $r_f$.
       \vskip1ex
@@ -331,7 +382,9 @@ legend(x="topleft", bty="n", title="Security Market Line",
     \column{0.5\textwidth}
       The best fitting \emph{Security Market Line} (SML) for stocks is almost flat, which shows that stocks with higher $\beta$ don't earn higher returns.
       \vskip1ex
+\fbox{\parbox{\columnwidth-1.5em}{
       This is called the \emph{low beta anomaly}.
+}}
       <<echo=TRUE,eval=FALSE>>=
 # Load S&P500 constituent stock returns
 load("/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
@@ -383,7 +436,43 @@ legend(x="topleft", bty="n", title="Security Market Line",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Beta-adjusted Performance Measurement}
+\subsection{The Capital Market Line And The Security Market Line}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The CAPM formula can be applied in three different contexts.
+      \vskip1ex
+      First, as a regression of the time series of stock returns versus the time series of market returns, to determine the alpha $\alpha$ and beta $\beta$ coefficients:
+      \begin{displaymath}
+        r_i = r_f + \alpha + \beta (r_m - r_f) + \varepsilon_i
+      \end{displaymath}
+      Second, as the Security Market Line (SML), which relates the expected stock returns to their betas $\beta_n$:
+      \begin{displaymath}
+        \mathbbm{E}[R_n] = r_f + \alpha_n + \beta_n (\mathbbm{E}[R_m] - r_f)
+      \end{displaymath}
+      Third, as the Capital Market Line (CML), which relates the return of the portfolio of a stock and the risk-free asset to its standard deviation $\sigma_n$.
+      \begin{displaymath}
+        \mathbbm{E}[R_n] = r_f + \alpha_n + \rho_{n,m} \frac{\sigma_n}{\sigma_m} (\mathbbm{E}[R_m] - r_f)
+      \end{displaymath}
+      \vskip1ex
+      Note that the risk-free asset has zero standard deviation, and an expected return equal to $r_f$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.28\paperwidth]{figure/capm_reg.png}
+      \vspace{-2em}
+      \includegraphics[width=0.28\paperwidth]{figure/capm_sml_etf.png}
+      \vspace{-2em}
+      \includegraphics[width=0.28\paperwidth]{figure/capm_cml_stock.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Treynor and Information Ratios}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -404,6 +493,7 @@ legend(x="topleft", bty="n", title="Security Market Line",
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
+retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
 library(PerformanceAnalytics)
 # Calculate XLP Treynor ratio
 TreynorRatio(Ra=retp$XLP, Rb=retp$VTI)
@@ -426,13 +516,12 @@ InformationRatio(Ra=retp$XLP, Rb=retp$VTI)
       \texttt{PerformanceAnalytics::table.CAPM()} calculates the \emph{beta} $\beta$ and \emph{alpha} $\alpha$ values, the \emph{Treynor} ratio, and other performance statistics.
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-PerformanceAnalytics::table.CAPM(Ra=retp[, c("XLP", "XLF")], 
-                                 Rb=retp$VTI, scale=252)
+PerformanceAnalytics::table.CAPM(Ra=retm[, c("XLP", "XLF")], 
+                                 Rb=retm$VTI, scale=252)
       @
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-capmstats <- table.CAPM(Ra=retp[, symbolv], 
-              Rb=retp$VTI, scale=252)
+capmstats <- table.CAPM(Ra=retm[, symbolv], Rb=retm$VTI, scale=252)
 colv <- strsplit(colnames(capmstats), split=" ")
 colv <- do.call(cbind, colv)[1, ]
 colnames(capmstats) <- colv
@@ -459,11 +548,6 @@ rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
 \end{frame}
 
 
-
-%%%%%%%%%%%%%%%
-\section{Factor Analysis}
-
-
 %%%%%%%%%%%%%%%
 \subsection{Trailing Stock Beta Over Time}
 \begin{frame}[fragile,t]{\subsecname}
@@ -473,72 +557,7 @@ rutils::etfenv$capmstats[, c("Beta", "Alpha", "Information", "Treynor")]
     \column{0.5\textwidth}
       The trailing beta of \emph{XLP} versus \emph{VTI} changes over time, with lower beta in periods of stock selloffs.
       \vskip1ex
-      The function \texttt{roll\_reg()} from package \emph{HighFreq} performs trailing regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate XLP and VTI returns
-retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
-# Calculate monthly end points
-endd <- xts::endpoints(retp, on="months")[-1]
-# Calculate start points from look-back interval
-lookb <- 12  ##  Look back 12 months
-startp <- c(rep(1, lookb), endd[1:(NROW(endd)-lookb)])
-head(cbind(endd, startp), lookb+2)
-# Calculate trailing beta regressions every month in R
-formulav <- XLP ~ VTI  ##  Specify regression formula
-betar <- sapply(1:NROW(endd), FUN=function(tday) {
-    datav <- retp[startp[tday]:endd[tday], ]
-    ##  coef(lm(formulav, data=datav))[2]
-    drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
-  })  ##  end sapply
-# Calculate trailing betas using RcppArmadillo
-controll <- HighFreq::param_reg()
-reg_stats <- HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, 
-  startp=(startp-1), endp=(endd-1), controll=controll)
-betac <- reg_stats[, 2]
-all.equal(betac, betar)
-# Compare the speed of RcppArmadillo with R code
-library(microbenchmark)
-summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controll=controll),
-  Rcode=sapply(1:NROW(endd), FUN=function(tday) {
-    datav <- retp[startp[tday]:endd[tday], ]
-    drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
-  }),
-  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/trailing_betas.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# dygraph plot of trailing XLP beta and VTI prices
-datev <- zoo::index(retp[endd, ])
-pricev <- rutils::etfenv$prices$VTI[datev]
-datav <- cbind(pricev, betac)
-colnames(datav)[2] <- "beta"
-colv <- colnames(datav)
-dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
-  dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
-  dySeries(name=colv[1], axis="y", col="blue") %>%
-  dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Trailing Stock Beta Over Time}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The trailing beta of \emph{XLP} versus \emph{VTI} changes over time, with lower beta in periods of stock selloffs.
-      \vskip1ex
-      The function \texttt{roll\_reg()} from package \emph{HighFreq} performs trailing regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
+      The function \texttt{roll\_reg()} from package \emph{HighFreq} performs trailing regressions in \texttt{C++}, so it's much faster than equivalent \texttt{R} code.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate XLP and VTI returns
 retp <- na.omit(rutils::etfenv$returns[, c("XLP", "VTI")])
@@ -554,25 +573,25 @@ betar <- sapply(1:NROW(endd), FUN=function(tday) {
     datav <- retp[startp[tday]:endd[tday], ]
     ##  coef(lm(formulav, data=datav))[2]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
-  })  ##  end sapply
+})  ##  end sapply
 # Calculate trailing betas using RcppArmadillo
 controll <- HighFreq::param_reg()
 reg_stats <- HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, 
-  startp=(startp-1), endp=(endd-1), controll=controll)
-betac <- reg_stats[, 2]
+  startp=(startp-1), endd=(endd-1), controll=controll)
+betac <- reg_stats[, 1]
 all.equal(betac, betar)
 # Compare the speed of RcppArmadillo with R code
 library(microbenchmark)
 summary(microbenchmark(
-  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endp=(endd-1), controll=controll),
+  Rcpp=HighFreq::roll_reg(respv=retp$XLP, predm=retp$VTI, startp=(startp-1), endd=(endd-1), controll=controll),
   Rcode=sapply(1:NROW(endd), FUN=function(tday) {
     datav <- retp[startp[tday]:endd[tday], ]
     drop(cov(datav$XLP, datav$VTI)/var(datav$VTI))
   }),
   times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
-      @
+@
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/trailing_betas.png}
+      \includegraphics[width=0.45\paperwidth]{figure/beta_trailing.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of trailing XLP beta and VTI prices
@@ -586,7 +605,7 @@ dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -595,13 +614,13 @@ dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Recursive Trailing Stock Beta}
+\subsection{Trailing EMA Stock Beta}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The trailing beta $\beta$ of a stock with returns $r_t$ with respect to a stock index with returns $R_t$ can be updated using these recursive formulas with the decay factor $\lambda$:
+      The trailing beta $\beta$ of a stock with returns $r_t$ with respect to a stock index with returns $R_t$ can be updated using these recursive EMA formulas with the decay factor $\lambda$:
       \begin{flalign*}
         & \bar{r}_t = \lambda \bar{r}_{t-1} + (1-\lambda) r_t \\
         & \bar{R}_t = \lambda \bar{R}_{t-1} + (1-\lambda) R_t \\
@@ -622,23 +641,28 @@ betac <- covarv[, 1]/covarv[, 3]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/trailing_betas_rec.png}
+      \includegraphics[width=0.45\paperwidth]{figure/beta_ema.png}
       <<echo=TRUE,eval=FALSE>>=
 # dygraph plot of trailing XLP beta and VTI prices
 datav <- cbind(pricev, betac[endd])[-(1:11)] ##  Remove warmup period
 colnames(datav)[2] <- "beta"
 colv <- colnames(datav)
-dygraphs::dygraph(datav, main="XLP Trailing 12-month Beta and VTI Prices") %>%
+dygraphs::dygraph(datav, main="XLP Trailing EMA Beta and VTI Prices") %>%
   dyAxis("y", label=colv[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
   dySeries(name=colv[1], axis="y", col="blue", strokeWidth=2) %>%
   dySeries(name=colv[2], axis="y2", col="red", strokeWidth=2) %>%
-  dyLegend(show="always", width=500)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Factor Analysis}
 
 
 %%%%%%%%%%%%%%%

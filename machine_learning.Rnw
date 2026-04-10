@@ -65,7 +65,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Machine Learning]{Machine Learning}
-\subtitle{FRE6871 \& FRE7241, Fall 2025}
+\subtitle{FRE6871 \& FRE7241, Spring 2026}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
@@ -156,7 +156,7 @@ knit_theme$set(thm)
       \includegraphics[width=0.45\paperwidth]{figure/eigen_values.png}
       <<echo=TRUE,eval=FALSE>>=
 # Create a random real symmetric matrix
-matv <- matrix(runif(25), nc=5)
+matv <- matrix(rnorm(25), nc=5)
 matv <- matv + t(matv)
 # Calculate the eigenvalues and eigenvectors
 eigend <- eigen(matv)
@@ -248,7 +248,7 @@ all.equal(matv, matrixe)
       \includegraphics[width=0.45\paperwidth]{figure/eigen_posdef.png}
       <<echo=TRUE,eval=FALSE>>=
 # Create a random positive semi-definite matrix
-matv <- matrix(runif(25), nc=5)
+matv <- matrix(rnorm(25), nc=5)
 matv <- t(matv) %*% matv
 # Calculate the eigenvalues and eigenvectors
 eigend <- eigen(matv)
@@ -326,14 +326,14 @@ round(t(svdec$v) %*% svdec$v, 4)
 # Dimensions of left and right matrices
 nrows <- 6 ; ncols <- 4
 # Calculate the left matrix
-leftmat <- matrix(runif(nrows^2), nc=nrows)
+leftmat <- matrix(rnorm(nrows^2), nc=nrows)
 eigend <- eigen(crossprod(leftmat))
 leftmat <- eigend$vectors[, 1:ncols]
 # Calculate the right matrix and singular values
-rightmat <- matrix(runif(ncols^2), nc=ncols)
+rightmat <- matrix(rnorm(ncols^2), nc=ncols)
 eigend <- eigen(crossprod(rightmat))
 rightmat <- eigend$vectors
-singval <- sort(runif(ncols, min=1, max=5), decreasing=TRUE)
+singval <- sort(rnorm(ncols, min=1, max=5), decreasing=TRUE)
 # Compose rectangular matrix
 matv <- leftmat %*% (singval * t(rightmat))
 # Perform singular value decomposition
@@ -387,7 +387,7 @@ all.equal(abs(eigend$vectors), abs(rightmat))
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create a random positive semi-definite matrix
-matv <- matrix(runif(25), nc=5)
+matv <- matrix(rnorm(25), nc=5)
 matv <- t(matv) %*% matv
 # Calculate the inverse of matv
 invmat <- solve(a=matv)
@@ -429,27 +429,30 @@ all.equal(invmat, inveigen)
       \begin{displaymath}
         \mathbb{A}^{-1} = (\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T
       \end{displaymath}
-      In the case when the inverse matrix $\mathbb{A}^{-1}$ exists, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T = \mathbb{A}^{-1} (\mathbb{A}^T)^{-1} \mathbb{A}^T = \mathbb{A}^{-1}$
+      In the case of square positive definite matrices, the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T = \mathbb{A}^{-1} (\mathbb{A}^T)^{-1} \mathbb{A}^T = \mathbb{A}^{-1}$
+      \vskip1ex
+      If the number of rows of $\mathbb{A}$ is greater than the number of columns, then the generalized inverse is only a left inverse $\mathbb{A}^{-1} \mathbb{A} = \mathbbm{1}$, and if the number of rows is less than the number of columns, then it's only a right inverse $\mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$.
       \vskip1ex
       The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Random rectangular matrix: nrows > ncols
-nrows <- 6 ; ncols <- 4
-matv <- matrix(runif(nrows*ncols), nc=ncols)
+nrows <- 6 ; ncols <- 4 ; dimv <- min(nrows, ncols)
+matv <- matrix(rnorm(nrows*ncols), nc=ncols)
 # Calculate the generalized inverse of matv
 invmat <- MASS::ginv(matv)
-round(invmat %*% matv, 4)
+all.equal(matv %*% invmat, diag(dimv))
+all.equal(invmat %*% matv, diag(dimv))
 all.equal(matv, matv %*% invmat %*% matv)
 # Random rectangular matrix: nrows < ncols
-nrows <- 4 ; ncols <- 6
-matv <- matrix(runif(nrows*ncols), nc=ncols)
+nrows <- 4 ; ncols <- 6 ; dimv <- min(nrows, ncols)
+matv <- matrix(rnorm(nrows*ncols), nc=ncols)
 # Calculate the generalized inverse of matv
 invmat <- MASS::ginv(matv)
+all.equal(matv %*% invmat, diag(dimv))
+all.equal(invmat %*% matv, diag(dimv))
 all.equal(matv, matv %*% invmat %*% matv)
-round(matv %*% invmat, 4)
-round(invmat %*% matv, 4)
 # Perform singular value decomposition
 svdec <- svd(matv)
 # Calculate the generalized inverse from SVD
@@ -483,7 +486,7 @@ all.equal(invmp, invmat)
 # Create a random singular matrix
 # More columns than rows: ncols > nrows
 nrows <- 4 ; ncols <- 6
-matv <- matrix(runif(nrows*ncols), nc=ncols)
+matv <- matrix(rnorm(nrows*ncols), nc=ncols)
 matv <- t(matv) %*% matv
 # Perform singular value decomposition
 svdec <- svd(matv)
@@ -678,7 +681,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create large random positive semi-definite matrix
-matv <- matrix(runif(1e4), nc=100)
+matv <- matrix(rnorm(1e4), nc=100)
 matv <- t(matv) %*% matv
 # Calculate the eigen decomposition
 eigend <- eigen(matv)
@@ -730,8 +733,8 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the random covariance matrix
-covmat <- matrix(runif(25), nc=5)
+# Calculate random covariance matrix
+covmat <- matrix(rnorm(25), nc=5)
 covmat <- t(covmat) %*% covmat
 # Calculate the Cholesky matrix
 cholmat <- chol(covmat)
@@ -2366,9 +2369,9 @@ all.equal(coef(regmod), c(alphac, betac),
       The \emph{generic function} \texttt{plot()} produces a scatterplot when it's called on the regression formula.
       \vskip1ex
       \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object.
-        <<echo=-(1:3),eval=FALSE>>=
-# x11(width=5, height=4)  ##  Open x11 for plotting
+        <<echo=TRUE,eval=FALSE>>=
 # Set plot parameters to reduce whitespace around plot
+# x11(width=5, height=4)  ##  Open x11 for plotting
 # par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 fitv <- (alphac + betac*predm)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
@@ -2783,7 +2786,7 @@ lmtest::dwtest(regmod)
       \vskip1ex
       The Q-Q plot also shows that residuals are \emph{not} normally distributed.
       \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 foo <- etfenv$returns[, c("VTI", "VEU")]
 endd <- endpoints(foo, on="weeks")
 head(foo)
@@ -3023,7 +3026,7 @@ fitm <- rutils::do_call(cbind, fitm)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/reg_fitted.png}
-        <<echo=(-(1:3)),eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 x11(width=5, height=4)  ##  Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
@@ -3188,7 +3191,7 @@ legend(x="topleft", ##  Add legend
       But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests.
       \vskip1ex
       The Q-Q plot also shows that residuals are \emph{not} normally distributed.
-        <<echo=(-(1:3)),eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 library(lmtest)
 # Spurious regression in unit root time series
@@ -3431,23 +3434,27 @@ all.equal(sum(residv), target=0)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multivariate regression can also be solved recursively using \emph{coordinate descent}:
+      Multivariate regression can also be solved recursively using the \emph{coordinate descent} algorithm, which optimizes the regression coefficients one at a time using formulas similar to the \emph{Newton-Raphson} algorithm.
+      \vskip1ex
+      The \emph{partial residual} $r_j$ is first calculated without the effect of the $j$-th \emph{predictor}:
       \begin{flalign*}
         & r_j = y - \sum_{i \ne j} {\beta_i x_i} = y - \mathbb{X}_{-j} \beta_{-j} \\
         & \beta_j = \frac{x_j r_j}{x_j^T x_j}
       \end{flalign*}
-      The \emph{partial residual} $r_j$ is first calculated without the effect of the $j$-th \emph{predictor}.
+      Then the coefficient $\beta_j$ is updated, to be equal to the product of the \emph{partial residual} $r_j$ times the $j$-th \emph{predictor} vector $x_j$ divided by its sum of squares.
       \vskip1ex
-      Then the updated \emph{coefficient} $\beta_j$ is equal to the projection of the \emph{partial residual} $r_j$ onto the $j$-th \emph{predictor} vector $x_j$ divided by the sum of squared \emph{predictor} vector $x_j$.
+      The \emph{coordinate descent} algorithm performs a \emph{Newton-Raphson} type of optimization of each coordinate independently, one at a time, until the regression coefficients converge.
       \vskip1ex
-      The calculation is repeated  until the \emph{regression coefficients} $\beta$ converge.
+      The \emph{coordinate descent} algorithm can be faster than the \emph{OLS} solution when the number of predictors is large, because it avoids calculating the inverse of large predictor matrices.
+      \vskip1ex
+      It can also be faster when the predictor matrix is sparse, because it only uses the non-zero elements of the predictor matrix.
         <<echo=TRUE,eval=TRUE>>=
       @
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Solve multivariate regression using coordinate descent
-solvecd <- function(respv, predm, maxit = 1000, tol = 1e-6) {
+solve_cd <- function(respv, predm, maxit = 1000, tol = 1e-6) {
   # Initialize the variables
   ncols <- NCOL(predm)
   colsq <- colSums(predm^2)
@@ -3468,9 +3475,9 @@ solvecd <- function(respv, predm, maxit = 1000, tol = 1e-6) {
     if (sum(abs(betav - betap)) < tol) break
   } # end for iter
   return(betav)
-} # end solvecd
+} # end solve_cd
 # Calculate the regression coefficients using coordinate descent
-betav <- solvecd(respv, predm)
+betav <- solve_cd(respv, predm)
 all.equal(betav, drop(betac), check.attributes=FALSE)
       @
   \end{columns}
@@ -3694,7 +3701,7 @@ residvd <- sum(residv^2)/degf
       The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
+        <<echo=TRUE,eval=FALSE>>=
 # Calculate the fitted values and the residuals
 fitv <- drop(predm %*% betav)
 residv <- drop(respv - fitv)
@@ -3778,6 +3785,10 @@ plot(fitsd, type="l", lwd=3, col="blue",
       Bootstrapping the regression of stock returns shows that the actual standard errors can be much larger as the theoretical standard errors reported by the function \texttt{lm()}.
       \vskip1ex
       This is because the function \texttt{lm()} assumes that the data is normally distributed, while in reality stock returns have very large skewness and kurtosis.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{Jarque-Bera} test is that the data is normally distributed.
+      \vskip1ex
+      If the \emph{p}-value is very small, then the \emph{null hypothesis} can be assumed to be \texttt{FALSE}, and the data is not normally distributed.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -3786,6 +3797,9 @@ retp <- rutils::etfenv$returns[, c("XLF", "XLE")]
 retp <- na.omit(retp)
 nrows <- NROW(retp)
 head(retp)
+# Jarque-Bera test for normal distribution
+tseries::jarque.bera.test(retp$XLF)
+sapply(retp, tseries::jarque.bera.test)
 # Define regression formula
 formulav <- paste(colnames(retp)[1],
   paste(colnames(retp)[-1], collapse="+"),
@@ -3842,7 +3856,7 @@ t(apply(bootd, MARGIN=1, function(x)
       \end{align*}
     \column{0.5\textwidth}
       The variance $\sigma^2_f$ of the \emph{forecast value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
-        <<echo=TRUE,eval=TRUE>>=
+        <<echo=TRUE,eval=FALSE>>=
 # New data predictor is a data frame or row vector
 set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
 newdata <- data.frame(matrix(c(1, rnorm(5)), nr=1))
@@ -4331,7 +4345,7 @@ all.equal(invreg, invmp, check.attributes=FALSE)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Define transformation matrix
-matv <- matrix(runif(ncols^2, min=(-1), max=1), ncol=ncols)
+matv <- matrix(rnorm(ncols^2, min=(-1), max=1), ncol=ncols)
 # Calculate the linear combinations of predictor columns
 predt <- predm %*% matv
 # Calculate the influence matrix of the transformed predictor
@@ -4452,15 +4466,21 @@ drop(MASS::ginv(predm) %*% respv)
     \column{0.5\textwidth}
       The objective function of \emph{ridge regression} is equal to the \emph{Residual Sum of Squares} (\emph{RSS}) plus a penalty term proportional to the sum of squares of the coefficients:
       \begin{displaymath}
-        O(\beta) = (y - \mathbb{X} \boldsymbol\beta)^T (y - \mathbb{X} \boldsymbol\beta) + \lambda \sum_{i=1}^n \beta^2_i
+        \operatorname{O}(\beta) = (y - \mathbb{X} \boldsymbol\beta)^T (y - \mathbb{X} \boldsymbol\beta) + \lambda \boldsymbol\beta^T \boldsymbol\beta
       \end{displaymath}
       Where $\lambda$ is the regularization intensity parameter.
       \vskip1ex
-      The \emph{ridge regression} coefficients can be calculated using matrix inversion as follows:
+      The \emph{ridge regression} coefficients $\boldsymbol\beta$ are calculated by minimizing the objective function $\operatorname{O}(\beta)$, by setting its derivative equal to zero:
       \begin{displaymath}
-        \beta_{ridge} = (\mathbb{X}^T \mathbb{X} + \lambda \mathbbm{1})^{-1} \mathbb{X}^T y = \mathbb{X}_{\lambda}^{-2} \mathbb{X}^T y
+        \frac{d \operatorname{O}(\beta)}{d \boldsymbol\beta} = -2 \mathbb{X}^T (y - \mathbb{X} \boldsymbol\beta) + 2 \lambda \boldsymbol\beta = 0
+      \end{displaymath}
+      The coefficients $\boldsymbol\beta$ are then calculated by performing matrix inversion:
+      \begin{displaymath}
+        \boldsymbol\beta = (\mathbb{X}^T \mathbb{X} + \lambda \mathbbm{1})^{-1} \mathbb{X}^T y = \mathbb{X}_{\lambda}^{-2} \mathbb{X}^T y
       \end{displaymath}
       With $\mathbb{X}_{\lambda}^{-2} = (\mathbb{X}^T \mathbb{X} + \lambda \mathbbm{1})^{-1}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Regress the EEM returns on the other ETF returns
 predm <- na.omit(rutils::etfenv$returns[, c("SPY", "TLT", "USO", "XLB", "DBC", "EEM")])
@@ -4474,24 +4494,21 @@ names(betav) <- colnames(predm)
 # Calculate the ridge regression coefficients
 lambdaf <- 1000
 unitmat<- diag(ncol(predm))
-betar <- drop(MASS::ginv(t(predm) %*% predm + lambdaf*unitmat) %*% t(predm) %*% respv)
+pred2 <- (t(predm) %*% predm + lambdaf*unitmat)
+betar <- drop(MASS::ginv(pred2) %*% t(predm) %*% respv)
 names(betar) <- colnames(predm)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate the RRS and the penalty terms
-rrs <- sum((respv - predm %*% betar)^2)
+# Calculate the RSS and the penalty terms
+rss <- sum((respv - predm %*% betar)^2)
 penalty <- lambdaf*sum(betar^2)
-c(RSS=rrs, Penalty=penalty, Objective=rrs + penalty)
+c(RSS=rss, Penalty=penalty, Objective=rss + penalty)
 # Calculate the ridge objective function:
 ridgeobj <- function(respv, predm, betav, lambdaf) {
-  rrs <- sum((respv - predm %*% betav)^2)
+  rss <- sum((respv - predm %*% betav)^2)
   penalty <- lambdaf*sum(betav^2)
   residv <- respv - predm %*% betav
-  return(rrs + penalty)
+  return(rss + penalty)
 } # end ridgeobj
-# Calculate ridge coefficients by minimizing ridge objective
+# Calculate coefficients by minimizing the ridge objective
 optiml <- optim(par=rep(0, NCOL(predm)), 
                 ridgeobj, 
                 respv=respv, predm=predm, lambdaf=lambdaf,
@@ -4659,23 +4676,27 @@ legend("topright", legend=rownames(coeffm), lwd=3,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Multivariate regression can also be solved recursively using \emph{coordinate descent}:
+      Multivariate regression can also be solved recursively using the \emph{coordinate descent} algorithm, which optimizes the regression coefficients one at a time using formulas similar to the \emph{Newton-Raphson} algorithm.
+      \vskip1ex
+      The \emph{partial residual} $r_j$ is first calculated without the effect of the $j$-th \emph{predictor}:
       \begin{flalign*}
         & r_j = y - \sum_{i \ne j} {\beta_i x_i} = y - \mathbb{X}_{-j} \beta_{-j} \\
         & \beta_j = \frac{x_j r_j}{x_j^T x_j}
       \end{flalign*}
-      The \emph{partial residual} $r_j$ is first calculated without the effect of the $j$-th \emph{predictor}.
+      Then the coefficient $\beta_j$ is updated, to be equal to the product of the \emph{partial residual} $r_j$ times the $j$-th \emph{predictor} vector $x_j$ divided by its sum of squares.
       \vskip1ex
-      Then the updated \emph{coefficient} $\beta_j$ is equal to the projection of the \emph{partial residual} $r_j$ onto the $j$-th \emph{predictor} vector $x_j$ divided by the sum of squared \emph{predictor} vector $x_j$.
+      The \emph{coordinate descent} algorithm performs a \emph{Newton-Raphson} type of optimization of each coordinate independently, one at a time, until the regression coefficients converge.
       \vskip1ex
-      The recursion is repeated  until the \emph{regression coefficients} $\beta$ converge.
+      The \emph{coordinate descent} algorithm can be faster than the \emph{OLS} solution when the number of predictors is large, because it avoids calculating the inverse of large predictor matrices.
+      \vskip1ex
+      It can also be faster when the predictor matrix is sparse, because it only uses the non-zero elements of the predictor matrix.
         <<echo=TRUE,eval=TRUE>>=
       @
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Solve multivariate regression using coordinate descent
-solvecd <- function(respv, predm, maxit = 1000, tol = 1e-6) {
+solve_cd <- function(respv, predm, maxit = 1000, tol = 1e-6) {
   # Initialize the variables
   ncols <- NCOL(predm)
   colsq <- colSums(predm^2)
@@ -4696,9 +4717,9 @@ solvecd <- function(respv, predm, maxit = 1000, tol = 1e-6) {
     if (sum(abs(betav - betap)) < tol) break
   } # end for iter
   return(betav)
-} # end solvecd
+} # end solve_cd
 # Calculate the regression coefficients using coordinate descent
-betav <- solvecd(respv, predm)
+betav <- solve_cd(respv, predm)
 all.equal(betav, drop(betac), check.attributes=FALSE)
       @
   \end{columns}
@@ -4856,10 +4877,10 @@ lambdaf <- 1000
 unitmat<- diag(ncol(predm))
 coeffl <- drop(MASS::ginv(t(predm) %*% predm + lambdaf*unitmat) %*% t(predm) %*% respv)
 names(coeffl) <- colnames(predm)
-# Calculate the RRS and the penalty term
-rrs <- sum((respv - predm %*% coeffl)^2)
+# Calculate the RSS and the penalty term
+rss <- sum((respv - predm %*% coeffl)^2)
 penalty <- lambdaf*sum(coeffl^2)
-c(RSS=rrs, Penalty=penalty, Objective=rrs + penalty)
+c(RSS=rss, Penalty=penalty, Objective=rss + penalty)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -5321,7 +5342,6 @@ legend(x="topright", inset=0.0, bty="n", lwd=6, y.intersp=0.4,
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/islr_default_boxplot.png}
       <<echo=TRUE,eval=FALSE>>=
-x11(width=6, height=5)
 # Set 2 plot panels
 par(mfrow=c(1,2))
 # Balance boxplot
@@ -5616,7 +5636,7 @@ sum(testset$default & (fcast < threshv))
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Confusion Matrix of a Binary Classification Model}
+\subsection{The Confusion Matrix of the Classification Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -5674,9 +5694,9 @@ detach(Default)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of the binary classifier.
       \vskip1ex
-      The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
+      The area under the \emph{ROC curve} (AUC) is a measure of the performance of the binary classification model.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
 confun <- function(actualv, fcast, threshv) {
@@ -5702,14 +5722,16 @@ abs(sum(truepos*falsepos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/islr_defaults_roc.png}
+      \includegraphics[width=0.45\paperwidth]{figure/islr_defaults_roc.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot ROC Curve for Defaults
-x11(width=5, height=5)
 plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Add text with threshold values
+text(x=0.2, y=0.2, "High threshold", cex=1.0, col="blue")
+text(x=0.9, y=0.8, "Low threshold", cex=1.0, col="blue")
       @
   \end{columns}
 \end{block}

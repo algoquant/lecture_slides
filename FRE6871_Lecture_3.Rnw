@@ -65,13 +65,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#3]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#3, Fall 2025}
+\subtitle{Lecture\#3, Spring 2026}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{November 10, 2025}
+\date{February 9, 2026}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -183,11 +183,11 @@ colnames(ycurves) <- substr(colnames(ycurves), start=1, stop=4)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/yield_curve.png}
+      \includegraphics[width=0.45\paperwidth]{figure/yield_curve2.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot using matplot()
 colorv <- c("blue", "red")
-matplot(ycurves, main="Yield Curves in 2020 and 2025", xaxt="n", lwd=3, lty=1,
+matplot(ycurves, main="Yield Curves in 2020 and 2023", xaxt="n", lwd=3, lty=1,
         type="l", xlab="maturity", ylab="yield", col=colorv)
 # Add x-axis
 axis(1, seq_along(rownames(ycurves)), rownames(ycurves))
@@ -209,9 +209,7 @@ legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \emph{yield curve} changes shape dramatically depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+      <<echo=TRUE,eval=FALSE>>=
 # Load constant maturity Treasury rates
 load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
@@ -269,51 +267,30 @@ legend("topleft", legend=colnames(ycurves), y.intersp=0.5,
       Where $y(\tau)$ is the yield at the maturity $\tau$ and $\lambda$ is the time decay factor. 
       \vskip1ex
       The first term $\beta_0$ represents the long-term level of interest rates, the second term $\beta_1$ represents the slope, and the third term $\beta_2$ represents the curvature of the yield curve.
-      \vskip1ex
-      For very short maturities ($\tau \to 0$), the yield is equal to $y(0) = \beta_0 + \beta_1 + \beta_2$.
-      \vskip1ex
-      For very long maturities ($\tau \to \infty$), the yield is equal to $y(\infty) = \beta_0$
       <<echo=TRUE,eval=FALSE>>=
-# The Nelson-Siegel model
-slopet <- function(tau, lambda) (1 - exp(-lambda * tau)) / (lambda * tau)
-curvet <- function(tau, lambda) (1 - exp(-lambda * tau)) / (lambda * tau) - exp(-lambda * tau)
-yns <- function(tau, beta0, beta1, beta2, lambda) {
-  return(beta0 + beta1 * slopet(tau, lambda) + beta2 * curvet(tau, lambda))
-}  ##  end yns
+# Define the Nelson-Siegel model
+slopef <- function(tau, lambda) (1 - exp(-lambda*tau)) / (lambda*tau)
+curvef <- function(tau, lambda) slopef(tau, lambda) - exp(-lambda*tau)
+nsfun <- function(tau, beta0, beta1, beta2, lambda) {
+  return(beta0 + beta1 * slopef(tau, lambda) + beta2 * curvef(tau, lambda))
+}  ##  end nsfun
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/nelson_siegel_components.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Plot the Nelson-Siegel components
 tau <- seq(0.1, 30, by=0.2)
 lambda <- 0.2
-beta0 <- 1.0; beta1 <- -1.5; beta2 <- 3.0
-matplot(tau, cbind(beta0, beta1 * slopet(tau, lambda), beta2 * curvet(tau, lambda)),
+beta0 <- 0.1; beta1 <- -1.5; beta2 <- 3.0
+matplot(tau, cbind(beta0, beta1 * slopef(tau, lambda), beta2 * curvef(tau, lambda)),
         type="l", lwd=3, lty=1, 
         col=c("green", "blue", "red"),
         main="Nelson-Siegel Yield Curve Components",
         xlab="Maturity (years)", ylab="Yield (%)")
 legend("bottomright", bty="n", col=c("green", "blue", "red"),
        legend=c("Level (beta0)", "Slope (beta1)", "Curvature (beta2)"),
-       lty=1, lwd=3, inset=0.05, cex=1.0)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/nelson_siegel_curve.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the Nelson-Siegel yield curve
-yieldv <- yns(tau, beta0, beta1, beta2, lambda)
-plot(tau, yieldv, type="l", lwd=3, col="blue",
-     main="Nelson-Siegel Yield Curve",
-     xlab="Maturity (years)", ylab="Yield (%)")
-# Plot the Nelson-Siegel yield curve for different values of lambda
-lambdav <- c(0.1, 0.5, 1.0, 2.0)
-yieldm <- sapply(lambdav, function(lambda) {
-  yns(tau, beta0, beta1, beta2, lambda)
-})  ##  end lapply
-matplot(tau, yieldm, type="l", lwd=3, lty=1, 
-        col=rainbow(length(lambdav)),
-        main="Nelson-Siegel Yield Curve for Different Lambda",
-        xlab="Maturity (years)", ylab="Yield (%)")
-legend("bottomright", legend=paste0("lambda=", lambdav),
-       bty="n", col=rainbow(length(lambdav)), 
-       lty=1, lwd=3, inset=0.05, cex=1.0)
+       lty=1, lwd=6, inset=0.05, cex=1.0)
       @
   \end{columns}
 \end{block}
@@ -322,44 +299,38 @@ legend("bottomright", legend=paste0("lambda=", lambdav),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{DEoptim} for Global Optimization}
+\subsection{Nelson-Siegel Yield Curve}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      For very short maturities ($\tau \to 0$), the Nelson-Siegel yield is equal to $y(0) = \beta_0 + \beta_1 + \beta_2$.
       \vskip1ex
-      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations:\\
-      \hskip1em\url{https://link.springer.com/content/pdf/10.1023/A:1008202821328.pdf}
-      \vskip1ex
-      The first generation of solutions is selected randomly.
-      \vskip1ex
-      Each new generation is obtained by combining the best solutions from the previous generation.
-      \vskip1ex
-      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
-      \vskip1ex
-      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima.
-      \vskip1ex
-      A limitation of \emph{Differential Evolution} is that it doesn't estimate the standard errors of the parameters.
+      For very long maturities ($\tau \to \infty$), the yield is equal to $y(\infty) = \beta_0$
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the Nelson-Siegel yield curve
+yieldv <- nsfun(tau, beta0, beta1, beta2, lambda)
+plot(tau, yieldv, type="l", lwd=3, col="blue",
+     main="Nelson-Siegel Yield Curve",
+     xlab="Maturity (years)", ylab="Yield (%)")
+      @
     \column{0.5\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# Rastrigin function with vector argument for optimization
-rastrigin <- function(vecv, param=25) {
-  sum(vecv^2 - param*cos(vecv))
-}  ##  end rastrigin
-vecv <- c(pi/6, pi/6)
-rastrigin(vecv=vecv)
-library(DEoptim)
-# Optimize rastrigin using DEoptim
-optiml <-  DEoptim(rastrigin,
-  upper=c(6, 6), lower=c(-6, -6),
-  DEoptim.control(trace=FALSE, itermax=50))
-# Optimal parameters and value
-optiml$optim$bestmem
-rastrigin(optiml$optim$bestmem)
-summary(optiml)
-plot(optiml)
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/nelson_siegel_curve.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the Nelson-Siegel yield curve for different values of lambda
+lambdav <- c(0.1, 0.5, 1.0, 2.0)
+yieldm <- sapply(lambdav, function(lambda) {
+  nsfun(tau, beta0, beta1, beta2, lambda)
+})  ##  end lapply
+matplot(tau, yieldm, type="l", lwd=3, lty=1, 
+        col=rainbow(length(lambdav)),
+        main="Nelson-Siegel Yield Curve for Different Lambda",
+        xlab="Maturity (years)", ylab="Yield (%)")
+legend("bottomright", legend=paste0("lambda=", lambdav),
+       bty="n", col=rainbow(length(lambdav)), 
+       lty=1, lwd=6, inset=0.05, cex=1.0)
       @
   \end{columns}
 \end{block}
@@ -374,44 +345,328 @@ plot(optiml)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Nelson-Siegel model can be calibrated to the actual yields using \emph{global} optimization, to avoid local minima.
+      The Nelson-Siegel model can be calibrated to the actual yields using the function \texttt{optim()}. 
       \vskip1ex
-      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
       <<echo=TRUE,eval=FALSE>>=
 # Extract numeric maturities
 yieldv <- ycurves[, "2025"]
 tau <- as.numeric(sub("yr", "", names(yieldv)))
-# The Nelson-Siegel model objective function
+# Define the Nelson-Siegel model objective function
 objfun <- function(params, tau, yieldv) {
   beta0 <- params[1]; beta1 <- params[2]; beta2 <- params[3]; lambda <- params[4]
-  yieldf <- yns(tau, beta0, beta1, beta2, lambda)
-  return(sum((yieldv - yieldf)^2))
+  yieldns <- nsfun(tau, beta0, beta1, beta2, lambda)
+  return(sum((yieldv - yieldns)^2))
 }  ##  end objfun
-# Run DEoptim
-set.seed(1234)
-library(DEoptim)
-optiml <- DEoptim(fn = objfun,
+# Calculate objective function value for initial parameters
+objfun(c(beta0, beta1, beta2, lambda), tau=tau, yieldv=yieldv)
+# Optimize parameters using optim()
+pmax <- 30 # Maximum parameter value for optimization
+optiml <- optim(par=rep(1, 4), # Initial parameter values
+  fn=objfun,
   tau=tau, yieldv=yieldv,
-  lower = c(-1, -1, -1, -1),
-  upper = c(10, 10, 10, 10),
-  control = DEoptim.control(trace=FALSE, storepopfrom = 1, itermax=50))
+  method="L-BFGS-B",
+  upper=rep(pmax, 4),
+  lower=c(-rep(pmax, 3), 0.01))
 # The optimal parameters
-optimp <- optiml$optim$bestmem
-beta0 <- optimp[1]; beta1 <- optimp[2]; beta2 <- optimp[3]; lambda <- optimp[4]
+paroptim <- optiml$par
+beta0 <- paroptim[1]; beta1 <- paroptim[2]; beta2 <- paroptim[3]; lambda <- paroptim[4]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/nelson_siegel_fitted.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the Nelson-Siegel yield curve
-yieldv <- yns(tau, beta0, beta1, beta2, lambda)
+yieldv <- nsfun(tau, beta0, beta1, beta2, lambda)
 matplot(tau, cbind(yieldv, ycurves[, "2025"]), 
   type="l", lty=1, lwd=3, col=c("red", "blue"),
-  main="Nelson-Siegel and Actual Yield Curve",
+  main="Actual Yield Curve and Nelson-Siegel Fit",
   xlab="Maturity (years)", ylab="Yield (%)")
 legend("bottomright", legend=c("Nelson-Siegel", "Actual"),
        bty="n", col=c("red", "blue"), 
-       lty=1, lwd=3, inset=0.05, cex=1.0)
+       lty=1, lwd=6, inset=0.05, cex=1.0)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calibrating the Nelson-Siegel Model Using Differential Evolution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Nelson-Siegel model can be calibrated to the actual yields using \emph{global} optimization, to avoid local minima.
+      \vskip1ex
+      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      \vskip1ex
+      The function \texttt{DEoptim()} is much slower than \texttt{optim()}, but it is more likely to find the global minimum of the objective function.
+      <<echo=TRUE,eval=FALSE>>=
+# Extract numeric maturities
+yieldv <- ycurves[, "2025"]
+tau <- as.numeric(sub("yr", "", names(yieldv)))
+# Optimize parameters using DEoptim()
+set.seed(1234)
+library(DEoptim)
+optiml <- DEoptim::DEoptim(fn = objfun,
+  tau=tau, yieldv=yieldv,
+  upper=rep(pmax, 4),
+  lower=c(-rep(pmax, 3), 0.01),
+  control = DEoptim.control(trace=FALSE, storepopfrom = 1, itermax=500))
+# The optimal parameters
+pardeoptim <- optiml$optim$bestmem
+beta0 <- pardeoptim[1]; beta1 <- pardeoptim[2]; beta2 <- pardeoptim[3]; lambda <- pardeoptim[4]
+all.equal(paroptim, pardeoptim, check.attributes=FALSE)
+library(microbenchmark)
+summary(microbenchmark(
+  optim=optim(par=rep(1, 4), fn=objfun, tau=tau, yieldv=yieldv,
+   method="L-BFGS-B", upper=rep(pmax, 4), lower=c(-rep(pmax, 3), 0.01)),
+  deoptim=DEoptim(fn=objfun, tau=tau, yieldv=yieldv,
+   upper=rep(pmax, 4), lower=c(-rep(pmax, 3), 0.01),
+   control=DEoptim.control(trace=FALSE, storepopfrom=1, itermax=500)),
+  times=10))[, c(1, 4, 5)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/nelson_siegel_fitted_DEoptim.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the Nelson-Siegel yield curve
+yieldv <- nsfun(tau, beta0, beta1, beta2, lambda)
+matplot(tau, cbind(yieldv, ycurves[, "2025"]), 
+  type="l", lty=1, lwd=3, col=c("red", "blue"),
+  main="Actual Yield Curve and Nelson-Siegel DEoptim Fit",
+  xlab="Maturity (years)", ylab="Yield (%)")
+legend("bottomright", legend=c("Nelson-Siegel", "Actual"),
+       bty="n", col=c("red", "blue"), 
+       lty=1, lwd=6, inset=0.05, cex=1.0)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Vasicek Interest Rate Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{Vasicek} model is a stochastic process for the short-term interest rate $r_t$:
+      \begin{displaymath}
+        \mathrm{d} r_t = \theta \, (\mu - r_t) + \sigma \, \mathrm{d} B_t
+      \end{displaymath}
+      Where the parameter $\sigma$ is the volatility, $\mu$ is the equilibrium rate, and $\theta$ is the mean reversion parameter.
+      \vskip1ex
+      $B_t$ is a \emph{Brownian Motion}, with its increment $\mathrm{d} B_t$ following the normal distribution with the volatility $\sqrt{\mathrm{d}t}$, equal to the square root of the time increment $\mathrm{d}t$.
+      \vskip1ex
+      The \emph{Vasicek} process is also known as the \emph{Ornstein-Uhlenbeck} process.
+      \vskip1ex
+      The \emph{Vasicek} process is path dependent, so it must be simulated using explicit loops, either in \texttt{R} or in \texttt{C++}.
+      \vskip1ex
+      The compiled \emph{Rcpp} \texttt{C++} code can be over \texttt{100} times faster than loops in \texttt{R}!
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define Vasicek parameters
+ratin <- 0.0; rateq <- 4.0; 
+sigmav <- 0.1; thetav <- 0.01; nrows <- 1000
+# Initialize the data
+innov <- rnorm(nrows) # innovations
+rated <- numeric(nrows) # rate increments
+ratev <- numeric(nrows) # rates
+rated[1] <- sigmav*innov[1]
+ratev[1] <- ratin
+# Simulate Vasicek process in R
+for (i in 2:nrows) {
+  rated[i] <- thetav*(rateq - ratev[i-1]) + sigmav*innov[i]
+  ratev[i] <- ratev[i-1] + rated[i]
+}  ##  end for
+# Simulate Vasicek process in Rcpp
+pricecpp <- HighFreq::sim_ou(prici=ratin, priceq=rateq, 
+  theta=thetav, innov=matrix(sigmav*innov))
+all.equal(ratev, drop(pricecpp))
+# Compare the speed of R code with Rcpp
+library(microbenchmark)
+summary(microbenchmark(
+  Rcode={for (i in 2:nrows) {
+    rated[i] <- thetav*(rateq - ratev[i-1]) + sigmav*innov[i]
+    ratev[i] <- ratev[i-1] + rated[i]}},
+  Rcpp=HighFreq::sim_ou(prici=ratin, priceq=rateq, 
+    theta=thetav, innov=matrix(sigmav*innov)),
+  times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Solution of the Vasicek Process}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The solution of the \emph{Vasicek} process is given by:
+      \begin{displaymath}
+        r_t = r_0 e^{-\theta t} + \mu (1 - e^{-\theta t}) + \sigma \int_{0}^{t} {e^{\theta (s - t)} \mathrm{d} B_s}
+      \end{displaymath}
+      \vskip1ex
+      The mean and variance are given by:
+      \begin{flalign*}
+        & \mathbb{E}[r_t] = r_0 e^{-\theta t} + \mu (1 - e^{-\theta t}) \rightarrow \mu \\
+        & \mathbb{E}[(r_t - \mathbb{E}[r_t])^2] = \frac{\sigma^2}{2 \theta} (1 - e^{-\theta t}) \rightarrow \frac{\sigma^2}{2 \theta}
+      \end{flalign*}
+      The \emph{Vasicek} process is mean reverting to the equilibrium rate $\mu$.
+      \vskip1ex
+      The \emph{Vasicek} process needs a \emph{warmup period} before it reaches equilibrium.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vasicek_rate_process.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(ratev, type="l", xlab="time", ylab="rates",
+     main="Vasicek Interest Rate Process")
+legend("bottomright", title=paste(c(
+  paste0("rateq = ", rateq),
+  paste0("sigmav = ", sigmav),
+  paste0("thetav = ", thetav)),
+  collapse="\n"),
+  legend="", cex=1.1, inset=0.0, bg="white", bty="n")
+abline(h=rateq, col='red', lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vasicek Process Increments Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Vasicek} process, the rate increments are negatively correlated to the lagged rates.
+      <<echo=TRUE,eval=FALSE>>=
+rated <- rutils::diffit(ratev)
+pricelag <- rutils::lagit(ratev)
+formulav <- rated ~ pricelag
+regmod <- lm(formulav)
+summary(regmod)
+# Plot regression
+plot(formulav, xlab="lagged rates", ylab="rate increments",
+     main="Rate Increments Versus Lagged Rates")
+abline(regmod, lwd=2, col="red")
+# Add t-value of the slope
+text(x=1.0, y=0.3, cex=1.0, col="blue",
+ labels=paste("t-value =", round(summary(regmod)$coefficients[2, 3], 2)))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/vasicek_rate_scatter.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calibrating the Vasicek Parameters}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The volatility parameter of the Vasicek process can be estimated directly from the standard deviation of the rate increments.
+      \vskip1ex
+      The $\theta$ and $\mu$ parameters can be estimated from the linear regression of the rate increments versus the lagged prices.
+      \vskip1ex
+      Calculating regression parameters directly from formulas has the advantage of much faster calculations.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate volatility parameter
+c(volatility=sigmav, estimate=sd(rated))
+# Extract OU parameters from regression
+coeff <- summary(regmod)$coefficients
+# Calculate regression alpha and beta directly
+betac <- cov(rated, pricelag)/var(pricelag)
+alphac <- (mean(rated) - betac*mean(pricelag))
+cbind(direct=c(alpha=alphac, beta=betac), lm=coeff[, 1])
+all.equal(c(alpha=alphac, beta=betac), coeff[, 1],
+          check.attributes=FALSE)
+# Calculate regression standard errors directly
+betac <- c(alpha=alphac, beta=betac)
+fitv <- (alphac + betac*pricelag)
+resids <- (rated - fitv)
+price2 <- sum((pricelag - mean(pricelag))^2)
+betasd <- sqrt(sum(resids^2)/price2/(nrows-2))
+alphasd <- sqrt(sum(resids^2)/(nrows-2)*(1:nrows + mean(pricelag)^2/price2))
+cbind(direct=c(alphasd=alphasd, betasd=betasd), lm=coeff[, 2])
+all.equal(c(alphasd=alphasd, betasd=betasd), coeff[, 2],
+          check.attributes=FALSE)
+# Compare mean reversion parameter theta
+c(theta=(-thetav), round(coeff[2, ], 3))
+# Compare equilibrium rate mu
+c(priceq=rateq, estimate=-coeff[1, 1]/coeff[2, 1])
+# Compare actual and estimated parameters
+coeff <- cbind(c(thetav*rateq, -thetav), coeff[, 1:2])
+rownames(coeff) <- c("drift", "theta")
+colnames(coeff)[1] <- "actual"
+round(coeff, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Yield Curve Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The price of a discount (zero-coupon) bond with maturity $T$ under the \emph{Vasicek} model is given by:
+      \begin{displaymath}
+        P_T = \exp(A_T - B_T \, r_t)
+      \end{displaymath}
+      Where $r_t$ is the current short rate, and $A_T$ and $B_T$ are functions of the model parameters $\theta$, $\mu$, and $\sigma$:
+      \begin{flalign*}
+        & B_T = \frac{1 - \exp(-\theta T)}{\theta} \\
+        & A_T = (\mu - \frac{\sigma^2}{2 \theta^2})(B_T - T) - \frac{\sigma^2 B_T^2}{4 \theta}
+      \end{flalign*}
+      \vskip1ex
+      The discount bond price is $P_T = \exp(-y_T T)$, where the yield to maturity $y_T$ is given by:
+      \begin{displaymath}
+        y_T = \frac{-A_T + B_T \, r_t}{T}
+      \end{displaymath}
+      The yield curve $y_T$ is a function of the maturity $T$ and the current short rate $r_t$.
+      \vskip1ex
+      The Vasicek model is a single-factor model because the only source of market risk is the short rate $r_t$. 
+      The level of the short rate $r_t$ determines the whole term structure of interest rates.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vasicek_rate_curve.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the yield curve under the Vasicek model
+Tmax <- 30 # Maximum maturity in years
+Tseq <- seq(0.1, Tmax, by=1.0) # Maturity sequence
+BT <- (1 - exp(-thetav*Tseq))/thetav
+AT <- (rateq - sigmav^2/(2*thetav^2))
+AT <- AT*(BT - Tseq) - (sigmav^2*BT^2)/(4*thetav)
+yieldv <- (-AT + BT*rateq)/Tseq
+# Plot the yield curve
+plot(Tseq, yieldv, type="l", lwd=3, col="blue",
+     main="Yield Curve Under the Vasicek Model",
+     xlab="Maturity (years)", ylab="Yield (%)")
       @
   \end{columns}
 \end{block}
@@ -438,14 +693,14 @@ ratem <- rutils::do_call(cbind, ratem)
 ratem <- zoo::na.locf(ratem, na.rm=FALSE)
 ratem <- zoo::na.locf(ratem, fromLast=TRUE)
 # Calculate daily percentage rates changes
-retp <- rutils::diffit(log(ratem))
-# Center (de-mean) the returns
-retp <- lapply(retp, function(x) {x - mean(x)})
-retp <- rutils::do_call(cbind, retp)
-sapply(retp, mean)
+rated <- rutils::diffit(log(ratem))
+# Center (de-mean) the rate increments
+rated <- lapply(rated, function(x) {x - mean(x)})
+rated <- rutils::do_call(cbind, rated)
+sapply(rated, mean)
 # Covariance and Correlation matrices of Treasury rates
-covmat <- cov(retp)
-cormat <- cor(retp)
+covmat <- cov(rated)
+cormat <- cor(rated)
 # Reorder correlation matrix based on clusters
 library(corrplot)
 ordern <- corrMatOrder(cormat, order="hclust",
@@ -457,7 +712,6 @@ cormat <- cormat[ordern, ordern]
       \includegraphics[width=0.4\paperwidth]{figure/yield_cor.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the correlation matrix
-x11(width=6, height=6)
 colorv <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cormat, title=NA, tl.col="black",
     method="square", col=colorv(NCOL(cormat)), tl.cex=0.8,
@@ -498,17 +752,17 @@ nweights <- NROW(symbolv)
 weightv <- rep(1/sqrt(nweights), nweights)
 names(weightv) <- symbolv
 # Objective function equal to minus portfolio variance
-objfun <- function(weightv, retp) {
-  retp <- retp %*% weightv
-  -1e7*var(retp) + 1e7*(1 - sum(weightv*weightv))^2
+objfun <- function(weightv, rated) {
+  rated <- rated %*% weightv
+  -1e7*var(rated) + 1e7*(1 - sum(weightv*weightv))^2
 }  ##  end objfun
 # Objective function for equal weight portfolio
-objfun(weightv, retp)
+objfun(weightv, rated)
 # Compare speed of vector multiplication methods
 library(microbenchmark)
 summary(microbenchmark(
-  transp=t(retp) %*% retp,
-  sumv=sum(retp*retp),
+  transp=t(rated) %*% rated,
+  sumv=sum(rated*rated),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -517,13 +771,13 @@ summary(microbenchmark(
 # Find weights with maximum variance
 optiml <- optim(par=weightv,
   fn=objfun,
-  retp=retp,
+  rated=rated,
   method="L-BFGS-B",
   upper=rep(5.0, nweights),
   lower=rep(-5.0, nweights))
 # Optimal weights and maximum variance
 weights1 <- optiml$par
-objfun(weights1, retp)
+objfun(weights1, rated)
 # Plot first principal component loadings
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -549,18 +803,18 @@ barplot(weights1, names.arg=names(weights1),
       \vskip1ex
       The number of principal components is equal to the dimension of the covariance matrix.
       <<echo=TRUE,eval=FALSE>>=
-# pc1 weights and returns
-pc1 <- drop(retp %*% weights1)
+# pc1 weights and rate increments
+pc1 <- drop(rated %*% weights1)
 # Redefine objective function
-objfun <- function(weightv, retp) {
-  retp <- retp %*% weightv
-  -1e7*var(retp) + 1e7*(1 - sum(weightv^2))^2 +
+objfun <- function(weightv, rated) {
+  rated <- rated %*% weightv
+  -1e7*var(rated) + 1e7*(1 - sum(weightv^2))^2 +
     1e7*sum(weights1*weightv)^2
 }  ##  end objfun
 # Find second principal component weights
 optiml <- optim(par=weightv,
                    fn=objfun,
-                   retp=retp,
+                   rated=rated,
                    method="L-BFGS-B",
                    upper=rep(5.0, nweights),
                    lower=rep(-5.0, nweights))
@@ -569,9 +823,9 @@ optiml <- optim(par=weightv,
       \vspace{-1em}
       \includegraphics[width=0.35\paperwidth]{figure/pca_rates_load2.png}
       <<echo=TRUE,eval=FALSE>>=
-# pc2 weights and returns
+# pc2 weights and rate increments
 weights2 <- optiml$par
-pc2 <- drop(retp %*% weights2)
+pc2 <- drop(rated %*% weights2)
 sum(pc1*pc2)
 # Plot second principal component loadings
 barplot(weights2, names.arg=names(weights2),
@@ -657,7 +911,7 @@ barplot(eigend$values, names.arg=paste0("PC", 1:nweights),
 # Eigen decomposition of correlation matrix
 eigend <- eigen(cormat)
 # Perform PCA with scaling
-pcad <- prcomp(retp, scale=TRUE)
+pcad <- prcomp(rated, scale=TRUE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -665,7 +919,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
 # Eigen decomposition of covariance matrix
 eigend <- eigen(covmat)
 # Perform PCA without scaling
-pcad <- prcomp(retp, scale=FALSE)
+pcad <- prcomp(rated, scale=FALSE)
 # Compare outputs
 all.equal(eigend$values, pcad$sdev^2)
 all.equal(abs(eigend$vectors), abs(pcad$rotation),
@@ -701,7 +955,7 @@ all.equal(abs(eigend$vectors), abs(pcad$rotation),
       A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # Perform principal component analysis PCA
-pcad <- prcomp(retp, scale=TRUE)
+pcad <- prcomp(rated, scale=TRUE)
 # Plot standard deviations
 barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
   las=3, xlab="", ylab="",
@@ -721,7 +975,7 @@ barplot(pcad$sdev, names.arg=colnames(pcad$rotation),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Principal component} loadings are the weights of portfolios which have mutually orthogonal returns.
+      \emph{Principal component} loadings are the weights of portfolios which have mutually orthogonal rate increments.
       \vskip1ex
       The \emph{principal component} portfolios represent the different orthogonal modes of the data variance.
       \vskip1ex
@@ -759,29 +1013,29 @@ for (ordern in 1:NCOL(pcad$rotation)) {
     \column{0.5\textwidth}
       The time series of the \emph{principal components} can be calculated by multiplying the loadings (weights) times the original data.
       \vskip1ex
-      The \emph{principal component} time series have mutually orthogonal returns.
+      The \emph{principal component} time series have mutually orthogonal rate increments.
       \vskip1ex
       Higher order \emph{principal components} are gradually less volatile.
       <<echo=TRUE,eval=FALSE>>=
-# Standardize (center and scale) the returns
-retp <- lapply(retp, function(x) {(x - mean(x))/sd(x)})
-retp <- rutils::do_call(cbind, retp)
-sapply(retp, mean)
-sapply(retp, sd)
+# Standardize (center and scale) the rate increments
+rated <- lapply(rated, function(x) {(x - mean(x))/sd(x)})
+rated <- rutils::do_call(cbind, rated)
+sapply(rated, mean)
+sapply(rated, sd)
 # Calculate principal component time series
-retpcac <- retp %*% pcad$rotation
-all.equal(pcad$x, retpcac, check.attributes=FALSE)
+ratepca <- rated %*% pcad$rotation
+all.equal(pcad$x, ratepca, check.attributes=FALSE)
 # Calculate products of principal component time series
-round(t(retpcac) %*% retpcac, 2)
+round(t(ratepca) %*% ratepca, 2)
 # Coerce to xts time series
-retpcac <- xts(retpcac, order.by=zoo::index(retp))
-retpcac <- cumsum(retpcac)
+ratepca <- xts(ratepca, order.by=zoo::index(rated))
+ratepca <- cumsum(ratepca)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-rangev <- range(retpcac)
-for (ordern in 1:NCOL(retpcac)) {
-  plot.zoo(retpcac[, ordern], ylim=rangev, xlab="", ylab="")
+rangev <- range(ratepca)
+for (ordern in 1:NCOL(ratepca)) {
+  plot.zoo(ratepca[, ordern], ylim=rangev, xlab="", ylab="")
   title(paste0("PC", ordern), line=-1, col.main="red")
 }  ##  end for
       @
@@ -807,9 +1061,9 @@ for (ordern in 1:NCOL(retpcac)) {
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Invert all the principal component time series
-retpca <- retp %*% pcad$rotation
-solved <- retpca %*% solve(pcad$rotation)
-all.equal(coredata(retp), solved)
+ratepca <- rated %*% pcad$rotation
+solved <- ratepca %*% solve(pcad$rotation)
+all.equal(coredata(rated), solved)
       @
   \end{columns}
 \end{block}
@@ -826,16 +1080,16 @@ all.equal(coredata(retp), solved)
     \column{0.5\textwidth}
       The original time series can be calculated \emph{approximately} from just the first few \emph{principal components}, which demonstrates how \emph{PCA} can be used for \emph{dimension reduction}.
       \vskip1ex
-      A popular rule of thumb is to use the \emph{principal components} with the largest variances, which sum up to \texttt{80\%} of the total variance of returns.
+      A popular rule of thumb is to use the \emph{principal components} with the largest variances, which sum up to \texttt{80\%} of the total variance of rate increments.
       \vskip1ex
       The \emph{Kaiser-Guttman} rule uses only \emph{principal components} with variance greater than $1$.
       <<echo=TRUE,eval=FALSE>>=
 # Invert first 3 principal component time series
-solved <- retpca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
-solved <- xts::xts(solved, zoo::index(retp))
+solved <- ratepca[, 1:3] %*% solve(pcad$rotation)[1:3, ]
+solved <- xts::xts(solved, zoo::index(rated))
 solved <- cumsum(solved)
-retc <- cumsum(retp)
-# Plot the solved returns
+retc <- cumsum(rated)
+# Plot the solved rate increments
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 for (symbol in symbolv) {
@@ -849,6 +1103,42 @@ for (symbol in symbolv) {
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/pca_rates_series_solved.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conservation of Variance in PCA}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The matrix of \emph{principal component} rate increments $\mathbf{pc}$ is equal to the matrix $\mathbf{w}$ of the PCA weights (loadings) times the matrix of the return vectors $\mathbf{r}$:
+      \begin{displaymath}
+        \mathbf{pc} = \mathbf{w} \, \mathbf{r}
+      \end{displaymath}
+      Where the PCA weights $\mathbf{w}^T \mathbf{w} = \mathbbm{1}$ are orthonormal.
+      \vskip1ex
+      So the sum of the PCA variances is equal to:
+      \begin{displaymath}
+        \mathbf{pc}^T \mathbf{pc} = (\mathbf{w} \, \mathbf{r})^T \mathbf{w} \, \mathbf{r} = 
+        \mathbf{r}^T \, (\mathbf{w}^T \mathbf{w}) \, \mathbf{r} = \mathbf{r}^T \mathbf{r}
+      \end{displaymath}
+      So the total variance is conserved in PCA: the sum of the PCA variances is equal to the sum of the factor variances.
+      <<echo=TRUE,eval=FALSE>>=
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the PC time series
+pcad <- prcomp(rated, scale=FALSE)
+ratepca <- rated %*% pcad$rotation
+# Compare the total variances
+all.equal(sum(apply(ratepca, 2, var)), sum(apply(rated, 2, var)))
+      @
   \end{columns}
 \end{block}
 
@@ -1185,14 +1475,14 @@ legend(x="topleft", ##  Add legend
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the residuals
 fitv <- (alphac + betac*predm)
-resids <- (respv - fitv)
-all.equal(resids, regmod$residuals, check.attributes=FALSE)
+residv <- (respv - fitv)
+all.equal(residv, regmod$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to the predictor
-all.equal(sum(resids*predm), target=0)
+all.equal(sum(residv*predm), target=0)
 # Residuals are orthogonal to the fitted values
-all.equal(sum(resids*fitv), target=0)
+all.equal(sum(residv*fitv), target=0)
 # Sum of residuals is equal to zero
-all.equal(mean(resids), target=0)
+all.equal(mean(residv), target=0)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1222,9 +1512,7 @@ abline(h=0, lwd=3, col="red")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{residuals} are the source of error in the regression model, producing uncertainty in the \emph{response vector} $y$ and in the regression coefficients: $y_i = \alpha + \beta x_i + \varepsilon_i$.
-      \vskip1ex
-      The standard errors of the regression coefficients are equal to their standard deviations, given the \emph{residuals} as the source of error.
+      The \emph{residuals} $\varepsilon_i$ can be considered the source of error and uncertainty in the \emph{response vector} $y$: $y_i = \alpha + \beta x_i + \varepsilon_i$.
       \vskip1ex
       Since $\beta = \frac {\hat{y}^T \hat{x}} {\hat{x}^T \hat{x}}$, then its variance is equal to:
       \begin{displaymath}
@@ -1234,6 +1522,7 @@ abline(h=0, lwd=3, col="red")
       \begin{displaymath}
         \sigma^2_\alpha = \frac{\sigma^2_\varepsilon}{n} + \sigma^2_\beta \bar{x}^2 = \sigma^2_\varepsilon (\frac{1}{n} + \frac {\bar{x}^2} {\hat{x}^T \hat{x}})
       \end{displaymath}
+      The standard errors of the regression coefficients are equal to their standard deviations, given the \emph{residuals} as the source of error.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
@@ -1243,11 +1532,11 @@ respc <- respv - mean(respv)
 # Degrees of freedom of residuals
 degf <- regmod$df.residual
 # Standard deviation of residuals
-residsd <- sqrt(sum(resids^2)/degf)
+residvd <- sqrt(sum(residv^2)/degf)
 # Standard error of beta
-betasd <- residsd/sqrt(sum(predc^2))
+betasd <- residvd/sqrt(sum(predc^2))
 # Standard error of alpha
-alphasd <- residsd*sqrt(1/nrows + mean(predm)^2/sum(predc^2))
+alphasd <- residvd*sqrt(1/nrows + mean(predm)^2/sum(predc^2))
       @
   \end{columns}
 \end{block}
@@ -1529,92 +1818,6 @@ lmtest::dwtest(regmod)
 \end{frame}
 
 
-%%%%%%%%%%%%%%%
-\subsection{draft: Autocorrelated Time Series Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Filtering or smoothing a time series containing an error terms over overlapping periods introduces autocorrelations in the error terms of the time series.
-      \vskip1ex
-      Autocorrelations in the error terms introduces autocorrelations of the regression residuals, causing the Durbin-Watson test to fail.
-      \vskip1ex
-      Autocorrelations in the error terms introduce autocorrelations of the regression residuals, causing the Durbin-Watson test to fail.
-      \vskip1ex
-      The failure of the Durbin-Watson test means that the \emph{standard errors} and \emph{p}-values calculated by the regression model are too small, and therefore the regression may not be statistically significant.
-      \vskip1ex
-      But the failure of the Durbin-Watson test doesn't reject the existence of a linear relationship between the response and predictor variables, it just puts it in doubt.
-      \vskip1ex
-      Links:
-      https://onlinecourses.science.psu.edu/stat510/node/72
-      http://stats.stackexchange.com/questions/6469/simple-linear-model-with-autocorrelated-errors-in-r
-      \vskip1ex
-      Regression of non-stationary time series creates \emph{spurious} regressions.
-      \vskip1ex
-      The \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression.
-      \vskip1ex
-      But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests.
-      \vskip1ex
-      The Q-Q plot also shows that residuals are \emph{not} normally distributed.
-      \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
-foo <- etfenv$returns[, c("VTI", "VEU")]
-endd <- endpoints(foo, on="weeks")
-head(foo)
-tail(foo)
-class(foo)
-dim(foo)
-regmod <- lm(paste(names(foo), collapse=" ~ "), data=foo)
-regsum <- summary(regmod)
-regsum
-lmtest::dwtest(regmod)
-
-# Filter over non-overlapping periods
-bar <- names(foo)
-foo <- merge(period.sum(foo[, 1], INDEX=endd), period.sum(foo[, 2], INDEX=endd))
-foo <- foo[complete.cases(foo), ]
-names(foo) <- bar
-
-# Filter over overlapping periods
-foo <- rollsum(foo, k=11)
-
-
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-library(lmtest)
-# Spurious regression in unit root time series
-predm <- cumsum(rnorm(100))  ##  Unit root time series
-respv <- cumsum(rnorm(100))
-formulav <- respv ~ predm
-regmod <- lm(formulav)  ##  Perform regression
-# Summary indicates statistically significant regression
-regsum <- summary(regmod)
-regsum$coeff
-regsum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dwtest <- lmtest::dwtest(regmod)
-c(dwtest$statistic[[1]], dwtest$p.value)
-      @
-      \vspace{-2em}
-        <<autocorr_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  ##  Set plot panels
-plot(formulav, xlab="", ylab="")  ##  Plot scatterplot using formula
-title(main="Spurious Regression", line=-1)
-# Add regression line
-abline(regmod, lwd=2, col="red")
-plot(regmod, which=2, ask=FALSE)  ##  Plot just Q-Q
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/autocorr_reg-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
 
 %%%%%%%%%%%%%%%
 \section{Forecasts From Univariate Regression Models}
@@ -1752,10 +1955,10 @@ all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
       \includegraphics[width=0.45\paperwidth]{figure/reg_fitsd.png}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the covariance and standard deviations of fitted values
-resids <- drop(respv - fitv)
+residv <- drop(respv - fitv)
 degf <- (NROW(predm) - NCOL(predm))
-residsd <- sqrt(sum(resids^2)/degf)
-fitcovar <- residsd*infmat
+residvd <- sqrt(sum(residv^2)/degf)
+fitcovar <- residvd*infmat
 fitsd <- sqrt(diag(fitcovar))
 # Plot the standard deviations
 fitdata <- cbind(fitted=fitv, stdev=fitsd)
@@ -1850,7 +2053,7 @@ fcast <- drop(predn %*% betac)
 # Calculate the inverse of the squared predictor matrix
 pred2 <- MASS::ginv(crossprod(predm))
 # Calculate the standard errors
-predsd <- residsd*sqrt(predn %*% pred2 %*% t(predn))
+predsd <- residvd*sqrt(predn %*% pred2 %*% t(predn))
 # Combine the forecast values and standard errors
 fcast <- cbind(forecast=fcast, stdev=diag(predsd))
       @
@@ -2183,16 +2386,71 @@ all.equal(drop(betac), coef(regmod), check.attributes=FALSE)
 fitv <- drop(predm %*% betac)
 all.equal(fitv, regmod$fitted.values, check.attributes=FALSE)
 # Calculate the residuals
-resids <- drop(respv - fitv)
-all.equal(resids, regmod$residuals, check.attributes=FALSE)
+residv <- drop(respv - fitv)
+all.equal(residv, regmod$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to predictor columns (predms)
-sapply(resids %*% predm, all.equal, target=0)
+sapply(residv %*% predm, all.equal, target=0)
 # Residuals are orthogonal to the fitted values
-all.equal(sum(resids*fitv), target=0)
+all.equal(sum(residv*fitv), target=0)
 # Sum of residuals is equal to zero
-all.equal(sum(resids), target=0)
+all.equal(sum(residv), target=0)
       @
       \vspace{-1em}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Solution of Regression Using Coordinate Descent}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multivariate regression can also be solved recursively using \emph{coordinate descent}:
+      \begin{flalign*}
+        & r_j = y - \sum_{i \ne j} {\beta_i x_i} = y - \mathbb{X}_{-j} \beta_{-j} \\
+        & \beta_j = \frac{x_j r_j}{x_j^T x_j}
+      \end{flalign*}
+      The \emph{partial residual} $r_j$ is first calculated without the effect of the $j$-th \emph{predictor}.
+      \vskip1ex
+      Then the updated \emph{coefficient} $\beta_j$ is equal to the projection of the \emph{partial residual} $r_j$ onto the $j$-th \emph{predictor} vector $x_j$ divided by the sum of squared \emph{predictor} vector $x_j$.
+      \vskip1ex
+      The calculation is repeated  until the \emph{regression coefficients} $\beta$ converge.
+        <<echo=TRUE,eval=TRUE>>=
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Solve multivariate regression using coordinate descent
+solve_cd <- function(respv, predm, maxit = 1000, tol = 1e-6) {
+  # Initialize the variables
+  ncols <- NCOL(predm)
+  colsq <- colSums(predm^2)
+  betav <- rep(0, ncols)
+  # Loop over iterations
+  for (iter in 1:maxit) {
+    betap <- betav
+    # Loop over the predictors
+    for (j in 1:ncols) {
+      # Calculate the partial residual excluding current predictor
+      residv <- respv - predm[, -j] %*% betav[-j]
+      # Calculate the product of predictor j with the residual
+      covp <- sum(predm[, j] * residv)
+      # Update beta_j coefficient
+      betav[j] <- covp / colsq[j]
+    } # end for j
+    # Break when converged
+    if (sum(abs(betav - betap)) < tol) break
+  } # end for iter
+  return(betav)
+} # end solve_cd
+# Calculate the regression coefficients using coordinate descent
+betav <- solve_cd(respv, predm)
+all.equal(betav, drop(betac), check.attributes=FALSE)
+      @
   \end{columns}
 \end{block}
 
@@ -2268,8 +2526,8 @@ all.equal(fittedc, regmod$fitted.values - mean(respv),
   check.attributes=FALSE)
 # Calculate the residuals
 respc <- respv - mean(respv)
-resids <- drop(respc - fittedc)
-all.equal(resids, regmod$residuals, check.attributes=FALSE)
+residv <- drop(respc - fittedc)
+all.equal(residv, regmod$residuals, check.attributes=FALSE)
 # Calculate the influence matrix
 infmatc <- predc %*% MASS::ginv(predc)
 # Compare the fitted values
@@ -2383,8 +2641,8 @@ nrows <- NROW(predm)
 ncols <- NCOL(predm)
 degf <- (nrows - ncols)
 all.equal(degf, regsum$df[2])
-# Variance of residuals
-residsd <- sum(resids^2)/degf
+# Calculate the variance of residuals
+residvd <- sum(residv^2)/degf
       @
   \end{columns}
 \end{block}
@@ -2415,13 +2673,14 @@ residsd <- sum(resids^2)/degf
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-# Inverse of the squared predictor matrix
-pred2 <- MASS::ginv(crossprod(predm))
-# pred2 <- t(predm) %*% predm
-# Variance of residuals
-residsd <- sum(resids^2)/degf
+# Calculate the fitted values and the residuals
+fitv <- drop(predm %*% betav)
+residv <- drop(respv - fitv)
+# Calculate the variance of residuals
+degf <- (NROW(predm) - NCOL(predm))
+residvd <- sum(residv^2)/degf
 # Calculate the covariance matrix of betas
-covm <- residsd*pred2
+covm <- residvd*pred2
 # round(covm, 3)
 betasd <- sqrt(diag(covm))
 all.equal(betasd, regsum$coeff[, 2], check.attributes=FALSE)
@@ -2471,7 +2730,7 @@ all.equal(infmat, infmat %*% infmat)
       \includegraphics[width=0.45\paperwidth]{figure/regm_fitsd.png}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the covariance and standard deviations of fitted values
-fitcovar <- residsd*infmat
+fitcovar <- residvd*infmat
 fitsd <- sqrt(diag(fitcovar))
 # Sort the standard deviations
 fitsd <- cbind(fitted=fitv, stdev=fitsd)
@@ -2599,7 +2858,7 @@ formulav <- paste0("respv ~ ",
 regmod <- lm(formulav, data=data.frame(cbind(respv, predm)))
 regsum <- summary(regmod)
 # Predict from lm object
-fcastlm <- predict.lm(object=model, newdata=newdata,
+fcastlm <- predict.lm(object=regmod, newdata=newdata,
            interval="confidence", confl=1-2*(1-pnorm(2)))
 # Calculate the t-quantile
 tquant <- qt(pnorm(2), df=degf)
@@ -2647,7 +2906,7 @@ all.equal(fcastlm[1, "upr"], fcasth)
 # TSS = ESS + RSS
 tss <- sum((respv-mean(respv))^2)
 ess <- sum((fitv-mean(fitv))^2)
-rss <- sum(resids^2)
+rss <- sum(residv^2)
 all.equal(tss, ess + rss)
       @
   \end{columns}
@@ -2676,7 +2935,7 @@ all.equal(tss, ess + rss)
       \end{flalign*}
       \vskip1ex
 \fbox{\parbox{\columnwidth-1.5em}{
-      The \emph{R-squared} measures how well the regression fits the data, but it doesn't measure the statistical significance of the regression.  
+      The \emph{R-squared} measures how well the fitted values fit the response values, but it doesn't measure the statistical significance of the regression.  
 }}
       \vskip1ex
       A regression may have a large \emph{R-squared}, but the coefficient \emph{p}-values may also be large, when the statistical significance of the regression is low.
@@ -2728,7 +2987,7 @@ ncols <- NCOL(predm)
 # Degrees of freedom of residuals
 degf <- (nrows - ncols)
 # Adjusted R-squared
-rsqadj <- (1-sum(resids^2)/degf/var(respv))
+rsqadj <- (1-sum(residv^2)/degf/var(respv))
 # Compare adjusted R-squared from lm()
 all.equal(drop(rsqadj), regsum$adj.r.squared)
       @
@@ -3096,9 +3355,9 @@ infmat <- predm %*% MASS::ginv(predm)
 infpca <- predpca %*% MASS::ginv(predpca)
 all.equal(infmat, infpca)
 # Calculate the regression coefficients
-coeffv <- drop(MASS::ginv(predm) %*% respv)
+betav <- drop(MASS::ginv(predm) %*% respv)
 # Transform the collinear regression coefficients to the PCA
-drop(coeffv %*% pcad$rotation)
+drop(betav %*% pcad$rotation)
 # Calculate the PCA regression coefficients
 drop(MASS::ginv(predpca) %*% respv)
 # Calculate the PCA regression coefficients directly
@@ -3123,7 +3382,7 @@ colSums(predpca*drop(respv))/colSums(predpca^2)
       \vskip1ex
       The regression can be \emph{regularized} by removing the infinite or very large \emph{PCR} regression coefficients, and transforming the coefficients back to the original predictor coordinates.
       \vskip1ex
-      This is called \emph{dimension reduction} - excluding the principal components with very small squares.
+      This is called \emph{dimension reduction} - excluding the principal components with very small eigenvalues.
       \vskip1ex
       \emph{Dimension reduction} can also be applied to reduce model overfitting by reducing the number of effective predictors.
     \column{0.5\textwidth}
@@ -3133,26 +3392,26 @@ colSums(predpca*drop(respv))/colSums(predpca^2)
 predcol <- predm
 predcol[, 1] <- (predcol[, 1]/1e3 + predcol[, 2])
 # Calculate the collinear regression coefficients
-coeffv <- drop(MASS::ginv(predcol) %*% respv)
-coeffv
+betav <- drop(MASS::ginv(predcol) %*% respv)
+betav
 # Calculate the PCA predictors
 pcad <- prcomp(predcol, center=FALSE, scale=FALSE)
 predpca <- predcol %*% pcad$rotation
 round(t(predpca) %*% predpca, 6)
 # Transform the collinear regression coefficients to the PCA
-drop(coeffv %*% pcad$rotation)
+drop(betav %*% pcad$rotation)
 # Calculate the PCA regression coefficients
-coeffpca <- drop(MASS::ginv(predpca) %*% respv)
+betapca <- drop(MASS::ginv(predpca) %*% respv)
 # Calculate the PCA regression coefficients directly
 colSums(predpca*drop(respv))/colSums(predpca^2)
 # Transform the PCA regression coefficients to the original coordinates
-drop(coeffpca %*% MASS::ginv(pcad$rotation))
-coeffv
+drop(betapca %*% MASS::ginv(pcad$rotation))
+betav
 # Calculate the regression coefficients after dimension reduction
-npca <- NROW(coeffpca)
-drop(coeffpca[-npca] %*% MASS::ginv(pcad$rotation)[-npca, ])
+npca <- NROW(betapca)
+drop(betapca[-npca] %*% MASS::ginv(pcad$rotation)[-npca, ])
 # Compare with the collinear regression coefficients
-coeffv
+betav
 # Calculate the original regression coefficients
 drop(MASS::ginv(predm) %*% respv)
       @
@@ -3161,6 +3420,274 @@ drop(MASS::ginv(predm) %*% respv)
 
 \end{frame}
 
+
+%%%%%%%%%%%%%%%
+\subsection{Ridge Regularized Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The objective function of \emph{ridge regression} is equal to the \emph{Residual Sum of Squares} (\emph{RSS}) plus a penalty term proportional to the sum of squares of the coefficients:
+      \begin{displaymath}
+        O(\beta) = (y - \mathbb{X} \boldsymbol\beta)^T (y - \mathbb{X} \boldsymbol\beta) + \lambda \sum_{i=1}^n \beta^2_i
+      \end{displaymath}
+      Where $\lambda$ is the regularization intensity parameter.
+      \vskip1ex
+      The \emph{ridge regression} coefficients can be calculated using matrix inversion as follows:
+      \begin{displaymath}
+        \beta_{ridge} = (\mathbb{X}^T \mathbb{X} + \lambda \mathbbm{1})^{-1} \mathbb{X}^T y = \mathbb{X}_{\lambda}^{-2} \mathbb{X}^T y
+      \end{displaymath}
+      With $\mathbb{X}_{\lambda}^{-2} = (\mathbb{X}^T \mathbb{X} + \lambda \mathbbm{1})^{-1}$.
+        <<echo=TRUE,eval=FALSE>>=
+# Regress the EEM returns on the other ETF returns
+predm <- na.omit(rutils::etfenv$returns[, c("SPY", "TLT", "USO", "XLB", "DBC", "EEM")])
+# Standardized the predictors
+predm <- scale(predm)
+respv <- predm[, "EEM"]
+predm <- predm[, -which(colnames(predm) == "EEM")]
+# Calculate the standard regression coefficients
+betav <- drop(MASS::ginv(predm) %*% respv)
+names(betav) <- colnames(predm)
+# Calculate the ridge regression coefficients
+lambdaf <- 1000
+unitmat<- diag(ncol(predm))
+betar <- drop(MASS::ginv(t(predm) %*% predm + lambdaf*unitmat) %*% t(predm) %*% respv)
+names(betar) <- colnames(predm)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate the RRS and the penalty terms
+rrs <- sum((respv - predm %*% betar)^2)
+penalty <- lambdaf*sum(betar^2)
+c(RSS=rrs, Penalty=penalty, Objective=rrs + penalty)
+# Calculate the ridge objective function:
+ridgeobj <- function(respv, predm, betav, lambdaf) {
+  rrs <- sum((respv - predm %*% betav)^2)
+  penalty <- lambdaf*sum(betav^2)
+  residv <- respv - predm %*% betav
+  return(rrs + penalty)
+} # end ridgeobj
+# Calculate ridge coefficients by minimizing ridge objective
+optiml <- optim(par=rep(0, NCOL(predm)), 
+                ridgeobj, 
+                respv=respv, predm=predm, lambdaf=lambdaf,
+                method="BFGS")
+optiml$par
+all.equal(optiml$par, betar, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ridge Regression Coefficients}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Ridge regression} shrinks the less significant coefficients towards zero, but it does not set any of them exactly to zero.
+      \vskip1ex
+      As the \emph{regularization} intensity parameter $\lambda$ becomes very large, the \emph{ridge} coefficients tend to zero:
+      \begin{displaymath}
+        \lambda \to \infty \quad \Rightarrow \quad
+        \beta_{ridge} \to \frac{1}{\lambda} \mathbb{X}^T y
+      \end{displaymath}
+      When $\lambda$ is very large, all the \emph{ridge} coefficients tend to zero.
+      \vskip1ex
+      When $\lambda$ is zero, the \emph{ridge} coefficients are equal to the standard regression coefficients.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate ridge coefficients for different lambda values
+lambdav <- c(0, 10, 100, 1000, 10000)
+coeffm <- sapply(lambdav, function(lambdaf) {
+  drop(MASS::ginv(t(predm) %*% predm + lambdaf*unitmat) %*% t(predm) %*% respv)
+}) ## end sapply
+rownames(coeffm) <- colnames(predm)
+colnames(coeffm) <- paste("lambda", lambdav, sep="=")
+round(coeffm, 4)
+# Plot ridge regression coefficients vs lambda with colors
+colorv <- rainbow(nrow(coeffm))
+matplot(t(coeffm), type="b", pch=19, lty=1, col=colorv,
+  main="Ridge Regression Coefficients vs Lambda",
+  xlab="Lambda intensity", ylab="Coefficient")
+legend("topright", legend=rownames(coeffm), lwd=3,
+  pch=19, lty=1, bty="n", col=colorv, cex=0.9)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_ridge.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of the Regression Coefficients}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{covariance matrix} of the \emph{regression coefficients} $\hat\beta$ is given by:
+      \begin{align*}
+        & \sigma^2_\beta = \frac{\mathbbm{E}[(\hat\beta - \beta) (\hat\beta - \beta)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon (\mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T]}{d_{free}} = \\
+        & \frac{(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1}}{d_{free}} = \\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \sigma^2_\varepsilon \mathbbm{1} \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} =
+        \sigma^2_\varepsilon (\mathbb{X}^T \mathbb{X})^{-1}
+      \end{align*}
+      Where the expected values of the squared residuals are proportional to the diagonal unit matrix $\mathbbm{1}$: $\frac{\mathbbm{E}[\hat\varepsilon \hat\varepsilon^T]}{d_{free}} = \sigma^2_\varepsilon \mathbbm{1}$
+      \vskip1ex
+      If the predictors are close to being \emph{collinear}, then the squared predictor matrix becomes singular, and the covariance of their regression coefficients becomes very large.
+      \vskip1ex
+      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{predictor matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate the fitted values and the residuals
+fitv <- drop(predm %*% betav)
+residv <- drop(respv - fitv)
+# Inverse of the squared predictor matrix
+pred2 <- crossprod(predm)
+predinv <- MASS::ginv(pred2)
+# Calculate the variance of residuals
+degf <- (NROW(predm) - NCOL(predm))
+residvd <- sum(residv^2)/degf
+# Calculate the covariance matrix of betas
+covm <- residvd*predinv
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+% This is a copy from the previous section "Multivariate Regression"
+%%%%%%%%%%%%%%%
+\subsection{Solution of Regression Using Coordinate Descent}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multivariate regression can also be solved recursively using \emph{coordinate descent}:
+      \begin{flalign*}
+        & r_j = y - \sum_{i \ne j} {\beta_i x_i} = y - \mathbb{X}_{-j} \beta_{-j} \\
+        & \beta_j = \frac{x_j r_j}{x_j^T x_j}
+      \end{flalign*}
+      The \emph{partial residual} $r_j$ is first calculated without the effect of the $j$-th \emph{predictor}.
+      \vskip1ex
+      Then the updated \emph{coefficient} $\beta_j$ is equal to the projection of the \emph{partial residual} $r_j$ onto the $j$-th \emph{predictor} vector $x_j$ divided by the sum of squared \emph{predictor} vector $x_j$.
+      \vskip1ex
+      The recursion is repeated  until the \emph{regression coefficients} $\beta$ converge.
+        <<echo=TRUE,eval=TRUE>>=
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Solve multivariate regression using coordinate descent
+solve_cd <- function(respv, predm, maxit = 1000, tol = 1e-6) {
+  # Initialize the variables
+  ncols <- NCOL(predm)
+  colsq <- colSums(predm^2)
+  betav <- rep(0, ncols)
+  # Loop over iterations
+  for (iter in 1:maxit) {
+    betap <- betav
+    # Loop over the predictors
+    for (j in 1:ncols) {
+      # Calculate the partial residual excluding current predictor
+      residv <- respv - predm[, -j] %*% betav[-j]
+      # Calculate the product of predictor j with the residual
+      covp <- sum(predm[, j] * residv)
+      # Update beta_j coefficient
+      betav[j] <- covp / colsq[j]
+    } # end for j
+    # Break when converged
+    if (sum(abs(betav - betap)) < tol) break
+  } # end for iter
+  return(betav)
+} # end solve_cd
+# Calculate the regression coefficients using coordinate descent
+betav <- solve_cd(respv, predm)
+all.equal(betav, drop(betac), check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{LASSO Regularized Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The objective function of \emph{LASSO regression} is equal to the \emph{RSS} plus a penalty term proportional to the sum of the absolute values of the coefficients:
+      \begin{displaymath}
+        O(\beta) = (y - \mathbb{X} \beta)^T (y - \mathbb{X} \beta) + \lambda \sum_{i=1}^n |\beta_i|
+      \end{displaymath}
+      Where $\lambda$ is the regularization intensity parameter.
+      \vskip1ex
+      The \emph{LASSO regression} coefficients can be calculated using \emph{coordinate descent} with soft-thresholding:
+      \begin{flalign*}
+        & r_j = y - \sum_{i \ne j} {\beta_i x_i} = y - \mathbb{X}_{-j} \beta_{-j} \\
+        & c_j = x_j r_j \\
+        & c_j = sign(c_j) \, max(|c_j| - \lambda, 0) \\
+        & \beta_j = \frac{c_j}{x_j^T x_j}
+      \end{flalign*}
+      The \emph{partial residual} $r_j$ is calculated without the effect of the $j$-th \emph{predictor}.
+      \vskip1ex
+      Soft-thresholding is applied to the projection $c_j$ of the \emph{partial residual} $r_j$ onto the $j$-th \emph{predictor} vector $x_j$.
+      \vskip1ex
+      The \emph{coefficient} $\beta_j$ is equal to the projection $c_j$ divided by the sum of squared \emph{predictor} vector $x_j$.
+      \vskip1ex
+      The recursion is repeated  until the \emph{regression coefficients} $\beta$ converge.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Solve LASSO regression using coordinate descent
+solvelasso <- function(respv, predm, lambda, maxit = 1000, tol = 1e-6) {
+  # Initialize the variables
+  nrows <- NROW(predm)
+  ncols <- NCOL(predm)
+  colsq <- colSums(predm^2) / nrows
+  betav <- rep(0, ncols)
+  # Loop over iterations
+  for (iter in 1:maxit) {
+    betap <- betav
+    # Loop over the predictors
+    for (j in 1:ncols) {
+      # Calculate the partial residual excluding current predictor
+      residv <- respv - predm[, -j] %*% betav[-j]
+      # Calculate the product of predictor j with the residual
+      covp <- sum(predm[, j] * residv) / nrows
+      # Apply soft-thresholding to the covariate
+      covp <- sign(covp) * max(abs(covp) - lambda, 0)
+      # Update beta_j coefficient
+      betav[j] <- covp / colsq[j]
+    } # end for j
+    # Break when converged
+    if (sum(abs(betav - betap)) < tol) break
+  } # end for iter
+  return(betav)
+} # end solvelasso
+# Calculate the LASSO coefficients using coordinate descent
+betav <- solvelasso(respv, predm, lambda=0.0)
+all.equal(betav, drop(betac), check.attributes=FALSE)
+      @
+      The soft-thresholding shrinks the coefficients to zero if they are less than the regularization parameter $\lambda$.
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%

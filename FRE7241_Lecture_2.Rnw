@@ -64,13 +64,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#2]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#2, Fall 2025}
+\subtitle{Lecture\#2, Spring 2026}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{November 4, 2025}
+\date{January 27, 2026}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -329,16 +329,16 @@ nrows <- NROW(pricev)
 datev <- zoo::index(pricev)
 retp <- rutils::diffit(pricev)
 # Simulate stop-loss strategy
-stopl <- 0.05 # Stop-loss percentage
-pricem <- cummax(pricev) # Trailing maximum prices
+stopl <- 0.05 ##  Stop-loss percentage
+pricem <- cummax(pricev) ##  Trailing maximum prices
 # Calculate the drawdown
 dd <- (pricev - pricem)
-pnls <- retp # Initialize PnLs
+pnls <- retp ##  Initialize PnLs
 for (i in 1:(nrows-1)) {
 # Check for stop-loss
   if (dd[i] < -stopl*pricem[i])
-    pnls[i+1] <- 0 # Set PnLs = 0 if in stop-loss
-}  # end for
+    pnls[i+1] <- 0 ##  Set PnLs = 0 if in stop-loss
+}  ##  end for
 # Same but without using loops in R
 pnl2 <- retp
 insl <- rutils::lagit(dd < -stopl*pricem)
@@ -388,8 +388,8 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \includegraphics[width=0.45\paperwidth]{figure/stop_loss_performance.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the stop-loss strategy with shading
-indic <- (rutils::diffit(insl) != 0) # Indices of stop-loss
-crossd <- c(datev[indic], datev[nrows]) # Dates of stop-loss
+indic <- (rutils::diffit(insl) != 0) ##  Indices of stop-loss
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of stop-loss
 shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
@@ -399,7 +399,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -432,7 +432,7 @@ pnlc <- sapply(stopv, function(stopl) {
   insl <- rutils::lagit(dd < -stopl*pricem)
   pnls <- ifelse(insl, 0, pnls)
   sum(pnls)
-})  # end sapply
+})  ##  end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -473,38 +473,38 @@ plot(x=stopv, y=pnlc,
       <<echo=TRUE,eval=FALSE>>=
 # Function for simulating the stop-start strategy
 stopstart <- function(stopl) {
-  maxp <- pricev[1] # Trailing maximum price
-  minp <- pricev[1] # Trailing minimum price
-  insl <- FALSE # Is in stop-loss?
-  insg <- FALSE # Is in start-gain?
-  pnls <- retp # Initialize PnLs
+  maxp <- pricev[1] ##  Trailing maximum price
+  minp <- pricev[1] ##  Trailing minimum price
+  insl <- FALSE ##  Is in stop-loss?
+  insg <- FALSE ##  Is in start-gain?
+  pnls <- retp ##  Initialize PnLs
   for (i in 1:nrows) {
-    if (insl) { # In stop-loss
-      pnls[i] <- 0 # Set PnLs = 0 if in stop-loss
-      minp <- min(minp, pricev[i]) # Update minimum price to current price
-      if (pricev[i] > (1 + stopl)*minp) { # Check for start-gain
-        insg <- TRUE # Is in start-gain?
-        insl <- FALSE # Is in stop-loss?
-        maxp <- pricev[i] # Reset trailing maximum price
-      }  # end if
-    } else if (insg) { # In start-gain
-      maxp <- max(maxp, pricev[i]) # Update maximum price to current price
-      if (pricev[i] < (1 - stopl)*maxp) { # Check for stop-loss
-        insl <- TRUE # Is in stop-loss?
-        insg <- FALSE # Is in start-gain?
-        minp <- pricev[i] # Reset trailing minimum price
-      }  # end if
-    } else { # Warmup period
-      # Update the maximum and minimum prices
+    if (insl) { ##  In stop-loss
+      pnls[i] <- 0 ##  Set PnLs = 0 if in stop-loss
+      minp <- min(minp, pricev[i]) ##  Update minimum price to current price
+      if (pricev[i] > (1 + stopl)*minp) { ##  Check for start-gain
+        insg <- TRUE ##  Is in start-gain?
+        insl <- FALSE ##  Is in stop-loss?
+        maxp <- pricev[i] ##  Reset trailing maximum price
+      }  ##  end if
+    } else if (insg) { ##  In start-gain
+      maxp <- max(maxp, pricev[i]) ##  Update maximum price to current price
+      if (pricev[i] < (1 - stopl)*maxp) { ##  Check for stop-loss
+        insl <- TRUE ##  Is in stop-loss?
+        insg <- FALSE ##  Is in start-gain?
+        minp <- pricev[i] ##  Reset trailing minimum price
+      }  ##  end if
+    } else { ##  Warmup period
+      ##  Update the maximum and minimum prices
       maxp <- max(maxp, pricev[i])
       minp <- min(minp, pricev[i])
-      # Update the stop-loss and start-gain indicators
-      insl <- (pricev[i] < (1 - stopl)*maxp) # Is in stop-loss?
-      insg <- (pricev[i] > (1 + stopl)*minp) # Is in start-gain?
-    }  # end if
-  }  # end for
+      ##  Update the stop-loss and start-gain indicators
+      insl <- (pricev[i] < (1 - stopl)*maxp) ##  Is in stop-loss?
+      insg <- (pricev[i] > (1 + stopl)*minp) ##  Is in start-gain?
+    }  ##  end if
+  }  ##  end for
   return(pnls)
-} # end stopstart
+} ##  end stopstart
 @
   \end{columns}
 \end{block}
@@ -546,9 +546,9 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \includegraphics[width=0.45\paperwidth]{figure/stop_start_performance.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the stop-start strategy with shading
-insl <- (pnls == 0) # Is in stop-loss?
-indic <- (rutils::diffit(insl) != 0) # Indices of crosses
-crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
+insl <- (pnls == 0) ##  Is in stop-loss?
+indic <- (rutils::diffit(insl) != 0) ##  Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of crosses
 shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
@@ -558,7 +558,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -582,13 +582,13 @@ dyplot
 stopv <- 0.01*(1:30)
 # pnlc <- sapply(stopv, function(stopl) {
 #   sum(stopstart(stopl))
-# })  # end sapply
+# })  ##  end sapply
 # Simulate stop-loss strategies in a parallel loop (faster)
 library(parallel)
 ncores <- detectCores()-1
 pnlc <- unlist(mclapply(stopv, function(stopl) {
   sum(stopstart(stopl))
-}, mc.cores=ncores))  # end mclapply
+}, mc.cores=ncores))  ##  end mclapply
 # Find optimal stop-loss level
 stopl <- stopv[which.max(pnlc)]
       @
@@ -627,7 +627,7 @@ retp <- rutils::diffit(pricev)
 stopv <- 0.01*(1:30)
 pnlc <- unlist(mclapply(stopv, function(stopl) {
   sum(stopstart(stopl))
-}, mc.cores=ncores))  # end mclapply
+}, mc.cores=ncores))  ##  end mclapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -678,9 +678,9 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \includegraphics[width=0.45\paperwidth]{figure/stop_start_uso_performance.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the stop-start strategy with shading
-insl <- (pnls == 0) # Is in stop-loss?
-indic <- (rutils::diffit(insl) != 0) # Indices of crosses
-crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
+insl <- (pnls == 0) ##  Is in stop-loss?
+indic <- (rutils::diffit(insl) != 0) ##  Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of crosses
 shadev <- ifelse(insl[indic] == 1, "antiquewhite", "lightgreen")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
@@ -690,7 +690,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -714,6 +714,8 @@ dyplot
       A start-gain event is when the stock price rebounds from the previous minimum and exceeds the start-gain level, equal to the start-gain percentage times the previous minimum price.
       \vskip1ex
       After the start-gain level is crossed, the strategy buys back the stock which was sold under the stop-loss.
+      \vskip1ex
+      The trend-flip strategy trades a single \texttt{\$1} of stock, and is either long \texttt{\$1} of stock or it's short (\texttt{-\$1} of stock).
       \vskip1ex
       The trend-flip strategy is trend-following because it profits if price trends are persistent.  But it loses if prices are range-bound.
     \column{0.5\textwidth}
@@ -743,12 +745,12 @@ trend_flip <- function(stopl = 0.1) {
     } else if ((gainp > stopl) & (posv[it] <= 0)) {
       posv[it + 1] <- 1
       pricemax <- pricec
-    } else { # Do nothing
+    } else { ##  Do nothing
       posv[it + 1] <- posv[it]
     }
   }
   return(cbind(pnlv, posv))
-} # end trend_flip
+} ##  end trend_flip
 @
   \end{columns}
 \end{block}
@@ -766,6 +768,8 @@ trend_flip <- function(stopl = 0.1) {
       The trend-flip strategy spends less time in a stop-loss because prices tend to rebound sharply after a steep loss.
       \vskip1ex
       The start-gain rule tends to quickly override the stop-loss rule, so that the strategy is long the stock after it recovers after a stop-loss.
+      \vskip1ex
+      The trend-flip strategy suffers losses when prices are range-bound without a trend, because whenever it switches position the prices soon change direction.  (This is called a \emph{"whipsaw"}.)
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the trend-flip strategy
 pnls <- trend_flip(0.09)
@@ -791,8 +795,8 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       <<echo=TRUE,eval=FALSE>>=
 # Plot the trend-flip strategy with shading
 posv <- pnls[, "posv"]
-indic <- (rutils::diffit(posv) != 0) # Indices of crosses
-crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
+indic <- (rutils::diffit(posv) != 0) ##  Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of crosses
 shadev <- ifelse(posv[indic] == 1, "lightgreen", "antiquewhite")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
@@ -802,7 +806,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -828,7 +832,7 @@ library(parallel)
 ncores <- detectCores()-1
 pnlc <- unlist(mclapply(stopv, function(stopl) {
   sum(trend_flip(stopl)[, "pnlv"])
-}, mc.cores=ncores))  # end mclapply
+}, mc.cores=ncores))  ##  end mclapply
 # Find optimal stop-loss level
 stopl <- stopv[which.max(pnlc)]
       @
@@ -867,7 +871,7 @@ retp <- rutils::diffit(pricev)
 stopv <- 0.01*(1:30)
 pnlc <- unlist(mclapply(stopv, function(stopl) {
   sum(trend_flip(stopl)[, "pnlv"])
-}, mc.cores=ncores))  # end mclapply
+}, mc.cores=ncores))  ##  end mclapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -919,8 +923,8 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       <<echo=TRUE,eval=FALSE>>=
 # Plot the trend-flip strategy with shading
 posv <- pnls[, "posv"]
-indic <- (rutils::diffit(posv) != 0) # Indices of crosses
-crossd <- c(datev[indic], datev[nrows]) # Dates of crosses
+indic <- (rutils::diffit(posv) != 0) ##  Indices of crosses
+crossd <- c(datev[indic], datev[nrows]) ##  Dates of crosses
 shadev <- ifelse(posv[indic] == 1, "lightgreen", "antiquewhite")
 # Create dygraph object without plotting it
 dyplot <- dygraphs::dygraph(cumsum(wealthv), 
@@ -930,7 +934,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -952,7 +956,7 @@ dyplot
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Exponentially Weighted Moving Average Price} (\emph{EMA}) is defined as the weighted average of prices over a rolling interval:
+      The \emph{Exponential Moving Average Price} (\emph{EMA}) is defined as the weighted average of prices over a rolling interval:
       \begin{displaymath}
         p^{EMA}_i = (1 - \lambda) \sum_{j=0}^{\infty} \lambda^j p_{i-j}
       \end{displaymath}
@@ -1017,9 +1021,9 @@ legend("topleft", legend=colnames(pricev), y.intersp=0.5,
       \vskip1ex
       The recursive \emph{EMA} prices are slightly different from those calculated as a convolution, because the convolution uses a fixed look-back interval.
       \vskip1ex
-      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the exponentially weighted moving average prices recursively.
+      The compiled \texttt{C++} function \texttt{stats:::C\_rfilter()} calculates the exponential moving average prices recursively.
       \vskip1ex
-      The function \texttt{HighFreq::run\_mean()} calculates the exponentially weighted moving average prices recursively.
+      The function \texttt{HighFreq::run\_mean()} calculates the exponential moving average prices recursively.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the EMA prices recursively using C++ code
 emar <- .Call(stats:::C_rfilter, closep, lambdaf, c(as.numeric(closep[1])/(1-lambdaf), double(NROW(closep))))[-1]
@@ -1125,7 +1129,7 @@ shadev <- ifelse(drop(zoo::coredata(shadev)) == 1, "lightgreen", "antiquewhite")
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
 # Standard plot of EMA prices with position shading
@@ -1155,7 +1159,7 @@ legend("topleft", legend=colnames(pricev),
       The crossover strategy performance is worse than the underlying asset (\emph{VTI} ), but it has a negative correlation to it, which is very valuable when building a portfolio.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the daily profits and losses of crossover strategy
-retp <- rutils::diffit(closep)  # VTI returns
+retp <- rutils::diffit(closep)  ##  VTI returns
 pnls <- retp*posv
 colnames(pnls) <- "EMA"
 wealthv <- cbind(retp, pnls)
@@ -1174,7 +1178,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv), main="Performance of Crossover Stra
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% 
     dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -1411,32 +1415,32 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main="Crossover Strategy With Transacti
 sim_ema <- function(closep, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
   retp <- rutils::diffit(closep)
   nrows <- NROW(closep)
-  # Calculate the EMA prices
+  ##  Calculate the EMA prices
   pricema <- HighFreq::run_mean(closep, lambda=lambdaf)
-  # Calculate the indicator
+  ##  Calculate the indicator
   indic <- trend*sign(closep - pricema)
   if (lagg > 1) {
     indic <- HighFreq::roll_sum(indic, lagg)
     indic[1:lagg] <- 0
-  }  # end if
-  # Calculate the positions, either: -1, 0, or 1
+  }  ##  end if
+  ##  Calculate the positions, either: -1, 0, or 1
   posv <- rep(NA_integer_, nrows)
   posv[1] <- 0
   posv <- ifelse(indic == lagg, 1, posv)
   posv <- ifelse(indic == (-lagg), -1, posv)
   posv <- zoo::na.locf(posv, na.rm=FALSE)
   posv <- xts::xts(posv, order.by=zoo::index(closep))
-  # Lag the positions to trade on next day
+  ##  Lag the positions to trade on next day
   posv <- rutils::lagit(posv, lagg=1)
-  # Calculate the PnLs of strategy
+  ##  Calculate the PnLs of strategy
   pnls <- retp*posv
   costv <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costv)
-  # Calculate the strategy returns
+  ##  Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end sim_ema
+}  ##  end sim_ema
       @
   \end{columns}
 \end{block}
@@ -1460,9 +1464,9 @@ sim_ema <- function(closep, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
 lambdav <- seq(from=0.97, to=0.99, by=0.004)
 # Perform lapply() loop over lambdav
 pnltrend <- lapply(lambdav, function(lambdaf) {
-  # Simulate crossover strategy and calculate the returns
+  ##  Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
-})  # end lapply
+})  ##  end lapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
       @
@@ -1508,23 +1512,23 @@ legend("topleft", legend=colnames(pnltrend), inset=0.1,
       <<echo=TRUE,eval=FALSE>>=
 # Initialize compute cluster under Windows
 library(parallel)
-ncores <- detectCores() - 1  # Number of cores
+ncores <- detectCores() - 1  ##  Number of cores
 compclust <- makeCluster(detectCores()-1)
 clusterExport(compclust,
   varlist=c("ohlc", "lookb", "sim_ema"))
 # Perform parallel loop over lambdav under Windows
 pnltrend <- parLapply(compclust, lambdav, function(lambdaf) {
   library(quantmod)
-  # Simulate crossover strategy and calculate the returns
+  ##  Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
-})  # end parLapply
-stopCluster(compclust)  # Stop R processes over cluster under Windows
+})  ##  end parLapply
+stopCluster(compclust)  ##  Stop R processes over cluster under Windows
 # Perform parallel loop over lambdav under Mac-OSX or Linux
 pnltrend <- mclapply(lambdav, function(lambdaf) {
   library(quantmod)
-  # Simulate crossover strategy and calculate the returns
+  ##  Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
-}, mc.cores=ncores)  # end mclapply
+}, mc.cores=ncores)  ##  end mclapply
 pnltrend <- do.call(cbind, pnltrend)
 colnames(pnltrend) <- paste0("lambda=", lambdav)
       @
@@ -1554,7 +1558,7 @@ colnames(pnltrend) <- paste0("lambda=", lambdav)
 # Calculate the annualized Sharpe ratios of strategy returns
 sharpetrend <- sqrt(252)*sapply(pnltrend, function(xtsv) {
   mean(xtsv)/sd(xtsv)
-})  # end sapply
+})  ##  end sapply
 # Plot Sharpe ratios
 dev.new(width=6, height=5, noRStudioGD=TRUE)
 plot(x=lambdav, y=sharpetrend, t="l",
@@ -1635,9 +1639,9 @@ legend("top", legend=colnames(wealthv),
 lambdav <- seq(0.6, 0.7, 0.01)
 # Perform lapply() loop over lambdav
 pnlrevert <- lapply(lambdav, function(lambdaf) {
-  # Simulate crossover strategy and calculate the returns
+  ##  Simulate crossover strategy and calculate the returns
   sim_ema(closep=closep, lambdaf=lambdaf, bidask=0, trend=(-1))[, "pnls"]
-})  # end lapply
+})  ##  end lapply
 pnlrevert <- do.call(cbind, pnlrevert)
 colnames(pnlrevert) <- paste0("lambda=", lambdav)
 # Plot dygraph of mean reverting crossover strategies
@@ -1679,9 +1683,9 @@ legend("topleft", legend=colnames(pnlrevert),
       \vskip1ex
       The performance of mean reverting \emph{EMA} strategies depends on the $\lambda$ parameter, with performance decreasing for very small or very large $\lambda$ parameters.
       \vskip1ex
-      For too large $\lambda$ parameters, the trading frequency is too high, causing high transaction costs.
+      If the $\lambda$ parameter is too small, the trading frequency is too high, causing high transaction costs.
       \vskip1ex
-      For too small $\lambda$ parameters, the trading frequency is too low, causing the strategy to miss profitable trades.
+      If the $\lambda$ parameter is too large, the trading frequency is too low, causing the strategy to miss profitable trades.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ema_revert_performance.png}
@@ -1689,7 +1693,7 @@ legend("topleft", legend=colnames(pnlrevert),
 # Calculate the Sharpe ratios of strategy returns
 sharperevert <- sqrt(252)*sapply(pnlrevert, function(xtsv) {
   mean(xtsv)/sd(xtsv)
-})  # end sapply
+})  ##  end sapply
 plot(x=lambdav, y=sharperevert, t="l",
      xlab="lambda", ylab="Sharpe",
      main="Performance of EMA Mean Reverting Strategies
@@ -1860,7 +1864,7 @@ datev <- zoo::index(ohlc)
 nrows <- NROW(ohlc)
 closep <- quantmod::Cl(ohlc)
 colnames(closep) <- "VTI"
-retp <- rutils::diffit(closep)  # VTI returns
+retp <- rutils::diffit(closep)  ##  VTI returns
 # Calculate the fast and slow EMAs
 lambdafa <- 0.89
 lambdasl <- 0.95
@@ -1891,7 +1895,7 @@ dyplot <- dygraphs::dygraph(pricev, main="VTI Dual EMA Prices") %>%
   dyLegend(show="always", width=300)
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 dyplot
       @
   \end{columns}
@@ -1931,7 +1935,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -1961,32 +1965,32 @@ sim_ema2 <- function(closep, lambdafa=0.1, lambdasl=0.01,
   if (lambdafa >= lambdasl) return(NA)
   retp <- rutils::diffit(closep)
   nrows <- NROW(closep)
-  # Calculate the EMA prices
+  ##  Calculate the EMA prices
   emaf <- HighFreq::run_mean(closep, lambda=lambdafa)
   emas <- HighFreq::run_mean(closep, lambda=lambdasl)
-  # Calculate the positions, either: -1, 0, or 1
+  ##  Calculate the positions, either: -1, 0, or 1
   indic <- sign(emaf - emas)
   if (lagg > 1) {
     indic <- HighFreq::roll_sum(indic, lagg)
     indic[1:lagg] <- 0
-  }  # end if
+  }  ##  end if
   posv <- rep(NA_integer_, nrows)
   posv[1] <- 0
   posv <- ifelse(indic == lagg, 1, posv)
   posv <- ifelse(indic == (-lagg), -1, posv)
   posv <- zoo::na.locf(posv, na.rm=FALSE)
   posv <- xts::xts(posv, order.by=zoo::index(closep))
-  # Lag the positions to trade on next day
+  ##  Lag the positions to trade on next day
   posv <- rutils::lagit(posv, lagg=1)
-  # Calculate the PnLs of strategy
+  ##  Calculate the PnLs of strategy
   pnls <- retp*posv
   costv <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costv)
-  # Calculate the strategy returns
+  ##  Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end sim_ema2
+}  ##  end sim_ema2
       @
   \end{columns}
 \end{block}
@@ -2017,7 +2021,7 @@ calc_sharpe <- function(closep, lambdafa, lambdasl, bidask, trend, lagg) {
   pnls <- sim_ema2(closep=closep, lambdafa=lambdafa, lambdasl=lambdasl, 
     bidask=bidask, trend=trend, lagg=lagg)[, "pnls"]
   sqrt(252)*mean(pnls)/sd(pnls)
-}  # end calc_sharpe
+}  ##  end calc_sharpe
 # Vectorize calc_sharpe with respect to lambdafa and lambdasl
 calc_sharpe <- Vectorize(FUN=calc_sharpe, 
   vectorize.args=c("lambdafa", "lambdasl"))
@@ -2030,8 +2034,8 @@ sharpem <- sapply(lambdasv, function(lambdasl) {
     if (lambdafa >= lambdasl) return(NA)
     calc_sharpe(closep=closep, lambdafa=lambdafa, 
             lambdasl=lambdasl, bidask=0.0, trend=1, lagg=1)
-  })  # end sapply
-})  # end sapply
+  })  ##  end sapply
+})  ##  end sapply
 colnames(sharpem) <- lambdasv
 rownames(sharpem) <- lambdafv
       @
@@ -2085,7 +2089,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv), main=paste("Optimal Dual Crossover 
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -2277,7 +2281,7 @@ posv <- xts::xts(posv, order.by=zoo::index(closep))
 # Lag the positions to trade in next period
 posv <- rutils::lagit(posv, lagg=1)
 # Calculate the PnLs of VWAP strategy
-retp <- rutils::diffit(closep)  # VTI returns
+retp <- rutils::diffit(closep)  ##  VTI returns
 pnls <- retp*posv
 colnames(pnls) <- "VWAP"
 wealthv <- cbind(retp, pnls)
@@ -2303,7 +2307,7 @@ dyplot <- dygraphs::dygraph(cumsum(wealthv),
 # Add shading to dygraph object
 for (i in 1:NROW(shadev)) {
   dyplot <- dyplot %>% dyShading(from=crossd[i], to=crossd[i+1], color=shadev[i])
-}  # end for
+}  ##  end for
 # Plot the dygraph object
 dyplot
       @
@@ -2412,32 +2416,32 @@ sim_vwap <- function(ohlc, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
   volumv <- quantmod::Vo(ohlc)
   retp <- rutils::diffit(closep)
   nrows <- NROW(ohlc)
-  # Calculate the VWAP prices
+  ##  Calculate the VWAP prices
   vwap <- HighFreq::run_mean(closep, lambda=lambdaf, weightv=volumv)
-  # Calculate the indicator
+  ##  Calculate the indicator
   indic <- trend*sign(closep - vwap)
   if (lagg > 1) {
     indic <- HighFreq::roll_sum(indic, lagg)
     indic[1:lagg] <- 0
-  }  # end if
-  # Calculate the positions, either: -1, 0, or 1
+  }  ##  end if
+  ##  Calculate the positions, either: -1, 0, or 1
   posv <- rep(NA_integer_, nrows)
   posv[1] <- 0
   posv <- ifelse(indic == lagg, 1, posv)
   posv <- ifelse(indic == (-lagg), -1, posv)
   posv <- zoo::na.locf(posv, na.rm=FALSE)
   posv <- xts::xts(posv, order.by=zoo::index(closep))
-  # Lag the positions to trade on next day
+  ##  Lag the positions to trade on next day
   posv <- rutils::lagit(posv, lagg=1)
-  # Calculate the PnLs of strategy
+  ##  Calculate the PnLs of strategy
   pnls <- retp*posv
   costv <- 0.5*bidask*abs(rutils::diffit(posv))
   pnls <- (pnls - costv)
-  # Calculate the strategy returns
+  ##  Calculate the strategy returns
   pnls <- cbind(posv, pnls)
   colnames(pnls) <- c("positions", "pnls")
   pnls
-}  # end sim_vwap
+}  ##  end sim_vwap
       @
   \end{columns}
 \end{block}
@@ -2461,9 +2465,9 @@ sim_vwap <- function(ohlc, lambdaf=0.9, bidask=0.001, trend=1, lagg=1) {
 lambdav <- seq(from=0.97, to=0.995, by=0.004)
 # Perform lapply() loop over lambdav
 pnls <- lapply(lambdav, function(lambdaf) {
-  # Simulate VWAP strategy and Calculate the returns
+  ##  Simulate VWAP strategy and Calculate the returns
   sim_vwap(ohlc=ohlc, lambdaf=lambdaf, bidask=0, lagg=2)[, "pnls"]
-})  # end lapply
+})  ##  end lapply
 pnls <- do.call(cbind, pnls)
 colnames(pnls) <- paste0("lambda=", lambdav)
       @
@@ -2652,31 +2656,31 @@ volp <- HighFreq::run_var(pricev, lambda=lambdaf)
 pricema <- volp[, 1]
 volp <- sqrt(volp[, 2])
 # Prepare the simulation parameters
-pricen <- as.numeric(pricev) # Numeric price
-pricec <- pricen - pricema # Centered price
+pricen <- as.numeric(pricev) ##  Numeric price
+pricec <- pricen - pricema ##  Centered price
 threshv <- volp
 nrows <- NROW(pricev)
-posv <- integer(nrows) # Stock positions
-posv[1] <- 0 # Initial position
+posv <- integer(nrows) ##  Stock positions
+posv[1] <- 0 ##  Initial position
 # Calculate the positions from Bollinger bands
 for (it in 2:nrows) {
   if (pricec[it-1] > threshv[it-1]) {
-    # Enter short
+    ##  Enter short
     posv[it] <- (-1)
   } else if (pricec[it-1] < (-threshv[it-1])) {
-    # Enter long
+    ##  Enter long
     posv[it] <- 1
   } else if ((posv[it-1] < 0) && (pricec[it-1] < 0)) {
-    # Unwind short
+    ##  Unwind short
     posv[it] <- 0
   } else if ((posv[it-1] > 0) && (pricec[it-1] > 0)) {
-    # Unwind long
+    ##  Unwind long
     posv[it] <- 0
   } else {
-    # Do nothing
+    ##  Do nothing
     posv[it] <- posv[it-1]
-  }  # end if
-}  # end for
+  }  ##  end if
+}  ##  end for
 # Calculate the number of trades
 ntrades <- sum(abs(rutils::diffit(posv)) > 0)
 # Calculate the pnls
@@ -2740,20 +2744,20 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
       In the patient Bollinger Strategy the positions are held until the price reaches the opposite extreme, so that the strategy is always either long \texttt{\$1} dollar of stock or short \texttt{\$1} dollar of stock.
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the patient Bollinger Strategy
-posv <- integer(nrows) # Stock positions
-posv[1] <- 0 # Initial position
+posv <- integer(nrows) ##  Stock positions
+posv[1] <- 0 ##  Initial position
 for (it in 2:nrows) {
   if (pricec[it-1] > threshv[it-1]) {
-    # Enter short
+    ##  Enter short
     posv[it] <- (-1)
   } else if (pricec[it-1] < (-threshv[it-1])) {
-    # Enter long
+    ##  Enter long
     posv[it] <- 1
   } else {
-    # Do nothing
+    ##  Do nothing
     posv[it] <- posv[it-1]
-  }  # end if
-}  # end for
+  }  ##  end if
+}  ##  end for
 # Calculate the PnLs
 pnl2 <- retp*posv
       @
@@ -2910,7 +2914,7 @@ ntrades <- sum(abs(rutils::diffit(posv)) > 0)
 retp <- rutils::diffit(pricev)
 pnls <- retp*posv
 # Subtract transaction costs from the pnls
-bidask <- 0.0001 # Bid-ask spread equal to 1 basis point
+bidask <- 0.0001 ##  Bid-ask spread equal to 1 basis point
 costv <- 0.5*bidask*abs(rutils::diffit(posv))
 pnls <- (pnls - costv)
       @
@@ -3148,22 +3152,22 @@ expv <- quote({
   degf <- 2:20
   rangev <- (1:NROW(degf))
   indeks <- 4
-  # Plot a curve
+  ##  Plot a curve
   curve(expr=dchisq(x, df=degf[indeks]),
         xlim=c(0, 30), ylim=c(0, 0.2),
         xlab="", ylab="", lwd=3, col="red")
-  # Add grey lines to plot
+  ##  Add grey lines to plot
   for (it in rangev[-indeks]) {
     curve(expr=dchisq(x, df=degf[it]),
           xlim=c(0, 30), ylim=c(0, 0.2),
           xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
-  }  # end for
-  # Add title
+  }  ##  end for
+  ##  Add title
   title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
-  # Add legend
+  ##  Add legend
   text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
       degf[indeks]), pos=1, cex=1.3)
-})  # end quote
+})  ##  end quote
 @
     \column{0.5\textwidth}
       % \vspace{-1em}
@@ -3200,26 +3204,26 @@ library(animation)
 expv <- quote({
   degf <- 2:20
   rangev <- (1:NROW(degf))
-  # Set image refesh interval
+  ##  Set image refesh interval
   animation::ani.options(interval=0.5)
-  # Create multiple plots with curves
+  ##  Create multiple plots with curves
   for (indeks in rangev) {
     curve(expr=dchisq(x, df=degf[indeks]),
           xlim=c(0, 30), ylim=c(0, 0.2),
           xlab="", ylab="", lwd=3, col="red")
-    # Add grey lines to plot
+    ##  Add grey lines to plot
     for (it in rangev[-indeks]) {
       curve(expr=dchisq(x, df=degf[it]),
             xlim=c(0, 30), ylim=c(0, 0.2),
             xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
-    }  # end for
-    # Add title
+    }  ##  end for
+    ##  Add title
     title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
-    # Add legend
+    ##  Add legend
     text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
       degf[indeks]), pos=1, cex=1.3)
-  }  # end for
-})  # end quote
+  }  ##  end for
+})  ##  end quote
       @
     \column{0.5\textwidth}
       % \vspace{-1em}
@@ -3240,7 +3244,7 @@ animation::saveGIF(expr=eval(expv),
 animation::saveHTML(expr=eval(expv),
   img.name="chi_squared",
   htmlfile="chi_squared.html",
-  description="Chi-squared Distributions")  # end saveHTML
+  description="Chi-squared Distributions")  ##  end saveHTML
       @
   \end{columns}
 \end{block}
@@ -3368,25 +3372,25 @@ stdev <- 1.0
 
 ## Define the user interface
 uiface <- shiny::fluidPage(
-  # Create numeric input for the number of data points.
+  ##  Create numeric input for the number of data points.
   numericInput("ndata", "Number of data points:", value=ndata),
-  # Create slider input for the standard deviation parameter.
+  ##  Create slider input for the standard deviation parameter.
   sliderInput("stdev", label="Standard deviation:",
               min=0.1, max=3.0, value=stdev, step=0.1),
-  # Render plot in a panel.
+  ##  Render plot in a panel.
   plotOutput("plotobj", height=300, width=500)
-)  # end user interface
+)  ##  end user interface
 
 ## Define the server function
 servfun <- function(input, output) {
   output$plotobj <- shiny::renderPlot({
-    # Simulate the data
+    ##  Simulate the data
     datav <- rnorm(input$ndata, sd=input$stdev)
-    # Plot the data
+    ##  Plot the data
     par(mar=c(2, 4, 4, 0), oma=c(0, 0, 0, 0))
     hist(datav, xlim=c(-4, 4), main="Histogram of Random Data")
-  })  # end renderPlot
-}  # end servfun
+  })  ##  end renderPlot
+}  ##  end servfun
 
 # Return a Shiny app object
 shiny::shinyApp(ui=uiface, server=servfun)
@@ -3430,18 +3434,18 @@ shiny::shinyApp(ui=uiface, server=servfun)
 ## Create elements of the user interface
 uiface <- shiny::fluidPage(
   titlePanel("VWAP Moving Average"),
-  # Create single row of widgets with two slider inputs
+  ##  Create single row of widgets with two slider inputs
   fluidRow(
-    # Input stock symbol
+    ##  Input stock symbol
     column(width=3, selectInput("symbol", label="Symbol",
                                 choices=symbolv, selected=symbol)),
-    # Input look-back interval
+    ##  Input look-back interval
     column(width=3, sliderInput("lookb", label="Lookback interval",
                                 min=1, max=150, value=11, step=1))
-  ),  # end fluidRow
-  # Create output plot panel
+  ),  ##  end fluidRow
+  ##  Create output plot panel
   mainPanel(dygraphs::dygraphOutput("dyplot"), width=12)
-)  # end fluidPage interface
+)  ##  end fluidPage interface
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3475,34 +3479,34 @@ uiface <- shiny::fluidPage(
       <<echo=TRUE,eval=FALSE>>=
 ## Define the server function
 servfun <- shiny::shinyServer(function(input, output) {
-  # Get the close and volume data in a reactive environment
+  ##  Get the close and volume data in a reactive environment
   closep <- shiny::reactive({
-    # Get the data
+    ##  Get the data
     ohlc <- get(input$symbol, data_env)
     closep <- log(quantmod::Cl(ohlc))
     volum <- quantmod::Vo(ohlc)
-    # Return the data
+    ##  Return the data
     cbind(closep, volum)
-  })  # end reactive code
+  })  ##  end reactive code
   
-  # Calculate the VWAP indicator in a reactive environment
+  ##  Calculate the VWAP indicator in a reactive environment
   vwapv <- shiny::reactive({
-    # Get model parameters from input argument
+    ##  Get model parameters from input argument
     lookb <- input$lookb
-    # Calculate the VWAP indicator
+    ##  Calculate the VWAP indicator
     closep <- closep()[, 1]
     volum <- closep()[, 2]
     vwapv <- HighFreq::roll_sum(tseries=closep*volum, lookb=lookb)
     volumroll <- HighFreq::roll_sum(tseries=volum, lookb=lookb)
     vwapv <- vwapv/volumroll
     vwapv[is.na(vwapv)] <- 0
-    # Return the plot data
+    ##  Return the plot data
     datav <- cbind(closep, vwapv)
     colnames(datav) <- c(input$symbol, "VWAP")
     datav
-  })  # end reactive code
+  })  ##  end reactive code
   
-  # Return the dygraph plot to output argument
+  ##  Return the dygraph plot to output argument
   output$dyplot <- dygraphs::renderDygraph({
     colv <- colnames(vwapv())
     dygraphs::dygraph(vwapv(), main=paste(colv[1], "VWAP")) %>%
@@ -3510,8 +3514,8 @@ servfun <- shiny::shinyServer(function(input, output) {
       dyAxis("y2", label=colv[2], independentTicks=TRUE) %>%
       dySeries(name=colv[1], axis="y", label=colv[1], strokeWidth=2, col="blue") %>%
       dySeries(name=colv[2], axis="y2", label=colv[2], strokeWidth=2, col="red")
-  })  # end output plot
-})  # end server code
+  })  ##  end output plot
+})  ##  end server code
 
 ## Return a Shiny app object
 shiny::shinyApp(ui=uiface, server=servfun)
@@ -3544,41 +3548,41 @@ shiny::shinyApp(ui=uiface, server=servfun)
 ## Define the server function
 servfun <- shiny::shinyServer(function(input, output) {
 
-  # Create an empty list of reactive values.
+  ##  Create an empty list of reactive values.
   value_s <- reactiveValues()
   
-  # Get input parameters from the user interface.
+  ##  Get input parameters from the user interface.
   nrows <- reactive({
-    # Add nrows to list of reactive values.
+    ##  Add nrows to list of reactive values.
     value_s*nrows <- input$nrows
     input$nrows
-  })  # end reactive code
+  })  ##  end reactive code
   
-  # Broadcast a message to the console when the button is pressed.
+  ##  Broadcast a message to the console when the button is pressed.
   observeEvent(eventExpr=input$button, handlerExpr={
     cat("Input button pressed\n")
-  })  # end observeEvent
+  })  ##  end observeEvent
   
-  # Send the data when the button is pressed.
+  ##  Send the data when the button is pressed.
   datav <- eventReactive(eventExpr=input$button, valueExpr={
-    # eventReactive() executes on input$button, but not on nrows() or input$nrows.
+    ##  eventReactive() executes on input$button, but not on nrows() or input$nrows.
     cat("Sending", nrows(), "rows of data\n")
     datav <- head(mtcars, input$nrows)
     value_s$mpg <- mean(datav$mpg)
     datav
-  })  # end eventReactive
-  #   datav
+  })  ##  end eventReactive
+  ##    datav
   
-  # Draw table of the data when the button is pressed.
+  ##  Draw table of the data when the button is pressed.
   observeEvent(eventExpr=input$button, handlerExpr={
     datav <- datav()
     cat("Received", value_s*nrows, "rows of data\n")
     cat("Average mpg = ", value_s$mpg, "\n")
     cat("Drawing table\n")
     output$tablev <- renderTable(datav) 
-  })  # end observeEvent
+  })  ##  end observeEvent
   
-})  # end server code
+})  ##  end server code
 
 ## Return a Shiny app object
 shiny::shinyApp(ui=uiface, server=servfun)

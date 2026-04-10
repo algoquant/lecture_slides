@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Univariate Investment Strategies]{Univariate Investment Strategies}
-\subtitle{FRE7241, Fall 2025}
+\subtitle{FRE7241, Spring 2026}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -828,7 +828,7 @@ legend(x="topright", legend=c("VTI", "IEF"),
     \column{0.5\textwidth}
       The distribution of stock returns for short holding periods is close to symmetric.
       \vskip1ex
-      The distributions for longer holding periods have larger means and standard deviations, and are more positively skewed, with a smaller kurtoisis.
+      The distributions for longer holding periods have larger means and standard deviations, and are more positively skewed, with a smaller kurtosis.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the distributions of stock returns
 holdv <- round(nrows*seq(0.1, 0.5, 0.1))
@@ -1285,7 +1285,7 @@ dygraphs::dygraph(log(wealthv[endw]),
       \vskip1ex
       The stock allocations (\emph{dollar amounts}) increase when the volatility is low, and vice versa.
       \vskip1ex
-      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of returns $r_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the returns minus the trailing means $(r_t - \bar{r}_t)^2$, using the decay factor $\lambda$:
+      The function \texttt{HighFreq::run\_var()} calculates the trailing variance of returns $r_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the returns minus the \emph{EMA} prices $(r_t - \bar{r}_t)^2$, using the decay factor $\lambda$:
       \begin{flalign*}
         & \bar{r}_t = \lambda \bar{r}_{t-1} + (1 - \lambda) r_t \\
         & \sigma^2_t = \lambda^2 \sigma^2_{t-1} + (1 - \lambda^2) (r_t - \bar{r}_t)^2
@@ -1578,24 +1578,127 @@ text(x=0.0, y=0.8*max(resids), paste("Treynor test t-value =", tvalue))
       The \emph{Overnight Market Anomaly} is not as pronounced after the \texttt{2008-2009} financial crisis.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the log of OHLC VTI prices
-ohlc <- log(rutils::etfenv$VTI)
+symboln <- "VTI"
+ohlc <- get(symboln, rutils::etfenv)
+datev <- zoo::index(ohlc) # Date index
+volumv <- quantmod::Vo(ohlc)
+ohlc <- log(ohlc) # Log of OHLC prices
 openp <- quantmod::Op(ohlc)
 highp <- quantmod::Hi(ohlc)
 lowp <- quantmod::Lo(ohlc)
 closep <- quantmod::Cl(ohlc)
-# Calculate the close-to-close log returns, 
-# the daytime open-to-close returns 
-# and the overnight close-to-open returns.
-retp <- rutils::diffit(closep)
+retp <- rutils::diffit(closep) # Daily close-to-close returns
 colnames(retp) <- "daily"
-retd <- (closep - openp)
+retd <- (closep - openp) # Daytime open-to-close returns
 colnames(retd) <- "daytime"
 reton <- (openp - rutils::lagit(closep, lagg=1, pad_zeros=FALSE))
+colnames(reton) <- "overnight" # Overnight close-to-open returns
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_overnight_vti.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the Sharpe and Sortino ratios
+wealthv <- cbind(retp, reton, retd)
+sqrt(252)*sapply(wealthv, function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot dygraph of the Daytime and Overnight returns
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(cumsum(wealthv)[endw], 
+  main=paste(symboln, "Daily, Overnight, and Daytime Returns")) %>%
+  dySeries(name="daily", strokeWidth=2, col="blue") %>%
+  dySeries(name="overnight", strokeWidth=2, col="red") %>%
+  dySeries(name="daytime", strokeWidth=2, col="green") %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Overnight Market Anomaly Excess Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Before the \texttt{2008} financial crisis, the overnight returns were higher than the daily \emph{close-to-close} returns, but they were hard to monetize because of the high transaction costs at the time.
+      \vskip1ex
+      After the \texttt{2008} financial crisis, the trading volumes increased significantly, and the bid-ask spreads dropped, making it easier to monetize the excess overnight returns.
+      \vskip1ex
+      So the overnight returns became equal to the daily returns, but with a lower volatility, and thus a higher Sharpe ratio.
+      \vskip1ex
+      The overnight returns also have more positive autocorrelations than the daily returns, while the daytime returns have the most negative autocorrelations among them.
+      <<echo=TRUE,eval=FALSE>>=
+# Sharpe and Sortino ratios before the 2008 financial crisis
+sqrt(252)*sapply(wealthv["/2008"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Sharpe and Sortino ratios after the 2008 financial crisis
+sqrt(252)*sapply(wealthv["2009/"], function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Volatilities after the financial crisis
+sapply(wealthv["2009/"], sd)
+# PACF of the overnight returns after the financial crisis
+sapply(wealthv["2009/"], function(x) {
+  pacfl <- pacf(x, lag.max=10, plot=FALSE)
+  sum(pacfl$acf)
+}) #  end sapply
+pacf(reton["2009/"], lag.max=10)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_overnight_returns.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Dygraph plot of the excess overnight returns
+dygraphs::dygraph(cumsum(reton - retp)[endw], main="Excess Overnight Returns") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+# Calculate the EMA trading volumes
+volumema <- HighFreq::run_mean(volumv, lambda=0.9)
+volumema <- xts::xts(volumema, datev)
+dygraphs::dygraph(volumema[endw], main="EMA Trading Volumes") %>%
+  dyOptions(colors="blue", strokeWidth=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Overnight Market Anomaly for Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Overnight Market Anomaly} is more pronounced in more volatile stocks and also in "meme" stocks which are actively traded by retail investors.
+      \vskip1ex
+      This can be explained by investors' reluctance to hold volatile and risky stocks overnight.  Investors also want the liquidity during market hours.
+      \vskip1ex
+      So investors sell the stocks at the end of the trading session, which pushes daytime returns down and overnight returns up.  
+      \vskip1ex
+      Some of the stocks with large overnight returns compared to the daytime returns are \emph{BRKB}, \emph{MGM}, \emph{MU}, \emph{KMI}, etc.
+      \vskip1ex
+      But high transaction costs can make it difficult to monetize the excess overnight returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Load OHLC prices from .RData file
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
+symboln <- "MGM"
+ohlc <- log(get(symboln, sp500env))
+openp <- quantmod::Op(ohlc)
+closep <- quantmod::Cl(ohlc)
+retp <- rutils::diffit(closep) ##  daily returns
+colnames(retp) <- "daily"
+retd <- (closep - openp) ##  daytime returns
+colnames(retd) <- "daytime"
+reton <- (openp - rutils::lagit(closep, pad_zeros=FALSE)) ##  overnight returns
 colnames(reton) <- "overnight"
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/strat_overnight.png}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_overnight_mgm.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the Sharpe and Sortino ratios
 wealthv <- cbind(retp, reton, retd)
@@ -1604,11 +1707,11 @@ sqrt(252)*sapply(wealthv, function(x)
 # Plot the log wealth
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], 
-  main="Wealth of Close-to-Close, Overnight, and Daytime Strategies") %>%
-  dySeries(name="daily", strokeWidth=2, col="blue") %>%
-  dySeries(name="overnight", strokeWidth=2, col="red") %>%
-  dySeries(name="daytime", strokeWidth=2, col="green") %>%
-  dyLegend(width=500)
+  main=paste(symboln, "Daily, Overnight, and Daytime Returns")) %>%
+  dySeries(name="daily", strokeWidth=1, col="blue") %>%
+  dySeries(name="overnight", strokeWidth=1, col="red") %>%
+  dySeries(name="daytime", strokeWidth=1, col="green") %>%
+  dyLegend(width=300)
       @
   \end{columns}
 \end{block}
@@ -2145,6 +2248,8 @@ trend_flip <- function(stopl = 0.1) {
       The trend-flip strategy spends less time in a stop-loss because prices tend to rebound sharply after a steep loss.
       \vskip1ex
       The start-gain rule tends to quickly override the stop-loss rule, so that the strategy is long the stock after it recovers after a stop-loss.
+      \vskip1ex
+      The trend-flip strategy suffers losses when prices are range-bound without a trend, because whenever it switches position the prices soon change direction.  (This is called a \emph{"whipsaw"}.)
       <<echo=TRUE,eval=FALSE>>=
 # Simulate the trend-flip strategy
 pnls <- trend_flip(0.09)
@@ -2656,9 +2761,11 @@ wealthv <- cbind(pnls, pnlslag)
 colnames(wealthv) <- c("EMA", "Lagged")
 # Annualized Sharpe ratios of crossover strategies
 sharper <- sqrt(252)*sapply(wealthv, function (x) mean(x)/sd(x))
+sharper <- round(sharper, 3)
 # Plot both strategies
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
-dygraphs::dygraph(cumsum(wealthv)[endw], main=paste("EMA Crossover Strategy", paste(paste(names(sharper), round(sharper, 3), sep="="), collapse=", "))) %>% 
+captiont <- paste("EMA Crossover Strategy", paste(paste(names(sharper), sharper, sep="="), collapse=", "))
+dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>% 
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always", width=300)
       @
@@ -3058,9 +3165,9 @@ legend("topleft", legend=colnames(pnlrevert),
       \vskip1ex
       The performance of mean reverting \emph{EMA} strategies depends on the $\lambda$ parameter, with performance decreasing for very small or very large $\lambda$ parameters.
       \vskip1ex
-      For too large $\lambda$ parameters, the trading frequency is too high, causing high transaction costs.
+      If the $\lambda$ parameter is too small, the trading frequency is too high, causing high transaction costs.
       \vskip1ex
-      For too small $\lambda$ parameters, the trading frequency is too low, causing the strategy to miss profitable trades.
+      If the $\lambda$ parameter is too large, the trading frequency is too low, causing the strategy to miss profitable trades.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/ema_revert_performance.png}
@@ -3922,23 +4029,23 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main="Dual Crossover Strategy Out-of-Sa
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Bollinger Bands are three time series, with the middle band equal to the trailing mean prices, the upper band equal to the mean prices plus the trailing standard deviation, and the lower band equal to the mean prices minus the standard deviation.
+      The Bollinger Bands are three time series, with the middle band equal to the \emph{EMA} prices, the upper band equal to the mean prices plus the trailing standard deviation, and the lower band equal to the mean prices minus the standard deviation.
       \vskip1ex
       The Bollinger Bands are often used to indicate that prices are cheap if they are below the lower band, and rich (expensive) if they are above the upper band.
       \vskip1ex
-      The function \texttt{HighFreq::run\_var()} calculates the trailing mean and variance of the prices $p_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the prices minus the trailing means $(p_t - \bar{p}_t)^2$, using the decay factor $\lambda$:
+      The function \texttt{HighFreq::run\_var()} calculates the \emph{EMA} price and variance of the prices $p_t$, by recursively weighting the past variance estimates $\sigma^2_{t-1}$, with the squared differences of the prices minus the \emph{EMA} prices $(p_t - \bar{p}_t)^2$, using the decay factor $\lambda$:
       \begin{flalign*}
         & \bar{p}_t = \lambda \bar{p}_{t-1} + (1 - \lambda) p_t \\
         & \sigma^2_t = \lambda^2 \sigma^2_{t-1} + (1 - \lambda^2) (p_t - \bar{p}_t)^2
       \end{flalign*}
-      Where $\bar{p}_t$ and $\sigma^2_t$ are the trailing mean and variance at time $t$.
+      Where $\bar{p}_t$ and $\sigma^2_t$ are the \emph{EMA} price and variance at time $t$.
       \vskip1ex
       The decay factor $\lambda$ determines how quickly the mean and variance estimates are updated, with smaller values of $\lambda$ producing faster updating, giving more weight to recent prices, and vice versa.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/bollinger_feature.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the trailing mean prices and volatilities
+# Calculate the EMA prices and volatilities
 pricev <- log(na.omit(rutils::etfenv$prices$VTI))
 lambdaf <- 0.9
 volp <- HighFreq::run_var(pricev, lambda=lambdaf)
@@ -3975,15 +4082,27 @@ dygraphs::dygraph(priceb["2008-09/2009-09"], main="VTI Prices and Bollinger Band
       When the centered price is below the lower band it's considered cheap, and if it's above the upper band it's considered rich (expensive).
       \vskip1ex
       When the centered price is close to zero it's considered fair (neutral).
+      \vskip1ex
+      The \emph{price z-score} is equal to the ratio of the deviation from the \emph{EMA} price divided by the price volatility:
+      \begin{displaymath}
+        z_i = \frac{p_t - \bar{p}_t}{\sigma_t}
+      \end{displaymath}
+      The \emph{z-score} is the standardized deviation of the current price away from the \emph{EMA} price.
       <<echo=TRUE,eval=FALSE>>=
-      @
+# Calculate time series of z-scores
+zscores <- (pricev - pricema)/volp
+# Plot histogram of z-scores
+breakv <- seq(min(zscores), max(zscores), length.out=201)
+hist(zscores, main="Histogram of Z-scores", 
+     breaks=breakv, col="darkgray", border="white")
+@
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/bollinger_demean.png}
       <<echo=TRUE,eval=FALSE>>=
 # Center the prices
 pricec <- pricev - pricema
-# Dygraphs plot of Bollinger bands
+# Dygraph plot of Bollinger bands
 priceb <- cbind(pricec, volp, -volp)
 colnames(priceb) <- c("price", "upper", "lower")
 colv <- colnames(priceb)
@@ -4030,25 +4149,25 @@ lambdaf <- 0.1
 volp <- HighFreq::run_var(pricev, lambda=lambdaf)
 pricema <- volp[, 1]
 volp <- sqrt(volp[, 2])
+# Calculate time series of z-scores
+zscores <- (pricev - pricema)/volp
+threshv <- 1.0  ##  Threshold level for z-scores
 # Prepare the simulation parameters
-pricen <- as.numeric(pricev) ##  Numeric price
-pricec <- pricen - pricema ##  Centered price
-threshv <- volp
 nrows <- NROW(pricev)
 posv <- integer(nrows) ##  Stock positions
 posv[1] <- 0 ##  Initial position
 # Calculate the positions from Bollinger bands
 for (it in 2:nrows) {
-  if (pricec[it-1] > threshv[it-1]) {
+  if (zscores[it-1] > threshv) {
     ##  Enter short
     posv[it] <- (-1)
-  } else if (pricec[it-1] < (-threshv[it-1])) {
+  } else if (zscores[it-1] < -threshv) {
     ##  Enter long
     posv[it] <- 1
-  } else if ((posv[it-1] < 0) && (pricec[it-1] < 0)) {
+  } else if ((posv[it-1] < 0) && (zscores[it-1] < 0)) {
     ##  Unwind short
     posv[it] <- 0
-  } else if ((posv[it-1] > 0) && (pricec[it-1] > 0)) {
+  } else if ((posv[it-1] > 0) && (zscores[it-1] > 0)) {
     ##  Unwind long
     posv[it] <- 0
   } else {
@@ -4122,10 +4241,10 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
 posv <- integer(nrows) ##  Stock positions
 posv[1] <- 0 ##  Initial position
 for (it in 2:nrows) {
-  if (pricec[it-1] > threshv[it-1]) {
+  if (zscores[it-1] > threshv) {
     ##  Enter short
     posv[it] <- (-1)
-  } else if (pricec[it-1] < (-threshv[it-1])) {
+  } else if (zscores[it-1] < -threshv) {
     ##  Enter long
     posv[it] <- 1
   } else {
@@ -4177,13 +4296,13 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
 # Simulate the patient Bollinger Strategy quickly
 posf <- rep(NA_integer_, nrows)
 posf[1] <- 0
-posf <- ifelse(pricec > threshv, -1, posf)
-posf <- ifelse(pricec < -threshv, 1, posf)
+posf <- ifelse(zscores > threshv, -1, posf)
+posf <- ifelse(zscores < -threshv, 1, posf)
 posf <- zoo::na.locf(posf)
 # Lag the positions to trade in the next period
 posf <- rutils::lagit(posf, lagg=1)
 # Compare the positions
-all.equal(posv, posf)
+all.equal(posv, as.numeric(posf))
       @
   \end{columns}
 \end{block}
@@ -4216,13 +4335,13 @@ lambdaf <- 0.1
 volp <- HighFreq::run_var(priced, lambda=lambdaf)
 pricema <- volp[, 1]
 volp <- sqrt(volp[, 2])
+# Calculate time series of z-scores
+zscores <- (priced - pricema)/volp
 # Calculate the positions from Bollinger bands
-threshv <- volp
-pricec <- zoo::coredata(priced - pricema)
 posv <- rep(NA_integer_, nrows)
 posv[1] <- 0
-posv <- ifelse(pricec > threshv, -1, posv)
-posv <- ifelse(pricec < -threshv, 1, posv)
+posv <- ifelse(zscores > threshv, -1, posv)
+posv <- ifelse(zscores < -threshv, 1, posv)
 posv <- zoo::na.locf(posv)
 # Lag the positions to trade in the next period
 posv <- rutils::lagit(posv, lagg=1)
@@ -4267,7 +4386,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
       \vskip1ex
       This simulation doesn't account for transaction costs, which would likely erase all profits if market orders were used for trade executions.  But the strategy could be profitable if limit orders were used for trade executions.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the trailing mean prices and volatilities of SPY
+# Calculate the EMA prices and volatilities of SPY
 pricev <- log(quantmod::Cl(HighFreq::SPY))
 nrows <- NROW(pricev)
 lambdaf <- 0.1
@@ -4311,7 +4430,7 @@ captiont <- paste("Bollinger Strategy for Minute SPY", "/ \n",
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=100)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4426,14 +4545,14 @@ colnames(wealthv) <- c("VTI", "Strategy")
 sharper <- sqrt(252)*sapply(wealthv, function(x) mean(x)/sd(x[x<0]))
 sharper <- round(sharper, 3)
 # Dygraphs plot of Hampel strategy
+colv <- colnames(wealthv)
 captiont <- paste("Hampel Strategy", "/ \n", 
   paste0(paste(colv[1:2], "Sharpe =", sharper), collapse=" / "), "/ \n",
   "Number trades =", ntrades)
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
-colv <- colnames(wealthv)
 dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=100)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4452,7 +4571,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
       \vskip1ex
       This simulation doesn't account for transaction costs, which would likely erase all profits if market orders were used for trade executions.  But the strategy could be profitable if limit orders were used for trade executions.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the trailing mean prices and volatilities of SPY
+# Calculate the EMA prices and volatilities of SPY
 pricev <- log(quantmod::Cl(HighFreq::SPY))
 nrows <- NROW(pricev)
 # Calculate the price medians and MAD
@@ -4496,7 +4615,7 @@ captiont <- paste("Hampel Strategy for Minute SPY", "/ \n",
 endw <- rutils::calc_endpoints(wealthv, interval="weeks")
 dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
   dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always", width=100)
+  dyLegend(show="always", width=300)
       @
   \end{columns}
 \end{block}
@@ -4637,7 +4756,7 @@ dygraphs::dygraph(cumsum(wealthv)[endw],
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the volatility z-scores
-volp <- HighFreq::roll_var_ohlc(ohlc=ohlc, lookb=lookb, scale=FALSE)
+volp <- HighFreq::roll_var_ohlc(ohlc=ohlc, lookb=lookb, scalit=FALSE)
 volatm <- HighFreq::roll_mean(volp, lookb)
 volatsd <- sqrt(HighFreq::roll_var(rutils::diffit(volp), lookb))
 volatsd[1] <- 0
@@ -4835,7 +4954,7 @@ sum(!topl & (fcasts > threshv))
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Confusion Matrix of a Binary Classification Model}
+\subsection{The Confusion Matrix of the Classification Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -4899,17 +5018,19 @@ print(xtable::xtable(confusion_matrix,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Receiver Operating Characteristic (ROC) Curve for Stock Tops}
+\subsection{The Informedness}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      The \emph{sensitivity} is the \emph{true positive} rate, the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
       \vskip1ex
-      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
+      The \emph{specificity} is the \emph{true negative} rate, the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
       \vskip1ex
-      The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
+      The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of the binary classification model. 
+      \vskip1ex
+      The threshold value can be chosen by maximizing the \emph{informedness} of the classification model.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of threshold
 confun <- function(actual, fcasts, threshv) {
@@ -4927,30 +5048,68 @@ errorr <- sapply(threshv, confun,
   actual=!topl, fcasts=fcasts)  ##  end sapply
 errorr <- t(errorr)
 rownames(errorr) <- threshv
+errorr <- rbind(c(1, 0), errorr)
+errorr <- rbind(errorr, c(0, 1))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_stocktops_informedness.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
 # Calculate the informedness
 informv <- 2 - rowSums(errorr)
-plot(threshv, informv, t="l", main="Informedness")
+plot(threshv, informv, 
+     xlab="discrimination threshold", ylab="informedness",
+     t="l", main="Informedness as Function of Threshold")
 # Find the threshold corresponding to highest informedness
-threshm <- threshv[which.max(informv)]
+whichm <- which.max(informv)
+threshm <- threshv[whichm] # threshold corresponding to highest informedness
+informm <- informv[whichm] # highest informedness
+# Calculate the forecasts of price tops
 topf <- (fcasts > threshm)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Receiver Operating Characteristic (ROC) Curve for Stock Tops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of the binary classifier.
+      \vskip1ex
+      The area under the \emph{ROC curve} (AUC) measures the classification ability of the binary classifier.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the area under ROC curve (AUC)
+truepos <- (1 - errorr[, "typeII"])
+truepos <- (truepos + rutils::lagit(truepos))/2
+falsepos <- rutils::diffit(errorr[, "typeI"])
+abs(sum(truepos*falsepos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/logistic_stocktops_roc.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the area under ROC curve (AUC)
-errorr <- rbind(c(1, 0), errorr)
-errorr <- rbind(errorr, c(0, 1))
-truepos <- (1 - errorr[, "typeII"])
-truepos <- (truepos + rutils::lagit(truepos))/2
-falsepos <- rutils::diffit(errorr[, "typeI"])
-abs(sum(truepos*falsepos))
 # Plot ROC Curve for stock tops
 plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Stock Tops", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Add text with threshold values
+text(x=0.2, y=0.2, "High threshold", cex=1.0, col="blue")
+text(x=0.9, y=0.8, "Low threshold", cex=1.0, col="blue")
+# Add text with informedness value
+points(x=errorr[whichm, "typeI"],  y=(1-errorr[whichm, "typeII"]),
+       lwd=4, pch=16, col="red")
+text(x=errorr[whichm, "typeI"],  y=(1-errorr[whichm, "typeII"]),
+     labels=paste("Informedness =", round(informm, 3)), 
+     pos=3, col="red")
       @
   \end{columns}
 \end{block}
@@ -4965,11 +5124,11 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of the binary classifier.
       \vskip1ex
-      The area under the \emph{ROC curve} (AUC) measures the classification ability of a binary classifier.
+      The area under the \emph{ROC curve} (AUC) measures the classification ability of the binary classifier.
       \vskip1ex
-      The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of a binary classification model. 
+      The \emph{informedness} is equal to the sum of the sensitivity plus the specificity, and measures the performance of the binary classification model. 
       <<echo=TRUE,eval=FALSE>>=
 # Fit in-sample logistic regression for bottoms
 logmod <- glm(bottoml ~ predm, family=binomial(logit))
@@ -4987,7 +5146,10 @@ rownames(errorr) <- threshv
 informv <- 2 - rowSums(errorr)
 plot(threshv, informv, t="l", main="Informedness")
 # Find the threshold corresponding to highest informedness
-threshm <- threshv[which.max(informv)]
+whichm <- which.max(informv)
+threshm <- threshv[whichm] # threshold corresponding to highest informedness
+informm <- informv[whichm] # highest informedness
+# Calculate the forecasts of price bottoms
 botf <- (fcasts > threshm)
       @
     \column{0.5\textwidth}
@@ -5007,6 +5169,9 @@ plot(x=errorr[, "typeI"], y=1-errorr[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Stock Bottoms", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Add text with threshold values
+text(x=0.2, y=0.2, "High threshold", cex=1.0, col="blue")
+text(x=0.9, y=0.8, "Low threshold", cex=1.0, col="blue")
       @
   \end{columns}
 \end{block}
