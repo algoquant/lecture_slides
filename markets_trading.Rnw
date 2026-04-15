@@ -466,9 +466,11 @@ legend("bottomright", legend=c("Nelson-Siegel", "Actual"),
       \vskip1ex
       $B_t$ is a \emph{Brownian Motion}, with its increment $\mathrm{d} B_t$ following the normal distribution with the volatility $\sqrt{\mathrm{d}t}$, equal to the square root of the time increment $\mathrm{d}t$.
       \vskip1ex
-      The \emph{Vasicek} process is also known as the \emph{Ornstein-Uhlenbeck} process.
+      The Vasicek model is a single-factor model because it's driven by a single source of randomness, the Brownian motion $B_t$. 
       \vskip1ex
       The \emph{Vasicek} process is path dependent, so it must be simulated using explicit loops, either in \texttt{R} or in \texttt{C++}.
+      \vskip1ex
+      The \emph{Vasicek} process is also known as the \emph{Ornstein-Uhlenbeck} process.
       \vskip1ex
       The compiled \emph{Rcpp} \texttt{C++} code can be over \texttt{100} times faster than loops in \texttt{R}!
       \vskip1ex
@@ -479,21 +481,22 @@ legend("bottomright", legend=c("Nelson-Siegel", "Actual"),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define Vasicek parameters
-ratin <- 0.0; muv <- 4.0; 
-sigmav <- 0.1; thetav <- 0.01; nrows <- 1000
+r0 <- 2.0; muv <- 4.0; nrows <- 200
+stepv <- 30/nrows
+sigmav <- 0.5*stepv; thetav <- 0.5*stepv
 # Initialize the data
 innov <- rnorm(nrows) # innovations
 rated <- numeric(nrows) # rate increments
 ratev <- numeric(nrows) # rates
 rated[1] <- sigmav*innov[1]
-ratev[1] <- ratin
+ratev[1] <- r0
 # Simulate Vasicek process in R
 for (i in 2:nrows) {
   rated[i] <- thetav*(muv - ratev[i-1]) + sigmav*innov[i]
   ratev[i] <- ratev[i-1] + rated[i]
 }  ##  end for
 # Simulate Vasicek process in Rcpp
-pricecpp <- HighFreq::sim_ou(prici=ratin, priceq=muv, 
+pricecpp <- HighFreq::sim_ou(prici=r0, priceq=muv, 
   theta=thetav, innov=matrix(sigmav*innov))
 all.equal(ratev, drop(pricecpp))
 # Compare the speed of R code with Rcpp
@@ -502,7 +505,7 @@ summary(microbenchmark(
   Rcode={for (i in 2:nrows) {
     rated[i] <- thetav*(muv - ratev[i-1]) + sigmav*innov[i]
     ratev[i] <- ratev[i-1] + rated[i]}},
-  Rcpp=HighFreq::sim_ou(prici=ratin, priceq=muv, 
+  Rcpp=HighFreq::sim_ou(prici=r0, priceq=muv, 
     theta=thetav, innov=matrix(sigmav*innov)),
   times=10))[, c(1, 4, 5)]  ##  end microbenchmark summary
       @
@@ -526,8 +529,8 @@ summary(microbenchmark(
       \vskip1ex
       The mean and variance are given by:
       \begin{flalign*}
-        & \mathbb{E}[r_t] = r_0 e^{-\theta t} + \mu (1 - e^{-\theta t}) \rightarrow \mu \\
-        & \mathbb{E}[(r_t - \mathbb{E}[r_t])^2] = \frac{\sigma^2}{2 \theta} (1 - e^{-\theta t}) \rightarrow \frac{\sigma^2}{2 \theta}
+        & \mathbb{E}[r_t] = r_0 e^{-\theta t} + \mu (1 - e^{-\theta t}) \xrightarrow[t \to \infty]{} \mu \\
+        & \mathbb{E}[(r_t - \mathbb{E}[r_t])^2] = \frac{\sigma^2}{2 \theta} (1 - e^{-\theta t}) \xrightarrow[t \to \infty]{} \frac{\sigma^2}{2 \theta}
       \end{flalign*}
       The \emph{Vasicek} process is mean reverting to the equilibrium rate $\mu$.
       \vskip1ex
@@ -537,8 +540,9 @@ summary(microbenchmark(
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_rate_process.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-plot(ratev, type="l", xlab="time", ylab="rates",
-     main="Vasicek Interest Rate Process")
+plot(x=stepv*seq_along(ratev), y=ratev, 
+     main="Vasicek Interest Rate Process", 
+     type="l", xlab="years", ylab="rate")
 legend("bottomright", title=paste(c(
   paste0("muv = ", muv),
   paste0("sigmav = ", sigmav),
@@ -546,6 +550,7 @@ legend("bottomright", title=paste(c(
   collapse="\n"),
   legend="", cex=1.1, inset=0.0, bg="white", bty="n")
 abline(h=muv, col='red', lwd=2)
+text(x=5, y=muv+0.15, col="blue", cex=1.0, labels="equilibrium rate")
       @
   \end{columns}
 \end{block}
@@ -554,13 +559,13 @@ abline(h=muv, col='red', lwd=2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Vasicek Process Increments Correlation}
+\subsection{Vasicek Rate Increments}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Under the \emph{Vasicek} process, the rate increments are negatively correlated to the lagged rates.
+      Under the \emph{Vasicek} process, the rate increments (differences) are negatively correlated to the lagged rates.
       <<echo=TRUE,eval=FALSE>>=
 rated <- rutils::diffit(ratev)
 retlag <- rutils::lagit(ratev)
@@ -641,36 +646,34 @@ round(coeff, 4)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The price of a discount (zero-coupon) bond with maturity $T$ under the \emph{Vasicek} model is given by:
+      The price of a discount (zero-coupon) bond is equal to the expected value of the bond's payoff at maturity $T$, under all possible paths of the short rate $r_t$:
       \begin{displaymath}
-        P_T = \exp(A_T - B_T \, r_t)
+        P_T = \mathbb{E}[\exp( \sum_{i=0}^T r_t )] = \exp(A_T - B_T \, r_0)
       \end{displaymath}
-      Where $r_t$ is the current short rate, and $A_T$ and $B_T$ are functions of the model parameters $\theta$, $\mu$, and $\sigma$:
+      Where $r_0$ is the current short rate, and $A_T$ and $B_T$ are functions of the model parameters $\theta$, $\mu$, and $\sigma$:
       \begin{flalign*}
-        & B_T = \frac{1 - \exp(-\theta T)}{\theta} \\
+        & B_T = \frac{1 - \exp(-\theta T)}{\theta} \xrightarrow[T \to 0]{} T \\
         & A_T = (\mu - \frac{\sigma^2}{2 \theta^2})(B_T - T) - \frac{\sigma^2 B_T^2}{4 \theta}
       \end{flalign*}
-      \vskip1ex
-      The discount bond price is $P_T = \exp(-y_T T)$, where the yield to maturity $y_T$ is given by:
+      The discount bond price can be expressed as $P_T = \exp(-y_T T)$, where the yield to maturity $y_T$ is given by:
       \begin{displaymath}
-        y_T = \frac{-A_T + B_T \, r_t}{T}
+        y_T = \frac{-A_T + B_T \, r_0}{T}
       \end{displaymath}
-      The yield curve $y_T$ is a function of the maturity $T$ and the current short rate $r_t$.
-      \vskip1ex
-      The Vasicek model is a single-factor model because the only source of market risk is the short rate $r_t$. 
-      The level of the short rate $r_t$ determines the whole term structure of interest rates.
+      With $y_T \xrightarrow[T \to 0]{} r_0$ and $y_T \xrightarrow[T \to \infty]{} \mu - \frac{\sigma^2}{2 \theta^2}$ 
+      <<echo=TRUE,eval=FALSE>>=
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/vasicek_rate_curve.png}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the yield curve under the Vasicek model
-tauv <- seq(1, 30, by=1) # Maturities in years
+tauv <- seq(0.1, 30, by=1) # Maturities in years
 B <- (1 - exp(-thetav*tauv))/thetav
 A <- (muv - sigmav^2/(2*thetav^2))
 A <- A*(B - tauv) - (sigmav^2*B^2)/(4*thetav)
-ratet <- as.numeric(last(ratev)) # Current short rate
-ycurve <- (-A + B*ratet)/tauv
-# Plot the yield curve
+r0 <- 2.0 # Current short rate
+ycurve <- (-A + B * r0)/tauv # Vasicek yield curve
+# Plot the Vasicek yield curve
 plot(tauv, ycurve, type="l", lwd=3, col="blue",
      main="Yield Curve Under the Vasicek Model",
      xlab="Maturity (years)", ylab="Yield (%)")
@@ -683,64 +686,77 @@ plot(tauv, ycurve, type="l", lwd=3, col="blue",
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Multiple Yield Curves Under the Vasicek Model}
+\subsection{Yield Curves Under the Vasicek Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Vasicek} yield curve formula can be rewritten in terms of the long term yield $y_{inf}$, which is the yield as maturity $T$ goes to infinity:
+      The \emph{Vasicek} yield can be expressed in terms of the long term yield at infinite maturity $y_{inf}$:
        \begin{flalign*}
-        & y_{inf} = \mu - \frac{\sigma^2}{2 \theta^2} \\
-        & B_T = \frac{1 - \exp(-\theta T)}{\theta} \\
-        & y_T = y_{inf} + (r_t - y_{inf}) B_T / T + \frac{\sigma^2 B_T^2}{4 \theta T} \\
+        & y_T = y_{inf} + (r_0 - y_{inf}) \frac{B_T}{T} + \frac{\sigma^2 B_T^2}{4 \theta T} \\
+        & y_{inf} = \mu - \frac{\sigma^2}{2 \theta^2}
       \end{flalign*}
-      The yield curve gradually converges to the long term yield $y_{inf}$ as the maturity $T$ increases, and it is influenced by the current short rate $r_t$ and the model parameters $\theta$, $\mu$, and $\sigma$.
+      The yield curve gradually converges to the yield $y_{inf}$ as the maturity $T$ increases: $y_T \xrightarrow[T \to \infty]{} y_{inf}$ 
       \vskip1ex
-      The yield curve is upward sloping when the current short rate $r_t$ is below the long term yield $y_{inf}$, and it is downward sloping when $r_t$ is above $y_{inf}$.
+      The yield $y_{inf}$ is less than the equilibrium rate $\mu$ by the amount $\frac{\sigma^2}{2 \theta^2}$, which is the risk premium for holding long-term bonds.  \\
+      The risk premium is higher when the volatility $\sigma$ is higher, and when the mean reversion $\theta$ is weaker.  \\
+      Mathematically, it follows from \emph{Ito's lemma}.
       \vskip1ex
-
-      parameters $\theta$, $\mu$, and $\sigma$:
-       \begin{flalign*}
-        & B_T = \frac{1 - \exp(-\theta T)}{\theta} \\
-        & A_T = (\mu - \frac{\sigma^2}{2 \theta^2})(B_T - T) - \frac{\sigma^2 B_T^2}{4 \theta} \\
-        & y_T = \frac{-A_T + B_T \, r_t}{T}
-      \end{flalign*}
-      
-      The price of a discount (zero-coupon) bond with maturity $T$ under the \emph{Vasicek} model is given by:
-      \begin{displaymath}
-        P_T = \exp(A_T - B_T \, r_t)
-      \end{displaymath}
-      Where $r_t$ is the current short rate, and $A_T$ and $B_T$ are functions of the model parameters $\theta$, $\mu$, and $\sigma$:
-      \begin{flalign*}
-        & B_T = \frac{1 - \exp(-\theta T)}{\theta} \\
-        & A_T = (\mu - \frac{\sigma^2}{2 \theta^2})(B_T - T) - \frac{\sigma^2 B_T^2}{4 \theta}
-      \end{flalign*}
-      \vskip1ex
-      The discount bond price is $P_T = \exp(-y_T T)$, where the yield to maturity $y_T$ is given by:
-      \begin{displaymath}
-        y_T = \frac{-A_T + B_T \, r_t}{T}
-      \end{displaymath}
-      The yield curve $y_T$ is a function of the maturity $T$ and the current short rate $r_t$.
-      \vskip1ex
-      The Vasicek model is a single-factor model because the only source of market risk is the short rate $r_t$. 
-      The level of the short rate $r_t$ determines the whole term structure of interest rates.
+      The yield curve is upward sloping when the current short rate $r_0$ is below the long term yield $y_{inf}$, and it is downward sloping when $r_0$ is above $y_{inf}$.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate the yield curve using the yield at infinity
+yinf <- muv - (sigmav^2 / (2 * thetav^2))
+C <- (sigmav^2 * B^2) / (4 * thetav * tauv)
+r0 <- 2.0 # Current short rate
+ycurve1 <- yinf + (r0 - yinf)*B/tauv + C
+r0 <- 5.0 # Current short rate
+ycurve2 <- yinf + (r0 - yinf)*B/tauv + C
+ycurves <- cbind(ycurve1, ycurve2)
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/vasicek_rate_curve.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vasicek_rate_curves.png}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the yield curve under the Vasicek model
-tauv <- seq(1, 30, by=1) # Maturities in years
-B <- (1 - exp(-thetav*tauv))/thetav
-A <- (muv - sigmav^2/(2*thetav^2))
-A <- A*(B - tauv) - (sigmav^2*B^2)/(4*thetav)
-ratet <- as.numeric(last(ratev)) # Current short rate
-ycurve <- (-A + B*ratet)/tauv
-# Plot the yield curve
-plot(tauv, ycurve, type="l", lwd=3, col="blue",
-     main="Yield Curve Under the Vasicek Model",
-     xlab="Maturity (years)", ylab="Yield (%)")
+# Plot the yield curves
+matplot(tauv, ycurves, type="l", lwd=3, 
+        main="Yield Curves Under the Vasicek Model",
+        col=c("green", "blue"), lty=1,
+        xlab="Maturity (years)", ylab="Yield (%)")
+legend("topright", legend=c("r0 = 2.0", "r0 = 5.0"),
+       bty="n", col=c("green", "blue"), lty=1, lwd=6, inset=0.0, cex=1.0)
+abline(h=yinf, col="red", lwd=2)
+text(x=5, y=yinf-0.2, cex=1.0, col="blue", 
+     labels=paste("yield at infinity =", round(yinf, 2)))
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Advanced Interest Rate Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The advantage of the \emph{Vasicek} interest rate model is that it has a closed-form solution for the yield curve, which makes it easy to calibrate.
+      \vskip1ex
+      The \emph{Vasicek} model has many disadvantages: it can produce negative interest rates, it can't fit the yield curve exactly, it can't fit interest rate options prices, and it allows for arbitrage opportunities between bonds of different maturities.
+      \vskip1ex
+      The \emph{Hull-White} model is an extension of the \emph{Vasicek} model that allows for time-varying parameters $\theta_t, \mu_t, \sigma_t$, so it can better fit the yield curve and interest rate options prices:
+      \begin{displaymath}
+        \mathrm{d} r_t = \theta_t \, (\mu_t - r_t) + \sigma_t \, \mathrm{d} B_t
+      \end{displaymath}
+      The \emph{Black-Karasinski} model simulates the logarithm of the short rate, to ensure that the short rate $r_t$ is always positive:
+      \begin{displaymath}
+        \mathrm{d} \log(r_t) = \theta_t \, (\mu_t - \log(r_t)) + \sigma_t \, \mathrm{d} B_t
+      \end{displaymath}
+      This implies a log-normal distribution of rates, not a normal distribution.
+    \column{0.5\textwidth}
+      The disadvantage of the advanced interest rate models is that they have to be calibrated using numerical methods, which can be slow and numerically unstable.
   \end{columns}
 \end{block}
 
