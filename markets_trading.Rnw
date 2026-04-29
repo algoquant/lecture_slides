@@ -4522,51 +4522,33 @@ chart_Series(volagg[c(-1, -NROW(volagg))], theme=themev,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The autocorrelations depend on the length of the time lag and the aggregation interval.
+      \vskip1ex
       The autocorrelations are typically higher at the start and end of the trading sessions.
       Besides that, they are negative for most of the trading session.
       \vskip1ex
-      The distribution of autocorrelations depends on the stock and the level of volatility.
-      \vskip1ex
-      The autocorrelations are often more positive at the start of the trading session and decline during the day.
+      The autocorrelations are often negative in the first \textit{10} minutes of the trading session, then they become positive, and after that they become negative again.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate the lagged returns
-retp <- rutils::diffit(closep)
-retl <- rutils::lagit(retp, lagg=1)
-# Calculate the instantaneous autocorrelation of returns
-covv <- (retp*retl)/retp^2
-covv[is.na(covv)] <- 0
-sum(is.na(covv))
-mean(covv) # Autocorrelations slightly negative
-madv <- mad(covv)
-plot(density(covv), xlim=c(-10*madv, 10*madv), 
-     xlab="Autocorrelation", ylab="frequency",
-     main="Density of Autocorrelations of SPY Returns")
+retp <- rutils::diffit(closep, lagg=3)
+retl <- rutils::lagit(retp, lagg=3)
+# Calculate the instantaneous autocorrelations of returns
+covv <- sign(retp*retl)
+covagg <- covagg[-(1:3)] ##  Remove first three points biased by overnight returns
 # Aggregate the autocorrelations by time of day
 dated <- format(zoo::index(closep), "%H:%M")
 covagg <- tapply(X=covv, INDEX=dated, FUN=mean)
 # Coerce to xts
 datev <- as.POSIXct(paste(Sys.Date(), names(covagg)))
 covagg <- xts::xts(covagg, datev)
-covagg <- covagg[-(1:2)] ##  Remove first two points biased by overnight returns
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hf_intraday_autocorrelations.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the seasonality of autocorrelations
-dygraph(covagg, main="Seasonality of Intraday Autocorrelations") %>%
+dygraph(covagg, main="Seasonality of SPY Intraday Autocorrelations") %>%
   dyOptions(colors="blue", strokeWidth=1)
-# Aggregate covagg by 10 minutes
-endd <- rutils::calc_endpoints(covagg, interval=10)
-covagg10 <- sapply(seq_along(endd)[-1], function(it) {
-  mean(covagg[(endd[it-1]+1):endd[it]])
-})  ##  end sapply
-datev <- index(covagg)[endd]
-covagg10 <- xts::xts(covagg10, datev)
-# Dygraph of autocorrelations aggregated by 10 minutes
-dygraph(covagg10, main="Seasonality of Intraday Autocorrelations") %>%
-  dyOptions(colors="blue", strokeWidth=2, drawPoints=TRUE, pointSize=4) %>%
-  dyLimit(0, color="red", strokePattern="dashed")
       @
   \end{columns}
 \end{block}
