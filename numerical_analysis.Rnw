@@ -62,7 +62,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Numerical Analysis]{Numerical Analysis}
-\subtitle{FRE6871 \& FRE7241, Spring 2026}
+\subtitle{FRE6871 \& FRE7241, Fall 2026}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -3442,32 +3442,36 @@ rgl::rglwidget(elementId="plot3drgl", width=800, height=800)
       \end{displaymath}
       It uses the first and second derivatives of the objective function to find the coordinate $x$ of its minimum.  If the derivatives are not given analytically, they can be approximated using finite differences.
       \vskip1ex
-      Note that the coordinate step is larger when the second derivative $f''(x)$ is small, and vice versa.  Because when the second derivative is small then the function is flat, so a larger step is needed to reach the minimum value quicker.  If the second derivative is large then the function is more convex, so a smaller step is better to avoid overshooting the minimum.
+      Note that the coordinate step is larger when the second derivative $f''(x)$ is small, and vice versa.  
+      \vskip1ex
+      Because when the second derivative is small then the function is flat, so a larger step is needed to reach the minimum value quicker.  
+      \vskip1ex
+      If the second derivative is large then the function is more convex, so a smaller step is better to avoid overshooting the minimum.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Perform one-dimensional optimization using Newton-Raphson method
 optim_newton <- function(f, x0, h = 1e-5, maxiter = 50, tol = 1e-8) {
-  # Initialize the variables
+  ## Initialize the variables
   x <- x0
   histv <- numeric(maxiter + 1)
   histv[1] <- x
-  # Iterate using Newton-Raphson formula
+  ## Iterate using Newton-Raphson formula
   for (k in 1:maxiter) {
-    # Calculate the first derivative
+    ## Calculate the first derivative
     fp <- (f(x + h) - f(x - h)) / (2 * h)
-    # Calculate the second derivative
+    ## Calculate the second derivative
     fpp <- (f(x + h) - 2 * f(x) + f(x - h)) / (h^2)
-    # Check for convergence
+    ## Check for convergence
     if (abs(fp) < tol) {
       return(list(root = x, history = histv[1:k]))
-    } # end if
-    # Update the coordinate
+    } ## end if
+    ## Update the coordinate
     x <- x - fp / fpp
     histv[k + 1] <- x
-  } # end for k
+  } ## end for k
   return(list(par = x, history = histv))
-} # end optim_newton
+} ## end optim_newton
 # Calculate the minimum using quasi-Newton method
 funx <- function(x) x^4 - 3*x^3 + 2
 optiml <- rutils::optim_newton(funx, x0 = 3)
@@ -3541,46 +3545,46 @@ plot(optiml$history, type="b", main="Newton-Raphson Optimization Path",
         <<echo=TRUE,eval=FALSE>>=
 # BFGS loop to find the minimum
 for (n in 1:maxiter) {
-  dn <- - H %*% grad  # Increment of x
-  # Stop if increment is too small
+  dn <- - H %*% grad  ## Increment of x
+  ## Stop if increment is too small
   if (sum(dn^2) < tol^2) break
-  # Perform loop to satisfy the Armijo condition
+  ## Perform loop to satisfy the Armijo condition
   alpha <- 1
-  unchflag <- FALSE # Flag if x is unchanged
+  unchflag <- FALSE ## Flag if x is unchanged
   while (alpha > 1e-12) {
-    xn <- as.vector(x + alpha * dn) # New solution
-    fxn <- f(xn)                  # New function value
-    # Check for convergence based on step size
+    xn <- as.vector(x + alpha * dn) ## New solution
+    fxn <- f(xn)                  ## New function value
+    ## Check for convergence based on step size
     if (sum((xn - x)^2) < tol^2) {
-      unchflag <- TRUE # x is unchanged - stop loop
+      unchflag <- TRUE ## x is unchanged - stop loop
       break
-    } # end if
-    # Armijo condition for sufficient decrease in function value
+    } ## end if
+    ## Armijo condition for sufficient decrease in function value
     if (fxn <= fx + c1 * alpha * sum(grad * dn)) break
-    # Decrease the step size
+    ## Decrease the step size
     alpha <- alpha * rho
-  } # end while
-  # If unchanged condition is detected, accept the current values and stop loop
+  } ## end while
+  ## If unchanged condition is detected, accept the current values and stop loop
   if (unchflag) {
     x <- xn; fx <- fxn
     history[itern, ] <- x; itern <- itern + 1
     break
-  } # end if
-  # If the Armijo condition failed then stop
+  } ## end if
+  ## If the Armijo condition failed then stop
   if (alpha <= 1e-12) break
-  # BFGS update of the gradient and inverse Hessian
+  ## BFGS update of the gradient and inverse Hessian
   dx <- xn - x; gradn <- calc_grad(xn)
   dg <- gradn - grad; yp <- sum(dg * dx)
   if (yp > 1e-12) {
     I <- diag(narg)
     V <- I - outer(dx, dg) / yp
     H <- V %*% H %*% t(V) + outer(dx, dx) / yp
-  } # end if
-  # Copy variables for next iteration
+  } ## end if
+  ## Copy variables for next iteration
   x <- xn; grad <- gradn; fx <- fxn
-  # Store the history
+  ## Store the history
   history[itern, ] <- x; itern <- itern + 1
-} # end for n
+} ## end for n
       @
   \end{columns}
 \end{block}
@@ -3604,21 +3608,21 @@ for (n in 1:maxiter) {
 # Define the Rosenbrock function
 rosefun <- function(x) {
   (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
-} # end rosefun
+} ## end rosefun
 # Calculate the minimum using BFGS method
 optiml <- rutils::optim_bfgs(rosefun, x0 = c(-1.2, 1))
-optiml$par      # Minimum coordinates
-optiml$value    # Function value at the minimum
-optiml$history  # Optimization path
-optiml$iter     # Number of iterations
+optiml$par      ## Minimum coordinates
+optiml$value    ## Function value at the minimum
+optiml$history  ## Optimization path
+optiml$iter     ## Number of iterations
 # Solve using optim() for comparison
 optiml <- optim(c(-1.2, 1), rosefun, method = "L-BFGS-B")
-optiml$par      # Minimum coordinates
+optiml$par      ## Minimum coordinates
 ## Prepare data for 3D surface plot
 # Define the Rosenbrock function with two arguments
 rosefun2 <- function(x, y) {
   (1 - x)^2 + 100 * (y - x^2)^2
-} # end rosefun
+} ## end rosefun
 # Extract optimization path
 optimh <- optiml$history
 xp <- optimh[, 1]
@@ -3686,59 +3690,59 @@ rgl::rglwidget(elementId="rosenbrock", width=800, height=800)
         <<echo=TRUE,eval=FALSE>>=
 # Coordinate descent loop combined with BFGS quasi-Newton method
 for (n in 1:maxiter) {
-  xold <- x # Previous value of x
-  # Loop over the coordinates
+  xold <- x ## Previous value of x
+  ## Loop over the coordinates
   for (j in 1:narg) {
     gj <- grad[j]
-    if (abs(gj) < tol2) next # Skip this coordinate if gradient is too small
-    # The increment of the coordinate j
+    if (abs(gj) < tol2) next ## Skip this coordinate if gradient is too small
+    ## The increment of the coordinate j
     dj <- - H[j] * gj
-    if (abs(dj) < tol2) next # Skip this coordinate if step is too small
-    # Perform Armijo condition loop along coordinate j
+    if (abs(dj) < tol2) next ## Skip this coordinate if step is too small
+    ## Perform Armijo condition loop along coordinate j
     alpha <- 1
     repeat {
-      xtr <- x # Trial value of x
+      xtr <- x ## Trial value of x
       xtr[j] <- x[j] + alpha * dj
-      fxtr <- f(xtr)  # Trial function value
-      # Break if Armijo condition is satisfied
+      fxtr <- f(xtr)  ## Trial function value
+      ## Break if Armijo condition is satisfied
       if ((fxtr <= fx + c1 * alpha * gj * dj) || (alpha < 1e-12))
         break
-      # Reduce the step size and repeat test
+      ## Reduce the step size and repeat test
       alpha <- alpha * rho
-    } # end repeat
-    # If the Armijo condition failed then skip this coordinate
+    } ## end repeat
+    ## If the Armijo condition failed then skip this coordinate
     dx <- alpha * dj
     if (abs(dx) < tol2) next
-    # Accept the step
+    ## Accept the step
     x[j] <- x[j] + dx
     fx <- fxtr
-    # Update gradient component using central difference
+    ## Update gradient component using central difference
     e <- rep(0, narg); e[j] <- 1
     fp <- f(x + h * e)[1]
     fm <- f(x - h * e)[1]
-    gn <- (fp - fm) / (2 * h) # New gradient component
-    dg <- (gn - gj) # Change in gradient
-    # Hessian secant update
+    gn <- (fp - fm) / (2 * h) ## New gradient component
+    dg <- (gn - gj) ## Change in gradient
+    ## Hessian secant update
     if (dg * dx > 1e-12) {
       H[j] <- max(1e-12, dx / dg)
     } else {
       H[j] <- 1
-    } # end if
-    # Update the gradient
+    } ## end if
+    ## Update the gradient
     grad[j] <- gn
-  } # end loop over the coordinates
-  # Step-size stopping condition
+  } ## end loop over the coordinates
+  ## Step-size stopping condition
   if (sum((x - xold)^2) < tol2) {
     itern <- itern + 1
     history[itern, ] <- x
     break
-  } # end if
-  # Recompute full gradient
+  } ## end if
+  ## Recompute full gradient
   grad <- calc_grad(x)
-  # Store the history
+  ## Store the history
   itern <- itern + 1
   history[itern, ] <- x
-} # end for n
+} ## end for n
       @
   \end{columns}
 \end{block}
@@ -3771,22 +3775,22 @@ optiml$history
 # Define the Rosenbrock function
 rosefun <- function(x) {
   (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
-} # end rosefun
+} ## end rosefun
 # Calculate the minimum using BFGS method
 optiml <- rutils::optim_bfgs(rosefun, x0 = c(-1.2, 1))
-optiml$par      # Minimum coordinates
-optiml$value    # Function value at the minimum
-optiml$history  # Optimization path
-optiml$iter     # Number of iterations
+optiml$par      ## Minimum coordinates
+optiml$value    ## Function value at the minimum
+optiml$history  ## Optimization path
+optiml$iter     ## Number of iterations
 # Solve using optim() for comparison
 optiml <- optim(c(-1.2, 1), rosefun, method = "L-BFGS-B")
-optiml$par      # Minimum coordinates
+optiml$par      ## Minimum coordinates
 # Solve using coordinate descent
 optiml <- rutils::optim_coordescent(rosefun, x0 = c(-1.2, 1))
-optiml$par      # Minimum coordinates - wrong values!
-optiml$value    # Function value at the minimum
-optiml$history  # Optimization path
-optiml$iter     # Number of iterations
+optiml$par      ## Minimum coordinates - wrong values!
+optiml$value    ## Function value at the minimum
+optiml$history  ## Optimization path
+optiml$iter     ## Number of iterations
       @
   \end{columns}
 \end{block}
@@ -4529,13 +4533,13 @@ sim_our <- function(priceq=5.0,
   for (i in 2:nrows) {
     retp[i] <- theta*(priceq - pricev[i-1]) + volat*innov[i-1]
     pricev[i] <- pricev[i-1] + retp[i]
-  }  # end for
+  }  ## end for
   pricev
-}  # end sim_our
+}  ## end sim_our
 # Simulate Ornstein-Uhlenbeck process in R
 priceq <- 5.0; sigmav <- 0.01
 thetav <- 0.01; nrows <- 1000
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  # Reset random numbers
+set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")  ## Reset random numbers
 innov <- rnorm(nrows)
 ousim <- sim_our(priceq=priceq, volat=sigmav, theta=thetav, innov=innov)
       @
@@ -4557,7 +4561,7 @@ NumericVector sim_oucpp(double priceq,
     pricev[it] = pricev[it-1] + retv[it];
   }  // end for
   return pricev;
-}")  # end cppFunction
+}")  ## end cppFunction
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 oucpp <- sim_oucpp(priceq=priceq,
   volat=sigmav, theta=thetav, innov=innov)

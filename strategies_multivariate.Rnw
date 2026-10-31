@@ -66,7 +66,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Multivariate Investment Strategies]{Multivariate Investment Strategies}
-\subtitle{FRE7241, Spring 2026}
+\subtitle{FRE7241, Fall 2026}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -658,6 +658,61 @@ dygraphs::dygraph(cumsum(wealthv)[endw], main=captiont) %>%
 
 %%%%%%%%%%%%%%%
 \section{Stock Selection Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Distribution of Compounded Stock Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The equal wealth portfolio rebalances its weights - it sells the stocks with higher returns and buys stocks with lower returns.  So it's a \emph{mean reverting} (contrarian) strategy.
+      \vskip1ex
+      The equal wealth portfolio can often underperform the cap-weighted and fixed share indices because it gradually overweights underperforming stocks, as it rebalances to maintain equal wealth allocations.
+      \vskip1ex
+      In periods when a small number of stocks dominate returns, the cap-weighted and fixed share indices outperform the equal wealth index.
+      <<echo=TRUE,eval=FALSE>>=
+# install.packages("readxl")
+# Load all the sheets of Bessembinder stock data
+filen <- "/Users/jerzy/Develop/lecture_slides/data/Bessembinder_stock_data_2026.xlsx"
+sheetn <- readxl::excel_sheets(filen)
+datav <- lapply(sheetn, readxl::read_excel, path = filen)
+str(datav)
+
+# /Users/jerzy/Develop/lecture_slides/data/Bessembinder_stock_data_2026.xlsx
+
+
+# Wealth of fixed shares portfolio
+wealthfs <- rowMeans(cumprod(1 + retp))
+# Wealth of equal wealth portfolio (with rebalancing)
+wealthew <- cumprod(1 + retew)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/portf_equal_weight.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate combined log wealth
+wealthv <- cbind(wealthfs, wealthew)
+wealthv <- log(wealthv)
+wealthv <- xts::xts(wealthv, datev)
+colnames(wealthv) <- c("Fixed shares", "Equal wealth")
+# Calculate the Sharpe and Sortino ratios
+sqrt(252)*sapply(rutils::diffit(wealthv), function(x) 
+  c(Sharpe=mean(x)/sd(x), Sortino=mean(x)/sd(x[x<0])))
+# Plot of combined log wealth
+endw <- rutils::calc_endpoints(wealthv, interval="weeks")
+dygraphs::dygraph(wealthv[endw], 
+  main="Wealth of Fixed Share and Equal Wealth Portfolios") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always", width=300)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 
 
 %%%%%%%%%%%%%%%

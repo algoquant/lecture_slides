@@ -63,7 +63,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Data Management]{Data Management}
-\subtitle{FRE6871 \& FRE7241, Spring 2026}
+\subtitle{FRE6871 \& FRE7241, Fall 2026}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -2530,19 +2530,19 @@ assign("prices", rutils::do_call(cbind,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Load data frame of S&P500 constituents from CSV file
-sp500 <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
+# Load the S&P500 constituents from CSV file
+stockdata <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
 # Inspect data frame of S&P500 constituents
-dim(sp500)
-colnames(sp500)
+dim(stockdata)
+colnames(stockdata)
 # Extract tickers from the column Ticker
-symbolv <- sp500$Ticker
+symbolv <- stockdata$Ticker
 # Get duplicate tickers
 tablev <- table(symbolv)
 duplicatv <- tablev[tablev > 1]
 duplicatv <- names(duplicatv)
 # Get duplicate records (rows) of sp500
-sp500[symbolv %in% duplicatv, ]
+stockdata[symbolv %in% duplicatv, ]
 # Get unique tickers
 symbolv <- unique(symbolv)
 # Find index of ticker "BRK.B"
@@ -2550,6 +2550,59 @@ which(symbolv=="BRK.B")
 # Rename "BRK.B" to "BRK-B" and "BF.B" to "BF-B"
 symbolv[which(symbolv=="BRK.B")] <- "BRK-B"
 symbolv[which(symbolv=="BF.B")] <- "BF-B"
+# Load the 2026 SPY ETF holdings from CSV file
+spydata <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/SPY_holdings_2026.csv")
+# Extract tickers from the column Ticker
+symbolspy <- spydata$Ticker
+# Find SPY holdings that are not in the S&P500 constituents
+symbolnew <- symbolspy[!(symbolspy %in% symbolv)]
+spydatan <- spydata[match(symbolnew, spydata$Ticker), ]
+spydatan <- spydatan[, c("Ticker", "Name", "Identifier", "SEDOL")]
+# Add new SPY holdings to the S&P500 constituents
+stockdata <- rbind(stockdata, spydatan)
+write.csv(stockdata, file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv", row.names=FALSE)
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Biases of Historical Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The U.S. stock prices are biased by the bull market since \texttt{2009}, which is exceptional compared to past history and exceptional compared to other stock markets.
+      \vskip1ex
+      Stock prices from before \texttt{2009} are biased because they don't include the companies that are driving the current market today.
+      \vskip1ex
+      The stock market before the \texttt{2008} financial crisis was different because there were no high-frequency (HF) stock trading firms.  The trading volumes and liquidity were much lower before \texttt{2008}.
+      <<echo=TRUE,eval=FALSE>>=
+# Load the SPY ETF prices
+spyd <- rutils::etfenv$SPY
+spyd <- spyd[, c("SPY.Close", "SPY.Volume")]
+spyd[, 1] <- log(spyd[, 1])
+# Calculate smoothed trading volumes
+volv <- spyd[, 2]
+volv <- rutils::roll_sum(volv, 31)/31
+volv <- rutils::lagit(volv, -15)
+spyd[, 2] <- volv/1e6
+colnames(spyd) <- c("Price", "Volume")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/spy_prices_volumes.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot SPY prices and trading volumes
+dygraph(spyd, main="SPY ETF Log Prices and Volumes") %>%
+  dySeries("Price", label="Price") %>%
+  dySeries("Volume", label="Volume", axis="y2") %>%
+  dyAxis("y2", label="Volume", independentTicks=TRUE) %>%
+  dyOptions(colors=c("blue", "red")) %>%
+  dyLegend(show="always", width=300)
 @
   \end{columns}
 \end{block}

@@ -29,6 +29,7 @@ knit_theme$set(thm)
 \usepackage{amssymb}
 \usepackage{amsfonts}
 \usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
 \usepackage{url}
@@ -61,13 +62,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#2]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#2, Spring 2026}
+\subtitle{Lecture\#2, Fall 2026}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{February 2, 2026}
+\date{November 2, 2026}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -79,6 +80,7 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
 
 
 %%%%%%%%%%%%%%%
@@ -1353,7 +1355,7 @@ calc_var <- function(probv, ##  Default probabilities
       \vskip1ex
       For example, a \texttt{50\%} uncertainty in the default probabilities can produce a \texttt{20\%} uncertainty of the \emph{VaR}.
       \vskip1ex
-      When default probabilities are random, the standard error of the \emph{VaR} decreases with higher confidence level, because the whole loss distribtution shifts, so it has a larger effect at lower confidence levels.
+      The standard error of the \emph{CVaR} decreases with higher confidence level, because when default probabilities are random, the whole loss distribution shifts, so it has a larger effect at lower confidence levels.
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  ##  load package parallel
 ncores <- detectCores() - 1  ##  number of cores
@@ -1406,7 +1408,7 @@ legend(x="topleft",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      When default probabilities are random, the \emph{scaled} (relative) standard errors of \emph{VaR} and \emph{CVaR} decrease with higher confidence level, because the whole loss distribtution shifts, so it has a larger effect at lower confidence levels.
+      When default probabilities are random, the \emph{scaled} (relative) standard errors of \emph{VaR} and \emph{CVaR} decrease with higher confidence level, because the whole loss distribution shifts, so it has a larger effect at lower confidence levels.
       <<echo=TRUE,eval=FALSE>>=
       @
     \column{0.5\textwidth}
@@ -1455,79 +1457,6 @@ legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
 \end{frame}
 
 
-%%%%%%%%%%%%%%%
-\subsection{depr: Simulating Credit Portfolios Using Importance Sampling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      It's not possible to apply importance sampling to the credit loss distribtution because the distribtution is not known.
-      \vskip1ex
-      Importance sampling can be used to improve the accuracy of VaR and CVaR calculations for credit portfolios. 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-##########################################
-# Summary: Calculate the VaR and CVaR of a credit 
-# portfolio using importance sampling.
-
-## Run the setup code below.
-
-# Define model parameters
-nbonds <- 10; nsimu <- 1000; lgd <- 0.4
-# Define correlation parameters
-rho <- 0.2; rhos <- sqrt(rho); rhosm <- sqrt(1-rho)
-# Calculate default probabilities and thresholds
-set.seed(1121, "Mersenne-Twister", sample.kind="Rejection")
-probv <- runif(nbonds, max=0.2)
-threshv <- qnorm(probv)
-# Simulate losses under the Vasicek model
-sysv <- rnorm(nsimu)
-assetm <- matrix(rnorm(nsimu*nbonds), ncol=nsimu)
-assetm <- t(rhos*sysv + t(rhosm*assetm))
-lossv <- lgd*colSums(assetm < threshv)/nbonds
-
-# Calculate VaR from confidence level
-confl <- 0.95
-varisk <- quantile(lossv, confl)
-
-cumprob <- (1:nsimu)/nsimu
-sort(lossv)[findInterval(confl, cumprob)]
-
-# Calculate the CVaR as the mean losses in excess of VaR
-cvar <- mean(lossv[lossv > varisk])
-
-
-# Apply importance sampling
-lambdaf <- (-0.1)
-assett <- assetm + lambdaf
-weightv <- exp(-lambdaf*assett + lambdaf^2/2)
-
-losst <- lgd*colSums(assett < threshv)/nbonds
-lossw <- matrixStats::colProds(weightv)
-
-# Calculate the CVaR using importance sampling - doesn't work
-sum((losst < varisk)*lossw)/nsimu
-# Or
-losst <- lgd*colSums((assett < threshv)*weightv)/nbonds
-mean(losst[losst > varisk])
-
-# Data must be sorted for importance sampling of VaR
-ordern <- order(losst)
-losst <- losst[ordern]
-lossw <- lossw[ordern]
-
-# Calculate the VaR using importance sampling - doesn't work
-cumprob <- cumsum(lossw)/nsimu
-losst[findInterval(confl, cumprob)]
-
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
 
 
 %%%%%%%%%%%%%%%
@@ -1549,19 +1478,19 @@ losst[findInterval(confl, cumprob)]
       \vskip1ex
       And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v^2_i}$.
       \vskip1ex
-      Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$.
+      Let $\mathbb{X}$ be a matrix, with $\mathbb{X} = \left\{ X_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$.
       \vskip1ex
-      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as:
+      Then the inner product of matrix $\mathbb{X}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as:
       \begin{displaymath}
-        \mathbf{v}^T \mathbb{A} \, \mathbf{w} = \mathbf{w}^T \mathbb{A}^T \mathbf{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
+        \mathbf{v}^T \mathbb{X} \, \mathbf{w} = \mathbf{w}^T \mathbb{X}^T \mathbf{v} = {\sum_{{i,j}=1}^n {X_{ij} v_i w_j}}
       \end{displaymath}
     \column{0.5\textwidth}
       The derivative of a scalar variable with respect to a vector variable is a vector, for example:
       \begin{align*}
         \frac{d (\mathbf{v}^T \mathbbm{1})}{d \mathbf{v}} = d_v[\mathbf{v}^T \mathbbm{1}] = d_v[\mathbbm{1}^T \mathbf{v}] = \mathbbm{1}^T \\
         d_v[\mathbf{v}^T \mathbf{w}] = d_v[\mathbf{w}^T \mathbf{v}] = \mathbf{w}^T \\
-        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{w}] = \mathbf{w}^T \mathbb{A}^T \\
-        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{v}] = \mathbf{v}^T \mathbb{A} + \mathbf{v}^T \mathbb{A}^T
+        d_v[\mathbf{v}^T \mathbb{X} \, \mathbf{w}] = \mathbf{w}^T \mathbb{X}^T \\
+        d_v[\mathbf{v}^T \mathbb{X} \, \mathbf{v}] = \mathbf{v}^T \mathbb{X} + \mathbf{v}^T \mathbb{X}^T
       \end{align*}
   \end{columns}
 \end{block}
@@ -1576,9 +1505,9 @@ losst[findInterval(confl, cumprob)]
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The vector $w$ is an \emph{eigenvector} of the matrix $\mathbb{A}$, if it satisfies the \emph{eigenvalue} equation:
+      The vector $w$ is an \emph{eigenvector} of the matrix $\mathbb{X}$, if it satisfies the \emph{eigenvalue} equation:
       \begin{displaymath}
-        \mathbb{A} \, w = \lambda \, w
+        \mathbb{X} \, w = \lambda \, w
       \end{displaymath}
       Where $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $w$.
       \vskip1ex
@@ -1588,7 +1517,7 @@ losst[findInterval(confl, cumprob)]
       \vskip1ex
       The \emph{eigenvectors} can be normalized to $1$.
       \vskip1ex
-      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal.
+      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{X}$ is diagonal.
       \vskip1ex
       The function \texttt{eigen()} calculates the \emph{eigenvectors} and \emph{eigenvalues} of numeric matrices.
       \vskip1ex
@@ -1625,15 +1554,15 @@ barplot(eigend$values, xlab="", ylab="", las=3,
     \column{0.5\textwidth}
       Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other.
       \vskip1ex
-      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal:
+      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{X}$ is diagonal:
       \begin{displaymath}
-        \Sigma = \mathbb{O}^T \mathbb{A} \, \mathbb{O}
+        \Sigma = \mathbb{O}^T \mathbb{X} \, \mathbb{O}
       \end{displaymath}
-      Where $\Sigma$ is a \emph{diagonal} matrix containing the \emph{eigenvalues} of matrix $\mathbb{A}$, and $\mathbb{O}$ is an \emph{orthogonal} matrix of its \emph{eigenvectors}, with $\mathbb{O}^T \mathbb{O} = \mathbbm{1}$.
+      Where $\Sigma$ is a \emph{diagonal} matrix containing the \emph{eigenvalues} of matrix $\mathbb{X}$, and $\mathbb{O}$ is an \emph{orthogonal} matrix of its \emph{eigenvectors}, with $\mathbb{O}^T \mathbb{O} = \mathbbm{1}$.
       \vskip1ex
-      Any real symmetric matrix $\mathbb{A}$ can be decomposed into a product of its \emph{eigenvalues} and its \emph{eigenvectors} (the \emph{eigen decomposition}):
+      Any real symmetric matrix $\mathbb{X}$ can be decomposed into a product of its \emph{eigenvalues} and its \emph{eigenvectors} (the \emph{eigen decomposition}):
       \begin{displaymath}
-        \mathbb{A} = \mathbb{O} \, \Sigma \, \mathbb{O}^T
+        \mathbb{X} = \mathbb{O} \, \Sigma \, \mathbb{O}^T
       \end{displaymath}
 \fbox{\parbox{\columnwidth-1.5em}{
       The \emph{eigen decomposition} expresses a matrix as the product of a rotation, followed by a scaling, followed by the inverse rotation.
@@ -1685,7 +1614,7 @@ all.equal(matv, matrixe)
       \vskip1ex
       Matrices which have some \emph{eigenvalues} equal to zero are called \emph{singular} (degenerate) matrices.
       \vskip1ex
-      For any real matrix $\mathbb{A}$, the matrix $\mathbb{A}^T \mathbb{A}$ is \emph{positive semi-definite}.
+      For any real matrix $\mathbb{X}$, the matrix $\mathbb{X}^T \mathbb{X}$ is \emph{positive semi-definite}.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/eigen_posdef.png}
@@ -1718,17 +1647,17 @@ barplot(eigend$values, las=3, xlab="", ylab="",
       The \emph{Singular Value Decomposition} (\emph{SVD}) is a generalization for rectangular matrices, of the \emph{eigen decomposition} of square matrices.
 }}
       \vskip1ex
-      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ is defined as the factorization:
+      The \emph{SVD} of a rectangular matrix $\mathbb{X}$ is defined as the factorization:
       \begin{displaymath}
-        \mathbb{A} = \mathbb{U}  \, \Sigma  \, \mathbb{V}^T
+        \mathbb{X} = \mathbb{U}  \, \Sigma  \, \mathbb{V}^T
       \end{displaymath}
       Where $\mathbb{U}$ and $\mathbb{V}$ are the left and right \emph{singular matrices}, and $\Sigma$ is a diagonal matrix of \emph{singular values}.
       \vskip1ex
-      If $\mathbb{A}$ has \texttt{m} rows and \texttt{n} columns and if (\texttt{m > n}), then $\mathbb{U}$ is an (\texttt{m x n}) \emph{rectangular} matrix, $\Sigma$ is an (\texttt{n x n}) \emph{diagonal} matrix, and $\mathbb{V}$ is an (\texttt{n x n}) \emph{orthogonal} matrix, and if (\texttt{m < n}) then the dimensions are: (\texttt{m x m}), (\texttt{m x m}), and (\texttt{m x n}).
+      If $\mathbb{X}$ has \texttt{m} rows and \texttt{n} columns and if (\texttt{m > n}), then $\mathbb{U}$ is an (\texttt{m x n}) \emph{rectangular} matrix, $\Sigma$ is an (\texttt{n x n}) \emph{diagonal} matrix, and $\mathbb{V}$ is an (\texttt{n x n}) \emph{orthogonal} matrix, and if (\texttt{m < n}) then the dimensions are: (\texttt{m x m}), (\texttt{m x m}), and (\texttt{m x n}).
       \vskip1ex
       The left $\mathbb{U}$ and right $\mathbb{V}$ singular matrices consist of columns of \emph{orthonormal} vectors, so that $\mathbb{U}^T \mathbb{U} = \mathbb{V}^T \mathbb{V} = \mathbbm{1}$.
       \vskip1ex
-      In the special case when $\mathbb{A}$ is a square matrix, then $\mathbb{U} = \mathbb{V}$, and the \emph{SVD} reduces to the \emph{eigen decomposition}.
+      In the special case when $\mathbb{X}$ is a square matrix, then $\mathbb{U} = \mathbb{V}$, and the \emph{SVD} reduces to the \emph{eigen decomposition}.
     \column{0.5\textwidth}
       The function \texttt{svd()} performs \emph{Singular Value Decomposition} (\emph{SVD}) of a rectangular matrix, and returns a list of three elements: the \emph{singular values}, and the matrices of left-\emph{singular} vectors and the right-\emph{singular} vectors.
       <<echo=TRUE,eval=FALSE>>=
@@ -1754,15 +1683,15 @@ round(t(svdec$v) %*% svdec$v, 4)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The left $\mathbb{U}$ and right $\mathbb{V}$ singular matrices define rotation transformations into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
+      The left $\mathbb{U}$ and right $\mathbb{V}$ singular matrices define rotation transformations into a coordinate system where the matrix $\mathbb{X}$ becomes diagonal:
       \begin{displaymath}
-        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
+        \Sigma = \mathbb{U}^T \mathbb{X} \mathbb{V}
       \end{displaymath}
       The columns of $\mathbb{U}$ and $\mathbb{V}$ are called the \emph{singular} vectors, and they are only defined up to a reflection (change in sign), i.e. if \texttt{vec} is a singular vector, then so is \texttt{-vec}.
       \vskip1ex
-      The left singular matrix $\mathbb{U}$ forms the \emph{eigenvectors} of the matrix $\mathbb{A} \mathbb{A}^T$.
+      The left singular matrix $\mathbb{U}$ forms the \emph{eigenvectors} of the matrix $\mathbb{X} \mathbb{X}^T$.
       \vskip1ex
-      The right singular matrix $\mathbb{V}$ forms the \emph{eigenvectors} of the matrix $\mathbb{A}^T \mathbb{A}$.
+      The right singular matrix $\mathbb{V}$ forms the \emph{eigenvectors} of the matrix $\mathbb{X}^T \mathbb{X}$.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1811,15 +1740,15 @@ all.equal(abs(eigend$vectors), abs(rightmat))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The inverse of a square matrix $\mathbb{A}$ is defined as a square matrix $\mathbb{A}^{-1}$ that satisfies the equation:
+      The inverse of a square matrix $\mathbb{X}$ is defined as a square matrix $\mathbb{X}^{-1}$ that satisfies the equation:
       \begin{displaymath}
-        \mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}
+        \mathbb{X}^{-1} \mathbb{X} = \mathbb{X} \mathbb{X}^{-1} = \mathbbm{1}
       \end{displaymath}
       Where $\mathbbm{1}$ is the identity matrix.
       \vskip1ex
-      The inverse $\mathbb{A}^{-1}$ of a \emph{symmetric} square matrix $\mathbb{A}$ can also be expressed as the product of the inverse of its \emph{eigenvalues} ($\Sigma$) and its \emph{eigenvectors} ($\mathbb{O}$):
+      The inverse $\mathbb{X}^{-1}$ of a \emph{symmetric} square matrix $\mathbb{X}$ can also be expressed as the product of the inverse of its \emph{eigenvalues} ($\Sigma$) and its \emph{eigenvectors} ($\mathbb{O}$):
       \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{O} \, \Sigma^{-1} \, \mathbb{O}^T
+        \mathbb{X}^{-1} = \mathbb{O} \, \Sigma^{-1} \, \mathbb{O}^T
       \end{displaymath}
       But \emph{singular} (degenerate) matrices (which have some \emph{eigenvalues} equal to zero) don't have an inverse.
       \vskip1ex
@@ -1860,19 +1789,19 @@ all.equal(invmat, inveigen)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The generalized inverse of an (\texttt{m x n}) rectangular matrix $\mathbb{A}$ is defined as an (\texttt{n x m}) matrix $\mathbb{A}^{-1}$ that satisfies the equation:
+      The generalized inverse of an (\texttt{m x n}) rectangular matrix $\mathbb{X}$ is defined as an (\texttt{n x m}) matrix $\mathbb{X}^{-1}$ that satisfies the equation:
       \begin{displaymath}
-        \mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbb{A}
+        \mathbb{X} \mathbb{X}^{-1} \mathbb{X} = \mathbb{X}
       \end{displaymath}
-      The generalized inverse matrix $\mathbb{A}^{-1}$ can be expressed as a product of the inverse of its \emph{singular values} ($\Sigma$) and its left and right \emph{singular} matrices ($\mathbb{U}$ and $\mathbb{V}$):
+      The generalized inverse matrix $\mathbb{X}^{-1}$ can be expressed as a product of the inverse of its \emph{singular values} ($\Sigma$) and its left and right \emph{singular} matrices ($\mathbb{U}$ and $\mathbb{V}$):
       \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
+        \mathbb{X}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
       \end{displaymath}
-      The generalized inverse $\mathbb{A}^{-1}$ can also be expressed as the \emph{Moore-Penrose pseudo-inverse}:
+      The generalized inverse $\mathbb{X}^{-1}$ can also be expressed as the \emph{Moore-Penrose pseudo-inverse}:
       \begin{displaymath}
-        \mathbb{A}^{-1} = (\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T
+        \mathbb{X}^{-1} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
       \end{displaymath}
-      In the case when the inverse matrix $\mathbb{A}^{-1}$ exists, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T = \mathbb{A}^{-1} (\mathbb{A}^T)^{-1} \mathbb{A}^T = \mathbb{A}^{-1}$
+      In the case when the inverse matrix $\mathbb{X}^{-1}$ exists, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{X}^{-1} (\mathbb{X}^T)^{-1} \mathbb{X}^T = \mathbb{X}^{-1}$
       \vskip1ex
       The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
     \column{0.5\textwidth}
@@ -1915,11 +1844,11 @@ all.equal(invmp, invmat)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Singular} matrices have some \emph{singular values} equal to zero, so they don't have an inverse matrix which satisfies the equation: $\mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}$
+      \emph{Singular} matrices have some \emph{singular values} equal to zero, so they don't have an inverse matrix which satisfies the equation: $\mathbb{X} \mathbb{X}^{-1} \mathbb{X} = \mathbbm{A}$
       \vskip1ex
       But if the \emph{singular values} that are equal to zero are removed, then a \emph{regularized inverse} for \emph{singular} matrices can be specified by:
       \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
+        \mathbb{X}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
       \end{displaymath}
       Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices with the rows and columns corresponding to zero \emph{singular values} removed.
       <<echo=TRUE,eval=FALSE>>=
@@ -1968,15 +1897,15 @@ all.equal(invmp, invmat)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The left-\emph{singular} matrix $\mathbb{U}$ combined with the right-\emph{singular} matrix $\mathbb{V}$ define a rotation transformation into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
+      The left-\emph{singular} matrix $\mathbb{U}$ combined with the right-\emph{singular} matrix $\mathbb{V}$ define a rotation transformation into a coordinate system where the matrix $\mathbb{X}$ becomes diagonal:
       \begin{displaymath}
-        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
+        \Sigma = \mathbb{U}^T \mathbb{X} \mathbb{V}
       \end{displaymath}
-      The generalized inverse of \emph{singular} matrices doesn't satisfy the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$, but if it's rotated into the same coordinate system where $\mathbb{A}$ is diagonal, then we have:
+      The generalized inverse of \emph{singular} matrices doesn't satisfy the equation: $\mathbb{X}^{-1} \mathbb{X} = \mathbb{X} \mathbb{X}^{-1} = \mathbbm{1}$, but if it's rotated into the same coordinate system where $\mathbb{X}$ is diagonal, then we have:
       \begin{displaymath}
-        \mathbb{U}^T (\mathbb{A}^{-1} \mathbb{A}) \, \mathbb{V} = \mathbbm{1}_n
+        \mathbb{U}^T (\mathbb{X}^{-1} \mathbb{X}) \, \mathbb{V} = \mathbbm{1}_n
       \end{displaymath}
-      So that $\mathbb{A}^{-1} \mathbb{A}$ is diagonal in the same coordinate system where $\mathbb{A}$ is diagonal.
+      So that $\mathbb{X}^{-1} \mathbb{X}$ is diagonal in the same coordinate system where $\mathbb{X}$ is diagonal.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -2001,15 +1930,15 @@ round(t(svdec$u) %*% unitmat %*% svdec$v, 4)
     \column{0.5\textwidth}
       A system of linear equations can be defined as:
       \begin{displaymath}
-        \mathbb{A} \, x = b
+        \mathbb{X} \, x = b
       \end{displaymath}
-      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and \texttt{x} is the unknown vector.
+      Where $\mathbb{X}$ is a matrix, $b$ is a vector, and \texttt{x} is the unknown vector.
       \vskip1ex
       The solution of the system of linear equations is equal to:
       \begin{displaymath}
-        x = \mathbb{A}^{-1} b
+        x = \mathbb{X}^{-1} b
       \end{displaymath}
-      Where $\mathbb{A}^{-1}$ is the \emph{inverse} of the matrix $\mathbb{A}$.
+      Where $\mathbb{X}^{-1}$ is the \emph{inverse} of the matrix $\mathbb{X}$.
       \vskip1ex
       The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
       \vskip1ex
@@ -2102,14 +2031,14 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Cholesky} decomposition of a \emph{positive definite} matrix $\mathbb{A}$ is defined as:
+      The \emph{Cholesky} decomposition of a \emph{positive definite} matrix $\mathbb{X}$ is defined as:
       \begin{displaymath}
-        \mathbb{A} = \mathbb{L}^T \mathbb{L}
+        \mathbb{X} = \mathbb{L}^T \mathbb{L}
       \end{displaymath}
       Where $\mathbb{L}$ is an upper triangular matrix with positive diagonal elements.
       \vskip1ex
 \fbox{\parbox{\columnwidth-1.5em}{
-      The Cholesky matrix $\mathbb{L}$ can be considered the square root of the matrix $\mathbb{A}$.
+      The Cholesky matrix $\mathbb{L}$ can be considered the square root of the matrix $\mathbb{X}$.
 }}
       \vskip1ex
       The vast majority of random \emph{positive semi-definite} matrices are also \emph{positive definite}.
@@ -2390,15 +2319,15 @@ invmat <- solve(covshrink)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The inverse of a square matrix $\mathbb{A}$ can be calculated approximately using the recursive \emph{Schulz formula}:
+      The inverse of a square matrix $\mathbb{X}$ can be calculated approximately using the recursive \emph{Schulz formula}:
       \begin{displaymath}
-        \mathbb{A}_{i+1}^{-1} = 2 \mathbb{A}_i^{-1} - \mathbb{A}_i^{-1} \mathbb{A} \mathbb{A}_i^{-1}
+        \mathbb{X}_{i+1}^{-1} = 2 \mathbb{X}_i^{-1} - \mathbb{X}_i^{-1} \mathbb{X} \mathbb{X}_i^{-1}
       \end{displaymath}
-      The \emph{Schulz formula} requires a good initial value for the inverse matrix $\mathbb{A}_1^{-1}$ or else the recursion diverges.
+      The \emph{Schulz formula} requires a good initial value for the inverse matrix $\mathbb{X}_1^{-1}$ or else the recursion diverges.
       \vskip1ex
-      If the initial inverse matrix $\mathbb{A}_1^{-1}$ is very close to the actual inverse $\mathbb{A}^{-1}$, then the \emph{Schulz formula} produces a very good approximation with just a few iterations.
+      If the initial inverse matrix $\mathbb{X}_1^{-1}$ is very close to the actual inverse $\mathbb{X}^{-1}$, then the \emph{Schulz formula} produces a very good approximation with just a few iterations.
       \vskip1ex
-      The \emph{Schulz formula} is useful for updating the inverse when the matrix $\mathbb{A}$ changes only slightly.  For example, for updating the inverse of the covariance matrix as it changes slowly over time.
+      The \emph{Schulz formula} is useful for updating the inverse when the matrix $\mathbb{X}$ changes only slightly.  For example, for updating the inverse of the covariance matrix as it changes slowly over time.
       <<echo=TRUE,eval=FALSE>>=
 # Create a random matrix
 matv <- matrix(rnorm(100), nc=10)
